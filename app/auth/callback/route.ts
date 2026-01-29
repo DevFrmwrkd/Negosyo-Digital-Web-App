@@ -77,18 +77,8 @@ export async function GET(request: Request) {
                     .select()
 
                 if (insertError) {
-                    console.error('❌ INSERT ERROR:', {
-                        message: insertError.message,
-                        details: insertError.details,
-                        hint: insertError.hint,
-                        code: insertError.code,
-                    })
                     // Don't fail - user is authenticated, they can complete profile later
-                } else {
-                    console.log('✅ Creator profile created successfully:')
                 }
-            } else {
-                console.log('Creator profile already exists')
             }
 
             // Check user role and redirect accordingly

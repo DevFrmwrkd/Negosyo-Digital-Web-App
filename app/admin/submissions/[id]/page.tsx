@@ -4,6 +4,10 @@ import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,17 +15,115 @@ import { PhotoLightbox } from "@/components/PhotoLightbox"
 import WebsitePreview from "@/components/WebsitePreview"
 import VisualEditor from "@/components/editor/VisualEditor"
 import ContentEditor, { EditorCustomizations } from "@/components/ContentEditor"
-import { useAdminAuth, useSubmission, useSubmissionStatus } from "@/hooks/useAdmin"
 import { createClient } from "@/lib/supabase/client"
-import type { SubmissionStatus } from "@/types/database"
 
 export default function SubmissionDetailPage() {
     const params = useParams()
     const submissionId = params.id as string
+    const { user, isLoaded } = useUser()
 
-    const { isAdmin, loading: authLoading } = useAdminAuth()
-    const { submission, creator, loading: dataLoading, refresh } = useSubmission(submissionId)
-    const { updateStatus, updating } = useSubmissionStatus(submissionId)
+    // Get current user to check admin status
+    const currentCreator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+    const isAdmin = currentCreator?.role === 'admin'
+
+    // Get submission with creator info
+    const submissionData = useQuery(
+        api.submissions.getByIdWithCreator,
+        isAdmin && submissionId ? { id: submissionId as Id<"submissions"> } : "skip"
+    )
+
+    // Resolve photo storage IDs to actual URLs (only for legacy Convex storage IDs)
+    // R2 URLs start with http and don't need resolution
+    const needsPhotoResolution = submissionData?.photos?.some(p => p.startsWith('convex:') || !p.startsWith('http'))
+    const photoUrls = useQuery(
+        api.files.getMultipleUrls,
+        needsPhotoResolution && submissionData?.photos && submissionData.photos.length > 0
+            ? { storageIds: submissionData.photos }
+            : "skip"
+    )
+
+    // Load existing generated website if available (moved up for heroImageUrls dependency)
+    const existingWebsite = useQuery(
+        api.generatedWebsites.getBySubmissionId,
+        submissionData ? { submissionId: submissionData._id } : "skip"
+    )
+
+    // Resolve hero images from websiteContent (these may be different from submission photos)
+    const websiteImages = existingWebsite?.extractedContent?.images as string[] | undefined
+    const needsHeroResolution = websiteImages?.some(p => !p.startsWith('http'))
+    const heroImageUrls = useQuery(
+        api.files.getMultipleUrls,
+        needsHeroResolution && websiteImages && websiteImages.length > 0
+            ? { storageIds: websiteImages }
+            : "skip"
+    )
+
+    // Prefer R2 URLs (videoUrl/audioUrl) over Convex storage IDs for video/audio
+    const hasR2VideoUrl = !!submissionData?.videoUrl
+    const hasR2AudioUrl = !!submissionData?.audioUrl
+
+    // Resolve video storage ID to URL (only if no R2 URL)
+    const legacyVideoUrl = useQuery(
+        api.files.getUrlByString,
+        !hasR2VideoUrl && submissionData?.videoStorageId
+            ? { storageId: submissionData.videoStorageId.toString() }
+            : "skip"
+    )
+
+    // Resolve audio storage ID to URL (only if no R2 URL)
+    const legacyAudioUrl = useQuery(
+        api.files.getUrlByString,
+        !hasR2AudioUrl && submissionData?.audioStorageId
+            ? { storageId: submissionData.audioStorageId.toString() }
+            : "skip"
+    )
+
+    // Use R2 URLs if available, otherwise fall back to legacy Convex URLs
+    const videoUrl = hasR2VideoUrl ? submissionData?.videoUrl : legacyVideoUrl
+    const audioUrl = hasR2AudioUrl ? submissionData?.audioUrl : legacyAudioUrl
+
+    // Mutations
+    const updateSubmissionMutation = useMutation(api.submissions.update)
+    const updateStatusMutation = useMutation(api.submissions.updateStatus)
+
+    const authLoading = !isLoaded || (user && currentCreator === undefined)
+    const dataLoading = isAdmin && submissionData === undefined
+    const [updating, setUpdating] = useState(false)
+
+    // Map Convex data to expected format
+    const submission = submissionData ? {
+        id: submissionData._id,
+        business_name: submissionData.businessName,
+        business_type: submissionData.businessType,
+        owner_name: submissionData.ownerName,
+        owner_phone: submissionData.ownerPhone,
+        owner_email: submissionData.ownerEmail,
+        address: submissionData.address,
+        city: submissionData.city,
+        photos: submissionData.photos,
+        video_url: videoUrl || null,
+        audio_url: audioUrl || null,
+        transcript: submissionData.transcript,
+        status: submissionData.status,
+        creator_payout: submissionData.creatorPayout,
+        amount: submissionData.amount,
+        payout_requested_at: submissionData.payoutRequestedAt,
+        paid_at: submissionData.paidAt,
+        created_at: (submissionData as any)._creationTime,
+    } : null
+
+    const creator = submissionData?.creator ? {
+        first_name: submissionData.creator.firstName,
+        last_name: submissionData.creator.lastName,
+        email: submissionData.creator.email,
+        phone: submissionData.creator.phone,
+    } : null
+
+    // Refresh function (Convex auto-refreshes, but keep for compatibility)
+    const refresh = () => { }
 
     // Modal state
     const [showModal, setShowModal] = useState(false)
@@ -108,6 +210,79 @@ export default function SubmissionDetailPage() {
         }
     }
 
+    // Handler to republish website (update existing deployment)
+    const [republishingWebsite, setRepublishingWebsite] = useState(false)
+    const handleRepublishWebsite = async () => {
+        if (republishingWebsite) return
+
+        setRepublishingWebsite(true)
+        try {
+            const response = await fetch('/api/publish-website', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    submissionId,
+                }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to republish website')
+            }
+
+            const data = await response.json()
+            setWebsitePublishedUrl(data.url)
+            setModalType('success')
+            setModalMessage(`Website republished successfully! Changes are now live at: ${data.url}`)
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Republish error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to republish website')
+            setShowModal(true)
+        } finally {
+            setRepublishingWebsite(false)
+        }
+    }
+
+    // Handler to send website URL to business owner
+    const [sendingEmail, setSendingEmail] = useState(false)
+    const handleSendWebsiteEmail = async () => {
+        if (sendingEmail || !websitePublishedUrl) return
+
+        setSendingEmail(true)
+        try {
+            const response = await fetch('/api/send-website-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    submissionId,
+                    websiteUrl: websitePublishedUrl,
+                }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to send email')
+            }
+
+            setModalType('success')
+            setModalMessage(`Email sent successfully to ${submission?.owner_email || 'the business owner'}!`)
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Send email error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to send email')
+            setShowModal(true)
+        } finally {
+            setSendingEmail(false)
+        }
+    }
+
     const handleUpdateDesign = async (customizations: EditorCustomizations) => {
         if (JSON.stringify(customizations) === JSON.stringify(websiteCustomizations)) {
             return
@@ -155,33 +330,27 @@ export default function SubmissionDetailPage() {
     }
 
     const handleSave = async () => {
-        if (!submission) return
+        if (!submission || !submissionData) return
 
         setSaving(true)
         try {
-            const supabase = createClient()
-            const { error } = await supabase
-                .from('submissions')
-                .update({
-                    business_name: editedData.business_name,
-                    business_type: editedData.business_type,
-                    owner_name: editedData.owner_name,
-                    owner_phone: editedData.owner_phone,
-                    owner_email: editedData.owner_email || null,
-                    address: editedData.address,
-                    city: editedData.city,
-                    transcript: editedData.transcript || null,
-                    photos: editedData.photos,
-                })
-                .eq('id', submission.id)
-
-            if (error) throw error
+            await updateSubmissionMutation({
+                id: submissionData._id,
+                businessName: editedData.business_name,
+                businessType: editedData.business_type,
+                ownerName: editedData.owner_name,
+                ownerPhone: editedData.owner_phone,
+                ownerEmail: editedData.owner_email || undefined,
+                address: editedData.address,
+                city: editedData.city,
+                transcript: editedData.transcript || undefined,
+                photos: editedData.photos,
+            })
 
             setModalType('success')
             setModalMessage('Changes saved successfully!')
             setShowModal(true)
             setIsEditing(false)
-            refresh() // Reload data
         } catch (err: any) {
             console.error('Error saving changes:', err)
             setModalType('error')
@@ -199,10 +368,16 @@ export default function SubmissionDetailPage() {
         })
     }
 
-    const handleStatusUpdate = async (newStatus: SubmissionStatus) => {
-        const success = await updateStatus(newStatus)
+    const handleStatusUpdate = async (newStatus: string) => {
+        if (!submissionData) return
 
-        if (success) {
+        setUpdating(true)
+        try {
+            await updateStatusMutation({
+                id: submissionData._id,
+                status: newStatus as any,
+            })
+
             setModalType('success')
             setModalMessage(`Submission ${newStatus} successfully!`)
             setShowModal(true)
@@ -219,13 +394,13 @@ export default function SubmissionDetailPage() {
                     console.error('Failed to send approval email:', error)
                 }
             }
-
-            // Refresh data to show updated status
-            refresh()
-        } else {
+        } catch (err: any) {
+            console.error('Status update error:', err)
             setModalType('error')
             setModalMessage('Failed to update status. Please try again.')
             setShowModal(true)
+        } finally {
+            setUpdating(false)
         }
     }
 
@@ -298,57 +473,38 @@ export default function SubmissionDetailPage() {
         }
     }
 
-    // Load existing generated website if available
     useEffect(() => {
-        async function loadExistingWebsite() {
-            if (!submission || !submissionId) return
-
-            try {
-                const supabase = createClient()
-                const { data: website, error } = await supabase
-                    .from('generated_websites')
-                    .select('*')
-                    .eq('submission_id', submissionId)
-                    .single()
-
-                if (!error && website) {
-                    setWebsitePreviewUrl(website.storage_url)
-                    setWebsiteHtmlContent(website.html_content)
-                    setWebsiteContent(website.extracted_content) // fixed property name
-                    setWebsiteCustomizations(website.customizations)
-                    setWebsitePublishedUrl(website.published_url || null)
-                    setWebsiteGenerated(true)
-                }
-            } catch (error) {
-                console.error('Error loading existing website:', error)
-            }
+        if (existingWebsite) {
+            setWebsiteHtmlContent(existingWebsite.htmlContent || '')
+            setWebsiteContent(existingWebsite.extractedContent)
+            setWebsiteCustomizations(existingWebsite.customizations || {})
+            setWebsitePublishedUrl(existingWebsite.publishedUrl || null)
+            setWebsiteGenerated(true)
         }
-
-        loadExistingWebsite()
-    }, [submission, submissionId])
+    }, [existingWebsite])
 
     // Auto-populate quality checklist
     useEffect(() => {
-        if (submission) {
+        if (submissionData) {
             setQualityChecklist({
-                hasPhotos: (submission.photos?.length || 0) > 0,
-                hasAudioVideo: !!(submission.audio_url || submission.video_url),
-                hasTranscript: !!submission.transcript,
+                hasPhotos: (submissionData.photos?.length || 0) > 0,
+                hasAudioVideo: !!(submissionData.audioStorageId || submissionData.videoStorageId || submissionData.audioUrl || submissionData.videoUrl),
+                hasTranscript: !!submissionData.transcript,
                 businessInfoComplete: !!(
-                    submission.business_name &&
-                    submission.business_type &&
-                    submission.owner_name &&
-                    submission.owner_phone &&
-                    submission.address &&
-                    submission.city
+                    submissionData.businessName &&
+                    submissionData.businessType &&
+                    submissionData.ownerName &&
+                    submissionData.ownerPhone &&
+                    submissionData.address &&
+                    submissionData.city
                 ),
                 contactInfoComplete: !!(
-                    submission.owner_phone &&
-                    (submission.owner_email || submission.owner_phone)
+                    submissionData.ownerPhone &&
+                    (submissionData.ownerEmail || submissionData.ownerPhone)
                 ),
             })
         }
-    }, [submission])
+    }, [submissionData?._id])
 
     if (authLoading || dataLoading) {
         return (
@@ -380,9 +536,22 @@ export default function SubmissionDetailPage() {
                                 <p className="text-sm text-gray-500">Submission Details</p>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            {/* Generate Website Button */}
-                            {(submission.status == 'submitted' || submission.status === 'approved' || submission.status === 'website_generated' || submission.status === 'paid') && (
+                        <div className="flex gap-2 flex-wrap">
+                            {/* WORKFLOW: submitted -> in_review -> approved -> deployed -> pending_payment -> paid */}
+
+                            {/* Step 1: Mark as In Review (for submitted status) */}
+                            {submission.status === 'submitted' && (
+                                <Button
+                                    onClick={() => handleStatusUpdate('in_review')}
+                                    disabled={updating}
+                                    className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                                >
+                                    {updating ? 'Updating...' : '📋 Mark as In Review'}
+                                </Button>
+                            )}
+
+                            {/* Step 2: Generate Website (for in_review, approved, or deployed status) */}
+                            {(submission.status === 'in_review' || submission.status === 'approved' || submission.status === 'deployed') && (
                                 <Button
                                     onClick={() => handleGenerateWebsite()}
                                     disabled={generatingWebsite}
@@ -404,49 +573,92 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
+                            {/* Step 3: Approve (for in_review status when website is generated) */}
+                            {submission.status === 'in_review' && websiteGenerated && (
+                                <Button
+                                    onClick={() => handleStatusUpdate('approved')}
+                                    disabled={updating}
+                                    className="bg-green-500 hover:bg-green-600 text-white"
+                                >
+                                    {updating ? 'Updating...' : '✓ Approve'}
+                                </Button>
+                            )}
+
+                            {/* Step 4: Publish/Deploy (for approved status) */}
+                            {submission.status === 'approved' && websiteGenerated && (
+                                <Button
+                                    onClick={handlePublishWebsite}
+                                    disabled={publishingWebsite}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    {publishingWebsite ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Publishing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Publish to Netlify
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+
+                            {/* Step 5: Send to Client (for deployed status) */}
+                            {submission.status === 'deployed' && (
+                                <Button
+                                    onClick={handleSendWebsiteEmail}
+                                    disabled={sendingEmail}
+                                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                                >
+                                    {sendingEmail ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Sending...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                            Send to Client
+                                        </>
+                                    )}
+                                </Button>
+                            )}
+
+                            {/* Step 6: Mark as Paid (for pending_payment status) */}
+                            {submission.status === 'pending_payment' && (
+                                <Button
+                                    onClick={() => handleStatusUpdate('paid')}
+                                    disabled={updating}
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                >
+                                    {updating ? 'Updating...' : '💰 Mark as Paid'}
+                                </Button>
+                            )}
+
+                            {/* Reject button (available until deployed) */}
+                            {!['rejected', 'deployed', 'pending_payment', 'paid'].includes(submission.status) && (
+                                <Button
+                                    onClick={() => handleStatusUpdate('rejected')}
+                                    disabled={updating}
+                                    variant="outline"
+                                    className="border-red-300 text-red-600 hover:bg-red-50"
+                                >
+                                    {updating ? 'Updating...' : '✗ Reject'}
+                                </Button>
+                            )}
+
                             {/* Trigger Payout Button - Specific for Payout Requests */}
                             {submission.payout_requested_at && (
                                 <Button
                                     className="bg-orange-500 hover:bg-orange-600 text-white"
                                 >
                                     💸 Trigger Payout
-                                </Button>
-                            )}
-
-                            {submission.status !== 'approved' && submission.status !== 'paid' && (
-                                <Button
-                                    onClick={() => handleStatusUpdate('approved')}
-                                    disabled={updating}
-                                    className="bg-green-500 hover:bg-green-600 text-white"
-                                >
-                                    {updating ? 'Updating...' : 'Approve'}
-                                </Button>
-                            )}
-                            {submission.status === 'approved' && !submission.paid_at && (
-                                <Button
-                                    onClick={() => setShowMarkPaidModal(true)}
-                                    disabled={markingPaid}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white"
-                                >
-                                    {markingPaid ? 'Processing...' : '💰 Mark as Paid'}
-                                </Button>
-                            )}
-                            {submission.status !== 'rejected' && (
-                                <Button
-                                    onClick={() => handleStatusUpdate('rejected')}
-                                    disabled={updating}
-                                    className="bg-red-600 hover:bg-red-700 text-white"
-                                >
-                                    {updating ? 'Updating...' : 'Reject'}
-                                </Button>
-                            )}
-                            {submission.status !== 'in_review' && (
-                                <Button
-                                    onClick={() => handleStatusUpdate('in_review')}
-                                    disabled={updating}
-                                    variant="outline"
-                                >
-                                    {updating ? 'Updating...' : 'Mark as In Review'}
                                 </Button>
                             )}
                         </div>
@@ -472,6 +684,43 @@ export default function SubmissionDetailPage() {
                                     </svg>
                                     Open in New Tab
                                 </a>
+                                {websitePublishedUrl && (
+                                    <>
+                                        <a
+                                            href={websitePublishedUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm font-medium"
+                                        >
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Visit Published Site
+                                        </a>
+                                        {/* Republish button - for deployed/pending_payment/paid statuses */}
+                                        {['deployed', 'pending_payment', 'paid'].includes(submission.status) && (
+                                            <button
+                                                onClick={handleRepublishWebsite}
+                                                disabled={republishingWebsite}
+                                                className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {republishingWebsite ? (
+                                                    <>
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                        Republishing...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                        </svg>
+                                                        Republish Website
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -527,9 +776,6 @@ export default function SubmissionDetailPage() {
                                 <WebsitePreview
                                     htmlContent={websiteHtmlContent || ''}
                                     isRegenerating={generatingWebsite}
-                                    isPublishing={publishingWebsite}
-                                    publishedUrl={websitePublishedUrl}
-                                    onPublish={handlePublishWebsite}
                                 />
                             )}
 
@@ -546,9 +792,6 @@ export default function SubmissionDetailPage() {
                                         <WebsitePreview
                                             htmlContent={websiteHtmlContent || ''}
                                             isRegenerating={generatingWebsite}
-                                            isPublishing={publishingWebsite}
-                                            publishedUrl={websitePublishedUrl}
-                                            onPublish={handlePublishWebsite}
                                         />
                                     </div>
                                 </div>
@@ -565,10 +808,22 @@ export default function SubmissionDetailPage() {
                                                 services: [],
                                                 contact: {}
                                             }),
-                                            images: websiteContent?.images || submission.photos || []
+                                            // Pass raw storage IDs from websiteContent so VisualEditor can resolve them
+                                            // This ensures newly uploaded images (convex:xxx) are properly resolved
+                                            images: websiteContent?.images || submission?.photos || []
                                         }}
                                         htmlContent={websiteHtmlContent || ''}
                                         submissionId={submissionId}
+                                        navbarStyle={websiteCustomizations?.navbarStyle || '1'}
+                                        heroStyle={websiteCustomizations?.heroStyle || '1'}
+                                        aboutStyle={websiteCustomizations?.aboutStyle || '1'}
+                                        servicesStyle={websiteCustomizations?.servicesStyle || '1'}
+                                        featuredStyle={websiteCustomizations?.featuredStyle || '1'}
+                                        availableImages={[
+                                            // Include both hero images and submission photos (resolved URLs) for selection
+                                            ...(heroImageUrls?.filter((url): url is string => url !== null) || []),
+                                            ...(photoUrls?.filter((url): url is string => url !== null) || [])
+                                        ].filter((url, index, self) => self.indexOf(url) === index)}
                                         onSave={async (content: any) => {
                                             const response = await fetch('/api/save-content', {
                                                 method: 'POST',
@@ -733,46 +988,54 @@ export default function SubmissionDetailPage() {
                                 </div>
                             </div>
                             <div className="grid grid-cols-3 gap-4">
-                                {(isEditing ? editedData.photos : (submission.photos || [])).map((url, index) => (
-                                    <div
-                                        key={index}
-                                        className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group cursor-pointer"
-                                        onClick={() => {
-                                            if (!isEditing) {
-                                                setLightboxIndex(index)
-                                                setLightboxOpen(true)
-                                            }
-                                        }}
-                                    >
-                                        <Image
-                                            src={url}
-                                            alt={`Photo ${index + 1}`}
-                                            fill
-                                            className="object-cover"
-                                        />
-                                        {isEditing && (
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    removePhoto(index)
-                                                }}
-                                                className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                                type="button"
-                                            >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        )}
-                                        {!isEditing && (
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                                <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m0 0v6m0-6h6m-6 0H4" />
-                                                </svg>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
+                                {(isEditing ? editedData.photos : (submission.photos || [])).map((url: string, index: number) => {
+                                    // Get the resolved URL from photoUrls for display
+                                    // photoUrls contains the resolved HTTP URLs from Convex storage
+                                    const resolvedUrl = photoUrls?.[index] || (url?.startsWith('http') ? url : null)
+
+                                    if (!resolvedUrl) return null
+
+                                    return (
+                                        <div
+                                            key={index}
+                                            className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group cursor-pointer"
+                                            onClick={() => {
+                                                if (!isEditing) {
+                                                    setLightboxIndex(index)
+                                                    setLightboxOpen(true)
+                                                }
+                                            }}
+                                        >
+                                            <Image
+                                                src={resolvedUrl}
+                                                alt={`Photo ${index + 1}`}
+                                                fill
+                                                className="object-cover"
+                                            />
+                                            {isEditing && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        removePhoto(index)
+                                                    }}
+                                                    className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                                    type="button"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                            {!isEditing && (
+                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                    <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m0 0v6m0-6h6m-6 0H4" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )
+                                })}
                             </div>
                             {isEditing && editedData.photos.length === 0 && (
                                 <p className="text-gray-500 text-center py-8">No photos remaining</p>
@@ -1087,9 +1350,9 @@ export default function SubmissionDetailPage() {
             )}
 
             {/* Photo Lightbox */}
-            {lightboxOpen && submission.photos && submission.photos.length > 0 && (
+            {lightboxOpen && photoUrls && photoUrls.length > 0 && (
                 <PhotoLightbox
-                    photos={submission.photos}
+                    photos={photoUrls.filter((url): url is string => url !== null)}
                     initialIndex={lightboxIndex}
                     onClose={() => setLightboxOpen(false)}
                 />

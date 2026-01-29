@@ -2,59 +2,59 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useQuery } from "convex/react"
+import { useUser } from "@clerk/nextjs"
+import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 
 export default function WebsitePreviewPage() {
     const params = useParams()
     const router = useRouter()
     const submissionId = params.id as string
+    const { user, isLoaded } = useUser()
 
-    const [loading, setLoading] = useState(true)
-    const [websiteCode, setWebsiteCode] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
 
+    // Get generated website from Convex
+    const website = useQuery(
+        api.generatedWebsites.getBySubmissionId,
+        submissionId ? { submissionId: submissionId as any } : "skip"
+    )
+
+    // Get submission to check ownership
+    const submission = useQuery(
+        api.submissions.getById,
+        submissionId ? { id: submissionId as any } : "skip"
+    )
+
+    // Get current user's creator profile
+    const currentCreator = useQuery(
+        api.creators.getByClerkId,
+        user?.id ? { clerkId: user.id } : "skip"
+    )
+
     useEffect(() => {
-        loadWebsite()
-    }, [submissionId])
+        if (!isLoaded) return
 
-    const loadWebsite = async () => {
-        try {
-            const supabase = createClient()
-            const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            router.push('/login')
+            return
+        }
 
-            if (!user) {
-                router.push('/login')
-                return
-            }
-
-            const { data: submission, error: fetchError } = await supabase
-                .from('submissions')
-                .select('website_code, creator_id')
-                .eq('id', submissionId)
-                .single()
-
-            if (fetchError) throw fetchError
-
-            // Check if user owns this submission
-            if (submission.creator_id !== user.id) {
+        if (submission && currentCreator) {
+            // Check if user owns this submission or is admin
+            if (submission.creatorId !== currentCreator._id && currentCreator.role !== 'admin') {
                 setError('You do not have permission to view this website')
                 return
             }
-
-            if (!submission.website_code) {
-                setError('Website has not been generated yet')
-                return
-            }
-
-            setWebsiteCode(submission.website_code)
-        } catch (err: any) {
-            console.error('Error loading website:', err)
-            setError(err.message || 'Failed to load website')
-        } finally {
-            setLoading(false)
         }
-    }
+
+        if (website === null) {
+            setError('Website has not been generated yet')
+        }
+    }, [user, isLoaded, submission, currentCreator, website, router])
+
+    const loading = !isLoaded || website === undefined || submission === undefined
 
     if (loading) {
         return (
@@ -110,7 +110,7 @@ export default function WebsitePreviewPage() {
             {/* Website Content */}
             <div className="pt-14">
                 <iframe
-                    srcDoc={websiteCode || ''}
+                    srcDoc={website?.htmlContent || ''}
                     className="w-full h-[calc(100vh-3.5rem)] border-0"
                     title="Website Preview"
                     sandbox="allow-scripts allow-same-origin"

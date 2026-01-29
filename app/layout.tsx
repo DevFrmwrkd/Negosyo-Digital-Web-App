@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { ConvexClerkProvider } from "@/components/providers/ConvexClerkProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,7 +32,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ConvexClerkProvider>
+          {children}
+        </ConvexClerkProvider>
         <Toaster position="top-right" richColors />
       </body>
     </html>

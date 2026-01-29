@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { useUser } from "@clerk/nextjs"
+import { useQuery, useMutation, useAction } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
+import { Loader2 } from "lucide-react"
 
 const INTERVIEW_QUESTIONS = [
     "Tell us about your business. What do you do?",
@@ -18,9 +22,27 @@ type RecordingState = 'idle' | 'recording' | 'paused' | 'stopped'
 
 export default function InterviewUploadPage() {
     const router = useRouter()
+    const { user, isLoaded, isSignedIn } = useUser()
+
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [submissionId, setSubmissionId] = useState<string | null>(null)
+
+    // Get creator from Convex
+    const creator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+
+    // Get submission from Convex
+    const submission = useQuery(
+        api.submissions.getById,
+        submissionId ? { id: submissionId as Id<"submissions"> } : "skip"
+    )
+
+    // Mutations and Actions
+    const generateR2UploadUrl = useAction(api.r2.generateUploadUrl)
+    const updateSubmission = useMutation(api.submissions.update)
 
     // Form state
     const [interviewType, setInterviewType] = useState<'video' | 'audio' | null>(null)
@@ -52,39 +74,35 @@ export default function InterviewUploadPage() {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-    // Load submission ID and existing data
+    // Redirect if not authenticated
     useEffect(() => {
-        const loadData = async () => {
-            const id = sessionStorage.getItem('current_submission_id')
-            if (!id) {
-                router.push('/submit/info')
-                return
-            }
-            setSubmissionId(id)
+        if (isLoaded && !isSignedIn) {
+            router.push("/login")
+        }
+    }, [isLoaded, isSignedIn, router])
 
-            try {
-                const supabase = createClient()
-                const { data } = await supabase
-                    .from('submissions')
-                    .select('video_url, audio_url, creator_payout')
-                    .eq('id', id)
-                    .single()
+    // Load submission ID from session
+    useEffect(() => {
+        const id = sessionStorage.getItem('current_submission_id')
+        if (!id) {
+            router.push('/submit/info')
+            return
+        }
+        setSubmissionId(id)
+    }, [router])
 
-                if (data) {
-                    if (data.video_url) {
-                        setInterviewType('video')
-                        setExistingFileUrl(data.video_url)
-                    } else if (data.audio_url) {
-                        setInterviewType('audio')
-                        setExistingFileUrl(data.audio_url)
-                    }
-                }
-            } catch (err) {
-                console.error("Error loading interview:", err)
+    // Load existing data when submission is available
+    useEffect(() => {
+        if (submission) {
+            if (submission.videoStorageId) {
+                setInterviewType('video')
+                setExistingFileUrl('video_exists') // Placeholder - has video
+            } else if (submission.audioStorageId) {
+                setInterviewType('audio')
+                setExistingFileUrl('audio_exists') // Placeholder - has audio
             }
         }
-        loadData()
-    }, [router])
+    }, [submission])
 
     // Cleanup on unmount
     useEffect(() => {
@@ -448,35 +466,33 @@ export default function InterviewUploadPage() {
         setError(null)
 
         try {
-            const supabase = createClient()
+            // Get presigned upload URL from R2 action
+            const { uploadUrl, publicUrl } = await generateR2UploadUrl({
+                fileName: fileToUpload.name,
+                fileType: fileToUpload.type,
+                submissionId: submissionId,
+                mediaType: interviewType === 'video' ? 'video' : 'audio',
+            })
 
-            const bucketName = interviewType === 'video' ? 'submission-videos' : 'submission-audio'
-            const fileExt = fileToUpload.name.split('.').pop()
-            const fileName = `${submissionId}/${Date.now()}_interview.${fileExt}`
+            // Upload the file directly to R2
+            const result = await fetch(uploadUrl, {
+                method: "PUT",
+                headers: { "Content-Type": fileToUpload.type },
+                body: fileToUpload,
+            })
 
-            const { error: uploadError } = await supabase.storage
-                .from(bucketName)
-                .upload(fileName, fileToUpload)
-
-            if (uploadError) throw uploadError
-
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucketName)
-                .getPublicUrl(fileName)
-
-            const updateData = {
-                video_url: interviewType === 'video' ? publicUrl : null,
-                audio_url: interviewType === 'audio' ? publicUrl : null,
-                creator_payout: interviewType === 'video' ? 500 : 300,
-                updated_at: new Date().toISOString()
+            if (!result.ok) {
+                throw new Error('Failed to upload interview')
             }
 
-            const { error: updateError } = await supabase
-                .from('submissions')
-                .update(updateData)
-                .eq('id', submissionId)
-
-            if (updateError) throw updateError
+            // Update submission with R2 URL and payout
+            await updateSubmission({
+                id: submissionId as Id<"submissions">,
+                ...(interviewType === 'video'
+                    ? { videoUrl: publicUrl, creatorPayout: 500 }
+                    : { audioUrl: publicUrl, creatorPayout: 300 }
+                ),
+            })
 
             router.push('/submit/review')
         } catch (err: any) {

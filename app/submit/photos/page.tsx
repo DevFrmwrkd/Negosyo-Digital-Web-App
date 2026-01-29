@@ -2,12 +2,28 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useUser } from "@clerk/nextjs"
+import { useQuery, useMutation, useAction } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
+import { Loader2 } from "lucide-react"
 
 export default function UploadPhotosPage() {
     const router = useRouter()
+    const { user, isLoaded, isSignedIn } = useUser()
+
+    // Get creator from Convex
+    const creator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+
+    // Mutations and Actions
+    const generateR2UploadUrl = useAction(api.r2.generateUploadUrl)
+    const updateSubmission = useMutation(api.submissions.update)
+
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -17,36 +33,52 @@ export default function UploadPhotosPage() {
 
     // Already uploaded photos from DB
     const [existingPhotos, setExistingPhotos] = useState<string[]>([])
+    const [resolvedPhotoUrls, setResolvedPhotoUrls] = useState<(string | null)[]>([])
 
     const [submissionId, setSubmissionId] = useState<string | null>(null)
 
-    // Load submission ID and existing data
+    // Get submission if we have the ID
+    const submission = useQuery(
+        api.submissions.getById,
+        submissionId ? { id: submissionId as Id<"submissions"> } : "skip"
+    )
+
+    // Get resolved photo URLs
+    const photoUrls = useQuery(
+        api.files.getMultipleUrls,
+        existingPhotos.length > 0 ? { storageIds: existingPhotos } : "skip"
+    )
+
+    // Redirect if not authenticated
     useEffect(() => {
-        const loadData = async () => {
-            const id = sessionStorage.getItem('current_submission_id')
-            if (!id) {
-                router.push('/submit/info')
-                return
-            }
-            setSubmissionId(id)
-
-            try {
-                const supabase = createClient()
-                const { data } = await supabase
-                    .from('submissions')
-                    .select('photos')
-                    .eq('id', id)
-                    .single()
-
-                if (data && data.photos) {
-                    setExistingPhotos(data.photos)
-                }
-            } catch (err) {
-                console.error("Error loading photos:", err)
-            }
+        if (isLoaded && !isSignedIn) {
+            router.push("/login")
         }
-        loadData()
+    }, [isLoaded, isSignedIn, router])
+
+    // Load submission ID from session
+    useEffect(() => {
+        const id = sessionStorage.getItem('current_submission_id')
+        if (!id) {
+            router.push('/submit/info')
+            return
+        }
+        setSubmissionId(id)
     }, [router])
+
+    // Load existing photos when submission data is available
+    useEffect(() => {
+        if (submission && submission.photos) {
+            setExistingPhotos(submission.photos)
+        }
+    }, [submission])
+
+    // Update resolved URLs when photoUrls query returns
+    useEffect(() => {
+        if (photoUrls) {
+            setResolvedPhotoUrls(photoUrls)
+        }
+    }, [photoUrls])
 
     // Clean up object URLs when component unmounts
     useEffect(() => {
@@ -112,9 +144,32 @@ export default function UploadPhotosPage() {
         setPreviews(newPreviews)
     }
 
-    // Note: We don't implement removing *existing* uploaded photos in this UI for simplicity,
-    // as it creates complexity (deleting from storage immediately vs waiting for save).
-    // Users can just overwrite data by re-submitting or we can add it later.
+    const removeExistingPhoto = async (index: number) => {
+        if (!submissionId) return
+
+        const newExistingPhotos = [...existingPhotos]
+        const newResolvedUrls = [...resolvedPhotoUrls]
+
+        newExistingPhotos.splice(index, 1)
+        newResolvedUrls.splice(index, 1)
+
+        setExistingPhotos(newExistingPhotos)
+        setResolvedPhotoUrls(newResolvedUrls)
+
+        // Update submission in database immediately
+        try {
+            await updateSubmission({
+                id: submissionId as Id<"submissions">,
+                photos: newExistingPhotos,
+            })
+        } catch (err) {
+            console.error('Error removing photo:', err)
+            // Revert on error
+            setExistingPhotos(existingPhotos)
+            setResolvedPhotoUrls(resolvedPhotoUrls)
+            setError('Failed to remove photo. Please try again.')
+        }
+    }
 
     const handleNext = async () => {
         if (!submissionId) return
@@ -131,25 +186,30 @@ export default function UploadPhotosPage() {
         setError(null)
 
         try {
-            const supabase = createClient()
             const uploadedUrls: string[] = []
 
-            // Upload each NEW file
+            // Upload each NEW file to R2 storage
             for (const file of files) {
-                const fileExt = file.name.split('.').pop()
-                const fileName = `${submissionId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+                // Get presigned upload URL from R2 action
+                const { uploadUrl, publicUrl } = await generateR2UploadUrl({
+                    fileName: file.name,
+                    fileType: file.type,
+                    submissionId: submissionId,
+                    mediaType: 'photo',
+                })
 
-                const { error: uploadError } = await supabase.storage
-                    .from('submission-photos')
-                    .upload(fileName, file)
+                // Upload the file directly to R2
+                const result = await fetch(uploadUrl, {
+                    method: "PUT",
+                    headers: { "Content-Type": file.type },
+                    body: file,
+                })
 
-                if (uploadError) throw uploadError
+                if (!result.ok) {
+                    throw new Error(`Failed to upload ${file.name}`)
+                }
 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('submission-photos')
-                    .getPublicUrl(fileName)
-
+                // Store the public R2 URL
                 uploadedUrls.push(publicUrl)
             }
 
@@ -157,15 +217,10 @@ export default function UploadPhotosPage() {
             const finalPhotoList = [...existingPhotos, ...uploadedUrls]
 
             // Update submission record
-            const { error: updateError } = await supabase
-                .from('submissions')
-                .update({
-                    photos: finalPhotoList,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', submissionId)
-
-            if (updateError) throw updateError
+            await updateSubmission({
+                id: submissionId as Id<"submissions">,
+                photos: finalPhotoList,
+            })
 
             // Navigate to next step
             router.push('/submit/interview')
@@ -175,6 +230,15 @@ export default function UploadPhotosPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    // Loading state
+    if (!isLoaded || !isSignedIn || creator === undefined) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            </div>
+        )
     }
 
     const totalCount = files.length + existingPhotos.length
@@ -246,19 +310,38 @@ export default function UploadPhotosPage() {
                         {/* File Previews */}
                         <div className="grid grid-cols-3 gap-2">
                             {/* Existing Photos (Saved) */}
-                            {existingPhotos.map((url, index) => (
-                                <div key={url} className="relative aspect-square bg-green-50 rounded-lg overflow-hidden group border border-green-200">
-                                    <Image
-                                        src={url}
-                                        alt={`Saved Photo ${index + 1}`}
-                                        fill
-                                        className="object-cover opacity-90"
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <span className="text-xs text-white font-medium bg-black/50 px-2 py-1 rounded">Saved</span>
+                            {existingPhotos.map((originalUrl, index) => {
+                                const resolvedUrl = resolvedPhotoUrls[index] || originalUrl
+                                const isValidUrl = resolvedUrl && !resolvedUrl.startsWith('convex:')
+
+                                return (
+                                    <div key={originalUrl} className="relative aspect-square bg-green-50 rounded-lg overflow-hidden group border border-green-200">
+                                        {isValidUrl ? (
+                                            <img
+                                                src={resolvedUrl}
+                                                alt={`Saved Photo ${index + 1}`}
+                                                className="absolute inset-0 w-full h-full object-cover opacity-90"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                                <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => removeExistingPhoto(index)}
+                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                            title="Remove photo"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <div className="absolute bottom-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="text-xs text-white font-medium bg-green-600/80 px-2 py-0.5 rounded">Saved</span>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                )
+                            })}
 
                             {/* New Photos (Pending) */}
                             {previews.map((url, index) => (
@@ -297,10 +380,7 @@ export default function UploadPhotosPage() {
                         >
                             {loading ? (
                                 <span className="flex items-center gap-2">
-                                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
+                                    <Loader2 className="animate-spin h-5 w-5" />
                                     {files.length > 0 ? `Uploading ${files.length} photos...` : 'Saving...'}
                                 </span>
                             ) : (

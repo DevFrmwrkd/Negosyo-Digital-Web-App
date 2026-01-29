@@ -3,14 +3,14 @@
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { useClerk } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAdminAuth, useSubmissions } from "@/hooks/useAdmin"
-import type { SubmissionStatus } from "@/types/database"
 
 export default function AdminDashboard() {
     const router = useRouter()
+    const { signOut } = useClerk()
     const { isAdmin, loading: authLoading } = useAdminAuth()
     const { submissions, loading: submissionsLoading, refresh } = useSubmissions()
     const [filter, setFilter] = useState<string>('all')
@@ -19,8 +19,7 @@ export default function AdminDashboard() {
     const itemsPerPage = 10
 
     const handleLogout = async () => {
-        const supabase = createClient()
-        await supabase.auth.signOut()
+        await signOut()
         router.push('/login')
     }
 
@@ -70,7 +69,9 @@ export default function AdminDashboard() {
             in_review: 'bg-yellow-100 text-yellow-700',
             approved: 'bg-green-100 text-green-700',
             rejected: 'bg-red-100 text-red-700',
-            completed: 'bg-purple-100 text-purple-700',
+            deployed: 'bg-cyan-100 text-cyan-700',
+            pending_payment: 'bg-orange-100 text-orange-700',
+            paid: 'bg-emerald-100 text-emerald-700',
         }
         return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'
     }
@@ -141,13 +142,13 @@ export default function AdminDashboard() {
                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                         <p className="text-sm text-gray-500 mb-1">Pending Review</p>
                         <p className="text-3xl font-bold text-yellow-600">
-                            {submissions.filter(s => s.status === 'submitted').length}
+                            {submissions.filter(s => ['draft', 'submitted', 'in_review'].includes(s.status)).length}
                         </p>
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                         <p className="text-sm text-gray-500 mb-1">Approved</p>
                         <p className="text-3xl font-bold text-green-600">
-                            {submissions.filter(s => s.status === 'approved').length}
+                            {submissions.filter(s => ['approved', 'deployed', 'pending_payment', 'paid', 'completed', 'website_generated'].includes(s.status)).length}
                         </p>
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-gray-200">
@@ -210,7 +211,7 @@ export default function AdminDashboard() {
                 {/* Filters */}
                 <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
                     <div className="flex gap-2 overflow-x-auto">
-                        {['all', 'submitted', 'in_review', 'approved', 'rejected', 'completed'].map((status) => (
+                        {['all', 'submitted', 'in_review', 'approved', 'deployed', 'pending_payment', 'paid', 'rejected'].map((status) => (
                             <button
                                 key={status}
                                 onClick={() => setFilter(status)}

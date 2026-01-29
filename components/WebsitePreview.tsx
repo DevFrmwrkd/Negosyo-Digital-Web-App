@@ -1,22 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Monitor, Smartphone, Globe, ExternalLink, Moon } from 'lucide-react'
+import { Monitor, Smartphone } from 'lucide-react'
 
 interface WebsitePreviewProps {
     htmlContent: string
     isRegenerating: boolean
-    isPublishing: boolean
-    publishedUrl: string | null
-    onPublish: () => void
 }
 
 export default function WebsitePreview({
     htmlContent,
     isRegenerating,
-    isPublishing,
-    publishedUrl,
-    onPublish
 }: WebsitePreviewProps) {
     const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop')
 
@@ -50,46 +44,6 @@ export default function WebsitePreview({
                             <Smartphone className="w-4 h-4" />
                         </button>
                     </div>
-                </div>
-
-                {/* Publish Button */}
-                <div className="flex items-center gap-3">
-                    {publishedUrl && (
-                        <a
-                            href={publishedUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-3 py-2 text-green-700 text-sm font-medium hover:underline"
-                        >
-                            <ExternalLink className="w-4 h-4" />
-                            Live Site
-                        </a>
-                    )}
-
-                    <button
-                        onClick={onPublish}
-                        disabled={isPublishing || isRegenerating}
-                        className={`
-                            px-4 py-2 rounded-md text-white text-sm font-medium flex items-center gap-2 transition-all
-                            ${publishedUrl
-                                ? 'bg-green-600 hover:bg-green-700'
-                                : 'bg-blue-600 hover:bg-blue-700'
-                            }
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                        `}
-                    >
-                        {isPublishing ? (
-                            <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                Publishing...
-                            </>
-                        ) : (
-                            <>
-                                <Globe className="w-4 h-4" />
-                                {publishedUrl ? 'Update Site' : 'Publish Live'}
-                            </>
-                        )}
-                    </button>
                 </div>
             </div>
 

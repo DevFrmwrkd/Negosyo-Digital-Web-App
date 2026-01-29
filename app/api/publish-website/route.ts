@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@clerk/nextjs/server'
+import { fetchQuery, fetchMutation } from 'convex/nextjs'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
 
 interface NetlifySiteResponse {
     id: string
@@ -27,21 +30,14 @@ interface NetlifyDeployResponse {
  */
 export async function POST(request: NextRequest) {
     try {
-        const supabase = await createClient()
-
-        // Verify authentication
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError || !user) {
+        // Verify Clerk authentication
+        const { userId } = await auth()
+        if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // Verify admin role
-        const { data: creator } = await supabase
-            .from('creators')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-
+        // Verify admin role using Convex
+        const creator = await fetchQuery(api.creators.getByClerkId, { clerkId: userId })
         if (!creator || creator.role !== 'admin') {
             return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
         }
@@ -53,19 +49,26 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 })
         }
 
-        // Get the generated website
-        const { data: website, error: websiteError } = await supabase
-            .from('generated_websites')
-            .select('*, submissions!inner(business_name, business_type)')
-            .eq('submission_id', submissionId)
-            .single()
+        // Get the generated website from Convex
+        const website = await fetchQuery(api.generatedWebsites.getBySubmissionId, {
+            submissionId: submissionId as Id<"submissions">
+        })
 
-        if (websiteError || !website) {
+        if (!website) {
             return NextResponse.json({ error: 'Website not found. Generate it first.' }, { status: 404 })
         }
 
-        if (!website.html_content) {
+        if (!website.htmlContent) {
             return NextResponse.json({ error: 'No HTML content to deploy' }, { status: 400 })
+        }
+
+        // Get the submission for business name
+        const submission = await fetchQuery(api.submissions.getById, {
+            id: submissionId as Id<"submissions">
+        })
+
+        if (!submission) {
+            return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
         }
 
         // Get Netlify credentials
@@ -80,13 +83,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate subdomain from business name
-        const businessName = (website.submissions as any)?.business_name || 'business'
+        const businessName = submission.businessName || 'business'
         const subdomain = generateSubdomain(businessName)
 
         // Check if site already exists (for re-publishing)
-        let siteId = website.netlify_site_id
+        let siteId = website.netlifySiteId
         let siteName = subdomain
-        let existingPublishedUrl = website.published_url
+        let existingPublishedUrl = website.publishedUrl
 
         // Validate existing URL - must not have spaces and must be proper format
         const isValidUrl = existingPublishedUrl &&
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
         const deployResponse = await deployToNetlify(
             netlifyToken,
             siteId,
-            website.html_content,
+            website.htmlContent,
             businessName
         )
 
@@ -134,31 +137,26 @@ export async function POST(request: NextRequest) {
             ? existingPublishedUrl
             : `https://${siteName}.netlify.app`
 
-        // Update database with published info
-        const { error: updateError } = await supabase
-            .from('generated_websites')
-            .update({
-                status: 'published',
-                published_url: publishedUrl,
-                netlify_site_id: siteId,
-                published_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
+        // Update generated website in Convex with published info
+        try {
+            await fetchMutation(api.generatedWebsites.publish, {
+                submissionId: submissionId as Id<"submissions">,
+                publishedUrl,
+                netlifySiteId: siteId,
             })
-            .eq('submission_id', submissionId)
-
-        if (updateError) {
-            console.error('Database update error:', updateError)
-            // Don't fail - the site is deployed, just log the error
+        } catch (updateError: any) {
+            console.error('Database update error:', updateError?.message || updateError)
         }
 
-        // Also update submission status
-        await supabase
-            .from('submissions')
-            .update({
-                status: 'published',
-                website_url: publishedUrl
+        // Update submission status to deployed
+        try {
+            await fetchMutation(api.submissions.updateStatus, {
+                id: submissionId as Id<"submissions">,
+                status: 'deployed'
             })
-            .eq('id', submissionId)
+        } catch (statusError: any) {
+            console.error('Status update error:', statusError?.message || statusError)
+        }
 
         return NextResponse.json({
             success: true,

@@ -1,84 +1,68 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import { useAdminAuth } from "@/hooks/useAdmin"
-import { adminService } from "@/lib/services/admin.service"
-import type { SubmissionWithCreator } from "@/types/database"
+import { Id } from "@/convex/_generated/dataModel"
 
 type PayoutStatus = 'all' | 'pending' | 'paid'
 
-interface PayoutWithCreatorDetails extends SubmissionWithCreator {
-    creators?: {
-        first_name: string
-        last_name: string
-        email?: string
-        phone?: string
-        payout_method?: string
-        payout_details?: string
-    }
-}
-
 export default function PayoutsPage() {
-    const { isAdmin, loading: authLoading } = useAdminAuth()
-    const [payouts, setPayouts] = useState<PayoutWithCreatorDetails[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
-    const [processing, setProcessing] = useState(false)
+    const { user, isLoaded } = useUser()
+
+    // Get current user's creator profile to check admin status
+    const currentCreator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+
+    const isAdmin = currentCreator?.role === 'admin'
+
+    // Get pending payouts and stats
+    const payouts = useQuery(
+        api.admin.getPendingPayouts,
+        isAdmin ? {} : "skip"
+    )
+
+    const stats = useQuery(
+        api.admin.getPayoutStats,
+        isAdmin ? {} : "skip"
+    )
+
+    // Mutations
+    const markPayoutPaid = useMutation(api.admin.markPayoutPaid)
+    const bulkMarkPayoutsPaid = useMutation(api.admin.bulkMarkPayoutsPaid)
+
+    const loading = !isLoaded || (user && currentCreator === undefined) || (isAdmin && (payouts === undefined || stats === undefined))
 
     // Filters & Selection
     const [statusFilter, setStatusFilter] = useState<PayoutStatus>('all')
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-
-    // Stats
-    const [stats, setStats] = useState({
-        totalPending: 0,
-        totalPendingAmount: 0,
-        paidThisWeek: 0,
-        paidThisWeekAmount: 0,
-    })
-
-    // Fetch payouts
-    useEffect(() => {
-        async function fetchData() {
-            try {
-                setLoading(true)
-                const [payoutsData, statsData] = await Promise.all([
-                    adminService.getPendingPayouts(),
-                    adminService.getPayoutStats()
-                ])
-                setPayouts(payoutsData as PayoutWithCreatorDetails[])
-                setStats(statsData)
-            } catch (err: any) {
-                setError(err.message || 'Failed to load payouts')
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        if (isAdmin) {
-            fetchData()
-        }
-    }, [isAdmin])
+    const [processing, setProcessing] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     // Filtered payouts
     const filteredPayouts = useMemo(() => {
+        if (!payouts) return []
+
         return payouts.filter(payout => {
-            if (statusFilter === 'pending') return !payout.creator_paid_at
-            if (statusFilter === 'paid') return !!payout.creator_paid_at
+            if (statusFilter === 'pending') return !payout.creatorPaidAt
+            if (statusFilter === 'paid') return !!payout.creatorPaidAt
             return true
         })
     }, [payouts, statusFilter])
 
     // Select all visible
     const handleSelectAll = () => {
-        if (selectedIds.size === filteredPayouts.filter(p => !p.creator_paid_at).length) {
+        if (selectedIds.size === filteredPayouts.filter(p => !p.creatorPaidAt).length) {
             setSelectedIds(new Set())
         } else {
             const pendingIds = filteredPayouts
-                .filter(p => !p.creator_paid_at)
-                .map(p => p.id)
+                .filter(p => !p.creatorPaidAt)
+                .map(p => p._id)
             setSelectedIds(new Set(pendingIds))
         }
     }
@@ -97,16 +81,9 @@ export default function PayoutsPage() {
     // Mark single as paid
     const handleMarkAsPaid = async (id: string) => {
         setProcessing(true)
+        setError(null)
         try {
-            await adminService.markPayoutAsPaid(id)
-            setPayouts(prev => prev.map(p =>
-                p.id === id ? { ...p, creator_paid_at: new Date().toISOString() } : p
-            ))
-            setStats(prev => ({
-                ...prev,
-                totalPending: prev.totalPending - 1,
-                paidThisWeek: prev.paidThisWeek + 1
-            }))
+            await markPayoutPaid({ submissionId: id as Id<"submissions"> })
             setSelectedIds(prev => {
                 const newSet = new Set(prev)
                 newSet.delete(id)
@@ -124,16 +101,11 @@ export default function PayoutsPage() {
         if (selectedIds.size === 0) return
 
         setProcessing(true)
+        setError(null)
         try {
-            await adminService.bulkMarkAsPaid(Array.from(selectedIds))
-            setPayouts(prev => prev.map(p =>
-                selectedIds.has(p.id) ? { ...p, creator_paid_at: new Date().toISOString() } : p
-            ))
-            setStats(prev => ({
-                ...prev,
-                totalPending: prev.totalPending - selectedIds.size,
-                paidThisWeek: prev.paidThisWeek + selectedIds.size
-            }))
+            await bulkMarkPayoutsPaid({
+                submissionIds: Array.from(selectedIds) as Id<"submissions">[]
+            })
             setSelectedIds(new Set())
         } catch (err: any) {
             setError(err.message || 'Failed to process bulk action')
@@ -142,14 +114,14 @@ export default function PayoutsPage() {
         }
     }
 
-    const getPayoutStatusBadge = (payout: PayoutWithCreatorDetails) => {
-        if (payout.creator_paid_at) {
+    const getPayoutStatusBadge = (payout: { creatorPaidAt?: number }) => {
+        if (payout.creatorPaidAt) {
             return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Paid</span>
         }
         return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>
     }
 
-    if (authLoading || loading) {
+    if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
@@ -197,19 +169,19 @@ export default function PayoutsPage() {
                 <div className="grid grid-cols-4 gap-4 mb-8">
                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                         <p className="text-sm text-gray-500 mb-1">Pending Requests</p>
-                        <p className="text-3xl font-bold text-yellow-600">{stats.totalPending}</p>
+                        <p className="text-3xl font-bold text-yellow-600">{stats?.totalPending || 0}</p>
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                         <p className="text-sm text-gray-500 mb-1">Pending Amount</p>
-                        <p className="text-3xl font-bold text-gray-900">₱{stats.totalPendingAmount.toLocaleString()}</p>
+                        <p className="text-3xl font-bold text-gray-900">₱{(stats?.totalPendingAmount || 0).toLocaleString()}</p>
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                         <p className="text-sm text-gray-500 mb-1">Paid This Week</p>
-                        <p className="text-3xl font-bold text-green-600">{stats.paidThisWeek}</p>
+                        <p className="text-3xl font-bold text-green-600">{stats?.paidThisWeek || 0}</p>
                     </div>
                     <div className="bg-white rounded-xl p-6 border border-gray-200">
                         <p className="text-sm text-gray-500 mb-1">Paid Amount (Week)</p>
-                        <p className="text-3xl font-bold text-green-600">₱{stats.paidThisWeekAmount.toLocaleString()}</p>
+                        <p className="text-3xl font-bold text-green-600">₱{(stats?.paidThisWeekAmount || 0).toLocaleString()}</p>
                     </div>
                 </div>
 
@@ -221,14 +193,14 @@ export default function PayoutsPage() {
                                 key={status}
                                 onClick={() => setStatusFilter(status)}
                                 className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${statusFilter === status
-                                        ? 'bg-green-500 text-white'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                             >
                                 {status.charAt(0).toUpperCase() + status.slice(1)}
-                                {status === 'pending' && stats.totalPending > 0 && (
+                                {status === 'pending' && (stats?.totalPending || 0) > 0 && (
                                     <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                                        {stats.totalPending}
+                                        {stats?.totalPending}
                                     </span>
                                 )}
                             </button>
@@ -252,7 +224,7 @@ export default function PayoutsPage() {
                                 <th className="px-4 py-3 text-left">
                                     <input
                                         type="checkbox"
-                                        checked={selectedIds.size > 0 && selectedIds.size === filteredPayouts.filter(p => !p.creator_paid_at).length}
+                                        checked={selectedIds.size > 0 && selectedIds.size === filteredPayouts.filter(p => !p.creatorPaidAt).length}
                                         onChange={handleSelectAll}
                                         className="rounded border-gray-300 text-green-500 focus:ring-green-500"
                                     />
@@ -289,13 +261,13 @@ export default function PayoutsPage() {
                                 </tr>
                             ) : (
                                 filteredPayouts.map((payout) => (
-                                    <tr key={payout.id} className={`hover:bg-gray-50 ${selectedIds.has(payout.id) ? 'bg-green-50' : ''}`}>
+                                    <tr key={payout._id} className={`hover:bg-gray-50 ${selectedIds.has(payout._id) ? 'bg-green-50' : ''}`}>
                                         <td className="px-4 py-4">
-                                            {!payout.creator_paid_at && (
+                                            {!payout.creatorPaidAt && (
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedIds.has(payout.id)}
-                                                    onChange={() => toggleSelect(payout.id)}
+                                                    checked={selectedIds.has(payout._id)}
+                                                    onChange={() => toggleSelect(payout._id)}
                                                     className="rounded border-gray-300 text-green-500 focus:ring-green-500"
                                                 />
                                             )}
@@ -303,43 +275,43 @@ export default function PayoutsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-sm font-semibold">
-                                                    {payout.creators?.first_name?.charAt(0) || '?'}{payout.creators?.last_name?.charAt(0) || ''}
+                                                    {payout.creator?.firstName?.charAt(0) || '?'}{payout.creator?.lastName?.charAt(0) || ''}
                                                 </div>
                                                 <div className="ml-3">
                                                     <div className="text-sm font-medium text-gray-900">
-                                                        {payout.creators?.first_name} {payout.creators?.last_name}
+                                                        {payout.creator?.firstName} {payout.creator?.lastName}
                                                     </div>
                                                     <div className="text-xs text-gray-500">
-                                                        {payout.creators?.email || payout.creators?.phone || '—'}
+                                                        {payout.creator?.email || payout.creator?.phone || '—'}
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{payout.business_name}</div>
-                                            <div className="text-xs text-gray-500">{payout.business_type}</div>
+                                            <div className="text-sm text-gray-900">{payout.businessName}</div>
+                                            <div className="text-xs text-gray-500">{payout.businessType}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="text-lg font-bold text-green-600">
-                                                ₱{(payout.creator_payout || 0).toLocaleString()}
+                                                ₱{(payout.creatorPayout || 0).toLocaleString()}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{payout.creators?.payout_method || 'Not set'}</div>
-                                            <div className="text-xs text-gray-500 font-mono">{payout.creators?.payout_details || '—'}</div>
+                                            <div className="text-sm text-gray-900">{payout.creator?.payoutMethod || 'Not set'}</div>
+                                            <div className="text-xs text-gray-500 font-mono">{payout.creator?.payoutDetails || '—'}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {getPayoutStatusBadge(payout)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {payout.payout_requested_at
-                                                ? new Date(payout.payout_requested_at).toLocaleDateString()
+                                            {payout.payoutRequestedAt
+                                                ? new Date(payout.payoutRequestedAt).toLocaleDateString()
                                                 : '—'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {!payout.creator_paid_at ? (
+                                            {!payout.creatorPaidAt ? (
                                                 <Button
-                                                    onClick={() => handleMarkAsPaid(payout.id)}
+                                                    onClick={() => handleMarkAsPaid(payout._id)}
                                                     disabled={processing}
                                                     size="sm"
                                                     className="bg-green-500 hover:bg-green-600 text-white"
@@ -348,7 +320,7 @@ export default function PayoutsPage() {
                                                 </Button>
                                             ) : (
                                                 <span className="text-green-600 text-xs">
-                                                    Paid {new Date(payout.creator_paid_at).toLocaleDateString()}
+                                                    Paid {new Date(payout.creatorPaidAt).toLocaleDateString()}
                                                 </span>
                                             )}
                                         </td>

@@ -1,136 +1,118 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useUser } from '@clerk/nextjs'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 import { useRouter } from 'next/navigation'
-import { adminService } from '@/lib/services/admin.service'
-import type { SubmissionWithCreator, Submission, Creator, SubmissionStatus } from '@/types/database'
+import { useEffect, useState } from 'react'
 
 /**
  * Hook to check if user is admin and redirect if not
+ * Uses Clerk for auth and Convex for role check
  */
 export function useAdminAuth() {
     const router = useRouter()
-    const [isAdmin, setIsAdmin] = useState(false)
-    const [loading, setLoading] = useState(true)
+    const { user, isLoaded, isSignedIn } = useUser()
+    const [hasRedirected, setHasRedirected] = useState(false)
 
+    // Get creator profile from Convex
+    const creator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+
+    // Determine if user is admin
+    const isAdmin = creator?.role === 'admin'
+    const loading = !isLoaded || (isSignedIn && creator === undefined)
+
+    // Handle redirects - only for truly unauthorized users
     useEffect(() => {
-        checkAdmin()
-    }, [])
+        if (hasRedirected) return // Prevent multiple redirects
 
-    const checkAdmin = async () => {
-        try {
-            const admin = await adminService.isAdmin()
-
-            if (!admin) {
-                router.push('/dashboard')
-                return
-            }
-
-            setIsAdmin(true)
-        } catch (err) {
-            console.error('Error checking admin:', err)
+        if (isLoaded && !isSignedIn) {
+            setHasRedirected(true)
             router.push('/login')
-        } finally {
-            setLoading(false)
+            return
         }
-    }
 
-    return { isAdmin, loading }
+        // Wait for creator data to load
+        if (isSignedIn && creator !== undefined) {
+            if (creator === null) {
+                // No profile, redirect to onboarding
+                setHasRedirected(true)
+                router.push('/onboarding')
+            }
+            // Note: Non-admins are NOT redirected here anymore
+            // The admin page will just show unauthorized message
+        }
+    }, [isLoaded, isSignedIn, creator, router, hasRedirected])
+
+    return { isAdmin, loading, creator }
 }
 
 /**
- * Hook to fetch all submissions
+ * Hook to fetch all submissions (using Convex)
  */
 export function useSubmissions() {
-    const [submissions, setSubmissions] = useState<SubmissionWithCreator[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const { isAdmin } = useAdminAuth()
 
-    useEffect(() => {
-        loadSubmissions()
-    }, [])
+    // Get all submissions from Convex
+    const submissions = useQuery(
+        api.submissions.getAllWithCreator,
+        isAdmin ? {} : "skip"
+    )
 
-    const loadSubmissions = async () => {
-        try {
-            setLoading(true)
-            const data = await adminService.getAllSubmissions()
-            setSubmissions(data)
-            setError(null)
-        } catch (err: any) {
-            console.error('Error loading submissions:', err)
-            setError(err.message || 'Failed to load submissions')
-        } finally {
-            setLoading(false)
-        }
+    const loading = submissions === undefined
+    const error = null
+
+    // Transform to match expected format
+    const formattedSubmissions = (submissions || []).map((s: any) => ({
+        id: s._id,
+        business_name: s.businessName,
+        owner_name: s.ownerName,
+        business_type: s.businessType,
+        status: s.status,
+        creator_payout: s.creatorPayout || 0,
+        created_at: s._creationTime,
+        creators: s.creator ? {
+            first_name: s.creator.firstName,
+            last_name: s.creator.lastName,
+        } : null,
+    }))
+
+    const refresh = () => {
+        // Convex queries auto-refresh, this is just for API compatibility
     }
 
-    const refresh = () => loadSubmissions()
-
-    return { submissions, loading, error, refresh }
+    return { submissions: formattedSubmissions, loading, error, refresh }
 }
 
 /**
- * Hook to fetch single submission with creator info
+ * Hook to fetch single submission with creator info (using Convex)
  */
 export function useSubmission(id: string) {
-    const [submission, setSubmission] = useState<Submission | null>(null)
-    const [creator, setCreator] = useState<Partial<Creator> | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const { isAdmin } = useAdminAuth()
 
-    useEffect(() => {
-        if (id) {
-            loadSubmission()
-        }
-    }, [id])
-
-    const loadSubmission = async () => {
-        try {
-            setLoading(true)
-
-            const submissionData = await adminService.getSubmissionById(id)
-            setSubmission(submissionData)
-
-            if (submissionData?.creator_id) {
-                const creatorData = await adminService.getCreatorById(submissionData.creator_id)
-                setCreator(creatorData)
-            }
-
-            setError(null)
-        } catch (err: any) {
-            console.error('Error loading submission:', err)
-            setError(err.message || 'Failed to load submission')
-        } finally {
-            setLoading(false)
-        }
+    // We won't use this hook for now - use Convex directly in components
+    return {
+        submission: null,
+        creator: null,
+        loading: false,
+        error: 'Use Convex queries directly',
+        refresh: () => { }
     }
-
-    const refresh = () => loadSubmission()
-
-    return { submission, creator, loading, error, refresh }
 }
 
 /**
- * Hook to update submission status
+ * Hook to update submission status (using Convex)
  */
 export function useSubmissionStatus(submissionId: string) {
     const [updating, setUpdating] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const updateStatus = async (newStatus: SubmissionStatus): Promise<boolean> => {
-        setUpdating(true)
-        setError(null)
-
-        try {
-            await adminService.updateSubmissionStatus(submissionId, newStatus)
-            return true
-        } catch (err: any) {
-            console.error('Error updating status:', err)
-            setError(err.message || 'Failed to update status')
-            return false
-        } finally {
-            setUpdating(false)
-        }
+    const updateStatus = async (newStatus: string): Promise<boolean> => {
+        // This should use Convex mutations directly in the component
+        return false
     }
 
     return { updateStatus, updating, error }

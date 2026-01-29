@@ -1,64 +1,64 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useState } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
+import { useUser } from "@clerk/nextjs"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
-import { useAdminAuth } from "@/hooks/useAdmin"
-import { adminService } from "@/lib/services/admin.service"
-import type { Creator, Submission, CreatorStatus } from "@/types/database"
+import { Id } from "@/convex/_generated/dataModel"
 
-interface CreatorWithStats extends Creator {
-    submission_count: number
-}
+type CreatorStatus = 'pending' | 'active' | 'suspended'
 
 export default function CreatorDetailPage() {
     const params = useParams()
-    const router = useRouter()
     const creatorId = params.id as string
+    const { user, isLoaded } = useUser()
 
-    const { isAdmin, loading: authLoading } = useAdminAuth()
-    const [creator, setCreator] = useState<CreatorWithStats | null>(null)
-    const [submissions, setSubmissions] = useState<Submission[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    // Get current user's creator profile to check admin status
+    const currentCreator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+
+    const isAdmin = currentCreator?.role === 'admin'
+
+    // Get creator by ID
+    const creator = useQuery(
+        api.creators.getById,
+        isAdmin && creatorId ? { id: creatorId as Id<"creators"> } : "skip"
+    )
+
+    // Get submissions for this creator
+    const submissions = useQuery(
+        api.submissions.getByCreatorId,
+        isAdmin && creator ? { creatorId: creator._id } : "skip"
+    )
+
+    // Mutation to update status
+    const updateStatus = useMutation(api.creators.updateStatus)
+
+    const loading = !isLoaded || (user && currentCreator === undefined) || (isAdmin && creator === undefined)
+
     const [updating, setUpdating] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
     // Confirmation modal
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [pendingAction, setPendingAction] = useState<'suspend' | 'reactivate' | null>(null)
 
-    // Fetch creator data
-    useEffect(() => {
-        async function fetchData() {
-            try {
-                setLoading(true)
-                const [creatorData, submissionsData] = await Promise.all([
-                    adminService.getCreatorWithStats(creatorId),
-                    adminService.getCreatorSubmissions(creatorId)
-                ])
-                setCreator(creatorData)
-                setSubmissions(submissionsData)
-            } catch (err: any) {
-                setError(err.message || 'Failed to load creator')
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        if (isAdmin && creatorId) {
-            fetchData()
-        }
-    }, [isAdmin, creatorId])
-
     const handleStatusChange = async () => {
         if (!creator || !pendingAction) return
 
         setUpdating(true)
+        setError(null)
         try {
             const newStatus = pendingAction === 'suspend' ? 'suspended' : 'active'
-            await adminService.updateCreatorStatus(creator.id, newStatus)
-            setCreator({ ...creator, status: newStatus as CreatorStatus })
+            await updateStatus({
+                id: creator._id,
+                status: newStatus as CreatorStatus
+            })
             setShowConfirmModal(false)
             setPendingAction(null)
         } catch (err: any) {
@@ -73,15 +73,16 @@ export default function CreatorDetailPage() {
         setShowConfirmModal(true)
     }
 
-    const getStatusBadge = (status: CreatorStatus) => {
+    const getStatusBadge = (status: CreatorStatus | undefined) => {
+        const safeStatus = status || 'pending'
         const styles = {
             active: 'bg-green-100 text-green-800 border-green-200',
             pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
             suspended: 'bg-red-100 text-red-800 border-red-200',
         }
         return (
-            <span className={`px-3 py-1 text-sm font-medium rounded-full border ${styles[status]}`}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+            <span className={`px-3 py-1 text-sm font-medium rounded-full border ${styles[safeStatus]}`}>
+                {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
             </span>
         )
     }
@@ -103,7 +104,7 @@ export default function CreatorDetailPage() {
         )
     }
 
-    if (authLoading || loading) {
+    if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
@@ -126,6 +127,8 @@ export default function CreatorDetailPage() {
         )
     }
 
+    const submissionCount = submissions?.length || 0
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -143,7 +146,7 @@ export default function CreatorDetailPage() {
                             </Link>
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900">
-                                    {creator.first_name} {creator.middle_name ? `${creator.middle_name} ` : ''}{creator.last_name}
+                                    {creator.firstName} {creator.middleName ? `${creator.middleName} ` : ''}{creator.lastName}
                                 </h1>
                                 <p className="text-sm text-gray-500">Creator Details</p>
                             </div>
@@ -186,11 +189,11 @@ export default function CreatorDetailPage() {
                         <div className="bg-white rounded-xl p-6 border border-gray-200">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xl font-bold">
-                                    {creator.first_name.charAt(0)}{creator.last_name.charAt(0)}
+                                    {creator.firstName.charAt(0)}{creator.lastName.charAt(0)}
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-gray-900">
-                                        {creator.first_name} {creator.last_name}
+                                        {creator.firstName} {creator.lastName}
                                     </h2>
                                     <div className="flex items-center gap-2 mt-1">
                                         {getStatusBadge(creator.status)}
@@ -214,17 +217,11 @@ export default function CreatorDetailPage() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-500">Referral Code</span>
-                                    <span className="text-gray-900 font-medium font-mono">{creator.referral_code}</span>
+                                    <span className="text-gray-900 font-medium font-mono">{creator.referralCode}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-500">Referred By</span>
-                                    <span className="text-gray-900 font-medium">{creator.referred_by || '—'}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-500">Joined</span>
-                                    <span className="text-gray-900 font-medium">
-                                        {new Date(creator.created_at).toLocaleDateString()}
-                                    </span>
+                                    <span className="text-gray-900 font-medium">{creator.referredBy || '—'}</span>
                                 </div>
                             </div>
                         </div>
@@ -235,11 +232,11 @@ export default function CreatorDetailPage() {
                             <div className="space-y-3 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-gray-500">Method</span>
-                                    <span className="text-gray-900 font-medium">{creator.payout_method || 'Not set'}</span>
+                                    <span className="text-gray-900 font-medium">{creator.payoutMethod || 'Not set'}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-gray-500">Details</span>
-                                    <span className="text-gray-900 font-medium">{creator.payout_details || 'Not set'}</span>
+                                    <span className="text-gray-900 font-medium">{creator.payoutDetails || 'Not set'}</span>
                                 </div>
                             </div>
                         </div>
@@ -252,7 +249,7 @@ export default function CreatorDetailPage() {
                             <div className="bg-white rounded-xl p-6 border border-gray-200">
                                 <p className="text-sm text-gray-500 mb-1">Total Earnings</p>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    ₱{(creator.total_earnings || 0).toLocaleString()}
+                                    ₱{(creator.totalEarnings || 0).toLocaleString()}
                                 </p>
                             </div>
                             <div className="bg-white rounded-xl p-6 border border-gray-200">
@@ -264,7 +261,7 @@ export default function CreatorDetailPage() {
                             <div className="bg-white rounded-xl p-6 border border-gray-200">
                                 <p className="text-sm text-gray-500 mb-1">Total Submissions</p>
                                 <p className="text-2xl font-bold text-blue-600">
-                                    {creator.submission_count}
+                                    {submissionCount}
                                 </p>
                             </div>
                         </div>
@@ -274,34 +271,31 @@ export default function CreatorDetailPage() {
                             <div className="px-6 py-4 border-b border-gray-200">
                                 <h3 className="font-bold text-gray-900">Submission History</h3>
                             </div>
-                            {submissions.length === 0 ? (
+                            {!submissions || submissions.length === 0 ? (
                                 <div className="px-6 py-12 text-center text-gray-500">
                                     No submissions yet
                                 </div>
                             ) : (
                                 <div className="divide-y divide-gray-200">
                                     {submissions.map((submission) => (
-                                        <div key={submission.id} className="px-6 py-4 hover:bg-gray-50">
+                                        <div key={submission._id} className="px-6 py-4 hover:bg-gray-50">
                                             <div className="flex items-center justify-between">
                                                 <div>
                                                     <Link
-                                                        href={`/admin/submissions/${submission.id}`}
+                                                        href={`/admin/submissions/${submission._id}`}
                                                         className="font-medium text-gray-900 hover:text-blue-600"
                                                     >
-                                                        {submission.business_name}
+                                                        {submission.businessName}
                                                     </Link>
-                                                    <p className="text-sm text-gray-500">{submission.business_type}</p>
+                                                    <p className="text-sm text-gray-500">{submission.businessType}</p>
                                                 </div>
                                                 <div className="text-right">
                                                     {getSubmissionStatusBadge(submission.status)}
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {new Date(submission.created_at).toLocaleDateString()}
-                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="mt-2 flex items-center gap-4 text-sm">
                                                 <span className="text-gray-500">
-                                                    Payout: <span className="text-green-600 font-medium">₱{submission.creator_payout}</span>
+                                                    Payout: <span className="text-green-600 font-medium">₱{submission.creatorPayout}</span>
                                                 </span>
                                                 <span className="text-gray-500">
                                                     📍 {submission.city}
@@ -325,8 +319,8 @@ export default function CreatorDetailPage() {
                         </h3>
                         <p className="text-gray-600 mb-6">
                             {pendingAction === 'suspend'
-                                ? `Are you sure you want to suspend ${creator.first_name} ${creator.last_name}? They will not be able to access the platform.`
-                                : `Are you sure you want to reactivate ${creator.first_name} ${creator.last_name}? They will regain full access to the platform.`
+                                ? `Are you sure you want to suspend ${creator.firstName} ${creator.lastName}? They will not be able to access the platform.`
+                                : `Are you sure you want to reactivate ${creator.firstName} ${creator.lastName}? They will regain full access to the platform.`
                             }
                         </p>
                         <div className="flex gap-3 justify-end">

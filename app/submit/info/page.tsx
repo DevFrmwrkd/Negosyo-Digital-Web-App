@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useUser } from "@clerk/nextjs"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { createClient } from "@/lib/supabase/client"
+import { Loader2 } from "lucide-react"
 
 const BUSINESS_TYPES = [
     "Barber/Salon",
@@ -20,6 +23,24 @@ const BUSINESS_TYPES = [
 
 export default function BusinessInfoPage() {
     const router = useRouter()
+    const { user, isLoaded, isSignedIn } = useUser()
+
+    // Get creator from Convex
+    const creator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+
+    // Get existing draft submission
+    const existingDraft = useQuery(
+        api.submissions.getDraftByCreatorId,
+        creator?._id ? { creatorId: creator._id } : "skip"
+    )
+
+    // Mutations
+    const createSubmission = useMutation(api.submissions.create)
+    const updateSubmission = useMutation(api.submissions.update)
+
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -31,43 +52,30 @@ export default function BusinessInfoPage() {
     const [ownerEmail, setOwnerEmail] = useState("")
     const [address, setAddress] = useState("")
     const [city, setCity] = useState("")
-    const [description, setDescription] = useState("")
+    const [initialized, setInitialized] = useState(false)
 
-    // Check for existing draft on load
+    // Redirect if not authenticated
     useEffect(() => {
-        const loadDraft = async () => {
-            try {
-                const supabase = createClient()
-                const { data: { user } } = await supabase.auth.getUser()
-
-                if (user) {
-                    const { data: draft } = await supabase
-                        .from('submissions')
-                        .select('*')
-                        .eq('creator_id', user.id)
-                        .eq('status', 'draft')
-                        .order('updated_at', { ascending: false })
-                        .limit(1)
-                        .single()
-
-                    if (draft) {
-                        setBusinessName(draft.business_name || "")
-                        setBusinessType(draft.business_type || "")
-                        setOwnerName(draft.owner_name || "")
-                        setOwnerPhone(draft.owner_phone || "")
-                        setOwnerEmail(draft.owner_email || "")
-                        setAddress(draft.address || "")
-                        setCity(draft.city || "")
-                        // Store ID in session for other steps
-                        sessionStorage.setItem('current_submission_id', draft.id)
-                    }
-                }
-            } catch (err) {
-                console.error("Error loading draft:", err)
-            }
+        if (isLoaded && !isSignedIn) {
+            router.push("/login")
         }
-        loadDraft()
-    }, [])
+    }, [isLoaded, isSignedIn, router])
+
+    // Load draft data when available
+    useEffect(() => {
+        if (existingDraft && !initialized) {
+            setBusinessName(existingDraft.businessName || "")
+            setBusinessType(existingDraft.businessType || "")
+            setOwnerName(existingDraft.ownerName || "")
+            setOwnerPhone(existingDraft.ownerPhone || "")
+            setOwnerEmail(existingDraft.ownerEmail || "")
+            setAddress(existingDraft.address || "")
+            setCity(existingDraft.city || "")
+            // Store ID in session for other steps
+            sessionStorage.setItem('current_submission_id', existingDraft._id)
+            setInitialized(true)
+        }
+    }, [existingDraft, initialized])
 
     const handleNext = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -75,56 +83,38 @@ export default function BusinessInfoPage() {
         setError(null)
 
         try {
-            const supabase = createClient()
-
-            // Get current user
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) {
-                throw new Error('You must be logged in to submit')
+            if (!creator) {
+                throw new Error('You must complete your profile first')
             }
-
-            // Create or update draft submission
-            const submissionData = {
-                creator_id: user.id,
-                business_name: businessName,
-                business_type: businessType,
-                owner_name: ownerName,
-                owner_phone: ownerPhone,
-                owner_email: ownerEmail || null,
-                address: address,
-                city: city,
-                status: 'draft'
-            }
-
-            // Check if there's an existing draft
-            const { data: existingDraft } = await supabase
-                .from('submissions')
-                .select('id')
-                .eq('creator_id', user.id)
-                .eq('status', 'draft')
-                .single()
 
             let submissionId: string
 
             if (existingDraft) {
                 // Update existing draft
-                const { error: updateError } = await supabase
-                    .from('submissions')
-                    .update(submissionData)
-                    .eq('id', existingDraft.id)
-
-                if (updateError) throw updateError
-                submissionId = existingDraft.id
+                await updateSubmission({
+                    id: existingDraft._id,
+                    businessName,
+                    businessType,
+                    ownerName,
+                    ownerPhone,
+                    ownerEmail: ownerEmail || undefined,
+                    address,
+                    city,
+                })
+                submissionId = existingDraft._id
             } else {
                 // Create new draft
-                const { data: newSubmission, error: insertError } = await supabase
-                    .from('submissions')
-                    .insert([submissionData])
-                    .select('id')
-                    .single()
-
-                if (insertError) throw insertError
-                submissionId = newSubmission.id
+                submissionId = await createSubmission({
+                    creatorId: creator._id,
+                    businessName,
+                    businessType,
+                    ownerName,
+                    ownerPhone,
+                    ownerEmail: ownerEmail || undefined,
+                    address,
+                    city,
+                    status: 'draft',
+                })
             }
 
             // Store submission ID in session storage for next steps
@@ -138,6 +128,25 @@ export default function BusinessInfoPage() {
         } finally {
             setLoading(false)
         }
+    }
+
+    // Loading state
+    if (!isLoaded || !isSignedIn || creator === undefined) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            </div>
+        )
+    }
+
+    // Redirect to onboarding if no creator profile
+    if (!creator) {
+        router.push("/onboarding")
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            </div>
+        )
     }
 
     return (
@@ -314,10 +323,7 @@ export default function BusinessInfoPage() {
                         >
                             {loading ? (
                                 <span className="flex items-center gap-2">
-                                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
+                                    <Loader2 className="animate-spin h-5 w-5" />
                                     Saving...
                                 </span>
                             ) : (

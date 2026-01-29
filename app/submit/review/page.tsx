@@ -2,84 +2,84 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
+import { useUser } from "@clerk/nextjs"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { Id } from "@/convex/_generated/dataModel"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { createClient } from "@/lib/supabase/client"
-
-interface Submission {
-    id: string
-    business_name: string
-    business_type: string
-    owner_name: string
-    owner_phone: string
-    owner_email: string
-    address: string
-    city: string
-    photos: string[]
-    video_url?: string
-    audio_url?: string
-    creator_payout: number
-}
+import { Loader2 } from "lucide-react"
 
 export default function ReviewSubmissionPage() {
     const router = useRouter()
-    const [loading, setLoading] = useState(true)
+    const { user, isLoaded, isSignedIn } = useUser()
+
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [submission, setSubmission] = useState<Submission | null>(null)
     const [agreed, setAgreed] = useState(false)
+    const [submissionId, setSubmissionId] = useState<string | null>(null)
 
+    // Get creator from Convex
+    const creator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
+
+    // Get submission from Convex
+    const submission = useQuery(
+        api.submissions.getById,
+        submissionId ? { id: submissionId as Id<"submissions"> } : "skip"
+    )
+
+    // Get resolved photo URLs
+    const photoUrls = useQuery(
+        api.files.getMultipleUrls,
+        submission?.photos?.length ? { storageIds: submission.photos } : "skip"
+    )
+
+    // Get interview URL (video or audio)
+    // First check R2 URLs (new), then fall back to storage IDs (legacy)
+    const hasR2Video = !!submission?.videoUrl
+    const hasR2Audio = !!submission?.audioUrl
+    const interviewStorageId = submission?.videoStorageId || submission?.audioStorageId
+    const legacyInterviewUrl = useQuery(
+        api.files.getUrlByString,
+        interviewStorageId && !hasR2Video && !hasR2Audio ? { storageId: interviewStorageId.toString() } : "skip"
+    )
+    // Use R2 URL if available, otherwise use legacy storage URL
+    const interviewUrl = submission?.videoUrl || submission?.audioUrl || legacyInterviewUrl
+
+    // Mutations
+    const submitSubmission = useMutation(api.submissions.submit)
+
+    // Redirect if not authenticated
     useEffect(() => {
-        const fetchSubmission = async () => {
-            const id = sessionStorage.getItem('current_submission_id')
-            if (!id) {
-                router.push('/submit/info')
-                return
-            }
-
-            try {
-                const supabase = createClient()
-                const { data, error } = await supabase
-                    .from('submissions')
-                    .select('*')
-                    .eq('id', id)
-                    .single()
-
-                if (error) throw error
-                setSubmission(data)
-            } catch (err: any) {
-                console.error('Error fetching submission:', err)
-                setError('Failed to load submission data.')
-            } finally {
-                setLoading(false)
-            }
+        if (isLoaded && !isSignedIn) {
+            router.push("/login")
         }
+    }, [isLoaded, isSignedIn, router])
 
-        fetchSubmission()
+    // Load submission ID from session
+    useEffect(() => {
+        const id = sessionStorage.getItem('current_submission_id')
+        if (!id) {
+            router.push('/submit/info')
+            return
+        }
+        setSubmissionId(id)
     }, [router])
 
     const handleSubmit = async () => {
-        if (!submission || !agreed) return
+        if (!submission || !agreed || !submissionId) return
 
         setSubmitting(true)
         setError(null)
 
         try {
-            const supabase = createClient()
-
             // Update status to submitted
-            const { error: updateError } = await supabase
-                .from('submissions')
-                .update({
-                    status: 'submitted',
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', submission.id)
-
-            if (updateError) throw updateError
+            await submitSubmission({ id: submissionId as Id<"submissions"> })
 
             // Navigate to success page
             router.push('/submit/success')
@@ -90,15 +90,22 @@ export default function ReviewSubmissionPage() {
         }
     }
 
-    if (loading) {
+    // Loading state
+    if (!isLoaded || !isSignedIn || creator === undefined || submission === undefined) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
             </div>
         )
     }
 
     if (!submission) return null
+
+    // Determine interview type and payout
+    // Check both R2 URLs (new) and storage IDs (legacy)
+    const hasVideo = !!submission.videoUrl || !!submission.videoStorageId
+    const hasAudio = !!submission.audioUrl || !!submission.audioStorageId
+    const payout = hasVideo ? 500 : (hasAudio ? 300 : 0)
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -149,15 +156,15 @@ export default function ReviewSubmissionPage() {
                         <div className="p-4 space-y-4">
                             <div>
                                 <label className="text-xs text-gray-500 uppercase font-medium">Business</label>
-                                <p className="text-gray-900 font-medium">{submission.business_name}</p>
-                                <p className="text-sm text-gray-500">{submission.business_type}</p>
+                                <p className="text-gray-900 font-medium">{submission.businessName}</p>
+                                <p className="text-sm text-gray-500">{submission.businessType}</p>
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 uppercase font-medium">Owner</label>
-                                <p className="text-gray-900">{submission.owner_name}</p>
-                                <p className="text-sm text-gray-500">{submission.owner_phone}</p>
-                                {submission.owner_email && (
-                                    <p className="text-sm text-gray-500">{submission.owner_email}</p>
+                                <p className="text-gray-900">{submission.ownerName}</p>
+                                <p className="text-sm text-gray-500">{submission.ownerPhone}</p>
+                                {submission.ownerEmail && (
+                                    <p className="text-sm text-gray-500">{submission.ownerEmail}</p>
                                 )}
                             </div>
                             <div>
@@ -178,14 +185,19 @@ export default function ReviewSubmissionPage() {
                         </div>
                         <div className="p-4">
                             <div className="grid grid-cols-4 gap-2 mb-2">
-                                {(submission.photos || []).slice(0, 4).map((url, i) => (
+                                {(photoUrls || submission.photos || []).slice(0, 4).map((url, i) => (
                                     <div key={i} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                                        <Image
-                                            src={url}
-                                            alt={`Photo ${i + 1}`}
-                                            fill
-                                            className="object-cover"
-                                        />
+                                        {url && !url.startsWith('convex:') ? (
+                                            <img
+                                                src={url}
+                                                alt={`Photo ${i + 1}`}
+                                                className="absolute inset-0 w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -203,28 +215,59 @@ export default function ReviewSubmissionPage() {
                                 Edit
                             </Link>
                         </div>
-                        <div className="p-4">
+                        <div className="p-4 space-y-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-green-50 text-green-600 rounded-lg">
-                                    {submission.video_url ? (
+                                    {hasVideo ? (
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                         </svg>
-                                    ) : (
+                                    ) : hasAudio ? (
                                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                         </svg>
                                     )}
                                 </div>
                                 <div>
                                     <p className="font-medium text-gray-900">
-                                        {submission.video_url ? 'Video Interview' : 'Audio Interview'}
+                                        {hasVideo ? 'Video Interview' : hasAudio ? 'Audio Interview' : 'No interview uploaded'}
                                     </p>
                                     <p className="text-sm text-green-600 font-bold">
-                                        Payout: ₱{submission.creator_payout}
+                                        Payout: ₱{payout}
                                     </p>
                                 </div>
                             </div>
+
+                            {/* Media Player */}
+                            {interviewUrl && (
+                                <div className="mt-4">
+                                    {hasVideo ? (
+                                        <video
+                                            src={interviewUrl}
+                                            controls
+                                            className="w-full rounded-lg bg-black max-h-64"
+                                            preload="metadata"
+                                        />
+                                    ) : hasAudio ? (
+                                        <audio
+                                            src={interviewUrl}
+                                            controls
+                                            className="w-full"
+                                            preload="metadata"
+                                        />
+                                    ) : null}
+                                </div>
+                            )}
+                            {(hasVideo || hasAudio) && !interviewUrl && (
+                                <div className="mt-4 flex items-center justify-center py-4">
+                                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                                    <span className="ml-2 text-sm text-gray-500">Loading preview...</span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -254,10 +297,7 @@ export default function ReviewSubmissionPage() {
                     >
                         {submitting ? (
                             <span className="flex items-center gap-2">
-                                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
+                                <Loader2 className="animate-spin h-5 w-5" />
                                 Submitting...
                             </span>
                         ) : (

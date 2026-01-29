@@ -50,7 +50,6 @@ export async function sendApprovalEmail(data: ApprovalEmailData) {
             html: emailHtml
         })
 
-        console.log('Email sent successfully:', info.messageId)
         return { success: true, messageId: info.messageId }
     } catch (error: any) {
         console.error('Error in sendApprovalEmail:', error)

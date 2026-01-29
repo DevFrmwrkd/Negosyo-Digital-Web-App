@@ -1,48 +1,23 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 
 export default function WebsitePage() {
     const params = useParams()
     const submissionId = params.id as string
-    const [htmlContent, setHtmlContent] = useState<string>('')
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
 
-    useEffect(() => {
-        async function loadWebsite() {
-            try {
-                const supabase = createClient()
-                const { data: website, error } = await supabase
-                    .from('generated_websites')
-                    .select('html_content')
-                    .eq('submission_id', submissionId)
-                    .single()
+    // Get generated website from Convex
+    const website = useQuery(
+        api.generatedWebsites.getBySubmissionId,
+        submissionId ? { submissionId: submissionId as any } : "skip"
+    )
 
-                if (error) {
-                    console.error('Supabase error:', error)
-                    throw error
-                }
+    const loading = website === undefined
+    const error = website === null ? 'Website not found' : null
+    const htmlContent = website?.htmlContent || ''
 
-                if (website && website.html_content) {
-                    setHtmlContent(website.html_content)
-                } else {
-                    setError('Website not found')
-                }
-            } catch (err: any) {
-                console.error('Error loading website:', err)
-                setError(err.message || 'Failed to load website')
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        if (submissionId) {
-            loadWebsite()
-        }
-    }, [submissionId])
 
     if (loading) {
         return (

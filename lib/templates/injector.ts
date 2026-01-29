@@ -1,7 +1,9 @@
 import * as cheerio from 'cheerio'
+import { generateNavbarHtml } from './navbar-styles'
 import { generateHeroHtml } from './hero-styles'
 import { generateAboutHtml } from './about-styles'
 import { generateServicesHtml } from './services-styles'
+import { generateFeaturedHtml } from './featured-styles'
 import { generateFooterHtml } from './footer-styles'
 import { generateColorSchemeCss } from './color-schemes'
 
@@ -40,12 +42,89 @@ export interface ExtractedContent {
         brand_blurb: string
         social_links?: Array<{ platform: string; url: string }>
     }
+    // Hero section fields
+    hero_badge_text?: string
+    hero_testimonial?: string
+    // Visibility toggles
+    visibility?: {
+        navbar?: boolean
+        navbar_headline?: boolean // For style 4
+        hero_section?: boolean // Master toggle for entire hero section
+        hero_headline?: boolean
+        hero_tagline?: boolean
+        hero_description?: boolean
+        hero_testimonial?: boolean
+        hero_button?: boolean
+        hero_image?: boolean
+        // About section visibility
+        about_section?: boolean // Master toggle for entire about section
+        about_badge?: boolean
+        about_headline?: boolean
+        about_description?: boolean
+        about_images?: boolean
+        about_tagline?: boolean
+        about_tags?: boolean
+        // Services section visibility
+        services_section?: boolean // Master toggle for entire services section
+        services_badge?: boolean
+        services_headline?: boolean
+        services_subheadline?: boolean
+        services_image?: boolean
+        services_list?: boolean
+        // Featured section visibility
+        featured_section?: boolean // Master toggle for entire featured section
+        featured_headline?: boolean
+        featured_subheadline?: boolean
+        featured_products?: boolean
+        featured_images?: boolean // For style 3 gallery
+        // Footer section visibility
+        footer_section?: boolean // Master toggle for entire footer section
+        footer_badge?: boolean
+        footer_headline?: boolean
+        footer_description?: boolean
+        footer_contact?: boolean
+        footer_social?: boolean
+    }
+    // Services section fields
+    services_headline?: string
+    services_subheadline?: string
+    services_image?: string
+    // Featured section fields
+    featured_headline?: string
+    featured_subheadline?: string
+    featured_products?: Array<{
+        title: string
+        description: string
+        image?: string
+        tags?: string[]
+        testimonial?: {
+            quote: string
+            author: string
+            avatar?: string
+        }
+    }>
+    featured_images?: string[] // For style 3 gallery
+    featured_cta_text?: string // CTA button text for style 4
+    featured_cta_link?: string // CTA button link for style 4
+    // About section fields
+    about_headline?: string
+    about_description?: string // Separate description for about section
+    about_images?: string[] // Separate images for about section gallery
+    about_tagline?: string // Section title for style 3
+    about_tags?: string[] // Iterable tags for style 3
+    // Navbar fields
+    navbar_links?: Array<{ label: string; href: string }>
+    navbar_cta_text?: string
+    navbar_cta_link?: string
+    navbar_headline?: string // For style 4
 }
 
 export interface Customizations {
+    navbarStyle?: string
     heroStyle?: string
     aboutStyle?: string
     servicesStyle?: string
+    featuredStyle?: string
     footerStyle?: string
     colorScheme?: string[]
     fontPairing?: string
@@ -55,7 +134,7 @@ export interface Customizations {
 
 /**
  * Inject extracted content into HTML template using server-side replacement
- * This replaces content directly in the HTML before sending to client
+ * This completely replaces the template content with our generated components
  */
 export function injectContent(
     templateHtml: string,
@@ -65,701 +144,231 @@ export function injectContent(
 ): string {
     const $ = cheerio.load(templateHtml)
 
-    // 0. Apply Hero Style if provided (replaces entire hero section)
-    if (customizations?.heroStyle) {
-        const heroHtml = generateHeroHtml(customizations.heroStyle, {
+    // Update page title
+    $('title').text(`${content.business_name} - ${content.tagline}`)
+
+    // STEP 1: Clear ALL content from main and body (except head)
+    // Remove all existing content - we're building from scratch with our components
+    $('main').empty()
+    $('nav').remove()
+    $('header').remove()
+    $('footer').remove()
+
+    // Remove any divs that might be outside main but inside body
+    $('body > div').not('main').remove()
+    $('body > section').remove()
+
+    // Ensure main element exists
+    let $main = $('main').first()
+    if (!$main.length) {
+        $('body').append('<main></main>')
+        $main = $('main').first()
+    }
+
+    // STEP 2: Generate and inject our components in order
+
+    // 2a. Generate Navbar
+    let navbarHtml = ''
+    if (customizations?.navbarStyle) {
+        const navbarProps = {
+            businessName: content.business_name,
+            links: content.navbar_links,
+            ctaText: content.navbar_cta_text,
+            ctaLink: content.navbar_cta_link,
+            headline: content.navbar_headline,
+            visibility: {
+                navbar: content.visibility?.navbar,
+                navbar_headline: content.visibility?.navbar_headline
+            }
+        }
+        navbarHtml = generateNavbarHtml(customizations.navbarStyle, navbarProps)
+    }
+
+    // 2b. Generate Hero (only if hero_section is visible)
+    let heroHtml = ''
+    if (customizations?.heroStyle && content.visibility?.hero_section !== false) {
+        const heroProps = {
             businessName: content.business_name,
             tagline: content.tagline,
             about: content.about,
             heroCta: content.hero_cta,
-            photos: photos || []
-        })
-
-        // First, remove any existing #hero-section (from previous generation)
-        $('#hero-section').remove()
-
-        // Find and replace the hero section (first child div of main)
-        const $heroSection = $('main > div').first()
-        if ($heroSection.length) {
-            $heroSection.replaceWith(heroHtml)
-        } else {
-            // If no hero section found, prepend to main
-            const $main = $('main').first()
-            if ($main.length) {
-                $main.prepend(heroHtml)
-            }
-        }
-    }
-
-    // 0.a. Apply Services Style
-    if (customizations?.servicesStyle) {
-        const servicesHtml = generateServicesHtml(customizations.servicesStyle, {
             photos: photos || [],
-            services: content.services || []
-        })
-
-        // First, remove any existing #services-section (from previous generation)
-        $('#services-section').remove()
-
-        // Also remove old template sections containing "Curated Disciplines"
-        $('h2').each((_, el) => {
-            if ($(el).text().trim().includes('Curated Disciplines')) {
-                let $section = $(el).parents().filter((_, p) => $(p).hasClass('border-b')).first()
-                if ($section.length && ($section.attr('class') || '').includes('col-span')) {
-                    const $higher = $section.parents().filter((_, p) => $(p).hasClass('border-b')).not($section).first()
-                    if ($higher.length) $section = $higher
-                }
-                if ($section.length) {
-                    $section.remove()
-                }
-            }
-        })
-
-        // Always append fresh
-        const $main = $('main').first()
-        if ($main.length) {
-            $main.append(servicesHtml)
-        } else {
-            $('body').append(servicesHtml)
+            badgeText: content.hero_badge_text,
+            testimonial: content.hero_testimonial,
+            visibility: content.visibility
         }
+        heroHtml = generateHeroHtml(customizations.heroStyle, heroProps)
     }
 
-    // 0.b. Apply About/Features Style
-    if (customizations?.aboutStyle) {
-        const aboutHtml = generateAboutHtml(customizations.aboutStyle, {
+    // 2c. Generate About (only if about_section is visible)
+    let aboutHtml = ''
+    if (customizations?.aboutStyle && content.visibility?.about_section !== false) {
+        // Use about_description if set, otherwise fall back to about
+        const aboutDescription = content.about_description || content.about
+        // Use about_images if set, otherwise fall back to photos
+        const aboutPhotos = content.about_images && content.about_images.length > 0
+            ? content.about_images
+            : (photos || [])
+
+        const aboutProps = {
             businessName: content.business_name,
-            about: content.about,
-            photos: photos || [],
-            usps: content.unique_selling_points
-        })
-
-        // First, remove any existing #about-section (from previous generation)
-        $('#about-section').remove()
-
-        // Also remove old template sections
-        $('h2').each((_, el) => {
-            const text = $(el).text().trim()
-            if (text.includes('Structured for Outcome') || text.includes('Signature Cohorts') || text.includes('Why Choose') || text.includes('Our Philosophy')) {
-                let $section = $(el).parents().filter((_, p) => $(p).hasClass('border-b')).first()
-                if ($section.length && ($section.attr('class') || '').includes('col-span')) {
-                    const $higher = $section.parents().filter((_, p) => $(p).hasClass('border-b')).not($section).first()
-                    if ($higher.length) $section = $higher
-                }
-                if ($section.length) {
-                    $section.remove()
-                }
+            about: aboutDescription,
+            photos: aboutPhotos,
+            usps: content.unique_selling_points,
+            headline: content.about_headline,
+            tagline: content.about_tagline,
+            tags: content.about_tags,
+            visibility: {
+                about_badge: content.visibility?.about_badge,
+                about_headline: content.visibility?.about_headline,
+                about_description: content.visibility?.about_description,
+                about_images: content.visibility?.about_images,
+                about_tagline: content.visibility?.about_tagline,
+                about_tags: content.visibility?.about_tags
             }
-        })
-
-        // Always append fresh
-        const $main = $('main').first()
-        if ($main.length) {
-            $main.append(aboutHtml)
-        } else {
-            $('body').append(aboutHtml)
         }
+        aboutHtml = generateAboutHtml(customizations.aboutStyle, aboutProps)
     }
 
-    // 0.c. Apply Footer Style
-    if (customizations?.footerStyle) {
-        const footerHtml = generateFooterHtml(customizations.footerStyle, {
+    // 2d. Generate Services (only if services_section is visible)
+    let servicesHtml = ''
+    if (customizations?.servicesStyle && content.visibility?.services_section !== false) {
+        // Use services_image if set, otherwise fall back to first photo
+        const servicesPhoto = content.services_image
+            ? [content.services_image]
+            : (photos && photos.length > 0 ? [photos[0]] : [])
+
+        const servicesProps = {
+            photos: servicesPhoto,
+            services: content.services,
+            headline: content.services_headline,
+            subheadline: content.services_subheadline,
+            visibility: {
+                services_badge: content.visibility?.services_badge,
+                services_headline: content.visibility?.services_headline,
+                services_subheadline: content.visibility?.services_subheadline,
+                services_image: content.visibility?.services_image,
+                services_list: content.visibility?.services_list
+            }
+        }
+        servicesHtml = generateServicesHtml(customizations.servicesStyle, servicesProps)
+    }
+
+    // 2e. Generate Featured (only if featured_section is visible)
+    let featuredHtml = ''
+    if (customizations?.featuredStyle && content.visibility?.featured_section !== false) {
+        const featuredProps = {
+            photos: photos || [],
+            projects: content.featured_products,
+            headline: content.featured_headline,
+            subheadline: content.featured_subheadline,
+            featuredImages: content.featured_images,
+            ctaText: content.featured_cta_text,
+            ctaLink: content.featured_cta_link,
+            visibility: {
+                featured_headline: content.visibility?.featured_headline,
+                featured_subheadline: content.visibility?.featured_subheadline,
+                featured_products: content.visibility?.featured_products,
+                featured_images: content.visibility?.featured_images
+            }
+        }
+        featuredHtml = generateFeaturedHtml(customizations.featuredStyle, featuredProps)
+    }
+
+    // 2f. Generate Footer (only if footer_section is visible)
+    let footerHtml = ''
+    if (customizations?.footerStyle && content.visibility?.footer_section !== false) {
+        // Get a featured image for the Craft Footer style (first product image or first photo)
+        const featuredProductImage = content.featured_products?.[0]?.image
+        const firstPhoto = photos?.[0]
+        const footerFeaturedImage = featuredProductImage || firstPhoto
+
+        const footerProps = {
             businessName: content.business_name,
             email: content.contact?.email || 'contact@example.com',
             phone: content.contact?.phone || '+63 900 000 0000',
-            address: content.contact?.address
-        })
-
-        // First, remove any existing #footer-section (from previous generation)
-        $('#footer-section').remove()
-
-        // Also replace any existing footer tag
-        if ($('footer').length) {
-            $('footer').replaceWith(footerHtml)
-        } else {
-            $('body').append(footerHtml)
+            address: content.contact?.address,
+            description: content.footer?.brand_blurb,
+            socialLinks: content.footer?.social_links,
+            featuredImage: footerFeaturedImage,
+            photos: photos, // Pass uploaded photos for marquee carousel
+            visibility: {
+                footer_badge: content.visibility?.footer_badge,
+                footer_headline: content.visibility?.footer_headline,
+                footer_description: content.visibility?.footer_description,
+                footer_contact: content.visibility?.footer_contact,
+                footer_social: content.visibility?.footer_social
+            }
         }
+        footerHtml = generateFooterHtml(customizations.footerStyle, footerProps)
     }
 
-    // 1. Replace page title
-    $('title').text(`${content.business_name} - ${content.tagline}`)
+    // STEP 3: Inject components in correct order
+    // Order: Navbar (in body before main) -> Hero -> About -> Services -> Featured (all in main) -> Footer (after main)
 
-    // 5. Replace "Signature Cohorts" with Offer Section title and description
-    $('h2, p').each((_, el) => {
-        const $el = $(el)
-        if ($el.text().trim() === 'Signature Cohorts') {
-            if (content.offer_section?.title) {
-                $el.text(content.offer_section.title)
-            }
-            // The description is usually the next p element or close by
-            const $desc = $el.next('p')
-            if ($desc.length && content.offer_section?.description) {
-                $desc.text(content.offer_section.description)
-            }
-        }
-    })
-    // 2. Replace all h1 elements with business name
-    $('h1').each((_, el) => {
-        $(el).text(content.business_name.toUpperCase())
-    })
-
-    // 3. Replace hero section content
-    const heroParagraphs = $('p.leading-snug')
-    if (heroParagraphs.length >= 1) {
-        heroParagraphs.eq(0).html(`<span class="block">${content.tagline}</span>`)
-        if (heroParagraphs.length >= 2) {
-            heroParagraphs.eq(1).html(`<span class="block">${content.about}</span>`)
-        }
+    // Navbar goes at the beginning of body (before main)
+    if (navbarHtml) {
+        $('body').prepend(`<div id="navbar-section">${navbarHtml}</div>`)
     }
 
-    // 4. Replace ALL images with business photos
-    if (photos && photos.length > 0) {
-        // Replace hero slideshow images
-        $('.hero-slide').each((index, el) => {
-            const photoIndex = index % photos.length
-            $(el).attr('src', photos[photoIndex])
-            $(el).attr('alt', content.business_name)
-        })
-
-        // Replace all other images
-        $('img:not(.hero-slide)').each((index, el) => {
-            const photoIndex = index % photos.length
-            $(el).attr('src', photos[photoIndex])
-            $(el).attr('alt', content.business_name)
-        })
-
-        // Remove template image badges/overlays
-        // Remove template image badges/overlays
-        // Target specific style classes used for badges in atelier.html: "top-2 right-2", "uppercase", "tracking-widest", "border"
-        $('.absolute.top-2.right-2.uppercase.tracking-widest.border').remove();
-
-        // Also try more generic removal for any badge-like element in cards
-        $('.group.cursor-pointer .absolute.top-2.right-2').remove();
+    // Hero section
+    if (heroHtml) {
+        $main.append(`<div id="hero-section">${heroHtml}</div>`)
     }
 
-    // 5. Replace section headings
-    const h2Elements = $('h2')
-    // The template has "Curated Disciplines" and "Signature Cohorts" (or "Discover" section)
-    if (h2Elements.length > 0) {
-        // Find specific headers by text to be safe
-        $('h2').each((_, el) => {
-            const text = $(el).text().trim();
-            if (text.includes('Signature Cohorts') || text.includes('Discover')) {
-                $(el).text('What We Offer');
-            }
-        });
+    // About section
+    if (aboutHtml) {
+        $main.append(`<div id="about-section">${aboutHtml}</div>`)
     }
 
-    // 6. Inject service/program cards
-    if (content.services && content.services.length > 0) {
-        // Find all service card containers
-        const serviceCards = $('.group.cursor-pointer')
-
-        content.services.forEach((service, index) => {
-            if (index < serviceCards.length) {
-                const $card = serviceCards.eq(index)
-
-                // Find the content area (the div with flex justify-between)
-                const $contentArea = $card.find('.flex.justify-between.items-start').first()
-
-                if ($contentArea.length > 0) {
-                    // Create and prepend service title and description
-                    const serviceHtml = `
-                        <div class="leading-tight">
-                            <h3 class="text-xl font-medium text-[#1F2933] tracking-tight font-serif font-manrope">
-                                ${service.name}
-                            </h3>
-                            <p class="uppercase text-xs text-[#4B5563] tracking-widest mt-1 font-manrope">
-                                ${service.description}
-                            </p>
-                        </div>
-                    `
-                    $contentArea.prepend(serviceHtml)
-
-                    // Remove rating stars and numbers
-                    $contentArea.find('.flex.items-center.gap-1').remove()
-                }
-            }
-        })
+    // Services section
+    if (servicesHtml) {
+        $main.append(`<div id="services-section">${servicesHtml}</div>`)
     }
 
-    // 7. Inject Unique Selling Points (USPs)
-    // Map these to the "Collection Cards" (replacing "Technology", "Design Strategy", etc.)
-    // The user explicitly requested these cards be the USPs.
-    if (content.unique_selling_points && content.unique_selling_points.length > 0) {
-        // Target the collection card titles
-        const collectionTitles = $('.group.relative .absolute h3');
-        const collectionSubtitles = $('.group.relative .absolute span');
-
-        content.unique_selling_points.forEach((usp, index) => {
-            if (index < collectionTitles.length) {
-                collectionTitles.eq(index).text(usp);
-                // process subtitle to say "Highlight" or similar instead of "Track"
-                if (index < collectionSubtitles.length) {
-                    collectionSubtitles.eq(index).text('Highlight');
-                }
-            }
-        });
-
-        // Hide unused collection cards if we have fewer USPs than cards
-        if (content.unique_selling_points.length < collectionTitles.length) {
-            $('.group.relative').each((index, el) => {
-                if (index >= content.unique_selling_points.length) {
-                    $(el).attr('style', 'display: none !important');
-                }
-            });
-        }
+    // Featured section
+    if (featuredHtml) {
+        $main.append(`<div id="featured-section">${featuredHtml}</div>`)
     }
 
-    // 8. Replace methodology/workflow section
-    if (content.methodology) {
-        // Find section with "Structured for Outcome" or similar
-        $('h2, h3').each((_, el) => {
-            const $el = $(el);
-            const text = $el.text();
-            if (text.includes('Structured for Outcome') || text.includes('Process') || text.includes('Methodology')) {
-                $el.text(content.methodology!.title);
-            }
-        });
-
-        // Map steps
-        if (content.methodology.steps && content.methodology.steps.length > 0) {
-            // Find step headers
-            const stepHeaders = $('h3.text-xl, h3.text-2xl');
-            const stepDescriptions = $('p.text-gray-600, p[class*="text-[#4B5563]"]');
-
-            content.methodology.steps.forEach((step, idx) => {
-                // Try to find corresponding headers by index order in the methodology section
-                // This is a bit heuristic, assuming the order matches the template
-                // Ideally we'd use more specific selectors if the template allowed
-
-                // Update Step Title (e.g., "01 — Discover")
-                if (idx < stepHeaders.length) {
-                    // We try to preserve the number if possible, or just replace the text
-                    const currentScript = stepHeaders.eq(idx).text();
-                    const numberPart = currentScript.split('—')[0];
-                    if (numberPart.trim().match(/^\d+$/)) {
-                        stepHeaders.eq(idx).text(`${numberPart} — ${step.title}`);
-                    } else {
-                        stepHeaders.eq(idx).text(step.title);
-                    }
-                }
-
-                // Update Description
-                // Skiping first few p tags that might be hero text
-                const offset = 2; // Heuristic: skip hero taglines
-                if (idx + offset < stepDescriptions.length) {
-                    stepDescriptions.eq(idx + offset).text(step.description);
-                }
-            });
-        }
-    } else {
-        // Fallback for methodology if new field not present (legacy support)
-        $('h2, h3, h4').each((_, el) => {
-            const $el = $(el)
-            const text = $el.text()
-
-            if (text.includes('Structured for Outcome')) {
-                $el.text(`Why Choose ${content.business_name}`)
-            }
-            if (text === 'Discover' && content.unique_selling_points && content.unique_selling_points[0]) {
-                $el.text(content.unique_selling_points[0])
-            }
-            if (text === 'Apply' && content.unique_selling_points && content.unique_selling_points[1]) {
-                $el.text(content.unique_selling_points[1])
-            }
-            if (text === 'Master' && content.unique_selling_points && content.unique_selling_points[2]) {
-                $el.text(content.unique_selling_points[2])
-            }
-        })
-
-        // 9. Replace methodology descriptions fallback
-        $('p').each((_, el) => {
-            const $el = $(el)
-            const text = $el.text()
-
-            if (text.includes('Identify your skill gap') || text.includes('Explore curated learning paths')) {
-                $el.text(content.tagline)
-            }
-            if (text.includes('Join a vetted cohort') || text.includes('Selective intake')) {
-                $el.text(content.about)
-            }
-            if (text.includes('Live sessions and real projects') || text.includes('Direct feedback')) {
-                $el.text('Experience quality service and authentic hospitality.')
-            }
-        })
+    // Footer goes after main
+    if (footerHtml) {
+        $main.after(`<div id="footer-section">${footerHtml}</div>`)
     }
 
-    // 9.5 Collection Items (Images with Text overlays) - Curated Disciplines section
-    if (content.collection_items && content.collection_items.length > 0) {
-        // Target the collection cards more precisely
-        // Find all cards with the collection structure
-        const $collectionCards = $('a[class*="group"][class*="aspect-[3/4]"]').filter((_, el) => {
-            return $(el).find('.absolute').length > 0;
-        });
-
-        content.collection_items.forEach((item, idx) => {
-            if (idx < $collectionCards.length) {
-                const $card = $collectionCards.eq(idx);
-                // Find subtitle (the small TRACK label)
-                const $subtitle = $card.find('.text-\\[10px\\]').first();
-                if ($subtitle.length && item.subtitle) {
-                    $subtitle.text(item.subtitle);
-                }
-                // Find title (Technology, Design Strategy, etc.)
-                const $title = $card.find('h3').first();
-                if ($title.length && item.title) {
-                    $title.text(item.title);
-                }
-            }
-        });
-    }
-
-    // 9.6 Map "Curated Disciplines" heading
-    $('h2').each((_, el) => {
-        const $el = $(el);
-        if ($el.text().trim() === 'Curated Disciplines') {
-            if (content.collections_heading) {
-                $el.text(content.collections_heading);
-            }
-        }
-    });
-
-    // 10. Replace footer content
-    // 10. Replace footer content
-    if (content.footer) {
-        if (content.footer.brand_blurb) {
-            // Try to find the brand blurb paragraph (usually first p in footer or near logo)
-            const $footerP = $('footer p').first();
-            if ($footerP.length) $footerP.text(content.footer.brand_blurb);
-        }
-    } else {
-        $('footer p').first().text(content.about)
-    }
-
-    // Force Footer White Text (Inline) - REMOVED (Legacy)
-    // We now rely on the component styles or the color scheme injector to handle contrast
-    /*
-    $('footer').attr('style', ($('footer').attr('style') || '') + '; color: #ffffff !important;');
-    $('footer *').each((_, el) => {
-        // ...
-    });
-    */
-
-    $('footer h2, footer h3, footer h4').each((_, el) => {
-        const $el = $(el)
-        const text = $el.text().trim()
-
-        if (text.includes('ATELIER')) {
-            $el.text(content.business_name.toUpperCase())
-        }
-
-        // Hide template navigation sectionsA QUI
-        if (text === 'SUPPORT' || text === 'TEACH' || text === 'INSIGHTS' || text === 'FRMWRKD MEDIA') {
-            const $parent = $el.closest('div')
-            if ($parent.parent().length) {
-                $parent.parent().css('display', 'none')
-            }
-        }
-    })
-
-    // 12. Remove template footer links
-    $('footer a').each((_, el) => {
-        const $el = $(el)
-        const text = $el.text().trim()
-
-        if (text === 'Help Center' || text === 'Scholarships' || text === 'Enterprise' ||
-            text === 'Become a Mentor' || text === 'Curriculum Guide' || text === 'Mentor Resources' ||
-            text.includes('career insights')) {
-            // target list item if possible to preserve the column layout
-            const $li = $el.closest('li');
-            if ($li.length) {
-                $li.remove();
-            } else {
-                // Fallback to div or element removal if not in a list
-                const $parent = $el.closest('div');
-                // Only remove parent div if it looks like a wrapper, not the main col.
-                // But risky. Let's just remove the element itself if no li.
-                $el.remove();
-            }
-        }
-    })
-
-    // 13. Remove template footer text
-    $('footer p, footer span, footer div').each((_, el) => {
-        const $el = $(el)
-        const text = $el.text().trim()
-
-        if (text.includes('Get career insights') ||
-            text.includes('learning paths delivered') ||
-            text.includes('self-community') ||
-            text.includes('Interviews, trends, and curated thoughts')) {
-            $el.remove()
-        }
-    })
-
-    // 14. Replace contact information - Rewrite the "Contact Us" column
-    if (content.contact) {
-        // Clear the old contact section (vertical list in footer columns)
-        let $contactSection: any = $('#contact-section');
-
-        // Fallback: If ID not found, search by text (legacy support / robustness)
-        if (!$contactSection.length) {
-            $('footer h4').each((_, el) => {
-                const $el = $(el);
-                const text = $el.text().trim().toLowerCase();
-                if (text.includes('support') || text.includes('contact')) {
-                    $contactSection = $el.closest('div');
-                    return false; // break loop
-                }
-            });
-        }
-
-        // Hide or clear the old contact column
-        if ($contactSection.length) {
-            $contactSection.remove();
-        }
-
-        // Now inject into the footer bottom bar (the orange band at the very bottom)
-        const $footerBottomBar = $('#footer-bottom-bar');
-        if ($footerBottomBar.length) {
-            const contactItems = [];
-
-            if (content.contact.phone) {
-                contactItems.push(`
-                    <div class="text-[10px] text-[#F6F7F5]/70 tracking-wide">
-                        <span class="uppercase font-semibold">Phone:</span>
-                        <a href="tel:${content.contact.phone}" class="ml-2 hover:text-[#F6F7F5] transition-colors">${content.contact.phone}</a>
-                    </div>
-                `);
-            }
-
-            if (content.contact.email) {
-                contactItems.push(`
-                    <div class="text-[10px] text-[#F6F7F5]/70 tracking-wide">
-                        <span class="uppercase font-semibold">Email:</span>
-                        <a href="mailto:${content.contact.email}" class="ml-2 hover:text-[#F6F7F5] transition-colors">${content.contact.email}</a>
-                    </div>
-                `);
-            }
-
-            if (content.contact.address) {
-                contactItems.push(`
-                    <div class="text-[10px] text-[#F6F7F5]/70 tracking-wide">
-                        <span class="uppercase font-semibold">Address:</span>
-                        <span class="ml-2">${content.contact.address}</span>
-                    </div>
-                `);
-            }
-
-            // Replace footer bottom bar content with contact info in 3 columns
-            $footerBottomBar.html(`
-                <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 py-4 font-manrope">
-                    ${contactItems.join('')}
-                </div>
-            `);
-        }
-
-        // Dedicated Contact Section removed as per user request (reverting to footer only)
-        $('#dedicated-contact-section').remove();
-    }
-
-    // 15. Replace all remaining template-specific text
-    $('p, span, div').each((_, el) => {
-        const $el = $(el)
-        let text = $el.text()
-
-        if (text.includes('Atelier') && !text.includes(content.business_name)) {
-            text = text.replace(/Atelier/gi, content.business_name)
-            $el.text(text)
-        }
-        if (text.includes('world-class practitioners')) {
-            $el.text(content.tagline)
-        }
-        if (text.includes('lifelong learners')) {
-            $el.text(content.about)
-        }
-        if (text.includes('educational experiences')) {
-            $el.text(content.about)
-        }
-        if (text.includes('professionals who grow with intention')) {
-            $el.text('customers who appreciate quality and authenticity')
-        }
-    })
-
-    // 16. Replace CTAs
-    if (content.hero_cta) {
-        // Hero CTA is usually the first button/link in the hero section
-        // Strategy: Look for "Explore What we Offer" or the first main button
-        $('button, a').each((_, el) => {
-            const $el = $(el)
-            const text = $el.text().trim()
-            if (text.includes('Explore What we Offer') || text.includes('Explore')) {
-                // If it's a button, we might need to wrap it or change it to an anchor if a link is provided
-                // For now, let's assume we just change text and add onclick or href
-
-                // Preserve the icon if it exists
-                const $svg = $el.find('svg').clone()
-                $el.text(content.hero_cta!.label + ' ') // Add space for icon
-                if ($svg.length) $el.append($svg)
-
-                if (content.hero_cta!.link) {
-                    // If it's a button, try to make it act like a link or change to 'a' tag
-                    if ($el.is('button')) {
-                        // Convert button to a if possible, or just set onclick
-                        $el.attr('onclick', `window.location.href='${content.hero_cta!.link}'`)
-                    } else {
-                        $el.attr('href', content.hero_cta!.link)
-                    }
-                }
-            }
-        })
-    }
-
-    if (content.services_cta) {
-        // Services CTA "View Services"
-        $('a').each((_, el) => {
-            const $el = $(el)
-            const text = $el.text().trim()
-            if (text.includes('View Services')) {
-                const $svg = $el.find('svg').clone()
-                $el.text(content.services_cta!.label + ' ')
-                if ($svg.length) $el.append($svg)
-
-                if (content.services_cta!.link) {
-                    $el.attr('href', content.services_cta!.link)
-                }
-            }
-        })
-    }
-
-    // Apply color scheme if provided
+    // STEP 4: Apply color scheme
     if (customizations?.colorSchemeId) {
         const colorCss = generateColorSchemeCss(customizations.colorSchemeId)
         $('head').append(colorCss)
     }
 
-    // Apply font pairing if provided
+    // STEP 5: Apply font pairing
     if (customizations?.fontPairing) {
         const fontPairs = getFontPairing(customizations.fontPairing)
         if (fontPairs) {
-            // Remove all font-related classes from elements
-            $('[class*="font-"]').each((_, el) => {
-                const $el = $(el)
-                const classes = $el.attr('class') || ''
-                const newClasses = classes.split(' ').filter(c => !c.startsWith('font-')).join(' ')
-                $el.attr('class', newClasses)
-            })
-
-            // Add global font override
             $('head').append(`
-        <link href="https://fonts.googleapis.com/css2?family=${fontPairs.heading.replace(' ', '+')}:wght@300;400;500;600;700&family=${fontPairs.body.replace(' ', '+')}:wght@300;400;500;600&display=swap" rel="stylesheet">
-        <style>
-          /* Global font override */
-          * {
-            font-family: '${fontPairs.body}', sans-serif !important;
-          }
-          body, p, span, div, a, button, input, textarea, select {
-            font-family: '${fontPairs.body}', sans-serif !important;
-          }
-          h1, h2, h3, h4, h5, h6 {
-            font-family: '${fontPairs.heading}', sans-serif !important;
-          }
-        </style>
-      `)
+                <link href="https://fonts.googleapis.com/css2?family=${fontPairs.heading.replace(' ', '+')}:wght@300;400;500;600;700&family=${fontPairs.body.replace(' ', '+')}:wght@300;400;500;600&display=swap" rel="stylesheet">
+                <style>
+                    /* Global font override */
+                    * {
+                        font-family: '${fontPairs.body}', sans-serif !important;
+                    }
+                    body, p, span, div, a, button, input, textarea, select {
+                        font-family: '${fontPairs.body}', sans-serif !important;
+                    }
+                    h1, h2, h3, h4, h5, h6 {
+                        font-family: '${fontPairs.heading}', sans-serif !important;
+                    }
+                    /* Font class overrides */
+                    .font-dm-sans {
+                        font-family: '${fontPairs.heading}', sans-serif !important;
+                    }
+                    .font-manrope {
+                        font-family: '${fontPairs.body}', sans-serif !important;
+                    }
+                </style>
+            `)
         }
-    }
-    // 12. Force High Contrast on Buttons (Inline Style Override)
-    // This addresses the user's persistent issue with button contrast by forcing it directly on the element
-    $('button').each((_, el) => {
-        const $el = $(el)
-        const className = $el.attr('class') || ''
-        const text = $el.text().trim()
-
-        // Target the "Explore" button and potential primary buttons
-        if (text.includes('Explore') || className.includes('bg-[#6B8F71]') || className.includes('bg-')) {
-            $el.attr('style', ($el.attr('style') || '') + '; color: #ffffff !important;')
-            $el.find('*').attr('style', ($el.find('*').attr('style') || '') + '; color: #ffffff !important;')
-            $el.find('svg, path').attr('stroke', '#ffffff').attr('fill', 'none')
-        }
-    })
-
-    // Final Reorder Enforcement: Hero -> About -> Services -> Footer
-
-    // STRUCTURE-BASED HERO SELECTOR (Most Reliable)
-    // In atelier.html, Hero is the first child of <main>.
-    let $hero = $('main > div').first()
-
-    // Fallback: If no main, try the first section-like div in body wrapper
-    if (!$hero.length) {
-        $hero = $('body > div > div').first() // Wrapper > Main/Content
-    }
-
-    // Tag it so we know we found it
-    if ($hero.length) $hero.attr('id', 'hero-found-target')
-
-    const $about = $('#about-section')
-    const $services = $('#services-section')
-    let $footer = $('#footer-section')
-
-    // CLEANUP: Robust Text-Based Removal
-    $('h2').filter((_, el) => {
-        const t = $(el).text().trim()
-        return t.includes('Curated Disciplines') || t.includes('Selected Works') || t.includes('Service Output')
-    }).each((_, el) => {
-        const $p = $(el).closest('div[class*="border"]');
-        // Remove ONLY if it's NOT our injected section
-        if ($p.closest('#services-section').length === 0) {
-            $p.remove()
-            // Also remove immediate next sibling if it looks like a grid (atelier layout)
-            // In atelier.html, the grid is a separate sibling div sometimes?
-            // Actually, lines 393 show grid is sibling to header container.
-            // We'll trust that we removed the container header.
-            // But let's be safe and look for the grid manually.
-        }
-    })
-
-    // Cleanup "Signature Cohorts" / About legacy
-    $('h2').filter((_, el) => {
-        const t = $(el).text().trim()
-        return t.includes('Signature Cohorts') || t.includes('Structured for Outcome') || t.includes('What We Offer')
-    }).each((_, el) => {
-        const $p = $(el).closest('div[class*="border"]');
-        // Only if not ours
-        if ($p.closest('#about-section').length === 0 && $p.attr('id') !== 'hero-found-target') {
-            // Careful not to delete Hero (which has "What We Offer" button sometimes?) 
-            // Actually Line 357 "Explore What we Offer" is a button.
-            // We targeted 'h2'. Hero has 'h1'. Should be safe.
-            $p.remove()
-        }
-    })
-
-    // Remove any empty border divs left behind
-    $('div.border-b').filter((_, el) => $(el).text().trim() === '').remove()
-
-
-    // Strict Re-insertion
-    if ($about.length && $services.length) {
-
-        // 1. Position About
-        if ($hero.length) {
-            $about.insertAfter($hero)
-        } else {
-            // If selectors fail, append to MAIN, not body (to stay in wrapper)
-            $('main').prepend($about)
-        }
-
-        // 2. Position Services AFTER About
-        $services.insertAfter($about)
-
-        // 3. Position Footer AFTER Services
-        if ($footer.length) {
-            $footer.insertAfter($services)
-        }
-    }
-
-    // If Footer exists but wasn't moved (e.g. Services missing), force it to bottom
-    if ($footer.length && !$footer.prev().is('#services-section')) {
-        $('body').append($footer)
     }
 
     return $.html()
@@ -787,33 +396,4 @@ function getFontPairing(name: string) {
 
 export function getAvailableFontPairings() {
     return Object.keys(fontPairings)
-}
-
-/**
- * Calculate contrast color (black or white) for a given hex color
- * Uses standard W3C recommendations for contrast
- */
-function getContrastColor(hex: string): string {
-    // Sanitize hex
-    hex = hex.replace('#', '');
-
-    // Handle short hex (e.g. F00)
-    if (hex.length === 3) {
-        hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-    }
-
-    // Parse r, g, b
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-
-    // Get relative luminance
-    // Formula: L = 0.2126 * R + 0.7152 * G + 0.0722 * B
-    // Using simple YIQ for performance as it's generally good enough for black/white text decision
-    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-
-    // Threshold of 128 is standard, but we'll bias towards black for better readability on mid-tones
-    // if the user's primary is a bright orange (approx 150-180), black is better.
-    // If it's dark blue (<100), white is better.
-    return (yiq >= 140) ? '#000000' : '#ffffff';
 }

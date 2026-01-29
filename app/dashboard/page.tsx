@@ -1,37 +1,73 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useUser, SignOutButton } from "@clerk/nextjs"
+import { useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import LogoutButton from "@/components/LogoutButton"
 import Profile from '@/public/profile.png'
 import Image from "next/image"
 import Link from "next/link"
-import { Bell, Wallet, TrendingUp, ArrowRight, Store, Plus, Users, Headphones, CircleDollarSign, Home, Map, User, Clock } from "lucide-react"
+import { Wallet, Store, Plus, Clock, Loader2, LogOut } from "lucide-react"
 
-export default async function DashboardPage() {
-    const supabase = await createClient()
+export default function DashboardPage() {
+    const router = useRouter()
+    const { user, isLoaded, isSignedIn } = useUser()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    // Get creator profile from Convex
+    const creator = useQuery(
+        api.creators.getByClerkId,
+        user ? { clerkId: user.id } : "skip"
+    )
 
-    if (!user) {
-        redirect("/login")
+    // Get submissions from Convex
+    const submissions = useQuery(
+        api.submissions.getByCreatorId,
+        creator?._id ? { creatorId: creator._id } : "skip"
+    )
+
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (isLoaded && !isSignedIn) {
+            router.push("/login")
+        }
+    }, [isLoaded, isSignedIn, router])
+
+    // Redirect to onboarding if no creator profile
+    useEffect(() => {
+        if (isLoaded && isSignedIn && creator === null) {
+            router.push("/onboarding")
+        }
+    }, [isLoaded, isSignedIn, creator, router])
+
+    // Redirect admin users to admin dashboard
+    useEffect(() => {
+        if (isLoaded && isSignedIn && creator && creator.role === 'admin') {
+            router.push("/admin")
+        }
+    }, [isLoaded, isSignedIn, creator, router])
+
+    // Loading state - also keep loading for admins until they redirect
+    if (!isLoaded || !isSignedIn || creator === undefined) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            </div>
+        )
     }
 
-    // Fetch creator profile
-    const { data: creator } = await supabase
-        .from("creators")
-        .select("*")
-        .eq("id", user.id)
-        .single()
+    // Still loading creator, redirecting to onboarding, OR admin redirecting
+    if (!creator || creator.role === 'admin') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            </div>
+        )
+    }
 
-    // Fetch submissions
-    const { data: submissions } = await supabase
-        .from("submissions")
-        .select("*")
-        .eq("creator_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(3)
+    // Get recent submissions (limit to 3)
+    const recentSubmissions = submissions?.slice(0, 3) || []
 
     return (
         <div className="min-h-screen bg-white font-sans pb-24 overflow-x-hidden">
@@ -45,13 +81,15 @@ export default async function DashboardPage() {
                         <div>
                             <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wide">Welcome back</p>
                             <h1 className="text-lg font-bold text-zinc-900 leading-none">
-                                Mabuhay, {creator?.first_name || "Creator"}!
+                                Mabuhay, {creator.firstName || "Creator"}!
                             </h1>
                         </div>
                     </div>
-                    <div className="ml-2">
-                        <LogoutButton />
-                    </div>
+                    <SignOutButton redirectUrl="/login">
+                        <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-zinc-900 p-2">
+                            <LogOut className="h-5 w-5" />
+                        </Button>
+                    </SignOutButton>
                 </div>
             </header>
 
@@ -69,65 +107,11 @@ export default async function DashboardPage() {
                     </div>
 
                     <div className="mb-5 relative z-10">
-                        <span className="text-3xl font-bold tracking-tight">₱ {creator?.balance?.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}</span>
+                        <span className="text-3xl font-bold tracking-tight">
+                            ₱ {creator.balance?.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                        </span>
                     </div>
-
-                    {/* <div className="flex gap-2 relative z-10">
-                        <div className="flex-1 bg-zinc-800/50 rounded-xl p-2 flex items-center justify-center gap-1.5 border border-zinc-700/50 backdrop-blur-sm">
-                            <TrendingUp className="w-3 h-3 text-emerald-400" />
-                            <span className="text-[10px] font-medium text-emerald-400 truncate">+₱1,250 this week</span>
-                        </div>
-                        <Button className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-zinc-900 font-bold rounded-xl h-auto py-2 text-xs">
-                            Cash Out
-                            <ArrowRight className="w-3 h-3 ml-1" />
-                        </Button>
-                    </div> */}
-
                 </div>
-
-                {/* Quick Actions */}
-                {/* <div className="grid grid-cols-3 gap-3">
-                    <Link href="/submit/info" className="flex flex-col items-center gap-2 group">
-                        <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-sm group-hover:bg-blue-100 transition-colors">
-                            <Store className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-bold text-zinc-600 text-center leading-tight">Add<br />Business</span>
-                    </Link>
-                    <button className="flex flex-col items-center gap-2 group">
-                        <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 shadow-sm group-hover:bg-purple-100 transition-colors">
-                            <Users className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-bold text-zinc-600 text-center leading-tight">Referrals</span>
-                    </button>
-                    <button className="flex flex-col items-center gap-2 group">
-                        <div className="w-14 h-14 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-600 shadow-sm group-hover:bg-orange-100 transition-colors">
-                            <Headphones className="w-6 h-6" />
-                        </div>
-                        <span className="text-[10px] font-bold text-zinc-600 text-center leading-tight">Support</span>
-                    </button>
-                </div> */}
-
-                {/* Stats Row */}
-                {/* <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-emerald-50/50 rounded-2xl p-4 border border-emerald-100/50">
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <div className="bg-white p-1 rounded-lg shadow-sm">
-                                <Users className="w-3.5 h-3.5 text-emerald-600" />
-                            </div>
-                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Total Referrals</span>
-                        </div>
-                        <span className="text-xl font-bold text-zinc-900">24</span>
-                    </div>
-                    <div className="bg-amber-50/50 rounded-2xl p-4 border border-amber-100/50">
-                        <div className="flex items-center gap-2 mb-1.5">
-                            <div className="bg-white p-1 rounded-lg shadow-sm">
-                                <CircleDollarSign className="w-3.5 h-3.5 text-amber-600" />
-                            </div>
-                            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Earnings</span>
-                        </div>
-                        <span className="text-xl font-bold text-zinc-900">₱ 850</span>
-                    </div>
-                </div> */}
 
                 {/* Submission Status */}
                 <div>
@@ -136,8 +120,8 @@ export default async function DashboardPage() {
                         <Link href="/submissions" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">View All</Link>
                     </div>
                     <div className="space-y-3">
-                        {submissions?.map((sub) => {
-                            const isIncomplete = (!sub.photos || sub.photos.length === 0) || (!sub.video_url && !sub.audio_url)
+                        {recentSubmissions.map((sub) => {
+                            const isIncomplete = (!sub.photos || sub.photos.length === 0) || (!sub.videoStorageId && !sub.audioStorageId && !sub.videoUrl && !sub.audioUrl)
                             const isDraft = sub.status === 'draft' || isIncomplete
 
                             const getStatusBg = () => {
@@ -157,15 +141,17 @@ export default async function DashboardPage() {
                             const badge = getStatusBadge()
 
                             return (
-                                <Link key={sub.id} href={`/submissions/${sub.id}`}>
+                                <Link key={sub._id} href={`/submissions/${sub._id}`}>
                                     <div className="bg-white rounded-xl p-3 border border-zinc-100 shadow-sm flex items-center justify-between hover:border-zinc-200 hover:shadow-md transition-all cursor-pointer">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getStatusBg()}`}>
                                                 {isDraft ? <Clock className="w-5 h-5" /> : <Store className="w-5 h-5" />}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-sm text-zinc-900">{sub.business_name}</h3>
-                                                <p className="text-[10px] text-zinc-500">Submitted {new Date(sub.created_at).toLocaleDateString()}</p>
+                                                <h3 className="font-bold text-sm text-zinc-900">{sub.businessName}</h3>
+                                                <p className="text-[10px] text-zinc-500">
+                                                    Submitted {new Date(sub._creationTime).toLocaleDateString()}
+                                                </p>
                                             </div>
                                         </div>
                                         <div className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${badge.bg}`}>
@@ -175,7 +161,7 @@ export default async function DashboardPage() {
                                 </Link>
                             )
                         })}
-                        {!submissions?.length && (
+                        {recentSubmissions.length === 0 && (
                             <div className="text-center py-6 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
                                 <p className="text-zinc-500 text-xs">No submissions yet.</p>
                             </div>
@@ -186,15 +172,6 @@ export default async function DashboardPage() {
 
             {/* Bottom Navigation */}
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-100 px-6 py-2 pb-6 flex items-center justify-center z-50">
-                {/* <button className="flex flex-col items-center gap-1 text-emerald-600">
-                    <Home className="w-6 h-6" />
-                    <span className="text-[10px] font-medium">Home</span>
-                </button>
-                <button className="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-600">
-                    <Map className="w-6 h-6" />
-                    <span className="text-[10px] font-medium">Map</span>
-                </button> */}
-
                 {/* Floating Action Button */}
                 <div className="relative -top-6">
                     <Link
@@ -209,17 +186,6 @@ export default async function DashboardPage() {
                         </span>
                     </Link>
                 </div>
-
-                {/* <button className="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-600">
-                    <Wallet className="w-6 h-6" />
-                    <span className="text-[10px] font-medium">Wallet</span>
-                </button>
-                <Link href="/profile" className="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-600">
-                    <User className="w-6 h-6" />
-                    <span className="text-[10px] font-medium">Profile</span>
-                </Link> */}
-
-
             </div>
         </div>
     )
