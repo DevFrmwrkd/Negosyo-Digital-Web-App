@@ -8,6 +8,8 @@ import { Id } from '@/convex/_generated/dataModel'
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
 export async function POST(request: NextRequest) {
+    let submissionId: string | undefined
+
     try {
         // Check Clerk authentication
         const { userId } = await auth()
@@ -16,12 +18,14 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { audioUrl, submissionId, useConvexStorage, videoStorageId, audioStorageId } = body
+        const { audioUrl, useConvexStorage, videoStorageId, audioStorageId, videoUrl } = body
+        submissionId = body.submissionId
 
-        let mediaUrl = audioUrl
+        // Priority: R2 URLs (videoUrl/audioUrl from body) > Convex storage URLs
+        let mediaUrl = videoUrl || audioUrl
 
-        // If using Convex storage, get the actual URL
-        if (useConvexStorage && (videoStorageId || audioStorageId)) {
+        // If no direct URL and using Convex storage, get the actual URL
+        if (!mediaUrl && useConvexStorage && (videoStorageId || audioStorageId)) {
             const storageId = videoStorageId || audioStorageId
             try {
                 // Get URL from Convex storage
@@ -41,15 +45,28 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Audio/Video URL is required' }, { status: 400 })
         }
 
+        // Set transcription status to processing
+        if (submissionId) {
+            try {
+                await convex.mutation(api.submissions.update, {
+                    id: submissionId as Id<"submissions">,
+                    transcriptionStatus: 'processing',
+                })
+            } catch (err) {
+                console.error('Error setting transcription status:', err)
+            }
+        }
+
         // Transcribe audio
         const transcript = await groqService.transcribeAudioFromUrl(mediaUrl)
 
-        // Update submission with transcript if submissionId provided
+        // Update submission with transcript and status if submissionId provided
         if (submissionId) {
             try {
                 await convex.mutation(api.submissions.update, {
                     id: submissionId as Id<"submissions">,
                     transcript: transcript,
+                    transcriptionStatus: 'complete',
                 })
             } catch (err) {
                 console.error('Error updating submission:', err)
@@ -63,6 +80,19 @@ export async function POST(request: NextRequest) {
         })
     } catch (error: any) {
         console.error('Transcription API error:', error)
+
+        // Set transcription status to failed
+        if (submissionId) {
+            try {
+                await convex.mutation(api.submissions.update, {
+                    id: submissionId as Id<"submissions">,
+                    transcriptionStatus: 'failed',
+                })
+            } catch (updateErr) {
+                console.error('Error setting failed status:', updateErr)
+            }
+        }
+
         return NextResponse.json(
             { error: error.message || 'Failed to transcribe audio' },
             { status: 500 }

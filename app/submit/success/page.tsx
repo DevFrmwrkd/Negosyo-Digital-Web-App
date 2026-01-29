@@ -50,7 +50,8 @@ export default function SubmissionSuccessPage() {
 
     // Trigger transcription when submission is loaded
     useEffect(() => {
-        if (submission && (submission.videoStorageId || submission.audioStorageId) && !transcribing && !transcriptionComplete) {
+        const hasMedia = submission?.videoStorageId || submission?.audioStorageId || submission?.videoUrl || submission?.audioUrl
+        if (submission && hasMedia && !transcribing && !transcriptionComplete) {
             triggerTranscription()
         }
     }, [submission])
@@ -67,21 +68,23 @@ export default function SubmissionSuccessPage() {
             // For now, we'll skip transcription if using Convex storage
             // This can be enhanced later with proper Convex file URL resolution
 
-            const hasMedia = submission.videoStorageId || submission.audioStorageId
+            const hasMedia = submission.videoStorageId || submission.audioStorageId || submission.videoUrl || submission.audioUrl
             if (!hasMedia) {
                 setTranscribing(false)
                 return
             }
 
-            // Call transcription API with storage info
+            // Call transcription API with storage info or R2 URLs
             const res = await fetch('/api/transcribe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     submissionId: submissionId,
-                    useConvexStorage: true,
+                    useConvexStorage: !!(submission.videoStorageId || submission.audioStorageId),
                     videoStorageId: submission.videoStorageId,
                     audioStorageId: submission.audioStorageId,
+                    videoUrl: submission.videoUrl,
+                    audioUrl: submission.audioUrl,
                 }),
             })
 
@@ -100,8 +103,10 @@ export default function SubmissionSuccessPage() {
         }
     }
 
-    // Determine payout based on interview type
-    const payout = submission?.videoStorageId ? 500 : (submission?.audioStorageId ? 300 : null)
+    // Determine payout based on interview type (check both R2 URLs and storage IDs)
+    const hasVideo = submission?.videoUrl || submission?.videoStorageId
+    const hasAudio = submission?.audioUrl || submission?.audioStorageId
+    const payout = hasVideo ? 500 : (hasAudio ? 300 : null)
 
     // Loading state - wait for submission to load too
     if (!isLoaded || !isSignedIn || creator === undefined || (submissionId && submission === undefined)) {

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
-import { useQuery, useMutation } from "convex/react"
+import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import { Button } from "@/components/ui/button"
@@ -40,8 +40,8 @@ export default function InterviewUploadPage() {
         submissionId ? { id: submissionId as Id<"submissions"> } : "skip"
     )
 
-    // Mutations
-    const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    // Mutations and Actions
+    const generateR2UploadUrl = useAction(api.r2.generateUploadUrl)
     const updateSubmission = useMutation(api.submissions.update)
 
     // Form state
@@ -466,12 +466,17 @@ export default function InterviewUploadPage() {
         setError(null)
 
         try {
-            // Get upload URL from Convex
-            const uploadUrl = await generateUploadUrl()
+            // Get presigned upload URL from R2 action
+            const { uploadUrl, publicUrl } = await generateR2UploadUrl({
+                fileName: fileToUpload.name,
+                fileType: fileToUpload.type,
+                submissionId: submissionId,
+                mediaType: interviewType === 'video' ? 'video' : 'audio',
+            })
 
-            // Upload the file
+            // Upload the file directly to R2
             const result = await fetch(uploadUrl, {
-                method: "POST",
+                method: "PUT",
                 headers: { "Content-Type": fileToUpload.type },
                 body: fileToUpload,
             })
@@ -480,14 +485,12 @@ export default function InterviewUploadPage() {
                 throw new Error('Failed to upload interview')
             }
 
-            const { storageId } = await result.json()
-
-            // Update submission with storage ID and payout
+            // Update submission with R2 URL and payout
             await updateSubmission({
                 id: submissionId as Id<"submissions">,
                 ...(interviewType === 'video'
-                    ? { videoStorageId: storageId, creatorPayout: 500 }
-                    : { audioStorageId: storageId, creatorPayout: 300 }
+                    ? { videoUrl: publicUrl, creatorPayout: 500 }
+                    : { audioUrl: publicUrl, creatorPayout: 300 }
                 ),
             })
 

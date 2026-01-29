@@ -29,18 +29,26 @@ export default function SubmissionDetailPage() {
         id ? { id: id as Id<"submissions"> } : "skip"
     )
 
-    // Get resolved photo URLs
+    // Get resolved photo URLs (only for legacy Convex storage IDs)
+    // R2 URLs start with http and don't need resolution
+    const needsResolution = submission?.photos?.some(p => p.startsWith('convex:') || !p.startsWith('http'))
     const photoUrls = useQuery(
         api.files.getMultipleUrls,
-        submission?.photos?.length ? { storageIds: submission.photos } : "skip"
+        needsResolution && submission?.photos?.length ? { storageIds: submission.photos } : "skip"
     )
 
-    // Get interview URL (video or audio)
+    // Get interview URL
+    // Prefer R2 URLs (videoUrl/audioUrl) over Convex storage IDs (legacy)
+    const hasR2InterviewUrl = submission?.videoUrl || submission?.audioUrl
     const interviewStorageId = submission?.videoStorageId || submission?.audioStorageId
-    const interviewUrl = useQuery(
+    const legacyInterviewUrl = useQuery(
         api.files.getUrlByString,
-        interviewStorageId ? { storageId: interviewStorageId.toString() } : "skip"
+        !hasR2InterviewUrl && interviewStorageId ? { storageId: interviewStorageId.toString() } : "skip"
     )
+    // Use R2 URL if available, otherwise fall back to resolved Convex URL
+    const interviewUrl = hasR2InterviewUrl
+        ? (submission?.videoUrl || submission?.audioUrl)
+        : legacyInterviewUrl
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -72,7 +80,9 @@ export default function SubmissionDetailPage() {
     }
 
     // Check if submission is incomplete (draft)
-    const isIncomplete = (!submission.photos || submission.photos.length === 0) || (!submission.videoStorageId && !submission.audioStorageId)
+    // Now also check for R2 URLs (videoUrl/audioUrl) in addition to Convex storage IDs
+    const hasInterview = submission.videoStorageId || submission.audioStorageId || submission.videoUrl || submission.audioUrl
+    const isIncomplete = (!submission.photos || submission.photos.length === 0) || !hasInterview
     const isDraft = submission.status === 'draft' || isIncomplete
 
     const getStatusBadge = () => {
@@ -175,25 +185,32 @@ export default function SubmissionDetailPage() {
                             </h2>
                             {submission.photos && submission.photos.length > 0 ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    {(photoUrls || submission.photos).map((url: string | null, index: number) => (
-                                        <div
-                                            key={index}
-                                            className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center"
-                                        >
-                                            {url && !url.startsWith('convex:') ? (
-                                                <img
-                                                    src={url}
-                                                    alt={`Photo ${index + 1}`}
-                                                    className="absolute inset-0 w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="text-center p-4">
-                                                    <Loader2 className="w-8 h-8 mx-auto text-gray-400 animate-spin mb-2" />
-                                                    <span className="text-xs text-gray-500">Loading...</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
+                                    {submission.photos.map((originalUrl: string, index: number) => {
+                                        // Use original URL if it's an http URL (R2), otherwise use resolved URL from Convex
+                                        const isR2Url = originalUrl.startsWith('http')
+                                        const resolvedUrl = isR2Url ? originalUrl : (photoUrls?.[index] || null)
+                                        const displayUrl = resolvedUrl && !resolvedUrl.startsWith('convex:') ? resolvedUrl : null
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center"
+                                            >
+                                                {displayUrl ? (
+                                                    <img
+                                                        src={displayUrl}
+                                                        alt={`Photo ${index + 1}`}
+                                                        className="absolute inset-0 w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="text-center p-4">
+                                                        <Loader2 className="w-8 h-8 mx-auto text-gray-400 animate-spin mb-2" />
+                                                        <span className="text-xs text-gray-500">Loading...</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             ) : (
                                 <p className="text-gray-500">No photos uploaded</p>
@@ -231,14 +248,14 @@ export default function SubmissionDetailPage() {
 
                                 {interviewUrl && (
                                     <div className="rounded-xl overflow-hidden bg-black">
-                                        {submission.videoStorageId ? (
+                                        {(submission.videoUrl || submission.videoStorageId) ? (
                                             <video
                                                 src={interviewUrl}
                                                 controls
                                                 className="w-full max-h-96"
                                                 preload="metadata"
                                             />
-                                        ) : submission.audioStorageId ? (
+                                        ) : (submission.audioUrl || submission.audioStorageId) ? (
                                             <div className="p-4 bg-gray-100 rounded-xl">
                                                 <audio
                                                     src={interviewUrl}
@@ -251,14 +268,14 @@ export default function SubmissionDetailPage() {
                                     </div>
                                 )}
 
-                                {(submission.videoStorageId || submission.audioStorageId) && !interviewUrl && (
+                                {hasInterview && !interviewUrl && (
                                     <div className="flex items-center justify-center py-8 bg-gray-50 rounded-xl">
                                         <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                                         <span className="ml-2 text-sm text-gray-500">Loading recording...</span>
                                     </div>
                                 )}
 
-                                {!submission.videoStorageId && !submission.audioStorageId && (
+                                {!hasInterview && (
                                     <p className="text-gray-500">No interview uploaded</p>
                                 )}
                             </div>
@@ -307,8 +324,8 @@ export default function SubmissionDetailPage() {
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${(submission.videoStorageId || submission.audioStorageId) ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                                        {(submission.videoStorageId || submission.audioStorageId) ? (
+                                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${hasInterview ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                                        {hasInterview ? (
                                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
@@ -318,7 +335,7 @@ export default function SubmissionDetailPage() {
                                             </svg>
                                         )}
                                     </div>
-                                    <span className={(submission.videoStorageId || submission.audioStorageId) ? 'text-gray-900' : 'text-gray-500'}>
+                                    <span className={hasInterview ? 'text-gray-900' : 'text-gray-500'}>
                                         Interview recording
                                     </span>
                                 </div>

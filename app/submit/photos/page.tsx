@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
-import { useQuery, useMutation } from "convex/react"
+import { useQuery, useMutation, useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import Image from "next/image"
@@ -20,8 +20,8 @@ export default function UploadPhotosPage() {
         user ? { clerkId: user.id } : "skip"
     )
 
-    // Mutations
-    const generateUploadUrl = useMutation(api.files.generateUploadUrl)
+    // Mutations and Actions
+    const generateR2UploadUrl = useAction(api.r2.generateUploadUrl)
     const updateSubmission = useMutation(api.submissions.update)
 
     const [loading, setLoading] = useState(false)
@@ -144,6 +144,33 @@ export default function UploadPhotosPage() {
         setPreviews(newPreviews)
     }
 
+    const removeExistingPhoto = async (index: number) => {
+        if (!submissionId) return
+
+        const newExistingPhotos = [...existingPhotos]
+        const newResolvedUrls = [...resolvedPhotoUrls]
+
+        newExistingPhotos.splice(index, 1)
+        newResolvedUrls.splice(index, 1)
+
+        setExistingPhotos(newExistingPhotos)
+        setResolvedPhotoUrls(newResolvedUrls)
+
+        // Update submission in database immediately
+        try {
+            await updateSubmission({
+                id: submissionId as Id<"submissions">,
+                photos: newExistingPhotos,
+            })
+        } catch (err) {
+            console.error('Error removing photo:', err)
+            // Revert on error
+            setExistingPhotos(existingPhotos)
+            setResolvedPhotoUrls(resolvedPhotoUrls)
+            setError('Failed to remove photo. Please try again.')
+        }
+    }
+
     const handleNext = async () => {
         if (!submissionId) return
 
@@ -161,14 +188,19 @@ export default function UploadPhotosPage() {
         try {
             const uploadedUrls: string[] = []
 
-            // Upload each NEW file to Convex storage
+            // Upload each NEW file to R2 storage
             for (const file of files) {
-                // Get upload URL from Convex
-                const uploadUrl = await generateUploadUrl()
+                // Get presigned upload URL from R2 action
+                const { uploadUrl, publicUrl } = await generateR2UploadUrl({
+                    fileName: file.name,
+                    fileType: file.type,
+                    submissionId: submissionId,
+                    mediaType: 'photo',
+                })
 
-                // Upload the file
+                // Upload the file directly to R2
                 const result = await fetch(uploadUrl, {
-                    method: "POST",
+                    method: "PUT",
                     headers: { "Content-Type": file.type },
                     body: file,
                 })
@@ -177,11 +209,8 @@ export default function UploadPhotosPage() {
                     throw new Error(`Failed to upload ${file.name}`)
                 }
 
-                const { storageId } = await result.json()
-
-                // For now, store the storage ID as a string URL placeholder
-                // In production, you'd want to get the actual URL
-                uploadedUrls.push(`convex:${storageId}`)
+                // Store the public R2 URL
+                uploadedUrls.push(publicUrl)
             }
 
             // Combine existing photos + new uploads
@@ -298,8 +327,17 @@ export default function UploadPhotosPage() {
                                                 <Loader2 className="w-6 h-6 text-gray-400 animate-spin" />
                                             </div>
                                         )}
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <span className="text-xs text-white font-medium bg-black/50 px-2 py-1 rounded">Saved</span>
+                                        <button
+                                            onClick={() => removeExistingPhoto(index)}
+                                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                            title="Remove photo"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                        <div className="absolute bottom-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="text-xs text-white font-medium bg-green-600/80 px-2 py-0.5 rounded">Saved</span>
                                         </div>
                                     </div>
                                 )

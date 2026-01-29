@@ -13,6 +13,7 @@ import type * as creators from "../creators.js";
 import type * as files from "../files.js";
 import type * as generatedWebsites from "../generatedWebsites.js";
 import type * as migrations_migrateContent from "../migrations/migrateContent.js";
+import type * as r2 from "../r2.js";
 import type * as storage from "../storage.js";
 import type * as submissions from "../submissions.js";
 import type * as websiteContent from "../websiteContent.js";
@@ -29,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   generatedWebsites: typeof generatedWebsites;
   "migrations/migrateContent": typeof migrations_migrateContent;
+  r2: typeof r2;
   storage: typeof storage;
   submissions: typeof submissions;
   websiteContent: typeof websiteContent;

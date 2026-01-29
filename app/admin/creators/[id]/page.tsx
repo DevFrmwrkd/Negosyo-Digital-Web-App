@@ -73,15 +73,16 @@ export default function CreatorDetailPage() {
         setShowConfirmModal(true)
     }
 
-    const getStatusBadge = (status: CreatorStatus) => {
+    const getStatusBadge = (status: CreatorStatus | undefined) => {
+        const safeStatus = status || 'pending'
         const styles = {
             active: 'bg-green-100 text-green-800 border-green-200',
             pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
             suspended: 'bg-red-100 text-red-800 border-red-200',
         }
         return (
-            <span className={`px-3 py-1 text-sm font-medium rounded-full border ${styles[status]}`}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+            <span className={`px-3 py-1 text-sm font-medium rounded-full border ${styles[safeStatus]}`}>
+                {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
             </span>
         )
     }

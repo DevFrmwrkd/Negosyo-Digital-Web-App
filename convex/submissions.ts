@@ -208,7 +208,11 @@ export const update = mutation({
         photos: v.optional(v.array(v.string())),
         videoStorageId: v.optional(v.id('_storage')),
         audioStorageId: v.optional(v.id('_storage')),
+        // R2 URLs (preferred for new uploads)
+        videoUrl: v.optional(v.string()),
+        audioUrl: v.optional(v.string()),
         transcript: v.optional(v.string()),
+        transcriptionStatus: v.optional(v.string()), // processing, complete, failed
         websiteUrl: v.optional(v.string()),
         websiteCode: v.optional(v.string()),
         amount: v.optional(v.number()),
@@ -327,8 +331,8 @@ export const markPayoutComplete = mutation({
         const creator = await ctx.db.get(submission.creatorId);
         if (creator) {
             await ctx.db.patch(submission.creatorId, {
-                balance: creator.balance - submission.creatorPayout,
-                totalEarnings: creator.totalEarnings + submission.creatorPayout,
+                balance: (creator.balance || 0) - submission.creatorPayout,
+                totalEarnings: (creator.totalEarnings || 0) + submission.creatorPayout,
             });
         }
     },
