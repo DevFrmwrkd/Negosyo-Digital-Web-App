@@ -35,10 +35,12 @@ export default function SubmissionDetailPage() {
         isAdmin && submissionId ? { id: submissionId as Id<"submissions"> } : "skip"
     )
 
-    // Resolve photo storage IDs to actual URLs (original submission photos)
+    // Resolve photo storage IDs to actual URLs (only for legacy Convex storage IDs)
+    // R2 URLs start with http and don't need resolution
+    const needsPhotoResolution = submissionData?.photos?.some(p => p.startsWith('convex:') || !p.startsWith('http'))
     const photoUrls = useQuery(
         api.files.getMultipleUrls,
-        submissionData?.photos && submissionData.photos.length > 0
+        needsPhotoResolution && submissionData?.photos && submissionData.photos.length > 0
             ? { storageIds: submissionData.photos }
             : "skip"
     )
@@ -51,28 +53,37 @@ export default function SubmissionDetailPage() {
 
     // Resolve hero images from websiteContent (these may be different from submission photos)
     const websiteImages = existingWebsite?.extractedContent?.images as string[] | undefined
+    const needsHeroResolution = websiteImages?.some(p => !p.startsWith('http'))
     const heroImageUrls = useQuery(
         api.files.getMultipleUrls,
-        websiteImages && websiteImages.length > 0
+        needsHeroResolution && websiteImages && websiteImages.length > 0
             ? { storageIds: websiteImages }
             : "skip"
     )
 
-    // Resolve video storage ID to URL
-    const videoUrl = useQuery(
-        api.storage.getUrl,
-        submissionData?.videoStorageId
-            ? { storageId: submissionData.videoStorageId }
+    // Prefer R2 URLs (videoUrl/audioUrl) over Convex storage IDs for video/audio
+    const hasR2VideoUrl = !!submissionData?.videoUrl
+    const hasR2AudioUrl = !!submissionData?.audioUrl
+
+    // Resolve video storage ID to URL (only if no R2 URL)
+    const legacyVideoUrl = useQuery(
+        api.files.getUrlByString,
+        !hasR2VideoUrl && submissionData?.videoStorageId
+            ? { storageId: submissionData.videoStorageId.toString() }
             : "skip"
     )
 
-    // Resolve audio storage ID to URL
-    const audioUrl = useQuery(
-        api.storage.getUrl,
-        submissionData?.audioStorageId
-            ? { storageId: submissionData.audioStorageId }
+    // Resolve audio storage ID to URL (only if no R2 URL)
+    const legacyAudioUrl = useQuery(
+        api.files.getUrlByString,
+        !hasR2AudioUrl && submissionData?.audioStorageId
+            ? { storageId: submissionData.audioStorageId.toString() }
             : "skip"
     )
+
+    // Use R2 URLs if available, otherwise fall back to legacy Convex URLs
+    const videoUrl = hasR2VideoUrl ? submissionData?.videoUrl : legacyVideoUrl
+    const audioUrl = hasR2AudioUrl ? submissionData?.audioUrl : legacyAudioUrl
 
     // Mutations
     const updateSubmissionMutation = useMutation(api.submissions.update)
@@ -477,7 +488,7 @@ export default function SubmissionDetailPage() {
         if (submissionData) {
             setQualityChecklist({
                 hasPhotos: (submissionData.photos?.length || 0) > 0,
-                hasAudioVideo: !!(submissionData.audioStorageId || submissionData.videoStorageId),
+                hasAudioVideo: !!(submissionData.audioStorageId || submissionData.videoStorageId || submissionData.audioUrl || submissionData.videoUrl),
                 hasTranscript: !!submissionData.transcript,
                 businessInfoComplete: !!(
                     submissionData.businessName &&

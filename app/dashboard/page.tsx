@@ -121,7 +121,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="space-y-3">
                         {recentSubmissions.map((sub) => {
-                            const isIncomplete = (!sub.photos || sub.photos.length === 0) || (!sub.videoStorageId && !sub.audioStorageId)
+                            const isIncomplete = (!sub.photos || sub.photos.length === 0) || (!sub.videoStorageId && !sub.audioStorageId && !sub.videoUrl && !sub.audioUrl)
                             const isDraft = sub.status === 'draft' || isIncomplete
 
                             const getStatusBg = () => {

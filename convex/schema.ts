@@ -13,15 +13,16 @@ export default defineSchema({
         referralCode: v.string(),
         referredBy: v.optional(v.id('creators')),
         balance: v.number(),
-        totalEarnings: v.number(),
-        status: v.union(
+        totalEarnings: v.optional(v.number()), // Optional for legacy records
+        status: v.optional(v.union(
             v.literal('pending'),
             v.literal('active'),
             v.literal('suspended')
-        ),
-        role: v.union(v.literal('creator'), v.literal('admin')),
+        )), // Optional for legacy records
+        role: v.optional(v.union(v.literal('creator'), v.literal('admin'))), // Optional for legacy records
         payoutMethod: v.optional(v.string()),
         payoutDetails: v.optional(v.string()),
+        createdAt: v.optional(v.number()), // Timestamp from legacy records
     })
         .index('by_clerkId', ['clerkId'])
         .index('by_email', ['email'])
@@ -42,20 +43,25 @@ export default defineSchema({
         address: v.string(),
         city: v.string(),
 
-        // Files - store as storage IDs for Convex file storage
+        // Files - store as storage IDs for Convex file storage or URL strings (legacy)
         photos: v.array(v.string()), // URLs or storage IDs
-        videoStorageId: v.optional(v.id('_storage')),
-        audioStorageId: v.optional(v.id('_storage')),
+        videoStorageId: v.optional(v.union(v.id('_storage'), v.string())), // Storage ID or URL string
+        audioStorageId: v.optional(v.union(v.id('_storage'), v.string())), // Storage ID or URL string
+        // R2 URLs (preferred over storage IDs for new uploads)
+        videoUrl: v.optional(v.string()),
+        audioUrl: v.optional(v.string()),
         transcript: v.optional(v.string()),
+        transcriptionStatus: v.optional(v.string()), // Status of audio transcription
 
         // Generated content
         websiteUrl: v.optional(v.string()),
         websiteCode: v.optional(v.string()),
 
         // Status workflow: submitted -> in_review -> approved -> deployed -> pending_payment -> paid
-        // Note: 'completed' and 'website_generated' kept for backward compatibility with existing data
+        // Note: 'pending', 'completed' and 'website_generated' kept for backward compatibility with existing data
         status: v.union(
             v.literal('draft'),
+            v.literal('pending'),
             v.literal('submitted'),
             v.literal('in_review'),
             v.literal('approved'),

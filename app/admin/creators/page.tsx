@@ -66,15 +66,16 @@ export default function CreatorsPage() {
         suspended: creators?.filter(c => c.status === 'suspended').length || 0,
     }), [creators])
 
-    const getStatusBadge = (status: CreatorStatus) => {
+    const getStatusBadge = (status: CreatorStatus | undefined) => {
+        const safeStatus = status || 'pending'
         const styles = {
             active: 'bg-green-100 text-green-800',
             pending: 'bg-yellow-100 text-yellow-800',
             suspended: 'bg-red-100 text-red-800',
         }
         return (
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status]}`}>
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+            <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[safeStatus]}`}>
+                {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
             </span>
         )
     }

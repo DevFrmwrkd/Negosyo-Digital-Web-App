@@ -40,11 +40,16 @@ export default function ReviewSubmissionPage() {
     )
 
     // Get interview URL (video or audio)
+    // First check R2 URLs (new), then fall back to storage IDs (legacy)
+    const hasR2Video = !!submission?.videoUrl
+    const hasR2Audio = !!submission?.audioUrl
     const interviewStorageId = submission?.videoStorageId || submission?.audioStorageId
-    const interviewUrl = useQuery(
+    const legacyInterviewUrl = useQuery(
         api.files.getUrlByString,
-        interviewStorageId ? { storageId: interviewStorageId.toString() } : "skip"
+        interviewStorageId && !hasR2Video && !hasR2Audio ? { storageId: interviewStorageId.toString() } : "skip"
     )
+    // Use R2 URL if available, otherwise use legacy storage URL
+    const interviewUrl = submission?.videoUrl || submission?.audioUrl || legacyInterviewUrl
 
     // Mutations
     const submitSubmission = useMutation(api.submissions.submit)
@@ -97,8 +102,9 @@ export default function ReviewSubmissionPage() {
     if (!submission) return null
 
     // Determine interview type and payout
-    const hasVideo = !!submission.videoStorageId
-    const hasAudio = !!submission.audioStorageId
+    // Check both R2 URLs (new) and storage IDs (legacy)
+    const hasVideo = !!submission.videoUrl || !!submission.videoStorageId
+    const hasAudio = !!submission.audioUrl || !!submission.audioStorageId
     const payout = hasVideo ? 500 : (hasAudio ? 300 : 0)
 
     return (
