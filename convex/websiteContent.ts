@@ -157,10 +157,13 @@ export const upsert = mutation({
         })),
         // Customizations
         customizations: v.optional(v.object({
-            navbarStyle: v.optional(v.string()),
             heroStyle: v.optional(v.string()),
             aboutStyle: v.optional(v.string()),
             servicesStyle: v.optional(v.string()),
+            galleryStyle: v.optional(v.string()),
+            contactStyle: v.optional(v.string()),
+            // Legacy fields
+            navbarStyle: v.optional(v.string()),
             featuredStyle: v.optional(v.string()),
             footerStyle: v.optional(v.string()),
             colorScheme: v.optional(v.string()),
@@ -301,10 +304,13 @@ export const update = mutation({
             footerSocial: v.optional(v.boolean()),
         })),
         customizations: v.optional(v.object({
-            navbarStyle: v.optional(v.string()),
             heroStyle: v.optional(v.string()),
             aboutStyle: v.optional(v.string()),
             servicesStyle: v.optional(v.string()),
+            galleryStyle: v.optional(v.string()),
+            contactStyle: v.optional(v.string()),
+            // Legacy fields
+            navbarStyle: v.optional(v.string()),
             featuredStyle: v.optional(v.string()),
             footerStyle: v.optional(v.string()),
             colorScheme: v.optional(v.string()),

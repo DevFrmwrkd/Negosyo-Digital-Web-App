@@ -74,14 +74,18 @@ export default defineSchema({
         ),
 
         // Payment
-        amount: v.number(),
+        amount: v.optional(v.number()),
         paymentReference: v.optional(v.string()),
         paidAt: v.optional(v.number()), // Timestamp
 
         // Creator payout
-        creatorPayout: v.number(),
+        creatorPayout: v.optional(v.number()),
         payoutRequestedAt: v.optional(v.number()), // Timestamp
         creatorPaidAt: v.optional(v.number()), // Timestamp
+
+        // Airtable sync
+        airtableRecordId: v.optional(v.string()),
+        airtableSyncStatus: v.optional(v.string()),
     })
         .index('by_creatorId', ['creatorId'])
         .index('by_status', ['status'])
@@ -110,12 +114,13 @@ export default defineSchema({
 
     // Website content - all editable content with proper typing
     websiteContent: defineTable({
-        websiteId: v.id('generatedWebsites'),
+        websiteId: v.optional(v.id('generatedWebsites')),
+        submissionId: v.optional(v.id('submissions')), // Legacy field
 
         // ==================== BUSINESS INFO ====================
         businessName: v.string(),
-        tagline: v.string(),
-        aboutText: v.string(),
+        tagline: v.optional(v.string()),
+        aboutText: v.optional(v.string()),
         tone: v.optional(v.string()),
 
         // ==================== HERO SECTION ====================
@@ -233,15 +238,25 @@ export default defineSchema({
 
         // ==================== CUSTOMIZATIONS (STYLES) ====================
         customizations: v.optional(v.object({
-            navbarStyle: v.optional(v.string()),
             heroStyle: v.optional(v.string()),
             aboutStyle: v.optional(v.string()),
             servicesStyle: v.optional(v.string()),
+            galleryStyle: v.optional(v.string()),
+            contactStyle: v.optional(v.string()),
+            // Legacy fields for backward compat
+            navbarStyle: v.optional(v.string()),
             featuredStyle: v.optional(v.string()),
             footerStyle: v.optional(v.string()),
             colorScheme: v.optional(v.string()),
             fontPairing: v.optional(v.string()),
         })),
+
+        // ==================== LEGACY FIELDS ====================
+        enhancedImages: v.optional(v.any()),
+        contactCta: v.optional(v.string()),
+        servicesDescription: v.optional(v.string()),
+        heroSubHeadline: v.optional(v.string()),
+        airtableSyncedAt: v.optional(v.number()),
 
         // ==================== METADATA ====================
         updatedAt: v.number(),

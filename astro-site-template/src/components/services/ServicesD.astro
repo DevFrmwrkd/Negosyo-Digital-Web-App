@@ -1,0 +1,150 @@
+---
+/**
+ * ServicesD - Stats Grid with Quote
+ * Light (#fafafa) background. Badge with dot + "SERVICES" text.
+ * Large description text with last words italic. Stats row. Full-width grayscale image.
+ */
+interface Props {
+  headline?: string;
+  subheadline?: string;
+  services: Array<{
+    name: string;
+    description: string;
+    icon?: string;
+  }>;
+  photos: string[];
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  headline = 'What We Do',
+  subheadline = '',
+  services = [],
+  photos = [],
+  visibility,
+} = Astro.props;
+
+const mainPhoto = photos[0] || '';
+
+// Visibility defaults (all visible unless explicitly false)
+const showBadge = visibility?.servicesBadge !== false;
+const showHeadline = visibility?.servicesHeadline !== false;
+const showSubheadline = visibility?.servicesSubheadline !== false && !!subheadline;
+const showImage = visibility?.servicesImage !== false;
+const showList = visibility?.servicesList !== false;
+
+// Auto-generate stats from services
+const serviceCount = services.length;
+const stats = [
+  { value: `${serviceCount}+`, label: 'Services Offered' },
+  { value: '100%', label: 'Client Satisfaction' },
+  { value: '10+', label: 'Years Experience' },
+];
+
+// Word-reveal: make last 2 words italic
+function formatSubheadline(text: string): { normal: string; italic: string } {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= 2) {
+    return { normal: '', italic: text.trim() };
+  }
+  const italic = words.slice(-2).join(' ');
+  const normal = words.slice(0, -2).join(' ');
+  return { normal, italic };
+}
+
+const formattedSub = subheadline ? formatSubheadline(subheadline) : null;
+---
+
+<section id="services" class="reveal bg-[#fafafa] py-16 md:py-24 lg:py-32">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+    {/* Badge */}
+    {showBadge && (
+      <div class="mb-6 flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)] animate-pulse-dot"></span>
+        <span class="text-xs font-semibold uppercase tracking-widest text-[#1a1a1a]">
+          Services
+        </span>
+      </div>
+    )}
+
+    {/* Headline */}
+    {showHeadline && (
+      <h2
+        class="mb-6 max-w-3xl font-semibold leading-tight tracking-tight text-[#1a1a1a]"
+        style="font-size: clamp(2rem, 4vw, 3rem); font-family: var(--heading-font, inherit);"
+      >
+        {headline}
+      </h2>
+    )}
+
+    {/* Subheadline - large text with last words italic */}
+    {showSubheadline && formattedSub && (
+      <p
+        class="mb-12 max-w-3xl leading-relaxed text-gray-600 md:mb-16"
+        style="font-size: clamp(1.125rem, 2vw, 1.5rem);"
+      >
+        {formattedSub.normal}{' '}
+        <em class="text-[#1a1a1a]" style="font-family: var(--heading-font, inherit);">
+          {formattedSub.italic}
+        </em>
+      </p>
+    )}
+
+    {/* Stats Row */}
+    {showList && (
+      <div class="mb-12 grid grid-cols-3 gap-6 border-y border-gray-200 py-8 md:mb-16 md:gap-10 md:py-10">
+        {stats.map((stat) => (
+          <div class="text-center">
+            <span
+              class="mb-1 block text-3xl font-bold text-[#1a1a1a] md:text-4xl lg:text-5xl"
+              style="font-family: var(--heading-font, inherit);"
+            >
+              {stat.value}
+            </span>
+            <span class="text-xs font-medium uppercase tracking-wider text-gray-400 md:text-sm">
+              {stat.label}
+            </span>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Service list - compact grid */}
+    {showList && (
+      <div class="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:mb-16">
+        {services.map((service) => (
+          <div class="flex items-start gap-3 rounded-lg bg-white p-4">
+            <span class="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-[var(--primary,#6B8F71)]"></span>
+            <div>
+              <h3 class="text-sm font-bold text-[#1a1a1a]" style="font-family: var(--heading-font, inherit);">
+                {service.name}
+              </h3>
+              <p class="mt-1 text-sm leading-relaxed text-gray-500">
+                {service.description}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Full-width image - grayscale, hover full color */}
+    {showImage && (
+      <div class="overflow-hidden rounded-2xl lg:rounded-3xl">
+        {mainPhoto ? (
+          <img
+            src={mainPhoto}
+            alt="Our services"
+            class="h-auto w-full object-cover transition-all duration-700 grayscale hover:grayscale-0"
+            style="aspect-ratio: 16 / 7;"
+          />
+        ) : (
+          <div class="flex w-full items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300" style="aspect-ratio: 16 / 7;">
+            <span class="text-sm text-gray-400">No image</span>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>

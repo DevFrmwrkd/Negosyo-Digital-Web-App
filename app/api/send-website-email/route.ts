@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
             businessOwnerName: submission.ownerName,
             businessOwnerEmail: submission.ownerEmail,
             websiteUrl: publishedUrl,
-            amount: submission.amount,
+            amount: submission.amount ?? 0,
             submissionId: submissionId
         })
 

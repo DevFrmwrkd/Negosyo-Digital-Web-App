@@ -1,0 +1,169 @@
+---
+/**
+ * ContactB - Craft Style (White/Light)
+ * White background. Large italic serif headline, contact arrow link, optional featured image,
+ * and a 3-column bottom section with navigation, social links, and contact details.
+ * Ported from the existing "Footer" section's contact portions.
+ */
+interface Props {
+  businessName: string;
+  email: string;
+  phone: string;
+  address?: string;
+  whatsapp?: string;
+  messenger?: string;
+  description?: string;
+  socialLinks?: Array<{ platform: string; url: string }>;
+  featuredImage?: string;
+  photos: string[];
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  email,
+  phone,
+  address,
+  whatsapp,
+  messenger,
+  description,
+  socialLinks = [],
+  featuredImage,
+  photos = [],
+  visibility,
+} = Astro.props;
+
+// Visibility defaults (all visible unless explicitly false)
+const showHeadline = visibility?.contactHeadline !== false;
+const showDescription = visibility?.contactDescription !== false && !!description;
+const showInfo = visibility?.contactInfo !== false;
+const showSocial = visibility?.contactSocial !== false && socialLinks.length > 0;
+
+const year = new Date().getFullYear();
+
+// Capitalize platform name for text display
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Navigation links for the footer columns
+const navLinks = [
+  { label: 'About', href: '#about' },
+  { label: 'Services', href: '#services' },
+  { label: 'Gallery', href: '#gallery' },
+  { label: 'Contact', href: '#contact' },
+];
+---
+
+<section id="contact" class="reveal bg-white py-20 md:py-28 lg:py-36">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+    {/* Headline */}
+    {showHeadline && (
+      <h2
+        class="mb-6 italic leading-tight tracking-[-0.02em] text-[#1a1a1a]"
+        style="font-size: clamp(2rem, 5vw, 3.5rem); font-family: var(--heading-font, 'Playfair Display'), serif; font-weight: 400;"
+      >
+        {description || `Let's create something beautiful together`}
+      </h2>
+    )}
+
+    {/* Contact Link / Button */}
+    <a
+      href={`mailto:${email}`}
+      class="group mb-12 inline-flex items-center gap-3 text-lg font-medium text-[#1a1a1a] transition-colors hover:text-[var(--primary,#6B8F71)]"
+    >
+      Contact us
+      <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">
+        &rarr;
+      </span>
+    </a>
+
+    {/* Featured Image */}
+    {featuredImage && (
+      <div class="mb-16 overflow-hidden rounded-2xl">
+        <img
+          src={featuredImage}
+          alt={businessName}
+          class="aspect-[16/9] w-full object-cover"
+          loading="lazy"
+        />
+      </div>
+    )}
+
+    {/* Bottom 3-Column Section */}
+    <div class="mt-16 border-t border-[#1a1a1a]/10 pt-12">
+      <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+
+        {/* Column 1: Navigation Links */}
+        <div>
+          <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-[#1a1a1a]/40">
+            Navigation
+          </h4>
+          <div class="space-y-2">
+            {navLinks.map((link) => (
+              <a
+                href={link.href}
+                class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* Column 2: Social Links (text format) */}
+        {showSocial && (
+          <div>
+            <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-[#1a1a1a]/40">
+              Social
+            </h4>
+            <div class="space-y-2">
+              {socialLinks.map((link) => (
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+                >
+                  {capitalize(link.platform)}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Column 3: Contact Details */}
+        {showInfo && (
+          <div>
+            <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-[#1a1a1a]/40">
+              Contact
+            </h4>
+            <div class="space-y-2">
+              <a
+                href={`mailto:${email}`}
+                class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+              >
+                {email}
+              </a>
+              <a
+                href={`tel:${phone}`}
+                class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+              >
+                {phone}
+              </a>
+              {address && (
+                <p class="text-sm text-[#1a1a1a]/70">{address}</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Copyright */}
+      <div class="mt-12 border-t border-[#1a1a1a]/10 pt-8 text-center">
+        <p class="text-xs text-[#1a1a1a]/40">&copy; {year} {businessName}. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+</section>

@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
-import { selectTemplateForBusinessType, getTemplate } from '@/lib/templates'
-import { injectContent } from '@/lib/templates/injector'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { buildAstroSite } from '@/lib/astro-builder'
 
 export async function POST(request: NextRequest) {
     try {
@@ -162,13 +159,8 @@ IMPORTANT:
             }
         }
 
-        // Select template
-        const selectedTemplate = templateName || selectTemplateForBusinessType(submission.business_type)
-        const template = getTemplate(selectedTemplate)
-
-        // Read template file
-        const templatePath = path.join(process.cwd(), 'app', template.path)
-        const templateHtml = await fs.readFile(templatePath, 'utf-8')
+        // Template name kept for backward compat in database records
+        const selectedTemplate = templateName || 'astro'
 
         // Inject content with default customizations if none provided
         // Get photos from submission and resolve Convex storage IDs to actual URLs
@@ -283,10 +275,13 @@ IMPORTANT:
         }
 
         const defaultCustomizations = {
+            heroStyle: 'A',
+            aboutStyle: 'A',
+            servicesStyle: 'A',
+            galleryStyle: 'A',
+            contactStyle: 'A',
+            // Legacy fields
             navbarStyle: '1',
-            heroStyle: '1',
-            aboutStyle: '1',
-            servicesStyle: '1',
             featuredStyle: '1',
             footerStyle: '1',
             colorScheme: 'auto',
@@ -399,7 +394,7 @@ IMPORTANT:
             }
         }
 
-        const generatedHtml = injectContent(templateHtml, contentWithContact, finalCustomizations, photos)
+        const generatedHtml = await buildAstroSite(contentWithContact, finalCustomizations, photos)
 
         // Save to Convex using mutations
         const { fetchMutation } = await import('convex/nextjs')
@@ -522,10 +517,13 @@ IMPORTANT:
             } : undefined,
             // Customizations
             customizations: {
-                navbarStyle: finalCustomizations.navbarStyle,
                 heroStyle: finalCustomizations.heroStyle,
                 aboutStyle: finalCustomizations.aboutStyle,
                 servicesStyle: finalCustomizations.servicesStyle,
+                galleryStyle: finalCustomizations.galleryStyle || finalCustomizations.featuredStyle,
+                contactStyle: finalCustomizations.contactStyle || finalCustomizations.footerStyle,
+                // Legacy fields
+                navbarStyle: finalCustomizations.navbarStyle,
                 featuredStyle: finalCustomizations.featuredStyle,
                 footerStyle: finalCustomizations.footerStyle,
                 colorScheme: finalCustomizations.colorScheme || finalCustomizations.colorSchemeId,
@@ -533,8 +531,11 @@ IMPORTANT:
             },
         })
 
-        // Note: Status is not automatically changed when generating website
-        // The workflow is: in_review -> (generate) -> approved -> deployed -> pending_payment -> paid
+        // Update submission status to website_generated
+        await fetchMutation(api.submissions.updateStatus, {
+            id: submissionId as any,
+            status: 'website_generated',
+        })
 
         return NextResponse.json({
             success: true,

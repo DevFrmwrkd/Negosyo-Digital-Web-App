@@ -1,0 +1,155 @@
+---
+/**
+ * GalleryC - Image-Only Grid
+ * Light (#fafafa) background. Masonry-style image grid with centered headline and italic accent.
+ * Ported from the existing "Featured" section.
+ */
+interface Props {
+  headline?: string;
+  subheadline?: string;
+  items: Array<{
+    title: string;
+    description: string;
+    image?: string;
+    tags?: string[];
+    testimonial?: {
+      quote: string;
+      author: string;
+      avatar?: string;
+    };
+  }>;
+  images?: string[];
+  ctaText?: string;
+  ctaLink?: string;
+  photos: string[];
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  headline = 'Our Gallery',
+  items = [],
+  images,
+  photos = [],
+  visibility,
+} = Astro.props;
+
+const showHeadline = visibility?.galleryHeadline !== false;
+const showImages = visibility?.galleryImages !== false;
+
+// Resolve the image list: images array > photos array > extract from items
+const resolvedImages: string[] = (images && images.length > 0)
+  ? images
+  : (photos && photos.length > 0)
+    ? photos
+    : items.map((item) => item.image).filter((img): img is string => !!img);
+
+// Split headline for italic accent:
+// If headline contains " / ", split on that; otherwise italicize last 2 words
+function splitHeadline(text: string): { normal: string; italic: string } {
+  if (text.includes(' / ')) {
+    const parts = text.split(' / ');
+    return { normal: parts[0], italic: parts.slice(1).join(' / ') };
+  }
+  const words = text.split(' ');
+  if (words.length <= 2) {
+    return { normal: '', italic: text };
+  }
+  return {
+    normal: words.slice(0, -2).join(' '),
+    italic: words.slice(-2).join(' '),
+  };
+}
+
+const headlineParts = splitHeadline(headline);
+
+// Distribute images across 3 columns for masonry layout
+const columns: string[][] = [[], [], []];
+resolvedImages.forEach((img, i) => {
+  columns[i % 3].push(img);
+});
+---
+
+<section id="gallery" class="relative bg-[#fafafa] py-20 md:py-32">
+  <div class="mx-auto max-w-7xl px-6 lg:px-20">
+    {/* Header */}
+    {showHeadline && (
+      <div class="reveal mb-14 text-center md:mb-20">
+        <span class="mb-4 inline-block text-xs font-medium uppercase tracking-[0.15em] text-[#1F2933]/40">
+          Gallery
+        </span>
+        <h2
+          class="mx-auto max-w-3xl font-semibold leading-tight tracking-[-0.02em] text-[#1F2933]"
+          style="font-size: clamp(2rem, 5vw, 3.5rem); font-family: var(--heading-font, inherit);"
+        >
+          {headlineParts.normal && (
+            <span>{headlineParts.normal}{' '}</span>
+          )}
+          <em class="not-italic font-light italic text-[var(--primary,#6B8F71)]">
+            {headlineParts.italic}
+          </em>
+        </h2>
+      </div>
+    )}
+
+    {/* Masonry Grid */}
+    {showImages && resolvedImages.length > 0 && (
+      <>
+        {/* Desktop: 3 columns */}
+        <div class="reveal hidden gap-4 md:grid md:grid-cols-3">
+          {columns.map((col, colIndex) => (
+            <div class="flex flex-col gap-4">
+              {col.map((src, imgIndex) => {
+                const globalIndex = imgIndex * 3 + colIndex;
+                const isTall = globalIndex % 2 === 0;
+                return (
+                  <div class={`group overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                    <img
+                      src={src}
+                      alt=""
+                      class="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl"
+                      loading="lazy"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Tablet: 2 columns */}
+        <div class="reveal hidden gap-4 sm:grid sm:grid-cols-2 md:hidden">
+          {resolvedImages.map((src, i) => {
+            const isTall = i % 2 === 0;
+            return (
+              <div class={`group overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                <img
+                  src={src}
+                  alt=""
+                  class="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl"
+                  loading="lazy"
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Mobile: 1 column */}
+        <div class="reveal flex flex-col gap-4 sm:hidden">
+          {resolvedImages.map((src, i) => {
+            const isTall = i % 2 === 0;
+            return (
+              <div class={`group overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                <img
+                  src={src}
+                  alt=""
+                  class="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl"
+                  loading="lazy"
+                />
+              </div>
+            );
+          })}
+        </div>
+      </>
+    )}
+  </div>
+</section>

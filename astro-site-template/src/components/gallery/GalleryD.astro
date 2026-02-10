@@ -1,0 +1,219 @@
+---
+/**
+ * GalleryD - Staggered Masonry Grid
+ * Light (#fafafa) background. Badge + headline + optional CTA. 3-column staggered masonry with hover overlays.
+ * Ported from the existing "Featured" section.
+ */
+interface Props {
+  headline?: string;
+  subheadline?: string;
+  items: Array<{
+    title: string;
+    description: string;
+    image?: string;
+    tags?: string[];
+    testimonial?: {
+      quote: string;
+      author: string;
+      avatar?: string;
+    };
+  }>;
+  images?: string[];
+  ctaText?: string;
+  ctaLink?: string;
+  photos: string[];
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  headline = 'Our Portfolio',
+  items = [],
+  images,
+  ctaText,
+  ctaLink = '#contact',
+  photos = [],
+  visibility,
+} = Astro.props;
+
+const showHeadline = visibility?.galleryHeadline !== false;
+const showItems = visibility?.galleryItems !== false;
+const showImages = visibility?.galleryImages !== false;
+
+// Resolve images: prefer images array, else extract from items with photos fallback
+const resolvedEntries = (images && images.length > 0)
+  ? images.map((src, i) => ({
+      src,
+      title: items[i]?.title || '',
+      tags: items[i]?.tags || [],
+    }))
+  : items.map((item, i) => ({
+      src: item.image || photos[i] || '',
+      title: item.title,
+      tags: item.tags || [],
+    }));
+
+// Distribute entries across 3 columns for staggered layout
+const columns: Array<typeof resolvedEntries> = [[], [], []];
+resolvedEntries.forEach((entry, i) => {
+  columns[i % 3].push(entry);
+});
+
+// Stagger offsets for each column
+const columnOffsets = ['pt-0', 'pt-12 md:pt-20', 'pt-6 md:pt-10'];
+---
+
+<section id="gallery" class="relative bg-[#fafafa] py-20 md:py-32">
+  <div class="mx-auto max-w-7xl px-6 lg:px-20">
+    {/* Header */}
+    <div class="reveal mb-14 flex flex-col items-start gap-6 md:mb-20 md:flex-row md:items-end md:justify-between">
+      <div>
+        {/* Badge */}
+        <div class="mb-4 flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)]"></span>
+          <span class="text-xs font-semibold uppercase tracking-[0.15em] text-[#1F2933]/50">
+            Portfolio
+          </span>
+        </div>
+
+        {showHeadline && (
+          <h2
+            class="max-w-xl font-semibold leading-tight tracking-[-0.02em] text-[#1F2933]"
+            style="font-size: clamp(2rem, 4vw, 3rem); font-family: var(--heading-font, inherit);"
+          >
+            {headline}
+          </h2>
+        )}
+      </div>
+
+      {/* CTA Button */}
+      {ctaText && (
+        <a
+          href={ctaLink}
+          class="inline-flex items-center gap-2 rounded-full bg-[var(--primary,#6B8F71)] px-6 py-3 text-sm font-medium text-white transition-all duration-300 hover:scale-[1.03] hover:shadow-lg"
+        >
+          {ctaText}
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"></path>
+            <path d="m12 5 7 7-7 7"></path>
+          </svg>
+        </a>
+      )}
+    </div>
+
+    {/* Staggered Masonry Grid */}
+    {(showItems || showImages) && resolvedEntries.length > 0 && (
+      <>
+        {/* Desktop: 3-column staggered */}
+        <div class="reveal hidden gap-4 md:grid md:grid-cols-3 lg:gap-6">
+          {columns.map((col, colIndex) => (
+            <div class={`flex flex-col gap-4 lg:gap-6 ${columnOffsets[colIndex]}`}>
+              {col.map((entry, imgIndex) => {
+                const globalIndex = imgIndex * 3 + colIndex;
+                const isTall = globalIndex % 3 !== 1;
+                return (
+                  <div class={`group relative overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                    {entry.src ? (
+                      <img
+                        src={entry.src}
+                        alt={entry.title}
+                        class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="h-full w-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                    )}
+                    {/* Hover Overlay */}
+                    <div class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-6 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                      {entry.title && (
+                        <h3 class="mb-1 text-lg font-semibold text-white" style="font-family: var(--heading-font, inherit);">
+                          {entry.title}
+                        </h3>
+                      )}
+                      {entry.tags.length > 0 && (
+                        <div class="flex flex-wrap gap-1.5">
+                          {entry.tags.map((tag) => (
+                            <span class="text-xs text-white/70">{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        {/* Tablet: 2 columns */}
+        <div class="reveal hidden gap-4 sm:grid sm:grid-cols-2 md:hidden">
+          {resolvedEntries.map((entry, i) => {
+            const isTall = i % 3 !== 1;
+            return (
+              <div class={`group relative overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                {entry.src ? (
+                  <img
+                    src={entry.src}
+                    alt={entry.title}
+                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="h-full w-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                )}
+                <div class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-5 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                  {entry.title && (
+                    <h3 class="mb-1 text-base font-semibold text-white" style="font-family: var(--heading-font, inherit);">
+                      {entry.title}
+                    </h3>
+                  )}
+                  {entry.tags.length > 0 && (
+                    <div class="flex flex-wrap gap-1.5">
+                      {entry.tags.map((tag) => (
+                        <span class="text-xs text-white/70">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Mobile: 1 column */}
+        <div class="reveal flex flex-col gap-4 sm:hidden">
+          {resolvedEntries.map((entry, i) => {
+            const isTall = i % 2 === 0;
+            return (
+              <div class={`group relative overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                {entry.src ? (
+                  <img
+                    src={entry.src}
+                    alt={entry.title}
+                    class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="h-full w-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                )}
+                <div class="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-5 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+                  {entry.title && (
+                    <h3 class="mb-1 text-base font-semibold text-white" style="font-family: var(--heading-font, inherit);">
+                      {entry.title}
+                    </h3>
+                  )}
+                  {entry.tags.length > 0 && (
+                    <div class="flex flex-wrap gap-1.5">
+                      {entry.tags.map((tag) => (
+                        <span class="text-xs text-white/70">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </>
+    )}
+  </div>
+</section>

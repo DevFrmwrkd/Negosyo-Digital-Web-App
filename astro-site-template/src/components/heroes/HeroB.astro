@@ -1,0 +1,133 @@
+---
+/**
+ * HeroB - Fullscreen Background
+ * Full viewport height, image as background with dark gradient overlay.
+ * Headline split into 2 lines in black boxes with fade-up animation.
+ * Ported from hero-styles.ts generateHeroStyle2.
+ */
+interface Props {
+  businessName: string;
+  headline: string;
+  description: string;
+  badgeText?: string;
+  testimonial?: string;
+  ctaLabel?: string;
+  ctaLink?: string;
+  photos: string[];
+  services?: Array<{ name: string; description: string }>;
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  headline,
+  photos = [],
+  visibility,
+} = Astro.props;
+
+const mainPhoto = photos[0] || '';
+
+// Visibility defaults
+const showHeadline = visibility?.heroHeadline !== false;
+const showImage = visibility?.heroImage !== false;
+
+// Split headline into two lines at midpoint of words
+const headlineWords = headline.split(' ');
+const midPoint = Math.ceil(headlineWords.length / 2);
+const topLine = headlineWords.slice(0, midPoint).join(' ');
+const bottomLine = headlineWords.slice(midPoint).join(' ');
+---
+
+<section id="hero" class="relative min-h-screen w-full overflow-hidden">
+
+  {/* Background Image or Gradient Fallback */}
+  {showImage && mainPhoto ? (
+    <div class="absolute inset-0 z-[1]">
+      <img src={mainPhoto} alt={businessName} class="h-full w-full object-cover object-center" />
+      <div class="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/30"></div>
+    </div>
+  ) : (
+    <div class="absolute inset-0 z-[1] bg-gradient-to-br from-[#1a1a1a] to-[#333333]"></div>
+  )}
+
+  {/* Content */}
+  <div class="relative z-[2] flex min-h-screen flex-col items-center justify-center p-8 text-center">
+
+    {/* Business Name - centered at top */}
+    <div class="absolute left-1/2 top-8 z-[3] -translate-x-1/2 text-base font-semibold uppercase tracking-[0.1em] text-white opacity-0 md:top-12 md:text-lg hero-b-brand"
+         style="font-family: var(--heading-font, inherit);">
+      {businessName}
+    </div>
+
+    {/* Headline in Black Boxes */}
+    {showHeadline && (
+      <div class="flex flex-col items-center gap-2">
+        <span class="hero-b-line inline-block bg-black px-6 py-2 text-white uppercase font-bold tracking-[0.05em] leading-[1.2] md:px-8 md:py-3 lg:px-10 lg:py-4"
+              style="font-size: clamp(1.5rem, 5vw, 4.5rem); font-family: var(--heading-font, inherit);">
+          {topLine}
+        </span>
+        {bottomLine && (
+          <span class="hero-b-line inline-block bg-black px-6 py-2 text-white uppercase font-bold tracking-[0.05em] leading-[1.2] md:px-8 md:py-3 lg:px-10 lg:py-4"
+                style="font-size: clamp(1.5rem, 5vw, 4.5rem); font-family: var(--heading-font, inherit);">
+            {bottomLine}
+          </span>
+        )}
+      </div>
+    )}
+
+    {/* Scroll Indicator */}
+    <button type="button"
+            class="absolute bottom-8 left-1/2 z-[3] flex -translate-x-1/2 flex-col items-center gap-2 border-none bg-transparent p-0 text-white opacity-0 transition-transform duration-300 hero-b-scroll hover:scale-105"
+            onclick="document.getElementById('about-section')?.scrollIntoView({ behavior: 'smooth' }) || document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })">
+      <span class="text-xs font-medium uppercase tracking-[0.2em]">Scroll</span>
+      <div class="h-10 w-px bg-gradient-to-b from-white to-transparent animate-scroll-bounce"></div>
+    </button>
+  </div>
+</section>
+
+<style>
+  /* Brand fade-in */
+  .hero-b-brand {
+    animation: heroB-fade-in 0.6s ease-out 0.1s forwards;
+  }
+
+  /* Headline lines fade-up with stagger */
+  .hero-b-line {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: heroB-fade-up 0.8s ease-out forwards;
+  }
+
+  .hero-b-line:nth-child(1) {
+    animation-delay: 0.2s;
+  }
+
+  .hero-b-line:nth-child(2) {
+    animation-delay: 0.4s;
+  }
+
+  /* Scroll indicator fade-in */
+  .hero-b-scroll {
+    animation: heroB-fade-in 0.6s ease-out 0.8s forwards;
+  }
+
+  @keyframes heroB-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes heroB-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+</style>

@@ -1,0 +1,130 @@
+---
+/**
+ * AboutC - Tags Card Layout
+ * White background with centered headline (italic accent on last words).
+ * Content card below with image left, tagline + description + tags right.
+ * Tags displayed as inline-flex pills with checkmark icons.
+ */
+interface Props {
+  businessName: string;
+  description: string;
+  headline?: string;
+  tagline?: string;
+  tags?: string[];
+  usps?: string[];
+  photos: string[];
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  description,
+  headline = 'About Us',
+  tagline,
+  tags = [],
+  usps = [],
+  photos = [],
+  visibility,
+} = Astro.props;
+
+// Visibility defaults (all visible unless explicitly false)
+const showHeadline = visibility?.aboutHeadline !== false;
+const showDescription = visibility?.aboutDescription !== false;
+const showImages = visibility?.aboutImages !== false;
+const showTagline = visibility?.aboutTagline !== false && !!tagline;
+const showTags = visibility?.aboutTags !== false && tags.length > 0;
+
+const mainPhoto = photos[0] || '';
+
+// Split headline to italicize last portion
+// Find " in " or " for " to split, otherwise italicize last 2 words
+function splitHeadline(text: string): { regular: string; italic: string } {
+  const separators = [' in ', ' for ', ' with ', ' of '];
+  for (const sep of separators) {
+    const idx = text.toLowerCase().lastIndexOf(sep);
+    if (idx !== -1) {
+      return {
+        regular: text.slice(0, idx),
+        italic: text.slice(idx),
+      };
+    }
+  }
+  // Fallback: italicize last 2 words
+  const words = text.split(' ');
+  if (words.length > 2) {
+    return {
+      regular: words.slice(0, -2).join(' ') + ' ',
+      italic: words.slice(-2).join(' '),
+    };
+  }
+  return { regular: text, italic: '' };
+}
+
+const headlineParts = splitHeadline(headline);
+---
+
+<section id="about" class="relative overflow-hidden bg-white py-20 md:py-28 lg:py-32">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+    {/* Centered headline */}
+    {showHeadline && (
+      <div class="reveal mb-12 text-center md:mb-16">
+        <h2 class="mx-auto max-w-3xl font-semibold leading-[1.15] tracking-[-0.02em] text-[var(--secondary,#1F2933)]"
+            style="font-size: clamp(2rem, 4vw, 3.5rem); font-family: var(--heading-font, inherit);">
+          {headlineParts.regular}{headlineParts.italic && (
+            <span class="italic font-normal text-[var(--secondary,#1F2933)]/70">{headlineParts.italic}</span>
+          )}
+        </h2>
+      </div>
+    )}
+
+    {/* Content card */}
+    <div class="reveal reveal-delay-1 overflow-hidden rounded-2xl bg-[var(--bg,#F6F7F5)] shadow-[0_4px_40px_rgba(0,0,0,0.06)]">
+      <div class="grid grid-cols-1 md:grid-cols-2">
+
+        {/* LEFT: Image */}
+        {showImages && mainPhoto && (
+          <div class="relative">
+            <img
+              src={mainPhoto}
+              alt={businessName}
+              class="aspect-[4/5] h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        {/* RIGHT: Tagline + Description + Tags */}
+        <div class="flex flex-col justify-center p-8 md:p-10 lg:p-14">
+
+          {showTagline && (
+            <p class="reveal reveal-delay-2 mb-4 text-lg font-bold text-[var(--secondary,#1F2933)] md:text-xl"
+               style="font-family: var(--heading-font, inherit);">
+              {tagline}
+            </p>
+          )}
+
+          {showDescription && (
+            <p class="reveal reveal-delay-2 mb-8 leading-relaxed text-[var(--secondary,#1F2933)]/65"
+               style="font-size: clamp(0.95rem, 1.3vw, 1.075rem);">
+              {description}
+            </p>
+          )}
+
+          {showTags && (
+            <div class="reveal reveal-delay-3 flex flex-wrap gap-3">
+              {tags.map((tag) => (
+                <span class="inline-flex items-center gap-2 rounded-full border border-[var(--secondary,#1F2933)]/12 bg-white px-4 py-2 text-sm font-medium text-[var(--secondary,#1F2933)]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--primary,#6B8F71)]">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
