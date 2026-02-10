@@ -1,0 +1,173 @@
+---
+/**
+ * AboutD - Quote with Logo Carousel
+ * Light (#fafafa) background with centered badge, word-by-word reveal description,
+ * and infinite scrolling image/logo carousel at the bottom.
+ */
+interface Props {
+  businessName: string;
+  description: string;
+  headline?: string;
+  tagline?: string;
+  tags?: string[];
+  usps?: string[];
+  photos: string[];
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  description,
+  headline,
+  tagline,
+  tags = [],
+  usps = [],
+  photos = [],
+  visibility,
+} = Astro.props;
+
+// Visibility defaults (all visible unless explicitly false)
+const showBadge = visibility?.aboutBadge !== false;
+const showDescription = visibility?.aboutDescription !== false;
+const showImages = visibility?.aboutImages !== false;
+
+// Split description into words for word-by-word reveal
+const descriptionWords = description.split(' ');
+const totalWords = descriptionWords.length;
+// Last 2-3 words get italic lighter style
+const italicStartIndex = Math.max(0, totalWords - 3);
+
+// Duplicate photos for seamless infinite scroll
+const carouselPhotos = photos.length > 0 ? [...photos, ...photos] : [];
+---
+
+<section id="about" class="relative overflow-hidden bg-[#fafafa] py-20 md:py-28 lg:py-32">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+    {/* Badge: dot + ABOUT US */}
+    {showBadge && (
+      <div class="reveal mb-12 flex items-center justify-center gap-2 md:mb-16">
+        <span class="h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)] animate-pulse-dot"></span>
+        <span class="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--secondary,#1F2933)]/70">
+          About Us
+        </span>
+      </div>
+    )}
+
+    {/* Word-by-word description */}
+    {showDescription && (
+      <div class="reveal mx-auto max-w-4xl text-center">
+        <p class="about-d-words leading-[1.45] text-[var(--secondary,#1F2933)]"
+           style="font-size: clamp(1.5rem, 3vw, 2.5rem); font-family: var(--heading-font, inherit);">
+          {descriptionWords.map((word, index) => (
+            <span
+              class={`reveal-word inline-block ${index >= italicStartIndex ? 'italic text-[var(--secondary,#1F2933)]/40' : ''}`}
+              style="margin-right: 0.3em;"
+            >
+              {word}
+            </span>
+          ))}
+        </p>
+      </div>
+    )}
+
+    {/* Infinite image/logo carousel */}
+    {showImages && carouselPhotos.length > 0 && (
+      <div class="reveal reveal-delay-2 relative mt-16 md:mt-24">
+        {/* Fade edges */}
+        <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[#fafafa] to-transparent md:w-32"></div>
+        <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[#fafafa] to-transparent md:w-32"></div>
+
+        {/* Carousel track */}
+        <div class="about-d-carousel overflow-hidden">
+          <div class="about-d-track flex items-center gap-10 md:gap-14">
+            {carouselPhotos.map((photo, index) => (
+              <div class="flex-shrink-0">
+                <img
+                  src={photo}
+                  alt={`${businessName} partner ${(index % photos.length) + 1}`}
+                  class="h-20 w-20 rounded-xl object-cover grayscale transition-all duration-300 hover:grayscale-0 md:h-24 md:w-24"
+                  loading="lazy"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  /* Word reveal - default dimmed, becomes full when in view */
+  .reveal-word {
+    opacity: 0.15;
+    transition: opacity 0.5s ease-out;
+  }
+
+  .reveal-word.active {
+    opacity: 1;
+  }
+
+  /* Italic words get lighter when active */
+  .reveal-word.active.italic {
+    opacity: 0.45;
+  }
+
+  /* Infinite carousel animation */
+  .about-d-track {
+    animation: aboutD-carousel-scroll 25s linear infinite;
+    width: max-content;
+  }
+
+  @keyframes aboutD-carousel-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Pause carousel on hover */
+  .about-d-carousel:hover .about-d-track {
+    animation-play-state: paused;
+  }
+</style>
+
+<script>
+  // IntersectionObserver for word-by-word reveal
+  function initAboutDWordReveal() {
+    const words = document.querySelectorAll('.about-d-words .reveal-word');
+    if (words.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Reveal words with staggered delay
+            const wordEls = entry.target.querySelectorAll
+              ? [entry.target]
+              : [];
+
+            entry.target.classList.add('active');
+          }
+        });
+      },
+      {
+        threshold: 0.5,
+        rootMargin: '0px 0px -10% 0px',
+      }
+    );
+
+    // Observe each word individually for staggered reveal
+    words.forEach((word, index) => {
+      // Add a small transition delay for cascade effect
+      (word as HTMLElement).style.transitionDelay = `${index * 0.04}s`;
+      observer.observe(word);
+    });
+  }
+
+  // Run on page load
+  initAboutDWordReveal();
+</script>

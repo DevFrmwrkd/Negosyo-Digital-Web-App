@@ -43,25 +43,33 @@ export const getMultipleUrls = query({
     args: { storageIds: v.array(v.string()) },
     handler: async (ctx, args) => {
         const urls: (string | null)[] = [];
+        const r2PublicUrl = process.env.R2_PUBLIC_URL?.replace(/\/$/, '');
 
         for (const idString of args.storageIds) {
             try {
+                // Already a full URL - pass through
+                if (idString.startsWith('http://') || idString.startsWith('https://')) {
+                    urls.push(idString);
+                    continue;
+                }
+
+                // R2 relative paths (images/..., videos/..., audio/...) - prepend R2 public URL
+                if (/^(images|videos|audio)\//.test(idString) && r2PublicUrl) {
+                    urls.push(`${r2PublicUrl}/${idString}`);
+                    continue;
+                }
+
                 // Handle "convex:storageId" format
                 const storageId = idString.startsWith('convex:')
                     ? idString.replace('convex:', '')
                     : idString;
 
-                // Check if it's a valid storage ID format
-                if (storageId.length > 10) {
-                    const url = await ctx.storage.getUrl(storageId as Id<"_storage">);
-                    urls.push(url);
-                } else {
-                    // Treat as a regular URL
-                    urls.push(idString);
-                }
+                // Try Convex storage resolution
+                const url = await ctx.storage.getUrl(storageId as Id<"_storage">);
+                urls.push(url);
             } catch {
-                // If it fails, return as-is (might be a regular URL)
-                urls.push(idString);
+                // If it fails, return null (not a valid URL or storage ID)
+                urls.push(null);
             }
         }
 

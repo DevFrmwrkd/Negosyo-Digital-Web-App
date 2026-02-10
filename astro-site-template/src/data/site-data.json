@@ -1,0 +1,234 @@
+{
+  "layout": {
+    "businessName": "Fizzy pop soda",
+    "tagline": "Sip, Savor, Sparkle",
+    "navLinks": [
+      {
+        "href": "#about",
+        "label": "About"
+      },
+      {
+        "href": "#services",
+        "label": "Services"
+      },
+      {
+        "href": "#featured",
+        "label": "Featured"
+      },
+      {
+        "href": "#contact",
+        "label": "Contacts"
+      }
+    ],
+    "socialLinks": [],
+    "colorScheme": "green",
+    "fontPairing": "bold",
+    "contact": {
+      "address": "432 Refreshment Drive, Manila",
+      "email": "azedge17@gmail.com",
+      "phone": "956 465 4677"
+    }
+  },
+  "customizations": {
+    "heroStyle": "B",
+    "aboutStyle": "A",
+    "servicesStyle": "B",
+    "galleryStyle": "C",
+    "contactStyle": "A"
+  },
+  "visibility": {
+    "heroSection": true,
+    "heroHeadline": true,
+    "heroTagline": true,
+    "heroDescription": true,
+    "heroTestimonial": true,
+    "heroButton": true,
+    "heroImage": true,
+    "aboutSection": true,
+    "aboutBadge": true,
+    "aboutHeadline": true,
+    "aboutDescription": true,
+    "aboutImages": true,
+    "aboutTagline": true,
+    "aboutTags": true,
+    "servicesSection": true,
+    "servicesBadge": true,
+    "servicesHeadline": true,
+    "servicesSubheadline": true,
+    "servicesImage": true,
+    "servicesList": true,
+    "gallerySection": true,
+    "galleryHeadline": true,
+    "gallerySubheadline": true,
+    "galleryItems": true,
+    "galleryImages": true,
+    "contactSection": true,
+    "contactBadge": true,
+    "contactHeadline": true,
+    "contactDescription": true,
+    "contactInfo": true,
+    "contactSocial": true
+  },
+  "hero": {
+    "businessName": "Fizzy pop soda",
+    "headline": "Sip, Savor, Sparkle",
+    "description": "Fizzy Pop Soda is a proudly Filipino beverage brand that delivers fun, refreshing flavors in every bottle. With a perfect balance of sweetness and feast, Fizzy Pop offers a variety of soda options that bring joy to every occasion. Our vibrant packaging and bold flavors are designed to stand out and become a favorite choice for family, friends, and celebrations.",
+    "photos": [
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+    ],
+    "services": [
+      {
+        "description": "Get your favorite Fizzy Pop Soda flavors with customized packaging for special events and occasions",
+        "name": "Customized Soda Orders"
+      },
+      {
+        "description": "Visit our store and experience a guided tasting of our unique and delicious soda flavors",
+        "name": "Soda Tasting Experience"
+      },
+      {
+        "description": "Order our party packs and bundles for a convenient and refreshing way to enjoy Fizzy Pop Soda with friends and family",
+        "name": "Party Packs and Bundles"
+      }
+    ],
+    "visibility": {
+      "heroHeadline": true,
+      "heroTagline": true,
+      "heroDescription": true,
+      "heroTestimonial": true,
+      "heroButton": true,
+      "heroImage": true
+    }
+  },
+  "about": {
+    "businessName": "Fizzy pop soda",
+    "description": "Fizzy Pop Soda is a proudly Filipino beverage brand that delivers fun, refreshing flavors in every bottle. With a perfect balance of sweetness and feast, Fizzy Pop offers a variety of soda options that bring joy to every occasion. Our vibrant packaging and bold flavors are designed to stand out and become a favorite choice for family, friends, and celebrations.",
+    "headline": "About Us",
+    "usps": [
+      "Unique Filipino flavors",
+      "Vibrant and colorful packaging",
+      "Perfect balance of sweetness and taste"
+    ],
+    "photos": [
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+    ],
+    "visibility": {
+      "aboutBadge": true,
+      "aboutHeadline": true,
+      "aboutDescription": true,
+      "aboutImages": true,
+      "aboutTagline": true,
+      "aboutTags": true
+    }
+  },
+  "services": {
+    "headline": "Our Services",
+    "services": [
+      {
+        "description": "Get your favorite Fizzy Pop Soda flavors with customized packaging for special events and occasions",
+        "name": "Customized Soda Orders"
+      },
+      {
+        "description": "Visit our store and experience a guided tasting of our unique and delicious soda flavors",
+        "name": "Soda Tasting Experience"
+      },
+      {
+        "description": "Order our party packs and bundles for a convenient and refreshing way to enjoy Fizzy Pop Soda with friends and family",
+        "name": "Party Packs and Bundles"
+      }
+    ],
+    "photos": [
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg"
+    ],
+    "visibility": {
+      "servicesBadge": true,
+      "servicesHeadline": true,
+      "servicesSubheadline": true,
+      "servicesImage": true,
+      "servicesList": true
+    }
+  },
+  "gallery": {
+    "headline": "Featured Flavors",
+    "subheadline": "Try our signature soda flavors that are perfect for any occasion",
+    "items": [
+      {
+        "title": "Classic Cola",
+        "description": "Our take on the classic cola flavor, with a perfect balance of sweetness and a hint of spice. This flavor is a timeless favorite among our customers and is sure to quench your thirst. With its rich, smooth taste, Classic Cola is a must-try for anyone looking for a traditional soda experience.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
+        "tags": [
+          "Soda",
+          "Short-term"
+        ],
+        "testimonial": {
+          "author": "Mark Reyes",
+          "quote": "I've tried many cola flavors before, but Fizzy Pop Soda's Classic Cola is by far the best. It's so smooth and refreshing, and the packaging is so colorful and fun! I've already ordered a dozen bottles for my next party."
+        }
+      },
+      {
+        "title": "Mango Madness",
+        "description": "A sweet and tangy mango flavor that's perfect for summer vacations and outdoor gatherings. This flavor is a favorite among our younger customers, who love the vibrant packaging and joyful, sparkling effect of every soda. With its unique blend of mango puree and a hint of citrus, Mango Madness is a refreshing twist on traditional soda flavors.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
+        "tags": [
+          "Fruity Soda",
+          "Short-term"
+        ],
+        "testimonial": {
+          "author": "Sophia Santos",
+          "quote": "I'm obsessed with Fizzy Pop Soda's Mango Madness flavor! It's so fruity and delicious, and the packaging is so Instagrammable. I've already recommended it to all my friends and family."
+        }
+      },
+      {
+        "title": "Pineapple Upswing",
+        "description": "A refreshing pineapple flavor with a hint of citrus and a touch of sweetness. This flavor is perfect for those looking for a lighter and more refreshing soda option. With its unique blend of pineapple juice and a hint of coconut, Pineapple Upswing is a tropical getaway in every bottle.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
+        "tags": [
+          "Fruity Soda",
+          "Short-term"
+        ],
+        "testimonial": {
+          "author": "Rachel Morales",
+          "quote": "I was blown away by Fizzy Pop Soda's Pineapple Upswing flavor! It's so refreshing and light, and the packaging is so cute and colorful. I've already ordered a few cases for my next beach trip."
+        }
+      }
+    ],
+    "photos": [
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+    ],
+    "visibility": {
+      "galleryHeadline": true,
+      "gallerySubheadline": true,
+      "galleryItems": true,
+      "galleryImages": true
+    }
+  },
+  "contact": {
+    "businessName": "Fizzy pop soda",
+    "email": "azedge17@gmail.com",
+    "phone": "956 465 4677",
+    "address": "432 Refreshment Drive, Manila",
+    "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
+    "socialLinks": [],
+    "photos": [
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+    ],
+    "visibility": {
+      "contactBadge": true,
+      "contactHeadline": true,
+      "contactDescription": true,
+      "contactInfo": true,
+      "contactSocial": true
+    }
+  }
+}

@@ -550,8 +550,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 2: Generate Website (for in_review, approved, or deployed status) */}
-                            {(submission.status === 'in_review' || submission.status === 'approved' || submission.status === 'deployed') && (
+                            {/* Step 2: Generate Website (for in_review, website_generated, approved, or deployed status) */}
+                            {(submission.status === 'in_review' || submission.status === 'website_generated' || submission.status === 'approved' || submission.status === 'deployed') && (
                                 <Button
                                     onClick={() => handleGenerateWebsite()}
                                     disabled={generatingWebsite}
@@ -573,8 +573,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 3: Approve (for in_review status when website is generated) */}
-                            {submission.status === 'in_review' && websiteGenerated && (
+                            {/* Step 3: Approve (for website_generated or in_review status when website exists) */}
+                            {(submission.status === 'website_generated' || (submission.status === 'in_review' && websiteGenerated)) && (
                                 <Button
                                     onClick={() => handleStatusUpdate('approved')}
                                     disabled={updating}
@@ -814,11 +814,10 @@ export default function SubmissionDetailPage() {
                                         }}
                                         htmlContent={websiteHtmlContent || ''}
                                         submissionId={submissionId}
-                                        navbarStyle={websiteCustomizations?.navbarStyle || '1'}
-                                        heroStyle={websiteCustomizations?.heroStyle || '1'}
-                                        aboutStyle={websiteCustomizations?.aboutStyle || '1'}
-                                        servicesStyle={websiteCustomizations?.servicesStyle || '1'}
-                                        featuredStyle={websiteCustomizations?.featuredStyle || '1'}
+                                        heroStyle={websiteCustomizations?.heroStyle || 'A'}
+                                        aboutStyle={websiteCustomizations?.aboutStyle || 'A'}
+                                        servicesStyle={websiteCustomizations?.servicesStyle || 'A'}
+                                        galleryStyle={websiteCustomizations?.galleryStyle || websiteCustomizations?.featuredStyle || 'A'}
                                         availableImages={[
                                             // Include both hero images and submission photos (resolved URLs) for selection
                                             ...(heroImageUrls?.filter((url): url is string => url !== null) || []),
@@ -991,7 +990,8 @@ export default function SubmissionDetailPage() {
                                 {(isEditing ? editedData.photos : (submission.photos || [])).map((url: string, index: number) => {
                                     // Get the resolved URL from photoUrls for display
                                     // photoUrls contains the resolved HTTP URLs from Convex storage
-                                    const resolvedUrl = photoUrls?.[index] || (url?.startsWith('http') ? url : null)
+                                    const raw = photoUrls?.[index] || url
+                                    const resolvedUrl = raw?.startsWith('http') ? raw : null
 
                                     if (!resolvedUrl) return null
 
@@ -1308,7 +1308,7 @@ export default function SubmissionDetailPage() {
                                 <p className="text-sm font-medium text-blue-900 mb-2">This will:</p>
                                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
                                     <li>Update submission status to "Paid"</li>
-                                    <li>Add ₱{submission.creator_payout.toLocaleString()} to creator's balance</li>
+                                    <li>Add ₱{(submission.creator_payout ?? 0).toLocaleString()} to creator's balance</li>
                                     <li>Update creator's total earnings</li>
                                 </ul>
                             </div>
@@ -1320,11 +1320,11 @@ export default function SubmissionDetailPage() {
                                 </div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-gray-600">Amount:</span>
-                                    <span className="font-medium text-gray-900">₱{submission.amount.toLocaleString()}</span>
+                                    <span className="font-medium text-gray-900">₱{(submission.amount ?? 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Creator Payout:</span>
-                                    <span className="font-bold text-green-600">₱{submission.creator_payout.toLocaleString()}</span>
+                                    <span className="font-bold text-green-600">₱{(submission.creator_payout ?? 0).toLocaleString()}</span>
                                 </div>
                             </div>
 
@@ -1352,7 +1352,7 @@ export default function SubmissionDetailPage() {
             {/* Photo Lightbox */}
             {lightboxOpen && photoUrls && photoUrls.length > 0 && (
                 <PhotoLightbox
-                    photos={photoUrls.filter((url): url is string => url !== null)}
+                    photos={photoUrls.filter((url): url is string => url !== null && url.startsWith('http'))}
                     initialIndex={lightboxIndex}
                     onClose={() => setLightboxOpen(false)}
                 />

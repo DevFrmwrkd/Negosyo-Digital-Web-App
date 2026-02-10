@@ -73,7 +73,7 @@ export const getPayoutStats = query({
         );
         const totalPending = pendingPayouts.length;
         const totalPendingAmount = pendingPayouts.reduce(
-            (sum, s) => sum + s.creatorPayout,
+            (sum, s) => sum + (s.creatorPayout ?? 0),
             0
         );
 
@@ -84,7 +84,7 @@ export const getPayoutStats = query({
         );
         const paidThisWeekCount = paidThisWeek.length;
         const paidThisWeekAmount = paidThisWeek.reduce(
-            (sum, s) => sum + s.creatorPayout,
+            (sum, s) => sum + (s.creatorPayout ?? 0),
             0
         );
 

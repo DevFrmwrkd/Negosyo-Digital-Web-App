@@ -1,0 +1,155 @@
+---
+/**
+ * HeroC - Centered Carousel
+ * Light background (#fafafa) with dot grid pattern, centered content,
+ * and infinite scrolling image carousel at bottom.
+ * Ported from hero-styles.ts generateHeroStyle3.
+ */
+interface Props {
+  businessName: string;
+  headline: string;
+  description: string;
+  badgeText?: string;
+  testimonial?: string;
+  ctaLabel?: string;
+  ctaLink?: string;
+  photos: string[];
+  services?: Array<{ name: string; description: string }>;
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  headline,
+  badgeText,
+  ctaLabel = 'Book a Call',
+  ctaLink = '#contact',
+  photos = [],
+  visibility,
+} = Astro.props;
+
+// Visibility defaults
+const showHeadline = visibility?.heroHeadline !== false;
+const showTagline = visibility?.heroTagline !== false;
+const showButton = visibility?.heroButton !== false;
+const showImage = visibility?.heroImage !== false;
+
+// Build carousel images: loop to fill at least 8 slots for seamless scroll
+const carouselImages: string[] = [];
+if (photos.length > 0) {
+  const minImages = 8;
+  while (carouselImages.length < minImages) {
+    for (const photo of photos) {
+      carouselImages.push(photo);
+      if (carouselImages.length >= minImages) break;
+    }
+  }
+}
+
+// Split headline to make last part italic
+// Look for " in " or " for " to italicize the rest, else last 2 words
+let headlinePart1 = headline;
+let headlinePart2 = '';
+
+const lowerHeadline = headline.toLowerCase();
+let splitIndex = lowerHeadline.lastIndexOf(' in ');
+if (splitIndex === -1) {
+  splitIndex = lowerHeadline.lastIndexOf(' for ');
+}
+
+if (splitIndex !== -1) {
+  // Find the actual preposition length (3 for "in", 4 for "for") + leading space
+  const preposition = lowerHeadline.charAt(splitIndex + 1) === 'i' ? ' in ' : ' for ';
+  headlinePart1 = headline.substring(0, splitIndex + preposition.length);
+  headlinePart2 = headline.substring(splitIndex + preposition.length);
+} else {
+  // Fallback: italicize last 2 words
+  const words = headline.split(' ');
+  if (words.length > 2) {
+    headlinePart1 = words.slice(0, -2).join(' ') + ' ';
+    headlinePart2 = words.slice(-2).join(' ');
+  }
+}
+---
+
+<section id="hero" class="relative min-h-screen overflow-hidden pt-20"
+         style="background-color: #fafafa; background-image: radial-gradient(circle, #e5e5e5 1px, transparent 1px); background-size: 20px 20px;">
+
+  {/* Centered Content */}
+  <div class="mx-auto max-w-[1200px] px-6 pt-12 text-center md:px-8 md:pt-16 lg:pt-20">
+
+    {/* Business Name Badge */}
+    <div class="mb-6 text-sm font-medium tracking-[0.02em] text-[#666]">
+      {businessName}
+    </div>
+
+    {/* Headline with Italic Accent */}
+    {showHeadline && (
+      <h1 class="mb-5 font-medium leading-[1.15] tracking-[-0.02em] text-[#1a1a1a] md:text-[clamp(2.5rem,6vw,4rem)]"
+          style="font-size: clamp(2rem, 5vw, 3.5rem); font-family: var(--heading-font, inherit);">
+        {headlinePart1}{headlinePart2 && (
+          <span class="italic font-normal">{headlinePart2}</span>
+        )}
+      </h1>
+    )}
+
+    {/* Description - uses badgeText as description in this style */}
+    {showTagline && badgeText && (
+      <p class="mx-auto mb-8 max-w-[500px] text-base leading-[1.6] text-[#666] md:text-[1.0625rem]">
+        {badgeText}
+      </p>
+    )}
+
+    {/* CTA Button */}
+    {showButton && (
+      <a href={ctaLink}
+         class="inline-flex items-center justify-center rounded-lg bg-[#e85a30] px-7 py-3.5 text-[0.9375rem] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d14a22] hover:shadow-[0_4px_12px_rgba(232,90,48,0.3)]">
+        {ctaLabel}
+      </a>
+    )}
+  </div>
+
+  {/* Image Carousel */}
+  {showImage && carouselImages.length > 0 && (
+    <div class="hero-c-carousel relative mt-12 overflow-hidden md:mt-16">
+      {/* Fade edges */}
+      <div class="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[100px] bg-gradient-to-r from-[#fafafa] to-transparent"></div>
+      <div class="pointer-events-none absolute inset-y-0 right-0 z-[2] w-[100px] bg-gradient-to-l from-[#fafafa] to-transparent"></div>
+
+      {/* Carousel Track: duplicated images for seamless loop */}
+      <div class="hero-c-track flex w-fit gap-4 md:gap-5">
+        {/* First set */}
+        {carouselImages.map((img, i) => (
+          <div class="flex-shrink-0 w-[200px] h-[240px] overflow-hidden rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:w-[260px] md:h-[300px] md:rounded-2xl lg:w-[280px] lg:h-[320px]">
+            <img src={img} alt={`${businessName} - Image ${(i % photos.length) + 1}`} loading="lazy" class="h-full w-full object-cover" />
+          </div>
+        ))}
+        {/* Duplicate set for seamless loop */}
+        {carouselImages.map((img, i) => (
+          <div class="flex-shrink-0 w-[200px] h-[240px] overflow-hidden rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:w-[260px] md:h-[300px] md:rounded-2xl lg:w-[280px] lg:h-[320px]">
+            <img src={img} alt={`${businessName} - Image ${(i % photos.length) + 1}`} loading="lazy" class="h-full w-full object-cover" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</section>
+
+<style>
+  .hero-c-track {
+    animation: heroC-carousel-scroll 30s linear infinite;
+  }
+
+  .hero-c-carousel:hover .hero-c-track {
+    animation-play-state: paused;
+  }
+
+  @keyframes heroC-carousel-scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+</style>

@@ -331,8 +331,8 @@ export const markPayoutComplete = mutation({
         const creator = await ctx.db.get(submission.creatorId);
         if (creator) {
             await ctx.db.patch(submission.creatorId, {
-                balance: (creator.balance || 0) - submission.creatorPayout,
-                totalEarnings: (creator.totalEarnings || 0) + submission.creatorPayout,
+                balance: (creator.balance || 0) - (submission.creatorPayout ?? 0),
+                totalEarnings: (creator.totalEarnings || 0) + (submission.creatorPayout ?? 0),
             });
         }
     },
