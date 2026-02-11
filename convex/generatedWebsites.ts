@@ -65,6 +65,7 @@ export const updatePublishingInfo = mutation({
         submissionId: v.id('submissions'),
         publishedUrl: v.optional(v.string()),
         netlifySiteId: v.optional(v.string()),
+        cfPagesProjectName: v.optional(v.string()),
         status: v.optional(v.union(v.literal('draft'), v.literal('published'))),
     },
     handler: async (ctx, args) => {
@@ -80,6 +81,7 @@ export const updatePublishingInfo = mutation({
         const updates: any = {};
         if (args.publishedUrl !== undefined) updates.publishedUrl = args.publishedUrl;
         if (args.netlifySiteId !== undefined) updates.netlifySiteId = args.netlifySiteId;
+        if (args.cfPagesProjectName !== undefined) updates.cfPagesProjectName = args.cfPagesProjectName;
         if (args.status !== undefined) {
             updates.status = args.status;
             if (args.status === 'published') {
@@ -97,7 +99,7 @@ export const publish = mutation({
     args: {
         submissionId: v.id('submissions'),
         publishedUrl: v.string(),
-        netlifySiteId: v.string(),
+        cfPagesProjectName: v.string(),
     },
     handler: async (ctx, args) => {
         const website = await ctx.db
@@ -112,7 +114,7 @@ export const publish = mutation({
         await ctx.db.patch(website._id, {
             status: 'published',
             publishedUrl: args.publishedUrl,
-            netlifySiteId: args.netlifySiteId,
+            cfPagesProjectName: args.cfPagesProjectName,
             publishedAt: Date.now(),
         });
 
@@ -139,6 +141,7 @@ export const unpublish = mutation({
             status: 'draft',
             publishedUrl: undefined,
             netlifySiteId: undefined,
+            cfPagesProjectName: undefined,
             publishedAt: undefined,
         });
 

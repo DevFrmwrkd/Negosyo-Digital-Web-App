@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
             .eq('submission_id', submissionId)
             .single()
 
-        const publishedUrl = website?.published_url || submission.website_url || 'https://your-website.netlify.app'
+        const publishedUrl = website?.published_url || submission.website_url || 'https://your-website.pages.dev'
 
         // Send approval email
         await sendApprovalEmail({

@@ -531,11 +531,14 @@ IMPORTANT:
             },
         })
 
-        // Update submission status to website_generated
-        await fetchMutation(api.submissions.updateStatus, {
-            id: submissionId as any,
-            status: 'website_generated',
-        })
+        // Update submission status to website_generated (but don't regress if already deployed+)
+        const keepStatuses = ['deployed', 'pending_payment', 'paid']
+        if (!keepStatuses.includes(submissionData.status)) {
+            await fetchMutation(api.submissions.updateStatus, {
+                id: submissionId as any,
+                status: 'website_generated',
+            })
+        }
 
         return NextResponse.json({
             success: true,

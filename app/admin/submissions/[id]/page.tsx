@@ -174,7 +174,7 @@ export default function SubmissionDetailPage() {
         setWebsiteHtmlContent(html)
     }
 
-    // Handler to publish website to Netlify
+    // Handler to publish website to Cloudflare Pages
     const handlePublishWebsite = async () => {
         if (publishingWebsite) return
 
@@ -244,6 +244,38 @@ export default function SubmissionDetailPage() {
             setShowModal(true)
         } finally {
             setRepublishingWebsite(false)
+        }
+    }
+
+    // Handler to unpublish website from Cloudflare Pages
+    const [unpublishingWebsite, setUnpublishingWebsite] = useState(false)
+    const handleUnpublishWebsite = async () => {
+        if (unpublishingWebsite) return
+
+        setUnpublishingWebsite(true)
+        try {
+            const response = await fetch('/api/unpublish-website', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to unpublish website')
+            }
+
+            setWebsitePublishedUrl(null)
+            setModalType('success')
+            setModalMessage('Website unpublished successfully.')
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Unpublish error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to unpublish website')
+            setShowModal(true)
+        } finally {
+            setUnpublishingWebsite(false)
         }
     }
 
@@ -584,8 +616,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 4: Publish/Deploy (for approved status) */}
-                            {submission.status === 'approved' && websiteGenerated && (
+                            {/* Step 4: Publish/Deploy (for approved or website_generated status) */}
+                            {(submission.status === 'approved' || submission.status === 'website_generated') && websiteGenerated && (
                                 <Button
                                     onClick={handlePublishWebsite}
                                     disabled={publishingWebsite}
@@ -601,7 +633,7 @@ export default function SubmissionDetailPage() {
                                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            Publish to Netlify
+                                            Publish Website
                                         </>
                                     )}
                                 </Button>
@@ -719,6 +751,26 @@ export default function SubmissionDetailPage() {
                                                 )}
                                             </button>
                                         )}
+                                        {/* Unpublish button */}
+                                        <button
+                                            onClick={handleUnpublishWebsite}
+                                            disabled={unpublishingWebsite}
+                                            className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {unpublishingWebsite ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    Unpublishing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    </svg>
+                                                    Unpublish
+                                                </>
+                                            )}
+                                        </button>
                                     </>
                                 )}
                             </div>
