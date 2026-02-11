@@ -1,7 +1,7 @@
 {
   "layout": {
-    "businessName": "Fizzy pop soda",
-    "tagline": "Sip, Savor, Sparkle",
+    "businessName": "String and frets",
+    "tagline": "Hit the Right Note",
     "navLinks": [
       {
         "href": "#about",
@@ -21,19 +21,19 @@
       }
     ],
     "socialLinks": [],
-    "colorScheme": "green",
-    "fontPairing": "bold",
+    "colorScheme": "auto",
+    "fontPairing": "modern",
     "contact": {
-      "address": "432 Refreshment Drive, Manila",
+      "address": "435 Harmony Street, Quezon City",
       "email": "azedge17@gmail.com",
-      "phone": "956 465 4677"
+      "phone": "956 456 4567"
     }
   },
   "customizations": {
-    "heroStyle": "B",
+    "heroStyle": "A",
     "aboutStyle": "A",
-    "servicesStyle": "B",
-    "galleryStyle": "C",
+    "servicesStyle": "A",
+    "galleryStyle": "A",
     "contactStyle": "A"
   },
   "visibility": {
@@ -70,27 +70,29 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "Fizzy pop soda",
-    "headline": "Sip, Savor, Sparkle",
-    "description": "Fizzy Pop Soda is a proudly Filipino beverage brand that delivers fun, refreshing flavors in every bottle. With a perfect balance of sweetness and feast, Fizzy Pop offers a variety of soda options that bring joy to every occasion. Our vibrant packaging and bold flavors are designed to stand out and become a favorite choice for family, friends, and celebrations.",
+    "businessName": "String and frets",
+    "headline": "Hit the Right Note",
+    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
     ],
     "services": [
       {
-        "description": "Get your favorite Fizzy Pop Soda flavors with customized packaging for special events and occasions",
-        "name": "Customized Soda Orders"
+        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
+        "name": "Guitar Sales"
       },
       {
-        "description": "Visit our store and experience a guided tasting of our unique and delicious soda flavors",
-        "name": "Soda Tasting Experience"
+        "description": "Get a bespoke guitar tailored to your playing style and preferences",
+        "name": "Customization"
       },
       {
-        "description": "Order our party packs and bundles for a convenient and refreshing way to enjoy Fizzy Pop Soda with friends and family",
-        "name": "Party Packs and Bundles"
+        "description": "Trust our skilled technicians to restore your instrument to its former glory",
+        "name": "Instrument Repair"
       }
     ],
     "visibility": {
@@ -103,19 +105,21 @@
     }
   },
   "about": {
-    "businessName": "Fizzy pop soda",
-    "description": "Fizzy Pop Soda is a proudly Filipino beverage brand that delivers fun, refreshing flavors in every bottle. With a perfect balance of sweetness and feast, Fizzy Pop offers a variety of soda options that bring joy to every occasion. Our vibrant packaging and bold flavors are designed to stand out and become a favorite choice for family, friends, and celebrations.",
+    "businessName": "String and frets",
+    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
     "headline": "About Us",
     "usps": [
-      "Unique Filipino flavors",
-      "Vibrant and colorful packaging",
-      "Perfect balance of sweetness and taste"
+      "Customized Guitars",
+      "Wide Instrument Range",
+      "Personalized Service"
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -130,20 +134,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Get your favorite Fizzy Pop Soda flavors with customized packaging for special events and occasions",
-        "name": "Customized Soda Orders"
+        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
+        "name": "Guitar Sales"
       },
       {
-        "description": "Visit our store and experience a guided tasting of our unique and delicious soda flavors",
-        "name": "Soda Tasting Experience"
+        "description": "Get a bespoke guitar tailored to your playing style and preferences",
+        "name": "Customization"
       },
       {
-        "description": "Order our party packs and bundles for a convenient and refreshing way to enjoy Fizzy Pop Soda with friends and family",
-        "name": "Party Packs and Bundles"
+        "description": "Trust our skilled technicians to restore your instrument to its former glory",
+        "name": "Instrument Repair"
       }
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -154,54 +158,56 @@
     }
   },
   "gallery": {
-    "headline": "Featured Flavors",
-    "subheadline": "Try our signature soda flavors that are perfect for any occasion",
+    "headline": "Featured Products",
+    "subheadline": "Discover our handpicked selection of exceptional guitars",
     "items": [
       {
-        "title": "Classic Cola",
-        "description": "Our take on the classic cola flavor, with a perfect balance of sweetness and a hint of spice. This flavor is a timeless favorite among our customers and is sure to quench your thirst. With its rich, smooth taste, Classic Cola is a must-try for anyone looking for a traditional soda experience.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
+        "title": "Electric Dream",
+        "description": "This stunning electric guitar is designed for the modern player, with a sleek body and versatile pickups. Its rich, resonant tone is perfect for rock, pop, and beyond. With its comfortable neck and precise fretwork, you'll be playing like a pro in no time.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
         "tags": [
-          "Soda",
-          "Short-term"
+          "Electric Guitar",
+          "6-8 weeks"
         ],
         "testimonial": {
           "author": "Mark Reyes",
-          "quote": "I've tried many cola flavors before, but Fizzy Pop Soda's Classic Cola is by far the best. It's so smooth and refreshing, and the packaging is so colorful and fun! I've already ordered a dozen bottles for my next party."
+          "quote": "I've never played a guitar that felt so right. The Electric Dream is my go-to instrument for gigs and recordings. The customization options were incredibly helpful in finding my perfect sound."
         }
       },
       {
-        "title": "Mango Madness",
-        "description": "A sweet and tangy mango flavor that's perfect for summer vacations and outdoor gatherings. This flavor is a favorite among our younger customers, who love the vibrant packaging and joyful, sparkling effect of every soda. With its unique blend of mango puree and a hint of citrus, Mango Madness is a refreshing twist on traditional soda flavors.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
+        "title": "Acoustic Masterpiece",
+        "description": "Experience the warmth and intimacy of our handcrafted acoustic guitar, featuring a solid wood body and delicate inlays. Its balanced tone and impressive projection make it ideal for folk, country, and singer-songwriter performances. Whether you're playing solo or with a band, this guitar is sure to impress.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
         "tags": [
-          "Fruity Soda",
-          "Short-term"
+          "Acoustic Guitar",
+          "8-10 weeks"
         ],
         "testimonial": {
-          "author": "Sophia Santos",
-          "quote": "I'm obsessed with Fizzy Pop Soda's Mango Madness flavor! It's so fruity and delicious, and the packaging is so Instagrammable. I've already recommended it to all my friends and family."
+          "author": "Lia Santos",
+          "quote": "The Acoustic Masterpiece has become my trusted companion for songwriting and live shows. The attention to detail and craftsmanship are exceptional, and the sound is nothing short of breathtaking."
         }
       },
       {
-        "title": "Pineapple Upswing",
-        "description": "A refreshing pineapple flavor with a hint of citrus and a touch of sweetness. This flavor is perfect for those looking for a lighter and more refreshing soda option. With its unique blend of pineapple juice and a hint of coconut, Pineapple Upswing is a tropical getaway in every bottle.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
+        "title": "Bass Beauty",
+        "description": "Get ready to rumble with our powerful bass guitar, designed for the modern bassist. With its sleek design, active pickups, and versatile tone controls, you'll be able to craft the perfect low-end sound for any genre. From jazz to metal, this bass can handle it all.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
         "tags": [
-          "Fruity Soda",
-          "Short-term"
+          "Bass Guitar",
+          "4-6 weeks"
         ],
         "testimonial": {
-          "author": "Rachel Morales",
-          "quote": "I was blown away by Fizzy Pop Soda's Pineapple Upswing flavor! It's so refreshing and light, and the packaging is so cute and colorful. I've already ordered a few cases for my next beach trip."
+          "author": "Ryan Tan",
+          "quote": "I was blown away by the Bass Beauty's tone and playability. The customization process was seamless, and the result is an instrument that perfectly complements my playing style. It's now my primary bass for all my gigs and recordings."
         }
       }
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -211,17 +217,19 @@
     }
   },
   "contact": {
-    "businessName": "Fizzy pop soda",
+    "businessName": "String and frets",
     "email": "azedge17@gmail.com",
-    "phone": "956 465 4677",
-    "address": "432 Refreshment Drive, Manila",
+    "phone": "956 456 4567",
+    "address": "435 Harmony Street, Quezon City",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695893969-c0nhl9mf.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895117-nq4su0kk.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695895817-vzf16iqo.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769695896485-vkglxblg.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
     ],
     "visibility": {
       "contactBadge": true,

@@ -3,29 +3,14 @@ import { auth } from '@clerk/nextjs/server'
 import { fetchQuery, fetchMutation } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-
-interface NetlifySiteResponse {
-    id: string
-    name: string
-    url: string
-    ssl_url: string
-    admin_url: string
-    deploy_url: string
-    state: string
-}
-
-interface NetlifyDeployResponse {
-    id: string
-    site_id: string
-    state: string
-    url: string
-    ssl_url: string
-    deploy_url: string
-}
+import { execSync } from 'child_process'
+import { mkdtempSync, writeFileSync, rmSync } from 'fs'
+import { join } from 'path'
+import { tmpdir } from 'os'
 
 /**
- * Publish a generated website to Netlify
- * Uses free .netlify.app subdomains (businessname.netlify.app)
+ * Publish a generated website to Cloudflare Pages
+ * Uses free .pages.dev subdomains (projectname.pages.dev)
  * POST /api/publish-website
  */
 export async function POST(request: NextRequest) {
@@ -71,78 +56,48 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
         }
 
-        // Get Netlify credentials
-        const netlifyToken = process.env.NETLIFY_ACCESS_TOKEN
-        const teamSlug = process.env.NETLIFY_TEAM_SLUG
+        // Get Cloudflare credentials
+        const cfApiToken = process.env.CLOUDFLARE_API_TOKEN
+        const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID
 
-        if (!netlifyToken) {
+        if (!cfApiToken || !cfAccountId) {
             return NextResponse.json(
-                { error: 'Netlify access token not configured. Check NETLIFY_SETUP.md' },
+                { error: 'Cloudflare credentials not configured. Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.' },
                 { status: 500 }
             )
         }
 
-        // Generate subdomain from business name
+        // Generate project name from business name
         const businessName = submission.businessName || 'business'
-        const subdomain = generateSubdomain(businessName)
+        const projectName = generateProjectName(businessName)
 
-        // Check if site already exists (for re-publishing)
-        let siteId = website.netlifySiteId
-        let siteName = subdomain
-        let existingPublishedUrl = website.publishedUrl
+        // Use existing project or create one
+        let cfProject = website.cfPagesProjectName
 
-        // Validate existing URL - must not have spaces and must be proper format
-        const isValidUrl = existingPublishedUrl &&
-            !existingPublishedUrl.includes(' ') &&
-            /^https:\/\/[a-z0-9-]+\.netlify\.app$/.test(existingPublishedUrl)
+        if (!cfProject) {
+            cfProject = await createCfPagesProject(cfApiToken, cfAccountId, projectName)
+        }
 
-        if (!siteId) {
-            // Create new Netlify site
-            const siteResponse = await createNetlifySite(netlifyToken, subdomain, teamSlug)
-            siteId = siteResponse.id
-            siteName = siteResponse.name  // Get the actual name (might have suffix if taken)
-        } else if (isValidUrl && existingPublishedUrl) {
-            // Site already exists with valid URL - extract site name from existing URL
-            const urlMatch = existingPublishedUrl.match(/https?:\/\/([^.]+)\.netlify\.app/)
-            if (urlMatch) {
-                siteName = urlMatch[1]
-            }
-        } else if (siteId) {
-            // Site exists but URL is invalid - fetch actual site info from Netlify
-            try {
-                const siteInfoResponse = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${netlifyToken}`,
-                    }
-                })
-                if (siteInfoResponse.ok) {
-                    const siteInfo = await siteInfoResponse.json()
-                    siteName = siteInfo.name || subdomain
-                }
-            } catch (e) {
-                console.error('Failed to fetch site info from Netlify:', e)
+        // Deploy using wrangler CLI (if project was deleted externally, recreate and retry)
+        try {
+            await deployWithWrangler(cfApiToken, cfAccountId, cfProject, website.htmlContent)
+        } catch (deployError: any) {
+            if (deployError.message?.includes('Project not found') || deployError.message?.includes('could not find project')) {
+                cfProject = await createCfPagesProject(cfApiToken, cfAccountId, projectName)
+                await deployWithWrangler(cfApiToken, cfAccountId, cfProject, website.htmlContent)
+            } else {
+                throw deployError
             }
         }
 
-        // Deploy the HTML content
-        const deployResponse = await deployToNetlify(
-            netlifyToken,
-            siteId,
-            website.htmlContent,
-            businessName
-        )
-
-        // Construct proper URL (never use invalid existing URL)
-        const publishedUrl = isValidUrl && existingPublishedUrl
-            ? existingPublishedUrl
-            : `https://${siteName}.netlify.app`
+        const publishedUrl = `https://${cfProject}.pages.dev`
 
         // Update generated website in Convex with published info
         try {
             await fetchMutation(api.generatedWebsites.publish, {
                 submissionId: submissionId as Id<"submissions">,
                 publishedUrl,
-                netlifySiteId: siteId,
+                cfPagesProjectName: cfProject,
             })
         } catch (updateError: any) {
             console.error('Database update error:', updateError?.message || updateError)
@@ -161,8 +116,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             url: publishedUrl,
-            siteId,
-            deployId: deployResponse.id,
+            projectName: cfProject,
             message: `Website published successfully to ${publishedUrl}`
         })
 
@@ -176,112 +130,90 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Generate a URL-safe subdomain from business name
+ * Generate a URL-safe project name from business name.
+ * CF Pages project names: lowercase, alphanumeric + hyphens, max 58 chars.
  */
-function generateSubdomain(businessName: string): string {
+function generateProjectName(businessName: string): string {
     return businessName
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')  // Replace non-alphanumeric with hyphens
-        .replace(/^-+|-+$/g, '')       // Remove leading/trailing hyphens
-        .substring(0, 63)              // Netlify subdomain max length
-        || 'business'                  // Fallback
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 58)
+        || 'business'
 }
 
 /**
- * Create a new Netlify site
+ * Create a new Cloudflare Pages project via REST API.
+ * Returns the actual project name (may have suffix if name was taken).
  */
-async function createNetlifySite(
+async function createCfPagesProject(
     token: string,
+    accountId: string,
     name: string,
-    teamSlug?: string
-): Promise<NetlifySiteResponse> {
-    const endpoint = teamSlug
-        ? `https://api.netlify.com/api/v1/accounts/${teamSlug}/sites`
-        : 'https://api.netlify.com/api/v1/sites'
+): Promise<string> {
+    const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name,
+                production_branch: 'main',
+            }),
+        }
+    )
 
-    const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ name })
-    })
+    const data = await response.json()
 
     if (!response.ok) {
-        const error = await response.text()
-
-        // If site name/subdomain is taken, try with a suffix
-        if (response.status === 422 && (error.includes('subdomain') || error.includes('name') || error.includes('unique'))) {
-            const uniqueName = `${name}-${Date.now().toString(36)}`
-            return createNetlifySite(token, uniqueName, teamSlug)
+        // If name is taken, retry with timestamp suffix
+        if (response.status === 409 || data?.errors?.some((e: any) => e.code === 8000007)) {
+            const uniqueName = `${name}-${Date.now().toString(36)}`.substring(0, 58)
+            return createCfPagesProject(token, accountId, uniqueName)
         }
-
-        throw new Error(`Failed to create Netlify site: ${error}`)
+        throw new Error(`Failed to create CF Pages project: ${JSON.stringify(data.errors || data)}`)
     }
 
-    return response.json()
+    return data.result.name
 }
 
 /**
- * Deploy HTML content to Netlify using direct file upload
+ * Deploy HTML content to Cloudflare Pages using wrangler CLI.
+ * Writes HTML to a temp directory and runs `wrangler pages deploy`.
  */
-async function deployToNetlify(
+function deployWithWrangler(
     token: string,
-    siteId: string,
+    accountId: string,
+    projectName: string,
     htmlContent: string,
-    title: string
-): Promise<NetlifyDeployResponse> {
-    // Use the simpler deploy approach - deploy with file content directly
-    // Netlify accepts deploys with file hashes, then we upload the files
+): Promise<void> {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'cf-pages-'))
 
-    // Calculate SHA1 hash of the content (Netlify uses this for file addressing)
-    const encoder = new TextEncoder()
-    const data = encoder.encode(htmlContent)
-    const hashBuffer = await crypto.subtle.digest('SHA-1', data)
-    const hashArray = Array.from(new Uint8Array(hashBuffer))
-    const sha1 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    try {
+        // Write HTML to temp directory
+        writeFileSync(join(tmpDir, 'index.html'), htmlContent, 'utf-8')
 
-    // Create deploy with file manifest
-    const response = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            title: `Deploy: ${title}`,
-            files: {
-                '/index.html': sha1
-            }
-        })
-    })
-
-    if (!response.ok) {
-        throw new Error(`Failed to create deploy: ${await response.text()}`)
-    }
-
-    const deploy = await response.json()
-
-    // Check if index.html needs to be uploaded (it will be in required array)
-    if (deploy.required && deploy.required.includes(sha1)) {
-        // Upload the file
-        const uploadResponse = await fetch(
-            `https://api.netlify.com/api/v1/deploys/${deploy.id}/files/index.html`,
+        // Run wrangler pages deploy
+        const result = execSync(
+            `npx wrangler pages deploy "${tmpDir}" --project-name="${projectName}" --branch=main --commit-dirty=true`,
             {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/octet-stream'
+                env: {
+                    ...process.env,
+                    CLOUDFLARE_API_TOKEN: token,
+                    CLOUDFLARE_ACCOUNT_ID: accountId,
                 },
-                body: htmlContent
+                timeout: 60000,
+                encoding: 'utf-8',
             }
         )
 
-        if (!uploadResponse.ok) {
-            throw new Error(`Failed to upload file: ${await uploadResponse.text()}`)
-        }
+    } finally {
+        // Clean up temp directory
+        rmSync(tmpDir, { recursive: true, force: true })
     }
 
-    return deploy
+    return Promise.resolve()
 }

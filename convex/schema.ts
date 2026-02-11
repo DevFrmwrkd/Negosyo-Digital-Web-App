@@ -106,7 +106,8 @@ export default defineSchema({
         // Publishing/deployment
         status: v.union(v.literal('draft'), v.literal('published')),
         publishedUrl: v.optional(v.string()),
-        netlifySiteId: v.optional(v.string()),
+        netlifySiteId: v.optional(v.string()), // DEPRECATED - kept for existing data
+        cfPagesProjectName: v.optional(v.string()), // Cloudflare Pages project name
         publishedAt: v.optional(v.number()),
     })
         .index('by_submissionId', ['submissionId'])
