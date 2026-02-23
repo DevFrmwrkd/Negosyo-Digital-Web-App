@@ -38,6 +38,20 @@ export const getBySubmissionId = query({
     },
 });
 
+/**
+ * Get website content directly by submission ID (uses submissionId field on websiteContent)
+ * This is a fallback for when the generatedWebsites chain doesn't have the data
+ */
+export const getDirectBySubmissionId = query({
+    args: { submissionId: v.id('submissions') },
+    handler: async (ctx, args) => {
+        return await ctx.db
+            .query('websiteContent')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+    },
+});
+
 // ==================== MUTATIONS ====================
 
 /**

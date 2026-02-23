@@ -4,7 +4,8 @@
       "Bash(npx tsc:*)",
       "Bash(npx convex codegen:*)",
       "Bash(npx convex:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

@@ -113,7 +113,7 @@ export default defineSchema({
         .index('by_status', ['status'])
         .index('by_payoutRequested', ['payoutRequestedAt']),
 
-    // Generated websites - technical/deployment data only
+    // Generated websites - technical/deployment data + content (mobile branch merged websiteContent fields here)
     generatedWebsites: defineTable({
         submissionId: v.id('submissions'),
         templateName: v.string(),
@@ -132,8 +132,61 @@ export default defineSchema({
         cfPagesProjectName: v.optional(v.string()), // Cloudflare Pages project name
         publishedAt: v.optional(v.number()),
         // Domain customization
-        subdomain: v.optional(v.string()), // e.g., juans-bakery for juans-bakery.negosyo.digital
-        customDomain: v.optional(v.string()), // e.g., www.juansbakery.com
+        subdomain: v.optional(v.string()),
+        customDomain: v.optional(v.string()),
+        // ==================== CONTENT FIELDS (from mobile branch merge) ====================
+        // Hero section
+        heroTitle: v.optional(v.string()),
+        heroSubtitle: v.optional(v.string()),
+        heroHeadline: v.optional(v.string()),
+        heroSubHeadline: v.optional(v.string()),
+        heroBadgeText: v.optional(v.string()),
+        heroCtaLabel: v.optional(v.string()),
+        heroCtaLink: v.optional(v.string()),
+        heroTestimonial: v.optional(v.string()),
+        // About section
+        aboutText: v.optional(v.string()),
+        aboutDescription: v.optional(v.string()),
+        aboutHeadline: v.optional(v.string()),
+        aboutTagline: v.optional(v.string()),
+        aboutTags: v.optional(v.any()),
+        aboutContent: v.optional(v.string()),
+        // Featured section
+        featuredHeadline: v.optional(v.string()),
+        featuredSubHeadline: v.optional(v.string()),
+        featuredSubheadline: v.optional(v.string()),
+        featuredImages: v.optional(v.any()),
+        featuredProducts: v.optional(v.any()),
+        // Footer/Navbar
+        footerDescription: v.optional(v.string()),
+        navbarHeadline: v.optional(v.string()),
+        navbarCtaLabel: v.optional(v.string()),
+        navbarCtaLink: v.optional(v.string()),
+        navbarCtaText: v.optional(v.string()),
+        navbarLinks: v.optional(v.any()),
+        // Services
+        servicesHeadline: v.optional(v.string()),
+        servicesSubheadline: v.optional(v.string()),
+        servicesDescription: v.optional(v.string()),
+        // Contact
+        contactCta: v.optional(v.string()),
+        // Business info
+        businessName: v.optional(v.string()),
+        tagline: v.optional(v.string()),
+        tone: v.optional(v.string()),
+        // Content data
+        services: v.optional(v.any()),
+        images: v.optional(v.any()),
+        contact: v.optional(v.any()),
+        contactInfo: v.optional(v.any()),
+        uniqueSellingPoints: v.optional(v.any()),
+        visibility: v.optional(v.any()),
+        socialLinks: v.optional(v.any()),
+        // Enhanced images
+        enhancedImages: v.optional(v.any()),
+        // Tracking
+        updatedAt: v.optional(v.number()),
+        airtableSyncedAt: v.optional(v.number()),
     })
         .index('by_submissionId', ['submissionId'])
         .index('by_status', ['status']),
@@ -504,5 +557,6 @@ export default defineSchema({
         // ==================== METADATA ====================
         updatedAt: v.number(),
     })
-        .index('by_websiteId', ['websiteId']),
+        .index('by_websiteId', ['websiteId'])
+        .index('by_submissionId', ['submissionId']),
 });

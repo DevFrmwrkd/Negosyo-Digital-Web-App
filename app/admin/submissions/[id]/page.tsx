@@ -61,6 +61,80 @@ export default function SubmissionDetailPage() {
             : "skip"
     )
 
+    // Fetch enhanced images from websiteContent table
+    const websiteContentRecord = useQuery(
+        api.websiteContent.getBySubmissionId,
+        submissionData ? { submissionId: submissionData._id } : "skip"
+    )
+
+    // Extract enhanced image URLs from all possible sources (same priority as generate-website route)
+    const enhancedImageData = (() => {
+        // Source 1: generatedWebsites.extractedContent.enhancedImages
+        let enhancedImages = (existingWebsite?.extractedContent as any)?.enhancedImages || null
+        // Source 2: websiteContent.enhancedImages
+        if (!enhancedImages) {
+            enhancedImages = (websiteContentRecord as any)?.enhancedImages || null
+        }
+        if (!enhancedImages || typeof enhancedImages !== 'object') return null
+        return enhancedImages as Record<string, { url?: string; storageId?: string }>
+    })()
+
+    // Categorize enhanced images by section (matching generate-website route logic)
+    const enhancedImagesByCategory = (() => {
+        if (!enhancedImageData) return null
+        const categories: Record<string, string[]> = {}
+        const allUrls: string[] = []
+        for (const [key, img] of Object.entries(enhancedImageData)) {
+            const url = img?.url || img?.storageId
+            if (!url) continue
+            allUrls.push(url)
+            if (key.startsWith('interior') || key === 'headshot') {
+                categories.about = categories.about || []
+                categories.about.push(url)
+            }
+            if (key.startsWith('product')) {
+                categories.featured = categories.featured || []
+                categories.featured.push(url)
+            }
+            if (key === 'exterior' || key === 'headshot') {
+                categories.hero = categories.hero || []
+                categories.hero.push(url)
+            }
+            if (key.startsWith('interior') || key === 'exterior') {
+                categories.services = categories.services || []
+                categories.services.push(url)
+            }
+        }
+        return { categories, allUrls }
+    })()
+
+    // Resolve enhanced image URLs (they may be storage IDs that need resolution)
+    const enhancedUrls = enhancedImagesByCategory?.allUrls || []
+    const enhancedStorageIds = enhancedUrls.filter(u => !u.startsWith('http'))
+    const resolvedEnhancedUrls = useQuery(
+        api.files.getMultipleUrls,
+        enhancedStorageIds.length > 0 ? { storageIds: enhancedStorageIds } : "skip"
+    )
+
+    // Build a map from storage ID -> resolved URL for enhanced images
+    const enhancedUrlMap = (() => {
+        const map: Record<string, string> = {}
+        if (resolvedEnhancedUrls) {
+            enhancedStorageIds.forEach((sid, i) => {
+                if (resolvedEnhancedUrls[i]) map[sid] = resolvedEnhancedUrls[i]!
+            })
+        }
+        return map
+    })()
+
+    // Helper to resolve an enhanced URL (storage ID or http URL)
+    const resolveEnhancedUrl = (url: string): string | null => {
+        if (url.startsWith('http')) return url
+        return enhancedUrlMap[url] || null
+    }
+
+    const hasEnhancedImages = (enhancedImagesByCategory?.allUrls?.length ?? 0) > 0
+
     // Prefer R2 URLs (videoUrl/audioUrl) over Convex storage IDs for video/audio
     const hasR2VideoUrl = !!submissionData?.videoUrl
     const hasR2AudioUrl = !!submissionData?.audioUrl
@@ -931,9 +1005,19 @@ export default function SubmissionDetailPage() {
                                                 services: [],
                                                 contact: {}
                                             }),
-                                            // Pass raw storage IDs from websiteContent so VisualEditor can resolve them
-                                            // This ensures newly uploaded images (convex:xxx) are properly resolved
-                                            images: websiteContent?.images || submission?.photos || []
+                                            // Prefer enhanced images over original images for each section
+                                            images: (hasEnhancedImages && enhancedImagesByCategory?.categories.hero?.length)
+                                                ? enhancedImagesByCategory.categories.hero
+                                                : websiteContent?.images || submission?.photos || [],
+                                            about_images: (hasEnhancedImages && enhancedImagesByCategory?.categories.about?.length)
+                                                ? enhancedImagesByCategory.categories.about
+                                                : websiteContent?.about_images,
+                                            services_image: (hasEnhancedImages && enhancedImagesByCategory?.categories.services?.length)
+                                                ? enhancedImagesByCategory.categories.services[0]
+                                                : websiteContent?.services_image,
+                                            featured_images: (hasEnhancedImages && enhancedImagesByCategory?.categories.featured?.length)
+                                                ? enhancedImagesByCategory.categories.featured
+                                                : websiteContent?.featured_images,
                                         }}
                                         htmlContent={websiteHtmlContent || ''}
                                         submissionId={submissionId}
@@ -942,7 +1026,8 @@ export default function SubmissionDetailPage() {
                                         servicesStyle={websiteCustomizations?.servicesStyle || 'A'}
                                         galleryStyle={websiteCustomizations?.galleryStyle || websiteCustomizations?.featuredStyle || 'A'}
                                         availableImages={[
-                                            // Include both hero images and submission photos (resolved URLs) for selection
+                                            // Include enhanced images first (priority), then original photos
+                                            ...(enhancedImagesByCategory?.allUrls?.map(u => resolveEnhancedUrl(u)).filter((url): url is string => url !== null) || []),
                                             ...(heroImageUrls?.filter((url): url is string => url !== null) || []),
                                             ...(photoUrls?.filter((url): url is string => url !== null) || [])
                                         ].filter((url, index, self) => self.indexOf(url) === index)}
