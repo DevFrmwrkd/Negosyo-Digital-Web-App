@@ -61,6 +61,80 @@ export default function SubmissionDetailPage() {
             : "skip"
     )
 
+    // Fetch enhanced images from websiteContent table
+    const websiteContentRecord = useQuery(
+        api.websiteContent.getBySubmissionId,
+        submissionData ? { submissionId: submissionData._id } : "skip"
+    )
+
+    // Extract enhanced image URLs from all possible sources (same priority as generate-website route)
+    const enhancedImageData = (() => {
+        // Source 1: generatedWebsites.extractedContent.enhancedImages
+        let enhancedImages = (existingWebsite?.extractedContent as any)?.enhancedImages || null
+        // Source 2: websiteContent.enhancedImages
+        if (!enhancedImages) {
+            enhancedImages = (websiteContentRecord as any)?.enhancedImages || null
+        }
+        if (!enhancedImages || typeof enhancedImages !== 'object') return null
+        return enhancedImages as Record<string, { url?: string; storageId?: string }>
+    })()
+
+    // Categorize enhanced images by section (matching generate-website route logic)
+    const enhancedImagesByCategory = (() => {
+        if (!enhancedImageData) return null
+        const categories: Record<string, string[]> = {}
+        const allUrls: string[] = []
+        for (const [key, img] of Object.entries(enhancedImageData)) {
+            const url = img?.url || img?.storageId
+            if (!url) continue
+            allUrls.push(url)
+            if (key.startsWith('interior') || key === 'headshot') {
+                categories.about = categories.about || []
+                categories.about.push(url)
+            }
+            if (key.startsWith('product')) {
+                categories.featured = categories.featured || []
+                categories.featured.push(url)
+            }
+            if (key === 'exterior' || key === 'headshot') {
+                categories.hero = categories.hero || []
+                categories.hero.push(url)
+            }
+            if (key.startsWith('interior') || key === 'exterior') {
+                categories.services = categories.services || []
+                categories.services.push(url)
+            }
+        }
+        return { categories, allUrls }
+    })()
+
+    // Resolve enhanced image URLs (they may be storage IDs that need resolution)
+    const enhancedUrls = enhancedImagesByCategory?.allUrls || []
+    const enhancedStorageIds = enhancedUrls.filter(u => !u.startsWith('http'))
+    const resolvedEnhancedUrls = useQuery(
+        api.files.getMultipleUrls,
+        enhancedStorageIds.length > 0 ? { storageIds: enhancedStorageIds } : "skip"
+    )
+
+    // Build a map from storage ID -> resolved URL for enhanced images
+    const enhancedUrlMap = (() => {
+        const map: Record<string, string> = {}
+        if (resolvedEnhancedUrls) {
+            enhancedStorageIds.forEach((sid, i) => {
+                if (resolvedEnhancedUrls[i]) map[sid] = resolvedEnhancedUrls[i]!
+            })
+        }
+        return map
+    })()
+
+    // Helper to resolve an enhanced URL (storage ID or http URL)
+    const resolveEnhancedUrl = (url: string): string | null => {
+        if (url.startsWith('http')) return url
+        return enhancedUrlMap[url] || null
+    }
+
+    const hasEnhancedImages = (enhancedImagesByCategory?.allUrls?.length ?? 0) > 0
+
     // Prefer R2 URLs (videoUrl/audioUrl) over Convex storage IDs for video/audio
     const hasR2VideoUrl = !!submissionData?.videoUrl
     const hasR2AudioUrl = !!submissionData?.audioUrl
@@ -88,6 +162,10 @@ export default function SubmissionDetailPage() {
     // Mutations
     const updateSubmissionMutation = useMutation(api.submissions.update)
     const updateStatusMutation = useMutation(api.submissions.updateStatus)
+    const approveSubmissionMutation = useMutation(api.admin.approveSubmission)
+    const rejectSubmissionMutation = useMutation(api.admin.rejectSubmission)
+    const markDeployedMutation = useMutation(api.admin.markDeployed)
+    const markPaidMutation = useMutation(api.admin.markPaid)
 
     const authLoading = !isLoaded || (user && currentCreator === undefined)
     const dataLoading = isAdmin && submissionData === undefined
@@ -134,6 +212,11 @@ export default function SubmissionDetailPage() {
     const [showMarkPaidModal, setShowMarkPaidModal] = useState(false)
     const [markingPaid, setMarkingPaid] = useState(false)
 
+    // Rejection reason modal state
+    const [showRejectModal, setShowRejectModal] = useState(false)
+    const [rejectionReason, setRejectionReason] = useState('')
+    const [rejecting, setRejecting] = useState(false)
+
     // Lightbox state
     const [lightboxOpen, setLightboxOpen] = useState(false)
     const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -174,7 +257,7 @@ export default function SubmissionDetailPage() {
         setWebsiteHtmlContent(html)
     }
 
-    // Handler to publish website to Netlify
+    // Handler to publish website to Cloudflare Pages
     const handlePublishWebsite = async () => {
         if (publishingWebsite) return
 
@@ -197,6 +280,20 @@ export default function SubmissionDetailPage() {
 
             const data = await response.json()
             setWebsitePublishedUrl(data.url)
+
+            // Create audit trail for deployment
+            if (user && submissionData) {
+                try {
+                    await markDeployedMutation({
+                        submissionId: submissionData._id,
+                        adminId: user.id,
+                        websiteUrl: data.url,
+                    })
+                } catch (auditErr) {
+                    console.error('Audit log error (non-blocking):', auditErr)
+                }
+            }
+
             setModalType('success')
             setModalMessage(`Website published successfully! View at: ${data.url}`)
             setShowModal(true)
@@ -244,6 +341,38 @@ export default function SubmissionDetailPage() {
             setShowModal(true)
         } finally {
             setRepublishingWebsite(false)
+        }
+    }
+
+    // Handler to unpublish website from Cloudflare Pages
+    const [unpublishingWebsite, setUnpublishingWebsite] = useState(false)
+    const handleUnpublishWebsite = async () => {
+        if (unpublishingWebsite) return
+
+        setUnpublishingWebsite(true)
+        try {
+            const response = await fetch('/api/unpublish-website', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to unpublish website')
+            }
+
+            setWebsitePublishedUrl(null)
+            setModalType('success')
+            setModalMessage('Website unpublished successfully.')
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Unpublish error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to unpublish website')
+            setShowModal(true)
+        } finally {
+            setUnpublishingWebsite(false)
         }
     }
 
@@ -369,8 +498,48 @@ export default function SubmissionDetailPage() {
     }
 
     const handleStatusUpdate = async (newStatus: string) => {
-        if (!submissionData) return
+        if (!submissionData || !user) return
 
+        // Route approve/reject through wired admin mutations
+        if (newStatus === 'approved') {
+            setUpdating(true)
+            try {
+                await approveSubmissionMutation({
+                    submissionId: submissionData._id,
+                    adminId: user.id,
+                })
+                setModalType('success')
+                setModalMessage('Submission approved successfully!')
+                setShowModal(true)
+
+                // Send approval email
+                try {
+                    await fetch('/api/send-approval-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ submissionId })
+                    })
+                } catch (error) {
+                    console.error('Failed to send approval email:', error)
+                }
+            } catch (err: any) {
+                console.error('Approve error:', err)
+                setModalType('error')
+                setModalMessage('Failed to approve. Please try again.')
+                setShowModal(true)
+            } finally {
+                setUpdating(false)
+            }
+            return
+        }
+
+        if (newStatus === 'rejected') {
+            // Show rejection reason modal instead of immediately rejecting
+            setShowRejectModal(true)
+            return
+        }
+
+        // For other statuses, use the generic updateStatus mutation
         setUpdating(true)
         try {
             await updateStatusMutation({
@@ -381,19 +550,6 @@ export default function SubmissionDetailPage() {
             setModalType('success')
             setModalMessage(`Submission ${newStatus} successfully!`)
             setShowModal(true)
-
-            // If approved, send email to business owner
-            if (newStatus === 'approved') {
-                try {
-                    await fetch('/api/send-approval-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ submissionId })
-                    })
-                } catch (error) {
-                    console.error('Failed to send approval email:', error)
-                }
-            }
         } catch (err: any) {
             console.error('Status update error:', err)
             setModalType('error')
@@ -404,25 +560,46 @@ export default function SubmissionDetailPage() {
         }
     }
 
+    const handleRejectWithReason = async () => {
+        if (!submissionData || !user) return
+
+        setRejecting(true)
+        try {
+            await rejectSubmissionMutation({
+                submissionId: submissionData._id,
+                adminId: user.id,
+                reason: rejectionReason || undefined,
+            })
+            setShowRejectModal(false)
+            setRejectionReason('')
+            setModalType('success')
+            setModalMessage('Submission rejected successfully.')
+            setShowModal(true)
+        } catch (err: any) {
+            console.error('Reject error:', err)
+            setModalType('error')
+            setModalMessage('Failed to reject. Please try again.')
+            setShowModal(true)
+        } finally {
+            setRejecting(false)
+        }
+    }
+
     const handleMarkAsPaid = async () => {
+        if (!submissionData || !user) return
+
         setMarkingPaid(true)
         try {
-            const response = await fetch(`/api/submissions/${submissionId}/mark-paid`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+            await markPaidMutation({
+                submissionId: submissionData._id,
+                adminId: user.id,
             })
-
-            if (!response.ok) {
-                throw new Error('Failed to mark as paid')
-            }
-
-            const data = await response.json()
             setShowMarkPaidModal(false)
             setModalType('success')
-            setModalMessage(`Payment confirmed! Creator balance updated to ₱${data.newBalance.toLocaleString()}`)
+            setModalMessage(`Payment confirmed! Earning record created and creator balance updated.`)
             setShowModal(true)
-            refresh()
         } catch (error: any) {
+            console.error('Mark paid error:', error)
             setModalType('error')
             setModalMessage('Failed to mark as paid. Please try again.')
             setShowModal(true)
@@ -550,8 +727,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 2: Generate Website (for in_review, approved, or deployed status) */}
-                            {(submission.status === 'in_review' || submission.status === 'approved' || submission.status === 'deployed') && (
+                            {/* Step 2: Generate Website (for in_review, website_generated, approved, or deployed status) */}
+                            {(submission.status === 'in_review' || submission.status === 'website_generated' || submission.status === 'approved' || submission.status === 'deployed') && (
                                 <Button
                                     onClick={() => handleGenerateWebsite()}
                                     disabled={generatingWebsite}
@@ -573,8 +750,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 3: Approve (for in_review status when website is generated) */}
-                            {submission.status === 'in_review' && websiteGenerated && (
+                            {/* Step 3: Approve (for website_generated or in_review status when website exists) */}
+                            {(submission.status === 'website_generated' || (submission.status === 'in_review' && websiteGenerated)) && (
                                 <Button
                                     onClick={() => handleStatusUpdate('approved')}
                                     disabled={updating}
@@ -584,8 +761,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 4: Publish/Deploy (for approved status) */}
-                            {submission.status === 'approved' && websiteGenerated && (
+                            {/* Step 4: Publish/Deploy (for approved or website_generated status) */}
+                            {(submission.status === 'approved' || submission.status === 'website_generated') && websiteGenerated && (
                                 <Button
                                     onClick={handlePublishWebsite}
                                     disabled={publishingWebsite}
@@ -601,7 +778,7 @@ export default function SubmissionDetailPage() {
                                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            Publish to Netlify
+                                            Publish Website
                                         </>
                                     )}
                                 </Button>
@@ -633,11 +810,11 @@ export default function SubmissionDetailPage() {
                             {/* Step 6: Mark as Paid (for pending_payment status) */}
                             {submission.status === 'pending_payment' && (
                                 <Button
-                                    onClick={() => handleStatusUpdate('paid')}
-                                    disabled={updating}
+                                    onClick={() => setShowMarkPaidModal(true)}
+                                    disabled={markingPaid}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                 >
-                                    {updating ? 'Updating...' : '💰 Mark as Paid'}
+                                    {markingPaid ? 'Processing...' : '💰 Mark as Paid'}
                                 </Button>
                             )}
 
@@ -719,6 +896,26 @@ export default function SubmissionDetailPage() {
                                                 )}
                                             </button>
                                         )}
+                                        {/* Unpublish button */}
+                                        <button
+                                            onClick={handleUnpublishWebsite}
+                                            disabled={unpublishingWebsite}
+                                            className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {unpublishingWebsite ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    Unpublishing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    </svg>
+                                                    Unpublish
+                                                </>
+                                            )}
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -808,19 +1005,29 @@ export default function SubmissionDetailPage() {
                                                 services: [],
                                                 contact: {}
                                             }),
-                                            // Pass raw storage IDs from websiteContent so VisualEditor can resolve them
-                                            // This ensures newly uploaded images (convex:xxx) are properly resolved
-                                            images: websiteContent?.images || submission?.photos || []
+                                            // Prefer enhanced images over original images for each section
+                                            images: (hasEnhancedImages && enhancedImagesByCategory?.categories.hero?.length)
+                                                ? enhancedImagesByCategory.categories.hero
+                                                : websiteContent?.images || submission?.photos || [],
+                                            about_images: (hasEnhancedImages && enhancedImagesByCategory?.categories.about?.length)
+                                                ? enhancedImagesByCategory.categories.about
+                                                : websiteContent?.about_images,
+                                            services_image: (hasEnhancedImages && enhancedImagesByCategory?.categories.services?.length)
+                                                ? enhancedImagesByCategory.categories.services[0]
+                                                : websiteContent?.services_image,
+                                            featured_images: (hasEnhancedImages && enhancedImagesByCategory?.categories.featured?.length)
+                                                ? enhancedImagesByCategory.categories.featured
+                                                : websiteContent?.featured_images,
                                         }}
                                         htmlContent={websiteHtmlContent || ''}
                                         submissionId={submissionId}
-                                        navbarStyle={websiteCustomizations?.navbarStyle || '1'}
-                                        heroStyle={websiteCustomizations?.heroStyle || '1'}
-                                        aboutStyle={websiteCustomizations?.aboutStyle || '1'}
-                                        servicesStyle={websiteCustomizations?.servicesStyle || '1'}
-                                        featuredStyle={websiteCustomizations?.featuredStyle || '1'}
+                                        heroStyle={websiteCustomizations?.heroStyle || 'A'}
+                                        aboutStyle={websiteCustomizations?.aboutStyle || 'A'}
+                                        servicesStyle={websiteCustomizations?.servicesStyle || 'A'}
+                                        galleryStyle={websiteCustomizations?.galleryStyle || websiteCustomizations?.featuredStyle || 'A'}
                                         availableImages={[
-                                            // Include both hero images and submission photos (resolved URLs) for selection
+                                            // Include enhanced images first (priority), then original photos
+                                            ...(enhancedImagesByCategory?.allUrls?.map(u => resolveEnhancedUrl(u)).filter((url): url is string => url !== null) || []),
                                             ...(heroImageUrls?.filter((url): url is string => url !== null) || []),
                                             ...(photoUrls?.filter((url): url is string => url !== null) || [])
                                         ].filter((url, index, self) => self.indexOf(url) === index)}
@@ -991,7 +1198,8 @@ export default function SubmissionDetailPage() {
                                 {(isEditing ? editedData.photos : (submission.photos || [])).map((url: string, index: number) => {
                                     // Get the resolved URL from photoUrls for display
                                     // photoUrls contains the resolved HTTP URLs from Convex storage
-                                    const resolvedUrl = photoUrls?.[index] || (url?.startsWith('http') ? url : null)
+                                    const raw = photoUrls?.[index] || url
+                                    const resolvedUrl = raw?.startsWith('http') ? raw : null
 
                                     if (!resolvedUrl) return null
 
@@ -1308,7 +1516,7 @@ export default function SubmissionDetailPage() {
                                 <p className="text-sm font-medium text-blue-900 mb-2">This will:</p>
                                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
                                     <li>Update submission status to "Paid"</li>
-                                    <li>Add ₱{submission.creator_payout.toLocaleString()} to creator's balance</li>
+                                    <li>Add ₱{(submission.creator_payout ?? 0).toLocaleString()} to creator's balance</li>
                                     <li>Update creator's total earnings</li>
                                 </ul>
                             </div>
@@ -1320,11 +1528,11 @@ export default function SubmissionDetailPage() {
                                 </div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-gray-600">Amount:</span>
-                                    <span className="font-medium text-gray-900">₱{submission.amount.toLocaleString()}</span>
+                                    <span className="font-medium text-gray-900">₱{(submission.amount ?? 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Creator Payout:</span>
-                                    <span className="font-bold text-green-600">₱{submission.creator_payout.toLocaleString()}</span>
+                                    <span className="font-bold text-green-600">₱{(submission.creator_payout ?? 0).toLocaleString()}</span>
                                 </div>
                             </div>
 
@@ -1349,10 +1557,47 @@ export default function SubmissionDetailPage() {
                 </div>
             )}
 
+            {/* Rejection Reason Modal */}
+            {showRejectModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Reject Submission</h3>
+                        <p className="text-gray-600 mb-4">
+                            Provide a reason for rejecting this submission (optional).
+                        </p>
+                        <textarea
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="Reason for rejection..."
+                            className="w-full h-32 p-3 border border-gray-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowRejectModal(false)
+                                    setRejectionReason('')
+                                }}
+                                disabled={rejecting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleRejectWithReason}
+                                disabled={rejecting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all disabled:opacity-50"
+                            >
+                                {rejecting ? 'Rejecting...' : 'Reject'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Photo Lightbox */}
             {lightboxOpen && photoUrls && photoUrls.length > 0 && (
                 <PhotoLightbox
-                    photos={photoUrls.filter((url): url is string => url !== null)}
+                    photos={photoUrls.filter((url): url is string => url !== null && url.startsWith('http'))}
                     initialIndex={lightboxIndex}
                     onClose={() => setLightboxOpen(false)}
                 />

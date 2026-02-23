@@ -1,0 +1,118 @@
+---
+/**
+ * AboutB - Minimal Italic
+ * White/clean background with minimal design.
+ * Left: Large italic serif description text.
+ * Right: Small "About us" label with arrow.
+ * Bottom left: Auto-cycling image slideshow.
+ */
+interface Props {
+  businessName: string;
+  description: string;
+  headline?: string;
+  tagline?: string;
+  tags?: string[];
+  usps?: string[];
+  photos: string[];
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  description,
+  headline,
+  tagline,
+  tags = [],
+  usps = [],
+  photos = [],
+  visibility,
+} = Astro.props;
+
+// Visibility defaults (all visible unless explicitly false)
+const showDescription = visibility?.aboutDescription !== false;
+const showImages = visibility?.aboutImages !== false;
+
+// Use all available photos for the slideshow
+const slideshowPhotos = photos.length > 0 ? photos : [];
+---
+
+<section id="about" class="relative overflow-hidden bg-white py-20 md:py-28 lg:py-32">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+
+    {/* Top: Description + Label */}
+    <div class="reveal grid grid-cols-1 items-start gap-8 md:grid-cols-[1fr_auto] md:gap-16">
+
+      {/* LEFT: Large italic description */}
+      {showDescription && (
+        <p class="reveal max-w-3xl leading-[1.5] text-[var(--secondary,#1F2933)]"
+           style="font-size: clamp(1.5rem, 3vw, 2.5rem); font-style: italic; font-weight: 400; font-family: var(--heading-font, inherit);">
+          {description}
+        </p>
+      )}
+
+      {/* RIGHT: "About us" label */}
+      <div class="reveal reveal-delay-1 flex items-center gap-2 whitespace-nowrap pt-2 text-sm font-medium text-[var(--secondary,#1F2933)]/60">
+        <span>About us</span>
+        <span class="text-base">&rarr;</span>
+      </div>
+    </div>
+
+    {/* Bottom left: Image slideshow */}
+    {showImages && slideshowPhotos.length > 0 && (
+      <div class="reveal reveal-delay-2 mt-14 md:mt-20">
+        <div class="about-b-slideshow relative max-w-[400px] overflow-hidden rounded-2xl" data-photos={JSON.stringify(slideshowPhotos)}>
+          {slideshowPhotos.map((photo, index) => (
+            <img
+              src={photo}
+              alt={`${businessName} - ${index + 1}`}
+              class={`about-b-slide aspect-[4/5] w-full object-cover transition-opacity duration-700 ${index === 0 ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+              loading="lazy"
+              data-index={index}
+            />
+          ))}
+        </div>
+      </div>
+    )}
+  </div>
+</section>
+
+<script>
+  // Auto-cycling slideshow for AboutB
+  function initAboutBSlideshow() {
+    const container = document.querySelector('.about-b-slideshow');
+    if (!container) return;
+
+    const slides = container.querySelectorAll<HTMLImageElement>('.about-b-slide');
+    if (slides.length <= 1) return;
+
+    let currentIndex = 0;
+
+    setInterval(() => {
+      const prevIndex = currentIndex;
+      currentIndex = (currentIndex + 1) % slides.length;
+
+      slides[prevIndex].classList.remove('opacity-100');
+      slides[prevIndex].classList.add('opacity-0');
+      slides[currentIndex].classList.remove('opacity-0');
+      slides[currentIndex].classList.add('opacity-100');
+    }, 4000);
+  }
+
+  // Run on page load
+  initAboutBSlideshow();
+</script>
+
+<style>
+  .about-b-slideshow {
+    position: relative;
+  }
+
+  .about-b-slide {
+    transition: opacity 0.7s ease-in-out;
+  }
+
+  .about-b-slide:not(:first-child) {
+    position: absolute;
+    inset: 0;
+  }
+</style>

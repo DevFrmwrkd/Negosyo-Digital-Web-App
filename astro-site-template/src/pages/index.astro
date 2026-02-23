@@ -1,0 +1,83 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// Hero components
+import HeroA from '../components/heroes/HeroA.astro';
+import HeroB from '../components/heroes/HeroB.astro';
+import HeroC from '../components/heroes/HeroC.astro';
+import HeroD from '../components/heroes/HeroD.astro';
+
+// About components
+import AboutA from '../components/about/AboutA.astro';
+import AboutB from '../components/about/AboutB.astro';
+import AboutC from '../components/about/AboutC.astro';
+import AboutD from '../components/about/AboutD.astro';
+
+// Services components
+import ServicesA from '../components/services/ServicesA.astro';
+import ServicesB from '../components/services/ServicesB.astro';
+import ServicesC from '../components/services/ServicesC.astro';
+import ServicesD from '../components/services/ServicesD.astro';
+
+// Gallery components
+import GalleryA from '../components/gallery/GalleryA.astro';
+import GalleryB from '../components/gallery/GalleryB.astro';
+import GalleryC from '../components/gallery/GalleryC.astro';
+import GalleryD from '../components/gallery/GalleryD.astro';
+
+// Contact components
+import ContactA from '../components/contact/ContactA.astro';
+import ContactB from '../components/contact/ContactB.astro';
+import ContactC from '../components/contact/ContactC.astro';
+import ContactD from '../components/contact/ContactD.astro';
+
+// Import site data
+import siteData from '../data/site-data.json';
+
+// Component maps
+const heroComponents: Record<string, any> = { A: HeroA, B: HeroB, C: HeroC, D: HeroD };
+const aboutComponents: Record<string, any> = { A: AboutA, B: AboutB, C: AboutC, D: AboutD };
+const servicesComponents: Record<string, any> = { A: ServicesA, B: ServicesB, C: ServicesC, D: ServicesD };
+const galleryComponents: Record<string, any> = { A: GalleryA, B: GalleryB, C: GalleryC, D: GalleryD };
+const contactComponents: Record<string, any> = { A: ContactA, B: ContactB, C: ContactC, D: ContactD };
+
+// Select components based on customizations
+const HeroComponent = heroComponents[siteData.customizations.heroStyle] || HeroA;
+const AboutComponent = aboutComponents[siteData.customizations.aboutStyle] || AboutA;
+const ServicesComponent = servicesComponents[siteData.customizations.servicesStyle] || ServicesA;
+const GalleryComponent = galleryComponents[siteData.customizations.galleryStyle] || GalleryA;
+const ContactComponent = contactComponents[siteData.customizations.contactStyle] || ContactA;
+
+// Visibility shortcuts
+const vis = siteData.visibility;
+---
+
+<BaseLayout
+  businessName={siteData.layout.businessName}
+  tagline={siteData.layout.tagline}
+  navLinks={siteData.layout.navLinks}
+  socialLinks={siteData.layout.socialLinks}
+  colorScheme={siteData.layout.colorScheme}
+  fontPairing={siteData.layout.fontPairing}
+  contact={siteData.layout.contact}
+>
+  {vis.heroSection !== false && (
+    <HeroComponent {...siteData.hero} />
+  )}
+
+  {vis.aboutSection !== false && (
+    <AboutComponent {...siteData.about} />
+  )}
+
+  {vis.servicesSection !== false && (
+    <ServicesComponent {...siteData.services} />
+  )}
+
+  {vis.gallerySection !== false && (
+    <GalleryComponent {...siteData.gallery} />
+  )}
+
+  {vis.contactSection !== false && (
+    <ContactComponent {...siteData.contact} />
+  )}
+</BaseLayout>

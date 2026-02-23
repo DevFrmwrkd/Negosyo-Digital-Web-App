@@ -1,0 +1,243 @@
+{
+  "layout": {
+    "businessName": "Ben-Joe Tire Supply",
+    "tagline": "Tires that Take You Further",
+    "navLinks": [
+      {
+        "href": "#about",
+        "label": "About"
+      },
+      {
+        "href": "#services",
+        "label": "Services"
+      },
+      {
+        "href": "#featured",
+        "label": "Featured"
+      },
+      {
+        "href": "#contact",
+        "label": "Contacts"
+      }
+    ],
+    "socialLinks": [],
+    "colorScheme": "auto",
+    "fontPairing": "modern",
+    "contact": {
+      "address": "1747-E Evangelista St., Bangkal, Makati City",
+      "email": "jov.b20@gmail.com",
+      "phone": "9186246127"
+    }
+  },
+  "customizations": {
+    "heroStyle": "A",
+    "aboutStyle": "A",
+    "servicesStyle": "A",
+    "galleryStyle": "A",
+    "contactStyle": "A"
+  },
+  "visibility": {
+    "heroSection": true,
+    "heroHeadline": true,
+    "heroTagline": true,
+    "heroDescription": true,
+    "heroTestimonial": true,
+    "heroButton": true,
+    "heroImage": true,
+    "aboutSection": true,
+    "aboutBadge": true,
+    "aboutHeadline": true,
+    "aboutDescription": true,
+    "aboutImages": true,
+    "aboutTagline": true,
+    "aboutTags": true,
+    "servicesSection": true,
+    "servicesBadge": true,
+    "servicesHeadline": true,
+    "servicesSubheadline": true,
+    "servicesImage": true,
+    "servicesList": true,
+    "gallerySection": true,
+    "galleryHeadline": true,
+    "gallerySubheadline": true,
+    "galleryItems": true,
+    "galleryImages": true,
+    "contactSection": true,
+    "contactBadge": true,
+    "contactHeadline": true,
+    "contactDescription": true,
+    "contactInfo": true,
+    "contactSocial": true
+  },
+  "hero": {
+    "businessName": "Ben-Joe Tire Supply",
+    "headline": "Tires that Take You Further",
+    "description": "Ben-Joe Tire Supply is a trusted auto shop in Makati City, offering high-quality surplus and brand new tires, as well as surplus rims. With a commitment to excellent service, we ensure that every customer leaves satisfied. Established in 2010, we pride ourselves on providing reliable and affordable solutions for all your tire needs.",
+    "photos": [
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+    ],
+    "services": [
+      {
+        "description": "Expert tire replacement services for all vehicle types",
+        "name": "Tire Replacement"
+      },
+      {
+        "description": "Surplus rims in various sizes to fit your vehicle's needs",
+        "name": "Rim Sales"
+      },
+      {
+        "description": "Comprehensive tire inspections to ensure your safety on the road",
+        "name": "Tire Inspection"
+      }
+    ],
+    "visibility": {
+      "heroHeadline": true,
+      "heroTagline": true,
+      "heroDescription": true,
+      "heroTestimonial": true,
+      "heroButton": true,
+      "heroImage": true
+    }
+  },
+  "about": {
+    "businessName": "Ben-Joe Tire Supply",
+    "description": "Ben-Joe Tire Supply is a trusted auto shop in Makati City, offering high-quality surplus and brand new tires, as well as surplus rims. With a commitment to excellent service, we ensure that every customer leaves satisfied. Established in 2010, we pride ourselves on providing reliable and affordable solutions for all your tire needs.",
+    "headline": "About Us",
+    "usps": [
+      "High-quality surplus tires",
+      "Competitive pricing",
+      "Personalized customer service"
+    ],
+    "photos": [
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba"
+    ],
+    "visibility": {
+      "aboutBadge": true,
+      "aboutHeadline": true,
+      "aboutDescription": true,
+      "aboutImages": true,
+      "aboutTagline": true,
+      "aboutTags": true
+    }
+  },
+  "services": {
+    "headline": "Our Services",
+    "services": [
+      {
+        "description": "Expert tire replacement services for all vehicle types",
+        "name": "Tire Replacement"
+      },
+      {
+        "description": "Surplus rims in various sizes to fit your vehicle's needs",
+        "name": "Rim Sales"
+      },
+      {
+        "description": "Comprehensive tire inspections to ensure your safety on the road",
+        "name": "Tire Inspection"
+      }
+    ],
+    "photos": [
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852"
+    ],
+    "visibility": {
+      "servicesBadge": true,
+      "servicesHeadline": true,
+      "servicesSubheadline": true,
+      "servicesImage": true,
+      "servicesList": true
+    }
+  },
+  "gallery": {
+    "headline": "Featured Products",
+    "subheadline": "Explore our top-of-the-line tire and rim offerings, carefully selected to provide you with the best driving experience",
+    "items": [
+      {
+        "title": "Surplus Tire Package",
+        "description": "Our surplus tire package includes high-quality, gently used tires that have been thoroughly inspected to ensure safety and reliability. With a wide range of sizes available, we can fit any vehicle. Our team of experts will help you find the perfect tires for your needs.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+        "tags": [
+          "Tire Replacement",
+          "1-2 days"
+        ],
+        "testimonial": {
+          "author": "Mark Santos",
+          "quote": "I was impressed by the quality of the surplus tires I purchased from Ben-Joe Tire Supply. The price was unbeatable and the service was top-notch. I've already recommended them to my friends and family."
+        }
+      },
+      {
+        "title": "Brand New Tire Sale",
+        "description": "Get the best brand new tires on the market at competitive prices. Our brand new tire sale features top brands and models, carefully selected to provide you with the best performance, safety, and fuel efficiency. Our knowledgeable staff will help you choose the perfect tires for your vehicle.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+        "tags": [
+          "Tire Replacement",
+          "Same-day installation"
+        ],
+        "testimonial": {
+          "author": "Rachel Reyes",
+          "quote": "I recently purchased brand new tires from Ben-Joe Tire Supply and I'm extremely satisfied with the performance. The staff was knowledgeable and helpful, and the installation was quick and efficient."
+        }
+      },
+      {
+        "title": "Surplus Rim Package",
+        "description": "Our surplus rim package includes high-quality, gently used rims in various sizes to fit your vehicle's needs. Our team of experts will help you find the perfect rims to match your tires and enhance your vehicle's appearance.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+        "tags": [
+          "Rim Sales",
+          "1-3 days"
+        ],
+        "testimonial": {
+          "author": "Juan Lopez",
+          "quote": "I was looking for a unique set of rims for my car and Ben-Joe Tire Supply had exactly what I needed. The surplus rim package was affordable and the quality was exceptional. I'm very happy with my purchase."
+        }
+      }
+    ],
+    "images": [
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+    ],
+    "photos": [
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+    ],
+    "visibility": {
+      "galleryHeadline": true,
+      "gallerySubheadline": true,
+      "galleryItems": true,
+      "galleryImages": true
+    }
+  },
+  "contact": {
+    "businessName": "Ben-Joe Tire Supply",
+    "email": "jov.b20@gmail.com",
+    "phone": "9186246127",
+    "address": "1747-E Evangelista St., Bangkal, Makati City",
+    "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
+    "socialLinks": [],
+    "photos": [
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+    ],
+    "visibility": {
+      "contactBadge": true,
+      "contactHeadline": true,
+      "contactDescription": true,
+      "contactInfo": true,
+      "contactSocial": true
+    }
+  }
+}

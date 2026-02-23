@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { Id } from './_generated/dataModel';
+import { internal } from './_generated/api';
 
 // ==================== QUERIES ====================
 
@@ -150,6 +151,10 @@ export const create = mutation({
         ownerEmail: v.optional(v.string()),
         address: v.string(),
         city: v.string(),
+        province: v.optional(v.string()),
+        barangay: v.optional(v.string()),
+        postalCode: v.optional(v.string()),
+        coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
         photos: v.optional(v.array(v.string())),
         videoStorageId: v.optional(v.id('_storage')),
         audioStorageId: v.optional(v.id('_storage')),
@@ -179,6 +184,10 @@ export const create = mutation({
             ownerEmail: args.ownerEmail,
             address: args.address,
             city: args.city,
+            province: args.province,
+            barangay: args.barangay,
+            postalCode: args.postalCode,
+            coordinates: args.coordinates,
             photos: args.photos ?? [],
             videoStorageId: args.videoStorageId,
             audioStorageId: args.audioStorageId,
@@ -187,6 +196,15 @@ export const create = mutation({
             amount: args.amount ?? 1000,
             creatorPayout: args.creatorPayout ?? 500,
         });
+
+        // Increment creator's submissionCount and lastActiveAt
+        const creator = await ctx.db.get(args.creatorId);
+        if (creator) {
+            await ctx.db.patch(args.creatorId, {
+                submissionCount: (creator.submissionCount || 0) + 1,
+                lastActiveAt: Date.now(),
+            });
+        }
 
         return submissionId;
     },
@@ -205,6 +223,11 @@ export const update = mutation({
         ownerEmail: v.optional(v.string()),
         address: v.optional(v.string()),
         city: v.optional(v.string()),
+        province: v.optional(v.string()),
+        barangay: v.optional(v.string()),
+        postalCode: v.optional(v.string()),
+        coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+        businessDescription: v.optional(v.string()),
         photos: v.optional(v.array(v.string())),
         videoStorageId: v.optional(v.id('_storage')),
         audioStorageId: v.optional(v.id('_storage')),
@@ -217,6 +240,7 @@ export const update = mutation({
         websiteCode: v.optional(v.string()),
         amount: v.optional(v.number()),
         creatorPayout: v.optional(v.number()),
+        platformFee: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
         const { id, ...updates } = args;
@@ -261,7 +285,28 @@ export const updateStatus = mutation({
 export const submit = mutation({
     args: { id: v.id('submissions') },
     handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.id);
         await ctx.db.patch(args.id, { status: 'submitted' });
+
+        // Increment analytics on submit
+        if (submission) {
+            const today = new Date().toISOString().split('T')[0];
+            const month = today.substring(0, 7);
+            await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+                creatorId: submission.creatorId,
+                period: today,
+                periodType: 'daily',
+                field: 'submissionsCount',
+                delta: 1,
+            });
+            await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+                creatorId: submission.creatorId,
+                period: month,
+                periodType: 'monthly',
+                field: 'submissionsCount',
+                delta: 1,
+            });
+        }
     },
 });
 
@@ -331,8 +376,8 @@ export const markPayoutComplete = mutation({
         const creator = await ctx.db.get(submission.creatorId);
         if (creator) {
             await ctx.db.patch(submission.creatorId, {
-                balance: (creator.balance || 0) - submission.creatorPayout,
-                totalEarnings: (creator.totalEarnings || 0) + submission.creatorPayout,
+                balance: (creator.balance || 0) - (submission.creatorPayout ?? 0),
+                totalEarnings: (creator.totalEarnings || 0) + (submission.creatorPayout ?? 0),
             });
         }
     },

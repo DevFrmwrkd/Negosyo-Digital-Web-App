@@ -3,11 +3,7 @@ import { Save, RotateCcw, Eye, EyeOff, Image as ImageIcon, Upload } from 'lucide
 import { toast } from 'sonner'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { getHeroStyleFields } from '@/lib/templates/hero-styles'
-import { getServicesStyleFields } from '@/lib/templates/services-styles'
-import { getAboutStyleFields } from '@/lib/templates/about-styles'
-import { getFeaturedStyleFields } from '@/lib/templates/featured-styles'
-import { getNavbarStyleFields } from '@/lib/templates/navbar-styles'
+import { getHeroStyleFields, getAboutStyleFields, getServicesStyleFields, getGalleryStyleFields } from '@/lib/template-fields'
 
 interface Service {
     name: string
@@ -143,11 +139,10 @@ interface VisualEditorProps {
     submissionId: string
     onSave: (content: WebsiteContent) => Promise<void>
     availableImages?: string[] // Images from submission stored in Convex
-    navbarStyle?: string // Navbar section style variant
     heroStyle?: string // Hero section style variant
     aboutStyle?: string // About section style variant
     servicesStyle?: string // Services section style variant
-    featuredStyle?: string // Featured section style variant
+    galleryStyle?: string // Gallery section style variant (was featuredStyle)
 }
 
 export default function VisualEditor({
@@ -156,11 +151,10 @@ export default function VisualEditor({
     submissionId,
     onSave,
     availableImages = [],
-    navbarStyle = '1',
-    heroStyle = '1',
-    aboutStyle = '1',
-    servicesStyle = '1',
-    featuredStyle = '1'
+    heroStyle = 'A',
+    aboutStyle = 'A',
+    servicesStyle = 'A',
+    galleryStyle = 'A'
 }: VisualEditorProps) {
     const [content, setContent] = useState<WebsiteContent>(initialContent)
     const [isSaving, setIsSaving] = useState(false)
@@ -185,9 +179,6 @@ export default function VisualEditor({
     const [resolvedServicesImage, setResolvedServicesImage] = useState<string | null>(null)
     const [resolvedFeaturedImages, setResolvedFeaturedImages] = useState<string[]>([])
 
-    // Get which fields the current navbar style uses
-    const navbarFields = useMemo(() => getNavbarStyleFields(navbarStyle), [navbarStyle])
-
     // Get which fields the current hero style uses
     const heroFields = useMemo(() => getHeroStyleFields(heroStyle), [heroStyle])
 
@@ -197,8 +188,8 @@ export default function VisualEditor({
     // Get which fields the current services style uses
     const servicesFields = useMemo(() => getServicesStyleFields(servicesStyle), [servicesStyle])
 
-    // Get which fields the current featured style uses
-    const featuredFields = useMemo(() => getFeaturedStyleFields(featuredStyle), [featuredStyle])
+    // Get which fields the current gallery style uses
+    const galleryFields = useMemo(() => getGalleryStyleFields(galleryStyle), [galleryStyle])
 
     // Sync initialContent changes to content state (for when props update after mount)
     useEffect(() => {
@@ -444,8 +435,8 @@ export default function VisualEditor({
                 next.navbar_links = [
                     { label: 'About', href: '#about' },
                     { label: 'Services', href: '#services' },
-                    { label: 'Featured', href: '#featured' },
-                    { label: 'Contacts', href: '#contact' }
+                    { label: 'Gallery', href: '#gallery' },
+                    { label: 'Contact', href: '#contact' }
                 ]
                 changed = true
             }
@@ -729,81 +720,7 @@ export default function VisualEditor({
                             </div>
                         )}
 
-                        {/* Navbar Headline - Only show for navbar style 4 (Headline with Bullets) */}
-                        {content.visibility?.navbar !== false && navbarFields.usesHeadline && (
-                            <div
-                                onMouseEnter={() => highlightElement('.nav-headline')}
-                                onMouseLeave={removeHighlight}
-                                className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"
-                            >
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Navbar Headline
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => updateField('visibility', {
-                                            ...content.visibility,
-                                            navbar_headline: content.visibility?.navbar_headline === false ? true : false
-                                        })}
-                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                            content.visibility?.navbar_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
-                                        }`}
-                                    >
-                                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                            content.visibility?.navbar_headline !== false ? 'translate-x-4.5' : 'translate-x-1'
-                                        }`} />
-                                    </button>
-                                </div>
-                                <input
-                                    type="text"
-                                    value={content.navbar_headline || 'Timeless Designs Built To Be Desired'}
-                                    onChange={(e) => updateField('navbar_headline', e.target.value)}
-                                    placeholder="Timeless Designs Built To Be Desired"
-                                    disabled={content.visibility?.navbar_headline === false}
-                                    className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                        content.visibility?.navbar_headline === false ? 'opacity-50 bg-gray-100' : ''
-                                    }`}
-                                />
-                                <p className="text-xs text-gray-500 mt-2">A short tagline displayed next to your brand name</p>
-                            </div>
-                        )}
-
-                        {/* Navbar CTA Button - Only show for styles that use CTA */}
-                        {content.visibility?.navbar !== false && navbarFields.usesCta && (
-                            <div
-                                onMouseEnter={() => highlightElement('.cta-button')}
-                                onMouseLeave={removeHighlight}
-                                className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"
-                            >
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    CTA Button
-                                </label>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Button Text</label>
-                                        <input
-                                            type="text"
-                                            value={content.navbar_cta_text || 'Get in Touch'}
-                                            onChange={(e) => updateField('navbar_cta_text', e.target.value)}
-                                            placeholder="Get in Touch"
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Button Link</label>
-                                        <input
-                                            type="text"
-                                            value={content.navbar_cta_link || '#contact'}
-                                            onChange={(e) => updateField('navbar_cta_link', e.target.value)}
-                                            placeholder="#contact"
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-3">Customize the call-to-action button in your navigation bar</p>
-                            </div>
-                        )}
+                        {/* Navbar headline and CTA removed - BaseLayout uses a unified navbar design */}
                     </div>
 
                     {/* Hero Section - All fields grouped together */}
@@ -2491,12 +2408,12 @@ export default function VisualEditor({
                         )}
                     </div>
 
-                    {/* Featured Section */}
+                    {/* Gallery Section (was Featured) */}
                     <div className="space-y-4">
-                        {/* Featured Section Header with Toggle */}
+                        {/* Gallery Section Header with Toggle */}
                         <div
                             className="flex items-center justify-between"
-                            onMouseEnter={() => highlightElement('.featured-refit-wrapper')}
+                            onMouseEnter={() => highlightElement('#gallery')}
                             onMouseLeave={removeHighlight}
                         >
                             <h4 className={`font-medium text-lg flex items-center gap-2 ${
@@ -2507,7 +2424,7 @@ export default function VisualEditor({
                                 ) : (
                                     <EyeOff className="w-4 h-4" />
                                 )}
-                                Featured Section
+                                Gallery Section
                             </h4>
                             <button
                                 type="button"
@@ -2621,7 +2538,7 @@ export default function VisualEditor({
                                 </div>
 
                                 {/* Featured CTA Button - Only show if style uses CTA */}
-                                {featuredFields.usesCta && (
+                                {galleryFields.usesCta && (
                                     <div
                                         onMouseEnter={() => highlightElement('.featured-masonry .cta-button')}
                                         onMouseLeave={removeHighlight}
@@ -2660,7 +2577,7 @@ export default function VisualEditor({
                                 )}
 
                                 {/* Featured Products List - Only show if style uses products */}
-                                {featuredFields.usesProducts && (
+                                {galleryFields.usesProducts && (
                                 <div
                                     onMouseEnter={() => highlightElement('.featured-refit .projects-container')}
                                     onMouseLeave={removeHighlight}
@@ -2734,7 +2651,7 @@ export default function VisualEditor({
                                                     </div>
 
                                                     {/* Product Image - shown for all product-based styles */}
-                                                    {featuredFields.usesProducts && (() => {
+                                                    {galleryFields.usesProducts && (() => {
                                                         // Calculate actual display image (explicit or fallback)
                                                         const fallbackImage = availableImages[index % Math.max(availableImages.length, 1)]
                                                         const displayImage = project.image || fallbackImage
@@ -2779,7 +2696,7 @@ export default function VisualEditor({
                                                     })()}
 
                                                     {/* Description - only shown for styles that use it */}
-                                                    {featuredFields.usesTestimonials && (
+                                                    {galleryFields.usesTestimonials && (
                                                         <textarea
                                                             value={project.description}
                                                             onChange={(e) => {
@@ -2794,7 +2711,7 @@ export default function VisualEditor({
                                                     )}
 
                                                     {/* Tags/Category - shown for all styles */}
-                                                    {featuredFields.usesTags && (
+                                                    {galleryFields.usesTags && (
                                                         <input
                                                             type="text"
                                                             value={project.tags?.join(', ') || ''}
@@ -2809,7 +2726,7 @@ export default function VisualEditor({
                                                     )}
 
                                                     {/* Testimonial - only shown for styles that use it */}
-                                                    {featuredFields.usesTestimonials && (
+                                                    {galleryFields.usesTestimonials && (
                                                         <div className="pt-2 border-t border-gray-200 space-y-2">
                                                             <p className="text-xs text-gray-500">Testimonial (optional):</p>
                                                             <textarea
@@ -2856,7 +2773,7 @@ export default function VisualEditor({
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const newProject = featuredFields.usesTestimonials
+                                                    const newProject = galleryFields.usesTestimonials
                                                         ? {
                                                             title: '',
                                                             description: '',
@@ -2885,7 +2802,7 @@ export default function VisualEditor({
                                 )}
 
                                 {/* Featured Images Gallery - Only show if style uses images (Style 3) */}
-                                {featuredFields.usesImages && (
+                                {galleryFields.usesImages && (
                                 <div
                                     onMouseEnter={() => highlightElement('.featured-gallery .gallery-grid')}
                                     onMouseLeave={removeHighlight}
@@ -3123,12 +3040,12 @@ export default function VisualEditor({
                         )}
                     </div>
 
-                    {/* Footer Section */}
+                    {/* Contact Section (was Footer) */}
                     <div className="space-y-4">
-                        {/* Footer Section Header with Toggle */}
+                        {/* Contact Section Header with Toggle */}
                         <div
                             className="flex items-center justify-between"
-                            onMouseEnter={() => highlightElement('.footer-refit-wrapper')}
+                            onMouseEnter={() => highlightElement('#contact')}
                             onMouseLeave={removeHighlight}
                         >
                             <h4 className={`font-medium text-lg flex items-center gap-2 ${
@@ -3139,7 +3056,7 @@ export default function VisualEditor({
                                 ) : (
                                     <EyeOff className="w-4 h-4" />
                                 )}
-                                Footer Section
+                                Contact Section
                             </h4>
                             <button
                                 type="button"

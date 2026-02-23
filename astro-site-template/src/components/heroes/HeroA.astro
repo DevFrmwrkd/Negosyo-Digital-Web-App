@@ -1,0 +1,111 @@
+---
+/**
+ * HeroA - Split Dark Modern
+ * Dark background (#0a0a0a) with split grid layout: content left (45%) + image right (55%).
+ * Ported from hero-styles.ts generateHeroStyle1.
+ */
+interface Props {
+  businessName: string;
+  headline: string;
+  description: string;
+  badgeText?: string;
+  testimonial?: string;
+  ctaLabel?: string;
+  ctaLink?: string;
+  photos: string[];
+  services?: Array<{ name: string; description: string }>;
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  headline,
+  description,
+  badgeText,
+  testimonial,
+  ctaLabel = 'Work with us',
+  ctaLink = '#services',
+  photos = [],
+  visibility,
+} = Astro.props;
+
+const mainPhoto = photos[0] || '';
+
+// Visibility defaults (all visible unless explicitly false)
+const showHeadline = visibility?.heroHeadline !== false;
+const showTagline = visibility?.heroTagline !== false && !!badgeText;
+const showDescription = visibility?.heroDescription !== false;
+const showTestimonial = visibility?.heroTestimonial !== false && !!testimonial;
+const showButton = visibility?.heroButton !== false;
+const showImage = visibility?.heroImage !== false;
+---
+
+<section id="hero" class="relative min-h-screen overflow-hidden bg-[#0a0a0a] pt-20 md:pt-24 lg:pt-28">
+  <div class="mx-auto grid max-w-[1400px] grid-cols-1 items-center gap-8 p-8 md:grid-cols-[1fr_1fr] md:gap-12 md:px-16 md:py-12 lg:grid-cols-[45%_55%] lg:gap-16 lg:px-20 lg:py-16">
+
+    {/* Content Side */}
+    <div class="order-2 flex flex-col justify-center pt-8 md:order-1 md:pt-0">
+
+      {showTagline && (
+        <div class="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2">
+          <span class="h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)] animate-pulse-dot"></span>
+          <span class="text-[0.8rem] tracking-[0.02em] text-white/85">{badgeText}</span>
+        </div>
+      )}
+
+      {showHeadline && (
+        <h1 class="mb-6 font-medium leading-[1.1] tracking-[-0.02em] text-white"
+            style="font-size: clamp(2.5rem, 6vw, 4.5rem); font-family: var(--heading-font, inherit);">
+          {headline}
+        </h1>
+      )}
+
+      {showDescription && (
+        <p class="mb-10 max-w-[420px] leading-[1.7] text-white/65"
+           style="font-size: clamp(1rem, 1.5vw, 1.125rem);">
+          {description}
+        </p>
+      )}
+
+      {showButton && (
+        <a href={ctaLink}
+           class="inline-flex w-fit items-center justify-center gap-3 rounded-full bg-white px-6 py-4 text-[0.9rem] font-medium text-[#0a0a0a] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_10px_30px_rgba(255,255,255,0.15)]">
+          {ctaLabel}
+          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#0a0a0a] transition-transform duration-300 group-hover:rotate-45">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7 7h10v10"></path>
+              <path d="M7 17L17 7"></path>
+            </svg>
+          </span>
+        </a>
+      )}
+    </div>
+
+    {/* Image Side */}
+    {showImage && (
+      <div class="relative order-1 min-h-[300px] md:order-2 md:h-full md:min-h-0">
+        <div class="relative h-full min-h-[350px] overflow-hidden rounded-[16px] md:min-h-[500px] md:rounded-[20px] lg:min-h-[600px] lg:rounded-[24px]">
+          {mainPhoto ? (
+            <img src={mainPhoto} alt={businessName} class="h-full w-full object-cover object-center" />
+          ) : (
+            <div class="h-full w-full bg-gradient-to-br from-[#1a1a1a] to-[#333]"></div>
+          )}
+
+          {/* Floating Testimonial Card - desktop only */}
+          {showTestimonial && (
+            <div class="absolute bottom-6 right-4 hidden max-w-[280px] rounded-xl bg-white/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-[20px] md:block md:bottom-8 md:right-6 md:p-5 lg:bottom-10 lg:right-8 lg:max-w-[300px] lg:p-6">
+              <div class="mb-3 flex gap-1">
+                {Array.from({ length: 5 }).map(() => (
+                  <svg class="h-3.5 w-3.5 fill-[var(--primary,#6B8F71)]" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                  </svg>
+                ))}
+              </div>
+              <p class="text-[0.85rem] italic leading-[1.6] text-[#1a1a1a]">"{testimonial}"</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+</section>

@@ -1,0 +1,154 @@
+---
+/**
+ * HeroD - Dark with Services List
+ * Full viewport, dark background with image overlay (85% opacity dark gradient).
+ * Large italic business name on left, "What we do" numbered description on right.
+ * Ported from hero-styles.ts generateHeroStyle4.
+ */
+interface Props {
+  businessName: string;
+  headline: string;
+  description: string;
+  badgeText?: string;
+  testimonial?: string;
+  ctaLabel?: string;
+  ctaLink?: string;
+  photos: string[];
+  services?: Array<{ name: string; description: string }>;
+  visibility?: Record<string, boolean>;
+}
+
+const {
+  businessName,
+  description,
+  badgeText,
+  photos = [],
+  visibility,
+} = Astro.props;
+
+const mainPhoto = photos[0] || '';
+
+// Visibility defaults
+const showTagline = visibility?.heroTagline !== false && !!badgeText;
+const showHeadline = visibility?.heroHeadline !== false;
+const showDescription = visibility?.heroDescription !== false;
+const showImage = visibility?.heroImage !== false;
+
+// Split description into sentences for numbered display
+const descriptionSentences = description
+  ? description.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0)
+  : [];
+---
+
+<section id="hero" class="relative flex min-h-screen w-full items-center overflow-hidden">
+
+  {/* Background Image or Gradient Fallback */}
+  {showImage && mainPhoto ? (
+    <div class="absolute inset-0 z-[1]">
+      <img src={mainPhoto} alt={businessName} class="h-full w-full object-cover object-center" />
+      <div class="absolute inset-0" style="background: linear-gradient(135deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,0.5) 100%);"></div>
+    </div>
+  ) : (
+    <div class="absolute inset-0 z-[1] bg-gradient-to-br from-[#0a0a0a] to-[#1a1a2e]"></div>
+  )}
+
+  {/* Content Grid */}
+  <div class="relative z-[2] mx-auto grid w-full max-w-[1400px] grid-cols-1 gap-12 px-8 pt-32 pb-16 md:gap-16 md:px-12 md:pt-40 md:pb-20 lg:grid-cols-[1.2fr_1fr] lg:items-center lg:gap-24 lg:px-16 lg:pt-48 lg:pb-24">
+
+    {/* Left Column - Badge and Business Name */}
+    <div class="flex flex-col gap-6">
+
+      {showTagline && (
+        <div class="hero-d-badge inline-flex w-fit items-center gap-2.5 rounded-full border border-white/12 bg-white/8 px-4 py-2">
+          <span class="hero-d-dot h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)]"></span>
+          <span class="text-xs font-medium uppercase tracking-[0.1em] text-white/85">{badgeText}</span>
+        </div>
+      )}
+
+      {showHeadline && (
+        <h1 class="hero-d-headline font-semibold italic leading-none tracking-[-0.03em] text-white"
+            style="font-size: clamp(3rem, 8vw, 8rem); font-family: var(--heading-font, inherit);">
+          {businessName}
+        </h1>
+      )}
+    </div>
+
+    {/* Right Column - What We Do */}
+    {showDescription && description && (
+      <div class="hero-d-right flex flex-col gap-4 lg:border-l lg:border-white/15 lg:pl-8">
+        <span class="text-[0.8125rem] font-medium uppercase tracking-[0.1em] text-white/50">
+          What we do
+        </span>
+
+        {descriptionSentences.length > 1 ? (
+          descriptionSentences.map((sentence, i) => (
+            <div class="flex items-start gap-4">
+              <span class="shrink-0 pt-1 text-xs font-semibold text-[var(--primary,#6B8F71)]">
+                {String(i + 1).padStart(2, '0')}
+              </span>
+              <p class="text-base leading-[1.7] text-white/75 md:text-[1.0625rem]">
+                {sentence.trim()}
+              </p>
+            </div>
+          ))
+        ) : (
+          <div class="flex items-start gap-4">
+            <span class="shrink-0 pt-1 text-xs font-semibold text-[var(--primary,#6B8F71)]">
+              01
+            </span>
+            <p class="text-base leading-[1.7] text-white/75 md:text-[1.0625rem]">
+              {description}
+            </p>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  /* Badge fade-up */
+  .hero-d-badge {
+    opacity: 0;
+    animation: heroD-fade-up 0.8s ease-out 0.1s forwards;
+  }
+
+  /* Dot pulse */
+  .hero-d-dot {
+    animation: heroD-dot-pulse 2s ease-in-out infinite;
+  }
+
+  /* Headline fade-up */
+  .hero-d-headline {
+    opacity: 0;
+    animation: heroD-fade-up 0.8s ease-out 0.3s forwards;
+  }
+
+  /* Right column fade-up */
+  .hero-d-right {
+    opacity: 0;
+    animation: heroD-fade-up 0.8s ease-out 0.5s forwards;
+  }
+
+  @keyframes heroD-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes heroD-dot-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.6;
+      transform: scale(1.2);
+    }
+  }
+</style>
