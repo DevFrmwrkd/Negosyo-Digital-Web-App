@@ -88,6 +88,10 @@ export default function SubmissionDetailPage() {
     // Mutations
     const updateSubmissionMutation = useMutation(api.submissions.update)
     const updateStatusMutation = useMutation(api.submissions.updateStatus)
+    const approveSubmissionMutation = useMutation(api.admin.approveSubmission)
+    const rejectSubmissionMutation = useMutation(api.admin.rejectSubmission)
+    const markDeployedMutation = useMutation(api.admin.markDeployed)
+    const markPaidMutation = useMutation(api.admin.markPaid)
 
     const authLoading = !isLoaded || (user && currentCreator === undefined)
     const dataLoading = isAdmin && submissionData === undefined
@@ -133,6 +137,11 @@ export default function SubmissionDetailPage() {
     // Mark as Paid modal state
     const [showMarkPaidModal, setShowMarkPaidModal] = useState(false)
     const [markingPaid, setMarkingPaid] = useState(false)
+
+    // Rejection reason modal state
+    const [showRejectModal, setShowRejectModal] = useState(false)
+    const [rejectionReason, setRejectionReason] = useState('')
+    const [rejecting, setRejecting] = useState(false)
 
     // Lightbox state
     const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -197,6 +206,20 @@ export default function SubmissionDetailPage() {
 
             const data = await response.json()
             setWebsitePublishedUrl(data.url)
+
+            // Create audit trail for deployment
+            if (user && submissionData) {
+                try {
+                    await markDeployedMutation({
+                        submissionId: submissionData._id,
+                        adminId: user.id,
+                        websiteUrl: data.url,
+                    })
+                } catch (auditErr) {
+                    console.error('Audit log error (non-blocking):', auditErr)
+                }
+            }
+
             setModalType('success')
             setModalMessage(`Website published successfully! View at: ${data.url}`)
             setShowModal(true)
@@ -401,8 +424,48 @@ export default function SubmissionDetailPage() {
     }
 
     const handleStatusUpdate = async (newStatus: string) => {
-        if (!submissionData) return
+        if (!submissionData || !user) return
 
+        // Route approve/reject through wired admin mutations
+        if (newStatus === 'approved') {
+            setUpdating(true)
+            try {
+                await approveSubmissionMutation({
+                    submissionId: submissionData._id,
+                    adminId: user.id,
+                })
+                setModalType('success')
+                setModalMessage('Submission approved successfully!')
+                setShowModal(true)
+
+                // Send approval email
+                try {
+                    await fetch('/api/send-approval-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ submissionId })
+                    })
+                } catch (error) {
+                    console.error('Failed to send approval email:', error)
+                }
+            } catch (err: any) {
+                console.error('Approve error:', err)
+                setModalType('error')
+                setModalMessage('Failed to approve. Please try again.')
+                setShowModal(true)
+            } finally {
+                setUpdating(false)
+            }
+            return
+        }
+
+        if (newStatus === 'rejected') {
+            // Show rejection reason modal instead of immediately rejecting
+            setShowRejectModal(true)
+            return
+        }
+
+        // For other statuses, use the generic updateStatus mutation
         setUpdating(true)
         try {
             await updateStatusMutation({
@@ -413,19 +476,6 @@ export default function SubmissionDetailPage() {
             setModalType('success')
             setModalMessage(`Submission ${newStatus} successfully!`)
             setShowModal(true)
-
-            // If approved, send email to business owner
-            if (newStatus === 'approved') {
-                try {
-                    await fetch('/api/send-approval-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ submissionId })
-                    })
-                } catch (error) {
-                    console.error('Failed to send approval email:', error)
-                }
-            }
         } catch (err: any) {
             console.error('Status update error:', err)
             setModalType('error')
@@ -436,25 +486,46 @@ export default function SubmissionDetailPage() {
         }
     }
 
+    const handleRejectWithReason = async () => {
+        if (!submissionData || !user) return
+
+        setRejecting(true)
+        try {
+            await rejectSubmissionMutation({
+                submissionId: submissionData._id,
+                adminId: user.id,
+                reason: rejectionReason || undefined,
+            })
+            setShowRejectModal(false)
+            setRejectionReason('')
+            setModalType('success')
+            setModalMessage('Submission rejected successfully.')
+            setShowModal(true)
+        } catch (err: any) {
+            console.error('Reject error:', err)
+            setModalType('error')
+            setModalMessage('Failed to reject. Please try again.')
+            setShowModal(true)
+        } finally {
+            setRejecting(false)
+        }
+    }
+
     const handleMarkAsPaid = async () => {
+        if (!submissionData || !user) return
+
         setMarkingPaid(true)
         try {
-            const response = await fetch(`/api/submissions/${submissionId}/mark-paid`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+            await markPaidMutation({
+                submissionId: submissionData._id,
+                adminId: user.id,
             })
-
-            if (!response.ok) {
-                throw new Error('Failed to mark as paid')
-            }
-
-            const data = await response.json()
             setShowMarkPaidModal(false)
             setModalType('success')
-            setModalMessage(`Payment confirmed! Creator balance updated to ₱${data.newBalance.toLocaleString()}`)
+            setModalMessage(`Payment confirmed! Earning record created and creator balance updated.`)
             setShowModal(true)
-            refresh()
         } catch (error: any) {
+            console.error('Mark paid error:', error)
             setModalType('error')
             setModalMessage('Failed to mark as paid. Please try again.')
             setShowModal(true)
@@ -665,11 +736,11 @@ export default function SubmissionDetailPage() {
                             {/* Step 6: Mark as Paid (for pending_payment status) */}
                             {submission.status === 'pending_payment' && (
                                 <Button
-                                    onClick={() => handleStatusUpdate('paid')}
-                                    disabled={updating}
+                                    onClick={() => setShowMarkPaidModal(true)}
+                                    disabled={markingPaid}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                 >
-                                    {updating ? 'Updating...' : '💰 Mark as Paid'}
+                                    {markingPaid ? 'Processing...' : '💰 Mark as Paid'}
                                 </Button>
                             )}
 
@@ -1396,6 +1467,43 @@ export default function SubmissionDetailPage() {
                                     {markingPaid ? 'Processing...' : 'Confirm Payment'}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Rejection Reason Modal */}
+            {showRejectModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Reject Submission</h3>
+                        <p className="text-gray-600 mb-4">
+                            Provide a reason for rejecting this submission (optional).
+                        </p>
+                        <textarea
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="Reason for rejection..."
+                            className="w-full h-32 p-3 border border-gray-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowRejectModal(false)
+                                    setRejectionReason('')
+                                }}
+                                disabled={rejecting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleRejectWithReason}
+                                disabled={rejecting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all disabled:opacity-50"
+                            >
+                                {rejecting ? 'Rejecting...' : 'Reject'}
+                            </button>
                         </div>
                     </div>
                 </div>

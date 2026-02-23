@@ -1,32 +1,32 @@
 {
   "layout": {
-    "businessName": "String and frets",
-    "tagline": "Hit the Right Note",
+    "businessName": "Random Shops",
+    "tagline": "Discover the Unexpected",
     "navLinks": [
       {
-        "href": "#about",
-        "label": "About"
+        "label": "About",
+        "href": "#about"
       },
       {
-        "href": "#services",
-        "label": "Services"
+        "label": "Services",
+        "href": "#services"
       },
       {
-        "href": "#featured",
-        "label": "Featured"
+        "label": "Featured",
+        "href": "#featured"
       },
       {
-        "href": "#contact",
-        "label": "Contacts"
+        "label": "Contacts",
+        "href": "#contact"
       }
     ],
     "socialLinks": [],
     "colorScheme": "auto",
     "fontPairing": "modern",
     "contact": {
-      "address": "435 Harmony Street, Quezon City",
       "email": "azedge17@gmail.com",
-      "phone": "956 456 4567"
+      "phone": "956 465 1264",
+      "address": "Langkiwa Street, Carmona"
     }
   },
   "customizations": {
@@ -70,29 +70,26 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "String and frets",
-    "headline": "Hit the Right Note",
-    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
+    "businessName": "Random Shops",
+    "headline": "Discover the Unexpected",
+    "description": "Random Shops, owned by Elias Barns, is a unique retail experience in Carmona, offering a diverse range of products. With a passion for surprise and delight, we curate an ever-changing selection of items. From rare finds to everyday essentials, our shop is a treasure trove of discovery.",
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828439313-1mm1z794.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828441346-avpc3ec7.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828443878-dzh2qi8t.jpg"
     ],
     "services": [
       {
-        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
-        "name": "Guitar Sales"
+        "name": "Personalized Shopping",
+        "description": "Let our experienced staff help you find the perfect item"
       },
       {
-        "description": "Get a bespoke guitar tailored to your playing style and preferences",
-        "name": "Customization"
+        "name": "Gift Wrapping",
+        "description": "Add a special touch to your purchases with our complimentary gift wrapping service"
       },
       {
-        "description": "Trust our skilled technicians to restore your instrument to its former glory",
-        "name": "Instrument Repair"
+        "name": "Loyalty Program",
+        "description": "Join our loyalty program to earn rewards and exclusive discounts"
       }
     ],
     "visibility": {
@@ -105,21 +102,18 @@
     }
   },
   "about": {
-    "businessName": "String and frets",
-    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
+    "businessName": "Random Shops",
+    "description": "Random Shops, owned by Elias Barns, is a unique retail experience in Carmona, offering a diverse range of products. With a passion for surprise and delight, we curate an ever-changing selection of items. From rare finds to everyday essentials, our shop is a treasure trove of discovery.",
     "headline": "About Us",
     "usps": [
-      "Customized Guitars",
-      "Wide Instrument Range",
-      "Personalized Service"
+      "Curated Selection",
+      "Personalized Service",
+      "Community Focus"
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828439313-1mm1z794.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828441346-avpc3ec7.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828443878-dzh2qi8t.jpg"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -134,20 +128,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
-        "name": "Guitar Sales"
+        "name": "Personalized Shopping",
+        "description": "Let our experienced staff help you find the perfect item"
       },
       {
-        "description": "Get a bespoke guitar tailored to your playing style and preferences",
-        "name": "Customization"
+        "name": "Gift Wrapping",
+        "description": "Add a special touch to your purchases with our complimentary gift wrapping service"
       },
       {
-        "description": "Trust our skilled technicians to restore your instrument to its former glory",
-        "name": "Instrument Repair"
+        "name": "Loyalty Program",
+        "description": "Join our loyalty program to earn rewards and exclusive discounts"
       }
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828439313-1mm1z794.jpg"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -159,55 +153,52 @@
   },
   "gallery": {
     "headline": "Featured Products",
-    "subheadline": "Discover our handpicked selection of exceptional guitars",
+    "subheadline": "A showcase of our unique and exciting products",
     "items": [
       {
-        "title": "Electric Dream",
-        "description": "This stunning electric guitar is designed for the modern player, with a sleek body and versatile pickups. Its rich, resonant tone is perfect for rock, pop, and beyond. With its comfortable neck and precise fretwork, you'll be playing like a pro in no time.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
+        "title": "Vintage Clothing Collection",
+        "description": "Explore our carefully curated collection of vintage clothing, featuring one-of-a-kind pieces from past decades. From elegant dresses to stylish accessories, our vintage collection is a must-see. With new items added regularly, you'll always find something new and exciting.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828439313-1mm1z794.jpg",
         "tags": [
-          "Electric Guitar",
+          "Fashion",
+          "Ongoing"
+        ],
+        "testimonial": {
+          "quote": "I stumbled upon Random Shops and found the most amazing vintage dress. The staff were so helpful and knowledgeable, and I felt like I'd discovered a hidden gem. I've been back every week since!",
+          "author": "Emily W."
+        }
+      },
+      {
+        "title": "Local Artisan Showcase",
+        "description": "We're proud to support local artisans by showcasing their unique, handmade products in our shop. From beautiful jewelry to functional home decor, our artisan showcase is a celebration of local talent. With new artisans featured regularly, you'll always find something new and inspiring.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828441346-avpc3ec7.jpg",
+        "tags": [
+          "Artisanal",
           "6-8 weeks"
         ],
         "testimonial": {
-          "author": "Mark Reyes",
-          "quote": "I've never played a guitar that felt so right. The Electric Dream is my go-to instrument for gigs and recordings. The customization options were incredibly helpful in finding my perfect sound."
+          "quote": "I was blown away by the quality and creativity of the local artisans featured at Random Shops. I ended up buying a stunning piece of jewelry that I wear every day.",
+          "author": "David K."
         }
       },
       {
-        "title": "Acoustic Masterpiece",
-        "description": "Experience the warmth and intimacy of our handcrafted acoustic guitar, featuring a solid wood body and delicate inlays. Its balanced tone and impressive projection make it ideal for folk, country, and singer-songwriter performances. Whether you're playing solo or with a band, this guitar is sure to impress.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
+        "title": "Rare Book Collection",
+        "description": "Discover our extensive collection of rare and out-of-print books, featuring everything from classic literature to obscure non-fiction. Our knowledgeable staff are always happy to help you find the perfect book, and we offer a range of services to help you care for your new purchase. Whether you're a casual reader or a serious collector, our rare book collection is a treasure trove of discovery.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828443878-dzh2qi8t.jpg",
         "tags": [
-          "Acoustic Guitar",
-          "8-10 weeks"
+          "Literary",
+          "3-4 months"
         ],
         "testimonial": {
-          "author": "Lia Santos",
-          "quote": "The Acoustic Masterpiece has become my trusted companion for songwriting and live shows. The attention to detail and craftsmanship are exceptional, and the sound is nothing short of breathtaking."
-        }
-      },
-      {
-        "title": "Bass Beauty",
-        "description": "Get ready to rumble with our powerful bass guitar, designed for the modern bassist. With its sleek design, active pickups, and versatile tone controls, you'll be able to craft the perfect low-end sound for any genre. From jazz to metal, this bass can handle it all.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
-        "tags": [
-          "Bass Guitar",
-          "4-6 weeks"
-        ],
-        "testimonial": {
-          "author": "Ryan Tan",
-          "quote": "I was blown away by the Bass Beauty's tone and playability. The customization process was seamless, and the result is an instrument that perfectly complements my playing style. It's now my primary bass for all my gigs and recordings."
+          "quote": "As a book collector, I was thrilled to find Random Shops' rare book collection. The staff were incredibly knowledgeable and helped me find a rare edition that I'd been searching for years. I'll definitely be back!",
+          "author": "Sarah T."
         }
       }
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828439313-1mm1z794.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828441346-avpc3ec7.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828443878-dzh2qi8t.jpg"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -217,19 +208,16 @@
     }
   },
   "contact": {
-    "businessName": "String and frets",
+    "businessName": "Random Shops",
     "email": "azedge17@gmail.com",
-    "phone": "956 456 4567",
-    "address": "435 Harmony Street, Quezon City",
+    "phone": "956 465 1264",
+    "address": "Langkiwa Street, Carmona",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221506891-wk6t7i04.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221508764-xgyrnvvs.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221509613-d16em6dl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221510318-vl3r4gzl.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221511112-z2syi6t3.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770221512862-wnoyrwrj.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828439313-1mm1z794.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828441346-avpc3ec7.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1770828443878-dzh2qi8t.jpg"
     ],
     "visibility": {
       "contactBadge": true,
