@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
+import { internal } from './_generated/api';
 
 // ==================== QUERIES ====================
 
@@ -103,6 +104,7 @@ export const create = mutation({
         phone: v.optional(v.string()),
         referralCode: v.string(),
         referredBy: v.optional(v.id('creators')),
+        referredByCode: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         // Check if creator already exists
@@ -124,11 +126,32 @@ export const create = mutation({
             phone: args.phone,
             referralCode: args.referralCode,
             referredBy: args.referredBy,
+            referredByCode: args.referredByCode,
             balance: 0,
             totalEarnings: 0,
+            totalWithdrawn: 0,
+            submissionCount: 0,
+            level: 1,
             status: 'active',
             role: 'creator',
+            createdAt: Date.now(),
         });
+
+        // Wire referral: if referredByCode was provided, create a referral record
+        if (args.referredByCode) {
+            const referrer = await ctx.db
+                .query('creators')
+                .withIndex('by_referralCode', (q) => q.eq('referralCode', args.referredByCode!))
+                .first();
+
+            if (referrer && referrer._id !== creatorId) {
+                await ctx.scheduler.runAfter(0, internal.referrals.createFromSignup, {
+                    referrerId: referrer._id,
+                    referredId: creatorId,
+                    referralCode: args.referredByCode!,
+                });
+            }
+        }
 
         return creatorId;
     },

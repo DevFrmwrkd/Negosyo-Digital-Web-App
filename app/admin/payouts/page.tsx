@@ -35,6 +35,7 @@ export default function PayoutsPage() {
     // Mutations
     const markPayoutPaid = useMutation(api.admin.markPayoutPaid)
     const bulkMarkPayoutsPaid = useMutation(api.admin.bulkMarkPayoutsPaid)
+    const markPaidWired = useMutation(api.admin.markPaid)
 
     const loading = !isLoaded || (user && currentCreator === undefined) || (isAdmin && (payouts === undefined || stats === undefined))
 
@@ -78,12 +79,16 @@ export default function PayoutsPage() {
         setSelectedIds(newSet)
     }
 
-    // Mark single as paid
+    // Mark single as paid (uses wired mutation with audit trail)
     const handleMarkAsPaid = async (id: string) => {
+        if (!user) return
         setProcessing(true)
         setError(null)
         try {
-            await markPayoutPaid({ submissionId: id as Id<"submissions"> })
+            await markPaidWired({
+                submissionId: id as Id<"submissions">,
+                adminId: user.id,
+            })
             setSelectedIds(prev => {
                 const newSet = new Set(prev)
                 newSet.delete(id)
