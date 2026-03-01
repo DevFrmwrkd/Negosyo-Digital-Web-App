@@ -271,7 +271,8 @@ export const updateStatus = mutation({
             v.literal('pending_payment'),
             v.literal('paid'),
             v.literal('completed'),
-            v.literal('website_generated')
+            v.literal('website_generated'),
+            v.literal('unpublished')
         ),
     },
     handler: async (ctx, args) => {

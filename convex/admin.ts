@@ -192,30 +192,6 @@ export const approveSubmission = mutation({
             delta: 1,
         });
 
-        // Referral check: if this is the creator's first approval, qualify the referral
-        const referral = await ctx.db
-            .query('referrals')
-            .withIndex('by_referred', (q) => q.eq('referredId', submission.creatorId))
-            .filter((q) => q.eq(q.field('status'), 'pending'))
-            .first();
-
-        if (referral) {
-            // Check if this is the first approved submission
-            const approvedSubmissions = await ctx.db
-                .query('submissions')
-                .withIndex('by_creatorId', (q) => q.eq('creatorId', submission.creatorId))
-                .filter((q) => q.eq(q.field('status'), 'approved'))
-                .collect();
-
-            // Count 1 because we just approved this one
-            if (approvedSubmissions.length <= 1) {
-                await ctx.scheduler.runAfter(0, internal.referrals.qualifyByCreator, {
-                    referredId: submission.creatorId,
-                    bonusAmount: 100, // ₱100 referral bonus
-                });
-            }
-        }
-
         return args.submissionId;
     },
 });
@@ -300,9 +276,19 @@ export const markDeployed = mutation({
         const submission = await ctx.db.get(args.submissionId);
         if (!submission) throw new Error('Submission not found');
 
+        // Resolve websiteUrl: use provided value, or fall back to generatedWebsites.publishedUrl
+        let resolvedUrl = args.websiteUrl;
+        if (!resolvedUrl) {
+            const website = await ctx.db
+                .query('generatedWebsites')
+                .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+                .first();
+            if (website?.publishedUrl) resolvedUrl = website.publishedUrl;
+        }
+
         // Update submission status
         const updates: any = { status: 'deployed' };
-        if (args.websiteUrl) updates.websiteUrl = args.websiteUrl;
+        if (resolvedUrl) updates.websiteUrl = resolvedUrl;
         await ctx.db.patch(args.submissionId, updates);
 
         // Audit log
@@ -311,7 +297,7 @@ export const markDeployed = mutation({
             action: 'website_deployed',
             targetType: 'submission',
             targetId: args.submissionId,
-            metadata: { businessName: submission.businessName, websiteUrl: args.websiteUrl },
+            metadata: { businessName: submission.businessName, websiteUrl: resolvedUrl },
         });
 
         // Notification to creator
@@ -320,7 +306,7 @@ export const markDeployed = mutation({
             type: 'website_live',
             title: 'Website is Live!',
             body: `The website for "${submission.businessName}" is now live!`,
-            data: { submissionId: args.submissionId, websiteUrl: args.websiteUrl },
+            data: { submissionId: args.submissionId, websiteUrl: resolvedUrl },
         });
 
         // Analytics
@@ -422,7 +408,163 @@ export const markPaid = mutation({
             delta: payoutAmount,
         });
 
+        // Referral check: if this is the creator's first paid submission, qualify the referral
+        const referral = await ctx.db
+            .query('referrals')
+            .withIndex('by_referred', (q) => q.eq('referredId', submission.creatorId))
+            .filter((q) => q.eq(q.field('status'), 'pending'))
+            .first();
+
+        if (referral) {
+            // Check if this is the first paid submission
+            const paidSubmissions = await ctx.db
+                .query('submissions')
+                .withIndex('by_creatorId', (q) => q.eq('creatorId', submission.creatorId))
+                .filter((q) => q.eq(q.field('status'), 'completed'))
+                .collect();
+
+            // Count 1 because we just marked this one as completed/paid
+            if (paidSubmissions.length <= 1) {
+                await ctx.scheduler.runAfter(0, internal.referrals.qualifyByCreator, {
+                    referredId: submission.creatorId,
+                    bonusAmount: 1000, // ₱1,000 referral bonus
+                });
+            }
+        }
+
         return args.submissionId;
+    },
+});
+
+/**
+ * Mark submission email as sent — sets status to pending_payment and records sentEmailAt.
+ * Called by the send-website-email API route after successfully sending the client email.
+ */
+export const markEmailSent = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        await ctx.db.patch(args.submissionId, {
+            status: 'pending_payment',
+            sentEmailAt: Date.now(),
+        });
+
+        // Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'payment_sent',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: { businessName: submission.businessName, note: 'Payment email sent to client' },
+        });
+
+        return args.submissionId;
+    },
+});
+
+// ==================== CASCADING DELETION ====================
+
+/**
+ * Delete submission and all related Convex records.
+ * Called by the /api/delete-submission route AFTER external assets (R2, CF Pages, Airtable) are cleaned up.
+ * Deletes: generatedWebsites, websiteContent, Convex storage files, submission record.
+ * Creates an audit log entry with deletion metadata.
+ */
+export const deleteSubmissionRecords = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        deletedAssets: v.optional(v.any()),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        const businessName = submission.businessName;
+        const creatorId = submission.creatorId;
+
+        // 1. Delete generatedWebsites record
+        const website = await ctx.db
+            .query('generatedWebsites')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+
+        if (website) {
+            // Delete Convex storage file for HTML if it exists
+            if (website.htmlStorageId) {
+                try {
+                    await ctx.storage.delete(website.htmlStorageId);
+                } catch (e) {
+                    // htmlStorageId might be invalid or already deleted
+                }
+            }
+            await ctx.db.delete(website._id);
+        }
+
+        // 2. Delete websiteContent records (both via websiteId chain and direct submissionId)
+        if (website) {
+            const wcByWebsite = await ctx.db
+                .query('websiteContent')
+                .withIndex('by_websiteId', (q) => q.eq('websiteId', website._id))
+                .first();
+            if (wcByWebsite) {
+                await ctx.db.delete(wcByWebsite._id);
+            }
+        }
+
+        const wcBySubmission = await ctx.db
+            .query('websiteContent')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+        if (wcBySubmission) {
+            await ctx.db.delete(wcBySubmission._id);
+        }
+
+        // 3. Delete Convex _storage files (legacy storage IDs for video/audio)
+        if (submission.videoStorageId && typeof submission.videoStorageId === 'string' && !submission.videoStorageId.startsWith('http')) {
+            try {
+                await ctx.storage.delete(submission.videoStorageId as any);
+            } catch (e) {
+                // Storage ID might be invalid or already deleted
+            }
+        }
+        if (submission.audioStorageId && typeof submission.audioStorageId === 'string' && !submission.audioStorageId.startsWith('http')) {
+            try {
+                await ctx.storage.delete(submission.audioStorageId as any);
+            } catch (e) {
+                // Storage ID might be invalid or already deleted
+            }
+        }
+
+        // 4. Decrement creator's submissionCount
+        const creator = await ctx.db.get(creatorId);
+        if (creator && (creator.submissionCount || 0) > 0) {
+            await ctx.db.patch(creatorId, {
+                submissionCount: (creator.submissionCount || 0) - 1,
+            });
+        }
+
+        // 5. Delete the submission record
+        await ctx.db.delete(args.submissionId);
+
+        // 6. Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'submission_deleted',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: {
+                businessName,
+                deletedAssets: args.deletedAssets,
+            },
+        });
+
+        return { success: true, businessName };
     },
 });
 
@@ -441,6 +583,51 @@ export const markPayoutPaid = mutation({
             creatorPaidAt: Date.now(),
             status: 'completed',
         });
+    },
+});
+
+/**
+ * Backfill websiteUrl on submissions and publishedUrl on generatedWebsites
+ * for all records with status: deployed, pending_payment, paid, or completed.
+ * Syncs both directions: submission ← generatedWebsite and generatedWebsite ← submission.
+ */
+export const backfillWebsiteUrls = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const targetStatuses = ['deployed', 'pending_payment', 'paid', 'completed'] as const;
+        let updatedSubmissions = 0;
+        let updatedWebsites = 0;
+
+        for (const status of targetStatuses) {
+            const submissions = await ctx.db
+                .query('submissions')
+                .withIndex('by_status', (q) => q.eq('status', status))
+                .collect();
+
+            for (const submission of submissions) {
+                const website = await ctx.db
+                    .query('generatedWebsites')
+                    .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+                    .first();
+
+                // Submission missing websiteUrl but generatedWebsite has publishedUrl → copy to submission
+                if (!submission.websiteUrl && website?.publishedUrl) {
+                    await ctx.db.patch(submission._id, { websiteUrl: website.publishedUrl });
+                    updatedSubmissions++;
+                }
+
+                // generatedWebsite missing publishedUrl but submission has websiteUrl → copy to website
+                if (website && !website.publishedUrl && submission.websiteUrl) {
+                    await ctx.db.patch(website._id, {
+                        publishedUrl: submission.websiteUrl,
+                        status: 'published',
+                    });
+                    updatedWebsites++;
+                }
+            }
+        }
+
+        return { updatedSubmissions, updatedWebsites };
     },
 });
 

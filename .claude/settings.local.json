@@ -5,7 +5,15 @@
       "Bash(npx convex codegen:*)",
       "Bash(npx convex:*)",
       "Bash(npm run build:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(xargs grep -l \"netlify\\\\|deploy\\\\|domain\\\\|dns\" -i)",
+      "Bash(xargs grep -l \"netlify\\\\|NETLIFY\" -i)",
+      "Bash(xargs grep -l \"referredByCode\\\\|referral.*input\\\\|referral.*code\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://diligent-ibex-454.convex.cloud\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''scripts'',{}\\), indent=2\\)\\)\")",
+      "Bash(xargs grep -l \"enhanced\\\\|Airtable\\\\|airtable\")",
+      "Bash(xargs grep -l \"fetch\\\\|axios\\\\|request\")",
+      "Bash(npx next build)"
     ]
   }
 }

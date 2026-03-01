@@ -67,16 +67,11 @@ export async function POST(request: NextRequest) {
             submissionId: submissionId
         })
 
-        // Update submission to pending_payment status (awaiting client payment)
-        try {
-            await fetchMutation(api.submissions.updateStatus, {
-                id: submissionId as Id<"submissions">,
-                status: 'pending_payment'
-            })
-        } catch (statusError) {
-            console.error('Status update error:', statusError)
-            // Don't fail - email was sent successfully
-        }
+        // Mark email as sent: sets status → pending_payment and records sentEmailAt timestamp
+        await fetchMutation(api.admin.markEmailSent, {
+            submissionId: submissionId as Id<"submissions">,
+            adminId: userId,
+        })
 
         return NextResponse.json({
             success: true,

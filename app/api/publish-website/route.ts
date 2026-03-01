@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
             console.error('Database update error:', updateError?.message || updateError)
         }
 
-        // Update submission status to deployed
+        // Update submission status to deployed and set websiteUrl
         try {
             await fetchMutation(api.submissions.updateStatus, {
                 id: submissionId as Id<"submissions">,
@@ -111,6 +111,15 @@ export async function POST(request: NextRequest) {
             })
         } catch (statusError: any) {
             console.error('Status update error:', statusError?.message || statusError)
+        }
+
+        try {
+            await fetchMutation(api.submissions.update, {
+                id: submissionId as Id<"submissions">,
+                websiteUrl: publishedUrl,
+            })
+        } catch (urlError: any) {
+            console.error('Submission websiteUrl update error:', urlError?.message || urlError)
         }
 
         return NextResponse.json({

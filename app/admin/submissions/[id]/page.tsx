@@ -217,6 +217,10 @@ export default function SubmissionDetailPage() {
     const [rejectionReason, setRejectionReason] = useState('')
     const [rejecting, setRejecting] = useState(false)
 
+    // Delete submission modal state
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+
     // Lightbox state
     const [lightboxOpen, setLightboxOpen] = useState(false)
     const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -608,6 +612,36 @@ export default function SubmissionDetailPage() {
         }
     }
 
+    // Handle cascading deletion
+    const handleDeleteSubmission = async () => {
+        if (!submissionData || !user) return
+
+        setDeleting(true)
+        try {
+            const response = await fetch('/api/delete-submission', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId: submissionData._id }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to delete submission')
+            }
+
+            // Redirect to admin dashboard after successful deletion
+            window.location.href = '/admin'
+        } catch (error: any) {
+            console.error('Delete submission error:', error)
+            setShowDeleteModal(false)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to delete submission. Please try again.')
+            setShowModal(true)
+        } finally {
+            setDeleting(false)
+        }
+    }
+
     // Handle website generation
     const handleGenerateWebsite = async (customizationsOverride?: any) => {
         // If already generating, skip (unless this is a distinct request, but for now prevent double-click)
@@ -818,8 +852,19 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
+                            {/* Unpublished: allow republishing */}
+                            {submission.status === 'unpublished' && (
+                                <Button
+                                    onClick={handlePublishWebsite}
+                                    disabled={publishingWebsite}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    {publishingWebsite ? 'Republishing...' : '🔄 Republish Website'}
+                                </Button>
+                            )}
+
                             {/* Reject button (available until deployed) */}
-                            {!['rejected', 'deployed', 'pending_payment', 'paid'].includes(submission.status) && (
+                            {!['rejected', 'deployed', 'pending_payment', 'paid', 'unpublished'].includes(submission.status) && (
                                 <Button
                                     onClick={() => handleStatusUpdate('rejected')}
                                     disabled={updating}
@@ -838,6 +883,28 @@ export default function SubmissionDetailPage() {
                                     💸 Trigger Payout
                                 </Button>
                             )}
+
+                            {/* Delete Submission (always available for admin) */}
+                            <Button
+                                onClick={() => setShowDeleteModal(true)}
+                                disabled={deleting}
+                                variant="outline"
+                                className="border-red-500 text-red-600 hover:bg-red-50"
+                            >
+                                {deleting ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete
+                                    </>
+                                )}
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -1588,6 +1655,81 @@ export default function SubmissionDetailPage() {
                                 className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all disabled:opacity-50"
                             >
                                 {rejecting ? 'Rejecting...' : 'Reject'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && submission && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Delete &ldquo;{submission.business_name}&rdquo;</h3>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                            <p className="text-sm font-semibold text-red-800 mb-2">This action is permanent and cannot be undone. The following will be deleted:</p>
+                            <ul className="text-sm text-red-700 space-y-1">
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Business submission record
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Generated website &amp; content
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    All media files (images, audio, video) from Cloudflare R2
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Cloudflare Pages deployment (if published)
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Airtable record (if synced)
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Business</span>
+                                <span className="font-medium text-gray-900">{submission.business_name}</span>
+                            </div>
+                            <div className="flex justify-between text-sm mt-1">
+                                <span className="text-gray-500">Status</span>
+                                <span className="font-medium text-gray-900">{submission.status}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={deleting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteSubmission}
+                                disabled={deleting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50"
+                            >
+                                {deleting ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Processing...
+                                    </span>
+                                ) : 'Delete Permanently'}
                             </button>
                         </div>
                     </div>
