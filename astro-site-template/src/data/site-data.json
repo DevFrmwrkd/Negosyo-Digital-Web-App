@@ -1,32 +1,32 @@
 {
   "layout": {
-    "businessName": "Ben-Joe Tire Supply",
-    "tagline": "Tires that Take You Further",
+    "businessName": "SweetLayers Cakes",
+    "tagline": "Layers of Love in Every Bite",
     "navLinks": [
       {
-        "href": "#about",
-        "label": "About"
+        "label": "About",
+        "href": "#about"
       },
       {
-        "href": "#services",
-        "label": "Services"
+        "label": "Services",
+        "href": "#services"
       },
       {
-        "href": "#featured",
-        "label": "Featured"
+        "label": "Featured",
+        "href": "#featured"
       },
       {
-        "href": "#contact",
-        "label": "Contacts"
+        "label": "Contacts",
+        "href": "#contact"
       }
     ],
     "socialLinks": [],
     "colorScheme": "auto",
     "fontPairing": "modern",
     "contact": {
-      "address": "1747-E Evangelista St., Bangkal, Makati City",
-      "email": "jov.b20@gmail.com",
-      "phone": "9186246127"
+      "email": "bcsteven0209@gmail.com",
+      "phone": "+109278147733",
+      "address": "Makapiling st., Manila"
     }
   },
   "customizations": {
@@ -70,29 +70,26 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "Ben-Joe Tire Supply",
-    "headline": "Tires that Take You Further",
-    "description": "Ben-Joe Tire Supply is a trusted auto shop in Makati City, offering high-quality surplus and brand new tires, as well as surplus rims. With a commitment to excellent service, we ensure that every customer leaves satisfied. Established in 2010, we pride ourselves on providing reliable and affordable solutions for all your tire needs.",
+    "businessName": "SweetLayers Cakes",
+    "headline": "Layers of Love in Every Bite",
+    "description": "SweetLayers Cakes is a boutique cake shop in Manila, specializing in handcrafted cakes for all occasions. Our cakes are combined with sweet flavors to deliver a dessert as beautiful as they are delicious. Owned by Clarrise Baustista, our shop is dedicated to providing unique and mouth-watering creations.",
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
-      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
-      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
-      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
     ],
     "services": [
       {
-        "description": "Expert tire replacement services for all vehicle types",
-        "name": "Tire Replacement"
+        "name": "Custom Wedding Cakes",
+        "description": "Exquisite, handcrafted wedding cakes tailored to your special day"
       },
       {
-        "description": "Surplus rims in various sizes to fit your vehicle's needs",
-        "name": "Rim Sales"
+        "name": "Birthday Cake Design",
+        "description": "Fun and creative birthday cakes for all ages"
       },
       {
-        "description": "Comprehensive tire inspections to ensure your safety on the road",
-        "name": "Tire Inspection"
+        "name": "Special Occasion Cakes",
+        "description": "Cakes for anniversaries, graduations, and other celebrations"
       }
     ],
     "visibility": {
@@ -105,18 +102,18 @@
     }
   },
   "about": {
-    "businessName": "Ben-Joe Tire Supply",
-    "description": "Ben-Joe Tire Supply is a trusted auto shop in Makati City, offering high-quality surplus and brand new tires, as well as surplus rims. With a commitment to excellent service, we ensure that every customer leaves satisfied. Established in 2010, we pride ourselves on providing reliable and affordable solutions for all your tire needs.",
+    "businessName": "SweetLayers Cakes",
+    "description": "SweetLayers Cakes is a boutique cake shop in Manila, specializing in handcrafted cakes for all occasions. Our cakes are combined with sweet flavors to deliver a dessert as beautiful as they are delicious. Owned by Clarrise Baustista, our shop is dedicated to providing unique and mouth-watering creations.",
     "headline": "About Us",
     "usps": [
-      "High-quality surplus tires",
-      "Competitive pricing",
-      "Personalized customer service"
+      "Handcrafted with love",
+      "Unique flavor combinations",
+      "Customizable designs"
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
-      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -131,20 +128,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Expert tire replacement services for all vehicle types",
-        "name": "Tire Replacement"
+        "name": "Custom Wedding Cakes",
+        "description": "Exquisite, handcrafted wedding cakes tailored to your special day"
       },
       {
-        "description": "Surplus rims in various sizes to fit your vehicle's needs",
-        "name": "Rim Sales"
+        "name": "Birthday Cake Design",
+        "description": "Fun and creative birthday cakes for all ages"
       },
       {
-        "description": "Comprehensive tire inspections to ensure your safety on the road",
-        "name": "Tire Inspection"
+        "name": "Special Occasion Cakes",
+        "description": "Cakes for anniversaries, graduations, and other celebrations"
       }
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -155,60 +152,53 @@
     }
   },
   "gallery": {
-    "headline": "Featured Products",
-    "subheadline": "Explore our top-of-the-line tire and rim offerings, carefully selected to provide you with the best driving experience",
+    "headline": "Featured Creations",
+    "subheadline": "A showcase of our most stunning and delicious cakes",
     "items": [
       {
-        "title": "Surplus Tire Package",
-        "description": "Our surplus tire package includes high-quality, gently used tires that have been thoroughly inspected to ensure safety and reliability. With a wide range of sizes available, we can fit any vehicle. Our team of experts will help you find the perfect tires for your needs.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+        "title": "Elegant Wedding Masterpiece",
+        "description": "A 3-tiered wedding cake with intricate designs and flavors of vanilla and strawberry. This cake is a true showstopper, perfect for any wedding reception. With its delicate details and exquisite taste, it's sure to impress your guests.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
         "tags": [
-          "Tire Replacement",
-          "1-2 days"
+          "Wedding Cake",
+          "3-4 weeks"
         ],
         "testimonial": {
-          "author": "Mark Santos",
-          "quote": "I was impressed by the quality of the surplus tires I purchased from Ben-Joe Tire Supply. The price was unbeatable and the service was top-notch. I've already recommended them to my friends and family."
+          "quote": "The wedding cake from SweetLayers Cakes was absolutely stunning and delicious. Our guests couldn't stop raving about it! The attention to detail and the flavors were just perfect.",
+          "author": "Maria Rodriguez"
         }
       },
       {
-        "title": "Brand New Tire Sale",
-        "description": "Get the best brand new tires on the market at competitive prices. Our brand new tire sale features top brands and models, carefully selected to provide you with the best performance, safety, and fuel efficiency. Our knowledgeable staff will help you choose the perfect tires for your vehicle.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+        "title": "Birthday Bash Cake",
+        "description": "A fun and colorful birthday cake designed for kids and kids-at-heart. This cake features a chocolate base with cream cheese frosting and decorations of candy and sprinkles. It's the perfect way to make your birthday celebration even more special.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
         "tags": [
-          "Tire Replacement",
-          "Same-day installation"
+          "Birthday Cake",
+          "1-2 weeks"
         ],
         "testimonial": {
-          "author": "Rachel Reyes",
-          "quote": "I recently purchased brand new tires from Ben-Joe Tire Supply and I'm extremely satisfied with the performance. The staff was knowledgeable and helpful, and the installation was quick and efficient."
+          "quote": "My son's birthday cake from SweetLayers Cakes was a huge hit! The kids loved the colorful design and the cake was moist and flavorful. We'll definitely be ordering from them again.",
+          "author": "John Lee"
         }
       },
       {
-        "title": "Surplus Rim Package",
-        "description": "Our surplus rim package includes high-quality, gently used rims in various sizes to fit your vehicle's needs. Our team of experts will help you find the perfect rims to match your tires and enhance your vehicle's appearance.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+        "title": "Anniversary Cake for Two",
+        "description": "An intimate and romantic anniversary cake designed for couples. This cake features a rich red velvet flavor with cream cheese frosting and delicate decorations. It's the perfect way to celebrate your love and commitment to each other.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg",
         "tags": [
-          "Rim Sales",
-          "1-3 days"
+          "Anniversary Cake",
+          "1 week"
         ],
         "testimonial": {
-          "author": "Juan Lopez",
-          "quote": "I was looking for a unique set of rims for my car and Ben-Joe Tire Supply had exactly what I needed. The surplus rim package was affordable and the quality was exceptional. I'm very happy with my purchase."
+          "quote": "The anniversary cake from SweetLayers Cakes was the perfect way to celebrate our special day. The cake was beautiful and delicious, and the service was top-notch. We highly recommend them!",
+          "author": "Emily Chen"
         }
       }
     ],
-    "images": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
-    ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
-      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
-      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
-      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -218,19 +208,16 @@
     }
   },
   "contact": {
-    "businessName": "Ben-Joe Tire Supply",
-    "email": "jov.b20@gmail.com",
-    "phone": "9186246127",
-    "address": "1747-E Evangelista St., Bangkal, Makati City",
+    "businessName": "SweetLayers Cakes",
+    "email": "bcsteven0209@gmail.com",
+    "phone": "+109278147733",
+    "address": "Makapiling st., Manila",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
-      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
-      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
-      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
     ],
     "visibility": {
       "contactBadge": true,

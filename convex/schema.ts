@@ -92,13 +92,16 @@ export default defineSchema({
             v.literal('pending_payment'),
             v.literal('paid'),
             v.literal('completed'),
-            v.literal('website_generated')
+            v.literal('website_generated'),
+            v.literal('unpublished')
         ),
 
         // Payment
         amount: v.optional(v.number()),
         paymentReference: v.optional(v.string()),
         paidAt: v.optional(v.number()), // Timestamp
+        sentEmailAt: v.optional(v.number()), // Timestamp when payment email was sent to client
+        unpublishedAt: v.optional(v.number()), // Timestamp when website was auto-unpublished
 
         // Creator payout
         creatorPayout: v.optional(v.number()),
@@ -116,7 +119,7 @@ export default defineSchema({
     // Generated websites - technical/deployment data + content (mobile branch merged websiteContent fields here)
     generatedWebsites: defineTable({
         submissionId: v.id('submissions'),
-        templateName: v.string(),
+        templateName: v.optional(v.string()),
         // DEPRECATED: extractedContent and customizations are being moved to websiteContent table
         // Kept for backward compatibility during migration
         extractedContent: v.optional(v.any()),
@@ -126,7 +129,7 @@ export default defineSchema({
         cssContent: v.optional(v.string()),
         htmlStorageId: v.optional(v.id('_storage')),
         // Publishing/deployment
-        status: v.union(v.literal('draft'), v.literal('published')),
+        status: v.optional(v.union(v.literal('draft'), v.literal('published'))),
         publishedUrl: v.optional(v.string()),
         netlifySiteId: v.optional(v.string()), // DEPRECATED - kept for existing data
         cfPagesProjectName: v.optional(v.string()), // Cloudflare Pages project name
@@ -318,6 +321,7 @@ export default defineSchema({
         type: v.union(
             v.literal('submission_approved'),
             v.literal('submission_rejected'),
+            v.literal('submission_created'),
             v.literal('new_lead'),
             v.literal('payout_sent'),
             v.literal('website_live'),

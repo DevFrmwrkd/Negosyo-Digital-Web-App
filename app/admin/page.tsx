@@ -4,6 +4,8 @@ import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useClerk } from "@clerk/nextjs"
+import { useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAdminAuth, useSubmissions } from "@/hooks/useAdmin"
@@ -17,10 +19,54 @@ export default function AdminDashboard() {
     const [searchQuery, setSearchQuery] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 10
+    const [backfilling, setBackfilling] = useState(false)
+    const [backfillResult, setBackfillResult] = useState<{ updatedSubmissions: number; updatedWebsites: number } | null>(null)
+    const backfillWebsiteUrls = useMutation(api.admin.backfillWebsiteUrls)
+
+    // Delete submission state
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+    const [deleteTargetName, setDeleteTargetName] = useState('')
+    const [deleting, setDeleting] = useState(false)
+    const [deleteResult, setDeleteResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+    const handleBackfill = async () => {
+        setBackfilling(true)
+        setBackfillResult(null)
+        try {
+            const result = await backfillWebsiteUrls({})
+            setBackfillResult(result)
+        } finally {
+            setBackfilling(false)
+        }
+    }
 
     const handleLogout = async () => {
         await signOut()
         router.push('/login')
+    }
+
+    const handleDeleteSubmission = async () => {
+        if (!deleteTargetId) return
+        setDeleting(true)
+        try {
+            const response = await fetch('/api/delete-submission', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId: deleteTargetId }),
+            })
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to delete submission')
+            }
+            setDeleteResult({ type: 'success', message: `"${deleteTargetName}" deleted successfully.` })
+        } catch (error: any) {
+            setDeleteResult({ type: 'error', message: error.message || 'Failed to delete submission.' })
+        } finally {
+            setDeleting(false)
+            setShowDeleteModal(false)
+            setDeleteTargetId(null)
+        }
     }
 
     // Filter and search submissions
@@ -72,6 +118,7 @@ export default function AdminDashboard() {
             deployed: 'bg-cyan-100 text-cyan-700',
             pending_payment: 'bg-orange-100 text-orange-700',
             paid: 'bg-emerald-100 text-emerald-700',
+            unpublished: 'bg-rose-100 text-rose-700',
         }
         return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-700'
     }
@@ -142,6 +189,82 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
+            {/* Delete Result Banner */}
+            {deleteResult && (
+                <div className={`border-b ${deleteResult.type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+                        <p className={`text-sm font-medium ${deleteResult.type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                            {deleteResult.message}
+                        </p>
+                        <button onClick={() => setDeleteResult(null)} className="text-gray-400 hover:text-gray-600">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Delete &ldquo;{deleteTargetName}&rdquo;</h3>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                            <p className="text-sm font-semibold text-red-800 mb-2">This action is permanent and cannot be undone. The following will be deleted:</p>
+                            <ul className="text-sm text-red-700 space-y-1">
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Business submission record
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Generated website &amp; content
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    All media files (images, audio, video)
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Cloudflare Pages deployment &amp; Airtable record
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => { setShowDeleteModal(false); setDeleteTargetId(null) }}
+                                disabled={deleting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteSubmission}
+                                disabled={deleting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50"
+                            >
+                                {deleting ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Processing...
+                                    </span>
+                                ) : 'Delete Permanently'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Stats Cards */}
@@ -190,6 +313,27 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 )}
+
+                {/* Maintenance Tools */}
+                <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6 flex items-center gap-4 flex-wrap">
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700">Backfill Website URLs</p>
+                        <p className="text-xs text-gray-500">Sync missing <code>websiteUrl</code> / <code>publishedUrl</code> for deployed, pending_payment, paid, and completed submissions.</p>
+                        {backfillResult && (
+                            <p className="text-xs text-green-600 mt-1">
+                                Done — {backfillResult.updatedSubmissions} submission(s) updated, {backfillResult.updatedWebsites} website record(s) updated.
+                            </p>
+                        )}
+                    </div>
+                    <Button
+                        onClick={handleBackfill}
+                        disabled={backfilling}
+                        variant="outline"
+                        className="text-gray-700 shrink-0"
+                    >
+                        {backfilling ? 'Running...' : 'Run Backfill'}
+                    </Button>
+                </div>
 
                 {/* Search Bar */}
                 <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
@@ -304,12 +448,27 @@ export default function AdminDashboard() {
                                                 {new Date(submission.created_at).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <Link
-                                                    href={`/admin/submissions/${submission.id}`}
-                                                    className="text-green-600 hover:text-green-900"
-                                                >
-                                                    View Details
-                                                </Link>
+                                                <div className="flex items-center gap-3">
+                                                    <Link
+                                                        href={`/admin/submissions/${submission.id}`}
+                                                        className="text-green-600 hover:text-green-900"
+                                                    >
+                                                        View Details
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => {
+                                                            setDeleteTargetId(submission.id)
+                                                            setDeleteTargetName(submission.business_name)
+                                                            setShowDeleteModal(true)
+                                                        }}
+                                                        className="text-red-400 hover:text-red-600 transition-colors"
+                                                        title="Delete submission"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
