@@ -801,24 +801,24 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 4: Publish/Deploy (for approved or website_generated status) */}
-                            {(submission.status === 'approved' || submission.status === 'website_generated') && websiteGenerated && (
+                            {/* Step 4: Publish/Deploy (for approved, website_generated, deployed, pending_payment, paid) */}
+                            {(submission.status === 'approved' || submission.status === 'website_generated' || submission.status === 'deployed' || submission.status === 'pending_payment' || submission.status === 'paid') && websiteGenerated && (
                                 <Button
-                                    onClick={handlePublishWebsite}
-                                    disabled={publishingWebsite}
+                                    onClick={websitePublishedUrl ? handleRepublishWebsite : handlePublishWebsite}
+                                    disabled={publishingWebsite || republishingWebsite}
                                     className="bg-blue-600 hover:bg-blue-700 text-white"
                                 >
-                                    {publishingWebsite ? (
+                                    {(publishingWebsite || republishingWebsite) ? (
                                         <>
                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            Publishing...
+                                            {websitePublishedUrl ? 'Republishing...' : 'Publishing...'}
                                         </>
                                     ) : (
                                         <>
                                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            Publish Website
+                                            {websitePublishedUrl ? 'Republish Website' : 'Publish Website'}
                                         </>
                                     )}
                                 </Button>
@@ -947,28 +947,6 @@ export default function SubmissionDetailPage() {
                                             </svg>
                                             Visit Published Site
                                         </a>
-                                        {/* Republish button - for deployed/pending_payment/paid statuses */}
-                                        {['deployed', 'pending_payment', 'paid'].includes(submission.status) && (
-                                            <button
-                                                onClick={handleRepublishWebsite}
-                                                disabled={republishingWebsite}
-                                                className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {republishingWebsite ? (
-                                                    <>
-                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                                        Republishing...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                        </svg>
-                                                        Republish Website
-                                                    </>
-                                                )}
-                                            </button>
-                                        )}
                                         {/* Unpublish button */}
                                         <button
                                             onClick={handleUnpublishWebsite}

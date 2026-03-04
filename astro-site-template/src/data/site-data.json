@@ -1,36 +1,36 @@
 {
   "layout": {
-    "businessName": "Gulayan ni gulay",
-    "tagline": "Sowing Smiles, Harvesting Delight",
+    "businessName": "Ben-Joe Tire Supply",
+    "tagline": "TIRES THAT TAKE YOUR FURTHER",
     "navLinks": [
       {
-        "label": "About",
-        "href": "#about"
+        "href": "#about",
+        "label": "About"
       },
       {
-        "label": "Services",
-        "href": "#services"
+        "href": "#services",
+        "label": "Services"
       },
       {
-        "label": "Featured",
-        "href": "#featured"
+        "href": "#featured",
+        "label": "Featured"
       },
       {
-        "label": "Contacts",
-        "href": "#contact"
+        "href": "#contact",
+        "label": "Contacts"
       }
     ],
     "socialLinks": [],
-    "colorScheme": "auto",
+    "colorScheme": "dark",
     "fontPairing": "modern",
     "contact": {
-      "email": "jerickfrancisco31@gmail.com",
-      "phone": "91234567890",
-      "address": "Caloocan, Manial"
+      "address": "1747-E Evangelista St., Bangkal, Makati City",
+      "email": "jov.b20@gmail.com",
+      "phone": "9186246127"
     }
   },
   "customizations": {
-    "heroStyle": "A",
+    "heroStyle": "B",
     "aboutStyle": "A",
     "servicesStyle": "A",
     "galleryStyle": "A",
@@ -70,26 +70,29 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "Gulayan ni gulay",
-    "headline": "Sowing Smiles, Harvesting Delight",
-    "description": "Gulayan ni gulay is a unique venture in Manial, Caloocan, offering innovative solutions. With a passion for growth, Jerick Martin brings a fresh perspective to the community. From conceptualization to realization, Gulayan ni gulay is dedicated to making a positive impact.",
+    "businessName": "Ben-Joe Tire Supply",
+    "headline": "TIRES THAT TAKE YOUR FURTHER",
+    "description": "Ben-Joe Tire Supply is a trusted auto shop in Makati City, offering high-quality surplus and brand new tires, as well as surplus rims. With a commitment to excellent service, we ensure that every customer leaves satisfied. Established in 2010, we pride ourselves on providing reliable and affordable solutions for all your tire needs.",
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
     ],
     "services": [
       {
-        "name": "Custom Gardening",
-        "description": "Personalized gardening services tailored to your space and needs"
+        "description": "Expert tire replacement services for all vehicle types",
+        "name": "Tire Replacement"
       },
       {
-        "name": "Sustainable Farming",
-        "description": "Eco-friendly farming practices for a healthier environment"
+        "description": "Surplus rims in various sizes to fit your vehicle's needs",
+        "name": "Rim Sales"
       },
       {
-        "name": "Urban Agriculture",
-        "description": "Transforming urban spaces into thriving agricultural hubs"
+        "description": "Comprehensive tire inspections to ensure your safety on the road",
+        "name": "Tire Inspection"
       }
     ],
     "visibility": {
@@ -102,18 +105,18 @@
     }
   },
   "about": {
-    "businessName": "Gulayan ni gulay",
-    "description": "Gulayan ni gulay is a unique venture in Manial, Caloocan, offering innovative solutions. With a passion for growth, Jerick Martin brings a fresh perspective to the community. From conceptualization to realization, Gulayan ni gulay is dedicated to making a positive impact.",
+    "businessName": "Ben-Joe Tire Supply",
+    "description": "Ben-Joe Tire Supply is a trusted auto shop in Makati City, offering high-quality surplus and brand new tires, as well as surplus rims. With a commitment to excellent service, we ensure that every customer leaves satisfied. Established in 2010, we pride ourselves on providing reliable and affordable solutions for all your tire needs.",
     "headline": "About Us",
     "usps": [
-      "Innovative Approaches",
-      "Eco-Friendly Practices",
-      "Community Focus"
+      "High-quality surplus tires",
+      "Competitive pricing",
+      "Personalized customer service"
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -128,20 +131,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "name": "Custom Gardening",
-        "description": "Personalized gardening services tailored to your space and needs"
+        "description": "Expert tire replacement services for all vehicle types",
+        "name": "Tire Replacement"
       },
       {
-        "name": "Sustainable Farming",
-        "description": "Eco-friendly farming practices for a healthier environment"
+        "description": "Surplus rims in various sizes to fit your vehicle's needs",
+        "name": "Rim Sales"
       },
       {
-        "name": "Urban Agriculture",
-        "description": "Transforming urban spaces into thriving agricultural hubs"
+        "description": "Comprehensive tire inspections to ensure your safety on the road",
+        "name": "Tire Inspection"
       }
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -152,53 +155,60 @@
     }
   },
   "gallery": {
-    "headline": "Featured Projects",
-    "subheadline": "Showcasing our commitment to quality and sustainability",
+    "headline": "Featured Products",
+    "subheadline": "Explore our top-of-the-line tire and rim offerings, carefully selected to provide you with the best driving experience",
     "items": [
       {
-        "title": "Green Oasis",
-        "description": "A bespoke gardening project, transforming a small urban space into a lush oasis. This project showcases our attention to detail and commitment to sustainability. The outcome is a serene and peaceful environment, perfect for relaxation.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
+        "title": "Surplus Tire Package",
+        "description": "Our surplus tire package includes high-quality, gently used tires that have been thoroughly inspected to ensure safety and reliability. With a wide range of sizes available, we can fit any vehicle. Our team of experts will help you find the perfect tires for your needs.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
         "tags": [
-          "Gardening",
-          "2 weeks"
+          "Tire Replacement",
+          "1-2 days"
         ],
         "testimonial": {
-          "quote": "I was blown away by the transformation of my backyard. The team at Gulayan ni gulay brought my vision to life, and I couldn't be happier with the result. Their dedication to sustainability and quality is evident in every aspect of the project.",
-          "author": "Maria Rodriguez"
+          "author": "Mark Santos",
+          "quote": "I was impressed by the quality of the surplus tires I purchased from Ben-Joe Tire Supply. The price was unbeatable and the service was top-notch. I've already recommended them to my friends and family."
         }
       },
       {
-        "title": "Farm to Table",
-        "description": "A pioneering urban agriculture project, aimed at promoting sustainable farming practices and community engagement. This initiative has not only provided fresh produce to the local community but has also served as an educational platform for sustainable living. The project's success is a testament to the power of collaboration and innovation.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
+        "title": "Brand New Tire Sale",
+        "description": "Get the best brand new tires on the market at competitive prices. Our brand new tire sale features top brands and models, carefully selected to provide you with the best performance, safety, and fuel efficiency. Our knowledgeable staff will help you choose the perfect tires for your vehicle.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
         "tags": [
-          "Urban Farming",
-          "6 months"
+          "Tire Replacement",
+          "Same-day installation"
         ],
         "testimonial": {
-          "quote": "Gulayan ni gulay's Farm to Table project has been a game-changer for our community. The fresh produce and educational workshops have made a significant impact on our lives. We're grateful for their commitment to making a positive difference.",
-          "author": "Mark Davis"
+          "author": "Rachel Reyes",
+          "quote": "I recently purchased brand new tires from Ben-Joe Tire Supply and I'm extremely satisfied with the performance. The staff was knowledgeable and helpful, and the installation was quick and efficient."
         }
       },
       {
-        "title": "Eco-Friendly Landscape",
-        "description": "A cutting-edge landscaping project, incorporating eco-friendly materials and practices to minimize environmental impact. This project demonstrates our ability to balance aesthetics with sustainability, resulting in a stunning and environmentally responsible outdoor space. The client's satisfaction is a reflection of our dedication to excellence.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b",
+        "title": "Surplus Rim Package",
+        "description": "Our surplus rim package includes high-quality, gently used rims in various sizes to fit your vehicle's needs. Our team of experts will help you find the perfect rims to match your tires and enhance your vehicle's appearance.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
         "tags": [
-          "Landscape Design",
-          "4 weeks"
+          "Rim Sales",
+          "1-3 days"
         ],
         "testimonial": {
-          "quote": "I was impressed by the creativity and expertise of the Gulayan ni gulay team. They not only met but exceeded my expectations, delivering a breathtaking outdoor space that's both beautiful and sustainable. I highly recommend their services to anyone looking for innovative and eco-friendly solutions.",
-          "author": "Sophia Lee"
+          "author": "Juan Lopez",
+          "quote": "I was looking for a unique set of rims for my car and Ben-Joe Tire Supply had exactly what I needed. The surplus rim package was affordable and the quality was exceptional. I'm very happy with my purchase."
         }
       }
     ],
+    "images": [
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
+    ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -208,16 +218,19 @@
     }
   },
   "contact": {
-    "businessName": "Gulayan ni gulay",
-    "email": "jerickfrancisco31@gmail.com",
-    "phone": "91234567890",
-    "address": "Caloocan, Manial",
+    "businessName": "Ben-Joe Tire Supply",
+    "email": "jov.b20@gmail.com",
+    "phone": "9186246127",
+    "address": "1747-E Evangelista St., Bangkal, Makati City",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
-      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e4a2925b-62eb-43ea-abd9-8d21de561852",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2219fbe1-6db8-48f0-bec5-c10c805d6c77",
+      "https://diligent-ibex-454.convex.cloud/api/storage/ee6ed386-6f02-4961-86e9-10f55618a65d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/29ff5b06-56f7-4544-9a6f-afc6a7ac81ba",
+      "https://diligent-ibex-454.convex.cloud/api/storage/0f3b8636-e840-496f-9315-b0f8ca34a97c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/b48c99cd-aaee-4148-8bba-5de0ca554014"
     ],
     "visibility": {
       "contactBadge": true,

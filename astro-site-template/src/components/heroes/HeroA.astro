@@ -43,8 +43,8 @@ const showImage = visibility?.heroImage !== false;
 <section id="hero" class="relative min-h-screen overflow-hidden bg-[#0a0a0a] pt-20 md:pt-24 lg:pt-28">
   <div class="mx-auto grid max-w-[1400px] grid-cols-1 items-center gap-8 p-8 md:grid-cols-[1fr_1fr] md:gap-12 md:px-16 md:py-12 lg:grid-cols-[45%_55%] lg:gap-16 lg:px-20 lg:py-16">
 
-    {/* Content Side */}
-    <div class="order-2 flex flex-col justify-center pt-8 md:order-1 md:pt-0">
+    {/* Content Side - slides in from right */}
+    <div class="hero-content order-2 flex flex-col justify-center pt-8 md:order-1 md:pt-0">
 
       {showTagline && (
         <div class="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2">
@@ -81,9 +81,9 @@ const showImage = visibility?.heroImage !== false;
       )}
     </div>
 
-    {/* Image Side */}
+    {/* Image Side - slides in from left */}
     {showImage && (
-      <div class="relative order-1 min-h-[300px] md:order-2 md:h-full md:min-h-0">
+      <div class="hero-image relative order-1 min-h-[300px] md:order-2 md:h-full md:min-h-0">
         <div class="relative h-full min-h-[350px] overflow-hidden rounded-[16px] md:min-h-[500px] md:rounded-[20px] lg:min-h-[600px] lg:rounded-[24px]">
           {mainPhoto ? (
             <img src={mainPhoto} alt={businessName} class="h-full w-full object-cover object-center" />
@@ -109,3 +109,31 @@ const showImage = visibility?.heroImage !== false;
     )}
   </div>
 </section>
+
+<style>
+  .hero-image {
+    opacity: 0;
+    transform: translateX(-80px);
+    animation: slideFromLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+  }
+
+  .hero-content {
+    opacity: 0;
+    transform: translateX(80px);
+    animation: slideFromRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+  }
+
+  @keyframes slideFromLeft {
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideFromRight {
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+</style>
