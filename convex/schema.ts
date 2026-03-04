@@ -252,6 +252,13 @@ export default defineSchema({
             v.literal('bank_transfer')
         ),
         accountDetails: v.string(),
+        accountHolderName: v.optional(v.string()),
+        accountNumber: v.optional(v.string()),
+        bankCode: v.optional(v.string()),
+        bankName: v.optional(v.string()),
+        failureReason: v.optional(v.string()),
+        wiseRecipientId: v.optional(v.string()),
+        wiseTransferId: v.optional(v.string()),
         status: v.union(
             v.literal('pending'),
             v.literal('processing'),

@@ -1,7 +1,7 @@
 {
   "layout": {
-    "businessName": "SweetLayers Cakes",
-    "tagline": "Layers of Love in Every Bite",
+    "businessName": "Gulayan ni gulay",
+    "tagline": "Sowing Smiles, Harvesting Delight",
     "navLinks": [
       {
         "label": "About",
@@ -24,9 +24,9 @@
     "colorScheme": "auto",
     "fontPairing": "modern",
     "contact": {
-      "email": "bcsteven0209@gmail.com",
-      "phone": "+109278147733",
-      "address": "Makapiling st., Manila"
+      "email": "jerickfrancisco31@gmail.com",
+      "phone": "91234567890",
+      "address": "Caloocan, Manial"
     }
   },
   "customizations": {
@@ -70,26 +70,26 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "SweetLayers Cakes",
-    "headline": "Layers of Love in Every Bite",
-    "description": "SweetLayers Cakes is a boutique cake shop in Manila, specializing in handcrafted cakes for all occasions. Our cakes are combined with sweet flavors to deliver a dessert as beautiful as they are delicious. Owned by Clarrise Baustista, our shop is dedicated to providing unique and mouth-watering creations.",
+    "businessName": "Gulayan ni gulay",
+    "headline": "Sowing Smiles, Harvesting Delight",
+    "description": "Gulayan ni gulay is a unique venture in Manial, Caloocan, offering innovative solutions. With a passion for growth, Jerick Martin brings a fresh perspective to the community. From conceptualization to realization, Gulayan ni gulay is dedicated to making a positive impact.",
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
+      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
     ],
     "services": [
       {
-        "name": "Custom Wedding Cakes",
-        "description": "Exquisite, handcrafted wedding cakes tailored to your special day"
+        "name": "Custom Gardening",
+        "description": "Personalized gardening services tailored to your space and needs"
       },
       {
-        "name": "Birthday Cake Design",
-        "description": "Fun and creative birthday cakes for all ages"
+        "name": "Sustainable Farming",
+        "description": "Eco-friendly farming practices for a healthier environment"
       },
       {
-        "name": "Special Occasion Cakes",
-        "description": "Cakes for anniversaries, graduations, and other celebrations"
+        "name": "Urban Agriculture",
+        "description": "Transforming urban spaces into thriving agricultural hubs"
       }
     ],
     "visibility": {
@@ -102,18 +102,18 @@
     }
   },
   "about": {
-    "businessName": "SweetLayers Cakes",
-    "description": "SweetLayers Cakes is a boutique cake shop in Manila, specializing in handcrafted cakes for all occasions. Our cakes are combined with sweet flavors to deliver a dessert as beautiful as they are delicious. Owned by Clarrise Baustista, our shop is dedicated to providing unique and mouth-watering creations.",
+    "businessName": "Gulayan ni gulay",
+    "description": "Gulayan ni gulay is a unique venture in Manial, Caloocan, offering innovative solutions. With a passion for growth, Jerick Martin brings a fresh perspective to the community. From conceptualization to realization, Gulayan ni gulay is dedicated to making a positive impact.",
     "headline": "About Us",
     "usps": [
-      "Handcrafted with love",
-      "Unique flavor combinations",
-      "Customizable designs"
+      "Innovative Approaches",
+      "Eco-Friendly Practices",
+      "Community Focus"
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
+      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -128,20 +128,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "name": "Custom Wedding Cakes",
-        "description": "Exquisite, handcrafted wedding cakes tailored to your special day"
+        "name": "Custom Gardening",
+        "description": "Personalized gardening services tailored to your space and needs"
       },
       {
-        "name": "Birthday Cake Design",
-        "description": "Fun and creative birthday cakes for all ages"
+        "name": "Sustainable Farming",
+        "description": "Eco-friendly farming practices for a healthier environment"
       },
       {
-        "name": "Special Occasion Cakes",
-        "description": "Cakes for anniversaries, graduations, and other celebrations"
+        "name": "Urban Agriculture",
+        "description": "Transforming urban spaces into thriving agricultural hubs"
       }
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg"
+      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -152,53 +152,53 @@
     }
   },
   "gallery": {
-    "headline": "Featured Creations",
-    "subheadline": "A showcase of our most stunning and delicious cakes",
+    "headline": "Featured Projects",
+    "subheadline": "Showcasing our commitment to quality and sustainability",
     "items": [
       {
-        "title": "Elegant Wedding Masterpiece",
-        "description": "A 3-tiered wedding cake with intricate designs and flavors of vanilla and strawberry. This cake is a true showstopper, perfect for any wedding reception. With its delicate details and exquisite taste, it's sure to impress your guests.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
+        "title": "Green Oasis",
+        "description": "A bespoke gardening project, transforming a small urban space into a lush oasis. This project showcases our attention to detail and commitment to sustainability. The outcome is a serene and peaceful environment, perfect for relaxation.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
         "tags": [
-          "Wedding Cake",
-          "3-4 weeks"
+          "Gardening",
+          "2 weeks"
         ],
         "testimonial": {
-          "quote": "The wedding cake from SweetLayers Cakes was absolutely stunning and delicious. Our guests couldn't stop raving about it! The attention to detail and the flavors were just perfect.",
+          "quote": "I was blown away by the transformation of my backyard. The team at Gulayan ni gulay brought my vision to life, and I couldn't be happier with the result. Their dedication to sustainability and quality is evident in every aspect of the project.",
           "author": "Maria Rodriguez"
         }
       },
       {
-        "title": "Birthday Bash Cake",
-        "description": "A fun and colorful birthday cake designed for kids and kids-at-heart. This cake features a chocolate base with cream cheese frosting and decorations of candy and sprinkles. It's the perfect way to make your birthday celebration even more special.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
+        "title": "Farm to Table",
+        "description": "A pioneering urban agriculture project, aimed at promoting sustainable farming practices and community engagement. This initiative has not only provided fresh produce to the local community but has also served as an educational platform for sustainable living. The project's success is a testament to the power of collaboration and innovation.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
         "tags": [
-          "Birthday Cake",
-          "1-2 weeks"
+          "Urban Farming",
+          "6 months"
         ],
         "testimonial": {
-          "quote": "My son's birthday cake from SweetLayers Cakes was a huge hit! The kids loved the colorful design and the cake was moist and flavorful. We'll definitely be ordering from them again.",
-          "author": "John Lee"
+          "quote": "Gulayan ni gulay's Farm to Table project has been a game-changer for our community. The fresh produce and educational workshops have made a significant impact on our lives. We're grateful for their commitment to making a positive difference.",
+          "author": "Mark Davis"
         }
       },
       {
-        "title": "Anniversary Cake for Two",
-        "description": "An intimate and romantic anniversary cake designed for couples. This cake features a rich red velvet flavor with cream cheese frosting and delicate decorations. It's the perfect way to celebrate your love and commitment to each other.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg",
+        "title": "Eco-Friendly Landscape",
+        "description": "A cutting-edge landscaping project, incorporating eco-friendly materials and practices to minimize environmental impact. This project demonstrates our ability to balance aesthetics with sustainability, resulting in a stunning and environmentally responsible outdoor space. The client's satisfaction is a reflection of our dedication to excellence.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b",
         "tags": [
-          "Anniversary Cake",
-          "1 week"
+          "Landscape Design",
+          "4 weeks"
         ],
         "testimonial": {
-          "quote": "The anniversary cake from SweetLayers Cakes was the perfect way to celebrate our special day. The cake was beautiful and delicious, and the service was top-notch. We highly recommend them!",
-          "author": "Emily Chen"
+          "quote": "I was impressed by the creativity and expertise of the Gulayan ni gulay team. They not only met but exceeded my expectations, delivering a breathtaking outdoor space that's both beautiful and sustainable. I highly recommend their services to anyone looking for innovative and eco-friendly solutions.",
+          "author": "Sophia Lee"
         }
       }
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
+      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -208,16 +208,16 @@
     }
   },
   "contact": {
-    "businessName": "SweetLayers Cakes",
-    "email": "bcsteven0209@gmail.com",
-    "phone": "+109278147733",
-    "address": "Makapiling st., Manila",
+    "businessName": "Gulayan ni gulay",
+    "email": "jerickfrancisco31@gmail.com",
+    "phone": "91234567890",
+    "address": "Caloocan, Manial",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120117320-xnv3d0tz.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122169-jv4yygiu.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772120122909-s54f5n5f.jpg"
+      "https://diligent-ibex-454.convex.cloud/api/storage/9e0416df-b438-4d74-abb3-13adaf080d9d",
+      "https://diligent-ibex-454.convex.cloud/api/storage/2ed6cc1f-3340-4717-a86e-2e7f3aca214a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/12f0f09c-d777-4d62-afcf-c887b8128e7b"
     ],
     "visibility": {
       "contactBadge": true,

@@ -232,3 +232,20 @@ export const updateBalance = mutation({
         await ctx.db.patch(args.id, updates);
     },
 });
+
+/**
+ * Update last active timestamp for a creator
+ */
+export const updateLastActive = mutation({
+    args: { clerkId: v.string() },
+    handler: async (ctx, args) => {
+        const creator = await ctx.db
+            .query('creators')
+            .withIndex('by_clerkId', (q) => q.eq('clerkId', args.clerkId))
+            .unique();
+
+        if (creator) {
+            await ctx.db.patch(creator._id, { lastActiveAt: Date.now() });
+        }
+    },
+});

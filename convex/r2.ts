@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { action } from './_generated/server';
+import { query, action } from './_generated/server';
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -47,6 +47,22 @@ function getPublicUrlPrefix() {
     // Ensure no trailing slash
     return publicUrl.replace(/\/$/, '');
 }
+
+/**
+ * Get a streamable (public) URL for an R2 file key.
+ * Returns the public URL directly without signing.
+ */
+export const getStreamableUrl = query({
+    args: { key: v.string() },
+    handler: async (ctx, args) => {
+        const publicUrl = process.env.R2_PUBLIC_URL;
+        if (!publicUrl) {
+            return null;
+        }
+        const prefix = publicUrl.replace(/\/$/, '');
+        return `${prefix}/${args.key}`;
+    },
+});
 
 /**
  * Generate a presigned URL for uploading a file to R2
