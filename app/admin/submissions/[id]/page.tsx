@@ -140,22 +140,25 @@ export default function SubmissionDetailPage() {
     const hasR2AudioUrl = !!submissionData?.audioUrl
 
     // Resolve video storage ID to URL (only if no R2 URL)
-    const legacyVideoUrl = useQuery(
-        api.files.getUrlByString,
+    // Use getMultipleUrls which handles both Convex storage IDs and R2 key paths
+    const resolvedVideoUrls = useQuery(
+        api.files.getMultipleUrls,
         !hasR2VideoUrl && submissionData?.videoStorageId
-            ? { storageId: submissionData.videoStorageId.toString() }
+            ? { storageIds: [submissionData.videoStorageId.toString()] }
             : "skip"
     )
+    const legacyVideoUrl = resolvedVideoUrls?.[0] || null
 
     // Resolve audio storage ID to URL (only if no R2 URL)
-    const legacyAudioUrl = useQuery(
-        api.files.getUrlByString,
+    const resolvedAudioUrls = useQuery(
+        api.files.getMultipleUrls,
         !hasR2AudioUrl && submissionData?.audioStorageId
-            ? { storageId: submissionData.audioStorageId.toString() }
+            ? { storageIds: [submissionData.audioStorageId.toString()] }
             : "skip"
     )
+    const legacyAudioUrl = resolvedAudioUrls?.[0] || null
 
-    // Use R2 URLs if available, otherwise fall back to legacy Convex URLs
+    // Use R2 URLs if available, otherwise fall back to resolved legacy URLs
     const videoUrl = hasR2VideoUrl ? submissionData?.videoUrl : legacyVideoUrl
     const audioUrl = hasR2AudioUrl ? submissionData?.audioUrl : legacyAudioUrl
 
@@ -690,7 +693,10 @@ export default function SubmissionDetailPage() {
             setWebsiteContent(existingWebsite.extractedContent)
             setWebsiteCustomizations(existingWebsite.customizations || {})
             setWebsitePublishedUrl(existingWebsite.publishedUrl || null)
-            setWebsiteGenerated(true)
+            // Only mark as generated if there's actual HTML content
+            if (existingWebsite.htmlContent) {
+                setWebsiteGenerated(true)
+            }
         }
     }, [existingWebsite])
 

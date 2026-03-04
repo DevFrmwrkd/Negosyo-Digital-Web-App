@@ -269,3 +269,22 @@ export const getWebsiteStatsByDate = query({
             .collect();
     },
 });
+
+/**
+ * Get all analytics records (admin dashboard overview)
+ */
+export const getAllAnalytics = query({
+    args: {
+        periodType: v.optional(v.union(v.literal('daily'), v.literal('monthly'))),
+    },
+    handler: async (ctx, args) => {
+        if (args.periodType) {
+            return await ctx.db
+                .query('analytics')
+                .withIndex('by_period', (q) => q.eq('periodType', args.periodType!))
+                .collect();
+        }
+        return await ctx.db.query('analytics').collect();
+    },
+});
+
