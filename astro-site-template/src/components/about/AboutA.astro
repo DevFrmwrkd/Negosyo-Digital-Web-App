@@ -37,25 +37,25 @@ const showImages = visibility?.aboutImages !== false;
 const galleryPhotos = photos.slice(0, 4);
 ---
 
-<section id="about" class="relative overflow-hidden bg-[var(--bg,#F6F7F5)] py-20 md:py-28 lg:py-32">
+<section id="about" class="relative overflow-hidden bg-[var(--bg)] py-24 md:py-32">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
     {/* Top: Split layout */}
-    <div class="reveal grid grid-cols-1 items-start gap-8 md:grid-cols-2 md:gap-12 lg:gap-20">
+    <div class="reveal grid grid-cols-1 items-start gap-12 md:grid-cols-2 md:gap-20">
 
       {/* LEFT: Badge + Headline */}
       <div>
         {showBadge && (
-          <div class="reveal mb-6">
-            <span class="about-badge inline-block rounded-full px-5 py-2 text-xs font-semibold uppercase tracking-[0.1em]">
-              About Us
+          <div class="reveal mb-8">
+            <span class="inline-block rounded-full px-6 py-2 text-[var(--fs-xs)] font-bold uppercase tracking-[0.2em] bg-[var(--primary)] text-[var(--text-inverse)] shadow-lg shadow-[var(--primary)]/20">
+              Overview
             </span>
           </div>
         )}
 
         {showHeadline && (
-          <h2 class="reveal reveal-delay-1 font-semibold leading-[1.15] tracking-[-0.02em] text-[var(--secondary,#1F2933)]"
-              style="font-size: clamp(2rem, 4vw, 3.5rem); font-family: var(--heading-font, inherit);">
+          <h2 class="reveal-delay-1 reveal font-bold leading-tight tracking-tight text-[var(--text)]"
+              style="font-size: var(--fs-2xl); font-family: var(--heading-font, inherit);">
             {headline}
           </h2>
         )}
@@ -63,9 +63,9 @@ const galleryPhotos = photos.slice(0, 4);
 
       {/* RIGHT: Description */}
       {showDescription && (
-        <div class="flex items-start md:pt-4 lg:pt-8">
-          <p class="reveal reveal-delay-2 max-w-lg leading-relaxed text-[var(--secondary,#1F2933)]/65"
-             style="font-size: clamp(1rem, 1.5vw, 1.125rem);">
+        <div class="reveal-delay-2 reveal flex items-start md:pt-4 lg:pt-12">
+          <p class="max-w-xl leading-[1.6] text-[var(--text-muted)] font-medium"
+             style="font-size: var(--fs-lg);">
             {description}
           </p>
         </div>
@@ -74,13 +74,16 @@ const galleryPhotos = photos.slice(0, 4);
 
     {/* Bottom: 4-image gallery */}
     {showImages && galleryPhotos.length > 0 && (
-      <div class="mt-14 md:mt-20 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+      <div class="mt-16 md:mt-24 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
         {galleryPhotos.map((photo, index) => (
-          <div class={`reveal reveal-delay-${index + 1} overflow-hidden rounded-2xl`}>
+          <div 
+            class="reveal overflow-hidden rounded-[2.5rem] bg-[var(--surface)] border border-[var(--text)]/5 shadow-xl transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl"
+            style={`transition-delay: ${index * 0.15 + 0.5}s;`}
+          >
             <img
               src={photo}
               alt={`${businessName} - ${index + 1}`}
-              class="aspect-[3/4] w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
+              class="aspect-[3/4] w-full object-cover transition-transform duration-[1s] hover:scale-110"
               loading="lazy"
             />
           </div>
@@ -89,14 +92,3 @@ const galleryPhotos = photos.slice(0, 4);
     )}
   </div>
 </section>
-
-<style>
-  /*
-   * Badge colors: --secondary is #ffffff on dark, #1F2933 on light.
-   * We need the badge to contrast against --bg in both cases.
-   */
-  .about-badge {
-    background-color: var(--secondary, #1F2933);
-    color: var(--bg, #F6F7F5);
-  }
-</style>

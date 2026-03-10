@@ -72,62 +72,71 @@ if (splitIndex !== -1) {
 }
 ---
 
-<section id="hero" class="relative min-h-screen overflow-hidden pt-20"
-         style="background-color: #fafafa; background-image: radial-gradient(circle, #e5e5e5 1px, transparent 1px); background-size: 20px 20px;">
+<section id="hero" class="relative min-h-screen overflow-hidden pt-32 pb-20 bg-[var(--bg)] flex flex-col justify-between">
+  {/* Modern dot grid background */}
+  <div class="absolute inset-0 z-0 pointer-events-none opacity-[0.03]" 
+       style="background-image: radial-gradient(var(--text) 1.5px, transparent 1.5px); background-size: 50px 50px; background-attachment: fixed;">
+  </div>
+  <div class="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-[var(--primary)]/5 to-transparent pointer-events-none"></div>
 
   {/* Centered Content */}
-  <div class="mx-auto max-w-[1200px] px-6 pt-12 text-center md:px-8 md:pt-16 lg:pt-20">
+  <div class="mx-auto max-w-[1300px] px-6 text-center relative z-10 flex-1 flex flex-col items-center justify-center">
 
     {/* Business Name Badge */}
-    <div class="mb-6 text-sm font-medium tracking-[0.02em] text-[#666]">
-      {businessName}
+    <div class="reveal mb-10 w-fit rounded-full border border-[var(--primary)]/20 bg-[var(--primary)]/5 px-8 py-3 shadow-xl backdrop-blur-sm">
+      <span class="text-[var(--fs-xs)] font-bold tracking-[0.4em] uppercase text-[var(--primary)]">
+        {businessName}
+      </span>
     </div>
 
     {/* Headline with Italic Accent */}
     {showHeadline && (
-      <h1 class="mb-5 font-medium leading-[1.15] tracking-[-0.02em] text-[#1a1a1a] md:text-[clamp(2.5rem,6vw,4rem)]"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); font-family: var(--heading-font, inherit);">
-        {headlinePart1}{headlinePart2 && (
-          <span class="italic font-normal">{headlinePart2}</span>
+      <h1 class="reveal-delay-1 reveal mb-10 font-black leading-[1.05] tracking-tighter text-[var(--text)]"
+          style="font-size: var(--fs-display); font-family: var(--heading-font, inherit);">
+        {headlinePart1}
+        {headlinePart2 && (
+          <span class="italic font-light opacity-50 block lg:inline-block lg:ml-2">{headlinePart2}</span>
         )}
       </h1>
     )}
 
-    {/* Description - uses badgeText as description in this style */}
+    {/* Description */}
     {showTagline && badgeText && (
-      <p class="mx-auto mb-8 max-w-[500px] text-base leading-[1.6] text-[#666] md:text-[1.0625rem]">
+      <p class="reveal-delay-2 reveal mx-auto mb-14 max-w-[700px] leading-relaxed text-[var(--text-muted)] font-medium"
+         style="font-size: var(--fs-lg);">
         {badgeText}
       </p>
     )}
 
     {/* CTA Button */}
     {showButton && (
-      <a href={ctaLink}
-         class="inline-flex items-center justify-center rounded-lg bg-[#e85a30] px-7 py-3.5 text-[0.9375rem] font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d14a22] hover:shadow-[0_4px_12px_rgba(232,90,48,0.3)]">
-        {ctaLabel}
-      </a>
+      <div class="reveal-delay-3 reveal">
+        <a href={ctaLink}
+           class="group relative inline-flex items-center justify-center gap-6 rounded-[2rem] bg-[var(--primary)] px-12 py-7 text-[var(--fs-sm)] font-bold uppercase tracking-widest text-[var(--text-inverse)] transition-all duration-500 hover:scale-105 hover:shadow-[0_20px_50px_rgba(var(--primary-rgb),0.5)]">
+          {ctaLabel}
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--text-inverse)] text-[var(--primary)] transition-transform duration-500 group-hover:rotate-45">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </span>
+        </a>
+      </div>
     )}
   </div>
 
   {/* Image Carousel */}
   {showImage && carouselImages.length > 0 && (
-    <div class="hero-c-carousel relative mt-12 overflow-hidden md:mt-16">
+    <div class="reveal-delay-4 reveal hero-c-carousel relative mt-20 lg:mt-32 overflow-hidden z-10 w-full">
       {/* Fade edges */}
-      <div class="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[100px] bg-gradient-to-r from-[#fafafa] to-transparent"></div>
-      <div class="pointer-events-none absolute inset-y-0 right-0 z-[2] w-[100px] bg-gradient-to-l from-[#fafafa] to-transparent"></div>
+      <div class="pointer-events-none absolute inset-y-0 left-0 z-[2] w-[20%] bg-gradient-to-r from-[var(--bg)] via-[var(--bg)]/80 to-transparent"></div>
+      <div class="pointer-events-none absolute inset-y-0 right-0 z-[2] w-[20%] bg-gradient-to-l from-[var(--bg)] via-[var(--bg)]/80 to-transparent"></div>
 
-      {/* Carousel Track: duplicated images for seamless loop */}
-      <div class="hero-c-track flex w-fit gap-4 md:gap-5">
-        {/* First set */}
+      {/* Carousel Track */}
+      <div class="hero-c-track flex w-max gap-10 lg:gap-16 py-16 px-10">
         {carouselImages.map((img, i) => (
-          <div class="flex-shrink-0 w-[200px] h-[240px] overflow-hidden rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:w-[260px] md:h-[300px] md:rounded-2xl lg:w-[280px] lg:h-[320px]">
-            <img src={img} alt={`${businessName} - Image ${(i % photos.length) + 1}`} loading="lazy" class="h-full w-full object-cover" />
-          </div>
-        ))}
-        {/* Duplicate set for seamless loop */}
-        {carouselImages.map((img, i) => (
-          <div class="flex-shrink-0 w-[200px] h-[240px] overflow-hidden rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:w-[260px] md:h-[300px] md:rounded-2xl lg:w-[280px] lg:h-[320px]">
-            <img src={img} alt={`${businessName} - Image ${(i % photos.length) + 1}`} loading="lazy" class="h-full w-full object-cover" />
+          <div class="flex-shrink-0 w-[280px] h-[380px] lg:w-[380px] lg:h-[500px] group relative overflow-hidden rounded-[4rem] shadow-2xl transition-all duration-700 hover:scale-105 hover:-rotate-1">
+            <img src={img} alt={`${businessName} - Image ${(i % photos.length) + 1}`} loading="lazy" class="h-full w-full object-cover grayscale-[0.2] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-110" />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           </div>
         ))}
       </div>
@@ -137,19 +146,16 @@ if (splitIndex !== -1) {
 
 <style>
   .hero-c-track {
-    animation: heroC-carousel-scroll 30s linear infinite;
+    animation: heroC-carousel-scroll 60s linear infinite;
+  }
+
+  /* Keyframes for infinite scroll - make sure it's half width for seamless loop */
+  @keyframes heroC-carousel-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
 
   .hero-c-carousel:hover .hero-c-track {
     animation-play-state: paused;
-  }
-
-  @keyframes heroC-carousel-scroll {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
-    }
   }
 </style>

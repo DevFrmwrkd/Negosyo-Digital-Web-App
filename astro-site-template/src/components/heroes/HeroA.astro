@@ -40,68 +40,80 @@ const showButton = visibility?.heroButton !== false;
 const showImage = visibility?.heroImage !== false;
 ---
 
-<section id="hero" class="relative min-h-screen overflow-hidden bg-[#0a0a0a] pt-20 md:pt-24 lg:pt-28">
-  <div class="mx-auto grid max-w-[1400px] grid-cols-1 items-center gap-8 p-8 md:grid-cols-[1fr_1fr] md:gap-12 md:px-16 md:py-12 lg:grid-cols-[45%_55%] lg:gap-16 lg:px-20 lg:py-16">
+<section id="hero" class="relative min-h-screen flex items-center overflow-hidden bg-[var(--bg)] py-20 md:py-32">
+  {/* Modern background element */}
+  <div class="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-[var(--primary)]/5 blur-[120px] pointer-events-none"></div>
+  <div class="absolute -bottom-[10%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[var(--secondary)]/5 blur-[100px] pointer-events-none"></div>
 
-    {/* Content Side - slides in from right */}
-    <div class="hero-content order-2 flex flex-col justify-center pt-8 md:order-1 md:pt-0">
+  <div class="mx-auto grid max-w-[1500px] grid-cols-1 items-center gap-16 px-6 md:grid-cols-2 md:px-16 lg:gap-24 lg:px-24">
+
+    {/* Content Side */}
+    <div class="hero-content order-2 flex flex-col justify-center md:order-1">
 
       {showTagline && (
-        <div class="mb-8 inline-flex w-fit items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2">
-          <span class="h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)] animate-pulse-dot"></span>
-          <span class="text-[0.8rem] tracking-[0.02em] text-white/85">{badgeText}</span>
+        <div class="reveal mb-10 w-fit items-center gap-4 rounded-full border border-[var(--text)]/10 bg-[var(--surface)] px-6 py-3 shadow-xl shadow-black/5">
+          <span class="flex items-center gap-3">
+            <span class="h-3 w-3 rounded-full bg-[var(--primary)] shadow-[0_0_15px_var(--primary)] animate-pulse-dot"></span>
+            <span class="text-[var(--fs-xs)] font-bold uppercase tracking-[0.25em] text-[var(--text-muted)]">{badgeText}</span>
+          </span>
         </div>
       )}
 
       {showHeadline && (
-        <h1 class="mb-6 font-medium leading-[1.1] tracking-[-0.02em] text-white"
-            style="font-size: clamp(2.5rem, 6vw, 4.5rem); font-family: var(--heading-font, inherit);">
+        <h1 class="reveal-delay-1 reveal mb-8 font-bold leading-[1.05] tracking-tight text-[var(--text)]"
+            style="font-size: var(--fs-display); font-family: var(--heading-font, inherit);">
           {headline}
         </h1>
       )}
 
       {showDescription && (
-        <p class="mb-10 max-w-[420px] leading-[1.7] text-white/65"
-           style="font-size: clamp(1rem, 1.5vw, 1.125rem);">
+        <p class="reveal-delay-2 reveal mb-14 max-w-[500px] leading-[1.6] text-[var(--text-muted)] font-medium"
+           style="font-size: var(--fs-lg);">
           {description}
         </p>
       )}
 
       {showButton && (
-        <a href={ctaLink}
-           class="inline-flex w-fit items-center justify-center gap-3 rounded-full bg-white px-6 py-4 text-[0.9rem] font-medium text-[#0a0a0a] transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_10px_30px_rgba(255,255,255,0.15)]">
-          {ctaLabel}
-          <span class="flex h-7 w-7 items-center justify-center rounded-full bg-[#0a0a0a] transition-transform duration-300 group-hover:rotate-45">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M7 7h10v10"></path>
-              <path d="M7 17L17 7"></path>
-            </svg>
-          </span>
-        </a>
+        <div class="reveal-delay-3 reveal">
+          <a href={ctaLink}
+             class="group inline-flex w-fit items-center justify-center gap-4 rounded-full bg-[var(--primary)] px-10 py-6 text-[var(--fs-sm)] font-bold uppercase tracking-widest text-[var(--text-inverse)] transition-all duration-500 hover:scale-105 hover:shadow-[0_20px_50px_rgba(var(--primary-rgb),0.4)] hover:-translate-y-1">
+            {ctaLabel}
+            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--text-inverse)] text-[var(--primary)] transition-all duration-500 group-hover:rotate-[360deg]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 7h10v10"></path>
+                <path d="M7 17L17 7"></path>
+              </svg>
+            </span>
+          </a>
+        </div>
       )}
     </div>
 
-    {/* Image Side - slides in from left */}
+    {/* Image Side */}
     {showImage && (
-      <div class="hero-image relative order-1 min-h-[300px] md:order-2 md:h-full md:min-h-0">
-        <div class="relative h-full min-h-[350px] overflow-hidden rounded-[16px] md:min-h-[500px] md:rounded-[20px] lg:min-h-[600px] lg:rounded-[24px]">
+      <div class="hero-image relative order-1 md:order-2">
+        <div class="relative overflow-hidden rounded-[3rem] lg:rounded-[5rem] shadow-2xl border border-[var(--text)]/5 group">
           {mainPhoto ? (
-            <img src={mainPhoto} alt={businessName} class="h-full w-full object-cover object-center" />
+            <img 
+              src={mainPhoto} 
+              alt={businessName} 
+              class="aspect-[4/5] w-full object-cover transition-transform duration-[2s] group-hover:scale-110" 
+            />
           ) : (
-            <div class="h-full w-full bg-gradient-to-br from-[#1a1a1a] to-[#333]"></div>
+            <div class="aspect-[4/5] w-full bg-[var(--surface)]"></div>
           )}
 
-          {/* Floating Testimonial Card - desktop only */}
+          {/* Floating Testimonial Card */}
           {showTestimonial && (
-            <div class="absolute bottom-6 right-4 hidden max-w-[280px] rounded-xl bg-white/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-[20px] md:block md:bottom-8 md:right-6 md:p-5 lg:bottom-10 lg:right-8 lg:max-w-[300px] lg:p-6">
-              <div class="mb-3 flex gap-1">
+            <div class="reveal-delay-4 reveal absolute bottom-8 left-8 right-8 rounded-[2rem] bg-[var(--surface)]/80 p-8 shadow-2xl backdrop-blur-2xl border border-[var(--text)]/10 md:bottom-12 md:left-12 lg:max-w-[350px] lg:right-auto">
+              <div class="mb-4 flex gap-1.5">
                 {Array.from({ length: 5 }).map(() => (
-                  <svg class="h-3.5 w-3.5 fill-[var(--primary,#6B8F71)]" viewBox="0 0 24 24">
+                  <svg class="h-4 w-4 fill-[var(--primary)]" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
                   </svg>
                 ))}
               </div>
-              <p class="text-[0.85rem] italic leading-[1.6] text-[#1a1a1a]">"{testimonial}"</p>
+              <p class="text-[var(--fs-xs)] font-bold italic leading-[1.6] text-[var(--text)] tracking-tight">"{testimonial}"</p>
             </div>
           )}
         </div>
@@ -113,27 +125,14 @@ const showImage = visibility?.heroImage !== false;
 <style>
   .hero-image {
     opacity: 0;
-    transform: translateX(-80px);
-    animation: slideFromLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+    transform: perspective(1000px) rotateY(-10deg) translateX(50px);
+    animation: imageReveal 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
   }
 
-  .hero-content {
-    opacity: 0;
-    transform: translateX(80px);
-    animation: slideFromRight 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-  }
-
-  @keyframes slideFromLeft {
+  @keyframes imageReveal {
     to {
       opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes slideFromRight {
-    to {
-      opacity: 1;
-      transform: translateX(0);
+      transform: perspective(1000px) rotateY(0deg) translateX(0);
     }
   }
 </style>

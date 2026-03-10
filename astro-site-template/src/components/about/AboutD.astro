@@ -41,28 +41,33 @@ const italicStartIndex = Math.max(0, totalWords - 3);
 const carouselPhotos = photos.length > 0 ? [...photos, ...photos] : [];
 ---
 
-<section id="about" class="relative overflow-hidden bg-[#fafafa] py-20 md:py-28 lg:py-32">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<section id="about" class="reveal relative overflow-hidden bg-[var(--bg)] py-32 md:py-48 lg:py-64">
+  {/* Modern background element */}
+  <div class="absolute inset-0 z-0 pointer-events-none opacity-[0.03]" 
+       style="background-image: radial-gradient(var(--text) 1.5px, transparent 1.5px); background-size: 60px 60px; background-attachment: fixed;">
+  </div>
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
 
     {/* Badge: dot + ABOUT US */}
     {showBadge && (
-      <div class="reveal mb-12 flex items-center justify-center gap-2 md:mb-16">
-        <span class="h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)] animate-pulse-dot"></span>
-        <span class="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--secondary,#1F2933)]/70">
-          About Us
+      <div class="reveal mb-16 flex items-center justify-center gap-6 md:mb-24">
+        <span class="h-4 w-4 rounded-full bg-[var(--primary)] shadow-[0_0_20px_var(--primary)] animate-pulse"></span>
+        <span class="text-[var(--fs-xs)] font-black uppercase tracking-[0.4em] text-[var(--primary)]">
+          Evolutionary Journey
         </span>
       </div>
     )}
 
     {/* Word-by-word description */}
     {showDescription && (
-      <div class="reveal mx-auto max-w-4xl text-center">
-        <p class="about-d-words leading-[1.45] text-[var(--secondary,#1F2933)]"
-           style="font-size: clamp(1.5rem, 3vw, 2.5rem); font-family: var(--heading-font, inherit);">
+      <div class="reveal mx-auto max-w-6xl text-center">
+        <p class="about-d-words leading-[1.1] text-[var(--text)] font-black tracking-tighter"
+           style="font-size: var(--fs-display); font-family: var(--heading-font, inherit);">
           {descriptionWords.map((word, index) => (
             <span
-              class={`reveal-word inline-block ${index >= italicStartIndex ? 'italic text-[var(--secondary,#1F2933)]/40' : ''}`}
-              style="margin-right: 0.3em;"
+              class={`reveal-word inline-block transition-all duration-700 ${index >= italicStartIndex ? 'italic font-light opacity-30' : 'opacity-10'}`}
+              style={`margin-right: 0.35em; transition-delay: ${index * 0.05}s;`}
             >
               {word}
             </span>
@@ -73,22 +78,23 @@ const carouselPhotos = photos.length > 0 ? [...photos, ...photos] : [];
 
     {/* Infinite image/logo carousel */}
     {showImages && carouselPhotos.length > 0 && (
-      <div class="reveal reveal-delay-2 relative mt-16 md:mt-24">
+      <div class="reveal-delay-2 reveal relative mt-32 md:mt-48">
         {/* Fade edges */}
-        <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[#fafafa] to-transparent md:w-32"></div>
-        <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[#fafafa] to-transparent md:w-32"></div>
+        <div class="pointer-events-none absolute inset-y-0 left-0 z-10 w-[20%] bg-gradient-to-r from-[var(--bg)] via-[var(--bg)]/80 to-transparent"></div>
+        <div class="pointer-events-none absolute inset-y-0 right-0 z-10 w-[20%] bg-gradient-to-l from-[var(--bg)] via-[var(--bg)]/80 to-transparent"></div>
 
         {/* Carousel track */}
         <div class="about-d-carousel overflow-hidden">
-          <div class="about-d-track flex items-center gap-10 md:gap-14">
+          <div class="about-d-track flex items-center gap-12 md:gap-20 py-10">
             {carouselPhotos.map((photo, index) => (
-              <div class="flex-shrink-0">
+              <div class="flex-shrink-0 group relative cursor-pointer">
                 <img
                   src={photo}
                   alt={`${businessName} partner ${(index % photos.length) + 1}`}
-                  class="h-20 w-20 rounded-xl object-cover grayscale transition-all duration-300 hover:grayscale-0 md:h-24 md:w-24"
+                  class="h-32 w-48 rounded-[2rem] object-cover grayscale opacity-40 transition-all duration-700 group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-110 group-hover:shadow-2xl md:h-40 md:w-64"
                   loading="lazy"
                 />
+                <div class="absolute inset-0 rounded-[2rem] border-2 border-[var(--primary)]/0 transition-all duration-700 group-hover:border-[var(--primary)]/20 scale-105 opacity-0 group-hover:opacity-100"></div>
               </div>
             ))}
           </div>
@@ -99,34 +105,30 @@ const carouselPhotos = photos.length > 0 ? [...photos, ...photos] : [];
 </section>
 
 <style>
-  /* Word reveal - default dimmed, becomes full when in view */
-  .reveal-word {
-    opacity: 0.15;
-    transition: opacity 0.5s ease-out;
-  }
-
+  /* Word reveal - active states */
   .reveal-word.active {
     opacity: 1;
+    transform: translateY(0);
   }
 
-  /* Italic words get lighter when active */
   .reveal-word.active.italic {
-    opacity: 0.45;
+    opacity: 0.5;
+  }
+
+  /* Word reveal - initial state */
+  .reveal-word {
+    transform: translateY(20px);
   }
 
   /* Infinite carousel animation */
   .about-d-track {
-    animation: aboutD-carousel-scroll 25s linear infinite;
+    animation: aboutD-carousel-scroll 40s linear infinite;
     width: max-content;
   }
 
   @keyframes aboutD-carousel-scroll {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
   }
 
   /* Pause carousel on hover */

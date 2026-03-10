@@ -71,7 +71,7 @@ interface Customizations {
  */
 function mapStyleToLetter(numericStyle: string | undefined, fallback: string = 'A'): string {
     if (!numericStyle) return fallback
-    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D' }
+    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E' }
     return map[numericStyle] || numericStyle // Pass through if already a letter
 }
 

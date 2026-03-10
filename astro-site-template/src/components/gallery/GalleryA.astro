@@ -38,22 +38,22 @@ const showSubheadline = visibility?.gallerySubheadline !== false && !!subheadlin
 const showItems = visibility?.galleryItems !== false;
 ---
 
-<section id="gallery" class="relative bg-[#F6F7F5]">
+<section id="gallery" class="relative bg-[var(--bg)] overflow-hidden">
   {/* Header */}
   {(showHeadline || showSubheadline) && (
-    <div class="reveal mx-auto max-w-4xl px-6 pt-24 pb-12 text-center md:pt-32 md:pb-16">
+    <div class="reveal mx-auto max-w-5xl px-6 pt-32 pb-16 text-center md:pt-40 md:pb-24">
       {showHeadline && (
         <h2
-          class="mb-4 font-semibold leading-tight tracking-[-0.02em] text-[#1F2933]"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); font-family: var(--heading-font, inherit);"
+          class="reveal mb-8 font-bold leading-tight tracking-tight text-[var(--text)]"
+          style="font-size: var(--fs-2xl); font-family: var(--heading-font, inherit);"
         >
           {headline}
         </h2>
       )}
       {showSubheadline && (
         <p
-          class="mx-auto max-w-2xl leading-relaxed text-[#1F2933]/60"
-          style="font-size: clamp(1rem, 1.5vw, 1.125rem);"
+          class="reveal-delay-1 reveal mx-auto max-w-3xl leading-relaxed text-[var(--text-muted)] font-medium"
+          style="font-size: var(--fs-lg);"
         >
           {subheadline}
         </p>
@@ -64,49 +64,47 @@ const showItems = visibility?.galleryItems !== false;
   {/* Project Cards */}
   {showItems && items.map((item, index) => {
     const isOdd = index % 2 === 0;
-    const cardBg = isOdd ? 'bg-white' : 'bg-[#1F2933]';
-    const textColor = isOdd ? 'text-[#1F2933]' : 'text-white';
-    const descColor = isOdd ? 'text-[#1F2933]/70' : 'text-white/70';
-    const tagBg = isOdd ? 'bg-[#1F2933]/8' : 'bg-white/12';
-    const tagText = isOdd ? 'text-[#1F2933]/70' : 'text-white/80';
-    const borderColor = isOdd ? 'border-[#1F2933]/10' : 'border-white/15';
-    const accentColor = isOdd ? 'text-[var(--primary,#6B8F71)]' : 'text-[var(--accent,#4ECDC4)]';
+    const cardBg = isOdd ? 'bg-[var(--surface)]' : 'bg-[var(--bg)]';
+    const textColor = 'text-[var(--text)]';
+    const descColor = 'text-[var(--text-muted)]';
+    const tagBg = 'bg-[var(--primary)]/10';
+    const tagText = 'text-[var(--primary)]';
     const imgSrc = item.image || photos[index] || '';
 
     return (
-      <div class={`reveal ${cardBg} py-16 md:py-24`}>
-        <div class={`mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 px-6 md:grid-cols-2 md:gap-16 lg:px-20 ${isOdd ? '' : 'direction-rtl'}`}>
+      <div class={`reveal ${cardBg} py-24 md:py-32 lg:py-40 border-y border-[var(--text)]/5`}>
+        <div class={`mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 px-6 md:grid-cols-2 md:gap-24 lg:px-20`}>
           {/* Image */}
-          <div class={`${isOdd ? 'md:order-1' : 'md:order-2'}`}>
+          <div class={`reveal ${isOdd ? 'md:order-1' : 'md:order-2'} group overflow-hidden rounded-[2.5rem] lg:rounded-[4rem] shadow-2xl border border-[var(--text)]/5`}>
             {imgSrc ? (
               <img
                 src={imgSrc}
                 alt={item.title}
-                class="aspect-[4/3] w-full rounded-2xl object-cover"
+                class="aspect-[4/3] w-full object-cover transition-transform duration-[1.5s] group-hover:scale-110"
                 loading="lazy"
               />
             ) : (
-              <div class="aspect-[4/3] w-full rounded-2xl bg-gradient-to-br from-gray-200 to-gray-300"></div>
+              <div class="aspect-[4/3] w-full bg-[var(--surface)]"></div>
             )}
           </div>
 
           {/* Content */}
-          <div class={`${isOdd ? 'md:order-2' : 'md:order-1'}`}>
+          <div class={`reveal-delay-1 reveal ${isOdd ? 'md:order-2' : 'md:order-1'}`}>
             <h3
-              class={`mb-4 font-semibold leading-tight ${textColor}`}
-              style="font-size: clamp(1.5rem, 3vw, 2rem); font-family: var(--heading-font, inherit);"
+              class={`mb-6 font-bold leading-tight tracking-tight ${textColor}`}
+              style="font-size: var(--fs-xl); font-family: var(--heading-font, inherit);"
             >
               {item.title}
             </h3>
-            <p class={`mb-6 text-sm leading-relaxed ${descColor}`}>
+            <p class={`mb-10 leading-[1.6] ${descColor} font-medium`} style="font-size: var(--fs-base);">
               {item.description}
             </p>
 
             {/* Tags */}
             {item.tags && item.tags.length > 0 && (
-              <div class="mb-8 flex flex-wrap gap-2">
+              <div class="mb-12 flex flex-wrap gap-3">
                 {item.tags.map((tag) => (
-                  <span class={`inline-block rounded-full px-3 py-1 text-xs font-medium ${tagBg} ${tagText}`}>
+                  <span class={`inline-block rounded-full px-5 py-2 text-[var(--fs-xs)] font-bold uppercase tracking-widest ${tagBg} ${tagText}`}>
                     {tag}
                   </span>
                 ))}
@@ -115,19 +113,20 @@ const showItems = visibility?.galleryItems !== false;
 
             {/* Testimonial */}
             {item.testimonial && (
-              <div class={`border-t pt-6 ${borderColor}`}>
-                <span
-                  class={`block text-4xl leading-none ${accentColor}`}
-                  style="font-family: Georgia, serif;"
-                  aria-hidden="true"
+              <div class={`border-t border-[var(--text)]/10 pt-10 relative`}>
+                <svg
+                  class={`absolute -top-4 -left-2 h-12 w-12 ${tagText} opacity-20`}
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="currentColor" 
+                  viewBox="0 0 32 32"
                 >
-                  &ldquo;
-                </span>
-                <p class={`mt-2 text-sm italic leading-relaxed ${descColor}`}>
-                  {item.testimonial.quote}
+                  <path d="M10 8c-3.3 0-6 2.7-6 6v10h10V14H7c0-1.7 1.3-3 3-3V8zm14 0c-3.3 0-6 2.7-6 6v10h10V14h-7c0-1.7 1.3-3 3-3V8z" />
+                </svg>
+                <p class={`italic leading-relaxed ${descColor} font-medium`} style="font-size: var(--fs-base);">
+                  &ldquo;{item.testimonial.quote}&rdquo;
                 </p>
-                <p class={`mt-3 text-sm font-medium ${textColor}`}>
-                  {item.testimonial.author}
+                <p class={`mt-6 font-bold ${textColor} uppercase tracking-[0.2em]`} style="font-size: var(--fs-xs);">
+                  &mdash; {item.testimonial.author}
                 </p>
               </div>
             )}

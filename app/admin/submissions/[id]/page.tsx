@@ -1082,6 +1082,10 @@ export default function SubmissionDetailPage() {
                                             ...(heroImageUrls?.filter((url): url is string => url !== null) || []),
                                             ...(photoUrls?.filter((url): url is string => url !== null) || [])
                                         ].filter((url, index, self) => self.indexOf(url) === index)}
+                                        originalImages={[
+                                            ...(photoUrls?.filter((url): url is string => url !== null) || []),
+                                            ...(heroImageUrls?.filter((url): url is string => url !== null) || [])
+                                        ].filter((url, index, self) => self.indexOf(url) === index)}
                                         onSave={async (content: any) => {
                                             const response = await fetch('/api/save-content', {
                                                 method: 'POST',

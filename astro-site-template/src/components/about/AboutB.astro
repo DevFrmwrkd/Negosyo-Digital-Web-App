@@ -36,40 +36,56 @@ const showImages = visibility?.aboutImages !== false;
 const slideshowPhotos = photos.length > 0 ? photos : [];
 ---
 
-<section id="about" class="relative overflow-hidden bg-white py-20 md:py-28 lg:py-32">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<section id="about" class="reveal relative overflow-hidden bg-[var(--bg)] py-24 md:py-32 lg:py-48">
+  {/* Modern background element */}
+  <div class="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-[var(--primary)]/5 blur-[100px] pointer-events-none"></div>
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
 
     {/* Top: Description + Label */}
-    <div class="reveal grid grid-cols-1 items-start gap-8 md:grid-cols-[1fr_auto] md:gap-16">
+    <div class="reveal grid grid-cols-1 items-start gap-12 md:grid-cols-12 md:gap-20">
 
       {/* LEFT: Large italic description */}
       {showDescription && (
-        <p class="reveal max-w-3xl leading-[1.5] text-[var(--secondary,#1F2933)]"
-           style="font-size: clamp(1.5rem, 3vw, 2.5rem); font-style: italic; font-weight: 400; font-family: var(--heading-font, inherit);">
-          {description}
-        </p>
+        <div class="md:col-span-12 lg:col-span-9">
+          <p class="reveal leading-[1.2] text-[var(--text)] italic font-black tracking-tighter"
+             style="font-size: var(--fs-display); font-family: var(--heading-font, inherit);">
+            {description}
+          </p>
+        </div>
       )}
 
       {/* RIGHT: "About us" label */}
-      <div class="reveal reveal-delay-1 flex items-center gap-2 whitespace-nowrap pt-2 text-sm font-medium text-[var(--secondary,#1F2933)]/60">
-        <span>About us</span>
-        <span class="text-base">&rarr;</span>
+      <div class="reveal-delay-1 reveal md:col-span-12 lg:col-span-3 flex lg:justify-end">
+        <div class="group flex items-center gap-6 whitespace-nowrap pt-8 lg:pt-12 text-[var(--fs-xs)] font-bold uppercase tracking-[0.4em] text-[var(--primary)]">
+          <span class="relative">
+            Our DNA
+            <span class="absolute -bottom-2 left-0 h-0.5 w-full bg-[var(--primary)] origin-left transition-transform duration-500 scale-x-0 group-hover:scale-x-100"></span>
+          </span>
+          <span class="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--primary)]/20 transition-all duration-500 group-hover:bg-[var(--primary)] group-hover:text-[var(--text-inverse)] group-hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
       </div>
     </div>
 
     {/* Bottom left: Image slideshow */}
     {showImages && slideshowPhotos.length > 0 && (
-      <div class="reveal reveal-delay-2 mt-14 md:mt-20">
-        <div class="about-b-slideshow relative max-w-[400px] overflow-hidden rounded-2xl" data-photos={JSON.stringify(slideshowPhotos)}>
+      <div class="reveal-delay-2 reveal mt-24 md:mt-32">
+        <div class="about-b-slideshow relative max-w-[450px] overflow-hidden rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.1)] border border-[var(--text)]/5" data-photos={JSON.stringify(slideshowPhotos)}>
           {slideshowPhotos.map((photo, index) => (
             <img
               src={photo}
               alt={`${businessName} - ${index + 1}`}
-              class={`about-b-slide aspect-[4/5] w-full object-cover transition-opacity duration-700 ${index === 0 ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
+              class={`about-b-slide aspect-[4/5] w-full object-cover grayscale-[0.2] hover:grayscale-0 transition-opacity duration-1000 ${index === 0 ? 'opacity-100' : 'absolute inset-0 opacity-0'}`}
               loading="lazy"
               data-index={index}
             />
           ))}
+          {/* Subtle overlay */}
+          <div class="absolute inset-0 bg-gradient-to-t from-[var(--secondary)]/40 via-transparent to-transparent opacity-40"></div>
         </div>
       </div>
     )}

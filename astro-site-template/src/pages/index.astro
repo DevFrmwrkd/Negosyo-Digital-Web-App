@@ -6,40 +6,45 @@ import HeroA from '../components/heroes/HeroA.astro';
 import HeroB from '../components/heroes/HeroB.astro';
 import HeroC from '../components/heroes/HeroC.astro';
 import HeroD from '../components/heroes/HeroD.astro';
+import HeroE from '../components/heroes/HeroE.astro';
 
 // About components
 import AboutA from '../components/about/AboutA.astro';
 import AboutB from '../components/about/AboutB.astro';
 import AboutC from '../components/about/AboutC.astro';
 import AboutD from '../components/about/AboutD.astro';
+import AboutE from '../components/about/AboutE.astro';
 
 // Services components
 import ServicesA from '../components/services/ServicesA.astro';
 import ServicesB from '../components/services/ServicesB.astro';
 import ServicesC from '../components/services/ServicesC.astro';
 import ServicesD from '../components/services/ServicesD.astro';
+import ServicesE from '../components/services/ServicesE.astro';
 
 // Gallery components
 import GalleryA from '../components/gallery/GalleryA.astro';
 import GalleryB from '../components/gallery/GalleryB.astro';
 import GalleryC from '../components/gallery/GalleryC.astro';
 import GalleryD from '../components/gallery/GalleryD.astro';
+import GalleryE from '../components/gallery/GalleryE.astro';
 
 // Contact components
 import ContactA from '../components/contact/ContactA.astro';
 import ContactB from '../components/contact/ContactB.astro';
 import ContactC from '../components/contact/ContactC.astro';
 import ContactD from '../components/contact/ContactD.astro';
+import ContactE from '../components/contact/ContactE.astro';
 
 // Import site data
 import siteData from '../data/site-data.json';
 
 // Component maps
-const heroComponents: Record<string, any> = { A: HeroA, B: HeroB, C: HeroC, D: HeroD };
-const aboutComponents: Record<string, any> = { A: AboutA, B: AboutB, C: AboutC, D: AboutD };
-const servicesComponents: Record<string, any> = { A: ServicesA, B: ServicesB, C: ServicesC, D: ServicesD };
-const galleryComponents: Record<string, any> = { A: GalleryA, B: GalleryB, C: GalleryC, D: GalleryD };
-const contactComponents: Record<string, any> = { A: ContactA, B: ContactB, C: ContactC, D: ContactD };
+const heroComponents: Record<string, any> = { A: HeroA, B: HeroB, C: HeroC, D: HeroD, E: HeroE };
+const aboutComponents: Record<string, any> = { A: AboutA, B: AboutB, C: AboutC, D: AboutD, E: AboutE };
+const servicesComponents: Record<string, any> = { A: ServicesA, B: ServicesB, C: ServicesC, D: ServicesD, E: ServicesE };
+const galleryComponents: Record<string, any> = { A: GalleryA, B: GalleryB, C: GalleryC, D: GalleryD, E: GalleryE };
+const contactComponents: Record<string, any> = { A: ContactA, B: ContactB, C: ContactC, D: ContactD, E: ContactE };
 
 // Select components based on customizations
 const HeroComponent = heroComponents[siteData.customizations.heroStyle] || HeroA;
