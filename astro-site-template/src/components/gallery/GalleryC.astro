@@ -69,22 +69,22 @@ resolvedImages.forEach((img, i) => {
 });
 ---
 
-<section id="gallery" class="relative bg-[#fafafa] py-20 md:py-32">
+<section id="gallery" class="relative bg-[var(--bg)] py-20 md:py-32 overflow-hidden">
   <div class="mx-auto max-w-7xl px-6 lg:px-20">
     {/* Header */}
     {showHeadline && (
-      <div class="reveal mb-14 text-center md:mb-20">
-        <span class="mb-4 inline-block text-xs font-medium uppercase tracking-[0.15em] text-[#1F2933]/40">
-          Gallery
+      <div class="reveal mb-14 text-center md:mb-24">
+        <span class="reveal mb-6 inline-block text-[var(--fs-xs)] font-bold uppercase tracking-[0.2em] text-[var(--primary)] uppercase">
+          Exhibit
         </span>
         <h2
-          class="mx-auto max-w-3xl font-semibold leading-tight tracking-[-0.02em] text-[#1F2933]"
-          style="font-size: clamp(2rem, 5vw, 3.5rem); font-family: var(--heading-font, inherit);"
+          class="reveal-delay-1 reveal mx-auto max-w-4xl font-bold leading-tight tracking-tight text-[var(--text)]"
+          style="font-size: var(--fs-2xl); font-family: var(--heading-font, inherit);"
         >
           {headlineParts.normal && (
             <span>{headlineParts.normal}{' '}</span>
           )}
-          <em class="not-italic font-light italic text-[var(--primary,#6B8F71)]">
+          <em class="not-italic font-bold italic opacity-60">
             {headlineParts.italic}
           </em>
         </h2>
@@ -93,20 +93,20 @@ resolvedImages.forEach((img, i) => {
 
     {/* Masonry Grid */}
     {showImages && resolvedImages.length > 0 && (
-      <>
+      <div class="reveal-delay-2">
         {/* Desktop: 3 columns */}
-        <div class="reveal hidden gap-4 md:grid md:grid-cols-3">
+        <div class="reveal hidden gap-8 md:grid md:grid-cols-3">
           {columns.map((col, colIndex) => (
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-8">
               {col.map((src, imgIndex) => {
                 const globalIndex = imgIndex * 3 + colIndex;
                 const isTall = globalIndex % 2 === 0;
                 return (
-                  <div class={`group overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+                  <div class={`reveal group overflow-hidden rounded-[2.5rem] shadow-xl border border-[var(--text)]/5 ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
                     <img
                       src={src}
                       alt=""
-                      class="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl"
+                      class="h-full w-full object-cover transition-all duration-[1s] group-hover:scale-110 group-hover:shadow-2xl"
                       loading="lazy"
                     />
                   </div>
@@ -117,15 +117,15 @@ resolvedImages.forEach((img, i) => {
         </div>
 
         {/* Tablet: 2 columns */}
-        <div class="reveal hidden gap-4 sm:grid sm:grid-cols-2 md:hidden">
+        <div class="reveal hidden gap-6 sm:grid sm:grid-cols-2 md:hidden">
           {resolvedImages.map((src, i) => {
             const isTall = i % 2 === 0;
             return (
-              <div class={`group overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+              <div class={`group overflow-hidden rounded-[2.5rem] shadow-lg border border-[var(--text)]/5 ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
                 <img
                   src={src}
                   alt=""
-                  class="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl"
+                  class="h-full w-full object-cover transition-all duration-[1s] group-hover:scale-110"
                   loading="lazy"
                 />
               </div>
@@ -134,22 +134,22 @@ resolvedImages.forEach((img, i) => {
         </div>
 
         {/* Mobile: 1 column */}
-        <div class="reveal flex flex-col gap-4 sm:hidden">
+        <div class="reveal flex flex-col gap-6 sm:hidden">
           {resolvedImages.map((src, i) => {
             const isTall = i % 2 === 0;
             return (
-              <div class={`group overflow-hidden rounded-xl ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
+              <div class={`group overflow-hidden rounded-[2.5rem] shadow-lg border border-[var(--text)]/5 ${isTall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}>
                 <img
                   src={src}
                   alt=""
-                  class="h-full w-full object-cover transition-all duration-500 group-hover:scale-105 group-hover:shadow-xl"
+                  class="h-full w-full object-cover transition-all duration-[1s] group-hover:scale-110"
                   loading="lazy"
                 />
               </div>
             );
           })}
         </div>
-      </>
+      </div>
     )}
   </div>
 </section>

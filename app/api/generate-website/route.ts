@@ -64,6 +64,21 @@ export async function POST(request: NextRequest) {
         // 3. Fresh extraction via Groq
         let extractedContent = existingWebsite?.extractedContent || submission.website_content
 
+        // When regenerating with existing content, override with fresh submission data
+        // so admin edits to business info are reflected in the regenerated website
+        if (extractedContent) {
+            extractedContent = {
+                ...extractedContent,
+                business_name: submission.business_name,
+                contact: {
+                    ...((extractedContent as any)?.contact || {}),
+                    email: submission.owner_email || (extractedContent as any)?.contact?.email || 'contact@example.com',
+                    phone: submission.owner_phone || (extractedContent as any)?.contact?.phone || '+63 900 000 0000',
+                    address: submission.address ? `${submission.address}, ${submission.city}` : (extractedContent as any)?.contact?.address || submission.city
+                }
+            }
+        }
+
         // Validate that extractedContent has required fields
         const hasRequiredFields = extractedContent &&
             extractedContent.business_name &&
@@ -234,10 +249,12 @@ IMPORTANT:
         const hasEnhancedImages = enhancedImageUrls.length > 0
 
         // Inject content with default customizations if none provided
-        // Get photos: prefer enhancedImages, fall back to extractedContent.images, then submission.photos
-        const photoStorageIds = hasEnhancedImages
-            ? enhancedImageUrls
-            : ((extractedContent as any).images || submission.photos || [])
+        // Get photos: prefer user-edited extractedContent.images, then enhancedImages, then submission.photos
+        // If extractedContent has images, it means the user explicitly selected them in the content editor
+        const hasUserEditedImages = existingWebsite?.extractedContent && (extractedContent as any)?.images?.length > 0
+        const photoStorageIds = hasUserEditedImages
+            ? (extractedContent as any).images
+            : (hasEnhancedImages ? enhancedImageUrls : ((extractedContent as any).images || submission.photos || []))
         let photos: string[] = []
 
         if (photoStorageIds.length > 0) {
@@ -258,10 +275,13 @@ IMPORTANT:
             }
         }
 
-        // Resolve about_images: prefer enhancedImages.about, fall back to extractedContent.about_images
-        const aboutImageStorageIds = (hasEnhancedImages && enhancedImagesByCategory.about?.length)
-            ? enhancedImagesByCategory.about
-            : ((extractedContent as any)?.about_images || [])
+        // Resolve about_images: prefer user-edited, then enhancedImages.about, then extractedContent.about_images
+        const hasUserEditedAboutImages = existingWebsite?.extractedContent && (extractedContent as any)?.about_images?.length > 0
+        const aboutImageStorageIds = hasUserEditedAboutImages
+            ? (extractedContent as any).about_images
+            : ((hasEnhancedImages && enhancedImagesByCategory.about?.length)
+                ? enhancedImagesByCategory.about
+                : ((extractedContent as any)?.about_images || []))
         let resolvedAboutImages: string[] = []
 
         if (aboutImageStorageIds.length > 0) {
@@ -297,10 +317,13 @@ IMPORTANT:
             }
         }
 
-        // Resolve services_image: prefer enhancedImages.services[0], fall back to extractedContent.services_image
-        const servicesImageStorageId = (hasEnhancedImages && enhancedImagesByCategory.services?.length)
-            ? enhancedImagesByCategory.services[0]
-            : (extractedContent as any)?.services_image
+        // Resolve services_image: prefer user-edited, then enhancedImages.services[0], then extractedContent.services_image
+        const hasUserEditedServicesImage = existingWebsite?.extractedContent && (extractedContent as any)?.services_image
+        const servicesImageStorageId = hasUserEditedServicesImage
+            ? (extractedContent as any).services_image
+            : ((hasEnhancedImages && enhancedImagesByCategory.services?.length)
+                ? enhancedImagesByCategory.services[0]
+                : (extractedContent as any)?.services_image)
         let resolvedServicesImage: string | undefined = undefined
 
         if (servicesImageStorageId && !servicesImageStorageId.startsWith('http')) {
@@ -318,10 +341,13 @@ IMPORTANT:
             resolvedServicesImage = servicesImageStorageId
         }
 
-        // Resolve featured_images: prefer enhancedImages.featured, fall back to extractedContent.featured_images
-        const featuredImageStorageIds = (hasEnhancedImages && enhancedImagesByCategory.featured?.length)
-            ? enhancedImagesByCategory.featured
-            : ((extractedContent as any)?.featured_images || [])
+        // Resolve featured_images: prefer user-edited, then enhancedImages.featured, then extractedContent.featured_images
+        const hasUserEditedFeaturedImages = existingWebsite?.extractedContent && (extractedContent as any)?.featured_images?.length > 0
+        const featuredImageStorageIds = hasUserEditedFeaturedImages
+            ? (extractedContent as any).featured_images
+            : ((hasEnhancedImages && enhancedImagesByCategory.featured?.length)
+                ? enhancedImagesByCategory.featured
+                : ((extractedContent as any)?.featured_images || []))
         let resolvedFeaturedImages: string[] = []
 
         if (featuredImageStorageIds.length > 0) {
@@ -463,7 +489,9 @@ IMPORTANT:
             navbar_cta_link: (extractedContent as any)?.navbar_cta_link,
             navbar_headline: (extractedContent as any)?.navbar_headline,
             // Images: prefer enhanced image URLs, fall back to extractedContent.images, then submission.photos
-            images: hasEnhancedImages ? enhancedImageUrls : ((extractedContent as any)?.images || submission.photos || []),
+            images: hasUserEditedImages
+                ? (extractedContent as any).images
+                : (hasEnhancedImages ? enhancedImageUrls : ((extractedContent as any)?.images || submission.photos || [])),
             // Contact info from submission (or from existing extracted content if edited)
             contact: (extractedContent as any)?.contact || {
                 email: submission.owner_email || 'contact@example.com',

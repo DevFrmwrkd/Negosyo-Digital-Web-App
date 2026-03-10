@@ -110,6 +110,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="B">Fullscreen Background</option>
                                     <option value="C">Centered Carousel</option>
                                     <option value="D">Services List Dark</option>
+                                    <option value="E">Visual Narrative (Modern)</option>
                                 </select>
                             </div>
 
@@ -129,6 +130,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="B">Minimal Italic</option>
                                     <option value="C">Tags Card</option>
                                     <option value="D">Quote with Logo Carousel</option>
+                                    <option value="E">Immersive DNA (Modern)</option>
                                 </select>
                             </div>
 
@@ -148,6 +150,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="B">Minimal Numbered Grid</option>
                                     <option value="C">Card Grid</option>
                                     <option value="D">Stats Grid with Quote</option>
+                                    <option value="E">Capabilites Mosaic (Modern)</option>
                                 </select>
                             </div>
 
@@ -167,6 +170,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="B">Portfolio Stack</option>
                                     <option value="C">Image Grid</option>
                                     <option value="D">Staggered Masonry</option>
+                                    <option value="E">Fluid Mosaic (Modern)</option>
                                 </select>
                             </div>
 
@@ -186,6 +190,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="B">Craft Style Light</option>
                                     <option value="C">Bold CTA</option>
                                     <option value="D">Dark Marquee Photos</option>
+                                    <option value="E">Interactive Tile Glass (Modern)</option>
                                 </select>
                             </div>
                         </div>
@@ -224,6 +229,11 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="purple">Purple Creative</option>
                                     <option value="orange">Orange Energetic</option>
                                     <option value="dark">Dark Elegant</option>
+                                    <option value="pink">Pink Vibrant</option>
+                                    <option value="brown">Brown Natural</option>
+                                    <option value="red">Red Intense</option>
+                                    <option value="yellow">Yellow Bright</option>
+                                    <option value="maroon">Maroon Rich</option>
                                 </select>
                             </div>
 
@@ -243,7 +253,11 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="elegant">Elegant Display</option>
                                     <option value="bold">Bold & Loud</option>
                                     <option value="minimal">Minimal Sans</option>
+                                    <option value="professional">Professional Sans</option>
+                                    <option value="creative">Creative Bold</option>
                                     <option value="tech">Tech Mono</option>
+                                    <option value="friendly">Friendly Rounded</option>
+                                    <option value="luxury">Luxury Serif</option>
                                 </select>
                             </div>
                         </div>

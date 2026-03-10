@@ -138,7 +138,8 @@ interface VisualEditorProps {
     htmlContent: string
     submissionId: string
     onSave: (content: WebsiteContent) => Promise<void>
-    availableImages?: string[] // Images from submission stored in Convex
+    availableImages?: string[] // All images (enhanced + original combined)
+    originalImages?: string[] // Original submission photos only
     heroStyle?: string // Hero section style variant
     aboutStyle?: string // About section style variant
     servicesStyle?: string // Services section style variant
@@ -151,6 +152,7 @@ export default function VisualEditor({
     submissionId,
     onSave,
     availableImages = [],
+    originalImages = [],
     heroStyle = 'A',
     aboutStyle = 'A',
     servicesStyle = 'A',
@@ -190,6 +192,15 @@ export default function VisualEditor({
 
     // Get which fields the current gallery style uses
     const galleryFields = useMemo(() => getGalleryStyleFields(galleryStyle), [galleryStyle])
+
+    // Separate enhanced (AI-generated) images from original images
+    const enhancedOnlyImages = useMemo(() => {
+        const originalSet = new Set(originalImages)
+        return availableImages.filter(url => !originalSet.has(url))
+    }, [availableImages, originalImages])
+
+    const hasOriginalImages = originalImages.length > 0
+    const hasEnhancedOnlyImages = enhancedOnlyImages.length > 0
 
     // Sync initialContent changes to content state (for when props update after mount)
     useEffect(() => {
@@ -1271,58 +1282,134 @@ export default function VisualEditor({
                                         <p className="text-sm text-gray-500 mb-4">
                                             {heroStyle === '3'
                                                 ? 'Click on images to add them to the carousel. Already added images are marked with a checkmark.'
-                                                : 'Select an image from the submission\'s uploaded photos:'}
+                                                : 'Select an image from the available photos:'}
                                         </p>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                            {availableImages.map((imageUrl, index) => {
-                                                const isSelected = content.images?.includes(imageUrl)
-                                                return (
-                                                    <button
-                                                        key={index}
-                                                        onClick={() => {
-                                                            if (heroStyle === '3') {
-                                                                // For carousel, toggle the image
-                                                                const newImages = content.images ? [...content.images] : []
-                                                                if (isSelected) {
-                                                                    // Remove from carousel
-                                                                    const filtered = newImages.filter(img => img !== imageUrl)
-                                                                    updateField('images', filtered)
-                                                                    toast.success('Image removed from carousel')
+                                        {/* Original Photos Section */}
+                                        {hasOriginalImages && (
+                                            <>
+                                                <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Original Photos</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                                                    {originalImages.map((imageUrl, index) => {
+                                                        const isSelected = content.images?.includes(imageUrl)
+                                                        return (
+                                                            <button
+                                                                key={`orig-${index}`}
+                                                                onClick={() => {
+                                                                    if (heroStyle === '3') {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        if (isSelected) {
+                                                                            updateField('images', newImages.filter(img => img !== imageUrl))
+                                                                            toast.success('Image removed from carousel')
+                                                                        } else {
+                                                                            newImages.push(imageUrl)
+                                                                            updateField('images', newImages)
+                                                                            toast.success('Image added to carousel')
+                                                                        }
+                                                                    } else {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        newImages[0] = imageUrl
+                                                                        updateField('images', newImages)
+                                                                        setShowImagePicker(false)
+                                                                        toast.success('Hero image updated')
+                                                                    }
+                                                                }}
+                                                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                    isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                }`}
+                                                            >
+                                                                <img src={imageUrl} alt={`Original ${index + 1}`} className="w-full h-full object-cover" />
+                                                                {isSelected && (
+                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                )}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
+                                        {/* AI-Enhanced Photos Section */}
+                                        {hasEnhancedOnlyImages && (
+                                            <>
+                                                <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">AI-Enhanced Photos</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    {enhancedOnlyImages.map((imageUrl, index) => {
+                                                        const isSelected = content.images?.includes(imageUrl)
+                                                        return (
+                                                            <button
+                                                                key={`enh-${index}`}
+                                                                onClick={() => {
+                                                                    if (heroStyle === '3') {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        if (isSelected) {
+                                                                            updateField('images', newImages.filter(img => img !== imageUrl))
+                                                                            toast.success('Image removed from carousel')
+                                                                        } else {
+                                                                            newImages.push(imageUrl)
+                                                                            updateField('images', newImages)
+                                                                            toast.success('Image added to carousel')
+                                                                        }
+                                                                    } else {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        newImages[0] = imageUrl
+                                                                        updateField('images', newImages)
+                                                                        setShowImagePicker(false)
+                                                                        toast.success('Hero image updated')
+                                                                    }
+                                                                }}
+                                                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                    isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                }`}
+                                                            >
+                                                                <img src={imageUrl} alt={`Enhanced ${index + 1}`} className="w-full h-full object-cover" />
+                                                                {isSelected && (
+                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                )}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
+                                        {/* Fallback: show all if no categorization */}
+                                        {!hasOriginalImages && !hasEnhancedOnlyImages && availableImages.length > 0 && (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                {availableImages.map((imageUrl, index) => {
+                                                    const isSelected = content.images?.includes(imageUrl)
+                                                    return (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => {
+                                                                if (heroStyle === '3') {
+                                                                    const newImages = content.images ? [...content.images] : []
+                                                                    if (isSelected) {
+                                                                        updateField('images', newImages.filter(img => img !== imageUrl))
+                                                                        toast.success('Image removed from carousel')
+                                                                    } else {
+                                                                        newImages.push(imageUrl)
+                                                                        updateField('images', newImages)
+                                                                        toast.success('Image added to carousel')
+                                                                    }
                                                                 } else {
-                                                                    // Add to carousel
-                                                                    newImages.push(imageUrl)
+                                                                    const newImages = content.images ? [...content.images] : []
+                                                                    newImages[0] = imageUrl
                                                                     updateField('images', newImages)
-                                                                    toast.success('Image added to carousel')
+                                                                    setShowImagePicker(false)
+                                                                    toast.success('Hero image updated')
                                                                 }
-                                                            } else {
-                                                                // For other styles, replace the first image
-                                                                const newImages = content.images ? [...content.images] : []
-                                                                newImages[0] = imageUrl
-                                                                updateField('images', newImages)
-                                                                setShowImagePicker(false)
-                                                                toast.success('Hero image updated')
-                                                            }
-                                                        }}
-                                                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                            isSelected
-                                                                ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                : 'border-gray-200'
-                                                        }`}
-                                                    >
-                                                        <img
-                                                            src={imageUrl}
-                                                            alt={`Option ${index + 1}`}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                        {isSelected && (
-                                                            <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                ✓
-                                                            </div>
-                                                        )}
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
+                                                            }}
+                                                            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                            }`}
+                                                        >
+                                                            <img src={imageUrl} alt={`Option ${index + 1}`} className="w-full h-full object-cover" />
+                                                            {isSelected && (
+                                                                <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="p-4 border-t border-gray-200 bg-gray-50">
                                         {heroStyle === '3' && (
@@ -1860,53 +1947,54 @@ export default function VisualEditor({
                                                         ? 'Click an image to select it for the about section.'
                                                         : 'Click images to select/deselect. Selected images show their order number. Maximum 4 images.'}
                                                 </p>
-                                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                                    {availableImages.map((imageUrl, index) => {
-                                                        const aboutImages = content.about_images || availableImages
-                                                        const isSelected = aboutImages.includes(imageUrl)
-                                                        const selectedIndex = aboutImages.indexOf(imageUrl)
-                                                        const maxImagesForPicker = aboutStyle === '3' ? 1 : 4
-                                                        return (
-                                                            <button
-                                                                key={index}
-                                                                onClick={() => {
-                                                                    const currentImages = content.about_images || [...availableImages]
-                                                                    if (isSelected) {
-                                                                        // Remove from selection
-                                                                        const newImages = currentImages.filter(img => img !== imageUrl)
-                                                                        updateField('about_images', newImages)
-                                                                    } else {
-                                                                        // Add to selection (max based on style)
-                                                                        if (aboutStyle === '3') {
-                                                                            // For style 3, replace the single image
-                                                                            updateField('about_images', [imageUrl])
-                                                                        } else if (currentImages.length < maxImagesForPicker) {
-                                                                            updateField('about_images', [...currentImages, imageUrl])
-                                                                        } else {
-                                                                            toast.error(`Maximum ${maxImagesForPicker} images allowed`)
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                                    isSelected
-                                                                        ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                        : 'border-gray-200'
-                                                                }`}
-                                                            >
-                                                                <img
-                                                                    src={imageUrl}
-                                                                    alt={`Option ${index + 1}`}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                                {isSelected && (
-                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                        {aboutStyle === '3' ? '✓' : selectedIndex + 1}
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
+                                                {/* Render categorized image sections */}
+                                                {[
+                                                    ...(hasOriginalImages ? [{ label: 'Original Photos', images: originalImages, prefix: 'orig' }] : []),
+                                                    ...(hasEnhancedOnlyImages ? [{ label: 'AI-Enhanced Photos', images: enhancedOnlyImages, prefix: 'enh' }] : []),
+                                                    ...(!hasOriginalImages && !hasEnhancedOnlyImages ? [{ label: '', images: availableImages, prefix: 'all' }] : [])
+                                                ].map(({ label, images, prefix }) => (
+                                                    <div key={prefix} className="mb-4">
+                                                        {label && <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">{label}</p>}
+                                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                                            {images.map((imageUrl, index) => {
+                                                                const aboutImages = content.about_images || availableImages
+                                                                const isSelected = aboutImages.includes(imageUrl)
+                                                                const selectedIndex = aboutImages.indexOf(imageUrl)
+                                                                const maxImagesForPicker = aboutStyle === '3' ? 1 : 4
+                                                                return (
+                                                                    <button
+                                                                        key={`${prefix}-${index}`}
+                                                                        onClick={() => {
+                                                                            const currentImages = content.about_images || [...availableImages]
+                                                                            if (isSelected) {
+                                                                                const newImages = currentImages.filter(img => img !== imageUrl)
+                                                                                updateField('about_images', newImages)
+                                                                            } else {
+                                                                                if (aboutStyle === '3') {
+                                                                                    updateField('about_images', [imageUrl])
+                                                                                } else if (currentImages.length < maxImagesForPicker) {
+                                                                                    updateField('about_images', [...currentImages, imageUrl])
+                                                                                } else {
+                                                                                    toast.error(`Maximum ${maxImagesForPicker} images allowed`)
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                        className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                            isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                        }`}
+                                                                    >
+                                                                        <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
+                                                                        {isSelected && (
+                                                                            <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                                                                {aboutStyle === '3' ? '✓' : selectedIndex + 1}
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                             <div className="p-4 border-t border-gray-200 bg-gray-50 flex gap-2">
                                                 <button
@@ -2362,36 +2450,37 @@ export default function VisualEditor({
                                             </div>
                                             <div className="p-4 overflow-y-auto max-h-[60vh]">
                                                 <p className="text-sm text-gray-500 mb-4">
-                                                    Select an image from the submission&apos;s uploaded photos:
+                                                    Select an image from the available photos:
                                                 </p>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                    {availableImages.map((imageUrl, index) => (
-                                                        <button
-                                                            key={index}
-                                                            onClick={() => {
-                                                                updateField('services_image', imageUrl)
-                                                                setShowServicesImagePicker(false)
-                                                                toast.success('Services image updated')
-                                                            }}
-                                                            className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                                content.services_image === imageUrl
-                                                                    ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                    : 'border-gray-200'
-                                                            }`}
-                                                        >
-                                                            <img
-                                                                src={imageUrl}
-                                                                alt={`Option ${index + 1}`}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                            {content.services_image === imageUrl && (
-                                                                <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                    ✓
-                                                                </div>
-                                                            )}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                                {[
+                                                    ...(hasOriginalImages ? [{ label: 'Original Photos', images: originalImages, prefix: 'orig' }] : []),
+                                                    ...(hasEnhancedOnlyImages ? [{ label: 'AI-Enhanced Photos', images: enhancedOnlyImages, prefix: 'enh' }] : []),
+                                                    ...(!hasOriginalImages && !hasEnhancedOnlyImages ? [{ label: '', images: availableImages, prefix: 'all' }] : [])
+                                                ].map(({ label, images, prefix }) => (
+                                                    <div key={prefix} className="mb-4">
+                                                        {label && <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">{label}</p>}
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                            {images.map((imageUrl, index) => (
+                                                                <button
+                                                                    key={`${prefix}-${index}`}
+                                                                    onClick={() => {
+                                                                        updateField('services_image', imageUrl)
+                                                                        setShowServicesImagePicker(false)
+                                                                        toast.success('Services image updated')
+                                                                    }}
+                                                                    className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                        content.services_image === imageUrl ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
+                                                                    {content.services_image === imageUrl && (
+                                                                        <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                             <div className="p-4 border-t border-gray-200 bg-gray-50">
                                                 <button
@@ -2683,7 +2772,25 @@ export default function VisualEditor({
                                                                             }}
                                                                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                                                         >
-                                                                            {availableImages.map((img, imgIndex) => (
+                                                                            {hasOriginalImages && (
+                                                                                <optgroup label="Original Photos">
+                                                                                    {originalImages.map((img, imgIndex) => (
+                                                                                        <option key={`orig-${imgIndex}`} value={img}>
+                                                                                            Original {imgIndex + 1}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </optgroup>
+                                                                            )}
+                                                                            {hasEnhancedOnlyImages && (
+                                                                                <optgroup label="AI-Enhanced Photos">
+                                                                                    {enhancedOnlyImages.map((img, imgIndex) => (
+                                                                                        <option key={`enh-${imgIndex}`} value={img}>
+                                                                                            Enhanced {imgIndex + 1}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </optgroup>
+                                                                            )}
+                                                                            {!hasOriginalImages && !hasEnhancedOnlyImages && availableImages.map((img, imgIndex) => (
                                                                                 <option key={imgIndex} value={img}>
                                                                                     Image {imgIndex + 1}
                                                                                 </option>
@@ -2985,45 +3092,46 @@ export default function VisualEditor({
                                                 <p className="text-sm text-gray-500 mb-4">
                                                     Click images to select/deselect. Select at least 6 images for the best gallery effect.
                                                 </p>
-                                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                                    {availableImages.map((imageUrl, index) => {
-                                                        const featuredImages = content.featured_images || availableImages
-                                                        const isSelected = featuredImages.includes(imageUrl)
-                                                        const selectedIndex = featuredImages.indexOf(imageUrl)
-                                                        return (
-                                                            <button
-                                                                key={index}
-                                                                onClick={() => {
-                                                                    const currentImages = content.featured_images || [...availableImages]
-                                                                    if (isSelected) {
-                                                                        // Remove from selection
-                                                                        const newImages = currentImages.filter(img => img !== imageUrl)
-                                                                        updateField('featured_images', newImages)
-                                                                    } else {
-                                                                        // Add to selection
-                                                                        updateField('featured_images', [...currentImages, imageUrl])
-                                                                    }
-                                                                }}
-                                                                className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                                    isSelected
-                                                                        ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                        : 'border-gray-200'
-                                                                }`}
-                                                            >
-                                                                <img
-                                                                    src={imageUrl}
-                                                                    alt={`Option ${index + 1}`}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                                {isSelected && (
-                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                        {selectedIndex + 1}
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
+                                                {[
+                                                    ...(hasOriginalImages ? [{ label: 'Original Photos', images: originalImages, prefix: 'orig' }] : []),
+                                                    ...(hasEnhancedOnlyImages ? [{ label: 'AI-Enhanced Photos', images: enhancedOnlyImages, prefix: 'enh' }] : []),
+                                                    ...(!hasOriginalImages && !hasEnhancedOnlyImages ? [{ label: '', images: availableImages, prefix: 'all' }] : [])
+                                                ].map(({ label, images, prefix }) => (
+                                                    <div key={prefix} className="mb-4">
+                                                        {label && <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">{label}</p>}
+                                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                                            {images.map((imageUrl, index) => {
+                                                                const featuredImages = content.featured_images || availableImages
+                                                                const isSelected = featuredImages.includes(imageUrl)
+                                                                const selectedIndex = featuredImages.indexOf(imageUrl)
+                                                                return (
+                                                                    <button
+                                                                        key={`${prefix}-${index}`}
+                                                                        onClick={() => {
+                                                                            const currentImages = content.featured_images || [...availableImages]
+                                                                            if (isSelected) {
+                                                                                const newImages = currentImages.filter(img => img !== imageUrl)
+                                                                                updateField('featured_images', newImages)
+                                                                            } else {
+                                                                                updateField('featured_images', [...currentImages, imageUrl])
+                                                                            }
+                                                                        }}
+                                                                        className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                            isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                        }`}
+                                                                    >
+                                                                        <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
+                                                                        {isSelected && (
+                                                                            <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                                                                {selectedIndex + 1}
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                             <div className="p-4 border-t border-gray-200 bg-gray-50 flex gap-2">
                                                 <button

@@ -40,20 +40,80 @@ const fontPairings: Record<string, { heading: string; body: string }> = {
 };
 
 const fonts = fontPairings[fontPairing] || fontPairings.modern;
+
+// Fluid typography scale
+const typographyScale = {
+  xs: 'clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)',
+  sm: 'clamp(0.875rem, 0.8rem + 0.35vw, 1rem)',
+  base: 'clamp(1rem, 0.95rem + 0.25vw, 1.125rem)',
+  lg: 'clamp(1.125rem, 1rem + 0.6vw, 1.5rem)',
+  xl: 'clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem)',
+  '2xl': 'clamp(2rem, 1.5rem + 2.5vw, 4rem)',
+  display: 'clamp(3rem, 2rem + 5vw, 7rem)',
+};
+
 const fontUrl = `https://fonts.googleapis.com/css2?family=${fonts.heading.replace(/ /g, '+')}:wght@300;400;500;600;700&family=${fonts.body.replace(/ /g, '+')}:wght@300;400;500;600&display=swap`;
 
 // Color schemes
-const colorSchemes: Record<string, { primary: string; secondary: string; accent: string; background: string; light: string }> = {
-  auto: { primary: '#6B8F71', secondary: '#1F2933', accent: '#4ECDC4', background: '#F6F7F5', light: '#FFFFFF' },
-  default: { primary: '#6B8F71', secondary: '#1F2933', accent: '#4ECDC4', background: '#F6F7F5', light: '#FFFFFF' },
-  blue: { primary: '#3B82F6', secondary: '#1E3A8A', accent: '#60A5FA', background: '#EFF6FF', light: '#FFFFFF' },
-  purple: { primary: '#8B5CF6', secondary: '#4C1D95', accent: '#A78BFA', background: '#F5F3FF', light: '#FFFFFF' },
-  orange: { primary: '#F97316', secondary: '#7C2D12', accent: '#FB923C', background: '#FFF7ED', light: '#FFFFFF' },
-  dark: { primary: '#D1D5DB', secondary: '#ffffff', accent: '#9CA3AF', background: '#111827', light: '#1a1a2e' },
+const colorSchemes: Record<string, { 
+  primary: string; 
+  secondary: string; 
+  accent: string; 
+  background: string; 
+  surface: string;
+  text: string;
+  textMuted: string;
+  inverseText: string;
+  isDark: boolean;
+}> = {
+  auto: { 
+    primary: '#6B8F71', secondary: '#1F2933', accent: '#4ECDC4', background: '#F6F7F5', surface: '#FFFFFF',
+    text: '#1F2933', textMuted: '#4A5568', inverseText: '#FFFFFF', isDark: false 
+  },
+  default: { 
+    primary: '#6B8F71', secondary: '#1F2933', accent: '#4ECDC4', background: '#F6F7F5', surface: '#FFFFFF',
+    text: '#1F2933', textMuted: '#4A5568', inverseText: '#FFFFFF', isDark: false 
+  },
+  blue: { 
+    primary: '#3B82F6', secondary: '#1E3A8A', accent: '#60A5FA', background: '#EFF6FF', surface: '#FFFFFF',
+    text: '#111827', textMuted: '#4B5563', inverseText: '#FFFFFF', isDark: false 
+  },
+  purple: { 
+    primary: '#8B5CF6', secondary: '#4C1D95', accent: '#A78BFA', background: '#F5F3FF', surface: '#FFFFFF',
+    text: '#1E1B4B', textMuted: '#4338CA', inverseText: '#FFFFFF', isDark: false 
+  },
+  orange: { 
+    primary: '#F97316', secondary: '#7C2D12', accent: '#FB923C', background: '#FFF7ED', surface: '#FFFFFF',
+    text: '#431407', textMuted: '#7C2D12', inverseText: '#FFFFFF', isDark: false 
+  },
+  dark: { 
+    primary: '#D1D5DB', secondary: '#FFFFFF', accent: '#9CA3AF', background: '#0F172A', surface: '#1E293B',
+    text: '#F8FAFC', textMuted: '#94A3B8', inverseText: '#0F172A', isDark: true 
+  },
+  pink: { 
+    primary: '#D81B60', secondary: '#880E4F', accent: '#F48FB1', background: '#FFF5F8', surface: '#FFFFFF',
+    text: '#311B92', textMuted: '#880E4F', inverseText: '#FFFFFF', isDark: false 
+  },
+  brown: { 
+    primary: '#795548', secondary: '#3E2723', accent: '#A1887F', background: '#FDFCFB', surface: '#FFFFFF',
+    text: '#3E2723', textMuted: '#5D4037', inverseText: '#FFFFFF', isDark: false 
+  },
+  red: { 
+    primary: '#D32F2F', secondary: '#B71C1C', accent: '#EF5350', background: '#FFF5F5', surface: '#FFFFFF',
+    text: '#1A0000', textMuted: '#7F0000', inverseText: '#FFFFFF', isDark: false 
+  },
+  yellow: { 
+    primary: '#FBC02D', secondary: '#F57F17', accent: '#D32F2F', background: '#FEFCE8', surface: '#FFFFFF',
+    text: '#1A1A1A', textMuted: '#424242', inverseText: '#FFFFFF', isDark: false 
+  },
+  maroon: { 
+    primary: '#800000', secondary: '#FFD700', accent: '#A52A2A', background: '#2D0000', surface: '#3D0000',
+    text: '#F5F5DC', textMuted: '#E0C0C0', inverseText: '#2D0000', isDark: true 
+  },
 };
 
 const scheme = colorSchemes[colorScheme] || colorSchemes.auto;
-const isDark = colorScheme === 'dark';
+const isDark = scheme.isDark;
 
 // Social SVG icons
 const socialIcons: Record<string, string> = {
@@ -131,75 +191,54 @@ const year = new Date().getFullYear();
     <slot />
   </main>
 
-  <!-- Footer -->
-  <footer class="bg-[var(--footer-bg)] text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-        <!-- Brand -->
-        <div>
-          <h3 class="text-xl font-semibold mb-3" style={`font-family: '${fonts.heading}', sans-serif;`}>{businessName}</h3>
-          <p class="text-sm text-white/60 leading-relaxed">{tagline}</p>
-        </div>
-
-        <!-- Quick Links -->
-        <div>
-          <h4 class="text-sm font-semibold uppercase tracking-wider text-white/80 mb-4">Quick Links</h4>
-          <div class="space-y-2">
-            {navLinks.map((link) => (
-              <a href={link.href} class="block text-sm text-white/60 hover:text-white transition-colors">
-                {link.label}
-              </a>
-            ))}
-          </div>
-        </div>
-
-        <!-- Social -->
-        {socialLinks.length > 0 && (
-          <div>
-            <h4 class="text-sm font-semibold uppercase tracking-wider text-white/80 mb-4">Follow Us</h4>
-            <div class="flex gap-3">
-              {socialLinks.map((link) => (
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                  aria-label={link.platform}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" set:html={socialIcons[link.platform] || ''} />
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <!-- Copyright -->
-      <div class="mt-10 pt-8 border-t border-white/10 text-center">
-        <p class="text-xs text-white/40">&copy; {year} {businessName}. All rights reserved.</p>
-      </div>
-    </div>
-  </footer>
-
   <style define:vars={{
     'primary': scheme.primary,
     'secondary': scheme.secondary,
     'accent': scheme.accent,
     'bg': scheme.background,
-    'light': scheme.light,
-    'nav-bg': isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)',
-    'nav-text': isDark ? '#ffffff' : '#1a1a1a',
-    'nav-link': isDark ? 'rgba(255, 255, 255, 0.6)' : 'rgba(26, 26, 26, 0.6)',
-    'nav-border': isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)',
-    'footer-bg': isDark ? '#0a0a0f' : scheme.secondary,
+    'surface': scheme.surface,
+    'text': scheme.text,
+    'text-muted': scheme.textMuted,
+    'text-inverse': scheme.inverseText,
+    'nav-bg': isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+    'nav-text': scheme.text,
+    'nav-link': isDark ? 'rgba(255, 245, 220, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+    'nav-border': isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+    'footer-bg': isDark ? '#08080c' : scheme.secondary,
     'heading-font': `'${fonts.heading}', sans-serif`,
     'body-font': `'${fonts.body}', sans-serif`,
+    // Typography scale
+    'fs-xs': typographyScale.xs,
+    'fs-sm': typographyScale.sm,
+    'fs-base': typographyScale.base,
+    'fs-lg': typographyScale.lg,
+    'fs-xl': typographyScale.xl,
+    'fs-2xl': typographyScale['2xl'],
+    'fs-display': typographyScale.display,
   }}>
-    h1, h2, h3, h4, h5, h6 {
-      font-family: var(--heading-font);
+    :root {
+      --primary: var(--primary);
+      --secondary: var(--secondary);
+      --accent: var(--accent);
+      --bg: var(--bg);
+      --surface: var(--surface);
+      --text: var(--text);
+      --text-muted: var(--text-muted);
+      --text-inverse: var(--text-inverse);
     }
 
-    body, p, span, a, button, input, textarea, select {
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--heading-font);
+      color: var(--text);
+    }
+
+    body {
+      font-family: var(--body-font);
+      background-color: var(--bg);
+      color: var(--text);
+    }
+
+    p, span, a, button, input, textarea, select {
       font-family: var(--body-font);
     }
   </style>

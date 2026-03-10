@@ -55,14 +55,14 @@ const navLinks = [
 ];
 ---
 
-<section id="contact" class="reveal bg-white py-20 md:py-28 lg:py-36">
+<section id="contact" class="reveal bg-[var(--bg)] py-24 md:py-32 lg:py-40 relative overflow-hidden">
   <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-    {/* Headline */}
+    {/* Big Headline */}
     {showHeadline && (
       <h2
-        class="mb-6 italic leading-tight tracking-[-0.02em] text-[#1a1a1a]"
-        style="font-size: clamp(2rem, 5vw, 3.5rem); font-family: var(--heading-font, 'Playfair Display'), serif; font-weight: 400;"
+        class="reveal mb-12 italic leading-tight tracking-tight text-[var(--text)]"
+        style="font-size: var(--fs-display); font-family: var(--heading-font, inherit); font-weight: 400;"
       >
         {description || `Let's create something beautiful together`}
       </h2>
@@ -71,60 +71,60 @@ const navLinks = [
     {/* Contact Link / Button */}
     <a
       href={`mailto:${email}`}
-      class="group mb-12 inline-flex items-center gap-3 text-lg font-medium text-[#1a1a1a] transition-colors hover:text-[var(--primary,#6B8F71)]"
+      class="reveal-delay-1 reveal group mb-20 inline-flex items-center gap-6 text-[var(--fs-xl)] font-bold text-[var(--text)] transition-all hover:text-[var(--primary)] hover:translate-x-4"
     >
-      Contact us
-      <span class="inline-block transition-transform duration-300 group-hover:translate-x-1">
+      Initiate Project
+      <span class="inline-block transition-transform duration-500 group-hover:scale-150">
         &rarr;
       </span>
     </a>
 
     {/* Featured Image */}
     {featuredImage && (
-      <div class="mb-16 overflow-hidden rounded-2xl">
+      <div class="reveal-delay-2 reveal mb-24 overflow-hidden rounded-[3rem] lg:rounded-[4rem] shadow-2xl border border-[var(--text)]/5">
         <img
           src={featuredImage}
           alt={businessName}
-          class="aspect-[16/9] w-full object-cover"
+          class="aspect-[21/9] w-full object-cover transition-transform duration-[1.5s] hover:scale-110"
           loading="lazy"
         />
       </div>
     )}
 
     {/* Bottom 3-Column Section */}
-    <div class="mt-16 border-t border-[#1a1a1a]/10 pt-12">
-      <div class="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+    <div class="reveal-delay-3 reveal mt-24 border-t border-[var(--text)]/10 pt-16">
+      <div class="grid grid-cols-1 gap-16 sm:grid-cols-2 lg:grid-cols-3">
 
         {/* Column 1: Navigation Links */}
         <div>
-          <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-[#1a1a1a]/40">
-            Navigation
+          <h4 class="mb-8 text-[var(--fs-xs)] font-bold uppercase tracking-[0.25em] text-[var(--primary)]">
+            Explore
           </h4>
-          <div class="space-y-2">
+          <nav class="flex flex-col gap-4">
             {navLinks.map((link) => (
               <a
                 href={link.href}
-                class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+                class="text-[var(--fs-base)] text-[var(--text-muted)] font-medium transition-all hover:text-[var(--text)] hover:translate-x-2"
               >
                 {link.label}
               </a>
             ))}
-          </div>
+          </nav>
         </div>
 
         {/* Column 2: Social Links (text format) */}
         {showSocial && (
           <div>
-            <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-[#1a1a1a]/40">
-              Social
+            <h4 class="mb-8 text-[var(--fs-xs)] font-bold uppercase tracking-[0.25em] text-[var(--primary)]">
+              Follow
             </h4>
-            <div class="space-y-2">
+            <div class="flex flex-col gap-4">
               {socialLinks.map((link) => (
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+                  class="text-[var(--fs-base)] text-[var(--text-muted)] font-medium transition-all hover:text-[var(--text)] hover:translate-x-2"
                 >
                   {capitalize(link.platform)}
                 </a>
@@ -136,24 +136,24 @@ const navLinks = [
         {/* Column 3: Contact Details */}
         {showInfo && (
           <div>
-            <h4 class="mb-4 text-xs font-semibold uppercase tracking-wider text-[#1a1a1a]/40">
-              Contact
+            <h4 class="mb-8 text-[var(--fs-xs)] font-bold uppercase tracking-[0.25em] text-[var(--primary)]">
+              Reach
             </h4>
-            <div class="space-y-2">
+            <div class="flex flex-col gap-6">
               <a
                 href={`mailto:${email}`}
-                class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+                class="text-[var(--fs-base)] font-bold text-[var(--text)] transition-colors hover:text-[var(--primary)]"
               >
                 {email}
               </a>
               <a
                 href={`tel:${phone}`}
-                class="block text-sm text-[#1a1a1a]/70 transition-colors hover:text-[#1a1a1a]"
+                class="text-[var(--fs-base)] font-bold text-[var(--text)] transition-colors hover:text-[var(--primary)]"
               >
                 {phone}
               </a>
               {address && (
-                <p class="text-sm text-[#1a1a1a]/70">{address}</p>
+                <p class="text-[var(--fs-sm)] text-[var(--text-muted)] leading-relaxed font-medium">{address}</p>
               )}
             </div>
           </div>
@@ -161,8 +161,9 @@ const navLinks = [
       </div>
 
       {/* Copyright */}
-      <div class="mt-12 border-t border-[#1a1a1a]/10 pt-8 text-center">
-        <p class="text-xs text-[#1a1a1a]/40">&copy; {year} {businessName}. All rights reserved.</p>
+      <div class="mt-24 border-t border-[var(--text)]/10 pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
+        <p class="text-[var(--fs-xs)] font-bold uppercase tracking-widest text-[var(--text-muted)] opacity-50">&copy; {year} {businessName}</p>
+        <p class="text-[var(--fs-xs)] font-bold uppercase tracking-widest text-[var(--text-muted)] opacity-30">Designed for distinction</p>
       </div>
     </div>
   </div>

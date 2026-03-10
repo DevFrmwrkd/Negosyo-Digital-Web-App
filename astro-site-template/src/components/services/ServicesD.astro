@@ -55,15 +55,18 @@ function formatSubheadline(text: string): { normal: string; italic: string } {
 const formattedSub = subheadline ? formatSubheadline(subheadline) : null;
 ---
 
-<section id="services" class="reveal bg-[#fafafa] py-16 md:py-24 lg:py-32">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<section id="services" class="reveal bg-[var(--bg)] py-24 md:py-32 lg:py-48 relative overflow-hidden">
+  {/* Modern background element */}
+  <div class="absolute top-0 left-0 w-full h-[50%] bg-gradient-to-b from-[var(--primary)]/5 to-transparent pointer-events-none"></div>
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
 
     {/* Badge */}
     {showBadge && (
-      <div class="mb-6 flex items-center gap-2">
-        <span class="h-2 w-2 rounded-full bg-[var(--primary,#6B8F71)] animate-pulse-dot"></span>
-        <span class="text-xs font-semibold uppercase tracking-widest text-[#1a1a1a]">
-          Services
+      <div class="reveal mb-10 flex items-center gap-6">
+        <span class="h-4 w-4 rounded-full bg-[var(--primary)] shadow-[0_0_20px_var(--primary)] animate-pulse"></span>
+        <span class="text-[var(--fs-xs)] font-bold uppercase tracking-[0.4em] text-[var(--primary)]">
+          Provisions
         </span>
       </div>
     )}
@@ -71,8 +74,8 @@ const formattedSub = subheadline ? formatSubheadline(subheadline) : null;
     {/* Headline */}
     {showHeadline && (
       <h2
-        class="mb-6 max-w-3xl font-semibold leading-tight tracking-tight text-[#1a1a1a]"
-        style="font-size: clamp(2rem, 4vw, 3rem); font-family: var(--heading-font, inherit);"
+        class="reveal-delay-1 reveal mb-10 max-w-5xl font-black leading-[1.05] tracking-tighter text-[var(--text)]"
+        style="font-size: var(--fs-display); font-family: var(--heading-font, inherit);"
       >
         {headline}
       </h2>
@@ -81,28 +84,28 @@ const formattedSub = subheadline ? formatSubheadline(subheadline) : null;
     {/* Subheadline - large text with last words italic */}
     {showSubheadline && formattedSub && (
       <p
-        class="mb-12 max-w-3xl leading-relaxed text-gray-600 md:mb-16"
-        style="font-size: clamp(1.125rem, 2vw, 1.5rem);"
+        class="reveal-delay-2 reveal mb-20 max-w-5xl leading-[1.4] text-[var(--text-muted)] font-medium md:mb-32"
+        style="font-size: var(--fs-2xl);"
       >
         {formattedSub.normal}{' '}
-        <em class="text-[#1a1a1a]" style="font-family: var(--heading-font, inherit);">
+        <span class="italic font-light opacity-50 block mt-4 lg:inline lg:mt-0">
           {formattedSub.italic}
-        </em>
+        </span>
       </p>
     )}
 
     {/* Stats Row */}
     {showList && (
-      <div class="mb-12 grid grid-cols-3 gap-6 border-y border-gray-200 py-8 md:mb-16 md:gap-10 md:py-10">
+      <div class="reveal-delay-3 reveal mb-20 grid grid-cols-1 md:grid-cols-3 gap-12 border-y border-[var(--text)]/10 py-16 md:mb-32 md:gap-20 md:py-24">
         {stats.map((stat) => (
-          <div class="text-center">
+          <div class="text-center group flex flex-col items-center">
             <span
-              class="mb-1 block text-3xl font-bold text-[#1a1a1a] md:text-4xl lg:text-5xl"
-              style="font-family: var(--heading-font, inherit);"
+              class="reveal mb-4 block font-black text-[var(--text)] transition-transform duration-700 group-hover:scale-110 group-hover:-translate-y-2"
+              style="font-size: var(--fs-display); font-family: var(--heading-font, inherit);"
             >
               {stat.value}
             </span>
-            <span class="text-xs font-medium uppercase tracking-wider text-gray-400 md:text-sm">
+            <span class="text-[var(--fs-xs)] font-bold uppercase tracking-[0.4em] text-[var(--primary)] opacity-60">
               {stat.label}
             </span>
           </div>
@@ -110,17 +113,24 @@ const formattedSub = subheadline ? formatSubheadline(subheadline) : null;
       </div>
     )}
 
-    {/* Service list - compact grid */}
+    {/* Service list - cards */}
     {showList && (
-      <div class="mb-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 md:mb-16">
-        {services.map((service) => (
-          <div class="flex items-start gap-3 rounded-lg bg-white p-4">
-            <span class="mt-1 flex h-2 w-2 shrink-0 rounded-full bg-[var(--primary,#6B8F71)]"></span>
+      <div class="reveal-delay-4 reveal mb-24 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3 md:mb-40">
+        {services.map((service, index) => (
+          <div 
+            class="reveal flex flex-col items-start gap-8 rounded-[3rem] bg-[var(--surface)] p-10 border border-[var(--text)]/5 transition-all duration-700 hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:-translate-y-3"
+            style={`transition-delay: ${index * 0.1}s;`}
+          >
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[var(--primary)] text-[var(--text-inverse)] shadow-lg shadow-[var(--primary)]/20 transition-transform duration-500 hover:rotate-[15deg]">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </div>
             <div>
-              <h3 class="text-sm font-bold text-[#1a1a1a]" style="font-family: var(--heading-font, inherit);">
+              <h3 class="text-[var(--fs-xl)] font-bold text-[var(--text)] mb-4 tracking-tight" style="font-family: var(--heading-font, inherit);">
                 {service.name}
               </h3>
-              <p class="mt-1 text-sm leading-relaxed text-gray-500">
+              <p class="text-[var(--fs-base)] leading-relaxed text-[var(--text-muted)] font-medium">
                 {service.description}
               </p>
             </div>
@@ -129,19 +139,20 @@ const formattedSub = subheadline ? formatSubheadline(subheadline) : null;
       </div>
     )}
 
-    {/* Full-width image - grayscale, hover full color */}
+    {/* Full-width image */}
     {showImage && (
-      <div class="overflow-hidden rounded-2xl lg:rounded-3xl">
+      <div class="reveal-delay-5 reveal overflow-hidden rounded-[3rem] lg:rounded-[6rem] shadow-2xl border border-[var(--text)]/5 group">
         {mainPhoto ? (
           <img
             src={mainPhoto}
             alt="Our services"
-            class="h-auto w-full object-cover transition-all duration-700 grayscale hover:grayscale-0"
-            style="aspect-ratio: 16 / 7;"
+            class="h-auto w-full object-cover transition-all duration-[2s] grayscale group-hover:grayscale-0 group-hover:scale-105"
+            style="aspect-ratio: 21 / 9;"
+            loading="lazy"
           />
         ) : (
-          <div class="flex w-full items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300" style="aspect-ratio: 16 / 7;">
-            <span class="text-sm text-gray-400">No image</span>
+          <div class="flex w-full items-center justify-center bg-[var(--surface)]" style="aspect-ratio: 21 / 9;">
+            <span class="text-[var(--fs-xs)] font-bold uppercase tracking-widest text-[var(--text-muted)] opacity-30">Visual Presence</span>
           </div>
         )}
       </div>
