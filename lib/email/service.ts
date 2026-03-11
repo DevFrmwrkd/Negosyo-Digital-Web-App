@@ -50,6 +50,194 @@ export async function sendApprovalEmail(data: ApprovalEmailData) {
     }
 }
 
+interface PaymentConfirmationEmailData {
+    businessName: string
+    businessOwnerName: string
+    businessOwnerEmail: string
+    websiteUrl: string
+    amount: number
+}
+
+export async function sendPaymentConfirmationEmail(data: PaymentConfirmationEmailData) {
+    const {
+        businessName,
+        businessOwnerName,
+        businessOwnerEmail,
+        websiteUrl,
+        amount,
+    } = data
+
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASSWORD
+            }
+        })
+
+        const emailHtml = getPaymentConfirmationTemplate({
+            businessName,
+            businessOwnerName,
+            websiteUrl,
+            amount,
+        })
+
+        const info = await transporter.sendMail({
+            from: `"Negosyo Digital" <${process.env.GMAIL_USER}>`,
+            to: businessOwnerEmail,
+            subject: `Payment Confirmed — ${businessName} is Now Live!`,
+            html: emailHtml
+        })
+
+        return { success: true, messageId: info.messageId }
+    } catch (error: any) {
+        console.error('Error in sendPaymentConfirmationEmail:', error)
+        throw error
+    }
+}
+
+function getPaymentConfirmationTemplate(params: {
+    businessName: string
+    businessOwnerName: string
+    websiteUrl: string
+    amount: number
+}): string {
+    const { businessName, businessOwnerName, websiteUrl, amount } = params
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmed — ${businessName}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+            <td align="center" style="padding:40px 16px;">
+
+                <!-- Card -->
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:#1a1a1a;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+
+                    <!-- Hero gradient header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#10b981 0%,#059669 50%,#06b6d4 100%);padding:48px 40px 40px;text-align:center;">
+                            <!-- Logo mark -->
+                            <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
+                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">NEGOSYO DIGITAL</span>
+                            </div>
+                            <h1 style="margin:0 0 12px;color:#ffffff;font-size:32px;font-weight:800;line-height:1.2;letter-spacing:-0.5px;">
+                                Payment Confirmed!
+                            </h1>
+                            <p style="margin:0;color:rgba(255,255,255,0.75);font-size:16px;line-height:1.6;">
+                                Your website is now officially live
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Greeting -->
+                    <tr>
+                        <td style="padding:36px 40px 0;">
+                            <p style="margin:0 0 12px;font-size:16px;color:#a1a1aa;line-height:1.7;">
+                                Hi <strong style="color:#ffffff;">${businessOwnerName}</strong>,
+                            </p>
+                            <p style="margin:0;font-size:16px;color:#a1a1aa;line-height:1.7;">
+                                We have received and confirmed your payment of <strong style="color:#10b981;">&#8369;${amount.toLocaleString()}</strong> for <strong style="color:#ffffff;">${businessName}</strong>. Your website is now fully published and live on the web!
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Payment Summary -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:12px;overflow:hidden;">
+                                <tr>
+                                    <td style="padding:28px;">
+                                        <p style="margin:0 0 20px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Payment Summary</p>
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                            <tr>
+                                                <td style="padding:7px 0;font-size:13px;color:#6b7280;width:140px;">Status</td>
+                                                <td style="padding:7px 0;">
+                                                    <span style="font-size:13px;color:#10b981;font-weight:700;background:#052e16;padding:3px 10px;border-radius:4px;">CONFIRMED</span>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:7px 0;font-size:13px;color:#6b7280;">Amount Paid</td>
+                                                <td style="padding:7px 0;font-size:14px;color:#e5e7eb;font-weight:600;">&#8369;${amount.toLocaleString()}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:7px 0;font-size:13px;color:#6b7280;">Business</td>
+                                                <td style="padding:7px 0;font-size:14px;color:#e5e7eb;font-weight:600;">${businessName}</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Website CTA -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:12px;overflow:hidden;">
+                                <tr>
+                                    <td style="padding:24px;text-align:center;">
+                                        <p style="margin:0 0 6px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Your Live Website</p>
+                                        <p style="margin:0 0 18px;font-size:13px;color:#4b5563;word-break:break-all;">${websiteUrl}</p>
+                                        <a href="${websiteUrl}"
+                                           style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#10b981,#059669);color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:0.3px;">
+                                            Visit Your Website &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Thank you note -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <p style="margin:0;font-size:16px;color:#a1a1aa;line-height:1.7;">
+                                Thank you for choosing Negosyo Digital! Your business is now online and accessible to everyone. If you need any changes or support, don't hesitate to reach out.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Support -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:10px;">
+                                <tr>
+                                    <td style="padding:18px 24px;text-align:center;">
+                                        <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">Questions? We're here to help.</p>
+                                        <a href="mailto:frmwkrd.media@gmail.com" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">frmwkrd.media@gmail.com</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding:32px 40px;text-align:center;">
+                            <p style="margin:0 0 4px;font-size:12px;color:#3f3f46;">&copy; 2026 Negosyo Digital. All rights reserved.</p>
+                            <p style="margin:0;font-size:12px;color:#3f3f46;">Empowering Filipino businesses with digital presence</p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>
+    `
+}
+
 function getApprovalEmailTemplate(params: {
     businessName: string
     businessOwnerName: string

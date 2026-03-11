@@ -437,6 +437,37 @@ export const markPaid = mutation({
 });
 
 /**
+ * Log payment confirmed audit entry — called after marking paid and sending confirmation email.
+ */
+export const logPaymentConfirmed = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        emailSent: v.boolean(),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'payment_confirmed' as const,
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: {
+                businessName: submission.businessName,
+                ownerEmail: submission.ownerEmail,
+                amount: submission.amount,
+                emailSent: args.emailSent,
+                note: args.emailSent
+                    ? 'Payment confirmed and confirmation email sent to business owner'
+                    : 'Payment confirmed. No owner email — confirmation email skipped.',
+            },
+        });
+    },
+});
+
+/**
  * Mark submission email as sent — sets status to pending_payment and records sentEmailAt.
  * Called by the send-website-email API route after successfully sending the client email.
  */

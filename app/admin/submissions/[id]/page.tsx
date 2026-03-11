@@ -597,18 +597,22 @@ export default function SubmissionDetailPage() {
 
         setMarkingPaid(true)
         try {
-            await markPaidMutation({
-                submissionId: submissionData._id,
-                adminId: user.id,
+            const response = await fetch('/api/mark-paid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId: submissionData._id }),
             })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Failed to mark as paid')
+
             setShowMarkPaidModal(false)
             setModalType('success')
-            setModalMessage(`Payment confirmed! Earning record created and creator balance updated.`)
+            setModalMessage(result.message || 'Payment confirmed! Earning record created and creator balance updated.')
             setShowModal(true)
         } catch (error: any) {
             console.error('Mark paid error:', error)
             setModalType('error')
-            setModalMessage('Failed to mark as paid. Please try again.')
+            setModalMessage(error.message || 'Failed to mark as paid. Please try again.')
             setShowModal(true)
         } finally {
             setMarkingPaid(false)

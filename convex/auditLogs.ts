@@ -15,6 +15,7 @@ export const log = internalMutation({
             v.literal('website_generated'),
             v.literal('website_deployed'),
             v.literal('payment_sent'),
+            v.literal('payment_confirmed'),
             v.literal('submission_deleted'),
             v.literal('creator_updated'),
             v.literal('manual_override')
