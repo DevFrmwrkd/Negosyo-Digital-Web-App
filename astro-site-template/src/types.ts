@@ -38,11 +38,11 @@ export interface ContactInfo {
 }
 
 export interface Customizations {
-  heroStyle: 'A' | 'B' | 'C' | 'D' | 'E';
-  aboutStyle: 'A' | 'B' | 'C' | 'D' | 'E';
-  servicesStyle: 'A' | 'B' | 'C' | 'D' | 'E';
-  galleryStyle: 'A' | 'B' | 'C' | 'D' | 'E';
-  contactStyle: 'A' | 'B' | 'C' | 'D' | 'E';
+  heroStyle: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  aboutStyle: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  servicesStyle: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  galleryStyle: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+  contactStyle: 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 }
 
 export interface VisibilitySettings {

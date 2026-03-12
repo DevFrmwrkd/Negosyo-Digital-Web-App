@@ -1,7 +1,7 @@
 {
   "layout": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "tagline": "Beauty that lasts, confidence that grows",
+    "businessName": "HAPAG",
+    "tagline": "Savoring Filipino Flavors 24/7",
     "navLinks": [
       {
         "href": "#about",
@@ -21,26 +21,26 @@
       }
     ],
     "socialLinks": [],
-    "colorScheme": "pink",
-    "fontPairing": "classic",
+    "colorScheme": "black",
+    "fontPairing": "professional",
     "contact": {
-      "address": "Heritage homes, Marilao, Bulacan, Marilao",
-      "email": "josephinecarvajal110168@gmail.com",
-      "phone": "9177871293"
+      "address": "Block 82 lot 5 Camalig Ema town Center Sto. Niño, MEYCAUAYAN",
+      "email": "joycedungo15@gmail.com",
+      "phone": "9756632359"
     }
   },
   "customizations": {
-    "heroStyle": "E",
-    "aboutStyle": "E",
-    "servicesStyle": "E",
-    "galleryStyle": "E",
-    "contactStyle": "C"
+    "heroStyle": "F",
+    "aboutStyle": "F",
+    "servicesStyle": "A",
+    "galleryStyle": "F",
+    "contactStyle": "F"
   },
   "visibility": {
     "heroSection": true,
     "heroHeadline": true,
     "heroTagline": true,
-    "heroDescription": true,
+    "heroDescription": false,
     "heroTestimonial": true,
     "heroButton": true,
     "heroImage": true,
@@ -70,50 +70,52 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "headline": "Beauty that lasts, confidence that grows",
-    "description": "Josephine Carvajal is a premier barber and salon in Marilao, Bulacan, dedicated to providing personalized beauty services that cater to each client's unique needs. With a focus on creating a welcoming and comfortable environment, our experienced team helps clients feel confident and beautiful. We offer a range of services for everyday beauty needs and special occasions.",
+    "businessName": "HAPAG",
+    "headline": "Savoring Filipino Flavors 24/7",
+    "description": "HAPAG is a 24-hour restaurant serving authentic Filipino dishes in a fun and relaxing atmosphere. With live band entertainment from Monday to Friday, we offer a unique dining experience. Our mezzanine area is also available for events and gatherings.",
+    "ctaLabel": "Explore Our Menu",
+    "ctaLink": "#services",
+    "ctaSecondaryLabel": "Our Story",
+    "ctaSecondaryLink": "#about",
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959893360-27lz7b5c.jpg",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c"
+      "https://diligent-ibex-454.convex.cloud/api/storage/6939e1c2-cbba-4143-a499-22b0ad99e00c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/c664fe21-705b-4f24-801c-bfc0dec4eeb4",
+      "https://diligent-ibex-454.convex.cloud/api/storage/716a61f5-f89c-4d20-a1f9-f415323324cb"
     ],
     "services": [
       {
-        "description": "Customized haircuts, styling, and grooming for men and women",
-        "name": "Hair Styling"
+        "description": "Enjoy your favorite Filipino dishes at any time of the day",
+        "name": "24-Hour Dining"
       },
       {
-        "description": "Professional hair coloring and highlighting services to enhance your look",
-        "name": "Hair Color"
+        "description": "Experience live music from Monday to Friday",
+        "name": "Live Band Entertainment"
       },
       {
-        "description": "Expert makeup applications for weddings, parties, and other special events",
-        "name": "Makeup Services"
+        "description": "Host your events and gatherings in our mezzanine area",
+        "name": "Event Hosting"
       }
     ],
     "visibility": {
       "heroHeadline": true,
       "heroTagline": true,
-      "heroDescription": true,
+      "heroDescription": false,
       "heroTestimonial": true,
       "heroButton": true,
       "heroImage": true
     }
   },
   "about": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "description": "Josephine Carvajal is a premier barber and salon in Marilao, Bulacan, dedicated to providing personalized beauty services that cater to each client's unique needs. With a focus on creating a welcoming and comfortable environment, our experienced team helps clients feel confident and beautiful. We offer a range of services for everyday beauty needs and special occasions.",
+    "businessName": "HAPAG",
+    "description": "HAPAG is a 24-hour restaurant serving authentic Filipino dishes in a fun and relaxing atmosphere. With live band entertainment from Monday to Friday, we offer a unique dining experience. Our mezzanine area is also available for events and gatherings.",
     "headline": "About Us",
     "usps": [
-      "Personalized care",
-      "Experienced team",
-      "Welcoming environment"
+      "24-hour operation",
+      "Live band entertainment",
+      "Mezzanine area for events"
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959893360-27lz7b5c.jpg"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1773240934855-v2fag1nr.jpg"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -128,20 +130,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Customized haircuts, styling, and grooming for men and women",
-        "name": "Hair Styling"
+        "description": "Enjoy your favorite Filipino dishes at any time of the day",
+        "name": "24-Hour Dining"
       },
       {
-        "description": "Professional hair coloring and highlighting services to enhance your look",
-        "name": "Hair Color"
+        "description": "Experience live music from Monday to Friday",
+        "name": "Live Band Entertainment"
       },
       {
-        "description": "Expert makeup applications for weddings, parties, and other special events",
-        "name": "Makeup Services"
+        "description": "Host your events and gatherings in our mezzanine area",
+        "name": "Event Hosting"
       }
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1773240934026-y3qeot9p.jpg"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -152,58 +154,53 @@
     }
   },
   "gallery": {
-    "headline": "Our Featured Services",
-    "subheadline": "Showcasing our expertise in beauty and wellness",
+    "headline": "Signature Dishes",
+    "subheadline": "A taste of authentic Filipino cuisine",
     "items": [
       {
-        "title": "Wedding Day Makeup",
-        "description": "Our team provided expert makeup services for a beautiful bride on her special day, ensuring she felt confident and stunning. We used high-quality products and techniques to create a flawless, long-lasting look. The result was a truly unforgettable wedding day appearance.",
-        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959893360-27lz7b5c.jpg",
+        "title": "Adobo Fiesta",
+        "description": "Our signature adobo dish made with tender chicken and savory sauce, served with steamed rice. This classic Filipino dish is a must-try. We use only the freshest ingredients to ensure the best flavor.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/2f0a2c5b-29c9-42b8-a685-3d0d4b28ebb9",
         "tags": [
-          "Makeup",
-          "Full-day"
+          "Filipino Cuisine",
+          "30 minutes"
         ],
         "testimonial": {
-          "author": "Ms. Rodriguez",
-          "quote": "I felt like a princess on my wedding day, thanks to the amazing makeup services from Josephine Carvajal. The team was professional, friendly, and truly talented. I received countless compliments on my makeup, and I couldn't be happier with the results."
+          "author": "Maria Rodriguez",
+          "quote": "I've tried adobo in many restaurants, but HAPAG's version is the best. The flavors are so rich and authentic. I highly recommend it!"
         }
       },
       {
-        "title": "Men's Grooming Package",
-        "description": "Our barber and salon services cater to men's grooming needs, providing a relaxing and rejuvenating experience. From haircuts to shaving, we use only the best products and techniques to ensure our clients look and feel their best. This package includes a haircut, shave, and facial treatment.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
+        "title": "Lechon Kawali Savory ",
+        "description": "Indulge in our crispy lechon kawali, served with a side of liver sauce and steamed vegetables. This Filipino favorite is perfect for any occasion. Our chefs use a secret recipe to achieve the perfect crunch.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/195ead85-77fb-4a88-ba7d-c51790101f3c",
         "tags": [
-          "Grooming",
-          "Half-day"
+          "Filipino Specialty",
+          "45 minutes"
         ],
         "testimonial": {
-          "author": "Mr. Santos",
-          "quote": "I've never felt so refreshed and revitalized after a grooming session. The team at Josephine Carvajal is exceptional, and their attention to detail is impressive. I highly recommend their men's grooming package to anyone looking for a top-notch experience."
+          "author": "Mark Santos",
+          "quote": "HAPAG's lechon kawali is crispy on the outside and tender on the inside. I love it! The live band entertainment made the experience even more enjoyable."
         }
       },
       {
-        "title": "Hair Color Transformation",
-        "description": "Our experienced team can transform your hair with our professional coloring services. From subtle highlights to bold, vibrant colors, we use only the best products to achieve the desired look. This client underwent a stunning hair color transformation, and the result was a dramatic, eye-catching new look.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
+        "title": "Sinigang Soup",
+        "description": "Warm up with our sour and savory sinigang soup, made with fresh tamarind broth and your choice of protein. This comforting dish is a staple in Filipino cuisine. We use only the freshest ingredients to ensure the best flavor.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/3025d7d7-f263-4ee2-bdca-d93519ae55a2",
         "tags": [
-          "Hair Color",
-          "Full-day"
+          "Filipino Comfort Food",
+          "20 minutes"
         ],
         "testimonial": {
-          "author": "Ms. Garcia",
-          "quote": "I was blown away by the hair color transformation I received at Josephine Carvajal. The team was knowledgeable, friendly, and truly skilled. My new hair color is everything I wanted and more – I've received countless compliments, and I feel like a completely new person."
+          "author": "Liza Reyes",
+          "quote": "HAPAG's sinigang soup is a breath of fresh air. The flavors are so bold and refreshing. I've been coming back for more!"
         }
       }
     ],
-    "images": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959893360-27lz7b5c.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959902485-nou2bbkq.jpg",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959906265-7t4pjpwa.jpg"
-    ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959893360-27lz7b5c.jpg",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c"
+      "https://diligent-ibex-454.convex.cloud/api/storage/6939e1c2-cbba-4143-a499-22b0ad99e00c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/c664fe21-705b-4f24-801c-bfc0dec4eeb4",
+      "https://diligent-ibex-454.convex.cloud/api/storage/716a61f5-f89c-4d20-a1f9-f415323324cb"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -213,16 +210,16 @@
     }
   },
   "contact": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "email": "josephinecarvajal110168@gmail.com",
-    "phone": "9177871293",
-    "address": "Heritage homes, Marilao, Bulacan, Marilao",
+    "businessName": "HAPAG",
+    "email": "joycedungo15@gmail.com",
+    "phone": "9756632359",
+    "address": "Block 82 lot 5 Camalig Ema town Center Sto. Niño, MEYCAUAYAN",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959893360-27lz7b5c.jpg",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c"
+      "https://diligent-ibex-454.convex.cloud/api/storage/6939e1c2-cbba-4143-a499-22b0ad99e00c",
+      "https://diligent-ibex-454.convex.cloud/api/storage/c664fe21-705b-4f24-801c-bfc0dec4eeb4",
+      "https://diligent-ibex-454.convex.cloud/api/storage/716a61f5-f89c-4d20-a1f9-f415323324cb"
     ],
     "visibility": {
       "contactBadge": true,

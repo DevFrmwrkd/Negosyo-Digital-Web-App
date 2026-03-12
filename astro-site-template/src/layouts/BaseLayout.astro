@@ -74,9 +74,13 @@ const colorSchemes: Record<string, {
     primary: '#6B8F71', secondary: '#1F2933', accent: '#4ECDC4', background: '#F6F7F5', surface: '#FFFFFF',
     text: '#1F2933', textMuted: '#4A5568', inverseText: '#FFFFFF', isDark: false 
   },
-  blue: { 
+  blue: {
     primary: '#3B82F6', secondary: '#1E3A8A', accent: '#60A5FA', background: '#EFF6FF', surface: '#FFFFFF',
-    text: '#111827', textMuted: '#4B5563', inverseText: '#FFFFFF', isDark: false 
+    text: '#111827', textMuted: '#4B5563', inverseText: '#FFFFFF', isDark: false
+  },
+  green: {
+    primary: '#16A34A', secondary: '#14532D', accent: '#4ADE80', background: '#F0FDF4', surface: '#FFFFFF',
+    text: '#14532D', textMuted: '#166534', inverseText: '#FFFFFF', isDark: false
   },
   purple: { 
     primary: '#8B5CF6', secondary: '#4C1D95', accent: '#A78BFA', background: '#F5F3FF', surface: '#FFFFFF',
@@ -106,9 +110,13 @@ const colorSchemes: Record<string, {
     primary: '#FBC02D', secondary: '#F57F17', accent: '#D32F2F', background: '#FEFCE8', surface: '#FFFFFF',
     text: '#1A1A1A', textMuted: '#424242', inverseText: '#FFFFFF', isDark: false 
   },
-  maroon: { 
+  maroon: {
     primary: '#800000', secondary: '#FFD700', accent: '#A52A2A', background: '#2D0000', surface: '#3D0000',
-    text: '#F5F5DC', textMuted: '#E0C0C0', inverseText: '#2D0000', isDark: true 
+    text: '#F5F5DC', textMuted: '#E0C0C0', inverseText: '#2D0000', isDark: true
+  },
+  black: {
+    primary: '#FFFFFF', secondary: '#E5E5E5', accent: '#A0A0A0', background: '#000000', surface: '#111111',
+    text: '#FFFFFF', textMuted: '#A0A0A0', inverseText: '#000000', isDark: true
   },
 };
 
@@ -142,7 +150,7 @@ const year = new Date().getFullYear();
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href={fontUrl} rel="stylesheet" />
 </head>
-<body class="min-h-screen bg-white text-gray-900 antialiased" style={`font-family: '${fonts.body}', sans-serif;`}>
+<body class="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased" style={`font-family: '${fonts.body}', sans-serif;`}>
   <!-- Navbar -->
   <nav class="fixed top-0 left-0 right-0 z-50 bg-[var(--nav-bg)] backdrop-blur-md border-b border-[var(--nav-border)]" id="navbar">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

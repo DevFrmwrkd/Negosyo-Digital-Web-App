@@ -111,6 +111,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="C">Centered Carousel</option>
                                     <option value="D">Services List Dark</option>
                                     <option value="E">Visual Narrative (Modern)</option>
+                                    <option value="F">Luxury Dark Elegant</option>
                                 </select>
                             </div>
 
@@ -131,6 +132,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="C">Tags Card</option>
                                     <option value="D">Quote with Logo Carousel</option>
                                     <option value="E">Immersive DNA (Modern)</option>
+                                    <option value="F">Luxury Story Layout</option>
                                 </select>
                             </div>
 
@@ -151,6 +153,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="C">Card Grid</option>
                                     <option value="D">Stats Grid with Quote</option>
                                     <option value="E">Capabilites Mosaic (Modern)</option>
+                                    <option value="F">Luxury Card Grid</option>
                                 </select>
                             </div>
 
@@ -171,6 +174,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="C">Image Grid</option>
                                     <option value="D">Staggered Masonry</option>
                                     <option value="E">Fluid Mosaic (Modern)</option>
+                                    <option value="F">Luxury Product Showcase</option>
                                 </select>
                             </div>
 
@@ -191,6 +195,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="C">Bold CTA</option>
                                     <option value="D">Dark Marquee Photos</option>
                                     <option value="E">Interactive Tile Glass (Modern)</option>
+                                    <option value="F">Luxury Footer Contact</option>
                                 </select>
                             </div>
                         </div>
@@ -234,6 +239,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="red">Red Intense</option>
                                     <option value="yellow">Yellow Bright</option>
                                     <option value="maroon">Maroon Rich</option>
+                                    <option value="black">Black Monochrome</option>
                                 </select>
                             </div>
 
