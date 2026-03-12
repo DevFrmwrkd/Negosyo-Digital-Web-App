@@ -17,6 +17,7 @@ interface ExtractedContent {
         messenger?: string
     }
     hero_cta?: { label: string; link: string }
+    hero_cta_secondary?: { label: string; link: string }
     hero_badge_text?: string
     hero_testimonial?: string
     visibility?: Record<string, boolean>
@@ -71,7 +72,7 @@ interface Customizations {
  */
 function mapStyleToLetter(numericStyle: string | undefined, fallback: string = 'A'): string {
     if (!numericStyle) return fallback
-    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E' }
+    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F' }
     return map[numericStyle] || numericStyle // Pass through if already a letter
 }
 
@@ -155,6 +156,8 @@ function transformToAstroData(
             testimonial: content.hero_testimonial,
             ctaLabel: content.hero_cta?.label,
             ctaLink: content.hero_cta?.link,
+            ctaSecondaryLabel: content.hero_cta_secondary?.label,
+            ctaSecondaryLink: content.hero_cta_secondary?.link,
             photos,
             services: content.services?.slice(0, 3),
             visibility: {

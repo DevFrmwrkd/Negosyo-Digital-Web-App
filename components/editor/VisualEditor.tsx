@@ -52,6 +52,10 @@ interface WebsiteContent {
         label: string
         link: string
     }
+    hero_cta_secondary?: {
+        label: string
+        link: string
+    }
     services_cta?: {
         label: string
         link: string
@@ -167,10 +171,12 @@ export default function VisualEditor({
     const aboutFileInputRef = useRef<HTMLInputElement>(null)
     const servicesFileInputRef = useRef<HTMLInputElement>(null)
     const featuredFileInputRef = useRef<HTMLInputElement>(null)
+    const productFileInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
     const [isUploading, setIsUploading] = useState(false)
     const [isUploadingAboutImage, setIsUploadingAboutImage] = useState(false)
     const [isUploadingServicesImage, setIsUploadingServicesImage] = useState(false)
     const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] = useState(false)
+    const [uploadingProductIndex, setUploadingProductIndex] = useState<number | null>(null)
     const [showImagePicker, setShowImagePicker] = useState(false)
     const [showAboutImagePicker, setShowAboutImagePicker] = useState(false)
     const [showServicesImagePicker, setShowServicesImagePicker] = useState(false)
@@ -180,12 +186,15 @@ export default function VisualEditor({
     const [resolvedAboutImages, setResolvedAboutImages] = useState<string[]>([])
     const [resolvedServicesImage, setResolvedServicesImage] = useState<string | null>(null)
     const [resolvedFeaturedImages, setResolvedFeaturedImages] = useState<string[]>([])
+    const [resolvedProductImages, setResolvedProductImages] = useState<Record<number, string>>({})
 
     // Get which fields the current hero style uses
     const heroFields = useMemo(() => getHeroStyleFields(heroStyle), [heroStyle])
 
     // Get which fields the current about style uses
     const aboutFields = useMemo(() => getAboutStyleFields(aboutStyle), [aboutStyle])
+    // About variants B, D, F and legacy '3' use a single image; others use a gallery of up to 4
+    const aboutSingleImage = aboutStyle === '3' || aboutStyle === 'C' || aboutStyle === 'F'
 
     // Get which fields the current services style uses
     const servicesFields = useMemo(() => getServicesStyleFields(servicesStyle), [servicesStyle])
@@ -342,6 +351,33 @@ export default function VisualEditor({
             setResolvedFeaturedImages([])
         }
     }, [resolvedFeaturedImageUrls, content.featured_images])
+
+    // Resolve product images URLs - handles convex:xxx format for uploaded product images
+    const productStorageIds = useMemo(() => {
+        return (content.featured_products || [])
+            .map(p => p.image)
+            .filter((img): img is string => !!img && !img.startsWith('http'))
+    }, [content.featured_products])
+    const resolvedProductImageUrls = useQuery(
+        api.files.getMultipleUrls,
+        productStorageIds.length > 0 ? { storageIds: productStorageIds } : 'skip'
+    )
+
+    useEffect(() => {
+        const products = content.featured_products || []
+        const resolved: Record<number, string> = {}
+        products.forEach((product, index) => {
+            if (product.image?.startsWith('http')) {
+                resolved[index] = product.image
+            } else if (product.image) {
+                const storageIdx = productStorageIds.indexOf(product.image)
+                if (resolvedProductImageUrls && storageIdx !== -1 && resolvedProductImageUrls[storageIdx]) {
+                    resolved[index] = resolvedProductImageUrls[storageIdx]!
+                }
+            }
+        })
+        setResolvedProductImages(resolved)
+    }, [resolvedProductImageUrls, content.featured_products, productStorageIds])
 
     // Initialize missing fields with defaults on mount
     useEffect(() => {
@@ -814,7 +850,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_headline: !content.visibility?.hero_headline
+                                        hero_headline: content.visibility?.hero_headline !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -861,7 +897,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_tagline: !content.visibility?.hero_tagline
+                                        hero_tagline: content.visibility?.hero_tagline !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_tagline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -909,7 +945,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_description: !content.visibility?.hero_description
+                                        hero_description: content.visibility?.hero_description !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_description !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -957,7 +993,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_testimonial: !content.visibility?.hero_testimonial
+                                        hero_testimonial: content.visibility?.hero_testimonial !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_testimonial !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -981,8 +1017,8 @@ export default function VisualEditor({
                         </div>
                         )}
 
-                        {/* Hero Button (CTA) - Only show if hero style uses it */}
-                        {heroFields.usesButton && (
+                        {/* Hero Button (CTA) - Show for styles that use buttons (A, C, E, F) */}
+                        {(heroFields.usesButton || heroStyle === 'E' || heroStyle === 'F' || heroStyle === '5' || heroStyle === '6') && (
                         <div
                             onMouseEnter={() => highlightElement('.cta-button')}
                             onMouseLeave={removeHighlight}
@@ -1005,7 +1041,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_button: !content.visibility?.hero_button
+                                        hero_button: content.visibility?.hero_button !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_button !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1050,7 +1086,48 @@ export default function VisualEditor({
                                     />
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">Call-to-action button displayed in the hero section</p>
+                            {heroStyle === 'F' && (
+                                <>
+                                    <div className="mt-4 pt-3 border-t border-gray-200">
+                                        <label className="block text-xs text-gray-500 mb-1 font-medium">Secondary Button</label>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Secondary Button Text</label>
+                                            <input
+                                                type="text"
+                                                value={content.hero_cta_secondary?.label || ''}
+                                                onChange={(e) => updateField('hero_cta_secondary', {
+                                                    ...content.hero_cta_secondary,
+                                                    label: e.target.value,
+                                                    link: content.hero_cta_secondary?.link || '#about'
+                                                })}
+                                                disabled={content.visibility?.hero_button === false}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                placeholder="e.g. Our Story"
+                                                maxLength={50}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Secondary Button Link</label>
+                                            <input
+                                                type="text"
+                                                value={content.hero_cta_secondary?.link || ''}
+                                                onChange={(e) => updateField('hero_cta_secondary', {
+                                                    ...content.hero_cta_secondary,
+                                                    label: content.hero_cta_secondary?.label || 'Our Story',
+                                                    link: e.target.value
+                                                })}
+                                                disabled={content.visibility?.hero_button === false}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                placeholder="e.g. #about or https://..."
+                                                maxLength={200}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            <p className="text-xs text-gray-500 mt-2">Call-to-action button{heroStyle === 'F' ? 's' : ''} displayed in the hero section</p>
                         </div>
                         )}
 
@@ -1078,7 +1155,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_image: !content.visibility?.hero_image
+                                        hero_image: content.visibility?.hero_image !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_image !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1531,7 +1608,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_headline: !content.visibility?.about_headline
+                                                about_headline: content.visibility?.about_headline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1578,7 +1655,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_description: !content.visibility?.about_description
+                                                about_description: content.visibility?.about_description !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_description !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1618,13 +1695,13 @@ export default function VisualEditor({
                                             ) : (
                                                 <EyeOff className="w-4 h-4 text-gray-400" />
                                             )}
-                                            {aboutStyle === '3' ? 'About Image' : 'About Images Gallery'}
+                                            {aboutSingleImage ? 'About Image' : 'About Images Gallery'}
                                         </label>
                                         <button
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_images: !content.visibility?.about_images
+                                                about_images: content.visibility?.about_images !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_images !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1636,14 +1713,14 @@ export default function VisualEditor({
                                         </button>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-3">
-                                        {aboutStyle === '3'
+                                        {aboutSingleImage
                                             ? 'Select 1 image for the about section'
                                             : 'Select up to 4 images for the horizontal gallery with scroll animations'}
                                     </p>
 
                                     {/* Current selected images */}
-                                    <div className={`grid gap-2 mb-3 ${aboutStyle === '3' ? 'grid-cols-1 max-w-[200px]' : 'grid-cols-4'}`}>
-                                        {(aboutStyle === '3' ? [0] : [0, 1, 2, 3]).map((index) => {
+                                    <div className={`grid gap-2 mb-3 ${aboutSingleImage ? 'grid-cols-1 max-w-[200px]' : 'grid-cols-4'}`}>
+                                        {(aboutSingleImage ? [0] : [0, 1, 2, 3]).map((index) => {
                                             const aboutImagesRaw = content.about_images || availableImages
                                             const rawImageUrl = aboutImagesRaw[index]
                                             // Use resolved URL if available, otherwise use raw URL (for http URLs)
@@ -1697,7 +1774,7 @@ export default function VisualEditor({
                                                 className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-medium"
                                             >
                                                 <ImageIcon className="w-4 h-4" />
-                                                {aboutStyle === '3' ? 'Choose Image' : 'Choose Images'}
+                                                {aboutSingleImage ? 'Choose Image' : 'Choose Images'}
                                             </button>
                                         )}
 
@@ -1712,7 +1789,7 @@ export default function VisualEditor({
                                                 // Use current about_images if set, otherwise empty array for uploads
                                                 // (don't fall back to availableImages for upload validation)
                                                 const currentImages = content.about_images || []
-                                                const maxImages = aboutStyle === '3' ? 1 : 4
+                                                const maxImages = aboutSingleImage ? 1 : 4
                                                 if (currentImages.length >= maxImages) {
                                                     toast.error(`Maximum ${maxImages} image${maxImages > 1 ? 's' : ''} allowed. Remove an image first.`)
                                                     return
@@ -1767,7 +1844,7 @@ export default function VisualEditor({
                                         />
                                         <button
                                             onClick={() => aboutFileInputRef.current?.click()}
-                                            disabled={isUploadingAboutImage || (content.about_images?.length || 0) >= (aboutStyle === '3' ? 1 : 4)}
+                                            disabled={isUploadingAboutImage || (content.about_images?.length || 0) >= (aboutSingleImage ? 1 : 4)}
                                             className="flex-1 px-3 py-2 bg-white border border-dashed border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <Upload className="w-4 h-4" />
@@ -1802,7 +1879,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_tagline: !content.visibility?.about_tagline
+                                                about_tagline: content.visibility?.about_tagline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_tagline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1850,7 +1927,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_tags: !content.visibility?.about_tags
+                                                about_tags: content.visibility?.about_tags !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_tags !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1932,7 +2009,7 @@ export default function VisualEditor({
                                         <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                                             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                                                 <h3 className="text-lg font-semibold text-gray-900">
-                                                    {aboutStyle === '3' ? 'Select About Image' : 'Select About Gallery Images'}
+                                                    {aboutSingleImage ? 'Select About Image' : 'Select About Gallery Images'}
                                                 </h3>
                                                 <button
                                                     onClick={() => setShowAboutImagePicker(false)}
@@ -1943,7 +2020,7 @@ export default function VisualEditor({
                                             </div>
                                             <div className="p-4 overflow-y-auto max-h-[60vh]">
                                                 <p className="text-sm text-gray-500 mb-4">
-                                                    {aboutStyle === '3'
+                                                    {aboutSingleImage
                                                         ? 'Click an image to select it for the about section.'
                                                         : 'Click images to select/deselect. Selected images show their order number. Maximum 4 images.'}
                                                 </p>
@@ -1960,7 +2037,7 @@ export default function VisualEditor({
                                                                 const aboutImages = content.about_images || availableImages
                                                                 const isSelected = aboutImages.includes(imageUrl)
                                                                 const selectedIndex = aboutImages.indexOf(imageUrl)
-                                                                const maxImagesForPicker = aboutStyle === '3' ? 1 : 4
+                                                                const maxImagesForPicker = aboutSingleImage ? 1 : 4
                                                                 return (
                                                                     <button
                                                                         key={`${prefix}-${index}`}
@@ -1970,7 +2047,7 @@ export default function VisualEditor({
                                                                                 const newImages = currentImages.filter(img => img !== imageUrl)
                                                                                 updateField('about_images', newImages)
                                                                             } else {
-                                                                                if (aboutStyle === '3') {
+                                                                                if (aboutSingleImage) {
                                                                                     updateField('about_images', [imageUrl])
                                                                                 } else if (currentImages.length < maxImagesForPicker) {
                                                                                     updateField('about_images', [...currentImages, imageUrl])
@@ -1986,7 +2063,7 @@ export default function VisualEditor({
                                                                         <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
                                                                         {isSelected && (
                                                                             <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                                {aboutStyle === '3' ? '✓' : selectedIndex + 1}
+                                                                                {aboutSingleImage ? '✓' : selectedIndex + 1}
                                                                             </div>
                                                                         )}
                                                                     </button>
@@ -2001,7 +2078,7 @@ export default function VisualEditor({
                                                     onClick={() => setShowAboutImagePicker(false)}
                                                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                                                 >
-                                                    Done ({(content.about_images || availableImages).length}/{aboutStyle === '3' ? 1 : 4} selected)
+                                                    Done ({(content.about_images || availableImages).length}/{aboutSingleImage ? 1 : 4} selected)
                                                 </button>
                                             </div>
                                         </div>
@@ -2110,7 +2187,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                services_headline: !content.visibility?.services_headline
+                                                services_headline: content.visibility?.services_headline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.services_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2157,7 +2234,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                services_subheadline: !content.visibility?.services_subheadline
+                                                services_subheadline: content.visibility?.services_subheadline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.services_subheadline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2205,7 +2282,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                services_image: !content.visibility?.services_image
+                                                services_image: content.visibility?.services_image !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.services_image !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2557,7 +2634,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                featured_headline: !content.visibility?.featured_headline
+                                                featured_headline: content.visibility?.featured_headline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.featured_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2603,7 +2680,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                featured_subheadline: !content.visibility?.featured_subheadline
+                                                featured_subheadline: content.visibility?.featured_subheadline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.featured_subheadline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2626,8 +2703,8 @@ export default function VisualEditor({
                                     <p className="text-xs text-gray-500 mt-1">Description text below the headline</p>
                                 </div>
 
-                                {/* Featured CTA Button - Only show if style uses CTA */}
-                                {galleryFields.usesCta && (
+                                {/* Featured CTA Button - Show for styles that use CTA (D, F) */}
+                                {(galleryFields.usesCta || galleryStyle === 'D' || galleryStyle === 'F' || galleryStyle === '4' || galleryStyle === '6') && (
                                     <div
                                         onMouseEnter={() => highlightElement('.featured-masonry .cta-button')}
                                         onMouseLeave={removeHighlight}
@@ -2743,7 +2820,8 @@ export default function VisualEditor({
                                                     {galleryFields.usesProducts && (() => {
                                                         // Calculate actual display image (explicit or fallback)
                                                         const fallbackImage = availableImages[index % Math.max(availableImages.length, 1)]
-                                                        const displayImage = project.image || fallbackImage
+                                                        const resolvedImg = resolvedProductImages[index]
+                                                        const displayImage = resolvedImg || (project.image?.startsWith('http') ? project.image : null) || fallbackImage
 
                                                         return (
                                                             <div className="space-y-1">
@@ -2762,9 +2840,9 @@ export default function VisualEditor({
                                                                             <ImageIcon className="w-6 h-6 text-gray-300" />
                                                                         </div>
                                                                     )}
-                                                                    <div className="flex-1">
+                                                                    <div className="flex-1 space-y-1.5">
                                                                         <select
-                                                                            value={project.image || fallbackImage || ''}
+                                                                            value={project.image?.startsWith('http') ? project.image : (project.image ? '' : (fallbackImage || ''))}
                                                                             onChange={(e) => {
                                                                                 const newProjects = [...(content.featured_products || [])]
                                                                                 newProjects[index] = { ...newProjects[index], image: e.target.value || undefined }
@@ -2772,6 +2850,9 @@ export default function VisualEditor({
                                                                             }}
                                                                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                                                         >
+                                                                            {project.image && !project.image.startsWith('http') && (
+                                                                                <option value="">Uploaded Image</option>
+                                                                            )}
                                                                             {hasOriginalImages && (
                                                                                 <optgroup label="Original Photos">
                                                                                     {originalImages.map((img, imgIndex) => (
@@ -2796,26 +2877,75 @@ export default function VisualEditor({
                                                                                 </option>
                                                                             ))}
                                                                         </select>
+                                                                        {/* Upload new image for this product */}
+                                                                        <input
+                                                                            type="file"
+                                                                            ref={(el) => { productFileInputRefs.current[index] = el }}
+                                                                            onChange={async (e) => {
+                                                                                const file = e.target.files?.[0]
+                                                                                if (!file) return
+                                                                                if (file.size > 5 * 1024 * 1024) {
+                                                                                    toast.error('File is too large. Maximum size is 5MB.')
+                                                                                    return
+                                                                                }
+                                                                                if (!file.type.startsWith('image/')) {
+                                                                                    toast.error('Only image files are allowed.')
+                                                                                    return
+                                                                                }
+                                                                                setUploadingProductIndex(index)
+                                                                                const toastId = toast.loading('Uploading image...')
+                                                                                try {
+                                                                                    const uploadUrl = await generateUploadUrl()
+                                                                                    const result = await fetch(uploadUrl, {
+                                                                                        method: 'POST',
+                                                                                        headers: { 'Content-Type': file.type },
+                                                                                        body: file,
+                                                                                    })
+                                                                                    if (!result.ok) throw new Error('Failed to upload file')
+                                                                                    const { storageId } = await result.json()
+                                                                                    const newProjects = [...(content.featured_products || [])]
+                                                                                    newProjects[index] = { ...newProjects[index], image: `convex:${storageId}` }
+                                                                                    updateField('featured_products', newProjects)
+                                                                                    toast.success('Product image uploaded', { id: toastId })
+                                                                                } catch (error) {
+                                                                                    console.error('Upload error:', error)
+                                                                                    toast.error('Failed to upload image', { id: toastId })
+                                                                                } finally {
+                                                                                    setUploadingProductIndex(null)
+                                                                                    const input = productFileInputRefs.current[index]
+                                                                                    if (input) input.value = ''
+                                                                                }
+                                                                            }}
+                                                                            accept="image/*"
+                                                                            className="hidden"
+                                                                        />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => productFileInputRefs.current[index]?.click()}
+                                                                            disabled={uploadingProductIndex === index}
+                                                                            className="w-full px-2 py-1.5 bg-white border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors"
+                                                                        >
+                                                                            <Upload className="w-3 h-3" />
+                                                                            {uploadingProductIndex === index ? 'Uploading...' : 'Upload New'}
+                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         )
                                                     })()}
 
-                                                    {/* Description - only shown for styles that use it */}
-                                                    {galleryFields.usesTestimonials && (
-                                                        <textarea
-                                                            value={project.description}
-                                                            onChange={(e) => {
-                                                                const newProjects = [...(content.featured_products || [])]
-                                                                newProjects[index] = { ...newProjects[index], description: e.target.value }
-                                                                updateField('featured_products', newProjects)
-                                                            }}
-                                                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                                            rows={2}
-                                                            placeholder="Project description"
-                                                        />
-                                                    )}
+                                                    {/* Description - shown for all product-based styles */}
+                                                    <textarea
+                                                        value={project.description}
+                                                        onChange={(e) => {
+                                                            const newProjects = [...(content.featured_products || [])]
+                                                            newProjects[index] = { ...newProjects[index], description: e.target.value }
+                                                            updateField('featured_products', newProjects)
+                                                        }}
+                                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                                        rows={2}
+                                                        placeholder="Project description"
+                                                    />
 
                                                     {/* Tags/Category - shown for all styles */}
                                                     {galleryFields.usesTags && (

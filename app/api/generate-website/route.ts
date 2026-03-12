@@ -383,6 +383,33 @@ IMPORTANT:
             }
         }
 
+        // Resolve product images inside featured_products (convex:storageId → URL)
+        const rawProducts = (extractedContent as any)?.featured_products || []
+        let resolvedProducts = rawProducts
+        if (rawProducts.length > 0) {
+            const productImageIds = rawProducts
+                .map((p: any) => p.image)
+                .filter((img: string | undefined) => img && !img.startsWith('http'))
+                .map((img: string) => img.replace(/^convex:/, ''))
+
+            if (productImageIds.length > 0) {
+                try {
+                    const resolvedUrls = await fetchQuery(api.files.getMultipleUrls, {
+                        storageIds: productImageIds
+                    })
+                    resolvedProducts = rawProducts.map((p: any) => {
+                        if (!p.image || p.image.startsWith('http')) return p
+                        const cleanId = p.image.replace(/^convex:/, '')
+                        const idx = productImageIds.indexOf(cleanId)
+                        const resolvedUrl = idx !== -1 ? resolvedUrls[idx] : null
+                        return { ...p, image: resolvedUrl || p.image }
+                    })
+                } catch (error) {
+                    console.error('Error resolving product image URLs:', error)
+                }
+            }
+        }
+
         const defaultCustomizations = {
             heroStyle: 'A',
             aboutStyle: 'A',
@@ -417,6 +444,7 @@ IMPORTANT:
             tone: extractedContent?.tone || 'professional-friendly',
             // Optional fields
             hero_cta: extractedContent?.hero_cta,
+            hero_cta_secondary: extractedContent?.hero_cta_secondary,
             services_cta: extractedContent?.services_cta,
             methodology: extractedContent?.methodology,
             // Hero section fields
@@ -473,7 +501,7 @@ IMPORTANT:
             // Featured section fields - generate defaults if not present
             featured_headline: (extractedContent as any)?.featured_headline || 'Featured Products',
             featured_subheadline: (extractedContent as any)?.featured_subheadline || `Take a look at some of our recent work at ${submission.business_name}`,
-            featured_products: (extractedContent as any)?.featured_products || generateDefaultFeaturedProducts(submission.business_name, submission.business_type, photos.length),
+            featured_products: resolvedProducts.length > 0 ? resolvedProducts : generateDefaultFeaturedProducts(submission.business_name, submission.business_type, photos.length),
             featured_images: resolvedFeaturedImages.length > 0 ? resolvedFeaturedImages : undefined,
             // Featured CTA fields for style 4
             featured_cta_text: (extractedContent as any)?.featured_cta_text,

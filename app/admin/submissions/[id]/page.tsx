@@ -928,7 +928,7 @@ export default function SubmissionDetailPage() {
                         {websiteGenerated && (
                             <div className="flex space-x-2">
                                 <a
-                                    href={`/website/${submissionId}`}
+                                    href={`/api/preview/${submissionId}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 text-sm font-medium"
