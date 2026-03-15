@@ -10,11 +10,11 @@ import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 
 const INTERVIEW_QUESTIONS = [
-    "Tell us about your business. What do you do?",
-    "How long have you been operating?",
-    "What makes your business special?",
-    "What's your biggest challenge right now?",
-    "What's your dream for this business?"
+    "What does your business do and who are your customers?",
+    "What are the main services or products you offer?",
+    "What makes your business different from others? Why do customers choose you?",
+    "Can you share a favorite customer story or project you're proud of?",
+    "What should customers know before visiting or contacting you?",
 ]
 
 type RecordingMode = 'upload' | 'record'
