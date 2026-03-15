@@ -28,7 +28,7 @@ export default function TrainingPage() {
     }, [isLoaded, user, router])
 
     useEffect(() => {
-        if (creator && creator.certifiedAt) router.push("/dashboard")
+        if (creator && (creator.certifiedAt || creator.role === 'admin')) router.push("/dashboard")
     }, [creator, router])
 
     // Trigger fade-up animations after mount

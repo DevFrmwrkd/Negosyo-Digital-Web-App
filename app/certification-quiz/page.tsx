@@ -130,6 +130,11 @@ export default function CertificationQuizPage() {
         if (isLoaded && !user) router.push("/login")
     }, [isLoaded, user, router])
 
+    // Redirect admins to admin dashboard — they don't need certification
+    useEffect(() => {
+        if (creator && creator.role === 'admin') router.push("/admin")
+    }, [creator, router])
+
     if (!isLoaded || creator === undefined) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white">
