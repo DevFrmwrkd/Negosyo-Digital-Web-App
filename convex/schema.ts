@@ -60,6 +60,7 @@ export default defineSchema({
         audioUrl: v.optional(v.string()),
         transcript: v.optional(v.string()),
         transcriptionStatus: v.optional(v.string()), // Status of audio transcription
+        transcriptionError: v.optional(v.string()), // Error message if Groq Whisper transcription failed
 
         // Extended address fields
         province: v.optional(v.string()),
@@ -67,6 +68,7 @@ export default defineSchema({
         postalCode: v.optional(v.string()),
         coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
         businessDescription: v.optional(v.string()), // AI-generated description from transcript
+        hasProducts: v.optional(v.boolean()), // Affects expected photo count (4 vs 6) and Airtable field mapping
 
         // Generated content
         websiteUrl: v.optional(v.string()),
@@ -114,7 +116,10 @@ export default defineSchema({
     })
         .index('by_creatorId', ['creatorId'])
         .index('by_status', ['status'])
-        .index('by_payoutRequested', ['payoutRequestedAt']),
+        .index('by_payoutRequested', ['payoutRequestedAt'])
+        .index('by_airtable_sync', ['airtableSyncStatus'])
+        .index('by_creator_status', ['creatorId', 'status'])
+        .index('by_city', ['city']),
 
     // Generated websites - technical/deployment data + content (mobile branch merged websiteContent fields here)
     generatedWebsites: defineTable({
@@ -283,6 +288,8 @@ export default defineSchema({
         ),
         accountName: v.string(),
         accountNumber: v.string(),
+        bankName: v.optional(v.string()),
+        bankCode: v.optional(v.string()),
         isDefault: v.boolean(),
     })
         .index('by_creator', ['creatorId']),
@@ -334,6 +341,7 @@ export default defineSchema({
             v.literal('payout_sent'),
             v.literal('website_live'),
             v.literal('profile_updated'),
+            v.literal('password_changed'),
             v.literal('system')
         ),
         title: v.string(),
