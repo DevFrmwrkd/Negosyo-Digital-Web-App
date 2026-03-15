@@ -13,9 +13,12 @@ export const createAndSend = internalMutation({
         type: v.union(
             v.literal('submission_approved'),
             v.literal('submission_rejected'),
+            v.literal('submission_created'),
             v.literal('new_lead'),
             v.literal('payout_sent'),
             v.literal('website_live'),
+            v.literal('profile_updated'),
+            v.literal('password_changed'),
             v.literal('system')
         ),
         title: v.string(),
@@ -212,6 +215,40 @@ export const markAsRead = mutation({
     args: { id: v.id('notifications') },
     handler: async (ctx, args) => {
         await ctx.db.patch(args.id, { read: true });
+    },
+});
+
+/**
+ * Create a notification from the client (password changes, profile updates, etc.)
+ */
+export const createForClient = mutation({
+    args: {
+        creatorId: v.id('creators'),
+        type: v.union(
+            v.literal('submission_approved'),
+            v.literal('submission_rejected'),
+            v.literal('submission_created'),
+            v.literal('new_lead'),
+            v.literal('payout_sent'),
+            v.literal('website_live'),
+            v.literal('profile_updated'),
+            v.literal('password_changed'),
+            v.literal('system')
+        ),
+        title: v.string(),
+        body: v.string(),
+        data: v.optional(v.any()),
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.insert('notifications', {
+            creatorId: args.creatorId,
+            type: args.type,
+            title: args.title,
+            body: args.body,
+            data: args.data,
+            read: false,
+            sentAt: Date.now(),
+        });
     },
 });
 

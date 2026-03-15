@@ -460,6 +460,7 @@ export default function AdminDashboard() {
                                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Owner</th>
                                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Type</th>
                                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Reviewed By</th>
                                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Date</th>
                                 <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Action</th>
                             </tr>
@@ -467,7 +468,7 @@ export default function AdminDashboard() {
                         <tbody>
                             {paginatedSubmissions.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-16 text-center text-sm text-gray-400">
+                                    <td colSpan={7} className="px-6 py-16 text-center text-sm text-gray-400">
                                         {searchQuery ? "No submissions match your search" : "No submissions found"}
                                     </td>
                                 </tr>
@@ -496,6 +497,9 @@ export default function AdminDashboard() {
                                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${badge.bg} ${badge.text}`}>
                                                     {badge.label}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                {submission.reviewed_by || <span className="text-gray-300">&mdash;</span>}
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">
                                                 {new Date(submission.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}

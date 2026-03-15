@@ -74,6 +74,7 @@ export function useSubmissions() {
         status: s.status,
         creator_payout: s.creatorPayout || 0,
         created_at: s._creationTime,
+        reviewed_by: s.reviewedByName || null,
         creators: s.creator ? {
             first_name: s.creator.firstName,
             last_name: s.creator.lastName,

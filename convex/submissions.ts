@@ -26,8 +26,19 @@ export const getByIdWithCreator = query({
 
         const creator = await ctx.db.get(submission.creatorId);
 
+        // Resolve reviewedBy Clerk ID to a name
+        let reviewedByName: string | null = null;
+        if (submission.reviewedBy) {
+            const reviewer = await ctx.db
+                .query('creators')
+                .withIndex('by_clerkId', (q) => q.eq('clerkId', submission.reviewedBy!))
+                .unique();
+            reviewedByName = reviewer ? `${reviewer.firstName} ${reviewer.lastName}` : null;
+        }
+
         return {
             ...submission,
+            reviewedByName,
             creator: creator
                 ? {
                     firstName: creator.firstName,
@@ -88,11 +99,32 @@ export const getAllWithCreator = query({
     handler: async (ctx) => {
         const submissions = await ctx.db.query('submissions').order('desc').collect();
 
+        // Cache reviewer lookups to avoid repeated queries
+        const reviewerCache = new Map<string, string | null>();
+
         const submissionsWithCreator = await Promise.all(
             submissions.map(async (submission) => {
                 const creator = await ctx.db.get(submission.creatorId);
+
+                // Resolve reviewedBy Clerk ID to a name
+                let reviewedByName: string | null = null;
+                if (submission.reviewedBy) {
+                    if (!reviewerCache.has(submission.reviewedBy)) {
+                        const reviewer = await ctx.db
+                            .query('creators')
+                            .withIndex('by_clerkId', (q) => q.eq('clerkId', submission.reviewedBy!))
+                            .unique();
+                        reviewerCache.set(
+                            submission.reviewedBy,
+                            reviewer ? `${reviewer.firstName} ${reviewer.lastName}` : null
+                        );
+                    }
+                    reviewedByName = reviewerCache.get(submission.reviewedBy) ?? null;
+                }
+
                 return {
                     ...submission,
+                    reviewedByName,
                     creator: creator
                         ? {
                             firstName: creator.firstName,
@@ -155,6 +187,7 @@ export const create = mutation({
         barangay: v.optional(v.string()),
         postalCode: v.optional(v.string()),
         coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+        hasProducts: v.optional(v.boolean()),
         photos: v.optional(v.array(v.string())),
         videoStorageId: v.optional(v.id('_storage')),
         audioStorageId: v.optional(v.id('_storage')),
@@ -188,6 +221,7 @@ export const create = mutation({
             barangay: args.barangay,
             postalCode: args.postalCode,
             coordinates: args.coordinates,
+            hasProducts: args.hasProducts,
             photos: args.photos ?? [],
             videoStorageId: args.videoStorageId,
             audioStorageId: args.audioStorageId,
@@ -228,6 +262,7 @@ export const update = mutation({
         postalCode: v.optional(v.string()),
         coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
         businessDescription: v.optional(v.string()),
+        hasProducts: v.optional(v.boolean()),
         photos: v.optional(v.array(v.string())),
         videoStorageId: v.optional(v.id('_storage')),
         audioStorageId: v.optional(v.id('_storage')),
@@ -236,6 +271,7 @@ export const update = mutation({
         audioUrl: v.optional(v.string()),
         transcript: v.optional(v.string()),
         transcriptionStatus: v.optional(v.string()), // processing, complete, failed
+        transcriptionError: v.optional(v.string()),
         websiteUrl: v.optional(v.string()),
         websiteCode: v.optional(v.string()),
         amount: v.optional(v.number()),
