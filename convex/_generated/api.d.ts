@@ -9,6 +9,7 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as airtable from "../airtable.js";
 import type * as analytics from "../analytics.js";
 import type * as analyticsJobs from "../analyticsJobs.js";
 import type * as auditLogs from "../auditLogs.js";
@@ -17,6 +18,7 @@ import type * as crons from "../crons.js";
 import type * as earnings from "../earnings.js";
 import type * as files from "../files.js";
 import type * as generatedWebsites from "../generatedWebsites.js";
+import type * as http from "../http.js";
 import type * as leadNotes from "../leadNotes.js";
 import type * as leads from "../leads.js";
 import type * as migrations_migrateContent from "../migrations/migrateContent.js";
@@ -39,6 +41,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  airtable: typeof airtable;
   analytics: typeof analytics;
   analyticsJobs: typeof analyticsJobs;
   auditLogs: typeof auditLogs;
@@ -47,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   earnings: typeof earnings;
   files: typeof files;
   generatedWebsites: typeof generatedWebsites;
+  http: typeof http;
   leadNotes: typeof leadNotes;
   leads: typeof leads;
   "migrations/migrateContent": typeof migrations_migrateContent;

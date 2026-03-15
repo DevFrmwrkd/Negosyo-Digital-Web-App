@@ -110,10 +110,12 @@ export default function UploadPhotosPage() {
                 (newFile) => !files.some((file) => file.name === newFile.name && file.size === newFile.size)
             );
 
-            // Validate: Must be images
-            const nonImageFiles = uniqueFiles.filter(file => !file.type.startsWith('image/'))
-            if (nonImageFiles.length > 0) {
-                setError("Only image files (JPG, PNG) are allowed.")
+            // Validate: Must be JPG, JPEG, or PNG only (required by Airtable pipeline)
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png']
+            const invalidFiles = uniqueFiles.filter(file => !allowedTypes.includes(file.type))
+            if (invalidFiles.length > 0) {
+                const names = invalidFiles.map(f => f.name).join(', ')
+                setError(`Only JPG, JPEG, and PNG files are accepted. Invalid: ${names}`)
                 return
             }
 
@@ -287,7 +289,7 @@ export default function UploadPhotosPage() {
                             <input
                                 type="file"
                                 multiple
-                                accept="image/*"
+                                accept=".jpg,.jpeg,.png"
                                 onChange={handleFileSelect}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 disabled={loading || totalCount >= 10}
@@ -302,7 +304,7 @@ export default function UploadPhotosPage() {
                                     Click or drag photos here
                                 </div>
                                 <div className="text-xs text-gray-400">
-                                    JPG, PNG up to 5MB each
+                                    JPG, JPEG, PNG only — up to 5MB each
                                 </div>
                             </div>
                         </div>

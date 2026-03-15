@@ -317,33 +317,62 @@ export const updateStatus = mutation({
 });
 
 /**
- * Submit a draft submission
+ * Submit a draft submission.
+ * Sets status to "submitted", creates a lead, increments analytics,
+ * and triggers the Airtable AI content pipeline.
  */
 export const submit = mutation({
     args: { id: v.id('submissions') },
     handler: async (ctx, args) => {
         const submission = await ctx.db.get(args.id);
-        await ctx.db.patch(args.id, { status: 'submitted' });
+        if (!submission) throw new Error('Submission not found');
 
-        // Increment analytics on submit
-        if (submission) {
-            const today = new Date().toISOString().split('T')[0];
-            const month = today.substring(0, 7);
-            await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
-                creatorId: submission.creatorId,
-                period: today,
-                periodType: 'daily',
-                field: 'submissionsCount',
-                delta: 1,
-            });
-            await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
-                creatorId: submission.creatorId,
-                period: month,
-                periodType: 'monthly',
-                field: 'submissionsCount',
-                delta: 1,
-            });
+        // Validate: at least 3 photos
+        if (!submission.photos || submission.photos.length < 3) {
+            throw new Error('At least 3 photos are required');
         }
+
+        // 1. Update submission status
+        await ctx.db.patch(args.id, {
+            status: 'submitted',
+            amount: 1000,
+            airtableSyncStatus: 'pending_push',
+        });
+
+        // 2. Create a lead record from business owner info
+        await ctx.db.insert('leads', {
+            submissionId: args.id,
+            creatorId: submission.creatorId,
+            source: 'direct',
+            name: submission.ownerName,
+            phone: submission.ownerPhone,
+            email: submission.ownerEmail,
+            status: 'new',
+            createdAt: Date.now(),
+        });
+
+        // 3. Increment analytics (daily + monthly)
+        const today = new Date().toISOString().split('T')[0];
+        const month = today.substring(0, 7);
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: today,
+            periodType: 'daily',
+            field: 'submissionsCount',
+            delta: 1,
+        });
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: month,
+            periodType: 'monthly',
+            field: 'submissionsCount',
+            delta: 1,
+        });
+
+        // 4. Trigger Airtable AI pipeline
+        await ctx.scheduler.runAfter(0, internal.airtable.pushToAirtableInternal, {
+            submissionId: args.id,
+        });
     },
 });
 

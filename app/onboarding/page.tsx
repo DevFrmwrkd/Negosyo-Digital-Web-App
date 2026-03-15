@@ -94,7 +94,7 @@ export default function OnboardingPage() {
                 referralCode,
             })
 
-            router.push("/dashboard")
+            router.push("/training")
         } catch (err: any) {
             console.error("Failed to create profile:", err)
             setError(err.message || "Failed to create profile")

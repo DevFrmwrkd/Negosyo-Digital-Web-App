@@ -1,46 +1,46 @@
 {
   "layout": {
-    "businessName": "HAPAG",
-    "tagline": "Savoring Filipino Flavors 24/7",
+    "businessName": "JuiceShow",
+    "tagline": "Sip Fresh, Smile Always",
     "navLinks": [
       {
-        "href": "#about",
-        "label": "About"
+        "label": "About",
+        "href": "#about"
       },
       {
-        "href": "#services",
-        "label": "Services"
+        "label": "Services",
+        "href": "#services"
       },
       {
-        "href": "#featured",
-        "label": "Featured"
+        "label": "Featured",
+        "href": "#featured"
       },
       {
-        "href": "#contact",
-        "label": "Contacts"
+        "label": "Contacts",
+        "href": "#contact"
       }
     ],
     "socialLinks": [],
-    "colorScheme": "black",
-    "fontPairing": "professional",
+    "colorScheme": "auto",
+    "fontPairing": "modern",
     "contact": {
-      "address": "Block 82 lot 5 Camalig Ema town Center Sto. Niño, MEYCAUAYAN",
-      "email": "joycedungo15@gmail.com",
-      "phone": "9756632359"
+      "email": "angela.santos@example.com",
+      "phone": "9652342424",
+      "address": " 101 Fresh Lane, Barangay Mabini,  Makati City"
     }
   },
   "customizations": {
-    "heroStyle": "F",
-    "aboutStyle": "F",
+    "heroStyle": "A",
+    "aboutStyle": "A",
     "servicesStyle": "A",
-    "galleryStyle": "F",
-    "contactStyle": "F"
+    "galleryStyle": "A",
+    "contactStyle": "A"
   },
   "visibility": {
     "heroSection": true,
     "heroHeadline": true,
     "heroTagline": true,
-    "heroDescription": false,
+    "heroDescription": true,
     "heroTestimonial": true,
     "heroButton": true,
     "heroImage": true,
@@ -70,52 +70,50 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "HAPAG",
-    "headline": "Savoring Filipino Flavors 24/7",
-    "description": "HAPAG is a 24-hour restaurant serving authentic Filipino dishes in a fun and relaxing atmosphere. With live band entertainment from Monday to Friday, we offer a unique dining experience. Our mezzanine area is also available for events and gatherings.",
-    "ctaLabel": "Explore Our Menu",
-    "ctaLink": "#services",
-    "ctaSecondaryLabel": "Our Story",
-    "ctaSecondaryLink": "#about",
+    "businessName": "JuiceShow",
+    "headline": "Sip Fresh, Smile Always",
+    "description": "JuiceShow is a beverage company based in Makati City, providing a variety of delicious and refreshing juices to quench your thirst. Our unique flavors and seasonal delights will bring a smile to your face. With a focus on quality and customer satisfaction, we strive to be your go-to destination for all your juice needs.",
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6939e1c2-cbba-4143-a499-22b0ad99e00c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c664fe21-705b-4f24-801c-bfc0dec4eeb4",
-      "https://diligent-ibex-454.convex.cloud/api/storage/716a61f5-f89c-4d20-a1f9-f415323324cb"
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
     ],
     "services": [
       {
-        "description": "Enjoy your favorite Filipino dishes at any time of the day",
-        "name": "24-Hour Dining"
+        "name": "Custom Juice Orders",
+        "description": "Create your own unique juice flavor"
       },
       {
-        "description": "Experience live music from Monday to Friday",
-        "name": "Live Band Entertainment"
+        "name": "Seasonal Juice Subscriptions",
+        "description": "Get a new juice flavor every season"
       },
       {
-        "description": "Host your events and gatherings in our mezzanine area",
-        "name": "Event Hosting"
+        "name": "Juice Tastings and Events",
+        "description": "Host your events with our specialty juices"
       }
     ],
     "visibility": {
       "heroHeadline": true,
       "heroTagline": true,
-      "heroDescription": false,
+      "heroDescription": true,
       "heroTestimonial": true,
       "heroButton": true,
       "heroImage": true
     }
   },
   "about": {
-    "businessName": "HAPAG",
-    "description": "HAPAG is a 24-hour restaurant serving authentic Filipino dishes in a fun and relaxing atmosphere. With live band entertainment from Monday to Friday, we offer a unique dining experience. Our mezzanine area is also available for events and gatherings.",
+    "businessName": "JuiceShow",
+    "description": "JuiceShow is a beverage company based in Makati City, providing a variety of delicious and refreshing juices to quench your thirst. Our unique flavors and seasonal delights will bring a smile to your face. With a focus on quality and customer satisfaction, we strive to be your go-to destination for all your juice needs.",
     "headline": "About Us",
     "usps": [
-      "24-hour operation",
-      "Live band entertainment",
-      "Mezzanine area for events"
+      "Unique Flavor Combinations",
+      "High-Quality Ingredients",
+      "Personalized Customer Service"
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1773240934855-v2fag1nr.jpg"
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -130,20 +128,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Enjoy your favorite Filipino dishes at any time of the day",
-        "name": "24-Hour Dining"
+        "name": "Custom Juice Orders",
+        "description": "Create your own unique juice flavor"
       },
       {
-        "description": "Experience live music from Monday to Friday",
-        "name": "Live Band Entertainment"
+        "name": "Seasonal Juice Subscriptions",
+        "description": "Get a new juice flavor every season"
       },
       {
-        "description": "Host your events and gatherings in our mezzanine area",
-        "name": "Event Hosting"
+        "name": "Juice Tastings and Events",
+        "description": "Host your events with our specialty juices"
       }
     ],
     "photos": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1773240934026-y3qeot9p.jpg"
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -154,53 +152,53 @@
     }
   },
   "gallery": {
-    "headline": "Signature Dishes",
-    "subheadline": "A taste of authentic Filipino cuisine",
+    "headline": "Featured Products",
+    "subheadline": "Our top picks for the season, featuring the freshest ingredients and most refreshing flavors",
     "items": [
       {
-        "title": "Adobo Fiesta",
-        "description": "Our signature adobo dish made with tender chicken and savory sauce, served with steamed rice. This classic Filipino dish is a must-try. We use only the freshest ingredients to ensure the best flavor.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/2f0a2c5b-29c9-42b8-a685-3d0d4b28ebb9",
+        "title": "Summer Sunrise Juice",
+        "description": "A refreshing blend of orange, pineapple, and mango juices, perfect for hot summer days. Made with 100% fresh and natural ingredients, this juice is sure to quench your thirst and revitalize your senses. With its unique flavor combination and high-quality ingredients, this juice is a must-try for any juice lover.",
+        "image": "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
         "tags": [
-          "Filipino Cuisine",
-          "30 minutes"
+          "Juice",
+          "Summer"
         ],
         "testimonial": {
-          "author": "Maria Rodriguez",
-          "quote": "I've tried adobo in many restaurants, but HAPAG's version is the best. The flavors are so rich and authentic. I highly recommend it!"
+          "quote": "I tried the Summer Sunrise Juice at JuiceShow and it was love at first sip! The combination of flavors was so unique and refreshing, I ended up ordering a subscription for the whole summer. The quality of the ingredients was top-notch and the customer service was exceptional.",
+          "author": "Rachel M."
         }
       },
       {
-        "title": "Lechon Kawali Savory ",
-        "description": "Indulge in our crispy lechon kawali, served with a side of liver sauce and steamed vegetables. This Filipino favorite is perfect for any occasion. Our chefs use a secret recipe to achieve the perfect crunch.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/195ead85-77fb-4a88-ba7d-c51790101f3c",
+        "title": "Tropical Temptation Smoothie",
+        "description": "A creamy and delicious blend of tropical fruits, including papaya, guava, and passionfruit. This smoothie is not only a treat for your taste buds but also provides a boost of essential vitamins and minerals. With its personalized service, JuiceShow ensures that every smoothie is made to order, using only the freshest ingredients and tailored to each customer's preferences.",
+        "image": "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
         "tags": [
-          "Filipino Specialty",
-          "45 minutes"
+          "Smoothie",
+          "1-2 weeks"
         ],
         "testimonial": {
-          "author": "Mark Santos",
-          "quote": "HAPAG's lechon kawali is crispy on the outside and tender on the inside. I love it! The live band entertainment made the experience even more enjoyable."
+          "quote": "I ordered the Tropical Temptation Smoothie for my birthday party and it was a huge hit! The flavors were so rich and creamy, and the presentation was beautiful. The team at JuiceShow was very accommodating and helped me customize the smoothie to fit my party's theme.",
+          "author": "Mark K."
         }
       },
       {
-        "title": "Sinigang Soup",
-        "description": "Warm up with our sour and savory sinigang soup, made with fresh tamarind broth and your choice of protein. This comforting dish is a staple in Filipino cuisine. We use only the freshest ingredients to ensure the best flavor.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/3025d7d7-f263-4ee2-bdca-d93519ae55a2",
+        "title": "Autumn Harvest Juice",
+        "description": "A seasonal blend of apple, pear, and cranberry juices, perfectly capturing the essence of autumn. This juice is made with locally sourced ingredients and is available for a limited time only, making it a unique and exclusive offering from JuiceShow. With its focus on quality and customer satisfaction, JuiceShow ensures that every juice is made with love and care, providing a truly exceptional drinking experience.",
+        "image": "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU",
         "tags": [
-          "Filipino Comfort Food",
-          "20 minutes"
+          "Juice",
+          "Fall"
         ],
         "testimonial": {
-          "author": "Liza Reyes",
-          "quote": "HAPAG's sinigang soup is a breath of fresh air. The flavors are so bold and refreshing. I've been coming back for more!"
+          "quote": "I tried the Autumn Harvest Juice at JuiceShow and it was the perfect drink for the season. The combination of flavors was so warm and comforting, it felt like a hug in a cup. The team at JuiceShow was very knowledgeable and helped me choose the perfect juice for my taste preferences.",
+          "author": "Emily W."
         }
       }
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6939e1c2-cbba-4143-a499-22b0ad99e00c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c664fe21-705b-4f24-801c-bfc0dec4eeb4",
-      "https://diligent-ibex-454.convex.cloud/api/storage/716a61f5-f89c-4d20-a1f9-f415323324cb"
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -210,16 +208,16 @@
     }
   },
   "contact": {
-    "businessName": "HAPAG",
-    "email": "joycedungo15@gmail.com",
-    "phone": "9756632359",
-    "address": "Block 82 lot 5 Camalig Ema town Center Sto. Niño, MEYCAUAYAN",
+    "businessName": "JuiceShow",
+    "email": "angela.santos@example.com",
+    "phone": "9652342424",
+    "address": " 101 Fresh Lane, Barangay Mabini,  Makati City",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6939e1c2-cbba-4143-a499-22b0ad99e00c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c664fe21-705b-4f24-801c-bfc0dec4eeb4",
-      "https://diligent-ibex-454.convex.cloud/api/storage/716a61f5-f89c-4d20-a1f9-f415323324cb"
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
+      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
     ],
     "visibility": {
       "contactBadge": true,
