@@ -19,6 +19,7 @@ export const createAndSend = internalMutation({
             v.literal('website_live'),
             v.literal('profile_updated'),
             v.literal('password_changed'),
+            v.literal('certification'),
             v.literal('system')
         ),
         title: v.string(),
@@ -233,6 +234,7 @@ export const createForClient = mutation({
             v.literal('website_live'),
             v.literal('profile_updated'),
             v.literal('password_changed'),
+            v.literal('certification'),
             v.literal('system')
         ),
         title: v.string(),

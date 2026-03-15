@@ -1,98 +1,76 @@
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+"use client"
+
+import { useUser } from "@clerk/nextjs"
+import { useQuery } from "convex/react"
+import { api } from "@/convex/_generated/api"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import Logo from "@/public/logo.png"
-import { Filter, AlertCircle, Clock, CheckCircle, Banknote, Store, Plus, ArrowLeft } from "lucide-react"
+import { AlertCircle, Clock, CheckCircle, Banknote, Store, Plus, ArrowLeft, Loader2, Globe } from "lucide-react"
 
-export default async function SubmissionsPage() {
-    const supabase = await createClient()
+export default function SubmissionsPage() {
+    const router = useRouter()
+    const { user, isLoaded, isSignedIn } = useUser()
 
-    const {
-        data: { user },
-    } = await supabase.auth.getUser()
+    const creator = useQuery(
+        api.creators.getByClerkId,
+        isLoaded && isSignedIn && user?.id ? { clerkId: user.id } : "skip"
+    )
 
-    if (!user) {
-        redirect("/login")
+    const submissions = useQuery(
+        api.submissions.getByCreatorId,
+        creator?._id ? { creatorId: creator._id } : "skip"
+    )
+
+    useEffect(() => {
+        if (isLoaded && !isSignedIn) {
+            router.push("/login")
+        }
+    }, [isLoaded, isSignedIn, router])
+
+    if (!isLoaded || !isSignedIn || creator === undefined || submissions === undefined) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            </div>
+        )
     }
 
-    // Fetch creator profile for earnings
-    const { data: creator } = await supabase
-        .from("creators")
-        .select("*")
-        .eq("id", user.id)
-        .single()
-
-    // Fetch all submissions
-    const { data: submissions } = await supabase
-        .from("submissions")
-        .select("*")
-        .eq("creator_id", user.id)
-        .order("created_at", { ascending: false })
-
-    // Calculate stats
-    // Total Earned: sum of earnings or just use creator.total_earnings (from dashboard)
-    // In Review: count of pending/submitted/in_review
-
-    // Fallback if creator.total_earnings is not available or we want to calc from list
-    const totalEarned = creator?.total_earnings || 0
-
-    // Count submissions that are NOT finalized (approved, paid, rejected)
-    // This includes: pending, submitted, in_review, website_generated, etc.
+    const totalEarned = creator?.totalEarnings || 0
     const inReviewCount = submissions?.filter(s =>
-        !['approved', 'paid', 'rejected'].includes(s.status?.toLowerCase())
+        s.status === 'submitted' || s.status === 'in_review'
     ).length || 0
 
-    // Helper to check if submission is incomplete (draft)
     const isIncomplete = (sub: any) => {
         const hasPhotos = sub.photos && sub.photos.length > 0
-        const hasMedia = sub.video_url || sub.audio_url
+        const hasMedia = sub.videoStorageId || sub.audioStorageId || sub.videoUrl || sub.audioUrl
         return !hasPhotos || !hasMedia
     }
 
     const getStatusBadge = (sub: any) => {
         const s = sub.status?.toLowerCase()
-        if (s === 'approved') {
-            return (
-                <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-md uppercase">
-                    Approved
-                </span>
-            )
+        const badges: Record<string, { bg: string; text: string }> = {
+            completed: { bg: 'bg-emerald-100 text-emerald-700', text: 'Completed' },
+            deployed: { bg: 'bg-emerald-100 text-emerald-700', text: 'Live' },
+            paid: { bg: 'bg-emerald-100 text-emerald-700', text: 'Paid' },
+            website_generated: { bg: 'bg-emerald-100 text-emerald-700', text: 'Website Ready' },
+            approved: { bg: 'bg-blue-100 text-blue-700', text: 'Approved' },
+            rejected: { bg: 'bg-red-100 text-red-700', text: 'Revision' },
+            revision: { bg: 'bg-red-100 text-red-700', text: 'Revision' },
+            submitted: { bg: 'bg-yellow-100 text-yellow-700', text: 'In Review' },
+            in_review: { bg: 'bg-yellow-100 text-yellow-700', text: 'In Review' },
         }
-        if (s === 'paid') {
-            return (
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-[10px] font-bold rounded-md uppercase">
-                    Paid
-                </span>
-            )
-        }
-        if (s === 'rejected' || s === 'revision') {
-            return (
-                <span className="px-2 py-1 bg-red-100 text-red-700 text-[10px] font-bold rounded-md uppercase">
-                    Revision
-                </span>
-            )
-        }
-        // Check if incomplete (draft)
         if (s === 'draft' || isIncomplete(sub)) {
-            return (
-                <span className="px-2 py-1 bg-zinc-100 text-zinc-600 text-[10px] font-bold rounded-md uppercase">
-                    Draft
-                </span>
-            )
+            return <span className="px-2 py-1 bg-zinc-100 text-zinc-600 text-[10px] font-bold rounded-md uppercase">Draft</span>
         }
-        // Default Pending
-        return (
-            <span className="px-2 py-1 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-md uppercase">
-                Pending
-            </span>
-        )
+        const badge = badges[s || ''] || { bg: 'bg-orange-100 text-orange-700', text: 'Pending' }
+        return <span className={`px-2 py-1 ${badge.bg} text-[10px] font-bold rounded-md uppercase`}>{badge.text}</span>
     }
 
     const getStatusIcon = (sub: any) => {
         const s = sub.status?.toLowerCase()
-        if (s === 'approved') return <CheckCircle className="w-5 h-5 text-green-500" />
-        if (s === 'paid') return <Banknote className="w-5 h-5 text-blue-500" />
+        if (s === 'completed' || s === 'deployed') return <Globe className="w-5 h-5 text-emerald-500" />
+        if (s === 'approved' || s === 'paid' || s === 'website_generated') return <CheckCircle className="w-5 h-5 text-green-500" />
         if (s === 'rejected' || s === 'revision') return <AlertCircle className="w-5 h-5 text-red-500" />
         if (s === 'draft' || isIncomplete(sub)) return <Clock className="w-5 h-5 text-zinc-400" />
         return <Store className="w-5 h-5 text-orange-500" />
@@ -100,22 +78,19 @@ export default async function SubmissionsPage() {
 
     const getStatusBg = (sub: any) => {
         const s = sub.status?.toLowerCase()
-        if (s === 'approved') return 'bg-green-50'
-        if (s === 'paid') return 'bg-blue-50'
+        if (s === 'completed' || s === 'deployed') return 'bg-emerald-50'
+        if (s === 'approved' || s === 'paid' || s === 'website_generated') return 'bg-green-50'
         if (s === 'rejected' || s === 'revision') return 'bg-red-50'
         if (s === 'draft' || isIncomplete(sub)) return 'bg-zinc-50'
         return 'bg-orange-50'
     }
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString)
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    const formatDate = (timestamp: number) => {
+        return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     }
 
     return (
         <div className="min-h-screen bg-gray-50 font-sans pb-24 relative">
-
-
             <main className="px-4 py-6">
                 <div className="flex items-center justify-between mb-2">
                     <Link href="/dashboard" className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-gray-200 text-zinc-600 hover:text-zinc-900 transition-colors">
@@ -125,7 +100,7 @@ export default async function SubmissionsPage() {
 
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-zinc-900 leading-tight">
-                        My <span className="text-green-500">Submissions</span>
+                        My <span className="text-emerald-500">Submissions</span>
                     </h1>
                     <p className="text-zinc-500 text-sm mt-1">Track your business onboardings.</p>
                 </div>
@@ -146,14 +121,14 @@ export default async function SubmissionsPage() {
                 <div className="space-y-3">
                     {submissions && submissions.length > 0 ? (
                         submissions.map((sub) => (
-                            <Link key={sub.id} href={`/submissions/${sub.id}`}>
+                            <Link key={sub._id} href={`/submissions/${sub._id}`}>
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-gray-200 hover:shadow-md transition-all cursor-pointer">
                                     <div className="flex items-center gap-3">
                                         <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${getStatusBg(sub)}`}>
                                             {getStatusIcon(sub)}
                                         </div>
                                         <div>
-                                            <h3 className="font-bold text-zinc-900 text-sm">{sub.business_name}</h3>
+                                            <h3 className="font-bold text-zinc-900 text-sm">{sub.businessName}</h3>
                                             <p className="text-xs text-zinc-500 truncate max-w-[140px]">
                                                 {sub.city || 'Location N/A'}
                                             </p>
@@ -162,7 +137,7 @@ export default async function SubmissionsPage() {
                                     <div className="flex flex-col items-end gap-1">
                                         {getStatusBadge(sub)}
                                         <span className="text-[10px] text-zinc-400 font-medium">
-                                            {formatDate(sub.created_at)}
+                                            {sub._creationTime ? formatDate(sub._creationTime) : ''}
                                         </span>
                                     </div>
                                 </div>

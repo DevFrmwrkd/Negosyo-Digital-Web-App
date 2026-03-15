@@ -17,7 +17,7 @@ export default defineSchema({
         totalEarnings: v.optional(v.number()), // Optional for legacy records
         totalWithdrawn: v.optional(v.number()), // Lifetime total withdrawn
         submissionCount: v.optional(v.number()), // Total submissions created
-        level: v.optional(v.number()), // Gamification level
+        referredByName: v.optional(v.string()), // Full name of the referrer
         status: v.optional(v.union(
             v.literal('pending'),
             v.literal('active'),
@@ -342,6 +342,7 @@ export default defineSchema({
             v.literal('website_live'),
             v.literal('profile_updated'),
             v.literal('password_changed'),
+            v.literal('certification'),
             v.literal('system')
         ),
         title: v.string(),

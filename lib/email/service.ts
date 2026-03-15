@@ -185,12 +185,23 @@ function getPaymentConfirmationTemplate(params: {
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:12px;overflow:hidden;">
                                 <tr>
                                     <td style="padding:24px;text-align:center;">
-                                        <p style="margin:0 0 6px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Your Live Website</p>
-                                        <p style="margin:0 0 18px;font-size:13px;color:#4b5563;word-break:break-all;">${websiteUrl}</p>
-                                        <a href="${websiteUrl}"
-                                           style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#10b981,#059669);color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:0.3px;">
-                                            Visit Your Website &rarr;
-                                        </a>
+                                        <p style="margin:0 0 18px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Your Live Website</p>
+                                        <!--[if mso]>
+                                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${websiteUrl}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="17%" fillcolor="#10b981">
+                                            <center style="color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;">Visit Your Website &rarr;</center>
+                                        </v:roundrect>
+                                        <![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                                            <tr>
+                                                <td style="border-radius:8px;background:linear-gradient(135deg,#059669,#10b981);">
+                                                    <a href="${websiteUrl}" target="_blank" style="display:block;padding:14px 32px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.3px;font-family:sans-serif;">
+                                                        Visit Your Website &rarr;
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <!--<![endif]-->
                                     </td>
                                 </tr>
                             </table>
@@ -213,7 +224,7 @@ function getPaymentConfirmationTemplate(params: {
                                 <tr>
                                     <td style="padding:18px 24px;text-align:center;">
                                         <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">Questions? We're here to help.</p>
-                                        <a href="mailto:frmwkrd.media@gmail.com" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">frmwkrd.media@gmail.com</a>
+                                        <a href="mailto:frmwrkd.media@gmail.com" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">frmwrkd.media@gmail.com</a>
                                     </td>
                                 </tr>
                             </table>
@@ -248,7 +259,7 @@ function getApprovalEmailTemplate(params: {
     const { businessName, businessOwnerName, websiteUrl, amount, submissionId } = params
 
     // Wise mock payment details
-    const wiseEmail = process.env.WISE_EMAIL || 'payments@negosyodigital.com'
+    const wiseEmail = process.env.WISE_EMAIL || 'frmwrkd.media@gmail.com'
     const wiseAccountName = process.env.WISE_ACCOUNT_NAME || 'Negosyo Digital'
     const reference = submissionId.substring(0, 8).toUpperCase()
 
@@ -271,7 +282,7 @@ function getApprovalEmailTemplate(params: {
 
                     <!-- Hero gradient header -->
                     <tr>
-                        <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#06b6d4 100%);padding:48px 40px 40px;text-align:center;">
+                        <td style="background:linear-gradient(135deg,#059669 0%,#10b981 50%,#34d399 100%);padding:48px 40px 40px;text-align:center;">
                             <!-- Logo mark -->
                             <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
                                 <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">NEGOSYO DIGITAL</span>
@@ -303,12 +314,23 @@ function getApprovalEmailTemplate(params: {
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:12px;overflow:hidden;">
                                 <tr>
                                     <td style="padding:24px;text-align:center;">
-                                        <p style="margin:0 0 6px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Preview Your Website</p>
-                                        <p style="margin:0 0 18px;font-size:13px;color:#4b5563;word-break:break-all;">${websiteUrl}</p>
-                                        <a href="${websiteUrl}"
-                                           style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#ffffff;text-decoration:none;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:0.3px;">
-                                            View Your Website &rarr;
-                                        </a>
+                                        <p style="margin:0 0 18px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Preview Your Website</p>
+                                        <!--[if mso]>
+                                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${websiteUrl}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="17%" fillcolor="#10b981">
+                                            <center style="color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;">View Your Website &rarr;</center>
+                                        </v:roundrect>
+                                        <![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                                            <tr>
+                                                <td style="border-radius:8px;background:linear-gradient(135deg,#059669,#10b981);">
+                                                    <a href="${websiteUrl}" target="_blank" style="display:block;padding:14px 32px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.3px;font-family:sans-serif;">
+                                                        View Your Website &rarr;
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <!--<![endif]-->
                                     </td>
                                 </tr>
                             </table>
@@ -326,17 +348,17 @@ function getApprovalEmailTemplate(params: {
                                         <p style="margin:0 0 20px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Payment Details</p>
 
                                         <!-- Amount row -->
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:linear-gradient(135deg,#1e1b4b,#2d1b69);border-radius:10px;margin-bottom:20px;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:linear-gradient(135deg,#064e3b,#065f46);border-radius:10px;margin-bottom:20px;">
                                             <tr>
                                                 <td style="padding:20px 24px;">
-                                                    <p style="margin:0 0 4px;font-size:12px;color:#a78bfa;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Total Amount Due</p>
+                                                    <p style="margin:0 0 4px;font-size:12px;color:#6ee7b7;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Total Amount Due</p>
                                                     <p style="margin:0;font-size:36px;font-weight:800;color:#ffffff;line-height:1;">&#8369;${amount.toLocaleString()}</p>
                                                 </td>
                                             </tr>
                                         </table>
 
                                         <!-- Wise details -->
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0d1117;border:1px solid #1e3a5f;border-radius:10px;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0d1117;border:1px solid #065f46;border-radius:10px;">
                                             <tr>
                                                 <td style="padding:20px 24px;">
                                                     <!-- Wise logo row -->
@@ -346,7 +368,7 @@ function getApprovalEmailTemplate(params: {
                                                                 <span style="color:#0d1117;font-size:13px;font-weight:800;letter-spacing:-0.3px;">wise</span>
                                                             </td>
                                                             <td style="padding-left:10px;">
-                                                                <span style="color:#60a5fa;font-size:13px;font-weight:600;">Bank Transfer</span>
+                                                                <span style="color:#10b981;font-size:13px;font-weight:600;">Bank Transfer</span>
                                                             </td>
                                                         </tr>
                                                     </table>
@@ -389,15 +411,15 @@ function getApprovalEmailTemplate(params: {
                     <!-- 24-hour urgency warning -->
                     <tr>
                         <td style="padding:20px 40px 0;">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:linear-gradient(135deg,#3f1515,#7f1d1d);border-radius:12px;border:1px solid #991b1b;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:linear-gradient(135deg,#052e16,#064e3b);border-radius:12px;border:1px solid #065f46;">
                                 <tr>
                                     <td style="padding:20px 24px;">
                                         <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                                             <tr>
                                                 <td style="vertical-align:top;padding-right:14px;font-size:22px;line-height:1;">&#9201;</td>
                                                 <td>
-                                                    <p style="margin:0 0 6px;font-size:14px;color:#fca5a5;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Action Required Within 24 Hours</p>
-                                                    <p style="margin:0;font-size:14px;color:#fecaca;line-height:1.6;">
+                                                    <p style="margin:0 0 6px;font-size:14px;color:#6ee7b7;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Action Required Within 24 Hours</p>
+                                                    <p style="margin:0;font-size:14px;color:#a7f3d0;line-height:1.6;">
                                                         Your website preview will be <strong>automatically taken offline</strong> if payment is not received within <strong>24 hours</strong> of this email. Complete your payment now to keep it live.
                                                     </p>
                                                 </td>
@@ -415,10 +437,10 @@ function getApprovalEmailTemplate(params: {
                             <p style="margin:0 0 16px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">What Happens Next</p>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 ${[
-                                    ['1', 'Send payment via Wise using the details above', '#6366f1'],
-                                    ['2', 'Reply to this email with your payment confirmation screenshot', '#8b5cf6'],
-                                    ['3', 'We\'ll verify your payment and fully activate your website', '#06b6d4'],
-                                    ['4', 'Your business goes live online — visible to everyone!', '#10b981'],
+                                    ['1', 'Send payment via Wise using the details above', '#059669'],
+                                    ['2', 'Reply to this email with your payment confirmation screenshot', '#10b981'],
+                                    ['3', 'We\'ll verify your payment and fully activate your website', '#34d399'],
+                                    ['4', 'Your business goes live online — visible to everyone!', '#6ee7b7'],
                                 ].map(([num, text, color]) => `
                                 <tr>
                                     <td style="padding:8px 0;">
@@ -443,7 +465,7 @@ function getApprovalEmailTemplate(params: {
                                 <tr>
                                     <td style="padding:18px 24px;text-align:center;">
                                         <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">Questions? We're here to help.</p>
-                                        <a href="mailto:support@negosyodigital.com" style="color:#8b5cf6;font-size:14px;font-weight:600;text-decoration:none;">support@negosyodigital.com</a>
+                                        <a href="mailto:frmwrkd.media@gmail.com" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">frmwrkd.media@gmail.com</a>
                                     </td>
                                 </tr>
                             </table>

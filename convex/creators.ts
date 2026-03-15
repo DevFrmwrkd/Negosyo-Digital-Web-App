@@ -131,13 +131,12 @@ export const create = mutation({
             totalEarnings: 0,
             totalWithdrawn: 0,
             submissionCount: 0,
-            level: 1,
             status: 'active',
             role: 'creator',
             createdAt: Date.now(),
         });
 
-        // Wire referral: if referredByCode was provided, create a referral record
+        // Wire referral: if referredByCode was provided, create a referral record and save referrer name
         if (args.referredByCode) {
             const referrer = await ctx.db
                 .query('creators')
@@ -145,6 +144,12 @@ export const create = mutation({
                 .first();
 
             if (referrer && referrer._id !== creatorId) {
+                // Save referrer's name on the new creator
+                await ctx.db.patch(creatorId, {
+                    referredBy: referrer._id,
+                    referredByName: `${referrer.firstName} ${referrer.lastName}`,
+                });
+
                 await ctx.scheduler.runAfter(0, internal.referrals.createFromSignup, {
                     referrerId: referrer._id,
                     referredId: creatorId,
@@ -168,6 +173,7 @@ export const update = mutation({
         lastName: v.optional(v.string()),
         phone: v.optional(v.string()),
         email: v.optional(v.string()),
+        profileImage: v.optional(v.string()),
         payoutMethod: v.optional(v.string()),
         payoutDetails: v.optional(v.string()),
     },
@@ -230,6 +236,83 @@ export const updateBalance = mutation({
             updates.totalEarnings = args.totalEarnings;
         }
         await ctx.db.patch(args.id, updates);
+    },
+});
+
+/**
+ * Certify a creator (sets certifiedAt timestamp, sends notification)
+ */
+export const certify = mutation({
+    args: { id: v.id('creators') },
+    handler: async (ctx, args) => {
+        const creator = await ctx.db.get(args.id);
+        if (!creator) throw new Error('Creator not found');
+
+        await ctx.db.patch(args.id, { certifiedAt: Date.now() });
+
+        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
+            creatorId: args.id,
+            type: 'certification',
+            title: 'Certification Complete',
+            body: 'Congratulations! You are now a certified creator and can start submitting businesses.',
+            data: { showCertificate: true },
+        });
+    },
+});
+
+/**
+ * Apply a referral code post-signup (for OAuth users or those who skipped it during registration)
+ */
+export const applyReferralCode = mutation({
+    args: {
+        id: v.id('creators'),
+        referredByCode: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const creator = await ctx.db.get(args.id);
+        if (!creator) throw new Error('Creator not found');
+
+        // Reject if already has a referral code applied
+        if (creator.referredByCode) {
+            throw new Error('You have already applied a referral code');
+        }
+
+        // Check if a referral record already exists for this creator
+        const existingReferral = await ctx.db
+            .query('referrals')
+            .withIndex('by_referred', (q) => q.eq('referredId', args.id))
+            .first();
+        if (existingReferral) {
+            throw new Error('A referral has already been recorded for your account');
+        }
+
+        // Find the referrer by code
+        const referrer = await ctx.db
+            .query('creators')
+            .withIndex('by_referralCode', (q) => q.eq('referralCode', args.referredByCode))
+            .first();
+        if (!referrer) {
+            throw new Error('Invalid referral code');
+        }
+
+        // Prevent self-referral
+        if (referrer._id === args.id) {
+            throw new Error('You cannot use your own referral code');
+        }
+
+        // Save the referral code and referrer info on the creator
+        await ctx.db.patch(args.id, {
+            referredByCode: args.referredByCode,
+            referredBy: referrer._id,
+            referredByName: `${referrer.firstName} ${referrer.lastName}`,
+        });
+
+        // Create referral record
+        await ctx.scheduler.runAfter(0, internal.referrals.createFromSignup, {
+            referrerId: referrer._id,
+            referredId: args.id,
+            referralCode: args.referredByCode,
+        });
     },
 });
 

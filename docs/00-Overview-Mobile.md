@@ -132,6 +132,47 @@ app/
 
 ---
 
+## Bottom Tab Bar — Navigation (`app/(app)/(tabs)/_layout.tsx`)
+
+The app uses a **custom bottom tab bar** with 5 visible slots: 4 standard tabs and a raised center FAB (Floating Action Button) for the primary action.
+
+### Tab Layout (Left to Right)
+
+| Position | Tab | Icon (Inactive / Active) | Route |
+|---|---|---|---|
+| 1 | **Home** | `home-outline` / `home` | `/(app)/(tabs)/` |
+| 2 | **Referral** | `people-outline` / `people` | `/(app)/(tabs)/referrals` |
+| 3 (Center) | **Submit** (FAB) | `add` (white, inside green circle) | `/(app)/submit/info` |
+| 4 | **Wallet** | `wallet-outline` / `wallet` | `/(app)/(tabs)/wallet` |
+| 5 | **Profile** | `person-outline` / `person` | `/(app)/(tabs)/profile` |
+
+### Visual Design
+
+- **Background:** White (`#fff`) with top border (`#e4e4e7`) and subtle drop shadow
+- **Active tab color:** Emerald green (`#10b981`) — both icon and label
+- **Inactive tab color:** Muted gray (`#a1a1aa`)
+- **Tab row height:** 60px with 6px bottom padding
+- **Safe area aware:** Bottom padding adapts to device (notch/home indicator)
+
+### Center FAB (Submit Button)
+
+The submit button is a **raised circular button** that visually "floats" above the tab bar:
+- **Size:** 56x56px circle with 28px border radius
+- **Color:** Emerald green (`#10b981`) background, white `+` icon (30px)
+- **Elevation:** Lifted 12px above the tab bar via `translateY: -12`
+- **Shadow:** Green-tinted shadow (`#10b981`, opacity 0.45, radius 8) for a glowing effect
+- **Label:** "Submit" text below the button in muted gray
+- **Action:** Navigates directly to `/(app)/submit/info` (Step 1 of submission flow)
+
+### Implementation Details
+
+- Uses Expo Router's `<Tabs>` component with a fully custom `tabBar` prop (`CustomTabBar`)
+- Tab items are defined in a `TAB_ITEMS` array — the FAB is rendered between `leftTabs` (Home, Referral) and `rightTabs` (Wallet, Profile)
+- Active state is determined by matching `state.index` to the route index
+- All screen headers are hidden (`headerShown: false`) — each tab screen handles its own header
+
+---
+
 ## Every Page — Detailed Breakdown
 
 ### Welcome Screen (`app/index.tsx`)
@@ -228,72 +269,228 @@ app/
 ### Wallet (`app/(app)/(tabs)/wallet.tsx`)
 
 **What it shows:**
-- Available balance display with total earned / total withdrawn stats
-- "Withdraw Funds" button → opens bottom sheet modal
-- Withdrawal form: amount (min PHP 100), account holder name, bank selection (15 Philippine banks), account number (bank-specific digit validation), city
-- Recent earnings list (5 items)
-- Withdrawal history (5 items) with status badges (pending/processing/completed/failed)
+
+**Header:**
+- Title "Wallet" (22px, weight 800) with subtitle "Manage your earnings and withdrawals." on white background with bottom border
+
+**Balance Card (dark theme):**
+- Dark card (`#18181b`, 24px border radius, strong shadow with elevation 6)
+- Top row: "AVAILABLE BALANCE" label (muted gray, 12px, letter-spacing 0.5) with large balance amount (white, 34px, weight 800, formatted as `₱X,XXX.XX`) on the left, green wallet icon in a dark circular badge on the right
+- Two stat sub-cards side by side in darker background (`#27272a`, 12px radius):
+  - **TOTAL EARNED** — shows `creator.totalEarnings` formatted as PHP
+  - **WITHDRAWN** — shows `creator.totalWithdrawn` formatted as PHP
+- **Withdraw Funds button:**
+  - Green (`#10b981`) when balance >= 100, dark gray (`#3f3f46`) when disabled
+  - Disabled when balance < PHP 100 or offline
+  - Shows "Minimum withdrawal is ₱100" hint when balance is too low
+  - Shows "You're offline — reconnect to withdraw" in amber when offline with sufficient balance
+  - Opens withdrawal bottom sheet modal on tap
+
+**Withdrawal Bottom Sheet Modal:**
+- Slides up from bottom, transparent backdrop (tap to dismiss)
+- White container with rounded top corners (28px), drag handle bar at top
+- **Title section:** "Withdraw Funds" header with available balance subtitle, bank transfer icon
+- **Wise badge:** Green info banner — "Processed securely via Wise · Bank Transfer only"
+- **Form fields:**
+  1. **Amount (₱)** — numeric input, shows available balance hint below
+  2. **Account Holder Name** — text input, letters and spaces only (regex filtered), placeholder "Full name as on bank account"
+  3. **Bank** — tap opens a secondary bank picker modal (scrollable list of 15 banks, selected bank highlighted in green with checkmark)
+  4. **Account Number + City** — side by side; account number is numeric with bank-specific max length, city is free text
+- **Validation rules:**
+  - Minimum ₱100, cannot exceed available balance
+  - Full name required (first and last name — at least 2 words)
+  - Bank must be selected
+  - Account number must match the exact digit count for the selected bank
+  - City is required
+- **Submit:** "Confirm Withdrawal" button (green), shows spinner while submitting
+- **Success:** Alert dialog confirming withdrawal amount and Wise processing notification
+
+**Bank Picker Modal (nested):**
+- Slides up over the withdrawal modal with dark overlay
+- Scrollable list of all 15 Wise-validated Philippine banks
+- Selected bank row highlighted with green background (`#ecfdf5`) and checkmark icon
+- Tapping a bank auto-fills both `bankName` and `bankCode` in the form
 
 **Supported Banks (via Wise API):**
 | Bank | Code | Digits |
 |---|---|---|
 | BDO Unibank | BDO | 10 |
-| BPI | BPI | 10 |
-| Metrobank | MBTC | 13 |
-| UnionBank | UBP | 12 |
-| Landbank | LBP | 10 |
-| PNB | PNB | 12 |
-| RCBC | RCBC | 10 |
-| Security Bank | SECB | 13 |
-| China Bank | CB | 12 |
-| EastWest Bank | EW | 12 |
-| AUB | AUB | 12 |
-| UCPB | UCPB | 12 |
-| PSBank | PSB | 12 |
-| Robinsons Bank | RBB | 12 |
-| GCash (via GXI) | GXI | 11 |
+| BPI (Bank of the Philippine Islands) | BPI | 10 |
+| Metropolitan Bank and Trust Company | MBTC | 13 |
+| Union Bank of the Philippines | UB | 12 |
+| Security Bank Corporation | SB | 13 |
+| Land Bank of the Philippines | LBP | 10 |
+| Philippine National Bank | PNB | 12 |
+| Rizal Commercial Banking Corp. | RCBC | 10 |
+| Asia United Bank | AUB | 12 |
+| East West Bank | EWB | 12 |
+| China Banking Corporation | CB | 14 |
+| CIMB Bank Philippines | CIMB | 14 |
+| Development Bank of the Philippines | DBP | 14 |
+| Philippine Savings Bank | PSB | 14 |
+| United Coconut Planters Bank | UCPB | 14 |
+
+**Recent Earnings (last 5):**
+- Empty state: gray cash icon, "No earnings yet", "Complete your first submission to start earning."
+- Populated: white card with rows showing green trending-up icon, "Submission Payout" label, relative timestamp, and green `+₱X,XXX.XX` amount
+
+**Withdrawal History (last 5):**
+- Empty state: gray swap icon, "No withdrawals yet", "Your withdrawal history will show up here."
+- Populated: white card with rows showing bank icon, bank name, relative timestamp, Wise transfer ID (if available), red `-₱X,XXX.XX` amount, and status badge:
+
+| Status | Badge Label | Color |
+|---|---|---|
+| `pending` | Pending | Amber (`#f59e0b`) |
+| `processing` | Processing | Blue (`#3b82f6`) |
+| `completed` | Completed | Green (`#10b981`) |
+| `failed` | Failed | Red (`#ef4444`) |
 
 **Logic:**
 - Queries: `creators.getByClerkId`, `earnings.getByCreator`, `withdrawals.getByCreator`
 - Mutation: `withdrawals.create(creatorId, amount, accountHolderName, bankName, bankCode, accountNumber, city)`
-- Balance is deducted immediately (optimistic) — Wise transfer initiated asynchronously
-- Validation: minimum PHP 100, sufficient balance, full name required, bank-specific digit count
+- Balance is deducted immediately (optimistic) — Wise transfer initiated asynchronously via `wise.initiateTransfer`
+- On failure: balance is restored, status set to "failed"
+- On completion: `totalWithdrawn` incremented, creator notified via push notification
+- Offline banner shown via `<OfflineBanner />`
 
 ---
 
 ### Profile (`app/(app)/(tabs)/profile.tsx`)
 
 **What it shows:**
-- Large avatar with name, email, referral code badge
-- Stats strip: Submissions count, Balance (PHP), Total Earned (PHP)
-- Menu sections:
-  - **Account:** Edit Profile, Notifications, Change Password, Show Certificate (if certified)
-  - **My Activity:** My Submissions, Referrals, Earnings
-  - **Support:** Help & FAQ, Terms of Service, Privacy Policy
-- Sign out button with confirmation dialog
-- Certificate modal with download/share buttons (uses `CertificateCard` component + `expo-media-library`)
+
+**Header + Avatar Section:**
+- Title "Profile" (22px, weight 800) on white background
+- Avatar row: 64x64px circular avatar — shows profile image from R2 if available, otherwise shows the first letter of the display name in white on a dark circle (`#18181b`)
+- **Name** (18px, weight 800) and **email** (13px, gray) displayed next to the avatar
+- **Referral code badge:** Small gray pill (`#f4f4f5`) below the email showing a gift icon + referral code in uppercase with letter spacing (only shown if referral code exists)
+
+**Stats Strip (3 columns):**
+- Full-width white bar below the header, divided into 3 equal columns separated by vertical borders:
+  - **SUBMISSIONS** — `creator.submissionCount` (integer)
+  - **BALANCE** — `₱{creator.balance}` (formatted as PHP)
+  - **TOTAL EARNED** — `₱{creator.totalEarnings}` (formatted as PHP)
+- Each stat: large number (18px, weight 800) on top, uppercase label (10px, gray) below
+
+**Menu Sections (3 groups):**
+
+Each section has an uppercase gray title label and a white rounded card (20px radius, shadow) containing menu items with icons, labels, sublabels, and chevron arrows.
+
+**1. ACCOUNT**
+| Icon | Label | Sublabel | Navigates to |
+|---|---|---|---|
+| `person-outline` | Edit Profile | Update your name and details | `/(app)/edit-profile` |
+| `notifications-outline` | Notifications | Manage your notification settings | `/(app)/notifications` |
+| `shield-checkmark-outline` | Change Password | Update your account password | `/(app)/change-password` |
+| `gift-outline` (indigo) | Enter Referral Code | Apply a code from another creator | Opens referral code modal |
+| `ribbon-outline` (green) | Show My Certificate | View and share your certification | Opens certificate modal |
+
+- The "Enter Referral Code" item only appears if the creator has **not** already applied a referral code (`creator.referredByCode` is empty). The icon is tinted indigo (`#6366f1`). This allows Google OAuth users and users who skipped the referral code during regular signup to apply one later.
+- The "Show My Certificate" item only appears if `creator.certifiedAt` is set (i.e., the creator has passed the certification quiz). The icon is tinted green (`#10b981`).
+
+**2. MY ACTIVITY**
+| Icon | Label | Sublabel | Navigates to |
+|---|---|---|---|
+| `layers-outline` | My Submissions | `{count} total submissions` | `/(app)/submissions` |
+| `people-outline` | Referrals | View your referral stats | `/(app)/(tabs)/referrals` |
+| `wallet-outline` | Earnings | `₱{totalEarnings} total earned` | `/(app)/(tabs)/wallet` |
+
+**3. SUPPORT**
+| Icon | Label | Navigates to |
+|---|---|---|
+| `help-circle-outline` | Help & FAQ | `/(app)/help-faq` |
+| `document-text-outline` | Terms of Service | `/(app)/terms-of-service` |
+| `lock-closed-outline` | Privacy Policy | `/(app)/privacy-policy` |
+
+**Sign Out Button:**
+- Standalone card with red border (`#fee2e2`), red logout icon, "Sign Out" text in red
+- Tap triggers a native `Alert.alert` confirmation dialog with "Cancel" and "Sign Out" (destructive style) options
+- On confirm: calls `signOut()` via Clerk, then redirects to `/(auth)/login`
+- Shows spinner and "Signing out..." text while processing
+
+**App Version:**
+- "Negosyo Digital Mobile v1.0.0" text centered at the bottom in light gray
+
+**Referral Code Modal (bottom sheet):**
+- Triggered by tapping "Enter Referral Code" in the Account menu
+- Slides up from bottom with dark overlay, white container with rounded top corners (28px), drag handle
+- **Header:** Indigo gift icon in a light indigo circle, "Enter Referral Code" title, "Got a code from a fellow creator?" subtitle
+- **Input field:** Text input with gift icon, auto-capitalizes to uppercase, letter-spacing 2, placeholder "e.g. JUD8A3BK"
+- **Error display:** Red error text shown inline for invalid codes, self-referral, or already-applied codes
+- **"Apply Code" button:** Indigo (`#6366f1`) when valid input, gray when empty or loading, shows spinner while processing
+- **Cancel button:** Text-only, dismisses the modal
+- **Validation (server-side via `creators.applyReferralCode`):**
+  - Rejects if creator already has a `referredByCode` set
+  - Rejects if a referral record already exists for this creator
+  - Rejects if the code doesn't match any creator's `referralCode`
+  - Rejects if the code belongs to the creator themselves (self-referral)
+- **On success:** Shows success alert, closes modal, saves `referredByCode` on creator, creates referral record via `referrals.createFromSignup`
+
+**Certificate Modal (full-screen overlay):**
+- Triggered by tapping "Show My Certificate" in the Account menu
+- Semi-transparent dark overlay (`rgba(0,0,0,0.5)`) with centered white card (24px radius, max 85% height)
+- **Modal header:** Close button (X icon, gray circle) on left, "My Certificate" title centered, Share button on right
+- **Certificate content:** Scrollable area containing the `CertificateCard` component (see [CertificateCard Component](#certificatecard-component--componentscertificatecardtsx) below for full details)
+- **Action buttons:**
+  - **"Save to Gallery"** — green button, captures certificate as PNG via `captureRef` (react-native-view-shot), saves to device gallery via `expo-media-library` (requests `WRITE_EXTERNAL_STORAGE` permission on Android < 13)
+  - **"Share Certificate"** — text-only green button, captures as PNG and opens native share sheet via `expo-sharing`
 
 **Logic:**
-- Queries: `creators.getByClerkId`, `submissions.getByCreatorId`
-- Sign out: `signOut()` via Clerk + clears cached auth state
-- Certificate: rendered via `CertificateCard` (forwardRef), captured as screenshot for sharing/download
-- Offline banner shown when disconnected
+- Queries: `creators.getByClerkId`
+- Mutations: `creators.applyReferralCode` (for referral code modal)
+- Display name: built from `creator.firstName + creator.lastName`, falls back to Clerk `user.fullName`, then "Creator"
+- Sign out: `signOut()` via Clerk + redirects to login
+- Certificate capture: uses `captureRef` from `react-native-view-shot` on the `CertificateCard` ref
+- Offline banner shown via `<OfflineBanner />`
 
 ---
 
 ### Referrals (`app/(app)/(tabs)/referrals.tsx`)
 
 **What it shows:**
-- Dark referral code card with copy + share buttons ("Copied!" feedback state)
-- Stats row: Referred count, Qualified count, Rewards (PHP)
-- List of referred creators: avatar initial, name, join date, status badge (Signed Up / Qualified / Rewarded)
-- "How it Works" section (3-step explanation)
+
+**Header:**
+- Title "Referrals" (22px, weight 800) with subtitle "Invite businesses and earn rewards together." on a white background with bottom border
+
+**Referral Code Card (dark theme):**
+- Dark card (`#18181b` background, 24px border radius, shadow with elevation 6)
+- Gift icon in a dark circular badge (`#27272a`) with green icon (`#34d399`)
+- "Your Referral Code" label in white
+- Referral code displayed in large green text (`#34d399`, 28px, weight 800, letter-spacing 4) on a dark inner card (`#27272a`)
+- Two action buttons side by side:
+  - **Copy Code** — dark button (`#27272a`), toggles to dark green (`#065f46`) with checkmark icon and "Copied!" text for 2.5 seconds after tap. Uses `expo-clipboard` (`Clipboard.setStringAsync`)
+  - **Share** — green button (`#10b981`), opens native share sheet via `Share.share()` with message: "Join Negosyo Digital and digitalize your business! Use my referral code: {CODE}"
+
+**Stats Row (3 cards):**
+- Three equal-width white cards with colored circular icons:
+  - **Referred** — indigo people icon (`#6366f1`), shows total referral count from `stats.total`
+  - **Qualified** — green checkmark icon (`#10b981`), shows `stats.qualified + stats.paid` combined count
+  - **Rewards** — amber cash icon (`#f59e0b`), shows `₱{stats.totalEarned}` formatted amount
+- Each card has rounded corners (16px), shadow, and centered layout with uppercase label
+
+**People You Referred (list):**
+- Empty state: circular gray people icon, "No referrals yet" title, "Share your code above to start earning referral rewards!" subtitle
+- Populated state: white card with divider-separated rows, each showing:
+  - **Avatar initial** — gray circle (`#f4f4f5`, 42x42px) with first letter of referred creator's name
+  - **Name + join date** — creator name (14px, bold) with relative timestamp ("Today", "Yesterday", "Xd ago")
+  - **Status badge** — colored pill with icon:
+    | Status | Badge Label | Color | Icon |
+    |---|---|---|---|
+    | `pending` | Signed Up | Amber (`#f59e0b`) | `time-outline` |
+    | `qualified` | Qualified | Green (`#10b981`) | `checkmark-circle` |
+    | `paid` | Rewarded | Indigo (`#6366f1`) | `gift` |
+
+**How it Works (3 steps):**
+- White card with 3 vertically stacked items, each with a colored circular icon and description:
+  1. **Share your code** (indigo `share-social-outline`) — "Send your referral code to fellow business owners."
+  2. **They sign up** (amber `person-add-outline`) — "They create an account and enter your referral code."
+  3. **You both earn** (green `cash-outline`) — "Earn a bonus when their first submission is approved."
 
 **Logic:**
-- Queries: `referrals.getByReferrer(creatorId)`, `referrals.getStats(creatorId)`
-- Share: uses `expo-sharing` to share referral code text
-- Copy: uses `expo-clipboard`
-- Offline banner shown when disconnected
+- Queries: `referrals.getByReferrer(referrerId)`, `referrals.getStats(referrerId)`
+- Loading state: green ActivityIndicator while waiting for Convex data (skipped when offline)
+- Offline banner shown via `<OfflineBanner />` when disconnected
+- Share message includes referral code and download instructions
 
 ---
 
@@ -463,16 +660,118 @@ Also shows: business info section, photos carousel (horizontal scroll), intervie
 
 ### Certification Quiz (`app/(app)/certification-quiz.tsx`)
 
-**What it shows:** 5 multiple-choice questions (A/B/C/D), category badges with colors, progress bar, question counter with slide/fade animations between questions.
+**Quiz Screen (5 questions):**
 
-**Pass (>=4/5):** Success checkmark animation, "Congratulations!" message, score display, certificate card (capturable via `CertificateCard` component), share/download certificate buttons, "Go to Dashboard" button.
+**Header:**
+- Back button (chevron, gray circle) — goes to previous question or exits quiz
+- "Certification Quiz" title with question counter (`1/5`, `2/5`, etc.)
+- **Progress bar:** green (`#10b981`) animated bar showing completion percentage
 
-**Fail (<4/5):** Graduation cap icon, "Not quite there yet!" message, score with progress bar, "Try Again" button → back to training.
+**Question Card:**
+- **Category badge:** colored pill with icon at the top (e.g., yellow "Lighting" badge with sun icon)
+- **Question label:** "QUESTION X OF 5" in uppercase muted gray
+- **Question text:** large bold text (20px, weight 800)
 
-**Logic:**
-- 5 hardcoded questions covering the training material
-- On pass: calls `creators.certify(id)` which sets `certifiedAt` timestamp and sends notification
-- Certificate captured as image via `ViewShot` → `expo-media-library` for download, `expo-sharing` for share
+**Answer Options:**
+- 3-4 options per question, each in a white card with:
+  - **Letter circle** (A/B/C/D) — gray when unselected, green with white text when selected
+  - **Option text** — turns dark green when selected
+  - **Green checkmark icon** appears on the selected option
+  - **Border:** changes from gray (`#f4f4f5`) to green (`#10b981`, 2px) when selected
+  - **Background:** changes from white to light green (`#f0fdf4`) when selected
+
+**Animations:**
+- **Between questions:** slide + fade transition (150ms exit → 200ms enter)
+- Questions slide horizontally in the direction of navigation (left for next, right for back)
+
+**Bottom CTA:**
+- "Next Question" button (green, 56px height, 28px radius) — disabled (gray) until an answer is selected
+- Last question shows "Finish Quiz" with checkmark icon instead of arrow
+- Green shadow glow effect when enabled
+
+**Quiz Questions (hardcoded):**
+
+| # | Category | Question | Correct |
+|---|---|---|---|
+| 1 | Lighting (yellow) | Which photo has better lighting for a business owner portrait? | B — Subject facing the window |
+| 2 | Audio (blue) | Before starting the real interview, what should you always do first? | B — Do a 10-second test clip |
+| 3 | Portrait (teal) | What is the correct way to frame the business owner in a portrait photo? | B — Head and shoulders, phone at eye level |
+| 4 | Interview (purple) | What is the best way to help the owner feel comfortable before recording? | C — Chat for 2 minutes before pressing record |
+| 5 | Requirements (pink) | How many required photos must you submit to get paid? | C — 3 photos: portrait, location, craft |
+
+**Pass threshold:** 4 out of 5 correct (80%)
+
+---
+
+#### Pass Screen (score >= 4/5)
+
+**Header:** Close button (X, navigates to dashboard), "Success" title, share button on right
+
+**Content (animated spring + fade-in):**
+1. **Green checkmark circle** — large (72x72px) with `checkmark-circle` icon (44px, green)
+2. **"Congratulations!"** — 26px, weight 900, centered
+3. **"You passed the Certification Quiz!"** — 14px, gray subtitle
+4. **Score badge:** `{score}/5 Score · {accuracy}% Accuracy` in green text
+5. **Certificate Card** — full `CertificateCard` component rendered inline (capturable via ref)
+
+**Bottom CTAs (fixed at bottom):**
+- **"Go to Dashboard"** — primary green button (56px height, green shadow glow), calls `creators.certify(id)` to set `certifiedAt` timestamp, saves `ndm_just_certified` flag to AsyncStorage (prevents dashboard redirect loop), then navigates to `/(app)/(tabs)/`
+- **"Download Certificate"** — secondary text button with download icon, captures certificate as PNG via `captureRef`, saves to gallery via `expo-media-library`
+
+---
+
+#### Fail Screen (score < 4/5)
+
+**Header:** Close button (X, navigates to training), "Certification Quiz" title
+
+**Content (animated spring + fade-in):**
+1. **Graduation cap icon** — green circle (72x72px) with `school` icon (36px)
+2. **"Not quite there yet!"** — 24px, weight 900, centered
+3. **Encouragement text:** "You're on your way to helping local businesses. A little more study and you'll be a pro!"
+4. **Score display:** "YOUR SCORE" label, then large `{score} / 5` text (56px number)
+5. **Progress bar:** green bar showing score percentage on gray track
+
+**Bottom CTA:**
+- **"Try Again"** — dark button (`#18181b`), navigates back to `/(app)/training`
+
+---
+
+### CertificateCard Component (`components/CertificateCard.tsx`)
+
+A `forwardRef`-wrapped component designed to be visually captured as an image for sharing and downloading. It renders a professional certification certificate.
+
+**Props:**
+- `creatorName` (string) — displayed in uppercase on the certificate
+- `certMonth` (string) — month name (e.g., "March")
+- `certYear` (number) — year (e.g., 2026)
+
+**Visual Layout (top to bottom):**
+
+1. **Green Top Banner** (`#15803d` background):
+   - App icon (44x44px, rounded 10px, loaded from `assets/icon.png`)
+   - "NEGOSYO DIGITAL" text in white (13px, weight 700, letter-spacing 1)
+
+2. **Certificate Body** (white background, centered content):
+   - **Ribbon icon** — green ribbon (`#10b981`) inside a light green circle (`#f0fdf4`, 48x48px)
+   - **"CERTIFICATE OF COMPLETION"** — uppercase gray label (11px, letter-spacing 2)
+   - **"Certified Creator"** — large title (22px, weight 900, near-black)
+   - **Green divider line** — 40x3px emerald bar
+   - **"This certifies that"** — gray description text
+   - **Creator name badge** — dark navy blue card (`#1e3a5f`, 10px radius) with the creator's name in white uppercase (16px, weight 900, letter-spacing 1). Falls back to "CERTIFIED CREATOR" if name is empty. Minimum width 180px.
+   - **Body text:** "has demonstrated proficiency in **Local Business Digitization** and is authorized to provide verified digital services to MSMEs in the Philippines."
+   - **Date section:** "DATE ISSUED" uppercase label with `{month} {year}` below (15px, weight 700)
+
+3. **Green Bottom Banner** (`#15803d` background):
+   - **"You can now start earning!"** — white bold text (14px, weight 800)
+
+**Design details:**
+- Outer container: white background, 16px border radius, 1px gray border (`#e5e7eb`), overflow hidden
+- `collapsable={false}` set on the root View to ensure `captureRef` works on Android
+- The component is purely visual — all interactivity (share, download) is handled by the parent screen
+
+**Used in:**
+- `certification-quiz.tsx` — rendered on the pass screen, captured for download/share
+- `profile.tsx` — rendered inside the certificate modal, captured for download/share
 
 ---
 
@@ -1050,6 +1349,7 @@ Consolidated into `generatedWebsites`. Kept for backwards compatibility with exi
 | `getByClerkId(clerkId)` | Query | Fetch creator by Clerk ID |
 | `create(clerkId, email, ...)` | Mutation | Create creator or update lastActiveAt; initializes referral if code provided |
 | `update(id, firstName?, lastName?, phone?, profileImage?)` | Mutation | Update profile, sends `profile_updated` notification |
+| `applyReferralCode(id, referredByCode)` | Mutation | Apply referral code post-signup; validates code, prevents duplicates/self-referral, creates referral record |
 | `updateLastActive(clerkId)` | Mutation | Updates `lastActiveAt` timestamp |
 | `certify(id)` | Mutation | Sets `certifiedAt`, sends notification |
 
