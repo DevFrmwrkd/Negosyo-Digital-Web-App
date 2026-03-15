@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         // Update the website's extracted content in Convex
         await fetchMutation(api.generatedWebsites.upsert, {
             submissionId: submissionId,
-            templateName: existingWebsite.templateName,
+            templateName: existingWebsite.templateName || 'default',
             extractedContent: content,
             customizations: customizations || existingWebsite.customizations,
             htmlContent: existingWebsite.htmlContent,
