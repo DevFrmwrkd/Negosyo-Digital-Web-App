@@ -61,33 +61,114 @@ export default function SubmissionDetailPage() {
             : "skip"
     )
 
+    // Fetch enhanced images from websiteContent table
+    const websiteContentRecord = useQuery(
+        api.websiteContent.getBySubmissionId,
+        submissionData ? { submissionId: submissionData._id } : "skip"
+    )
+
+    // Extract enhanced image URLs from all possible sources (same priority as generate-website route)
+    const enhancedImageData = (() => {
+        // Source 1: generatedWebsites.extractedContent.enhancedImages
+        let enhancedImages = (existingWebsite?.extractedContent as any)?.enhancedImages || null
+        // Source 2: websiteContent.enhancedImages
+        if (!enhancedImages) {
+            enhancedImages = (websiteContentRecord as any)?.enhancedImages || null
+        }
+        if (!enhancedImages || typeof enhancedImages !== 'object') return null
+        return enhancedImages as Record<string, { url?: string; storageId?: string }>
+    })()
+
+    // Categorize enhanced images by section (matching generate-website route logic)
+    const enhancedImagesByCategory = (() => {
+        if (!enhancedImageData) return null
+        const categories: Record<string, string[]> = {}
+        const allUrls: string[] = []
+        for (const [key, img] of Object.entries(enhancedImageData)) {
+            const url = img?.url || img?.storageId
+            if (!url) continue
+            allUrls.push(url)
+            if (key.startsWith('interior') || key === 'headshot') {
+                categories.about = categories.about || []
+                categories.about.push(url)
+            }
+            if (key.startsWith('product')) {
+                categories.featured = categories.featured || []
+                categories.featured.push(url)
+            }
+            if (key === 'exterior' || key === 'headshot') {
+                categories.hero = categories.hero || []
+                categories.hero.push(url)
+            }
+            if (key.startsWith('interior') || key === 'exterior') {
+                categories.services = categories.services || []
+                categories.services.push(url)
+            }
+        }
+        return { categories, allUrls }
+    })()
+
+    // Resolve enhanced image URLs (they may be storage IDs that need resolution)
+    const enhancedUrls = enhancedImagesByCategory?.allUrls || []
+    const enhancedStorageIds = enhancedUrls.filter(u => !u.startsWith('http'))
+    const resolvedEnhancedUrls = useQuery(
+        api.files.getMultipleUrls,
+        enhancedStorageIds.length > 0 ? { storageIds: enhancedStorageIds } : "skip"
+    )
+
+    // Build a map from storage ID -> resolved URL for enhanced images
+    const enhancedUrlMap = (() => {
+        const map: Record<string, string> = {}
+        if (resolvedEnhancedUrls) {
+            enhancedStorageIds.forEach((sid, i) => {
+                if (resolvedEnhancedUrls[i]) map[sid] = resolvedEnhancedUrls[i]!
+            })
+        }
+        return map
+    })()
+
+    // Helper to resolve an enhanced URL (storage ID or http URL)
+    const resolveEnhancedUrl = (url: string): string | null => {
+        if (url.startsWith('http')) return url
+        return enhancedUrlMap[url] || null
+    }
+
+    const hasEnhancedImages = (enhancedImagesByCategory?.allUrls?.length ?? 0) > 0
+
     // Prefer R2 URLs (videoUrl/audioUrl) over Convex storage IDs for video/audio
     const hasR2VideoUrl = !!submissionData?.videoUrl
     const hasR2AudioUrl = !!submissionData?.audioUrl
 
     // Resolve video storage ID to URL (only if no R2 URL)
-    const legacyVideoUrl = useQuery(
-        api.files.getUrlByString,
+    // Use getMultipleUrls which handles both Convex storage IDs and R2 key paths
+    const resolvedVideoUrls = useQuery(
+        api.files.getMultipleUrls,
         !hasR2VideoUrl && submissionData?.videoStorageId
-            ? { storageId: submissionData.videoStorageId.toString() }
+            ? { storageIds: [submissionData.videoStorageId.toString()] }
             : "skip"
     )
+    const legacyVideoUrl = resolvedVideoUrls?.[0] || null
 
     // Resolve audio storage ID to URL (only if no R2 URL)
-    const legacyAudioUrl = useQuery(
-        api.files.getUrlByString,
+    const resolvedAudioUrls = useQuery(
+        api.files.getMultipleUrls,
         !hasR2AudioUrl && submissionData?.audioStorageId
-            ? { storageId: submissionData.audioStorageId.toString() }
+            ? { storageIds: [submissionData.audioStorageId.toString()] }
             : "skip"
     )
+    const legacyAudioUrl = resolvedAudioUrls?.[0] || null
 
-    // Use R2 URLs if available, otherwise fall back to legacy Convex URLs
+    // Use R2 URLs if available, otherwise fall back to resolved legacy URLs
     const videoUrl = hasR2VideoUrl ? submissionData?.videoUrl : legacyVideoUrl
     const audioUrl = hasR2AudioUrl ? submissionData?.audioUrl : legacyAudioUrl
 
     // Mutations
     const updateSubmissionMutation = useMutation(api.submissions.update)
     const updateStatusMutation = useMutation(api.submissions.updateStatus)
+    const approveSubmissionMutation = useMutation(api.admin.approveSubmission)
+    const rejectSubmissionMutation = useMutation(api.admin.rejectSubmission)
+    const markDeployedMutation = useMutation(api.admin.markDeployed)
+    const markPaidMutation = useMutation(api.admin.markPaid)
 
     const authLoading = !isLoaded || (user && currentCreator === undefined)
     const dataLoading = isAdmin && submissionData === undefined
@@ -134,6 +215,15 @@ export default function SubmissionDetailPage() {
     const [showMarkPaidModal, setShowMarkPaidModal] = useState(false)
     const [markingPaid, setMarkingPaid] = useState(false)
 
+    // Rejection reason modal state
+    const [showRejectModal, setShowRejectModal] = useState(false)
+    const [rejectionReason, setRejectionReason] = useState('')
+    const [rejecting, setRejecting] = useState(false)
+
+    // Delete submission modal state
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+
     // Lightbox state
     const [lightboxOpen, setLightboxOpen] = useState(false)
     const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -174,7 +264,7 @@ export default function SubmissionDetailPage() {
         setWebsiteHtmlContent(html)
     }
 
-    // Handler to publish website to Netlify
+    // Handler to publish website to Cloudflare Pages
     const handlePublishWebsite = async () => {
         if (publishingWebsite) return
 
@@ -197,6 +287,20 @@ export default function SubmissionDetailPage() {
 
             const data = await response.json()
             setWebsitePublishedUrl(data.url)
+
+            // Create audit trail for deployment
+            if (user && submissionData) {
+                try {
+                    await markDeployedMutation({
+                        submissionId: submissionData._id,
+                        adminId: user.id,
+                        websiteUrl: data.url,
+                    })
+                } catch (auditErr) {
+                    console.error('Audit log error (non-blocking):', auditErr)
+                }
+            }
+
             setModalType('success')
             setModalMessage(`Website published successfully! View at: ${data.url}`)
             setShowModal(true)
@@ -244,6 +348,38 @@ export default function SubmissionDetailPage() {
             setShowModal(true)
         } finally {
             setRepublishingWebsite(false)
+        }
+    }
+
+    // Handler to unpublish website from Cloudflare Pages
+    const [unpublishingWebsite, setUnpublishingWebsite] = useState(false)
+    const handleUnpublishWebsite = async () => {
+        if (unpublishingWebsite) return
+
+        setUnpublishingWebsite(true)
+        try {
+            const response = await fetch('/api/unpublish-website', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to unpublish website')
+            }
+
+            setWebsitePublishedUrl(null)
+            setModalType('success')
+            setModalMessage('Website unpublished successfully.')
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Unpublish error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to unpublish website')
+            setShowModal(true)
+        } finally {
+            setUnpublishingWebsite(false)
         }
     }
 
@@ -369,8 +505,48 @@ export default function SubmissionDetailPage() {
     }
 
     const handleStatusUpdate = async (newStatus: string) => {
-        if (!submissionData) return
+        if (!submissionData || !user) return
 
+        // Route approve/reject through wired admin mutations
+        if (newStatus === 'approved') {
+            setUpdating(true)
+            try {
+                await approveSubmissionMutation({
+                    submissionId: submissionData._id,
+                    adminId: user.id,
+                })
+                setModalType('success')
+                setModalMessage('Submission approved successfully!')
+                setShowModal(true)
+
+                // Send approval email
+                try {
+                    await fetch('/api/send-approval-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ submissionId })
+                    })
+                } catch (error) {
+                    console.error('Failed to send approval email:', error)
+                }
+            } catch (err: any) {
+                console.error('Approve error:', err)
+                setModalType('error')
+                setModalMessage('Failed to approve. Please try again.')
+                setShowModal(true)
+            } finally {
+                setUpdating(false)
+            }
+            return
+        }
+
+        if (newStatus === 'rejected') {
+            // Show rejection reason modal instead of immediately rejecting
+            setShowRejectModal(true)
+            return
+        }
+
+        // For other statuses, use the generic updateStatus mutation
         setUpdating(true)
         try {
             await updateStatusMutation({
@@ -381,19 +557,6 @@ export default function SubmissionDetailPage() {
             setModalType('success')
             setModalMessage(`Submission ${newStatus} successfully!`)
             setShowModal(true)
-
-            // If approved, send email to business owner
-            if (newStatus === 'approved') {
-                try {
-                    await fetch('/api/send-approval-email', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ submissionId })
-                    })
-                } catch (error) {
-                    console.error('Failed to send approval email:', error)
-                }
-            }
         } catch (err: any) {
             console.error('Status update error:', err)
             setModalType('error')
@@ -404,30 +567,85 @@ export default function SubmissionDetailPage() {
         }
     }
 
+    const handleRejectWithReason = async () => {
+        if (!submissionData || !user) return
+
+        setRejecting(true)
+        try {
+            await rejectSubmissionMutation({
+                submissionId: submissionData._id,
+                adminId: user.id,
+                reason: rejectionReason || undefined,
+            })
+            setShowRejectModal(false)
+            setRejectionReason('')
+            setModalType('success')
+            setModalMessage('Submission rejected successfully.')
+            setShowModal(true)
+        } catch (err: any) {
+            console.error('Reject error:', err)
+            setModalType('error')
+            setModalMessage('Failed to reject. Please try again.')
+            setShowModal(true)
+        } finally {
+            setRejecting(false)
+        }
+    }
+
     const handleMarkAsPaid = async () => {
+        if (!submissionData || !user) return
+
         setMarkingPaid(true)
         try {
-            const response = await fetch(`/api/submissions/${submissionId}/mark-paid`, {
+            const response = await fetch('/api/mark-paid', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId: submissionData._id }),
             })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Failed to mark as paid')
 
-            if (!response.ok) {
-                throw new Error('Failed to mark as paid')
-            }
-
-            const data = await response.json()
             setShowMarkPaidModal(false)
             setModalType('success')
-            setModalMessage(`Payment confirmed! Creator balance updated to ₱${data.newBalance.toLocaleString()}`)
+            setModalMessage(result.message || 'Payment confirmed! Earning record created and creator balance updated.')
             setShowModal(true)
-            refresh()
         } catch (error: any) {
+            console.error('Mark paid error:', error)
             setModalType('error')
-            setModalMessage('Failed to mark as paid. Please try again.')
+            setModalMessage(error.message || 'Failed to mark as paid. Please try again.')
             setShowModal(true)
         } finally {
             setMarkingPaid(false)
+        }
+    }
+
+    // Handle cascading deletion
+    const handleDeleteSubmission = async () => {
+        if (!submissionData || !user) return
+
+        setDeleting(true)
+        try {
+            const response = await fetch('/api/delete-submission', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId: submissionData._id }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to delete submission')
+            }
+
+            // Redirect to admin dashboard after successful deletion
+            window.location.href = '/admin'
+        } catch (error: any) {
+            console.error('Delete submission error:', error)
+            setShowDeleteModal(false)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to delete submission. Please try again.')
+            setShowModal(true)
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -479,7 +697,10 @@ export default function SubmissionDetailPage() {
             setWebsiteContent(existingWebsite.extractedContent)
             setWebsiteCustomizations(existingWebsite.customizations || {})
             setWebsitePublishedUrl(existingWebsite.publishedUrl || null)
-            setWebsiteGenerated(true)
+            // Only mark as generated if there's actual HTML content
+            if (existingWebsite.htmlContent) {
+                setWebsiteGenerated(true)
+            }
         }
     }, [existingWebsite])
 
@@ -550,8 +771,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 2: Generate Website (for in_review, approved, or deployed status) */}
-                            {(submission.status === 'in_review' || submission.status === 'approved' || submission.status === 'deployed') && (
+                            {/* Step 2: Generate Website (for in_review, website_generated, approved, or deployed status) */}
+                            {(submission.status === 'in_review' || submission.status === 'website_generated' || submission.status === 'approved' || submission.status === 'deployed') && (
                                 <Button
                                     onClick={() => handleGenerateWebsite()}
                                     disabled={generatingWebsite}
@@ -573,8 +794,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 3: Approve (for in_review status when website is generated) */}
-                            {submission.status === 'in_review' && websiteGenerated && (
+                            {/* Step 3: Approve (for website_generated or in_review status when website exists) */}
+                            {(submission.status === 'website_generated' || (submission.status === 'in_review' && websiteGenerated)) && (
                                 <Button
                                     onClick={() => handleStatusUpdate('approved')}
                                     disabled={updating}
@@ -584,24 +805,24 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 4: Publish/Deploy (for approved status) */}
-                            {submission.status === 'approved' && websiteGenerated && (
+                            {/* Step 4: Publish/Deploy (for approved, website_generated, deployed, pending_payment, paid) */}
+                            {(submission.status === 'approved' || submission.status === 'website_generated' || submission.status === 'deployed' || submission.status === 'pending_payment' || submission.status === 'paid') && websiteGenerated && (
                                 <Button
-                                    onClick={handlePublishWebsite}
-                                    disabled={publishingWebsite}
+                                    onClick={websitePublishedUrl ? handleRepublishWebsite : handlePublishWebsite}
+                                    disabled={publishingWebsite || republishingWebsite}
                                     className="bg-blue-600 hover:bg-blue-700 text-white"
                                 >
-                                    {publishingWebsite ? (
+                                    {(publishingWebsite || republishingWebsite) ? (
                                         <>
                                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                            Publishing...
+                                            {websitePublishedUrl ? 'Republishing...' : 'Publishing...'}
                                         </>
                                     ) : (
                                         <>
                                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                             </svg>
-                                            Publish to Netlify
+                                            {websitePublishedUrl ? 'Republish Website' : 'Publish Website'}
                                         </>
                                     )}
                                 </Button>
@@ -633,16 +854,27 @@ export default function SubmissionDetailPage() {
                             {/* Step 6: Mark as Paid (for pending_payment status) */}
                             {submission.status === 'pending_payment' && (
                                 <Button
-                                    onClick={() => handleStatusUpdate('paid')}
-                                    disabled={updating}
+                                    onClick={() => setShowMarkPaidModal(true)}
+                                    disabled={markingPaid}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                 >
-                                    {updating ? 'Updating...' : '💰 Mark as Paid'}
+                                    {markingPaid ? 'Processing...' : '💰 Mark as Paid'}
+                                </Button>
+                            )}
+
+                            {/* Unpublished: allow republishing */}
+                            {submission.status === 'unpublished' && (
+                                <Button
+                                    onClick={handlePublishWebsite}
+                                    disabled={publishingWebsite}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    {publishingWebsite ? 'Republishing...' : '🔄 Republish Website'}
                                 </Button>
                             )}
 
                             {/* Reject button (available until deployed) */}
-                            {!['rejected', 'deployed', 'pending_payment', 'paid'].includes(submission.status) && (
+                            {!['rejected', 'deployed', 'pending_payment', 'paid', 'unpublished'].includes(submission.status) && (
                                 <Button
                                     onClick={() => handleStatusUpdate('rejected')}
                                     disabled={updating}
@@ -661,6 +893,28 @@ export default function SubmissionDetailPage() {
                                     💸 Trigger Payout
                                 </Button>
                             )}
+
+                            {/* Delete Submission (always available for admin) */}
+                            <Button
+                                onClick={() => setShowDeleteModal(true)}
+                                disabled={deleting}
+                                variant="outline"
+                                className="border-red-500 text-red-600 hover:bg-red-50"
+                            >
+                                {deleting ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                                        Deleting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Delete
+                                    </>
+                                )}
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -674,7 +928,7 @@ export default function SubmissionDetailPage() {
                         {websiteGenerated && (
                             <div className="flex space-x-2">
                                 <a
-                                    href={`/website/${submissionId}`}
+                                    href={`/api/preview/${submissionId}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 text-sm font-medium"
@@ -697,28 +951,26 @@ export default function SubmissionDetailPage() {
                                             </svg>
                                             Visit Published Site
                                         </a>
-                                        {/* Republish button - for deployed/pending_payment/paid statuses */}
-                                        {['deployed', 'pending_payment', 'paid'].includes(submission.status) && (
-                                            <button
-                                                onClick={handleRepublishWebsite}
-                                                disabled={republishingWebsite}
-                                                className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {republishingWebsite ? (
-                                                    <>
-                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                                        Republishing...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                        </svg>
-                                                        Republish Website
-                                                    </>
-                                                )}
-                                            </button>
-                                        )}
+                                        {/* Unpublish button */}
+                                        <button
+                                            onClick={handleUnpublishWebsite}
+                                            disabled={unpublishingWebsite}
+                                            className="inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {unpublishingWebsite ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    Unpublishing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                                    </svg>
+                                                    Unpublish
+                                                </>
+                                            )}
+                                        </button>
                                     </>
                                 )}
                             </div>
@@ -808,21 +1060,35 @@ export default function SubmissionDetailPage() {
                                                 services: [],
                                                 contact: {}
                                             }),
-                                            // Pass raw storage IDs from websiteContent so VisualEditor can resolve them
-                                            // This ensures newly uploaded images (convex:xxx) are properly resolved
-                                            images: websiteContent?.images || submission?.photos || []
+                                            // Prefer enhanced images over original images for each section
+                                            images: (hasEnhancedImages && enhancedImagesByCategory?.categories.hero?.length)
+                                                ? enhancedImagesByCategory.categories.hero
+                                                : websiteContent?.images || submission?.photos || [],
+                                            about_images: (hasEnhancedImages && enhancedImagesByCategory?.categories.about?.length)
+                                                ? enhancedImagesByCategory.categories.about
+                                                : websiteContent?.about_images,
+                                            services_image: (hasEnhancedImages && enhancedImagesByCategory?.categories.services?.length)
+                                                ? enhancedImagesByCategory.categories.services[0]
+                                                : websiteContent?.services_image,
+                                            featured_images: (hasEnhancedImages && enhancedImagesByCategory?.categories.featured?.length)
+                                                ? enhancedImagesByCategory.categories.featured
+                                                : websiteContent?.featured_images,
                                         }}
                                         htmlContent={websiteHtmlContent || ''}
                                         submissionId={submissionId}
-                                        navbarStyle={websiteCustomizations?.navbarStyle || '1'}
-                                        heroStyle={websiteCustomizations?.heroStyle || '1'}
-                                        aboutStyle={websiteCustomizations?.aboutStyle || '1'}
-                                        servicesStyle={websiteCustomizations?.servicesStyle || '1'}
-                                        featuredStyle={websiteCustomizations?.featuredStyle || '1'}
+                                        heroStyle={websiteCustomizations?.heroStyle || 'A'}
+                                        aboutStyle={websiteCustomizations?.aboutStyle || 'A'}
+                                        servicesStyle={websiteCustomizations?.servicesStyle || 'A'}
+                                        galleryStyle={websiteCustomizations?.galleryStyle || websiteCustomizations?.featuredStyle || 'A'}
                                         availableImages={[
-                                            // Include both hero images and submission photos (resolved URLs) for selection
+                                            // Include enhanced images first (priority), then original photos
+                                            ...(enhancedImagesByCategory?.allUrls?.map(u => resolveEnhancedUrl(u)).filter((url): url is string => url !== null) || []),
                                             ...(heroImageUrls?.filter((url): url is string => url !== null) || []),
                                             ...(photoUrls?.filter((url): url is string => url !== null) || [])
+                                        ].filter((url, index, self) => self.indexOf(url) === index)}
+                                        originalImages={[
+                                            ...(photoUrls?.filter((url): url is string => url !== null) || []),
+                                            ...(heroImageUrls?.filter((url): url is string => url !== null) || [])
                                         ].filter((url, index, self) => self.indexOf(url) === index)}
                                         onSave={async (content: any) => {
                                             const response = await fetch('/api/save-content', {
@@ -991,7 +1257,8 @@ export default function SubmissionDetailPage() {
                                 {(isEditing ? editedData.photos : (submission.photos || [])).map((url: string, index: number) => {
                                     // Get the resolved URL from photoUrls for display
                                     // photoUrls contains the resolved HTTP URLs from Convex storage
-                                    const resolvedUrl = photoUrls?.[index] || (url?.startsWith('http') ? url : null)
+                                    const raw = photoUrls?.[index] || url
+                                    const resolvedUrl = raw?.startsWith('http') ? raw : null
 
                                     if (!resolvedUrl) return null
 
@@ -1308,7 +1575,7 @@ export default function SubmissionDetailPage() {
                                 <p className="text-sm font-medium text-blue-900 mb-2">This will:</p>
                                 <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
                                     <li>Update submission status to "Paid"</li>
-                                    <li>Add ₱{submission.creator_payout.toLocaleString()} to creator's balance</li>
+                                    <li>Add ₱{(submission.creator_payout ?? 0).toLocaleString()} to creator's balance</li>
                                     <li>Update creator's total earnings</li>
                                 </ul>
                             </div>
@@ -1320,11 +1587,11 @@ export default function SubmissionDetailPage() {
                                 </div>
                                 <div className="flex justify-between text-sm mb-1">
                                     <span className="text-gray-600">Amount:</span>
-                                    <span className="font-medium text-gray-900">₱{submission.amount.toLocaleString()}</span>
+                                    <span className="font-medium text-gray-900">₱{(submission.amount ?? 0).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Creator Payout:</span>
-                                    <span className="font-bold text-green-600">₱{submission.creator_payout.toLocaleString()}</span>
+                                    <span className="font-bold text-green-600">₱{(submission.creator_payout ?? 0).toLocaleString()}</span>
                                 </div>
                             </div>
 
@@ -1349,10 +1616,122 @@ export default function SubmissionDetailPage() {
                 </div>
             )}
 
+            {/* Rejection Reason Modal */}
+            {showRejectModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Reject Submission</h3>
+                        <p className="text-gray-600 mb-4">
+                            Provide a reason for rejecting this submission (optional).
+                        </p>
+                        <textarea
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                            placeholder="Reason for rejection..."
+                            className="w-full h-32 p-3 border border-gray-300 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500 mb-4"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowRejectModal(false)
+                                    setRejectionReason('')
+                                }}
+                                disabled={rejecting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleRejectWithReason}
+                                disabled={rejecting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-500 hover:bg-red-600 text-white transition-all disabled:opacity-50"
+                            >
+                                {rejecting ? 'Rejecting...' : 'Reject'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && submission && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Delete &ldquo;{submission.business_name}&rdquo;</h3>
+                        </div>
+
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                            <p className="text-sm font-semibold text-red-800 mb-2">This action is permanent and cannot be undone. The following will be deleted:</p>
+                            <ul className="text-sm text-red-700 space-y-1">
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Business submission record
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Generated website &amp; content
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    All media files (images, audio, video) from Cloudflare R2
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Cloudflare Pages deployment (if published)
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Airtable record (if synced)
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Business</span>
+                                <span className="font-medium text-gray-900">{submission.business_name}</span>
+                            </div>
+                            <div className="flex justify-between text-sm mt-1">
+                                <span className="text-gray-500">Status</span>
+                                <span className="font-medium text-gray-900">{submission.status}</span>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={deleting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteSubmission}
+                                disabled={deleting}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50"
+                            >
+                                {deleting ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Processing...
+                                    </span>
+                                ) : 'Delete Permanently'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Photo Lightbox */}
             {lightboxOpen && photoUrls && photoUrls.length > 0 && (
                 <PhotoLightbox
-                    photos={photoUrls.filter((url): url is string => url !== null)}
+                    photos={photoUrls.filter((url): url is string => url !== null && url.startsWith('http'))}
                     initialIndex={lightboxIndex}
                     onClose={() => setLightboxOpen(false)}
                 />

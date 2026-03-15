@@ -5,21 +5,23 @@ import Link from "next/link"
 import { useUser } from "@clerk/nextjs"
 import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import AdminLayout from "../components/AdminLayout"
 
 type CreatorStatus = 'pending' | 'active' | 'suspended'
+
+function getInitials(first: string, last: string) {
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
+}
 
 export default function CreatorsPage() {
     const { user, isLoaded } = useUser()
 
-    // Get current user's creator profile to check admin status
     const currentCreator = useQuery(
         api.creators.getByClerkId,
         user ? { clerkId: user.id } : "skip"
     )
 
-    // Get all creators with stats
     const creators = useQuery(
         api.creators.getAllWithStats,
         currentCreator?.role === 'admin' ? {} : "skip"
@@ -37,12 +39,10 @@ export default function CreatorsPage() {
         if (!creators) return []
 
         return creators.filter(creator => {
-            // Status filter
             if (statusFilter !== 'all' && creator.status !== statusFilter) {
                 return false
             }
 
-            // Search filter
             if (searchQuery) {
                 const query = searchQuery.toLowerCase()
                 const fullName = `${creator.firstName} ${creator.lastName}`.toLowerCase()
@@ -68,13 +68,14 @@ export default function CreatorsPage() {
 
     const getStatusBadge = (status: CreatorStatus | undefined) => {
         const safeStatus = status || 'pending'
-        const styles = {
-            active: 'bg-green-100 text-green-800',
-            pending: 'bg-yellow-100 text-yellow-800',
-            suspended: 'bg-red-100 text-red-800',
+        const config: Record<string, { bg: string; text: string }> = {
+            active: { bg: 'bg-green-50', text: 'text-green-700' },
+            pending: { bg: 'bg-amber-50', text: 'text-amber-700' },
+            suspended: { bg: 'bg-red-50', text: 'text-red-700' },
         }
+        const style = config[safeStatus] || config.pending
         return (
-            <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[safeStatus]}`}>
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${style.bg} ${style.text}`}>
                 {safeStatus.charAt(0).toUpperCase() + safeStatus.slice(1)}
             </span>
         )
@@ -91,113 +92,92 @@ export default function CreatorsPage() {
     if (!isAdmin) return null
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between py-4">
-                        <div className="flex items-center gap-4">
-                            <Link href="/admin">
-                                <Button variant="outline" size="sm">
-                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                    Back
-                                </Button>
-                            </Link>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Creator Management</h1>
-                                <p className="text-sm text-gray-500">Manage platform creators</p>
-                            </div>
-                        </div>
+        <AdminLayout>
+            {/* Page Title */}
+            <div className="mb-6 lg:mb-8">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Creator Management</h1>
+                <p className="text-sm text-gray-500 mt-1">Manage platform creators and their accounts.</p>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
+                <button
+                    onClick={() => setStatusFilter('all')}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'all' ? "border-green-400 ring-2 ring-green-100" : "border-gray-100 hover:border-gray-200"}`}
+                >
+                    <p className="text-xs font-medium text-gray-500 mb-2">Total Creators</p>
+                    <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                </button>
+
+                <button
+                    onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'active' ? "border-green-400 ring-2 ring-green-100" : "border-gray-100 hover:border-gray-200"}`}
+                >
+                    <p className="text-xs font-medium text-gray-500 mb-2">Active</p>
+                    <p className="text-3xl font-bold text-green-600">{stats.active}</p>
+                </button>
+
+                <button
+                    onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'pending' ? "border-amber-400 ring-2 ring-amber-100" : "border-gray-100 hover:border-gray-200"}`}
+                >
+                    <p className="text-xs font-medium text-gray-500 mb-2">Pending</p>
+                    <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
+                </button>
+
+                <button
+                    onClick={() => setStatusFilter(statusFilter === 'suspended' ? 'all' : 'suspended')}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'suspended' ? "border-red-400 ring-2 ring-red-100" : "border-gray-100 hover:border-gray-200"}`}
+                >
+                    <p className="text-xs font-medium text-gray-500 mb-2">Suspended</p>
+                    <p className="text-3xl font-bold text-red-600">{stats.suspended}</p>
+                </button>
+            </div>
+
+            {/* Search */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                     </div>
+                    <Input
+                        type="text"
+                        placeholder="Search by name, email, or phone..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 border-gray-200 rounded-lg h-10 text-sm"
+                    />
+                    {searchQuery && (
+                        <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
+                            <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    )}
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                        <p className="text-sm text-gray-500">Total Creators</p>
-                        <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                        <p className="text-sm text-gray-500">Active</p>
-                        <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                        <p className="text-sm text-gray-500">Pending</p>
-                        <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-4 border border-gray-200">
-                        <p className="text-sm text-gray-500">Suspended</p>
-                        <p className="text-2xl font-bold text-red-600">{stats.suspended}</p>
-                    </div>
-                </div>
-
-                {/* Filters */}
-                <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
-                    <div className="flex flex-wrap gap-4 items-center">
-                        {/* Search */}
-                        <div className="flex-1 min-w-[250px]">
-                            <Input
-                                type="text"
-                                placeholder="Search by name, email, or phone..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full"
-                            />
-                        </div>
-
-                        {/* Status Filter */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">Status:</span>
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value as CreatorStatus | 'all')}
-                                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-                            >
-                                <option value="all">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="pending">Pending</option>
-                                <option value="suspended">Suspended</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Creators Table */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Creator
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Contact
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Submissions
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Earnings
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Balance
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
+            {/* Creators Table */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-100">
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Creator</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Contact</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Submissions</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Earnings</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Balance</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody>
                             {filteredCreators.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={7} className="px-6 py-16 text-center text-sm text-gray-400">
                                         {searchQuery || statusFilter !== 'all'
                                             ? 'No creators match your filters'
                                             : 'No creators found'}
@@ -205,46 +185,49 @@ export default function CreatorsPage() {
                                 </tr>
                             ) : (
                                 filteredCreators.map((creator) => (
-                                    <tr key={creator._id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-semibold">
-                                                    {creator.firstName.charAt(0)}{creator.lastName.charAt(0)}
+                                    <tr key={creator._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
+                                                    <span className="text-xs font-bold text-green-700">
+                                                        {getInitials(creator.firstName, creator.lastName)}
+                                                    </span>
                                                 </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">
                                                         {creator.firstName} {creator.middleName ? `${creator.middleName} ` : ''}{creator.lastName}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {creator.role === 'admin' ? '👑 Admin' : 'Creator'}
-                                                    </div>
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {creator.role === 'admin' ? 'Admin' : 'Creator'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{creator.email || '—'}</div>
-                                            <div className="text-sm text-gray-500">{creator.phone || '—'}</div>
+                                        <td className="px-6 py-4">
+                                            <p className="text-sm text-gray-900">{creator.email || '\u2014'}</p>
+                                            <p className="text-xs text-gray-500">{creator.phone || '\u2014'}</p>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-6 py-4">
                                             {getStatusBadge(creator.status)}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 text-blue-700">
                                                 {creator.submissionCount || 0}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                             ₱{(creator.totalEarnings || 0).toLocaleString()}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
                                             ₱{(creator.balance || 0).toLocaleString()}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-6 py-4">
                                             <Link
                                                 href={`/admin/creators/${creator._id}`}
-                                                className="text-blue-600 hover:text-blue-900"
+                                                className="text-gray-400 hover:text-green-600 transition-colors"
+                                                title="View details"
                                             >
-                                                View Details
+                                                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                                             </Link>
                                         </td>
                                     </tr>
@@ -255,10 +238,12 @@ export default function CreatorsPage() {
                 </div>
 
                 {/* Results count */}
-                <div className="mt-4 text-sm text-gray-500">
-                    Showing {filteredCreators.length} of {creators?.length || 0} creators
+                <div className="px-6 py-4 border-t border-gray-100">
+                    <p className="text-xs sm:text-sm text-gray-500">
+                        Showing {filteredCreators.length} of {creators?.length || 0} creators
+                    </p>
                 </div>
             </div>
-        </div>
+        </AdminLayout>
     )
 }

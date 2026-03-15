@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
-import { selectTemplateForBusinessType, getTemplate } from '@/lib/templates'
-import { injectContent } from '@/lib/templates/injector'
-import { promises as fs } from 'fs'
-import path from 'path'
+import { buildAstroSite } from '@/lib/astro-builder'
 
 export async function POST(request: NextRequest) {
     try {
@@ -66,6 +63,21 @@ export async function POST(request: NextRequest) {
         // 2. Previously extracted content from submissions
         // 3. Fresh extraction via Groq
         let extractedContent = existingWebsite?.extractedContent || submission.website_content
+
+        // When regenerating with existing content, override with fresh submission data
+        // so admin edits to business info are reflected in the regenerated website
+        if (extractedContent) {
+            extractedContent = {
+                ...extractedContent,
+                business_name: submission.business_name,
+                contact: {
+                    ...((extractedContent as any)?.contact || {}),
+                    email: submission.owner_email || (extractedContent as any)?.contact?.email || 'contact@example.com',
+                    phone: submission.owner_phone || (extractedContent as any)?.contact?.phone || '+63 900 000 0000',
+                    address: submission.address ? `${submission.address}, ${submission.city}` : (extractedContent as any)?.contact?.address || submission.city
+                }
+            }
+        }
 
         // Validate that extractedContent has required fields
         const hasRequiredFields = extractedContent &&
@@ -162,35 +174,114 @@ IMPORTANT:
             }
         }
 
-        // Select template
-        const selectedTemplate = templateName || selectTemplateForBusinessType(submission.business_type)
-        const template = getTemplate(selectedTemplate)
+        // Template name kept for backward compat in database records
+        const selectedTemplate = templateName || 'astro'
 
-        // Read template file
-        const templatePath = path.join(process.cwd(), 'app', template.path)
-        const templateHtml = await fs.readFile(templatePath, 'utf-8')
+        // Fetch enhancedImages — check all possible locations:
+        // 1. generatedWebsites top-level (mobile branch patches directly)
+        // 2. generatedWebsites.extractedContent.enhancedImages (nested in extractedContent)
+        // 3. websiteContent via generatedWebsites chain (by websiteId)
+        // 4. websiteContent directly by submissionId (fallback for records without generatedWebsites link)
+        let enhancedImageUrls: string[] = []
+        let enhancedImagesByCategory: Record<string, string[]> = {}
+        try {
+            // Source 1: generatedWebsites top-level
+            let enhancedImages = (existingWebsite as any)?.enhancedImages || null
+            let enhancedSource = enhancedImages ? 'generatedWebsites.enhancedImages' : null
+
+            // Source 2: nested in extractedContent
+            if (!enhancedImages) {
+                enhancedImages = (existingWebsite?.extractedContent as any)?.enhancedImages || null
+                enhancedSource = enhancedImages ? 'generatedWebsites.extractedContent.enhancedImages' : null
+            }
+
+            // Source 3: websiteContent via generatedWebsites chain
+            if (!enhancedImages) {
+                const wcViaChain = await fetchQuery(api.websiteContent.getBySubmissionId, {
+                    submissionId: submissionData._id
+                })
+                enhancedImages = wcViaChain?.enhancedImages || null
+                enhancedSource = enhancedImages ? 'websiteContent (via websiteId chain)' : null
+            }
+
+            // Source 4: websiteContent directly by submissionId (fallback)
+            if (!enhancedImages) {
+                const wcDirect = await fetchQuery(api.websiteContent.getDirectBySubmissionId, {
+                    submissionId: submissionData._id
+                })
+                enhancedImages = wcDirect?.enhancedImages || null
+                enhancedSource = enhancedImages ? 'websiteContent (direct by submissionId)' : null
+            }
+
+
+            if (enhancedImages && typeof enhancedImages === 'object') {
+                // Extract URLs from enhancedImages object
+                // Structure: { headshot: { url, storageId }, interior_1: { url, storageId }, ... }
+                for (const [key, img] of Object.entries(enhancedImages)) {
+                    const imgData = img as any
+                    if (imgData && (imgData.url || imgData.storageId)) {
+                        const url = imgData.url || imgData.storageId
+                        enhancedImageUrls.push(url)
+                        // Categorize for section-specific mapping
+                        if (key.startsWith('interior') || key === 'headshot') {
+                            enhancedImagesByCategory.about = enhancedImagesByCategory.about || []
+                            enhancedImagesByCategory.about.push(url)
+                        }
+                        if (key.startsWith('product')) {
+                            enhancedImagesByCategory.featured = enhancedImagesByCategory.featured || []
+                            enhancedImagesByCategory.featured.push(url)
+                        }
+                        if (key === 'exterior' || key === 'headshot') {
+                            enhancedImagesByCategory.hero = enhancedImagesByCategory.hero || []
+                            enhancedImagesByCategory.hero.push(url)
+                        }
+                        if (key.startsWith('interior') || key === 'exterior') {
+                            enhancedImagesByCategory.services = enhancedImagesByCategory.services || []
+                            enhancedImagesByCategory.services.push(url)
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching websiteContent enhancedImages:', error)
+        }
+
+        const hasEnhancedImages = enhancedImageUrls.length > 0
 
         // Inject content with default customizations if none provided
-        // Get photos from submission and resolve Convex storage IDs to actual URLs
-        const photoStorageIds = (extractedContent as any).images || submission.photos || []
+        // Get photos: prefer user-edited extractedContent.images, then enhancedImages, then submission.photos
+        // If extractedContent has images, it means the user explicitly selected them in the content editor
+        const hasUserEditedImages = existingWebsite?.extractedContent && (extractedContent as any)?.images?.length > 0
+        const photoStorageIds = hasUserEditedImages
+            ? (extractedContent as any).images
+            : (hasEnhancedImages ? enhancedImageUrls : ((extractedContent as any).images || submission.photos || []))
         let photos: string[] = []
 
         if (photoStorageIds.length > 0) {
             try {
-                const resolvedUrls = await fetchQuery(api.files.getMultipleUrls, {
-                    storageIds: photoStorageIds
-                })
-                // Filter out null values and keep only valid URLs
-                photos = resolvedUrls.filter((url): url is string => url !== null)
+                // Enhanced image URLs may already be resolved — check and only resolve storage IDs
+                const needsResolution = photoStorageIds.some((id: string) => !id.startsWith('http'))
+                if (needsResolution) {
+                    const resolvedUrls = await fetchQuery(api.files.getMultipleUrls, {
+                        storageIds: photoStorageIds
+                    })
+                    photos = resolvedUrls.filter((url): url is string => url !== null)
+                } else {
+                    photos = photoStorageIds.filter((url: string) => url && url.startsWith('http'))
+                }
             } catch (error) {
                 console.error('Error resolving photo URLs:', error)
-                // Fallback to original array if resolution fails
-                photos = photoStorageIds
+                photos = photoStorageIds.filter((url: string) => url && url.startsWith('http'))
             }
         }
 
-        // Resolve about_images storage IDs to actual URLs (if they exist and are not already URLs)
-        const aboutImageStorageIds = (extractedContent as any)?.about_images || []
+        // Resolve about_images: prefer user-edited, then enhancedImages.about, then extractedContent.about_images
+        const hasUserEditedAboutImages = existingWebsite?.extractedContent && (extractedContent as any)?.about_images?.length > 0
+        const aboutImageStorageIds = hasUserEditedAboutImages
+            ? (extractedContent as any).about_images
+            : ((hasEnhancedImages && enhancedImagesByCategory.about?.length)
+                ? enhancedImagesByCategory.about
+                : ((extractedContent as any)?.about_images || []))
         let resolvedAboutImages: string[] = []
 
         if (aboutImageStorageIds.length > 0) {
@@ -226,8 +317,13 @@ IMPORTANT:
             }
         }
 
-        // Resolve services_image storage ID to actual URL (if exists and is not already a URL)
-        const servicesImageStorageId = (extractedContent as any)?.services_image
+        // Resolve services_image: prefer user-edited, then enhancedImages.services[0], then extractedContent.services_image
+        const hasUserEditedServicesImage = existingWebsite?.extractedContent && (extractedContent as any)?.services_image
+        const servicesImageStorageId = hasUserEditedServicesImage
+            ? (extractedContent as any).services_image
+            : ((hasEnhancedImages && enhancedImagesByCategory.services?.length)
+                ? enhancedImagesByCategory.services[0]
+                : (extractedContent as any)?.services_image)
         let resolvedServicesImage: string | undefined = undefined
 
         if (servicesImageStorageId && !servicesImageStorageId.startsWith('http')) {
@@ -245,8 +341,13 @@ IMPORTANT:
             resolvedServicesImage = servicesImageStorageId
         }
 
-        // Resolve featured_images storage IDs to actual URLs (if they exist and are not already URLs)
-        const featuredImageStorageIds = (extractedContent as any)?.featured_images || []
+        // Resolve featured_images: prefer user-edited, then enhancedImages.featured, then extractedContent.featured_images
+        const hasUserEditedFeaturedImages = existingWebsite?.extractedContent && (extractedContent as any)?.featured_images?.length > 0
+        const featuredImageStorageIds = hasUserEditedFeaturedImages
+            ? (extractedContent as any).featured_images
+            : ((hasEnhancedImages && enhancedImagesByCategory.featured?.length)
+                ? enhancedImagesByCategory.featured
+                : ((extractedContent as any)?.featured_images || []))
         let resolvedFeaturedImages: string[] = []
 
         if (featuredImageStorageIds.length > 0) {
@@ -282,11 +383,41 @@ IMPORTANT:
             }
         }
 
+        // Resolve product images inside featured_products (convex:storageId → URL)
+        const rawProducts = (extractedContent as any)?.featured_products || []
+        let resolvedProducts = rawProducts
+        if (rawProducts.length > 0) {
+            const productImageIds = rawProducts
+                .map((p: any) => p.image)
+                .filter((img: string | undefined) => img && !img.startsWith('http'))
+                .map((img: string) => img.replace(/^convex:/, ''))
+
+            if (productImageIds.length > 0) {
+                try {
+                    const resolvedUrls = await fetchQuery(api.files.getMultipleUrls, {
+                        storageIds: productImageIds
+                    })
+                    resolvedProducts = rawProducts.map((p: any) => {
+                        if (!p.image || p.image.startsWith('http')) return p
+                        const cleanId = p.image.replace(/^convex:/, '')
+                        const idx = productImageIds.indexOf(cleanId)
+                        const resolvedUrl = idx !== -1 ? resolvedUrls[idx] : null
+                        return { ...p, image: resolvedUrl || p.image }
+                    })
+                } catch (error) {
+                    console.error('Error resolving product image URLs:', error)
+                }
+            }
+        }
+
         const defaultCustomizations = {
+            heroStyle: 'A',
+            aboutStyle: 'A',
+            servicesStyle: 'A',
+            galleryStyle: 'A',
+            contactStyle: 'A',
+            // Legacy fields
             navbarStyle: '1',
-            heroStyle: '1',
-            aboutStyle: '1',
-            servicesStyle: '1',
             featuredStyle: '1',
             footerStyle: '1',
             colorScheme: 'auto',
@@ -313,6 +444,7 @@ IMPORTANT:
             tone: extractedContent?.tone || 'professional-friendly',
             // Optional fields
             hero_cta: extractedContent?.hero_cta,
+            hero_cta_secondary: extractedContent?.hero_cta_secondary,
             services_cta: extractedContent?.services_cta,
             methodology: extractedContent?.methodology,
             // Hero section fields
@@ -369,7 +501,7 @@ IMPORTANT:
             // Featured section fields - generate defaults if not present
             featured_headline: (extractedContent as any)?.featured_headline || 'Featured Products',
             featured_subheadline: (extractedContent as any)?.featured_subheadline || `Take a look at some of our recent work at ${submission.business_name}`,
-            featured_products: (extractedContent as any)?.featured_products || generateDefaultFeaturedProducts(submission.business_name, submission.business_type, photos.length),
+            featured_products: resolvedProducts.length > 0 ? resolvedProducts : generateDefaultFeaturedProducts(submission.business_name, submission.business_type, photos.length),
             featured_images: resolvedFeaturedImages.length > 0 ? resolvedFeaturedImages : undefined,
             // Featured CTA fields for style 4
             featured_cta_text: (extractedContent as any)?.featured_cta_text,
@@ -384,8 +516,10 @@ IMPORTANT:
             navbar_cta_text: (extractedContent as any)?.navbar_cta_text,
             navbar_cta_link: (extractedContent as any)?.navbar_cta_link,
             navbar_headline: (extractedContent as any)?.navbar_headline,
-            // Images (preserve storage IDs for later resolution)
-            images: (extractedContent as any)?.images || submission.photos || [],
+            // Images: prefer enhanced image URLs, fall back to extractedContent.images, then submission.photos
+            images: hasUserEditedImages
+                ? (extractedContent as any).images
+                : (hasEnhancedImages ? enhancedImageUrls : ((extractedContent as any)?.images || submission.photos || [])),
             // Contact info from submission (or from existing extracted content if edited)
             contact: (extractedContent as any)?.contact || {
                 email: submission.owner_email || 'contact@example.com',
@@ -399,7 +533,7 @@ IMPORTANT:
             }
         }
 
-        const generatedHtml = injectContent(templateHtml, contentWithContact, finalCustomizations, photos)
+        const generatedHtml = await buildAstroSite(contentWithContact, finalCustomizations, photos)
 
         // Save to Convex using mutations
         const { fetchMutation } = await import('convex/nextjs')
@@ -522,10 +656,13 @@ IMPORTANT:
             } : undefined,
             // Customizations
             customizations: {
-                navbarStyle: finalCustomizations.navbarStyle,
                 heroStyle: finalCustomizations.heroStyle,
                 aboutStyle: finalCustomizations.aboutStyle,
                 servicesStyle: finalCustomizations.servicesStyle,
+                galleryStyle: finalCustomizations.galleryStyle || finalCustomizations.featuredStyle,
+                contactStyle: finalCustomizations.contactStyle || finalCustomizations.footerStyle,
+                // Legacy fields
+                navbarStyle: finalCustomizations.navbarStyle,
                 featuredStyle: finalCustomizations.featuredStyle,
                 footerStyle: finalCustomizations.footerStyle,
                 colorScheme: finalCustomizations.colorScheme || finalCustomizations.colorSchemeId,
@@ -533,8 +670,14 @@ IMPORTANT:
             },
         })
 
-        // Note: Status is not automatically changed when generating website
-        // The workflow is: in_review -> (generate) -> approved -> deployed -> pending_payment -> paid
+        // Update submission status to website_generated (but don't regress if already deployed+)
+        const keepStatuses = ['deployed', 'pending_payment', 'paid']
+        if (!keepStatuses.includes(submissionData.status)) {
+            await fetchMutation(api.submissions.updateStatus, {
+                id: submissionId as any,
+                status: 'website_generated',
+            })
+        }
 
         return NextResponse.json({
             success: true,

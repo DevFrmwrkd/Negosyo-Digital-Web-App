@@ -1,0 +1,303 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  businessName: string;
+  tagline: string;
+  navLinks: Array<{ label: string; href: string }>;
+  socialLinks?: Array<{ platform: string; url: string }>;
+  colorScheme?: string;
+  fontPairing?: string;
+  contact?: {
+    phone?: string;
+    email?: string;
+    address?: string;
+  };
+}
+
+const {
+  businessName,
+  tagline,
+  navLinks = [],
+  socialLinks = [],
+  colorScheme = 'auto',
+  fontPairing = 'modern',
+  contact = {},
+} = Astro.props;
+
+// Font pairings
+const fontPairings: Record<string, { heading: string; body: string }> = {
+  modern: { heading: 'Space Grotesk', body: 'Inter' },
+  classic: { heading: 'Playfair Display', body: 'Source Sans Pro' },
+  elegant: { heading: 'Cormorant Garamond', body: 'Montserrat' },
+  bold: { heading: 'Bebas Neue', body: 'Roboto' },
+  minimal: { heading: 'DM Sans', body: 'DM Sans' },
+  professional: { heading: 'Poppins', body: 'Open Sans' },
+  creative: { heading: 'Righteous', body: 'Nunito' },
+  tech: { heading: 'Orbitron', body: 'Exo 2' },
+  friendly: { heading: 'Quicksand', body: 'Quicksand' },
+  luxury: { heading: 'Cinzel', body: 'Lato' },
+};
+
+const fonts = fontPairings[fontPairing] || fontPairings.modern;
+
+// Fluid typography scale
+const typographyScale = {
+  xs: 'clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem)',
+  sm: 'clamp(0.875rem, 0.8rem + 0.35vw, 1rem)',
+  base: 'clamp(1rem, 0.95rem + 0.25vw, 1.125rem)',
+  lg: 'clamp(1.125rem, 1rem + 0.6vw, 1.5rem)',
+  xl: 'clamp(1.5rem, 1.2rem + 1.5vw, 2.5rem)',
+  '2xl': 'clamp(2rem, 1.5rem + 2.5vw, 4rem)',
+  display: 'clamp(3rem, 2rem + 5vw, 7rem)',
+};
+
+const fontUrl = `https://fonts.googleapis.com/css2?family=${fonts.heading.replace(/ /g, '+')}:wght@300;400;500;600;700&family=${fonts.body.replace(/ /g, '+')}:wght@300;400;500;600&display=swap`;
+
+// Color schemes
+const colorSchemes: Record<string, { 
+  primary: string; 
+  secondary: string; 
+  accent: string; 
+  background: string; 
+  surface: string;
+  text: string;
+  textMuted: string;
+  inverseText: string;
+  isDark: boolean;
+}> = {
+  auto: { 
+    primary: '#6B8F71', secondary: '#1F2933', accent: '#4ECDC4', background: '#F6F7F5', surface: '#FFFFFF',
+    text: '#1F2933', textMuted: '#4A5568', inverseText: '#FFFFFF', isDark: false 
+  },
+  default: { 
+    primary: '#6B8F71', secondary: '#1F2933', accent: '#4ECDC4', background: '#F6F7F5', surface: '#FFFFFF',
+    text: '#1F2933', textMuted: '#4A5568', inverseText: '#FFFFFF', isDark: false 
+  },
+  blue: {
+    primary: '#3B82F6', secondary: '#1E3A8A', accent: '#60A5FA', background: '#EFF6FF', surface: '#FFFFFF',
+    text: '#111827', textMuted: '#4B5563', inverseText: '#FFFFFF', isDark: false
+  },
+  green: {
+    primary: '#16A34A', secondary: '#14532D', accent: '#4ADE80', background: '#F0FDF4', surface: '#FFFFFF',
+    text: '#14532D', textMuted: '#166534', inverseText: '#FFFFFF', isDark: false
+  },
+  purple: { 
+    primary: '#8B5CF6', secondary: '#4C1D95', accent: '#A78BFA', background: '#F5F3FF', surface: '#FFFFFF',
+    text: '#1E1B4B', textMuted: '#4338CA', inverseText: '#FFFFFF', isDark: false 
+  },
+  orange: { 
+    primary: '#F97316', secondary: '#7C2D12', accent: '#FB923C', background: '#FFF7ED', surface: '#FFFFFF',
+    text: '#431407', textMuted: '#7C2D12', inverseText: '#FFFFFF', isDark: false 
+  },
+  dark: { 
+    primary: '#D1D5DB', secondary: '#FFFFFF', accent: '#9CA3AF', background: '#0F172A', surface: '#1E293B',
+    text: '#F8FAFC', textMuted: '#94A3B8', inverseText: '#0F172A', isDark: true 
+  },
+  pink: { 
+    primary: '#D81B60', secondary: '#880E4F', accent: '#F48FB1', background: '#FFF5F8', surface: '#FFFFFF',
+    text: '#311B92', textMuted: '#880E4F', inverseText: '#FFFFFF', isDark: false 
+  },
+  brown: { 
+    primary: '#795548', secondary: '#3E2723', accent: '#A1887F', background: '#FDFCFB', surface: '#FFFFFF',
+    text: '#3E2723', textMuted: '#5D4037', inverseText: '#FFFFFF', isDark: false 
+  },
+  red: { 
+    primary: '#D32F2F', secondary: '#B71C1C', accent: '#EF5350', background: '#FFF5F5', surface: '#FFFFFF',
+    text: '#1A0000', textMuted: '#7F0000', inverseText: '#FFFFFF', isDark: false 
+  },
+  yellow: { 
+    primary: '#FBC02D', secondary: '#F57F17', accent: '#D32F2F', background: '#FEFCE8', surface: '#FFFFFF',
+    text: '#1A1A1A', textMuted: '#424242', inverseText: '#FFFFFF', isDark: false 
+  },
+  maroon: {
+    primary: '#800000', secondary: '#FFD700', accent: '#A52A2A', background: '#2D0000', surface: '#3D0000',
+    text: '#F5F5DC', textMuted: '#E0C0C0', inverseText: '#2D0000', isDark: true
+  },
+  black: {
+    primary: '#FFFFFF', secondary: '#E5E5E5', accent: '#A0A0A0', background: '#000000', surface: '#111111',
+    text: '#FFFFFF', textMuted: '#A0A0A0', inverseText: '#000000', isDark: true
+  },
+};
+
+const scheme = colorSchemes[colorScheme] || colorSchemes.auto;
+const isDark = scheme.isDark;
+
+// Social SVG icons
+const socialIcons: Record<string, string> = {
+  instagram: '<path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2m-.2 2A3.6 3.6 0 004 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5M12 7a5 5 0 110 10 5 5 0 010-10m0 2a3 3 0 100 6 3 3 0 000-6z"/>',
+  facebook: '<path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/>',
+  tiktok: '<path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/>',
+  twitter: '<path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/>',
+  linkedin: '<path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
+  youtube: '<path d="M22.54 6.42a2.78 2.78 0 00-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 00-1.94 2A29 29 0 001 11.75a29 29 0 00.46 5.33A2.78 2.78 0 003.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 001.94-2 29 29 0 00.46-5.25 29 29 0 00-.46-5.33z"/><polygon points="9.75,15.02 15.5,11.75 9.75,8.48"/>',
+};
+
+const year = new Date().getFullYear();
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={`${businessName} - ${tagline}`} />
+  <meta property="og:title" content={`${businessName} - ${tagline}`} />
+  <meta property="og:description" content={tagline} />
+  <meta property="og:type" content="website" />
+  <title>{businessName} - {tagline}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href={fontUrl} rel="stylesheet" />
+</head>
+<body class="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased" style={`font-family: '${fonts.body}', sans-serif;`}>
+  <!-- Navbar -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-[var(--nav-bg)] backdrop-blur-md border-b border-[var(--nav-border)]" id="navbar">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 md:h-18">
+        <a href="#" class="text-lg font-semibold tracking-tight text-[var(--nav-text)]" style={`font-family: '${fonts.heading}', sans-serif;`}>
+          {businessName}
+        </a>
+
+        <!-- Desktop Nav -->
+        <div class="hidden md:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <a href={link.href} class="text-sm font-medium text-[var(--nav-link)] hover:text-[var(--nav-text)] transition-colors">
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button
+          type="button"
+          class="md:hidden flex flex-col gap-1.5 p-2"
+          id="mobile-menu-btn"
+          aria-label="Toggle menu"
+        >
+          <span class="block w-6 h-0.5 bg-[var(--nav-text)] transition-transform" id="menu-bar-1"></span>
+          <span class="block w-6 h-0.5 bg-[var(--nav-text)] transition-opacity" id="menu-bar-2"></span>
+          <span class="block w-6 h-0.5 bg-[var(--nav-text)] transition-transform" id="menu-bar-3"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="hidden md:hidden bg-[var(--nav-bg)] border-t border-[var(--nav-border)]" id="mobile-menu">
+      <div class="px-4 py-4 space-y-3">
+        {navLinks.map((link) => (
+          <a href={link.href} class="block text-sm font-medium text-[var(--nav-link)] hover:text-[var(--nav-text)] py-2">
+            {link.label}
+          </a>
+        ))}
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+    <slot />
+  </main>
+
+  <style define:vars={{
+    'primary': scheme.primary,
+    'secondary': scheme.secondary,
+    'accent': scheme.accent,
+    'bg': scheme.background,
+    'surface': scheme.surface,
+    'text': scheme.text,
+    'text-muted': scheme.textMuted,
+    'text-inverse': scheme.inverseText,
+    'nav-bg': isDark ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+    'nav-text': scheme.text,
+    'nav-link': isDark ? 'rgba(255, 245, 220, 0.7)' : 'rgba(0, 0, 0, 0.6)',
+    'nav-border': isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+    'footer-bg': isDark ? '#08080c' : scheme.secondary,
+    'heading-font': `'${fonts.heading}', sans-serif`,
+    'body-font': `'${fonts.body}', sans-serif`,
+    // Typography scale
+    'fs-xs': typographyScale.xs,
+    'fs-sm': typographyScale.sm,
+    'fs-base': typographyScale.base,
+    'fs-lg': typographyScale.lg,
+    'fs-xl': typographyScale.xl,
+    'fs-2xl': typographyScale['2xl'],
+    'fs-display': typographyScale.display,
+  }}>
+    :root {
+      --primary: var(--primary);
+      --secondary: var(--secondary);
+      --accent: var(--accent);
+      --bg: var(--bg);
+      --surface: var(--surface);
+      --text: var(--text);
+      --text-muted: var(--text-muted);
+      --text-inverse: var(--text-inverse);
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: var(--heading-font);
+      color: var(--text);
+    }
+
+    body {
+      font-family: var(--body-font);
+      background-color: var(--bg);
+      color: var(--text);
+    }
+
+    p, span, a, button, input, textarea, select {
+      font-family: var(--body-font);
+    }
+  </style>
+
+  <script>
+    // Mobile menu toggle
+    const btn = document.getElementById('mobile-menu-btn');
+    const menu = document.getElementById('mobile-menu');
+    const bar1 = document.getElementById('menu-bar-1');
+    const bar2 = document.getElementById('menu-bar-2');
+    const bar3 = document.getElementById('menu-bar-3');
+
+    if (btn && menu) {
+      btn.addEventListener('click', () => {
+        const isOpen = !menu.classList.contains('hidden');
+        menu.classList.toggle('hidden');
+        if (!isOpen) {
+          bar1?.style.setProperty('transform', 'rotate(45deg) translate(4px, 4px)');
+          bar2?.style.setProperty('opacity', '0');
+          bar3?.style.setProperty('transform', 'rotate(-45deg) translate(4px, -4px)');
+        } else {
+          bar1?.style.setProperty('transform', 'none');
+          bar2?.style.setProperty('opacity', '1');
+          bar3?.style.setProperty('transform', 'none');
+        }
+      });
+
+      // Close menu on link click
+      menu.querySelectorAll('a').forEach((link) => {
+        link.addEventListener('click', () => {
+          menu.classList.add('hidden');
+          bar1?.style.setProperty('transform', 'none');
+          bar2?.style.setProperty('opacity', '1');
+          bar3?.style.setProperty('transform', 'none');
+        });
+      });
+    }
+
+    // Scroll reveal
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+  </script>
+</body>
+</html>

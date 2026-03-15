@@ -12,8 +12,12 @@ export default defineSchema({
         email: v.optional(v.string()),
         referralCode: v.string(),
         referredBy: v.optional(v.id('creators')),
+        referredByCode: v.optional(v.string()), // Referral code used during signup
         balance: v.number(),
         totalEarnings: v.optional(v.number()), // Optional for legacy records
+        totalWithdrawn: v.optional(v.number()), // Lifetime total withdrawn
+        submissionCount: v.optional(v.number()), // Total submissions created
+        referredByName: v.optional(v.string()), // Full name of the referrer
         status: v.optional(v.union(
             v.literal('pending'),
             v.literal('active'),
@@ -23,6 +27,10 @@ export default defineSchema({
         payoutMethod: v.optional(v.string()),
         payoutDetails: v.optional(v.string()),
         createdAt: v.optional(v.number()), // Timestamp from legacy records
+        updatedAt: v.optional(v.number()), // Last profile update
+        lastActiveAt: v.optional(v.number()), // Last activity timestamp
+        profileImage: v.optional(v.string()), // Profile image URL (R2)
+        certifiedAt: v.optional(v.number()), // Timestamp when creator was certified
     })
         .index('by_clerkId', ['clerkId'])
         .index('by_email', ['email'])
@@ -52,10 +60,26 @@ export default defineSchema({
         audioUrl: v.optional(v.string()),
         transcript: v.optional(v.string()),
         transcriptionStatus: v.optional(v.string()), // Status of audio transcription
+        transcriptionError: v.optional(v.string()), // Error message if Groq Whisper transcription failed
+
+        // Extended address fields
+        province: v.optional(v.string()),
+        barangay: v.optional(v.string()),
+        postalCode: v.optional(v.string()),
+        coordinates: v.optional(v.object({ lat: v.number(), lng: v.number() })),
+        businessDescription: v.optional(v.string()), // AI-generated description from transcript
+        hasProducts: v.optional(v.boolean()), // Affects expected photo count (4 vs 6) and Airtable field mapping
 
         // Generated content
         websiteUrl: v.optional(v.string()),
         websiteCode: v.optional(v.string()),
+        aiGeneratedContent: v.optional(v.any()), // AI-extracted content from transcript
+
+        // Admin review tracking
+        reviewedBy: v.optional(v.string()), // Admin Clerk ID
+        reviewedAt: v.optional(v.number()), // Review timestamp
+        rejectionReason: v.optional(v.string()),
+        platformFee: v.optional(v.number()), // Platform fee charged
 
         // Status workflow: submitted -> in_review -> approved -> deployed -> pending_payment -> paid
         // Note: 'pending', 'completed' and 'website_generated' kept for backward compatibility with existing data
@@ -70,27 +94,37 @@ export default defineSchema({
             v.literal('pending_payment'),
             v.literal('paid'),
             v.literal('completed'),
-            v.literal('website_generated')
+            v.literal('website_generated'),
+            v.literal('unpublished')
         ),
 
         // Payment
-        amount: v.number(),
+        amount: v.optional(v.number()),
         paymentReference: v.optional(v.string()),
         paidAt: v.optional(v.number()), // Timestamp
+        sentEmailAt: v.optional(v.number()), // Timestamp when payment email was sent to client
+        unpublishedAt: v.optional(v.number()), // Timestamp when website was auto-unpublished
 
         // Creator payout
-        creatorPayout: v.number(),
+        creatorPayout: v.optional(v.number()),
         payoutRequestedAt: v.optional(v.number()), // Timestamp
         creatorPaidAt: v.optional(v.number()), // Timestamp
+
+        // Airtable sync
+        airtableRecordId: v.optional(v.string()),
+        airtableSyncStatus: v.optional(v.string()),
     })
         .index('by_creatorId', ['creatorId'])
         .index('by_status', ['status'])
-        .index('by_payoutRequested', ['payoutRequestedAt']),
+        .index('by_payoutRequested', ['payoutRequestedAt'])
+        .index('by_airtable_sync', ['airtableSyncStatus'])
+        .index('by_creator_status', ['creatorId', 'status'])
+        .index('by_city', ['city']),
 
-    // Generated websites - technical/deployment data only
+    // Generated websites - technical/deployment data + content (mobile branch merged websiteContent fields here)
     generatedWebsites: defineTable({
         submissionId: v.id('submissions'),
-        templateName: v.string(),
+        templateName: v.optional(v.string()),
         // DEPRECATED: extractedContent and customizations are being moved to websiteContent table
         // Kept for backward compatibility during migration
         extractedContent: v.optional(v.any()),
@@ -100,22 +134,310 @@ export default defineSchema({
         cssContent: v.optional(v.string()),
         htmlStorageId: v.optional(v.id('_storage')),
         // Publishing/deployment
-        status: v.union(v.literal('draft'), v.literal('published')),
+        status: v.optional(v.union(v.literal('draft'), v.literal('published'))),
         publishedUrl: v.optional(v.string()),
-        netlifySiteId: v.optional(v.string()),
+        netlifySiteId: v.optional(v.string()), // DEPRECATED - kept for existing data
+        cfPagesProjectName: v.optional(v.string()), // Cloudflare Pages project name
         publishedAt: v.optional(v.number()),
+        // Domain customization
+        subdomain: v.optional(v.string()),
+        customDomain: v.optional(v.string()),
+        // ==================== CONTENT FIELDS (from mobile branch merge) ====================
+        // Hero section
+        heroTitle: v.optional(v.string()),
+        heroSubtitle: v.optional(v.string()),
+        heroHeadline: v.optional(v.string()),
+        heroSubHeadline: v.optional(v.string()),
+        heroBadgeText: v.optional(v.string()),
+        heroCtaLabel: v.optional(v.string()),
+        heroCtaLink: v.optional(v.string()),
+        heroTestimonial: v.optional(v.string()),
+        // About section
+        aboutText: v.optional(v.string()),
+        aboutDescription: v.optional(v.string()),
+        aboutHeadline: v.optional(v.string()),
+        aboutTagline: v.optional(v.string()),
+        aboutTags: v.optional(v.any()),
+        aboutContent: v.optional(v.string()),
+        // Featured section
+        featuredHeadline: v.optional(v.string()),
+        featuredSubHeadline: v.optional(v.string()),
+        featuredSubheadline: v.optional(v.string()),
+        featuredImages: v.optional(v.any()),
+        featuredProducts: v.optional(v.any()),
+        // Footer/Navbar
+        footerDescription: v.optional(v.string()),
+        navbarHeadline: v.optional(v.string()),
+        navbarCtaLabel: v.optional(v.string()),
+        navbarCtaLink: v.optional(v.string()),
+        navbarCtaText: v.optional(v.string()),
+        navbarLinks: v.optional(v.any()),
+        // Services
+        servicesHeadline: v.optional(v.string()),
+        servicesSubheadline: v.optional(v.string()),
+        servicesDescription: v.optional(v.string()),
+        // Contact
+        contactCta: v.optional(v.string()),
+        // Business info
+        businessName: v.optional(v.string()),
+        tagline: v.optional(v.string()),
+        tone: v.optional(v.string()),
+        // Content data
+        services: v.optional(v.any()),
+        images: v.optional(v.any()),
+        contact: v.optional(v.any()),
+        contactInfo: v.optional(v.any()),
+        uniqueSellingPoints: v.optional(v.any()),
+        visibility: v.optional(v.any()),
+        socialLinks: v.optional(v.any()),
+        // Enhanced images
+        enhancedImages: v.optional(v.any()),
+        // Tracking
+        updatedAt: v.optional(v.number()),
+        airtableSyncedAt: v.optional(v.number()),
     })
         .index('by_submissionId', ['submissionId'])
         .index('by_status', ['status']),
 
+    // ==================== AUDIT LOGS ====================
+    auditLogs: defineTable({
+        adminId: v.string(), // Clerk user ID of the admin
+        action: v.union(
+            v.literal('submission_approved'),
+            v.literal('submission_rejected'),
+            v.literal('website_generated'),
+            v.literal('website_deployed'),
+            v.literal('payment_sent'),
+            v.literal('payment_confirmed'),
+            v.literal('submission_deleted'),
+            v.literal('creator_updated'),
+            v.literal('manual_override')
+        ),
+        targetType: v.union(
+            v.literal('submission'),
+            v.literal('creator'),
+            v.literal('website'),
+            v.literal('withdrawal')
+        ),
+        targetId: v.string(),
+        metadata: v.optional(v.any()),
+        timestamp: v.number(),
+    })
+        .index('by_admin', ['adminId'])
+        .index('by_target', ['targetType', 'targetId'])
+        .index('by_action', ['action'])
+        .index('by_timestamp', ['timestamp']),
+
+    // ==================== EARNINGS ====================
+    earnings: defineTable({
+        creatorId: v.id('creators'),
+        submissionId: v.id('submissions'),
+        amount: v.number(),
+        type: v.union(
+            v.literal('submission_approved'),
+            v.literal('referral_bonus'),
+            v.literal('lead_bonus')
+        ),
+        status: v.union(
+            v.literal('pending'),
+            v.literal('available'),
+            v.literal('withdrawn')
+        ),
+        createdAt: v.number(),
+    })
+        .index('by_creator', ['creatorId'])
+        .index('by_submission', ['submissionId']),
+
+    // ==================== WITHDRAWALS ====================
+    withdrawals: defineTable({
+        creatorId: v.id('creators'),
+        amount: v.number(),
+        payoutMethod: v.union(
+            v.literal('gcash'),
+            v.literal('maya'),
+            v.literal('bank_transfer')
+        ),
+        accountDetails: v.string(),
+        accountHolderName: v.optional(v.string()),
+        accountNumber: v.optional(v.string()),
+        bankCode: v.optional(v.string()),
+        bankName: v.optional(v.string()),
+        failureReason: v.optional(v.string()),
+        wiseRecipientId: v.optional(v.string()),
+        wiseTransferId: v.optional(v.string()),
+        status: v.union(
+            v.literal('pending'),
+            v.literal('processing'),
+            v.literal('completed'),
+            v.literal('failed')
+        ),
+        processedAt: v.optional(v.number()),
+        transactionRef: v.optional(v.string()),
+        createdAt: v.number(),
+    })
+        .index('by_creator', ['creatorId'])
+        .index('by_status', ['status']),
+
+    // ==================== PAYOUT METHODS ====================
+    payoutMethods: defineTable({
+        creatorId: v.id('creators'),
+        type: v.union(
+            v.literal('gcash'),
+            v.literal('maya'),
+            v.literal('bank_transfer')
+        ),
+        accountName: v.string(),
+        accountNumber: v.string(),
+        bankName: v.optional(v.string()),
+        bankCode: v.optional(v.string()),
+        isDefault: v.boolean(),
+    })
+        .index('by_creator', ['creatorId']),
+
+    // ==================== LEADS ====================
+    leads: defineTable({
+        submissionId: v.id('submissions'),
+        creatorId: v.id('creators'),
+        businessOwnerId: v.optional(v.string()),
+        source: v.union(
+            v.literal('website'),
+            v.literal('qr_code'),
+            v.literal('direct')
+        ),
+        name: v.string(),
+        phone: v.string(),
+        email: v.optional(v.string()),
+        message: v.optional(v.string()),
+        status: v.union(
+            v.literal('new'),
+            v.literal('contacted'),
+            v.literal('qualified'),
+            v.literal('converted'),
+            v.literal('lost')
+        ),
+        createdAt: v.number(),
+    })
+        .index('by_submission', ['submissionId'])
+        .index('by_creator', ['creatorId'])
+        .index('by_status', ['status']),
+
+    // ==================== LEAD NOTES ====================
+    leadNotes: defineTable({
+        leadId: v.id('leads'),
+        creatorId: v.id('creators'),
+        content: v.string(),
+        createdAt: v.number(),
+    })
+        .index('by_lead', ['leadId']),
+
+    // ==================== NOTIFICATIONS ====================
+    notifications: defineTable({
+        creatorId: v.id('creators'),
+        type: v.union(
+            v.literal('submission_approved'),
+            v.literal('submission_rejected'),
+            v.literal('submission_created'),
+            v.literal('new_lead'),
+            v.literal('payout_sent'),
+            v.literal('website_live'),
+            v.literal('profile_updated'),
+            v.literal('password_changed'),
+            v.literal('certification'),
+            v.literal('system')
+        ),
+        title: v.string(),
+        body: v.string(),
+        data: v.optional(v.any()),
+        read: v.boolean(),
+        sentAt: v.number(),
+    })
+        .index('by_creator', ['creatorId'])
+        .index('by_creator_unread', ['creatorId', 'read']),
+
+    // ==================== PUSH TOKENS ====================
+    pushTokens: defineTable({
+        creatorId: v.id('creators'),
+        token: v.string(),
+        platform: v.union(
+            v.literal('ios'),
+            v.literal('android'),
+            v.literal('web')
+        ),
+        active: v.boolean(),
+    })
+        .index('by_creator', ['creatorId'])
+        .index('by_token', ['token']),
+
+    // ==================== REFERRALS ====================
+    referrals: defineTable({
+        referrerId: v.id('creators'),
+        referredId: v.id('creators'),
+        referralCode: v.string(),
+        status: v.union(
+            v.literal('pending'),
+            v.literal('qualified'),
+            v.literal('paid')
+        ),
+        bonusAmount: v.optional(v.number()),
+        qualifiedAt: v.optional(v.number()),
+        paidAt: v.optional(v.number()),
+        createdAt: v.number(),
+    })
+        .index('by_referrer', ['referrerId'])
+        .index('by_referred', ['referredId'])
+        .index('by_status', ['status']),
+
+    // ==================== ANALYTICS ====================
+    analytics: defineTable({
+        creatorId: v.id('creators'),
+        period: v.string(), // "2026-02" for monthly, "2026-02-17" for daily
+        periodType: v.union(v.literal('daily'), v.literal('monthly')),
+        submissionsCount: v.number(),
+        approvedCount: v.number(),
+        rejectedCount: v.number(),
+        leadsGenerated: v.number(),
+        earningsTotal: v.number(),
+        websitesLive: v.number(),
+        referralsCount: v.number(),
+        updatedAt: v.number(),
+    })
+        .index('by_creator_period', ['creatorId', 'periodType', 'period'])
+        .index('by_period', ['periodType', 'period']),
+
+    // ==================== WEBSITE ANALYTICS ====================
+    websiteAnalytics: defineTable({
+        submissionId: v.id('submissions'),
+        date: v.string(), // "2026-02-17"
+        pageViews: v.number(),
+        uniqueVisitors: v.number(),
+        contactClicks: v.number(),
+        whatsappClicks: v.number(),
+        phoneClicks: v.number(),
+        formSubmissions: v.number(),
+        updatedAt: v.number(),
+    })
+        .index('by_submission_date', ['submissionId', 'date'])
+        .index('by_date', ['date']),
+
+    // ==================== SETTINGS ====================
+    settings: defineTable({
+        key: v.string(),
+        value: v.any(),
+        description: v.optional(v.string()),
+        updatedAt: v.number(),
+        updatedBy: v.optional(v.string()),
+    })
+        .index('by_key', ['key']),
+
     // Website content - all editable content with proper typing
     websiteContent: defineTable({
-        websiteId: v.id('generatedWebsites'),
+        websiteId: v.optional(v.id('generatedWebsites')),
+        submissionId: v.optional(v.id('submissions')), // Legacy field
 
         // ==================== BUSINESS INFO ====================
         businessName: v.string(),
-        tagline: v.string(),
-        aboutText: v.string(),
+        tagline: v.optional(v.string()),
+        aboutText: v.optional(v.string()),
         tone: v.optional(v.string()),
 
         // ==================== HERO SECTION ====================
@@ -233,18 +555,29 @@ export default defineSchema({
 
         // ==================== CUSTOMIZATIONS (STYLES) ====================
         customizations: v.optional(v.object({
-            navbarStyle: v.optional(v.string()),
             heroStyle: v.optional(v.string()),
             aboutStyle: v.optional(v.string()),
             servicesStyle: v.optional(v.string()),
+            galleryStyle: v.optional(v.string()),
+            contactStyle: v.optional(v.string()),
+            // Legacy fields for backward compat
+            navbarStyle: v.optional(v.string()),
             featuredStyle: v.optional(v.string()),
             footerStyle: v.optional(v.string()),
             colorScheme: v.optional(v.string()),
             fontPairing: v.optional(v.string()),
         })),
 
+        // ==================== LEGACY FIELDS ====================
+        enhancedImages: v.optional(v.any()),
+        contactCta: v.optional(v.string()),
+        servicesDescription: v.optional(v.string()),
+        heroSubHeadline: v.optional(v.string()),
+        airtableSyncedAt: v.optional(v.number()),
+
         // ==================== METADATA ====================
         updatedAt: v.number(),
     })
-        .index('by_websiteId', ['websiteId']),
+        .index('by_websiteId', ['websiteId'])
+        .index('by_submissionId', ['submissionId']),
 });

@@ -3,11 +3,7 @@ import { Save, RotateCcw, Eye, EyeOff, Image as ImageIcon, Upload } from 'lucide
 import { toast } from 'sonner'
 import { useMutation, useQuery } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { getHeroStyleFields } from '@/lib/templates/hero-styles'
-import { getServicesStyleFields } from '@/lib/templates/services-styles'
-import { getAboutStyleFields } from '@/lib/templates/about-styles'
-import { getFeaturedStyleFields } from '@/lib/templates/featured-styles'
-import { getNavbarStyleFields } from '@/lib/templates/navbar-styles'
+import { getHeroStyleFields, getAboutStyleFields, getServicesStyleFields, getGalleryStyleFields } from '@/lib/template-fields'
 
 interface Service {
     name: string
@@ -53,6 +49,10 @@ interface WebsiteContent {
         social_links?: { platform: string; url: string }[]
     }
     hero_cta?: {
+        label: string
+        link: string
+    }
+    hero_cta_secondary?: {
         label: string
         link: string
     }
@@ -142,12 +142,12 @@ interface VisualEditorProps {
     htmlContent: string
     submissionId: string
     onSave: (content: WebsiteContent) => Promise<void>
-    availableImages?: string[] // Images from submission stored in Convex
-    navbarStyle?: string // Navbar section style variant
+    availableImages?: string[] // All images (enhanced + original combined)
+    originalImages?: string[] // Original submission photos only
     heroStyle?: string // Hero section style variant
     aboutStyle?: string // About section style variant
     servicesStyle?: string // Services section style variant
-    featuredStyle?: string // Featured section style variant
+    galleryStyle?: string // Gallery section style variant (was featuredStyle)
 }
 
 export default function VisualEditor({
@@ -156,11 +156,11 @@ export default function VisualEditor({
     submissionId,
     onSave,
     availableImages = [],
-    navbarStyle = '1',
-    heroStyle = '1',
-    aboutStyle = '1',
-    servicesStyle = '1',
-    featuredStyle = '1'
+    originalImages = [],
+    heroStyle = 'A',
+    aboutStyle = 'A',
+    servicesStyle = 'A',
+    galleryStyle = 'A'
 }: VisualEditorProps) {
     const [content, setContent] = useState<WebsiteContent>(initialContent)
     const [isSaving, setIsSaving] = useState(false)
@@ -171,10 +171,12 @@ export default function VisualEditor({
     const aboutFileInputRef = useRef<HTMLInputElement>(null)
     const servicesFileInputRef = useRef<HTMLInputElement>(null)
     const featuredFileInputRef = useRef<HTMLInputElement>(null)
+    const productFileInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
     const [isUploading, setIsUploading] = useState(false)
     const [isUploadingAboutImage, setIsUploadingAboutImage] = useState(false)
     const [isUploadingServicesImage, setIsUploadingServicesImage] = useState(false)
     const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] = useState(false)
+    const [uploadingProductIndex, setUploadingProductIndex] = useState<number | null>(null)
     const [showImagePicker, setShowImagePicker] = useState(false)
     const [showAboutImagePicker, setShowAboutImagePicker] = useState(false)
     const [showServicesImagePicker, setShowServicesImagePicker] = useState(false)
@@ -184,21 +186,30 @@ export default function VisualEditor({
     const [resolvedAboutImages, setResolvedAboutImages] = useState<string[]>([])
     const [resolvedServicesImage, setResolvedServicesImage] = useState<string | null>(null)
     const [resolvedFeaturedImages, setResolvedFeaturedImages] = useState<string[]>([])
-
-    // Get which fields the current navbar style uses
-    const navbarFields = useMemo(() => getNavbarStyleFields(navbarStyle), [navbarStyle])
+    const [resolvedProductImages, setResolvedProductImages] = useState<Record<number, string>>({})
 
     // Get which fields the current hero style uses
     const heroFields = useMemo(() => getHeroStyleFields(heroStyle), [heroStyle])
 
     // Get which fields the current about style uses
     const aboutFields = useMemo(() => getAboutStyleFields(aboutStyle), [aboutStyle])
+    // About variants B, D, F and legacy '3' use a single image; others use a gallery of up to 4
+    const aboutSingleImage = aboutStyle === '3' || aboutStyle === 'C' || aboutStyle === 'F'
 
     // Get which fields the current services style uses
     const servicesFields = useMemo(() => getServicesStyleFields(servicesStyle), [servicesStyle])
 
-    // Get which fields the current featured style uses
-    const featuredFields = useMemo(() => getFeaturedStyleFields(featuredStyle), [featuredStyle])
+    // Get which fields the current gallery style uses
+    const galleryFields = useMemo(() => getGalleryStyleFields(galleryStyle), [galleryStyle])
+
+    // Separate enhanced (AI-generated) images from original images
+    const enhancedOnlyImages = useMemo(() => {
+        const originalSet = new Set(originalImages)
+        return availableImages.filter(url => !originalSet.has(url))
+    }, [availableImages, originalImages])
+
+    const hasOriginalImages = originalImages.length > 0
+    const hasEnhancedOnlyImages = enhancedOnlyImages.length > 0
 
     // Sync initialContent changes to content state (for when props update after mount)
     useEffect(() => {
@@ -341,6 +352,33 @@ export default function VisualEditor({
         }
     }, [resolvedFeaturedImageUrls, content.featured_images])
 
+    // Resolve product images URLs - handles convex:xxx format for uploaded product images
+    const productStorageIds = useMemo(() => {
+        return (content.featured_products || [])
+            .map(p => p.image)
+            .filter((img): img is string => !!img && !img.startsWith('http'))
+    }, [content.featured_products])
+    const resolvedProductImageUrls = useQuery(
+        api.files.getMultipleUrls,
+        productStorageIds.length > 0 ? { storageIds: productStorageIds } : 'skip'
+    )
+
+    useEffect(() => {
+        const products = content.featured_products || []
+        const resolved: Record<number, string> = {}
+        products.forEach((product, index) => {
+            if (product.image?.startsWith('http')) {
+                resolved[index] = product.image
+            } else if (product.image) {
+                const storageIdx = productStorageIds.indexOf(product.image)
+                if (resolvedProductImageUrls && storageIdx !== -1 && resolvedProductImageUrls[storageIdx]) {
+                    resolved[index] = resolvedProductImageUrls[storageIdx]!
+                }
+            }
+        })
+        setResolvedProductImages(resolved)
+    }, [resolvedProductImageUrls, content.featured_products, productStorageIds])
+
     // Initialize missing fields with defaults on mount
     useEffect(() => {
         setContent(prev => {
@@ -444,8 +482,8 @@ export default function VisualEditor({
                 next.navbar_links = [
                     { label: 'About', href: '#about' },
                     { label: 'Services', href: '#services' },
-                    { label: 'Featured', href: '#featured' },
-                    { label: 'Contacts', href: '#contact' }
+                    { label: 'Gallery', href: '#gallery' },
+                    { label: 'Contact', href: '#contact' }
                 ]
                 changed = true
             }
@@ -729,81 +767,7 @@ export default function VisualEditor({
                             </div>
                         )}
 
-                        {/* Navbar Headline - Only show for navbar style 4 (Headline with Bullets) */}
-                        {content.visibility?.navbar !== false && navbarFields.usesHeadline && (
-                            <div
-                                onMouseEnter={() => highlightElement('.nav-headline')}
-                                onMouseLeave={removeHighlight}
-                                className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"
-                            >
-                                <div className="flex items-center justify-between mb-3">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Navbar Headline
-                                    </label>
-                                    <button
-                                        type="button"
-                                        onClick={() => updateField('visibility', {
-                                            ...content.visibility,
-                                            navbar_headline: content.visibility?.navbar_headline === false ? true : false
-                                        })}
-                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                                            content.visibility?.navbar_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
-                                        }`}
-                                    >
-                                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                            content.visibility?.navbar_headline !== false ? 'translate-x-4.5' : 'translate-x-1'
-                                        }`} />
-                                    </button>
-                                </div>
-                                <input
-                                    type="text"
-                                    value={content.navbar_headline || 'Timeless Designs Built To Be Desired'}
-                                    onChange={(e) => updateField('navbar_headline', e.target.value)}
-                                    placeholder="Timeless Designs Built To Be Desired"
-                                    disabled={content.visibility?.navbar_headline === false}
-                                    className={`w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                        content.visibility?.navbar_headline === false ? 'opacity-50 bg-gray-100' : ''
-                                    }`}
-                                />
-                                <p className="text-xs text-gray-500 mt-2">A short tagline displayed next to your brand name</p>
-                            </div>
-                        )}
-
-                        {/* Navbar CTA Button - Only show for styles that use CTA */}
-                        {content.visibility?.navbar !== false && navbarFields.usesCta && (
-                            <div
-                                onMouseEnter={() => highlightElement('.cta-button')}
-                                onMouseLeave={removeHighlight}
-                                className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"
-                            >
-                                <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    CTA Button
-                                </label>
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Button Text</label>
-                                        <input
-                                            type="text"
-                                            value={content.navbar_cta_text || 'Get in Touch'}
-                                            onChange={(e) => updateField('navbar_cta_text', e.target.value)}
-                                            placeholder="Get in Touch"
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Button Link</label>
-                                        <input
-                                            type="text"
-                                            value={content.navbar_cta_link || '#contact'}
-                                            onChange={(e) => updateField('navbar_cta_link', e.target.value)}
-                                            placeholder="#contact"
-                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        />
-                                    </div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-3">Customize the call-to-action button in your navigation bar</p>
-                            </div>
-                        )}
+                        {/* Navbar headline and CTA removed - BaseLayout uses a unified navbar design */}
                     </div>
 
                     {/* Hero Section - All fields grouped together */}
@@ -886,7 +850,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_headline: !content.visibility?.hero_headline
+                                        hero_headline: content.visibility?.hero_headline !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -933,7 +897,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_tagline: !content.visibility?.hero_tagline
+                                        hero_tagline: content.visibility?.hero_tagline !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_tagline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -981,7 +945,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_description: !content.visibility?.hero_description
+                                        hero_description: content.visibility?.hero_description !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_description !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1029,7 +993,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_testimonial: !content.visibility?.hero_testimonial
+                                        hero_testimonial: content.visibility?.hero_testimonial !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_testimonial !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1053,8 +1017,8 @@ export default function VisualEditor({
                         </div>
                         )}
 
-                        {/* Hero Button (CTA) - Only show if hero style uses it */}
-                        {heroFields.usesButton && (
+                        {/* Hero Button (CTA) - Show for styles that use buttons (A, C, E, F) */}
+                        {(heroFields.usesButton || heroStyle === 'E' || heroStyle === 'F' || heroStyle === '5' || heroStyle === '6') && (
                         <div
                             onMouseEnter={() => highlightElement('.cta-button')}
                             onMouseLeave={removeHighlight}
@@ -1077,7 +1041,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_button: !content.visibility?.hero_button
+                                        hero_button: content.visibility?.hero_button !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_button !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1122,7 +1086,48 @@ export default function VisualEditor({
                                     />
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">Call-to-action button displayed in the hero section</p>
+                            {heroStyle === 'F' && (
+                                <>
+                                    <div className="mt-4 pt-3 border-t border-gray-200">
+                                        <label className="block text-xs text-gray-500 mb-1 font-medium">Secondary Button</label>
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Secondary Button Text</label>
+                                            <input
+                                                type="text"
+                                                value={content.hero_cta_secondary?.label || ''}
+                                                onChange={(e) => updateField('hero_cta_secondary', {
+                                                    ...content.hero_cta_secondary,
+                                                    label: e.target.value,
+                                                    link: content.hero_cta_secondary?.link || '#about'
+                                                })}
+                                                disabled={content.visibility?.hero_button === false}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                placeholder="e.g. Our Story"
+                                                maxLength={50}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Secondary Button Link</label>
+                                            <input
+                                                type="text"
+                                                value={content.hero_cta_secondary?.link || ''}
+                                                onChange={(e) => updateField('hero_cta_secondary', {
+                                                    ...content.hero_cta_secondary,
+                                                    label: content.hero_cta_secondary?.label || 'Our Story',
+                                                    link: e.target.value
+                                                })}
+                                                disabled={content.visibility?.hero_button === false}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                                placeholder="e.g. #about or https://..."
+                                                maxLength={200}
+                                            />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                            <p className="text-xs text-gray-500 mt-2">Call-to-action button{heroStyle === 'F' ? 's' : ''} displayed in the hero section</p>
                         </div>
                         )}
 
@@ -1150,7 +1155,7 @@ export default function VisualEditor({
                                     type="button"
                                     onClick={() => updateField('visibility', {
                                         ...content.visibility,
-                                        hero_image: !content.visibility?.hero_image
+                                        hero_image: content.visibility?.hero_image !== false ? false : true
                                     })}
                                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                         content.visibility?.hero_image !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1354,58 +1359,134 @@ export default function VisualEditor({
                                         <p className="text-sm text-gray-500 mb-4">
                                             {heroStyle === '3'
                                                 ? 'Click on images to add them to the carousel. Already added images are marked with a checkmark.'
-                                                : 'Select an image from the submission\'s uploaded photos:'}
+                                                : 'Select an image from the available photos:'}
                                         </p>
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                            {availableImages.map((imageUrl, index) => {
-                                                const isSelected = content.images?.includes(imageUrl)
-                                                return (
-                                                    <button
-                                                        key={index}
-                                                        onClick={() => {
-                                                            if (heroStyle === '3') {
-                                                                // For carousel, toggle the image
-                                                                const newImages = content.images ? [...content.images] : []
-                                                                if (isSelected) {
-                                                                    // Remove from carousel
-                                                                    const filtered = newImages.filter(img => img !== imageUrl)
-                                                                    updateField('images', filtered)
-                                                                    toast.success('Image removed from carousel')
+                                        {/* Original Photos Section */}
+                                        {hasOriginalImages && (
+                                            <>
+                                                <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Original Photos</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                                                    {originalImages.map((imageUrl, index) => {
+                                                        const isSelected = content.images?.includes(imageUrl)
+                                                        return (
+                                                            <button
+                                                                key={`orig-${index}`}
+                                                                onClick={() => {
+                                                                    if (heroStyle === '3') {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        if (isSelected) {
+                                                                            updateField('images', newImages.filter(img => img !== imageUrl))
+                                                                            toast.success('Image removed from carousel')
+                                                                        } else {
+                                                                            newImages.push(imageUrl)
+                                                                            updateField('images', newImages)
+                                                                            toast.success('Image added to carousel')
+                                                                        }
+                                                                    } else {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        newImages[0] = imageUrl
+                                                                        updateField('images', newImages)
+                                                                        setShowImagePicker(false)
+                                                                        toast.success('Hero image updated')
+                                                                    }
+                                                                }}
+                                                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                    isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                }`}
+                                                            >
+                                                                <img src={imageUrl} alt={`Original ${index + 1}`} className="w-full h-full object-cover" />
+                                                                {isSelected && (
+                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                )}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
+                                        {/* AI-Enhanced Photos Section */}
+                                        {hasEnhancedOnlyImages && (
+                                            <>
+                                                <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">AI-Enhanced Photos</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    {enhancedOnlyImages.map((imageUrl, index) => {
+                                                        const isSelected = content.images?.includes(imageUrl)
+                                                        return (
+                                                            <button
+                                                                key={`enh-${index}`}
+                                                                onClick={() => {
+                                                                    if (heroStyle === '3') {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        if (isSelected) {
+                                                                            updateField('images', newImages.filter(img => img !== imageUrl))
+                                                                            toast.success('Image removed from carousel')
+                                                                        } else {
+                                                                            newImages.push(imageUrl)
+                                                                            updateField('images', newImages)
+                                                                            toast.success('Image added to carousel')
+                                                                        }
+                                                                    } else {
+                                                                        const newImages = content.images ? [...content.images] : []
+                                                                        newImages[0] = imageUrl
+                                                                        updateField('images', newImages)
+                                                                        setShowImagePicker(false)
+                                                                        toast.success('Hero image updated')
+                                                                    }
+                                                                }}
+                                                                className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                    isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                }`}
+                                                            >
+                                                                <img src={imageUrl} alt={`Enhanced ${index + 1}`} className="w-full h-full object-cover" />
+                                                                {isSelected && (
+                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                )}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
+                                        {/* Fallback: show all if no categorization */}
+                                        {!hasOriginalImages && !hasEnhancedOnlyImages && availableImages.length > 0 && (
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                {availableImages.map((imageUrl, index) => {
+                                                    const isSelected = content.images?.includes(imageUrl)
+                                                    return (
+                                                        <button
+                                                            key={index}
+                                                            onClick={() => {
+                                                                if (heroStyle === '3') {
+                                                                    const newImages = content.images ? [...content.images] : []
+                                                                    if (isSelected) {
+                                                                        updateField('images', newImages.filter(img => img !== imageUrl))
+                                                                        toast.success('Image removed from carousel')
+                                                                    } else {
+                                                                        newImages.push(imageUrl)
+                                                                        updateField('images', newImages)
+                                                                        toast.success('Image added to carousel')
+                                                                    }
                                                                 } else {
-                                                                    // Add to carousel
-                                                                    newImages.push(imageUrl)
+                                                                    const newImages = content.images ? [...content.images] : []
+                                                                    newImages[0] = imageUrl
                                                                     updateField('images', newImages)
-                                                                    toast.success('Image added to carousel')
+                                                                    setShowImagePicker(false)
+                                                                    toast.success('Hero image updated')
                                                                 }
-                                                            } else {
-                                                                // For other styles, replace the first image
-                                                                const newImages = content.images ? [...content.images] : []
-                                                                newImages[0] = imageUrl
-                                                                updateField('images', newImages)
-                                                                setShowImagePicker(false)
-                                                                toast.success('Hero image updated')
-                                                            }
-                                                        }}
-                                                        className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                            isSelected
-                                                                ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                : 'border-gray-200'
-                                                        }`}
-                                                    >
-                                                        <img
-                                                            src={imageUrl}
-                                                            alt={`Option ${index + 1}`}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                        {isSelected && (
-                                                            <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                ✓
-                                                            </div>
-                                                        )}
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
+                                                            }}
+                                                            className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                            }`}
+                                                        >
+                                                            <img src={imageUrl} alt={`Option ${index + 1}`} className="w-full h-full object-cover" />
+                                                            {isSelected && (
+                                                                <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="p-4 border-t border-gray-200 bg-gray-50">
                                         {heroStyle === '3' && (
@@ -1527,7 +1608,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_headline: !content.visibility?.about_headline
+                                                about_headline: content.visibility?.about_headline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1574,7 +1655,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_description: !content.visibility?.about_description
+                                                about_description: content.visibility?.about_description !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_description !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1614,13 +1695,13 @@ export default function VisualEditor({
                                             ) : (
                                                 <EyeOff className="w-4 h-4 text-gray-400" />
                                             )}
-                                            {aboutStyle === '3' ? 'About Image' : 'About Images Gallery'}
+                                            {aboutSingleImage ? 'About Image' : 'About Images Gallery'}
                                         </label>
                                         <button
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_images: !content.visibility?.about_images
+                                                about_images: content.visibility?.about_images !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_images !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1632,14 +1713,14 @@ export default function VisualEditor({
                                         </button>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-3">
-                                        {aboutStyle === '3'
+                                        {aboutSingleImage
                                             ? 'Select 1 image for the about section'
                                             : 'Select up to 4 images for the horizontal gallery with scroll animations'}
                                     </p>
 
                                     {/* Current selected images */}
-                                    <div className={`grid gap-2 mb-3 ${aboutStyle === '3' ? 'grid-cols-1 max-w-[200px]' : 'grid-cols-4'}`}>
-                                        {(aboutStyle === '3' ? [0] : [0, 1, 2, 3]).map((index) => {
+                                    <div className={`grid gap-2 mb-3 ${aboutSingleImage ? 'grid-cols-1 max-w-[200px]' : 'grid-cols-4'}`}>
+                                        {(aboutSingleImage ? [0] : [0, 1, 2, 3]).map((index) => {
                                             const aboutImagesRaw = content.about_images || availableImages
                                             const rawImageUrl = aboutImagesRaw[index]
                                             // Use resolved URL if available, otherwise use raw URL (for http URLs)
@@ -1693,7 +1774,7 @@ export default function VisualEditor({
                                                 className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center gap-2 text-sm font-medium"
                                             >
                                                 <ImageIcon className="w-4 h-4" />
-                                                {aboutStyle === '3' ? 'Choose Image' : 'Choose Images'}
+                                                {aboutSingleImage ? 'Choose Image' : 'Choose Images'}
                                             </button>
                                         )}
 
@@ -1708,7 +1789,7 @@ export default function VisualEditor({
                                                 // Use current about_images if set, otherwise empty array for uploads
                                                 // (don't fall back to availableImages for upload validation)
                                                 const currentImages = content.about_images || []
-                                                const maxImages = aboutStyle === '3' ? 1 : 4
+                                                const maxImages = aboutSingleImage ? 1 : 4
                                                 if (currentImages.length >= maxImages) {
                                                     toast.error(`Maximum ${maxImages} image${maxImages > 1 ? 's' : ''} allowed. Remove an image first.`)
                                                     return
@@ -1763,7 +1844,7 @@ export default function VisualEditor({
                                         />
                                         <button
                                             onClick={() => aboutFileInputRef.current?.click()}
-                                            disabled={isUploadingAboutImage || (content.about_images?.length || 0) >= (aboutStyle === '3' ? 1 : 4)}
+                                            disabled={isUploadingAboutImage || (content.about_images?.length || 0) >= (aboutSingleImage ? 1 : 4)}
                                             className="flex-1 px-3 py-2 bg-white border border-dashed border-gray-300 rounded-md hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             <Upload className="w-4 h-4" />
@@ -1798,7 +1879,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_tagline: !content.visibility?.about_tagline
+                                                about_tagline: content.visibility?.about_tagline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_tagline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1846,7 +1927,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                about_tags: !content.visibility?.about_tags
+                                                about_tags: content.visibility?.about_tags !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.about_tags !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -1928,7 +2009,7 @@ export default function VisualEditor({
                                         <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
                                             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                                                 <h3 className="text-lg font-semibold text-gray-900">
-                                                    {aboutStyle === '3' ? 'Select About Image' : 'Select About Gallery Images'}
+                                                    {aboutSingleImage ? 'Select About Image' : 'Select About Gallery Images'}
                                                 </h3>
                                                 <button
                                                     onClick={() => setShowAboutImagePicker(false)}
@@ -1939,64 +2020,65 @@ export default function VisualEditor({
                                             </div>
                                             <div className="p-4 overflow-y-auto max-h-[60vh]">
                                                 <p className="text-sm text-gray-500 mb-4">
-                                                    {aboutStyle === '3'
+                                                    {aboutSingleImage
                                                         ? 'Click an image to select it for the about section.'
                                                         : 'Click images to select/deselect. Selected images show their order number. Maximum 4 images.'}
                                                 </p>
-                                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                                    {availableImages.map((imageUrl, index) => {
-                                                        const aboutImages = content.about_images || availableImages
-                                                        const isSelected = aboutImages.includes(imageUrl)
-                                                        const selectedIndex = aboutImages.indexOf(imageUrl)
-                                                        const maxImagesForPicker = aboutStyle === '3' ? 1 : 4
-                                                        return (
-                                                            <button
-                                                                key={index}
-                                                                onClick={() => {
-                                                                    const currentImages = content.about_images || [...availableImages]
-                                                                    if (isSelected) {
-                                                                        // Remove from selection
-                                                                        const newImages = currentImages.filter(img => img !== imageUrl)
-                                                                        updateField('about_images', newImages)
-                                                                    } else {
-                                                                        // Add to selection (max based on style)
-                                                                        if (aboutStyle === '3') {
-                                                                            // For style 3, replace the single image
-                                                                            updateField('about_images', [imageUrl])
-                                                                        } else if (currentImages.length < maxImagesForPicker) {
-                                                                            updateField('about_images', [...currentImages, imageUrl])
-                                                                        } else {
-                                                                            toast.error(`Maximum ${maxImagesForPicker} images allowed`)
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                                    isSelected
-                                                                        ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                        : 'border-gray-200'
-                                                                }`}
-                                                            >
-                                                                <img
-                                                                    src={imageUrl}
-                                                                    alt={`Option ${index + 1}`}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                                {isSelected && (
-                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                        {aboutStyle === '3' ? '✓' : selectedIndex + 1}
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
+                                                {/* Render categorized image sections */}
+                                                {[
+                                                    ...(hasOriginalImages ? [{ label: 'Original Photos', images: originalImages, prefix: 'orig' }] : []),
+                                                    ...(hasEnhancedOnlyImages ? [{ label: 'AI-Enhanced Photos', images: enhancedOnlyImages, prefix: 'enh' }] : []),
+                                                    ...(!hasOriginalImages && !hasEnhancedOnlyImages ? [{ label: '', images: availableImages, prefix: 'all' }] : [])
+                                                ].map(({ label, images, prefix }) => (
+                                                    <div key={prefix} className="mb-4">
+                                                        {label && <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">{label}</p>}
+                                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                                            {images.map((imageUrl, index) => {
+                                                                const aboutImages = content.about_images || availableImages
+                                                                const isSelected = aboutImages.includes(imageUrl)
+                                                                const selectedIndex = aboutImages.indexOf(imageUrl)
+                                                                const maxImagesForPicker = aboutSingleImage ? 1 : 4
+                                                                return (
+                                                                    <button
+                                                                        key={`${prefix}-${index}`}
+                                                                        onClick={() => {
+                                                                            const currentImages = content.about_images || [...availableImages]
+                                                                            if (isSelected) {
+                                                                                const newImages = currentImages.filter(img => img !== imageUrl)
+                                                                                updateField('about_images', newImages)
+                                                                            } else {
+                                                                                if (aboutSingleImage) {
+                                                                                    updateField('about_images', [imageUrl])
+                                                                                } else if (currentImages.length < maxImagesForPicker) {
+                                                                                    updateField('about_images', [...currentImages, imageUrl])
+                                                                                } else {
+                                                                                    toast.error(`Maximum ${maxImagesForPicker} images allowed`)
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                        className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                            isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                        }`}
+                                                                    >
+                                                                        <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
+                                                                        {isSelected && (
+                                                                            <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                                                                {aboutSingleImage ? '✓' : selectedIndex + 1}
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                             <div className="p-4 border-t border-gray-200 bg-gray-50 flex gap-2">
                                                 <button
                                                     onClick={() => setShowAboutImagePicker(false)}
                                                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
                                                 >
-                                                    Done ({(content.about_images || availableImages).length}/{aboutStyle === '3' ? 1 : 4} selected)
+                                                    Done ({(content.about_images || availableImages).length}/{aboutSingleImage ? 1 : 4} selected)
                                                 </button>
                                             </div>
                                         </div>
@@ -2105,7 +2187,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                services_headline: !content.visibility?.services_headline
+                                                services_headline: content.visibility?.services_headline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.services_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2152,7 +2234,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                services_subheadline: !content.visibility?.services_subheadline
+                                                services_subheadline: content.visibility?.services_subheadline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.services_subheadline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2200,7 +2282,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                services_image: !content.visibility?.services_image
+                                                services_image: content.visibility?.services_image !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.services_image !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2445,36 +2527,37 @@ export default function VisualEditor({
                                             </div>
                                             <div className="p-4 overflow-y-auto max-h-[60vh]">
                                                 <p className="text-sm text-gray-500 mb-4">
-                                                    Select an image from the submission&apos;s uploaded photos:
+                                                    Select an image from the available photos:
                                                 </p>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                    {availableImages.map((imageUrl, index) => (
-                                                        <button
-                                                            key={index}
-                                                            onClick={() => {
-                                                                updateField('services_image', imageUrl)
-                                                                setShowServicesImagePicker(false)
-                                                                toast.success('Services image updated')
-                                                            }}
-                                                            className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                                content.services_image === imageUrl
-                                                                    ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                    : 'border-gray-200'
-                                                            }`}
-                                                        >
-                                                            <img
-                                                                src={imageUrl}
-                                                                alt={`Option ${index + 1}`}
-                                                                className="w-full h-full object-cover"
-                                                            />
-                                                            {content.services_image === imageUrl && (
-                                                                <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                    ✓
-                                                                </div>
-                                                            )}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                                {[
+                                                    ...(hasOriginalImages ? [{ label: 'Original Photos', images: originalImages, prefix: 'orig' }] : []),
+                                                    ...(hasEnhancedOnlyImages ? [{ label: 'AI-Enhanced Photos', images: enhancedOnlyImages, prefix: 'enh' }] : []),
+                                                    ...(!hasOriginalImages && !hasEnhancedOnlyImages ? [{ label: '', images: availableImages, prefix: 'all' }] : [])
+                                                ].map(({ label, images, prefix }) => (
+                                                    <div key={prefix} className="mb-4">
+                                                        {label && <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">{label}</p>}
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                            {images.map((imageUrl, index) => (
+                                                                <button
+                                                                    key={`${prefix}-${index}`}
+                                                                    onClick={() => {
+                                                                        updateField('services_image', imageUrl)
+                                                                        setShowServicesImagePicker(false)
+                                                                        toast.success('Services image updated')
+                                                                    }}
+                                                                    className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                        content.services_image === imageUrl ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                    }`}
+                                                                >
+                                                                    <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
+                                                                    {content.services_image === imageUrl && (
+                                                                        <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                             <div className="p-4 border-t border-gray-200 bg-gray-50">
                                                 <button
@@ -2491,12 +2574,12 @@ export default function VisualEditor({
                         )}
                     </div>
 
-                    {/* Featured Section */}
+                    {/* Gallery Section (was Featured) */}
                     <div className="space-y-4">
-                        {/* Featured Section Header with Toggle */}
+                        {/* Gallery Section Header with Toggle */}
                         <div
                             className="flex items-center justify-between"
-                            onMouseEnter={() => highlightElement('.featured-refit-wrapper')}
+                            onMouseEnter={() => highlightElement('#gallery')}
                             onMouseLeave={removeHighlight}
                         >
                             <h4 className={`font-medium text-lg flex items-center gap-2 ${
@@ -2507,7 +2590,7 @@ export default function VisualEditor({
                                 ) : (
                                     <EyeOff className="w-4 h-4" />
                                 )}
-                                Featured Section
+                                Gallery Section
                             </h4>
                             <button
                                 type="button"
@@ -2551,7 +2634,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                featured_headline: !content.visibility?.featured_headline
+                                                featured_headline: content.visibility?.featured_headline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.featured_headline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2597,7 +2680,7 @@ export default function VisualEditor({
                                             type="button"
                                             onClick={() => updateField('visibility', {
                                                 ...content.visibility,
-                                                featured_subheadline: !content.visibility?.featured_subheadline
+                                                featured_subheadline: content.visibility?.featured_subheadline !== false ? false : true
                                             })}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
                                                 content.visibility?.featured_subheadline !== false ? 'bg-blue-600' : 'bg-gray-300'
@@ -2620,8 +2703,8 @@ export default function VisualEditor({
                                     <p className="text-xs text-gray-500 mt-1">Description text below the headline</p>
                                 </div>
 
-                                {/* Featured CTA Button - Only show if style uses CTA */}
-                                {featuredFields.usesCta && (
+                                {/* Featured CTA Button - Show for styles that use CTA (D, F) */}
+                                {(galleryFields.usesCta || galleryStyle === 'D' || galleryStyle === 'F' || galleryStyle === '4' || galleryStyle === '6') && (
                                     <div
                                         onMouseEnter={() => highlightElement('.featured-masonry .cta-button')}
                                         onMouseLeave={removeHighlight}
@@ -2660,7 +2743,7 @@ export default function VisualEditor({
                                 )}
 
                                 {/* Featured Products List - Only show if style uses products */}
-                                {featuredFields.usesProducts && (
+                                {galleryFields.usesProducts && (
                                 <div
                                     onMouseEnter={() => highlightElement('.featured-refit .projects-container')}
                                     onMouseLeave={removeHighlight}
@@ -2734,10 +2817,11 @@ export default function VisualEditor({
                                                     </div>
 
                                                     {/* Product Image - shown for all product-based styles */}
-                                                    {featuredFields.usesProducts && (() => {
+                                                    {galleryFields.usesProducts && (() => {
                                                         // Calculate actual display image (explicit or fallback)
                                                         const fallbackImage = availableImages[index % Math.max(availableImages.length, 1)]
-                                                        const displayImage = project.image || fallbackImage
+                                                        const resolvedImg = resolvedProductImages[index]
+                                                        const displayImage = resolvedImg || (project.image?.startsWith('http') ? project.image : null) || fallbackImage
 
                                                         return (
                                                             <div className="space-y-1">
@@ -2756,9 +2840,9 @@ export default function VisualEditor({
                                                                             <ImageIcon className="w-6 h-6 text-gray-300" />
                                                                         </div>
                                                                     )}
-                                                                    <div className="flex-1">
+                                                                    <div className="flex-1 space-y-1.5">
                                                                         <select
-                                                                            value={project.image || fallbackImage || ''}
+                                                                            value={project.image?.startsWith('http') ? project.image : (project.image ? '' : (fallbackImage || ''))}
                                                                             onChange={(e) => {
                                                                                 const newProjects = [...(content.featured_products || [])]
                                                                                 newProjects[index] = { ...newProjects[index], image: e.target.value || undefined }
@@ -2766,35 +2850,105 @@ export default function VisualEditor({
                                                                             }}
                                                                             className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                                                                         >
-                                                                            {availableImages.map((img, imgIndex) => (
+                                                                            {project.image && !project.image.startsWith('http') && (
+                                                                                <option value="">Uploaded Image</option>
+                                                                            )}
+                                                                            {hasOriginalImages && (
+                                                                                <optgroup label="Original Photos">
+                                                                                    {originalImages.map((img, imgIndex) => (
+                                                                                        <option key={`orig-${imgIndex}`} value={img}>
+                                                                                            Original {imgIndex + 1}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </optgroup>
+                                                                            )}
+                                                                            {hasEnhancedOnlyImages && (
+                                                                                <optgroup label="AI-Enhanced Photos">
+                                                                                    {enhancedOnlyImages.map((img, imgIndex) => (
+                                                                                        <option key={`enh-${imgIndex}`} value={img}>
+                                                                                            Enhanced {imgIndex + 1}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </optgroup>
+                                                                            )}
+                                                                            {!hasOriginalImages && !hasEnhancedOnlyImages && availableImages.map((img, imgIndex) => (
                                                                                 <option key={imgIndex} value={img}>
                                                                                     Image {imgIndex + 1}
                                                                                 </option>
                                                                             ))}
                                                                         </select>
+                                                                        {/* Upload new image for this product */}
+                                                                        <input
+                                                                            type="file"
+                                                                            ref={(el) => { productFileInputRefs.current[index] = el }}
+                                                                            onChange={async (e) => {
+                                                                                const file = e.target.files?.[0]
+                                                                                if (!file) return
+                                                                                if (file.size > 5 * 1024 * 1024) {
+                                                                                    toast.error('File is too large. Maximum size is 5MB.')
+                                                                                    return
+                                                                                }
+                                                                                if (!file.type.startsWith('image/')) {
+                                                                                    toast.error('Only image files are allowed.')
+                                                                                    return
+                                                                                }
+                                                                                setUploadingProductIndex(index)
+                                                                                const toastId = toast.loading('Uploading image...')
+                                                                                try {
+                                                                                    const uploadUrl = await generateUploadUrl()
+                                                                                    const result = await fetch(uploadUrl, {
+                                                                                        method: 'POST',
+                                                                                        headers: { 'Content-Type': file.type },
+                                                                                        body: file,
+                                                                                    })
+                                                                                    if (!result.ok) throw new Error('Failed to upload file')
+                                                                                    const { storageId } = await result.json()
+                                                                                    const newProjects = [...(content.featured_products || [])]
+                                                                                    newProjects[index] = { ...newProjects[index], image: `convex:${storageId}` }
+                                                                                    updateField('featured_products', newProjects)
+                                                                                    toast.success('Product image uploaded', { id: toastId })
+                                                                                } catch (error) {
+                                                                                    console.error('Upload error:', error)
+                                                                                    toast.error('Failed to upload image', { id: toastId })
+                                                                                } finally {
+                                                                                    setUploadingProductIndex(null)
+                                                                                    const input = productFileInputRefs.current[index]
+                                                                                    if (input) input.value = ''
+                                                                                }
+                                                                            }}
+                                                                            accept="image/*"
+                                                                            className="hidden"
+                                                                        />
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => productFileInputRefs.current[index]?.click()}
+                                                                            disabled={uploadingProductIndex === index}
+                                                                            className="w-full px-2 py-1.5 bg-white border border-dashed border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-1.5 transition-colors"
+                                                                        >
+                                                                            <Upload className="w-3 h-3" />
+                                                                            {uploadingProductIndex === index ? 'Uploading...' : 'Upload New'}
+                                                                        </button>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                         )
                                                     })()}
 
-                                                    {/* Description - only shown for styles that use it */}
-                                                    {featuredFields.usesTestimonials && (
-                                                        <textarea
-                                                            value={project.description}
-                                                            onChange={(e) => {
-                                                                const newProjects = [...(content.featured_products || [])]
-                                                                newProjects[index] = { ...newProjects[index], description: e.target.value }
-                                                                updateField('featured_products', newProjects)
-                                                            }}
-                                                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                                                            rows={2}
-                                                            placeholder="Project description"
-                                                        />
-                                                    )}
+                                                    {/* Description - shown for all product-based styles */}
+                                                    <textarea
+                                                        value={project.description}
+                                                        onChange={(e) => {
+                                                            const newProjects = [...(content.featured_products || [])]
+                                                            newProjects[index] = { ...newProjects[index], description: e.target.value }
+                                                            updateField('featured_products', newProjects)
+                                                        }}
+                                                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                                                        rows={2}
+                                                        placeholder="Project description"
+                                                    />
 
                                                     {/* Tags/Category - shown for all styles */}
-                                                    {featuredFields.usesTags && (
+                                                    {galleryFields.usesTags && (
                                                         <input
                                                             type="text"
                                                             value={project.tags?.join(', ') || ''}
@@ -2809,7 +2963,7 @@ export default function VisualEditor({
                                                     )}
 
                                                     {/* Testimonial - only shown for styles that use it */}
-                                                    {featuredFields.usesTestimonials && (
+                                                    {galleryFields.usesTestimonials && (
                                                         <div className="pt-2 border-t border-gray-200 space-y-2">
                                                             <p className="text-xs text-gray-500">Testimonial (optional):</p>
                                                             <textarea
@@ -2856,7 +3010,7 @@ export default function VisualEditor({
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    const newProject = featuredFields.usesTestimonials
+                                                    const newProject = galleryFields.usesTestimonials
                                                         ? {
                                                             title: '',
                                                             description: '',
@@ -2885,7 +3039,7 @@ export default function VisualEditor({
                                 )}
 
                                 {/* Featured Images Gallery - Only show if style uses images (Style 3) */}
-                                {featuredFields.usesImages && (
+                                {galleryFields.usesImages && (
                                 <div
                                     onMouseEnter={() => highlightElement('.featured-gallery .gallery-grid')}
                                     onMouseLeave={removeHighlight}
@@ -3068,45 +3222,46 @@ export default function VisualEditor({
                                                 <p className="text-sm text-gray-500 mb-4">
                                                     Click images to select/deselect. Select at least 6 images for the best gallery effect.
                                                 </p>
-                                                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                                    {availableImages.map((imageUrl, index) => {
-                                                        const featuredImages = content.featured_images || availableImages
-                                                        const isSelected = featuredImages.includes(imageUrl)
-                                                        const selectedIndex = featuredImages.indexOf(imageUrl)
-                                                        return (
-                                                            <button
-                                                                key={index}
-                                                                onClick={() => {
-                                                                    const currentImages = content.featured_images || [...availableImages]
-                                                                    if (isSelected) {
-                                                                        // Remove from selection
-                                                                        const newImages = currentImages.filter(img => img !== imageUrl)
-                                                                        updateField('featured_images', newImages)
-                                                                    } else {
-                                                                        // Add to selection
-                                                                        updateField('featured_images', [...currentImages, imageUrl])
-                                                                    }
-                                                                }}
-                                                                className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
-                                                                    isSelected
-                                                                        ? 'border-blue-500 ring-2 ring-blue-200'
-                                                                        : 'border-gray-200'
-                                                                }`}
-                                                            >
-                                                                <img
-                                                                    src={imageUrl}
-                                                                    alt={`Option ${index + 1}`}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                                {isSelected && (
-                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                        {selectedIndex + 1}
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        )
-                                                    })}
-                                                </div>
+                                                {[
+                                                    ...(hasOriginalImages ? [{ label: 'Original Photos', images: originalImages, prefix: 'orig' }] : []),
+                                                    ...(hasEnhancedOnlyImages ? [{ label: 'AI-Enhanced Photos', images: enhancedOnlyImages, prefix: 'enh' }] : []),
+                                                    ...(!hasOriginalImages && !hasEnhancedOnlyImages ? [{ label: '', images: availableImages, prefix: 'all' }] : [])
+                                                ].map(({ label, images, prefix }) => (
+                                                    <div key={prefix} className="mb-4">
+                                                        {label && <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">{label}</p>}
+                                                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                                                            {images.map((imageUrl, index) => {
+                                                                const featuredImages = content.featured_images || availableImages
+                                                                const isSelected = featuredImages.includes(imageUrl)
+                                                                const selectedIndex = featuredImages.indexOf(imageUrl)
+                                                                return (
+                                                                    <button
+                                                                        key={`${prefix}-${index}`}
+                                                                        onClick={() => {
+                                                                            const currentImages = content.featured_images || [...availableImages]
+                                                                            if (isSelected) {
+                                                                                const newImages = currentImages.filter(img => img !== imageUrl)
+                                                                                updateField('featured_images', newImages)
+                                                                            } else {
+                                                                                updateField('featured_images', [...currentImages, imageUrl])
+                                                                            }
+                                                                        }}
+                                                                        className={`relative aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                                            isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                                        }`}
+                                                                    >
+                                                                        <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
+                                                                        {isSelected && (
+                                                                            <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                                                                                {selectedIndex + 1}
+                                                                            </div>
+                                                                        )}
+                                                                    </button>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                             <div className="p-4 border-t border-gray-200 bg-gray-50 flex gap-2">
                                                 <button
@@ -3123,12 +3278,12 @@ export default function VisualEditor({
                         )}
                     </div>
 
-                    {/* Footer Section */}
+                    {/* Contact Section (was Footer) */}
                     <div className="space-y-4">
-                        {/* Footer Section Header with Toggle */}
+                        {/* Contact Section Header with Toggle */}
                         <div
                             className="flex items-center justify-between"
-                            onMouseEnter={() => highlightElement('.footer-refit-wrapper')}
+                            onMouseEnter={() => highlightElement('#contact')}
                             onMouseLeave={removeHighlight}
                         >
                             <h4 className={`font-medium text-lg flex items-center gap-2 ${
@@ -3139,7 +3294,7 @@ export default function VisualEditor({
                                 ) : (
                                     <EyeOff className="w-4 h-4" />
                                 )}
-                                Footer Section
+                                Contact Section
                             </h4>
                             <button
                                 type="button"

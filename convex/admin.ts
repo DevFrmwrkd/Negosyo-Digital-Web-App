@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
+import { internal } from './_generated/api';
 
 // ==================== QUERIES ====================
 
@@ -73,7 +74,7 @@ export const getPayoutStats = query({
         );
         const totalPending = pendingPayouts.length;
         const totalPendingAmount = pendingPayouts.reduce(
-            (sum, s) => sum + s.creatorPayout,
+            (sum, s) => sum + (s.creatorPayout ?? 0),
             0
         );
 
@@ -84,7 +85,7 @@ export const getPayoutStats = query({
         );
         const paidThisWeekCount = paidThisWeek.length;
         const paidThisWeekAmount = paidThisWeek.reduce(
-            (sum, s) => sum + s.creatorPayout,
+            (sum, s) => sum + (s.creatorPayout ?? 0),
             0
         );
 
@@ -117,6 +118,7 @@ export const getDashboardStats = query({
                 s.status === 'paid' ||
                 s.status === 'completed'
         ).length;
+        const deployed = submissions.filter((s) => s.status === 'deployed').length;
         const totalCreators = creators.length;
         const activeCreators = creators.filter((c) => c.status === 'active').length;
 
@@ -124,16 +126,483 @@ export const getDashboardStats = query({
             totalSubmissions,
             pendingReview,
             websitesGenerated,
+            deployed,
             totalCreators,
             activeCreators,
         };
     },
 });
 
-// ==================== MUTATIONS ====================
+// ==================== WIRED ADMIN MUTATIONS ====================
 
 /**
- * Mark payout as paid
+ * Approve a submission — sets status, tracks reviewer, triggers audit + notification + analytics + referral check
+ */
+export const approveSubmission = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        const previousStatus = submission.status;
+
+        // Update submission status
+        await ctx.db.patch(args.submissionId, {
+            status: 'approved',
+            reviewedBy: args.adminId,
+            reviewedAt: Date.now(),
+        });
+
+        // Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'submission_approved',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: { businessName: submission.businessName, previousStatus },
+        });
+
+        // Notification to creator
+        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
+            creatorId: submission.creatorId,
+            type: 'submission_approved',
+            title: 'Submission Approved!',
+            body: `Your submission for "${submission.businessName}" has been approved.`,
+            data: { submissionId: args.submissionId },
+        });
+
+        // Analytics
+        const today = new Date().toISOString().split('T')[0];
+        const month = today.substring(0, 7);
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: today,
+            periodType: 'daily',
+            field: 'approvedCount',
+            delta: 1,
+        });
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: month,
+            periodType: 'monthly',
+            field: 'approvedCount',
+            delta: 1,
+        });
+
+        return args.submissionId;
+    },
+});
+
+/**
+ * Reject a submission — sets status + reason, triggers audit + notification + analytics
+ */
+export const rejectSubmission = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        reason: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        const previousStatus = submission.status;
+
+        // Update submission status
+        const updates: any = {
+            status: 'rejected',
+            reviewedBy: args.adminId,
+            reviewedAt: Date.now(),
+        };
+        if (args.reason) {
+            updates.rejectionReason = args.reason;
+        }
+        await ctx.db.patch(args.submissionId, updates);
+
+        // Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'submission_rejected',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: { businessName: submission.businessName, reason: args.reason, previousStatus },
+        });
+
+        // Notification to creator
+        const reasonText = args.reason ? ` Reason: ${args.reason}` : '';
+        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
+            creatorId: submission.creatorId,
+            type: 'submission_rejected',
+            title: 'Submission Rejected',
+            body: `Your submission for "${submission.businessName}" was rejected.${reasonText}`,
+            data: { submissionId: args.submissionId },
+        });
+
+        // Analytics
+        const today = new Date().toISOString().split('T')[0];
+        const month = today.substring(0, 7);
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: today,
+            periodType: 'daily',
+            field: 'rejectedCount',
+            delta: 1,
+        });
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: month,
+            periodType: 'monthly',
+            field: 'rejectedCount',
+            delta: 1,
+        });
+
+        return args.submissionId;
+    },
+});
+
+/**
+ * Mark a submission as deployed — triggers audit + notification + analytics
+ */
+export const markDeployed = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        websiteUrl: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        // Resolve websiteUrl: use provided value, or fall back to generatedWebsites.publishedUrl
+        let resolvedUrl = args.websiteUrl;
+        if (!resolvedUrl) {
+            const website = await ctx.db
+                .query('generatedWebsites')
+                .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+                .first();
+            if (website?.publishedUrl) resolvedUrl = website.publishedUrl;
+        }
+
+        // Update submission status
+        const updates: any = { status: 'deployed' };
+        if (resolvedUrl) updates.websiteUrl = resolvedUrl;
+        await ctx.db.patch(args.submissionId, updates);
+
+        // Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'website_deployed',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: { businessName: submission.businessName, websiteUrl: resolvedUrl },
+        });
+
+        // Notification to creator
+        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
+            creatorId: submission.creatorId,
+            type: 'website_live',
+            title: 'Website is Live!',
+            body: `The website for "${submission.businessName}" is now live!`,
+            data: { submissionId: args.submissionId, websiteUrl: resolvedUrl },
+        });
+
+        // Analytics
+        const today = new Date().toISOString().split('T')[0];
+        const month = today.substring(0, 7);
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: today,
+            periodType: 'daily',
+            field: 'websitesLive',
+            delta: 1,
+        });
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: month,
+            periodType: 'monthly',
+            field: 'websitesLive',
+            delta: 1,
+        });
+
+        return args.submissionId;
+    },
+});
+
+/**
+ * Mark a submission as paid — creates earning record, updates creator, triggers audit + notification + analytics
+ */
+export const markPaid = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        const payoutAmount = submission.creatorPayout ?? 0;
+
+        // Update submission
+        await ctx.db.patch(args.submissionId, {
+            creatorPaidAt: Date.now(),
+            status: 'completed',
+        });
+
+        // Update creator earnings
+        const creator = await ctx.db.get(submission.creatorId);
+        if (creator) {
+            await ctx.db.patch(submission.creatorId, {
+                balance: (creator.balance || 0) + payoutAmount,
+                totalEarnings: (creator.totalEarnings || 0) + payoutAmount,
+            });
+        }
+
+        // Create earning record
+        await ctx.scheduler.runAfter(0, internal.earnings.create, {
+            creatorId: submission.creatorId,
+            submissionId: args.submissionId,
+            amount: payoutAmount,
+            type: 'submission_approved',
+        });
+
+        // Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'payment_sent',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: {
+                businessName: submission.businessName,
+                amount: payoutAmount,
+                creatorId: submission.creatorId,
+            },
+        });
+
+        // Notification to creator
+        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
+            creatorId: submission.creatorId,
+            type: 'payout_sent',
+            title: 'Payment Received!',
+            body: `You received ₱${payoutAmount} for "${submission.businessName}".`,
+            data: { submissionId: args.submissionId, amount: payoutAmount },
+        });
+
+        // Analytics
+        const today = new Date().toISOString().split('T')[0];
+        const month = today.substring(0, 7);
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: today,
+            periodType: 'daily',
+            field: 'earningsTotal',
+            delta: payoutAmount,
+        });
+        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
+            creatorId: submission.creatorId,
+            period: month,
+            periodType: 'monthly',
+            field: 'earningsTotal',
+            delta: payoutAmount,
+        });
+
+        // Referral check: if this is the creator's first paid submission, qualify the referral
+        const referral = await ctx.db
+            .query('referrals')
+            .withIndex('by_referred', (q) => q.eq('referredId', submission.creatorId))
+            .filter((q) => q.eq(q.field('status'), 'pending'))
+            .first();
+
+        if (referral) {
+            // Check if this is the first paid submission
+            const paidSubmissions = await ctx.db
+                .query('submissions')
+                .withIndex('by_creatorId', (q) => q.eq('creatorId', submission.creatorId))
+                .filter((q) => q.eq(q.field('status'), 'completed'))
+                .collect();
+
+            // Count 1 because we just marked this one as completed/paid
+            if (paidSubmissions.length <= 1) {
+                await ctx.scheduler.runAfter(0, internal.referrals.qualifyByCreator, {
+                    referredId: submission.creatorId,
+                    bonusAmount: 1000, // ₱1,000 referral bonus
+                });
+            }
+        }
+
+        return args.submissionId;
+    },
+});
+
+/**
+ * Log payment confirmed audit entry — called after marking paid and sending confirmation email.
+ */
+export const logPaymentConfirmed = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        emailSent: v.boolean(),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'payment_confirmed' as const,
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: {
+                businessName: submission.businessName,
+                ownerEmail: submission.ownerEmail,
+                amount: submission.amount,
+                emailSent: args.emailSent,
+                note: args.emailSent
+                    ? 'Payment confirmed and confirmation email sent to business owner'
+                    : 'Payment confirmed. No owner email — confirmation email skipped.',
+            },
+        });
+    },
+});
+
+/**
+ * Mark submission email as sent — sets status to pending_payment and records sentEmailAt.
+ * Called by the send-website-email API route after successfully sending the client email.
+ */
+export const markEmailSent = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        await ctx.db.patch(args.submissionId, {
+            status: 'pending_payment',
+            sentEmailAt: Date.now(),
+        });
+
+        // Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'payment_sent',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: { businessName: submission.businessName, note: 'Payment email sent to client' },
+        });
+
+        return args.submissionId;
+    },
+});
+
+// ==================== CASCADING DELETION ====================
+
+/**
+ * Delete submission and all related Convex records.
+ * Called by the /api/delete-submission route AFTER external assets (R2, CF Pages, Airtable) are cleaned up.
+ * Deletes: generatedWebsites, websiteContent, Convex storage files, submission record.
+ * Creates an audit log entry with deletion metadata.
+ */
+export const deleteSubmissionRecords = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        deletedAssets: v.optional(v.any()),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        const businessName = submission.businessName;
+        const creatorId = submission.creatorId;
+
+        // 1. Delete generatedWebsites record
+        const website = await ctx.db
+            .query('generatedWebsites')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+
+        if (website) {
+            // Delete Convex storage file for HTML if it exists
+            if (website.htmlStorageId) {
+                try {
+                    await ctx.storage.delete(website.htmlStorageId);
+                } catch (e) {
+                    // htmlStorageId might be invalid or already deleted
+                }
+            }
+            await ctx.db.delete(website._id);
+        }
+
+        // 2. Delete websiteContent records (both via websiteId chain and direct submissionId)
+        if (website) {
+            const wcByWebsite = await ctx.db
+                .query('websiteContent')
+                .withIndex('by_websiteId', (q) => q.eq('websiteId', website._id))
+                .first();
+            if (wcByWebsite) {
+                await ctx.db.delete(wcByWebsite._id);
+            }
+        }
+
+        const wcBySubmission = await ctx.db
+            .query('websiteContent')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+        if (wcBySubmission) {
+            await ctx.db.delete(wcBySubmission._id);
+        }
+
+        // 3. Delete Convex _storage files (legacy storage IDs for video/audio)
+        if (submission.videoStorageId && typeof submission.videoStorageId === 'string' && !submission.videoStorageId.startsWith('http')) {
+            try {
+                await ctx.storage.delete(submission.videoStorageId as any);
+            } catch (e) {
+                // Storage ID might be invalid or already deleted
+            }
+        }
+        if (submission.audioStorageId && typeof submission.audioStorageId === 'string' && !submission.audioStorageId.startsWith('http')) {
+            try {
+                await ctx.storage.delete(submission.audioStorageId as any);
+            } catch (e) {
+                // Storage ID might be invalid or already deleted
+            }
+        }
+
+        // 4. Decrement creator's submissionCount
+        const creator = await ctx.db.get(creatorId);
+        if (creator && (creator.submissionCount || 0) > 0) {
+            await ctx.db.patch(creatorId, {
+                submissionCount: (creator.submissionCount || 0) - 1,
+            });
+        }
+
+        // 5. Delete the submission record
+        await ctx.db.delete(args.submissionId);
+
+        // 6. Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'submission_deleted',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: {
+                businessName,
+                deletedAssets: args.deletedAssets,
+            },
+        });
+
+        return { success: true, businessName };
+    },
+});
+
+// ==================== LEGACY MUTATIONS (kept for backward compat) ====================
+
+/**
+ * Mark payout as paid (legacy — use markPaid for audit trail)
  */
 export const markPayoutPaid = mutation({
     args: { submissionId: v.id('submissions') },
@@ -145,6 +614,51 @@ export const markPayoutPaid = mutation({
             creatorPaidAt: Date.now(),
             status: 'completed',
         });
+    },
+});
+
+/**
+ * Backfill websiteUrl on submissions and publishedUrl on generatedWebsites
+ * for all records with status: deployed, pending_payment, paid, or completed.
+ * Syncs both directions: submission ← generatedWebsite and generatedWebsite ← submission.
+ */
+export const backfillWebsiteUrls = mutation({
+    args: {},
+    handler: async (ctx) => {
+        const targetStatuses = ['deployed', 'pending_payment', 'paid', 'completed'] as const;
+        let updatedSubmissions = 0;
+        let updatedWebsites = 0;
+
+        for (const status of targetStatuses) {
+            const submissions = await ctx.db
+                .query('submissions')
+                .withIndex('by_status', (q) => q.eq('status', status))
+                .collect();
+
+            for (const submission of submissions) {
+                const website = await ctx.db
+                    .query('generatedWebsites')
+                    .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+                    .first();
+
+                // Submission missing websiteUrl but generatedWebsite has publishedUrl → copy to submission
+                if (!submission.websiteUrl && website?.publishedUrl) {
+                    await ctx.db.patch(submission._id, { websiteUrl: website.publishedUrl });
+                    updatedSubmissions++;
+                }
+
+                // generatedWebsite missing publishedUrl but submission has websiteUrl → copy to website
+                if (website && !website.publishedUrl && submission.websiteUrl) {
+                    await ctx.db.patch(website._id, {
+                        publishedUrl: submission.websiteUrl,
+                        status: 'published',
+                    });
+                    updatedWebsites++;
+                }
+            }
+        }
+
+        return { updatedSubmissions, updatedWebsites };
     },
 });
 

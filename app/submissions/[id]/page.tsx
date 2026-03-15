@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Globe } from "lucide-react"
 import { Id } from "@/convex/_generated/dataModel"
 
 export default function SubmissionDetailPage() {
@@ -87,32 +87,21 @@ export default function SubmissionDetailPage() {
 
     const getStatusBadge = () => {
         const s = submission.status?.toLowerCase()
-        if (s === 'approved' || s === 'paid' || s === 'website_generated') {
-            return (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    {s === 'paid' ? 'Paid' : s === 'website_generated' ? 'Website Generated' : 'Approved'}
-                </span>
-            )
-        }
-        if (s === 'rejected') {
-            return (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                    Rejected
-                </span>
-            )
+        const badges: Record<string, { bg: string; text: string }> = {
+            completed: { bg: 'bg-emerald-100 text-emerald-800', text: 'Completed' },
+            deployed: { bg: 'bg-emerald-100 text-emerald-800', text: 'Live' },
+            paid: { bg: 'bg-emerald-100 text-emerald-800', text: 'Paid' },
+            website_generated: { bg: 'bg-emerald-100 text-emerald-800', text: 'Website Generated' },
+            approved: { bg: 'bg-blue-100 text-blue-800', text: 'Approved' },
+            rejected: { bg: 'bg-red-100 text-red-800', text: 'Rejected' },
+            submitted: { bg: 'bg-yellow-100 text-yellow-800', text: 'In Review' },
+            in_review: { bg: 'bg-yellow-100 text-yellow-800', text: 'In Review' },
         }
         if (isDraft) {
-            return (
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-zinc-100 text-zinc-700">
-                    Draft
-                </span>
-            )
+            return <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-zinc-100 text-zinc-700">Draft</span>
         }
-        return (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                {s === 'submitted' ? 'Submitted' : s === 'in_review' ? 'In Review' : 'Pending'}
-            </span>
-        )
+        const badge = badges[s || ''] || { bg: 'bg-yellow-100 text-yellow-800', text: s || 'Pending' }
+        return <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${badge.bg}`}>{badge.text}</span>
     }
 
     return (
@@ -302,6 +291,22 @@ export default function SubmissionDetailPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Website URL */}
+                        {submission.websiteUrl && (
+                            <div className="bg-emerald-50 rounded-xl p-6 border border-emerald-200">
+                                <h2 className="text-lg font-bold text-gray-900 mb-3">Generated Website</h2>
+                                <a
+                                    href={submission.websiteUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-colors"
+                                >
+                                    <Globe className="w-4 h-4" />
+                                    Visit Live Website
+                                </a>
+                            </div>
+                        )}
 
                         {/* Quality Checklist */}
                         <div className="bg-white rounded-xl p-6 border border-gray-200">

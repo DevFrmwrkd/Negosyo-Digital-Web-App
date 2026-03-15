@@ -38,6 +38,20 @@ export const getBySubmissionId = query({
     },
 });
 
+/**
+ * Get website content directly by submission ID (uses submissionId field on websiteContent)
+ * This is a fallback for when the generatedWebsites chain doesn't have the data
+ */
+export const getDirectBySubmissionId = query({
+    args: { submissionId: v.id('submissions') },
+    handler: async (ctx, args) => {
+        return await ctx.db
+            .query('websiteContent')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+    },
+});
+
 // ==================== MUTATIONS ====================
 
 /**
@@ -157,10 +171,13 @@ export const upsert = mutation({
         })),
         // Customizations
         customizations: v.optional(v.object({
-            navbarStyle: v.optional(v.string()),
             heroStyle: v.optional(v.string()),
             aboutStyle: v.optional(v.string()),
             servicesStyle: v.optional(v.string()),
+            galleryStyle: v.optional(v.string()),
+            contactStyle: v.optional(v.string()),
+            // Legacy fields
+            navbarStyle: v.optional(v.string()),
             featuredStyle: v.optional(v.string()),
             footerStyle: v.optional(v.string()),
             colorScheme: v.optional(v.string()),
@@ -301,10 +318,13 @@ export const update = mutation({
             footerSocial: v.optional(v.boolean()),
         })),
         customizations: v.optional(v.object({
-            navbarStyle: v.optional(v.string()),
             heroStyle: v.optional(v.string()),
             aboutStyle: v.optional(v.string()),
             servicesStyle: v.optional(v.string()),
+            galleryStyle: v.optional(v.string()),
+            contactStyle: v.optional(v.string()),
+            // Legacy fields
+            navbarStyle: v.optional(v.string()),
             featuredStyle: v.optional(v.string()),
             footerStyle: v.optional(v.string()),
             colorScheme: v.optional(v.string()),

@@ -94,7 +94,7 @@ export default function OnboardingPage() {
                 referralCode,
             })
 
-            router.push("/dashboard")
+            router.push("/training")
         } catch (err: any) {
             console.error("Failed to create profile:", err)
             setError(err.message || "Failed to create profile")
@@ -231,9 +231,11 @@ export default function OnboardingPage() {
                                     <Input
                                         id="phone"
                                         type="tel"
+                                        inputMode="numeric"
+                                        maxLength={10}
                                         placeholder="912 345 4567"
                                         value={phone}
-                                        onChange={(e) => setPhone(e.target.value)}
+                                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                                         disabled={loading}
                                         className="pl-11 h-12 bg-zinc-50 border-zinc-200 focus:border-emerald-600 focus:ring-emerald-600/20 rounded-xl w-full"
                                     />

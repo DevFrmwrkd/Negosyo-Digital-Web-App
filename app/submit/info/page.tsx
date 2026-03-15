@@ -255,9 +255,11 @@ export default function BusinessInfoPage() {
                                 <Input
                                     id="ownerPhone"
                                     type="tel"
+                                    inputMode="numeric"
+                                    maxLength={10}
                                     placeholder="912 345 4567"
                                     value={ownerPhone}
-                                    onChange={(e) => setOwnerPhone(e.target.value)}
+                                    onChange={(e) => setOwnerPhone(e.target.value.replace(/\D/g, ''))}
                                     required
                                     disabled={loading}
                                     className="flex-1 h-12 bg-white border-gray-200 focus:border-green-500 focus:ring-green-500"

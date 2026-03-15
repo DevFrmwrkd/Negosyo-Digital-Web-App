@@ -1,19 +1,17 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import Link from "next/link"
 import { useUser } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import { Button } from "@/components/ui/button"
 import { Id } from "@/convex/_generated/dataModel"
+import AdminLayout from "../components/AdminLayout"
 
 type PayoutStatus = 'all' | 'pending' | 'paid'
 
 export default function PayoutsPage() {
     const { user, isLoaded } = useUser()
 
-    // Get current user's creator profile to check admin status
     const currentCreator = useQuery(
         api.creators.getByClerkId,
         user ? { clerkId: user.id } : "skip"
@@ -21,7 +19,6 @@ export default function PayoutsPage() {
 
     const isAdmin = currentCreator?.role === 'admin'
 
-    // Get pending payouts and stats
     const payouts = useQuery(
         api.admin.getPendingPayouts,
         isAdmin ? {} : "skip"
@@ -32,8 +29,7 @@ export default function PayoutsPage() {
         isAdmin ? {} : "skip"
     )
 
-    // Mutations
-    const markPayoutPaid = useMutation(api.admin.markPayoutPaid)
+    const markPaidWired = useMutation(api.admin.markPaid)
     const bulkMarkPayoutsPaid = useMutation(api.admin.bulkMarkPayoutsPaid)
 
     const loading = !isLoaded || (user && currentCreator === undefined) || (isAdmin && (payouts === undefined || stats === undefined))
@@ -67,7 +63,6 @@ export default function PayoutsPage() {
         }
     }
 
-    // Toggle single selection
     const toggleSelect = (id: string) => {
         const newSet = new Set(selectedIds)
         if (newSet.has(id)) {
@@ -78,12 +73,15 @@ export default function PayoutsPage() {
         setSelectedIds(newSet)
     }
 
-    // Mark single as paid
     const handleMarkAsPaid = async (id: string) => {
+        if (!user) return
         setProcessing(true)
         setError(null)
         try {
-            await markPayoutPaid({ submissionId: id as Id<"submissions"> })
+            await markPaidWired({
+                submissionId: id as Id<"submissions">,
+                adminId: user.id,
+            })
             setSelectedIds(prev => {
                 const newSet = new Set(prev)
                 newSet.delete(id)
@@ -96,7 +94,6 @@ export default function PayoutsPage() {
         }
     }
 
-    // Bulk mark as paid
     const handleBulkMarkAsPaid = async () => {
         if (selectedIds.size === 0) return
 
@@ -114,13 +111,6 @@ export default function PayoutsPage() {
         }
     }
 
-    const getPayoutStatusBadge = (payout: { creatorPaidAt?: number }) => {
-        if (payout.creatorPaidAt) {
-            return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Paid</span>
-        }
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">Pending</span>
-    }
-
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -132,96 +122,89 @@ export default function PayoutsPage() {
     if (!isAdmin) return null
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between py-4">
-                        <div className="flex items-center gap-4">
-                            <Link href="/admin">
-                                <Button variant="outline" size="sm">
-                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                    Back
-                                </Button>
-                            </Link>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Payout Management</h1>
-                                <p className="text-sm text-gray-500">Process creator payouts</p>
-                            </div>
-                        </div>
-                        {selectedIds.size > 0 && (
-                            <Button
-                                onClick={handleBulkMarkAsPaid}
-                                disabled={processing}
-                                className="bg-green-500 hover:bg-green-600 text-white"
-                            >
-                                {processing ? 'Processing...' : `Mark ${selectedIds.size} as Paid`}
-                            </Button>
-                        )}
-                    </div>
+        <AdminLayout>
+            {/* Page Title */}
+            <div className="mb-6 lg:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payout Management</h1>
+                    <p className="text-sm text-gray-500 mt-1">Process and track creator payouts.</p>
+                </div>
+                {selectedIds.size > 0 && (
+                    <button
+                        onClick={handleBulkMarkAsPaid}
+                        disabled={processing}
+                        className="px-4 py-2.5 text-sm font-semibold text-white bg-green-500 hover:bg-green-600 rounded-xl transition-colors disabled:opacity-50 shrink-0"
+                    >
+                        {processing ? 'Processing...' : `Mark ${selectedIds.size} as Paid`}
+                    </button>
+                )}
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Pending Requests</p>
+                    <p className="text-3xl font-bold text-amber-600">{stats?.totalPending || 0}</p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Pending Amount</p>
+                    <p className="text-3xl font-bold text-gray-900">₱{(stats?.totalPendingAmount || 0).toLocaleString()}</p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Paid This Week</p>
+                    <p className="text-3xl font-bold text-green-600">{stats?.paidThisWeek || 0}</p>
+                </div>
+
+                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Paid Amount (Week)</p>
+                    <p className="text-3xl font-bold text-green-600">₱{(stats?.paidThisWeekAmount || 0).toLocaleString()}</p>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-4 gap-4 mb-8">
-                    <div className="bg-white rounded-xl p-6 border border-gray-200">
-                        <p className="text-sm text-gray-500 mb-1">Pending Requests</p>
-                        <p className="text-3xl font-bold text-yellow-600">{stats?.totalPending || 0}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-6 border border-gray-200">
-                        <p className="text-sm text-gray-500 mb-1">Pending Amount</p>
-                        <p className="text-3xl font-bold text-gray-900">₱{(stats?.totalPendingAmount || 0).toLocaleString()}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-6 border border-gray-200">
-                        <p className="text-sm text-gray-500 mb-1">Paid This Week</p>
-                        <p className="text-3xl font-bold text-green-600">{stats?.paidThisWeek || 0}</p>
-                    </div>
-                    <div className="bg-white rounded-xl p-6 border border-gray-200">
-                        <p className="text-sm text-gray-500 mb-1">Paid Amount (Week)</p>
-                        <p className="text-3xl font-bold text-green-600">₱{(stats?.paidThisWeekAmount || 0).toLocaleString()}</p>
-                    </div>
+            {/* Filter Tabs */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
+                <div className="flex gap-2">
+                    {(['all', 'pending', 'paid'] as PayoutStatus[]).map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => setStatusFilter(status)}
+                            className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${statusFilter === status
+                                ? 'bg-green-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                        >
+                            {status.charAt(0).toUpperCase() + status.slice(1)}
+                            {status === 'pending' && (stats?.totalPending || 0) > 0 && (
+                                <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-amber-50 text-amber-700">
+                                    {stats?.totalPending}
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
+            </div>
 
-                {/* Filter Tabs */}
-                <div className="bg-white rounded-xl p-4 border border-gray-200 mb-6">
-                    <div className="flex gap-2">
-                        {(['all', 'pending', 'paid'] as PayoutStatus[]).map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => setStatusFilter(status)}
-                                className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${statusFilter === status
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                            >
-                                {status.charAt(0).toUpperCase() + status.slice(1)}
-                                {status === 'pending' && (stats?.totalPending || 0) > 0 && (
-                                    <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800">
-                                        {stats?.totalPending}
-                                    </span>
-                                )}
-                            </button>
-                        ))}
-                    </div>
+            {/* Error */}
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 sm:mb-6 flex items-center justify-between">
+                    <p className="text-sm">{error}</p>
+                    <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-4">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
+            )}
 
-                {/* Error */}
-                {error && (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-                        {error}
-                        <button onClick={() => setError(null)} className="ml-4 text-red-500 hover:text-red-700">✕</button>
-                    </div>
-                )}
-
-                {/* Payouts Table */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left">
+            {/* Payouts Table */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-100">
+                                <th className="px-4 py-3.5 text-left">
                                     <input
                                         type="checkbox"
                                         checked={selectedIds.size > 0 && selectedIds.size === filteredPayouts.filter(p => !p.creatorPaidAt).length}
@@ -229,39 +212,25 @@ export default function PayoutsPage() {
                                         className="rounded border-gray-300 text-green-500 focus:ring-green-500"
                                     />
                                 </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Creator
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Business
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Amount
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Payout Method
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Requested
-                                </th>
-                                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Actions
-                                </th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Creator</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Business</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Amount</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Payout Method</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Requested</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody>
                             {filteredPayouts.length === 0 ? (
                                 <tr>
-                                    <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                                    <td colSpan={8} className="px-6 py-16 text-center text-sm text-gray-400">
                                         {statusFilter === 'pending' ? 'No pending payouts' : 'No payouts found'}
                                     </td>
                                 </tr>
                             ) : (
                                 filteredPayouts.map((payout) => (
-                                    <tr key={payout._id} className={`hover:bg-gray-50 ${selectedIds.has(payout._id) ? 'bg-green-50' : ''}`}>
+                                    <tr key={payout._id} className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${selectedIds.has(payout._id) ? 'bg-green-50/50' : ''}`}>
                                         <td className="px-4 py-4">
                                             {!payout.creatorPaidAt && (
                                                 <input
@@ -272,55 +241,60 @@ export default function PayoutsPage() {
                                                 />
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-sm font-semibold">
-                                                    {payout.creator?.firstName?.charAt(0) || '?'}{payout.creator?.lastName?.charAt(0) || ''}
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 bg-green-50 rounded-lg flex items-center justify-center shrink-0">
+                                                    <span className="text-xs font-bold text-green-700">
+                                                        {payout.creator?.firstName?.charAt(0) || '?'}{payout.creator?.lastName?.charAt(0) || ''}
+                                                    </span>
                                                 </div>
-                                                <div className="ml-3">
-                                                    <div className="text-sm font-medium text-gray-900">
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">
                                                         {payout.creator?.firstName} {payout.creator?.lastName}
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {payout.creator?.email || payout.creator?.phone || '—'}
-                                                    </div>
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {payout.creator?.email || payout.creator?.phone || '\u2014'}
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{payout.businessName}</div>
-                                            <div className="text-xs text-gray-500">{payout.businessType}</div>
+                                        <td className="px-6 py-4">
+                                            <p className="text-sm text-gray-900">{payout.businessName}</p>
+                                            <p className="text-xs text-gray-500">{payout.businessType}</p>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-lg font-bold text-green-600">
+                                        <td className="px-6 py-4">
+                                            <span className="text-base font-bold text-green-600">
                                                 ₱{(payout.creatorPayout || 0).toLocaleString()}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">{payout.creator?.payoutMethod || 'Not set'}</div>
-                                            <div className="text-xs text-gray-500 font-mono">{payout.creator?.payoutDetails || '—'}</div>
+                                        <td className="px-6 py-4">
+                                            <p className="text-sm text-gray-900">{payout.creator?.payoutMethod || 'Not set'}</p>
+                                            <p className="text-xs text-gray-500 font-mono">{payout.creator?.payoutDetails || '\u2014'}</p>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {getPayoutStatusBadge(payout)}
+                                        <td className="px-6 py-4">
+                                            {payout.creatorPaidAt ? (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-green-50 text-green-700">Paid</span>
+                                            ) : (
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700">Pending</span>
+                                            )}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-sm text-gray-500">
                                             {payout.payoutRequestedAt
-                                                ? new Date(payout.payoutRequestedAt).toLocaleDateString()
-                                                : '—'}
+                                                ? new Date(payout.payoutRequestedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                                : '\u2014'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-6 py-4">
                                             {!payout.creatorPaidAt ? (
-                                                <Button
+                                                <button
                                                     onClick={() => handleMarkAsPaid(payout._id)}
                                                     disabled={processing}
-                                                    size="sm"
-                                                    className="bg-green-500 hover:bg-green-600 text-white"
+                                                    className="px-3 py-1.5 text-xs font-semibold text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50"
                                                 >
                                                     Mark Paid
-                                                </Button>
+                                                </button>
                                             ) : (
-                                                <span className="text-green-600 text-xs">
-                                                    Paid {new Date(payout.creatorPaidAt).toLocaleDateString()}
+                                                <span className="text-xs text-green-600">
+                                                    Paid {new Date(payout.creatorPaidAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                                                 </span>
                                             )}
                                         </td>
@@ -332,11 +306,13 @@ export default function PayoutsPage() {
                 </div>
 
                 {/* Results count */}
-                <div className="mt-4 text-sm text-gray-500">
-                    Showing {filteredPayouts.length} payouts
-                    {selectedIds.size > 0 && ` • ${selectedIds.size} selected`}
+                <div className="px-6 py-4 border-t border-gray-100">
+                    <p className="text-xs sm:text-sm text-gray-500">
+                        Showing {filteredPayouts.length} payouts
+                        {selectedIds.size > 0 && ` \u00b7 ${selectedIds.size} selected`}
+                    </p>
                 </div>
             </div>
-        </div>
+        </AdminLayout>
     )
 }
