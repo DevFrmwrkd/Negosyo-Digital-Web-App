@@ -198,7 +198,8 @@ export const updateStatus = mutation({
         status: v.union(
             v.literal('pending'),
             v.literal('active'),
-            v.literal('suspended')
+            v.literal('suspended'),
+            v.literal('deleted')
         ),
     },
     handler: async (ctx, args) => {

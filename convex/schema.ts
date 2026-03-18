@@ -21,7 +21,8 @@ export default defineSchema({
         status: v.optional(v.union(
             v.literal('pending'),
             v.literal('active'),
-            v.literal('suspended')
+            v.literal('suspended'),
+            v.literal('deleted')
         )), // Optional for legacy records
         role: v.optional(v.union(v.literal('creator'), v.literal('admin'))), // Optional for legacy records
         payoutMethod: v.optional(v.string()),
@@ -31,6 +32,8 @@ export default defineSchema({
         lastActiveAt: v.optional(v.number()), // Last activity timestamp
         profileImage: v.optional(v.string()), // Profile image URL (R2)
         certifiedAt: v.optional(v.number()), // Timestamp when creator was certified
+        isDeleted: v.optional(v.boolean()), // Soft delete flag
+        deletedAt: v.optional(v.number()), // Timestamp when creator was deleted
     })
         .index('by_clerkId', ['clerkId'])
         .index('by_email', ['email'])
