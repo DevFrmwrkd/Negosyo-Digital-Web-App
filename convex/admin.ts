@@ -599,6 +599,185 @@ export const deleteSubmissionRecords = mutation({
     },
 });
 
+// ==================== CREATOR DELETION ====================
+
+/**
+ * Delete a creator and all related Convex records.
+ * Called by the /api/delete-creator route AFTER external assets and Clerk account are cleaned up.
+ * Deletes: all submissions (+ their websites/content), earnings, withdrawals, payoutMethods,
+ * leads, leadNotes, notifications, pushTokens, referrals, analytics, and the creator record.
+ * Creates an audit log entry.
+ */
+export const deleteCreatorRecords = mutation({
+    args: {
+        creatorId: v.id('creators'),
+        adminId: v.string(),
+        deletedAssets: v.optional(v.any()),
+    },
+    handler: async (ctx, args) => {
+        const creator = await ctx.db.get(args.creatorId);
+        if (!creator) throw new Error('Creator not found');
+
+        const creatorName = `${creator.firstName} ${creator.lastName}`;
+
+        // 1. Delete all submissions and their related records
+        const submissions = await ctx.db
+            .query('submissions')
+            .withIndex('by_creatorId', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+
+        for (const submission of submissions) {
+            // Delete generatedWebsites
+            const website = await ctx.db
+                .query('generatedWebsites')
+                .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+                .first();
+
+            if (website) {
+                if (website.htmlStorageId) {
+                    try { await ctx.storage.delete(website.htmlStorageId); } catch {}
+                }
+                // Delete websiteContent by websiteId
+                const wcByWebsite = await ctx.db
+                    .query('websiteContent')
+                    .withIndex('by_websiteId', (q) => q.eq('websiteId', website._id))
+                    .first();
+                if (wcByWebsite) await ctx.db.delete(wcByWebsite._id);
+
+                await ctx.db.delete(website._id);
+            }
+
+            // Delete websiteContent by submissionId
+            const wcBySubmission = await ctx.db
+                .query('websiteContent')
+                .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+                .first();
+            if (wcBySubmission) await ctx.db.delete(wcBySubmission._id);
+
+            // Delete legacy storage files
+            if (submission.videoStorageId && typeof submission.videoStorageId === 'string' && !submission.videoStorageId.startsWith('http')) {
+                try { await ctx.storage.delete(submission.videoStorageId as any); } catch {}
+            }
+            if (submission.audioStorageId && typeof submission.audioStorageId === 'string' && !submission.audioStorageId.startsWith('http')) {
+                try { await ctx.storage.delete(submission.audioStorageId as any); } catch {}
+            }
+
+            // Delete leads and leadNotes for this submission
+            const leads = await ctx.db
+                .query('leads')
+                .withIndex('by_submission', (q) => q.eq('submissionId', submission._id))
+                .collect();
+            for (const lead of leads) {
+                const notes = await ctx.db
+                    .query('leadNotes')
+                    .withIndex('by_lead', (q) => q.eq('leadId', lead._id))
+                    .collect();
+                for (const note of notes) await ctx.db.delete(note._id);
+                await ctx.db.delete(lead._id);
+            }
+
+            // Delete earnings for this submission
+            const earnings = await ctx.db
+                .query('earnings')
+                .withIndex('by_submission', (q) => q.eq('submissionId', submission._id))
+                .collect();
+            for (const earning of earnings) await ctx.db.delete(earning._id);
+
+            // Delete websiteAnalytics for this submission
+            const webAnalytics = await ctx.db
+                .query('websiteAnalytics')
+                .withIndex('by_submission_date', (q) => q.eq('submissionId', submission._id))
+                .collect();
+            for (const wa of webAnalytics) await ctx.db.delete(wa._id);
+
+            // Delete the submission
+            await ctx.db.delete(submission._id);
+        }
+
+        // 2. Delete creator-level records
+        // Withdrawals
+        const withdrawals = await ctx.db
+            .query('withdrawals')
+            .withIndex('by_creator', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+        for (const w of withdrawals) await ctx.db.delete(w._id);
+
+        // Payout methods
+        const payoutMethods = await ctx.db
+            .query('payoutMethods')
+            .withIndex('by_creator', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+        for (const pm of payoutMethods) await ctx.db.delete(pm._id);
+
+        // Notifications
+        const notifications = await ctx.db
+            .query('notifications')
+            .withIndex('by_creator', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+        for (const n of notifications) await ctx.db.delete(n._id);
+
+        // Push tokens
+        const pushTokens = await ctx.db
+            .query('pushTokens')
+            .withIndex('by_creator', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+        for (const pt of pushTokens) await ctx.db.delete(pt._id);
+
+        // Referrals (as referrer or referred)
+        const referralsAsReferrer = await ctx.db
+            .query('referrals')
+            .withIndex('by_referrer', (q) => q.eq('referrerId', args.creatorId))
+            .collect();
+        for (const r of referralsAsReferrer) await ctx.db.delete(r._id);
+
+        const referralsAsReferred = await ctx.db
+            .query('referrals')
+            .withIndex('by_referred', (q) => q.eq('referredId', args.creatorId))
+            .collect();
+        for (const r of referralsAsReferred) await ctx.db.delete(r._id);
+
+        // Analytics
+        const analytics = await ctx.db
+            .query('analytics')
+            .withIndex('by_creator_period', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+        for (const a of analytics) await ctx.db.delete(a._id);
+
+        // Remaining earnings by creator (not already deleted via submissions)
+        const remainingEarnings = await ctx.db
+            .query('earnings')
+            .withIndex('by_creator', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+        for (const e of remainingEarnings) await ctx.db.delete(e._id);
+
+        // Remaining leads by creator
+        const remainingLeads = await ctx.db
+            .query('leads')
+            .withIndex('by_creator', (q) => q.eq('creatorId', args.creatorId))
+            .collect();
+        for (const l of remainingLeads) await ctx.db.delete(l._id);
+
+        // 3. Delete the creator record
+        await ctx.db.delete(args.creatorId);
+
+        // 4. Audit log
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'creator_updated',
+            targetType: 'creator',
+            targetId: args.creatorId,
+            metadata: {
+                creatorName,
+                action: 'deleted',
+                submissionsDeleted: submissions.length,
+                deletedAssets: args.deletedAssets,
+            },
+        });
+
+        return { success: true, creatorName, submissionsDeleted: submissions.length };
+    },
+});
+
 // ==================== LEGACY MUTATIONS (kept for backward compat) ====================
 
 /**

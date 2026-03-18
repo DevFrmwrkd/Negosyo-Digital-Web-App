@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { Input } from "@/components/ui/input"
@@ -41,10 +42,13 @@ function getInitials(name: string) {
 }
 
 export default function AdminDashboard() {
+    const router = useRouter()
     const { isAdmin, loading: authLoading } = useAdminAuth()
     const { submissions, loading: submissionsLoading } = useSubmissions()
     const [searchQuery, setSearchQuery] = useState("")
     const [activeFilter, setActiveFilter] = useState<"all" | "pending" | "approved" | "rejected">("all")
+    const [sortBy, setSortBy] = useState<"newest" | "oldest" | "az" | "za" | "status" | "highest_payout">("newest")
+    const [showSortDropdown, setShowSortDropdown] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const itemsPerPage = 5
     const [backfilling, setBackfilling] = useState(false)
@@ -95,9 +99,15 @@ export default function AdminDashboard() {
         }
     }
 
-    // Filter by stat card + search
+    // Status order for sorting
+    const statusOrder: Record<string, number> = {
+        submitted: 0, in_review: 1, draft: 2, approved: 3, website_generated: 4,
+        deployed: 5, pending_payment: 6, paid: 7, completed: 8, rejected: 9, unpublished: 10,
+    }
+
+    // Filter by stat card + search + sort
     const filteredSubmissions = useMemo(() => {
-        let result = submissions
+        let result = [...submissions]
 
         if (activeFilter === "pending") {
             result = result.filter((s) => ["draft", "submitted", "in_review"].includes(s.status))
@@ -117,8 +127,21 @@ export default function AdminDashboard() {
             )
         }
 
+        // Sort
+        result.sort((a, b) => {
+            switch (sortBy) {
+                case "newest": return b.created_at - a.created_at
+                case "oldest": return a.created_at - b.created_at
+                case "az": return a.business_name.localeCompare(b.business_name)
+                case "za": return b.business_name.localeCompare(a.business_name)
+                case "status": return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99)
+                case "highest_payout": return (b.creator_payout || 0) - (a.creator_payout || 0)
+                default: return 0
+            }
+        })
+
         return result
-    }, [submissions, activeFilter, searchQuery])
+    }, [submissions, activeFilter, searchQuery, sortBy])
 
     // Pagination
     const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
@@ -129,7 +152,7 @@ export default function AdminDashboard() {
 
     useMemo(() => {
         setCurrentPage(1)
-    }, [searchQuery, activeFilter])
+    }, [searchQuery, activeFilter, sortBy])
 
     // Needs attention items
     const needsAttention = submissions.filter((s) => s.status === "submitted" || s.status === "in_review")
@@ -425,28 +448,72 @@ export default function AdminDashboard() {
                 </div>
             )}
 
-            {/* Search */}
+            {/* Search + Sort */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
-                <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                    <Input
-                        type="text"
-                        placeholder="Search business name, owner, or type..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-10 border-gray-200 rounded-lg h-10 text-sm"
-                    />
-                    {searchQuery && (
-                        <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
-                            <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
+                        </div>
+                        <Input
+                            type="text"
+                            placeholder="Search business name, owner, or type..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 border-gray-200 rounded-lg h-10 text-sm"
+                        />
+                        {searchQuery && (
+                            <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
+                                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                    {/* Sort Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowSortDropdown(!showSortDropdown)}
+                            className="flex items-center gap-2 px-3 py-2 h-10 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                        >
+                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                            </svg>
+                            Sort
+                            {sortBy !== "newest" && (
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                            )}
                         </button>
-                    )}
+                        {showSortDropdown && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1">
+                                    {([
+                                        { key: "newest", label: "Newest First" },
+                                        { key: "oldest", label: "Oldest First" },
+                                        { key: "az", label: "A - Z" },
+                                        { key: "za", label: "Z - A" },
+                                        { key: "status", label: "Status" },
+                                        { key: "highest_payout", label: "Highest Payout" },
+                                    ] as const).map((option) => (
+                                        <button
+                                            key={option.key}
+                                            onClick={() => { setSortBy(option.key); setShowSortDropdown(false) }}
+                                            className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                                                sortBy === option.key
+                                                    ? "bg-green-50 text-green-700 font-medium"
+                                                    : "text-gray-700 hover:bg-gray-50"
+                                            }`}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -476,7 +543,7 @@ export default function AdminDashboard() {
                                 paginatedSubmissions.map((submission: any) => {
                                     const badge = getStatusBadge(submission.status)
                                     return (
-                                        <tr key={submission.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                        <tr key={submission.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => router.push(`/admin/submissions/${submission.id}`)}>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
@@ -504,7 +571,7 @@ export default function AdminDashboard() {
                                             <td className="px-6 py-4 text-sm text-gray-500">
                                                 {new Date(submission.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                             </td>
-                                            <td className="px-6 py-4">
+                                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                                                 <div className="flex items-center gap-2">
                                                     <Link
                                                         href={`/admin/submissions/${submission.id}`}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
 import { useUser } from "@clerk/nextjs"
 import { useQuery, useMutation } from "convex/react"
@@ -9,10 +9,11 @@ import { api } from "@/convex/_generated/api"
 import { Button } from "@/components/ui/button"
 import { Id } from "@/convex/_generated/dataModel"
 
-type CreatorStatus = 'pending' | 'active' | 'suspended'
+type CreatorStatus = 'pending' | 'active' | 'suspended' | 'deleted'
 
 export default function CreatorDetailPage() {
     const params = useParams()
+    const router = useRouter()
     const creatorId = params.id as string
     const { user, isLoaded } = useUser()
 
@@ -48,6 +49,10 @@ export default function CreatorDetailPage() {
     const [showConfirmModal, setShowConfirmModal] = useState(false)
     const [pendingAction, setPendingAction] = useState<'suspend' | 'reactivate' | null>(null)
 
+    // Delete modal
+    const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+
     const handleStatusChange = async () => {
         if (!creator || !pendingAction) return
 
@@ -73,12 +78,37 @@ export default function CreatorDetailPage() {
         setShowConfirmModal(true)
     }
 
+    const handleDeleteCreator = async () => {
+        if (!creator) return
+        setDeleting(true)
+        setError(null)
+        try {
+            const response = await fetch('/api/delete-creator', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ creatorId: creator._id }),
+            })
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to delete creator')
+            }
+            setShowDeleteModal(false)
+            router.push('/admin/creators')
+        } catch (err: any) {
+            setError(err.message || 'Failed to delete creator')
+            setShowDeleteModal(false)
+        } finally {
+            setDeleting(false)
+        }
+    }
+
     const getStatusBadge = (status: CreatorStatus | undefined) => {
         const safeStatus = status || 'pending'
-        const styles = {
+        const styles: Record<string, string> = {
             active: 'bg-green-100 text-green-800 border-green-200',
             pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
             suspended: 'bg-red-100 text-red-800 border-red-200',
+            deleted: 'bg-gray-100 text-gray-800 border-gray-200',
         }
         return (
             <span className={`px-3 py-1 text-sm font-medium rounded-full border ${styles[safeStatus]}`}>
@@ -152,6 +182,18 @@ export default function CreatorDetailPage() {
                             </div>
                         </div>
                         <div className="flex gap-2">
+                            {creator.role !== 'admin' && (
+                                <Button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    variant="outline"
+                                    className="border-red-600 text-red-600 hover:bg-red-50"
+                                >
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                </Button>
+                            )}
                             {creator.status === 'suspended' ? (
                                 <Button
                                     onClick={() => openConfirmModal('reactivate')}
@@ -165,7 +207,7 @@ export default function CreatorDetailPage() {
                                     onClick={() => openConfirmModal('suspend')}
                                     disabled={updating || creator.role === 'admin'}
                                     variant="outline"
-                                    className="border-red-600 text-red-600 hover:bg-red-50"
+                                    className="border-amber-600 text-amber-600 hover:bg-amber-50"
                                 >
                                     {updating ? 'Updating...' : 'Suspend Creator'}
                                 </Button>
@@ -278,15 +320,12 @@ export default function CreatorDetailPage() {
                             ) : (
                                 <div className="divide-y divide-gray-200">
                                     {submissions.map((submission) => (
-                                        <div key={submission._id} className="px-6 py-4 hover:bg-gray-50">
+                                        <div key={submission._id} className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => router.push(`/admin/submissions/${submission._id}`)}>
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <Link
-                                                        href={`/admin/submissions/${submission._id}`}
-                                                        className="font-medium text-gray-900 hover:text-blue-600"
-                                                    >
+                                                    <span className="font-medium text-gray-900">
                                                         {submission.businessName}
-                                                    </Link>
+                                                    </span>
                                                     <p className="text-sm text-gray-500">{submission.businessType}</p>
                                                 </div>
                                                 <div className="text-right">
@@ -298,7 +337,7 @@ export default function CreatorDetailPage() {
                                                     Payout: <span className="text-green-600 font-medium">₱{submission.creatorPayout}</span>
                                                 </span>
                                                 <span className="text-gray-500">
-                                                    📍 {submission.city}
+                                                    {submission.city}
                                                 </span>
                                             </div>
                                         </div>
@@ -310,7 +349,7 @@ export default function CreatorDetailPage() {
                 </div>
             </div>
 
-            {/* Confirmation Modal */}
+            {/* Status Confirmation Modal */}
             {showConfirmModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
@@ -341,6 +380,70 @@ export default function CreatorDetailPage() {
                             >
                                 {updating ? 'Processing...' : pendingAction === 'suspend' ? 'Suspend' : 'Reactivate'}
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">
+                                Delete {creator.firstName} {creator.lastName}?
+                            </h3>
+                        </div>
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                            <p className="text-sm font-semibold text-red-800 mb-2">This action is permanent and cannot be undone:</p>
+                            <ul className="text-sm text-red-700 space-y-1">
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Creator account &amp; Clerk authentication
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    All {submissionCount} submission{submissionCount !== 1 ? 's' : ''} &amp; generated websites
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    All media files (images, audio, video)
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Cloudflare deployments &amp; Airtable records
+                                </li>
+                                <li className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                                    Earnings, withdrawals &amp; referral records
+                                </li>
+                            </ul>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={deleting}
+                                className="flex-1 py-2.5 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50 text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeleteCreator}
+                                disabled={deleting}
+                                className="flex-1 py-2.5 px-4 rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50 text-sm"
+                            >
+                                {deleting ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Deleting...
+                                    </span>
+                                ) : 'Delete Permanently'}
+                            </button>
                         </div>
                     </div>
                 </div>
