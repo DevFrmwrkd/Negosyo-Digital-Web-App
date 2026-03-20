@@ -1,42 +1,135 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
-import Accordion from "@/components/Accordion"
+import { motion } from "framer-motion";
+import { Scale, Users, FileText, Banknote, ShieldAlert, Award } from "lucide-react";
+import { Bricolage_Grotesque, Outfit } from 'next/font/google';
 
-const SECTIONS = [
-    { title: "1. Acceptance of Terms", content: "By accessing or using the Negosyo Digital platform, you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use our services." },
-    { title: "2. Account Registration", content: "You must be at least 18 years old to create an account. You agree to provide accurate and complete information during registration and to keep your account credentials secure. You are responsible for all activity that occurs under your account." },
-    { title: "3. Creator Certification", content: "Before submitting business content, you must complete the creator training program and pass the certification quiz with a score of at least 4 out of 5. Certification ensures quality standards for all submissions." },
-    { title: "4. Submissions", content: "All submissions must contain authentic, original content collected with the business owner's knowledge and consent. We reserve the right to reject any submission that does not meet our quality guidelines, contains inaccurate information, or violates these terms. Rejected submissions may be resubmitted after corrections." },
-    { title: "5. Payment Terms", content: "Creators earn PHP 500 for video submissions and PHP 300 for audio-only submissions, paid after the business owner completes payment. Referral bonuses of PHP 1,000 are awarded when a referred creator's first submission is approved and paid. Minimum withdrawal amount is PHP 100. All payments are processed via bank transfer through our payment partner." },
-    { title: "6. Referral Program", content: "Each creator receives a unique referral code. When a new creator signs up using your code and their first submission is approved and paid, you earn a PHP 1,000 referral bonus. Only one bonus is awarded per referred creator, regardless of subsequent submissions." },
-    { title: "7. Prohibited Conduct", content: "You may not: submit fake or fabricated business information, submit duplicate entries for the same business, use misleading or deceptive content, create multiple accounts, share or sell your account credentials, use the platform for any illegal purpose, or attempt to manipulate the referral system." },
-    { title: "8. Intellectual Property", content: "By submitting content (photos, recordings, business information), you grant Negosyo Digital a non-exclusive, worldwide license to use, display, and distribute this content for the purpose of generating and hosting business websites. You retain ownership of your original content." },
-    { title: "9. Account Termination", content: "We may suspend or terminate your account if you violate these terms, submit fraudulent content, engage in prohibited conduct, or are inactive for an extended period. Upon termination, any pending payouts may be forfeited if the termination was due to a violation." },
-    { title: "10. Limitation of Liability", content: "Negosyo Digital is not liable for the business outcomes of generated websites, the accuracy of AI-generated content, delays in payment processing, or any indirect, incidental, or consequential damages arising from your use of the platform." },
-    { title: "11. Governing Law", content: "These Terms of Service are governed by and construed in accordance with the laws of the Republic of the Philippines. Any disputes shall be resolved in the courts of the Philippines." },
-    { title: "12. Contact", content: "For questions about these Terms of Service, contact us at frmwrkd.media@gmail.com." },
-]
+import Navbar from "@/components/landing/Navbar";
+import Footer from "@/components/landing/Footer";
+import ScrollToTop from "@/components/landing/ScrollToTop";
+
+const bricolage = Bricolage_Grotesque({ subsets: ['latin'], weight: ['400', '600', '800'] });
+const outfit = Outfit({ subsets: ['latin'], weight: ['300', '400', '600'] });
+
+const termsSections = [
+  {
+    icon: <Scale className="w-8 h-8 text-[#00F0FF]" />,
+    title: "1. Acceptance of Terms",
+    content: "By accessing or using the Negosyo Digital platform (including our mobile app and web portal), you agree to be strictly bound by these Terms of Service. You must be at least 18 years of age to register as a Creator."
+  },
+  {
+    icon: <Award className="w-8 h-8 text-[#00FF66]" />,
+    title: "2. Creator Certification",
+    content: "To maintain quality across the platform, Creators must complete the in-app training program and pass the certification quiz with a minimum score of 80% (4 out of 5 correct) before submitting live MSME data to the network."
+  },
+  {
+    icon: <FileText className="w-8 h-8 text-[#39FF14]" />,
+    title: "3. Submissions & Media",
+    content: "All data submitted must be authentic and collected with the explicit consent of the business owner. Submissions require a minimum of 3 photos (portrait, location, product) and a valid audio/video interview. Fraudulent data will result in immediate termination."
+  },
+  {
+    icon: <Banknote className="w-8 h-8 text-[#1D00FF]" />,
+    title: "4. Payouts & Economics",
+    content: "Creators earn PHP 500 for a successful video interview submission, and PHP 300 for audio-only submissions. Referral bonuses of PHP 1,000 are credited when a referred Creator completes their first paid submission. The minimum withdrawal threshold is PHP 100, processed securely via Wise API direct to local Philippine bank accounts."
+  },
+  {
+    icon: <Users className="w-8 h-8 text-[#00F0FF]" />,
+    title: "5. Intellectual Property",
+    content: "By uploading media to Negosyo Digital, you grant us a worldwide, non-exclusive license to use, display, transcribe (via AI), and deploy the content to generate websites for the respective businesses."
+  },
+  {
+    icon: <ShieldAlert className="w-8 h-8 text-red-500" />,
+    title: "6. Prohibited Conduct & Law",
+    content: "Manipulating the referral system, uploading AI-generated fake stores, or harassing business owners is strictly prohibited. These Terms are governed by the laws of the Republic of the Philippines. Any disputes will be resolved in Philippine jurisdictions."
+  }
+];
 
 export default function TermsOfServicePage() {
-    return (
-        <div className="min-h-screen bg-white font-sans pb-12">
-            <header className="px-4 pt-6 pb-4">
-                <div className="flex items-center gap-3 mb-4">
-                    <Link href="/dashboard" className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-zinc-200 text-zinc-600 hover:text-zinc-900 transition-colors">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <div>
-                        <h1 className="text-xl font-bold text-zinc-900">Terms of Service</h1>
-                        <p className="text-xs text-zinc-500">Last updated: February 2026</p>
-                    </div>
-                </div>
-            </header>
+  return (
+    <div className={`min-h-screen bg-black text-white selection:bg-[#00F0FF] selection:text-black overflow-x-hidden ${outfit.className}`}>
+      <Navbar />
+      
+      {/* BACKGROUND EFFECTS */}
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="fixed top-0 left-[20%] w-[40%] h-[40%] bg-[#1D00FF] rounded-full mix-blend-screen filter blur-[250px] opacity-20 pointer-events-none" />
 
-            <main className="px-4">
-                <Accordion items={SECTIONS} defaultOpenIndex={0} />
-            </main>
+      <main className="relative z-10 w-full pt-48 pb-32 px-6 max-w-5xl mx-auto flex flex-col items-center">
+        
+        {/* HEADER */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-center w-full mb-20"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.4, type: "spring" }}
+            className="mb-8 p-4 rounded-3xl bg-white/5 border border-white/10 inline-block backdrop-blur-xl"
+          >
+            <Scale className="w-12 h-12 text-[#1D00FF]" />
+          </motion.div>
+          
+          <h1 className={`text-6xl md:text-8xl font-black uppercase tracking-tighter mb-6 ${bricolage.className}`}>
+            Terms of <br/> <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1D00FF] to-[#00F0FF]">Service</span>
+          </h1>
+          <p className="text-xl md:text-2xl text-white/50 max-w-2xl mx-auto font-light">
+            The operational guidelines governing your use of the Negosyo Digital Creator Network.
+          </p>
+          <div className="w-px h-24 bg-gradient-to-b from-[#1D00FF] to-transparent mx-auto mt-12" />
+        </motion.div>
+
+        {/* CONTENT SECTIONS */}
+        <div className="w-full grid gap-12">
+          {termsSections.map((section, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ delay: idx * 0.1, duration: 0.6 }}
+              className="group p-8 md:p-12 rounded-[2rem] bg-white/5 border border-white/10 hover:border-[#1D00FF]/50 transition-all relative overflow-hidden backdrop-blur-md"
+            >
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="p-4 bg-black/50 rounded-2xl border border-white/10 shrink-0 shadow-lg shadow-black/50">
+                  {section.icon}
+                </div>
+                <div>
+                  <h3 className={`text-3xl font-bold uppercase tracking-tight mb-4 text-white group-hover:text-[#00F0FF] transition-colors ${bricolage.className}`}>
+                    {section.title}
+                  </h3>
+                  <p className="text-white/70 text-lg leading-relaxed font-light">
+                    {section.content}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
         </div>
-    )
+
+        {/* CONTACT BANNER */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="w-full mt-24 p-12 rounded-[3rem] bg-gradient-to-br from-[#1D00FF]/20 to-[#00F0FF]/10 border border-[#1D00FF]/20 text-center relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none mix-blend-overlay" />
+          <h3 className={`text-3xl font-black uppercase tracking-tighter mb-4 relative z-10 ${bricolage.className}`}>
+            Legal Inquiries?
+          </h3>
+          <p className="text-white/70 text-lg mb-8 max-w-xl mx-auto relative z-10">
+            Reach out to our legal department for clarifications on payout structures or Intellectual Property disputes.
+          </p>
+          <a href="mailto:frmwrkd.media@gmail.com" className={`inline-block bg-[#1D00FF] text-white px-10 py-4 rounded-full font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors relative z-10 ${bricolage.className}`}>
+            Contact Legal HQ
+          </a>
+        </motion.div>
+      </main>
+
+      <Footer />
+      <ScrollToTop />
+    </div>
+  );
 }

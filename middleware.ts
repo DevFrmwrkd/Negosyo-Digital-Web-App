@@ -11,6 +11,8 @@ const isPublicRoute = createRouteMatcher([
     '/website/(.*)',
     '/preview/(.*)',
     '/api/webhooks(.*)',
+    '/privacy-policy(.*)',
+    '/terms-of-service(.*)',
 ]);
 
 // Define admin routes
