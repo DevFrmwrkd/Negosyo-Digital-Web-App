@@ -126,6 +126,37 @@ export const deleteFile = action({
 });
 
 /**
+ * Generate a presigned URL for uploading an APK to R2
+ */
+export const generateApkUploadUrl = action({
+    args: {
+        fileName: v.string(),
+        fileType: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const client = getR2Client();
+        const bucketName = getBucketName();
+        const publicUrlPrefix = getPublicUrlPrefix();
+
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 10);
+        const extension = args.fileName.split('.').pop() || 'apk';
+        const key = `releases/${timestamp}-${randomStr}.${extension}`;
+
+        const command = new PutObjectCommand({
+            Bucket: bucketName,
+            Key: key,
+            ContentType: args.fileType || 'application/vnd.android.package-archive',
+        });
+
+        const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
+        const publicUrl = `${publicUrlPrefix}/${key}`;
+
+        return { uploadUrl, publicUrl, key };
+    },
+});
+
+/**
  * Get a presigned URL for downloading a file (for private buckets)
  */
 export const getDownloadUrl = action({

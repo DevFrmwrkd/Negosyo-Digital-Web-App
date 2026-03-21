@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useSignIn, useSignUp } from "@clerk/nextjs"
+import { useState, useEffect } from "react"
+import { useSignIn, useSignUp, useAuth } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
@@ -15,8 +15,15 @@ const outfit = Outfit({ subsets: ['latin'], weight: ['300', '400', '600'] });
 
 export default function LoginPage() {
     const router = useRouter()
+    const { isSignedIn } = useAuth()
     const { signIn, setActive, isLoaded } = useSignIn()
     const { signUp } = useSignUp()
+
+    useEffect(() => {
+        if (isSignedIn) {
+            router.replace("/dashboard")
+        }
+    }, [isSignedIn, router])
 
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
@@ -113,10 +120,10 @@ export default function LoginPage() {
                             <Image src={Logo} alt="Logo" width={64} height={64} className="rounded-2xl" />
                         </div>
                         <h1 className={`text-4xl md:text-5xl font-black uppercase tracking-tighter text-center mb-3 ${bricolage.className}`}>
-                            Access <span className="text-[#00FF66]">Portal</span>
+                            Welcome Back <span className="text-[#00FF66]">Creator!</span>
                         </h1>
-                        <p className="text-white/50 text-center font-light text-lg">
-                            Authenticate to manage your creator dashboard.
+                        <p className="text-white/50 text-center font-light text-sm md:text-base max-w-xs">
+                           Let's Continue your Journey on Digitalizing Local Business.
                         </p>
                     </div>
 
@@ -135,7 +142,7 @@ export default function LoginPage() {
 
                         <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold uppercase tracking-widest text-white/60 pl-2">Email Identity</label>
+                                <label className="text-xs font-bold uppercase tracking-widest text-white/60 pl-2">Email Address</label>
                                 <div className="relative group">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                         <Mail className="w-5 h-5 text-white/30 group-focus-within:text-[#00FF66] transition-colors" />
@@ -154,9 +161,9 @@ export default function LoginPage() {
 
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between pl-2">
-                                    <label className="text-xs font-bold uppercase tracking-widest text-white/60">Passcode</label>
+                                    <label className="text-xs font-bold uppercase tracking-widest text-white/60">Password</label>
                                     <Link href="/forgot-password" className="text-xs font-bold text-[#00FF66] hover:text-white transition-colors">
-                                        RESET?
+                                        FORGOT PASSWORD?
                                     </Link>
                                 </div>
                                 <div className="relative group">
@@ -193,7 +200,7 @@ export default function LoginPage() {
                                     </>
                                 ) : (
                                     <>
-                                        Authorize Access <ArrowRight className="w-4 h-4" />
+                                        LOGIN <ArrowRight className="w-4 h-4" />
                                     </>
                                 )}
                             </button>
@@ -234,7 +241,7 @@ export default function LoginPage() {
                     <p className="text-center mt-8 text-sm font-light text-white/40">
                         New agent?{" "}
                         <Link href="/signup" className="font-bold text-[#00FF66] hover:text-white transition-colors tracking-wide underline decoration-[#00FF66]/30 underline-offset-4">
-                            Deploy your creator profile
+                            Create your creator profile
                         </Link>
                     </p>
                 </motion.div>

@@ -34,8 +34,9 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <h4 className={`text-lg font-bold uppercase tracking-widest text-[#00FF66] ${bricolage.className}`}>Connect</h4>
-            <div className="flex items-center gap-4">
+
+            {/* <h4 className={`text-lg font-bold uppercase tracking-widest text-[#00FF66] ${bricolage.className}`}>Connect</h4> */}
+            {/* <div className="flex items-center gap-4">
               <Link href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
                 <Github size={18} />
               </Link>
@@ -45,11 +46,13 @@ export default function Footer() {
               <Link href="#" className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
                 <Linkedin size={18} />
               </Link>
-            </div>
+            </div> */}
+            
             <Link href="/login" className="flex items-center gap-2 text-white/60 hover:text-[#00FF66] transition-colors mt-2 group">
               Login to Portal <ArrowUpRight className="w-4 h-4 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
+
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center pt-8 border-t border-white/10 gap-4">
