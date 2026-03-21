@@ -4,7 +4,9 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { MoveRight, Banknote, Activity, Download } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Bricolage_Grotesque } from 'next/font/google';
 
 import DashboardImg from "@/public/dashboard.png";
@@ -13,6 +15,31 @@ const bricolage = Bricolage_Grotesque({ subsets: ['latin'], weight: ['400', '600
 
 export default function HeroSection() {
   const containerRef = useRef(null);
+  const apkUrl = useQuery(api.settings.get, { key: "apk_download_url" }) as string | null;
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!apkUrl || downloading) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(apkUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Negosyo-Digital.apk";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: open URL directly
+      window.open(apkUrl, "_blank");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
@@ -76,11 +103,19 @@ export default function HeroSection() {
               </button>
             </Link>
 
-            <Link href="#" className="w-full sm:w-auto">
-              <button className={`w-full sm:w-auto group flex items-center justify-center gap-3 px-8 py-4 rounded-full border-2 border-transparent bg-white/10 hover:bg-white/20 transition-colors font-bold text-lg uppercase tracking-wider ${bricolage.className}`}>
-                Install App <Download className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
+            {apkUrl ? (
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className={`w-full sm:w-auto group flex items-center justify-center gap-3 px-8 py-4 rounded-full border-2 border-transparent bg-white/10 hover:bg-white/20 transition-colors font-bold text-lg uppercase tracking-wider disabled:opacity-70 ${bricolage.className}`}
+              >
+                {downloading ? "Downloading..." : "Install App"} <Download className={`w-5 h-5 ${downloading ? "animate-bounce" : "group-hover:translate-y-1"} transition-transform`} />
               </button>
-            </Link>
+            ) : (
+              <button disabled className={`w-full sm:w-auto group flex items-center justify-center gap-3 px-8 py-4 rounded-full border-2 border-transparent bg-white/10 opacity-50 cursor-not-allowed font-bold text-lg uppercase tracking-wider ${bricolage.className}`}>
+                Install App <Download className="w-5 h-5" />
+              </button>
+            )}
           </motion.div>
         </div>
 
