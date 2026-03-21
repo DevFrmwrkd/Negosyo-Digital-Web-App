@@ -17,6 +17,7 @@ export default function HeroSection() {
   const containerRef = useRef(null);
   const apkUrl = useQuery(api.settings.get, { key: "apk_download_url" }) as string | null;
   const [downloading, setDownloading] = useState(false);
+  const [showIosGuide, setShowIosGuide] = useState(false);
   const deferredPrompt = useRef<any>(null);
 
   useEffect(() => {
@@ -34,12 +35,9 @@ export default function HeroSection() {
   };
 
   const handleInstall = async () => {
-    // iOS: trigger native PWA add-to-home-screen via manifest
+    // iOS: show visual guide since programmatic install isn't possible
     if (isIos()) {
-      // iOS doesn't support programmatic install - open in Safari standalone mode hint
-      // The manifest + apple-mobile-web-app-capable meta tags handle this
-      // Best we can do is alert the user briefly
-      alert("To install: tap the Share button in Safari, then tap \"Add to Home Screen\".");
+      setShowIosGuide(true);
       return;
     }
 
@@ -211,6 +209,67 @@ export default function HeroSection() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[1400px] h-full opacity-10 pointer-events-none"
         style={{ backgroundImage: 'radial-gradient(circle at center, white 1px, transparent 1px)', backgroundSize: '40px 40px' }}
       />
+
+      {/* iOS Add to Home Screen Guide */}
+      {showIosGuide && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-end justify-center" onClick={() => setShowIosGuide(false)}>
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="w-full max-w-md mx-4 mb-8 bg-[#1C1C1E] rounded-2xl p-6 text-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 mx-auto mb-3 bg-[#00FF66]/20 rounded-2xl flex items-center justify-center">
+                <Image src="/logo.png" alt="Negosyo Digital" width={36} height={36} className="rounded-lg" />
+              </div>
+              <h3 className={`text-xl font-bold ${bricolage.className}`}>Install Negosyo Digital</h3>
+              <p className="text-white/50 text-sm mt-1">Add to your home screen in 2 steps</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center gap-4 p-3 bg-white/5 rounded-xl">
+                <div className="w-10 h-10 bg-[#007AFF] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">1. Tap the Share button</p>
+                  <p className="text-xs text-white/40">The square icon with an arrow at the bottom of Safari</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 p-3 bg-white/5 rounded-xl">
+                <div className="w-10 h-10 bg-[#00FF66] rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">2. Tap &quot;Add to Home Screen&quot;</p>
+                  <p className="text-xs text-white/40">Scroll down in the share menu to find it</p>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowIosGuide(false)}
+              className={`w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold text-sm transition-colors ${bricolage.className}`}
+            >
+              Got it
+            </button>
+
+            {/* Arrow pointing to bottom of screen */}
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">
+              <svg className="w-6 h-6 text-white/40 animate-bounce" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 16l-6-6h12l-6 6z" />
+              </svg>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </section>
   );
 }
