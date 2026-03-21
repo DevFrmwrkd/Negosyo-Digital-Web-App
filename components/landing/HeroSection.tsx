@@ -4,7 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { MoveRight, Banknote, Activity, Download } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Bricolage_Grotesque } from 'next/font/google';
@@ -17,8 +17,41 @@ export default function HeroSection() {
   const containerRef = useRef(null);
   const apkUrl = useQuery(api.settings.get, { key: "apk_download_url" }) as string | null;
   const [downloading, setDownloading] = useState(false);
+  const deferredPrompt = useRef<any>(null);
 
-  const handleDownload = async () => {
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      deferredPrompt.current = e;
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const isIos = () => {
+    if (typeof navigator === "undefined") return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+  };
+
+  const handleInstall = async () => {
+    // iOS: trigger native PWA add-to-home-screen via manifest
+    if (isIos()) {
+      // iOS doesn't support programmatic install - open in Safari standalone mode hint
+      // The manifest + apple-mobile-web-app-capable meta tags handle this
+      // Best we can do is alert the user briefly
+      alert("To install: tap the Share button in Safari, then tap \"Add to Home Screen\".");
+      return;
+    }
+
+    // Android/Chrome: use the native PWA install prompt if available
+    if (deferredPrompt.current) {
+      deferredPrompt.current.prompt();
+      const { outcome } = await deferredPrompt.current.userChoice;
+      deferredPrompt.current = null;
+      if (outcome === "accepted") return;
+    }
+
+    // Fallback: download APK for Android
     if (!apkUrl || downloading) return;
     setDownloading(true);
     try {
@@ -33,7 +66,6 @@ export default function HeroSection() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch {
-      // Fallback: open URL directly
       window.open(apkUrl, "_blank");
     } finally {
       setDownloading(false);
@@ -105,14 +137,14 @@ export default function HeroSection() {
 
             {apkUrl ? (
               <button
-                onClick={handleDownload}
+                onClick={handleInstall}
                 disabled={downloading}
-                className={`w-full sm:w-auto group flex items-center justify-center gap-3 px-8 py-4 rounded-full border-2 border-transparent bg-white/10 hover:bg-white/20 transition-colors font-bold text-lg uppercase tracking-wider disabled:opacity-70 ${bricolage.className}`}
+                className={`w-full sm:w-auto group flex items-center justify-center gap-3 px-8 py-4 rounded-full bg-white text-black hover:bg-white/90 transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(255,255,255,0.3)] font-bold text-lg uppercase tracking-wider disabled:opacity-70 ${bricolage.className}`}
               >
                 {downloading ? "Downloading..." : "Install App"} <Download className={`w-5 h-5 ${downloading ? "animate-bounce" : "group-hover:translate-y-1"} transition-transform`} />
               </button>
             ) : (
-              <button disabled className={`w-full sm:w-auto group flex items-center justify-center gap-3 px-8 py-4 rounded-full border-2 border-transparent bg-white/10 opacity-50 cursor-not-allowed font-bold text-lg uppercase tracking-wider ${bricolage.className}`}>
+              <button disabled className={`w-full sm:w-auto group flex items-center justify-center gap-3 px-8 py-4 rounded-full bg-white/20 text-white/50 cursor-not-allowed font-bold text-lg uppercase tracking-wider ${bricolage.className}`}>
                 Install App <Download className="w-5 h-5" />
               </button>
             )}
