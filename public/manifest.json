@@ -1,0 +1,17 @@
+{
+  "name": "Negosyo Digital",
+  "short_name": "Negosyo Digital",
+  "description": "Digitize MSMEs. Get Paid.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00FF66",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
