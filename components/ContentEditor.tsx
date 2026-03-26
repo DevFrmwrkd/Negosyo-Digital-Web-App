@@ -1,7 +1,18 @@
-'use client'
-
-import { useState } from 'react'
-import { Palette, Type, Layers, Box, ChevronDown, ChevronUp, Save } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { 
+    Palette, 
+    Type, 
+    Layers, 
+    Box, 
+    ChevronDown, 
+    ChevronUp, 
+    Save, 
+    Layout, 
+    Monitor, 
+    Smartphone,
+    Check
+} from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export interface EditorCustomizations {
     heroStyle: string
@@ -17,6 +28,156 @@ export interface EditorCustomizations {
     navbarStyle?: string
     featuredStyle?: string
     footerStyle?: string
+}
+
+const STYLE_METADATA: Record<string, Record<string, { label: string, description: string, previewUrl?: string }>> = {
+    heroStyle: {
+        'A': { label: 'Split Modern', description: 'Dynamic split with text left and visual focus right.' },
+        'B': { label: 'Fullscreen', description: 'Immersive background with elegant centered typography.' },
+        'C': { label: 'Carousel', description: 'Narrative-driven slides with intuitive navigation.' },
+        'D': { label: 'Agency Dark', description: 'Bold services-first list with a sophisticated dark theme.' },
+        'E': { label: 'Visual Narrative', description: 'Modern, layered composition with floating elements.' },
+        'F': { label: 'Luxury Elegant', description: 'Minimalist high-end layout with refined spacing.' }
+    },
+    aboutStyle: {
+        'A': { label: 'Gallery Split', description: 'Balanced layout with integrated mini-gallery.' },
+        'B': { label: 'Minimal Italic', description: 'Typographic focus with decorative serif accents.' },
+        'C': { label: 'Tags Card', description: 'Structured information cards for quick readability.' },
+        'D': { label: 'Corporate Quote', description: 'Trust-focused layout with brand carousel.' },
+        'E': { label: 'Immersive DNA', description: 'Deep storytelling with parallax backgrounds.' },
+        'F': { label: 'Luxury Story', description: 'Magazine-style layout with elegant editorial feel.' }
+    },
+    servicesStyle: {
+        'A': { label: 'Accordion', description: 'Interactive expandable lists with contextual imagery.' },
+        'B': { label: 'Numbered Grid', description: 'Sequential minimal grid for process-driven services.' },
+        'C': { label: 'Action Cards', description: 'Clickable feature cards with subtle hover effects.' },
+        'D': { label: 'Stats Focus', description: 'Data-driven layout with social proof integration.' },
+        'E': { label: 'Capabilities Mosaic', description: 'Asymmetric grid for a creative, modern display.' },
+        'F': { label: 'Luxury Mosaic', description: 'Refined grid with premium hover states and spacing.' }
+    },
+    galleryStyle: {
+        'A': { label: 'Scroll Reveal', description: 'Smooth entrance animations on scroll.' },
+        'B': { label: 'Stack Deck', description: 'Layered horizontal scroll for compact navigation.' },
+        'C': { label: 'Fixed Grid', description: 'Standard high-visibility image grid.' },
+        'D': { label: 'Staggered Masonry', description: 'Creative vertical flow for diverse asset sizes.' },
+        'E': { label: 'Fluid Mosaic', description: 'Edge-to-edge immersive experience.' },
+        'F': { label: 'Luxury Showcase', description: 'Premium focus on single items with elegant framing.' }
+    },
+    contactStyle: {
+        'A': { label: 'Grid Dark', description: 'High-contrast footer with structured contact info.' },
+        'B': { label: 'Artisan Light', description: 'Clean, airy layout with soft shadows and focus.' },
+        'C': { label: 'Bold CTA', description: 'Loud, center-aligned call to action section.' },
+        'D': { label: 'Marquee Rows', description: 'Dynamic moving visuals with overlayed info.' },
+        'E': { label: 'Glass Tiles', description: 'Premium interactive tiles with blur effects.' },
+        'F': { label: 'Luxury Concierge', description: 'The peak of refined contact experiences.' }
+    }
+}
+
+const StylePreviewBadge = ({ style, type, colorScheme = 'blue' }: { style: string, type: string, colorScheme?: string }) => {
+    // Dynamic colors based on scheme
+    const themeColors: Record<string, string> = {
+        'blue': 'bg-blue-600',
+        'green': 'bg-emerald-600',
+        'purple': 'bg-indigo-600',
+        'orange': 'bg-orange-600',
+        'dark': 'bg-gray-900',
+        'pink': 'bg-pink-600',
+        'brown': 'bg-amber-800',
+        'red': 'bg-red-600',
+        'yellow': 'bg-yellow-500',
+        'maroon': 'bg-rose-900',
+        'black': 'bg-black',
+        'auto': 'bg-blue-600'
+    }
+    const color = themeColors[colorScheme] || themeColors.blue
+
+    // Generate a mini-schematic based on the style
+    const renderSchematic = () => {
+        switch (style) {
+            case 'A': // Split / Grid
+                return (
+                    <div className="flex gap-1.5 h-full w-full">
+                        <div className="w-1/2 bg-gray-50 rounded p-1 space-y-1 overflow-hidden">
+                            <div className={`h-1.5 w-full ${color} opacity-40 rounded-full`} />
+                            <div className="h-1 w-3/4 bg-gray-200 rounded-full" />
+                            <div className="h-1 w-2/3 bg-gray-100 rounded-full" />
+                            <div className={`h-2 w-1/2 ${color} opacity-80 rounded-sm mt-1`} />
+                        </div>
+                        <div className="w-1/2 bg-gray-100/50 rounded flex items-center justify-center p-1">
+                            <Box className="w-4 h-4 text-gray-300" strokeWidth={1} />
+                        </div>
+                    </div>
+                )
+            case 'B': // Full / Minimal
+                return (
+                    <div className="relative h-full w-full bg-gray-50 rounded overflow-hidden flex items-center justify-center">
+                        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-gray-400 to-transparent" />
+                        <div className="z-10 flex flex-col items-center gap-1 w-full p-2">
+                            <div className={`h-1.5 w-1/2 ${color} opacity-90 rounded-full`} />
+                            <div className="h-1 w-2/3 bg-gray-300 rounded-full" />
+                            <div className={`h-2.5 w-1/3 ${color} rounded-sm mt-1`} />
+                        </div>
+                    </div>
+                )
+            case 'C': // Carousel / Cards
+                return (
+                    <div className="h-full w-full flex flex-col gap-1.5 p-1 bg-gray-50 rounded">
+                        <div className="flex gap-1 flex-1">
+                            <div className="w-1/3 bg-gray-100 rounded-sm" />
+                            <div className={`w-1/3 ${color} opacity-20 border border-gray-200 rounded-sm`} />
+                            <div className="w-1/3 bg-gray-100 rounded-sm" />
+                        </div>
+                        <div className="flex justify-center gap-1 pb-0.5">
+                            <div className={`w-1.5 h-1.5 rounded-full ${color}`} />
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
+                        </div>
+                    </div>
+                )
+            case 'D': // Dark / List
+                return (
+                    <div className="h-full w-full bg-gray-900 rounded p-2 flex flex-col gap-1.5">
+                        <div className={`h-1.5 w-1/2 ${color} opacity-50 rounded-full`} />
+                        <div className="flex gap-2 items-center">
+                           <div className="w-2 h-2 rounded-full border border-gray-700 shrink-0" />
+                           <div className="h-1 w-full bg-gray-700 rounded-full" />
+                        </div>
+                        <div className="flex gap-2 items-center">
+                           <div className={`w-2 h-2 rounded-full border ${color} opacity-40 shrink-0`} />
+                           <div className="h-1 w-3/4 bg-gray-700 rounded-full" />
+                        </div>
+                    </div>
+                )
+            case 'E': // Mosaic / Fluid
+                return (
+                    <div className="grid grid-cols-3 grid-rows-2 gap-1 h-full w-full p-1 bg-gray-50 rounded">
+                        <div className={`col-span-2 bg-gray-100 rounded-sm border border-gray-100`} />
+                        <div className={`${color} opacity-40 rounded-sm`} />
+                        <div className="bg-gray-100 rounded-sm" />
+                        <div className={`col-span-2 ${color} opacity-10 border border-gray-200 rounded-sm`} />
+                    </div>
+                )
+            case 'F': // Luxury / Premium
+                return (
+                    <div className="h-full w-full border border-gray-100 p-2 flex flex-col items-center justify-center gap-2 bg-white rounded">
+                        <div className={`w-8 h-[1px] ${color} opacity-20`} />
+                        <div className="flex flex-col gap-1 items-center">
+                            <div className={`h-1.5 w-12 ${color} rounded-sm`} />
+                            <div className="h-1 w-8 bg-gray-100 rounded-full" />
+                        </div>
+                        <div className={`w-8 h-[1px] ${color} opacity-20`} />
+                        <div className={`h-2 w-10 border border-gray-100 rounded-sm`} />
+                    </div>
+                )
+            default: return <div className="bg-gray-50 h-full w-full rounded" />
+        }
+    }
+
+    return (
+        <div className="w-full h-24 mb-1.5 bg-white border border-gray-100 rounded-lg p-1.5 shadow-sm group-hover:border-blue-200 group-hover:shadow transition-all group-hover:scale-[1.02] duration-200 overflow-hidden ring-offset-2 group-active:scale-[0.98]">
+            {renderSchematic()}
+        </div>
+    )
 }
 
 interface ContentEditorProps {
@@ -93,111 +254,68 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                     </button>
 
                     {expandedSections.has('layout') && (
-                        <div className="p-4 space-y-4 bg-white">
-                            {/* Hero Section */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    Hero Section
-                                    <span className="text-xs text-gray-400 font-normal ml-auto">Top Banner</span>
-                                </label>
-                                <select
-                                    value={customizations.heroStyle}
-                                    onChange={(e) => updateField('heroStyle', e.target.value)}
-                                    disabled={disabled}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
-                                >
-                                    <option value="A">Split Dark Modern (Default)</option>
-                                    <option value="B">Fullscreen Background</option>
-                                    <option value="C">Centered Carousel</option>
-                                    <option value="D">Services List Dark</option>
-                                    <option value="E">Visual Narrative (Modern)</option>
-                                    <option value="F">Luxury Dark Elegant</option>
-                                </select>
-                            </div>
-
-                            {/* About Section */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    About Section
-                                    <span className="text-xs text-gray-400 font-normal ml-auto">About Us</span>
-                                </label>
-                                <select
-                                    value={customizations.aboutStyle}
-                                    onChange={(e) => updateField('aboutStyle', e.target.value)}
-                                    disabled={disabled}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
-                                >
-                                    <option value="A">Gallery Split (Default)</option>
-                                    <option value="B">Minimal Italic</option>
-                                    <option value="C">Tags Card</option>
-                                    <option value="D">Quote with Logo Carousel</option>
-                                    <option value="E">Immersive DNA (Modern)</option>
-                                    <option value="F">Luxury Story Layout</option>
-                                </select>
-                            </div>
-
-                            {/* Services Section */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    Services Section
-                                    <span className="text-xs text-gray-400 font-normal ml-auto">What We Do</span>
-                                </label>
-                                <select
-                                    value={customizations.servicesStyle}
-                                    onChange={(e) => updateField('servicesStyle', e.target.value)}
-                                    disabled={disabled}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
-                                >
-                                    <option value="A">Accordion with Image (Default)</option>
-                                    <option value="B">Minimal Numbered Grid</option>
-                                    <option value="C">Card Grid</option>
-                                    <option value="D">Stats Grid with Quote</option>
-                                    <option value="E">Capabilites Mosaic (Modern)</option>
-                                    <option value="F">Luxury Card Grid</option>
-                                </select>
-                            </div>
-
-                            {/* Gallery Section */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    Gallery Section
-                                    <span className="text-xs text-gray-400 font-normal ml-auto">Portfolio</span>
-                                </label>
-                                <select
-                                    value={customizations.galleryStyle}
-                                    onChange={(e) => updateField('galleryStyle', e.target.value)}
-                                    disabled={disabled}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
-                                >
-                                    <option value="A">Scroll Reveal Cards (Default)</option>
-                                    <option value="B">Portfolio Stack</option>
-                                    <option value="C">Image Grid</option>
-                                    <option value="D">Staggered Masonry</option>
-                                    <option value="E">Fluid Mosaic (Modern)</option>
-                                    <option value="F">Luxury Product Showcase</option>
-                                </select>
-                            </div>
-
-                            {/* Contact Section */}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    Contact Section
-                                    <span className="text-xs text-gray-400 font-normal ml-auto">Get in Touch</span>
-                                </label>
-                                <select
-                                    value={customizations.contactStyle}
-                                    onChange={(e) => updateField('contactStyle', e.target.value)}
-                                    disabled={disabled}
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3"
-                                >
-                                    <option value="A">Contact Grid Dark (Default)</option>
-                                    <option value="B">Craft Style Light</option>
-                                    <option value="C">Bold CTA</option>
-                                    <option value="D">Dark Marquee Photos</option>
-                                    <option value="E">Interactive Tile Glass (Modern)</option>
-                                    <option value="F">Luxury Footer Contact</option>
-                                </select>
-                            </div>
+                        <div className="p-4 space-y-6 bg-white">
+                            {[
+                                { id: 'heroStyle', label: 'Hero Section', sub: 'Top Banner' },
+                                { id: 'aboutStyle', label: 'About Section', sub: 'Story & Mission' },
+                                { id: 'servicesStyle', label: 'Services Section', sub: 'What We Do' },
+                                { id: 'galleryStyle', label: 'Gallery Section', sub: 'Visual Portfolio' },
+                                { id: 'contactStyle', label: 'Contact Section', sub: 'Conversion Point' },
+                            ].map((section) => (
+                                <div key={section.id} className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-black text-gray-400 uppercase tracking-[0.15em]">
+                                            {section.label}
+                                        </label>
+                                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-tighter">
+                                            {section.sub}
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {(Object.entries(STYLE_METADATA[section.id])).map(([key, meta]) => (
+                                            <button
+                                                key={key}
+                                                onClick={() => updateField(section.id as any, key)}
+                                                className={`
+                                                    group relative flex flex-col p-2.5 rounded-2xl border transition-all text-left
+                                                    ${customizations[section.id as keyof EditorCustomizations] === key 
+                                                        ? 'bg-blue-50/50 border-blue-200 ring-2 ring-blue-50 ring-offset-0' 
+                                                        : 'bg-white border-gray-100 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md'}
+                                                `}
+                                            >
+                                                <StylePreviewBadge style={key} type={section.id} colorScheme={customizations.colorSchemeId} />
+                                                <div className="flex-1 min-w-0 px-0.5">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={`text-[10px] font-black uppercase tracking-tight ${customizations[section.id as keyof EditorCustomizations] === key ? 'text-blue-700' : 'text-gray-900'}`}>
+                                                            {meta.label}
+                                                        </span>
+                                                        {customizations[section.id as keyof EditorCustomizations] === key && (
+                                                            <div className="w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
+                                                                <Check size={7} className="text-white" strokeWidth={4} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[9px] text-gray-400 font-bold leading-tight mt-0.5 line-clamp-1 uppercase">
+                                                        Style {key}
+                                                    </p>
+                                                </div>
+                                                
+                                                {/* Selection Overlay */}
+                                                {customizations[section.id as keyof EditorCustomizations] === key && (
+                                                    <motion.div 
+                                                        layoutId={`selected-${section.id}`}
+                                                        className="absolute inset-0 border-2 border-blue-500 rounded-2xl pointer-events-none z-20"
+                                                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                                                    />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    
+                                    <div className="h-px bg-gray-50 !mt-6" />
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
