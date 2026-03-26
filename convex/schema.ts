@@ -10,6 +10,7 @@ export default defineSchema({
         middleName: v.optional(v.string()),
         lastName: v.string(),
         email: v.optional(v.string()),
+        wiseEmail: v.optional(v.string()), // For Wise payouts
         referralCode: v.string(),
         referredBy: v.optional(v.id('creators')),
         referredByCode: v.optional(v.string()), // Referral code used during signup
@@ -258,7 +259,8 @@ export default defineSchema({
         payoutMethod: v.union(
             v.literal('gcash'),
             v.literal('maya'),
-            v.literal('bank_transfer')
+            v.literal('bank_transfer'),
+            v.literal('wise_email')
         ),
         accountDetails: v.string(),
         accountHolderName: v.optional(v.string()),
@@ -266,6 +268,7 @@ export default defineSchema({
         bankCode: v.optional(v.string()),
         bankName: v.optional(v.string()),
         failureReason: v.optional(v.string()),
+        wiseEmail: v.optional(v.string()), // Wise payout email
         wiseRecipientId: v.optional(v.string()),
         wiseTransferId: v.optional(v.string()),
         status: v.union(
@@ -287,7 +290,8 @@ export default defineSchema({
         type: v.union(
             v.literal('gcash'),
             v.literal('maya'),
-            v.literal('bank_transfer')
+            v.literal('bank_transfer'),
+            v.literal('wise_email')
         ),
         accountName: v.string(),
         accountNumber: v.string(),

@@ -9,7 +9,7 @@ import { query, mutation } from './_generated/server';
 export const save = mutation({
     args: {
         creatorId: v.id('creators'),
-        type: v.union(v.literal('gcash'), v.literal('maya'), v.literal('bank_transfer')),
+        type: v.union(v.literal('gcash'), v.literal('maya'), v.literal('bank_transfer'), v.literal('wise_email')),
         accountName: v.string(),
         accountNumber: v.string(),
         isDefault: v.optional(v.boolean()),

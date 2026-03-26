@@ -14,7 +14,8 @@ export const create = mutation({
         payoutMethod: v.union(
             v.literal('gcash'),
             v.literal('maya'),
-            v.literal('bank_transfer')
+            v.literal('bank_transfer'),
+            v.literal('wise_email')
         ),
         accountDetails: v.string(),
     },
