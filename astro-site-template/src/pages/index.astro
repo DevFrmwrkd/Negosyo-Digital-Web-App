@@ -8,6 +8,7 @@ import HeroC from '../components/heroes/HeroC.astro';
 import HeroD from '../components/heroes/HeroD.astro';
 import HeroE from '../components/heroes/HeroE.astro';
 import HeroF from '../components/heroes/HeroF.astro';
+import HeroG from '../components/heroes/HeroG.astro';
 
 // About components
 import AboutA from '../components/about/AboutA.astro';
@@ -16,6 +17,7 @@ import AboutC from '../components/about/AboutC.astro';
 import AboutD from '../components/about/AboutD.astro';
 import AboutE from '../components/about/AboutE.astro';
 import AboutF from '../components/about/AboutF.astro';
+import AboutG from '../components/about/AboutG.astro';
 
 // Services components
 import ServicesA from '../components/services/ServicesA.astro';
@@ -24,6 +26,7 @@ import ServicesC from '../components/services/ServicesC.astro';
 import ServicesD from '../components/services/ServicesD.astro';
 import ServicesE from '../components/services/ServicesE.astro';
 import ServicesF from '../components/services/ServicesF.astro';
+import ServicesG from '../components/services/ServicesG.astro';
 
 // Gallery components
 import GalleryA from '../components/gallery/GalleryA.astro';
@@ -32,6 +35,7 @@ import GalleryC from '../components/gallery/GalleryC.astro';
 import GalleryD from '../components/gallery/GalleryD.astro';
 import GalleryE from '../components/gallery/GalleryE.astro';
 import GalleryF from '../components/gallery/GalleryF.astro';
+import GalleryG from '../components/gallery/GalleryG.astro';
 
 // Contact components
 import ContactA from '../components/contact/ContactA.astro';
@@ -40,16 +44,17 @@ import ContactC from '../components/contact/ContactC.astro';
 import ContactD from '../components/contact/ContactD.astro';
 import ContactE from '../components/contact/ContactE.astro';
 import ContactF from '../components/contact/ContactF.astro';
+import ContactG from '../components/contact/ContactG.astro';
 
 // Import site data
 import siteData from '../data/site-data.json';
 
 // Component maps
-const heroComponents: Record<string, any> = { A: HeroA, B: HeroB, C: HeroC, D: HeroD, E: HeroE, F: HeroF };
-const aboutComponents: Record<string, any> = { A: AboutA, B: AboutB, C: AboutC, D: AboutD, E: AboutE, F: AboutF };
-const servicesComponents: Record<string, any> = { A: ServicesA, B: ServicesB, C: ServicesC, D: ServicesD, E: ServicesE, F: ServicesF };
-const galleryComponents: Record<string, any> = { A: GalleryA, B: GalleryB, C: GalleryC, D: GalleryD, E: GalleryE, F: GalleryF };
-const contactComponents: Record<string, any> = { A: ContactA, B: ContactB, C: ContactC, D: ContactD, E: ContactE, F: ContactF };
+const heroComponents: Record<string, any> = { A: HeroA, B: HeroB, C: HeroC, D: HeroD, E: HeroE, F: HeroF, G: HeroG };
+const aboutComponents: Record<string, any> = { A: AboutA, B: AboutB, C: AboutC, D: AboutD, E: AboutE, F: AboutF, G: AboutG };
+const servicesComponents: Record<string, any> = { A: ServicesA, B: ServicesB, C: ServicesC, D: ServicesD, E: ServicesE, F: ServicesF, G: ServicesG };
+const galleryComponents: Record<string, any> = { A: GalleryA, B: GalleryB, C: GalleryC, D: GalleryD, E: GalleryE, F: GalleryF, G: GalleryG };
+const contactComponents: Record<string, any> = { A: ContactA, B: ContactB, C: ContactC, D: ContactD, E: ContactE, F: ContactF, G: ContactG };
 
 // Select components based on customizations
 const HeroComponent = heroComponents[siteData.customizations.heroStyle] || HeroA;

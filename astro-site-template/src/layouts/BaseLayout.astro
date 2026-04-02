@@ -37,9 +37,15 @@ const fontPairings: Record<string, { heading: string; body: string }> = {
   tech: { heading: 'Orbitron', body: 'Exo 2' },
   friendly: { heading: 'Quicksand', body: 'Quicksand' },
   luxury: { heading: 'Cinzel', body: 'Lato' },
+  gourmet: { heading: 'Cormorant Garamond', body: 'Montserrat' },
 };
 
 const fonts = fontPairings[fontPairing] || fontPairings.modern;
+
+// Helper to strip HTML tags for title/meta tags
+const stripHtml = (html: string) => html?.replace(/<[^>]*>?/gm, '') || '';
+const cleanBusinessName = stripHtml(businessName);
+const cleanTagline = stripHtml(tagline);
 
 // Fluid typography scale
 const typographyScale = {
@@ -118,6 +124,10 @@ const colorSchemes: Record<string, {
     primary: '#FFFFFF', secondary: '#E5E5E5', accent: '#A0A0A0', background: '#000000', surface: '#111111',
     text: '#FFFFFF', textMuted: '#A0A0A0', inverseText: '#000000', isDark: true
   },
+  gold: {
+    primary: '#c5a059', secondary: '#1a1a1a', accent: '#e5c07b', background: '#f8f5f0', surface: '#ffffff',
+    text: '#1a1a1a', textMuted: '#4a4a4a', inverseText: '#f8f5f0', isDark: false
+  },
 };
 
 const scheme = colorSchemes[colorScheme] || colorSchemes.auto;
@@ -141,11 +151,11 @@ const year = new Date().getFullYear();
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content={`${businessName} - ${tagline}`} />
-  <meta property="og:title" content={`${businessName} - ${tagline}`} />
-  <meta property="og:description" content={tagline} />
+  <meta name="description" content={`${cleanBusinessName} - ${cleanTagline}`} />
+  <meta property="og:title" content={`${cleanBusinessName} - ${cleanTagline}`} />
+  <meta property="og:description" content={cleanTagline} />
   <meta property="og:type" content="website" />
-  <title>{businessName} - {tagline}</title>
+  <title>{cleanBusinessName} {cleanTagline ? ` - ${cleanTagline}` : ''}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href={fontUrl} rel="stylesheet" />

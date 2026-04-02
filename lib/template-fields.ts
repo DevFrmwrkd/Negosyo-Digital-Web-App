@@ -48,6 +48,7 @@ const heroFields: Record<string, HeroStyleFields> = {
     'D': { usesHeadline: true, usesTagline: true, usesDescription: true, usesTestimonial: false, usesBadge: true, usesButton: false, usesImage: true },
     'E': { usesHeadline: true, usesTagline: true, usesDescription: true, usesTestimonial: true, usesBadge: true, usesButton: true, usesImage: true },
     'F': { usesHeadline: true, usesTagline: true, usesDescription: true, usesTestimonial: false, usesBadge: true, usesButton: true, usesImage: true },
+    'G': { usesHeadline: true, usesTagline: true, usesDescription: true, usesTestimonial: false, usesBadge: true, usesButton: true, usesImage: true },
 }
 
 const aboutFields: Record<string, AboutStyleFields> = {
@@ -57,6 +58,7 @@ const aboutFields: Record<string, AboutStyleFields> = {
     'D': { usesHeadline: false, usesBadge: true, usesDescription: true, usesImages: true, usesUsps: false, usesTagline: false, usesTags: false },
     'E': { usesHeadline: true, usesBadge: true, usesDescription: true, usesImages: true, usesUsps: true, usesTagline: false, usesTags: true },
     'F': { usesHeadline: true, usesBadge: true, usesDescription: true, usesImages: true, usesUsps: true, usesTagline: true, usesTags: false },
+    'G': { usesHeadline: true, usesBadge: false, usesDescription: true, usesImages: true, usesUsps: true, usesTagline: true, usesTags: false },
 }
 
 const servicesFields: Record<string, ServicesStyleFields> = {
@@ -66,6 +68,7 @@ const servicesFields: Record<string, ServicesStyleFields> = {
     'D': { usesHeadline: true, usesSubheadline: true, usesBadge: true, usesImage: true, usesList: true },
     'E': { usesHeadline: true, usesSubheadline: false, usesBadge: true, usesImage: false, usesList: true },
     'F': { usesHeadline: true, usesSubheadline: true, usesBadge: true, usesImage: false, usesList: true },
+    'G': { usesHeadline: true, usesSubheadline: true, usesBadge: true, usesImage: false, usesList: true },
 }
 
 const galleryFields: Record<string, GalleryStyleFields> = {
@@ -75,10 +78,11 @@ const galleryFields: Record<string, GalleryStyleFields> = {
     'D': { usesHeadline: true, usesSubheadline: true, usesProducts: true, usesTestimonials: false, usesTags: true, usesImages: false, usesCta: true },
     'E': { usesHeadline: true, usesSubheadline: true, usesProducts: true, usesTestimonials: true, usesTags: true, usesImages: false, usesCta: false },
     'F': { usesHeadline: true, usesSubheadline: true, usesProducts: true, usesTestimonials: false, usesTags: true, usesImages: false, usesCta: true },
+    'G': { usesHeadline: true, usesSubheadline: true, usesProducts: true, usesTestimonials: true, usesTags: true, usesImages: false, usesCta: false },
 }
 
 // Map numeric keys to letters for backward compat
-const numToLetter: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F' }
+const numToLetter: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F', '7': 'G' }
 function normalize(style: string): string {
     return numToLetter[style] || style
 }
@@ -98,3 +102,4 @@ export function getServicesStyleFields(style: string): ServicesStyleFields {
 export function getGalleryStyleFields(style: string): GalleryStyleFields {
     return galleryFields[normalize(style)] || galleryFields['A']
 }
+
