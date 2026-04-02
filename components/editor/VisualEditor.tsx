@@ -61,6 +61,14 @@ interface WebsiteContent {
         link: string
     }
     unique_selling_points?: string[]
+    // Footer extra fields
+    footer_badge?: string
+    footer_headline?: string
+    footer_hours?: string
+    footer_days?: string
+    // About extra fields
+    about_signature_name?: string
+    about_signature_role?: string
     // Hero section fields
     hero_badge_text?: string
     hero_testimonial?: string
@@ -148,6 +156,7 @@ interface VisualEditorProps {
     aboutStyle?: string // About section style variant
     servicesStyle?: string // Services section style variant
     galleryStyle?: string // Gallery section style variant (was featuredStyle)
+    contactStyle?: string // Contact/Footer section style variant
 }
 
 export default function VisualEditor({
@@ -160,7 +169,8 @@ export default function VisualEditor({
     heroStyle = 'A',
     aboutStyle = 'A',
     servicesStyle = 'A',
-    galleryStyle = 'A'
+    galleryStyle = 'A',
+    contactStyle = 'A'
 }: VisualEditorProps) {
     const [content, setContent] = useState<WebsiteContent>(initialContent)
     const [isSaving, setIsSaving] = useState(false)
@@ -187,6 +197,24 @@ export default function VisualEditor({
     const [resolvedServicesImage, setResolvedServicesImage] = useState<string | null>(null)
     const [resolvedFeaturedImages, setResolvedFeaturedImages] = useState<string[]>([])
     const [resolvedProductImages, setResolvedProductImages] = useState<Record<number, string>>({})
+    const [textFormatToolbar, setTextFormatToolbar] = useState<{
+        visible: boolean
+        top: number
+        fontSize: string
+        fontColor: string
+        isBold: boolean
+        isItalic: boolean
+        isUnderline: boolean
+    }>({
+        visible: false,
+        top: 200,
+        fontSize: '16',
+        fontColor: '#000000',
+        isBold: false,
+        isItalic: false,
+        isUnderline: false,
+    })
+    const previewContainerRef = useRef<HTMLDivElement>(null)
 
     // Get which fields the current hero style uses
     const heroFields = useMemo(() => getHeroStyleFields(heroStyle), [heroStyle])
@@ -488,6 +516,52 @@ export default function VisualEditor({
                 changed = true
             }
 
+            // Style G Defaults
+            if (heroStyle === 'G' || heroStyle === '7') {
+                if (!next.hero_cta) {
+                    next.hero_cta = { label: 'Reserve a Table', link: '#contact' }
+                    changed = true
+                }
+                if (!next.hero_cta_secondary) {
+                    next.hero_cta_secondary = { label: 'View Menu', link: '#services' }
+                    changed = true
+                }
+                if (!next.hero_badge_text) {
+                    next.hero_badge_text = 'Gourmet Experience'
+                    changed = true
+                }
+            }
+
+            if (galleryStyle === 'G' || galleryStyle === '7') {
+                if (!next.footer_badge) {
+                    next.footer_badge = 'Reservations'
+                    changed = true
+                }
+                if (!next.footer_headline) {
+                    next.footer_headline = `Experience ${prev.business_name || 'Negosyo Digital'}`
+                    changed = true
+                }
+                if (!next.footer_days) {
+                    next.footer_days = 'Mon - Sun'
+                    changed = true
+                }
+                if (!next.footer_hours) {
+                    next.footer_hours = '11:00 AM - 11:00 PM'
+                    changed = true
+                }
+            }
+
+            if (aboutStyle === 'G' || aboutStyle === '7') {
+                if (!next.about_signature_name) {
+                    next.about_signature_name = 'Alexander Rossi'
+                    changed = true
+                }
+                if (!next.about_signature_role) {
+                    next.about_signature_role = 'Executive Chef'
+                    changed = true
+                }
+            }
+
             if (changed) {
                 setHasChanges(true) // Mark as changed so user knows to save
                 return next
@@ -532,6 +606,138 @@ export default function VisualEditor({
             (iframe as any).srcdoc = htmlContent
         }
     }, [htmlContent])
+
+    // Simplified Sync Engine
+    const updateContentFromIframe = (field: string, html: string) => {
+        setContent(prev => {
+            const next = { ...prev } as any
+            const parts = field.split('.')
+            if (parts.length === 1) {
+                next[field] = html
+            } else if (parts.length === 2) {
+                const [p, c] = parts
+                next[p] = { ...prev[p as keyof WebsiteContent] as any, [c]: html }
+            } else if (parts.length === 3) {
+                const [p, i, c] = parts
+                const idx = parseInt(i)
+                const arr = [...((prev[p as keyof WebsiteContent] as any) || [])]
+                if (arr[idx]) { 
+                    arr[idx] = { ...arr[idx], [c]: html }
+                    next[p] = arr 
+                }
+            }
+            return next
+        })
+        setHasChanges(true)
+    }
+
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data?.type === 'SYNC') updateContentFromIframe(e.data.field, e.data.html)
+            if (e.data?.type === 'SELECTION') setTextFormatToolbar(prev => ({ ...prev, ...e.data.style }))
+        }
+        window.addEventListener('message', handleMessage)
+        return () => window.removeEventListener('message', handleMessage)
+    }, [])
+
+    useEffect(() => {
+        const iframe = document.getElementById('visual-preview') as HTMLIFrameElement
+        if (!iframe) return
+
+        const onIframeLoad = () => {
+            const doc = iframe.contentDocument
+            if (!doc) return
+
+            // Inject the Core Editor Script (The "Brain" inside the iframe)
+            const script = doc.createElement('script')
+            script.textContent = `
+                // Watch for ANY change to elements with data-field
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach(m => {
+                        let el = m.target;
+                        while (el && el.nodeType !== 1) el = el.parentNode;
+                        while (el && !el.hasAttribute('data-field') && el !== document.body) el = el.parentElement;
+                        
+                        if (el && el.hasAttribute('data-field')) {
+                            const field = el.getAttribute('data-field');
+                            window.parent.postMessage({ type: 'SYNC', field, html: el.innerHTML }, '*');
+                        }
+                    });
+                });
+
+                document.querySelectorAll('[data-field]').forEach(el => {
+                    el.contentEditable = "true";
+                    el.style.outline = "none";
+                    observer.observe(el, { characterData: true, childList: true, subtree: true });
+                    
+                    // Report selection styles to parent
+                    el.addEventListener('mouseup', reportSelection);
+                    el.addEventListener('keyup', reportSelection);
+                });
+
+                function reportSelection() {
+                    const sel = window.getSelection();
+                    if (!sel.rangeCount || sel.isCollapsed) return;
+                    
+                    const parent = sel.getRangeAt(0).startContainer.parentElement;
+                    const style = window.getComputedStyle(parent);
+                    const rect = sel.getRangeAt(0).getBoundingClientRect();
+                    
+                    window.parent.postMessage({
+                        type: 'SELECTION',
+                        style: {
+                            visible: true,
+                            top: rect.top,
+                            isBold: parseInt(style.fontWeight) >= 700,
+                            isItalic: style.fontStyle === 'italic',
+                            isUnderline: style.textDecoration.includes('underline'),
+                            fontSize: Math.round(parseFloat(style.fontSize)).toString(),
+                            fontColor: style.color
+                        }
+                    }, '*');
+                }
+
+                // Handle commands from parent
+                window.addEventListener('message', (e) => {
+                    if (e.data.type === 'FORMAT') {
+                        document.execCommand(e.data.cmd, false, e.data.val);
+                    }
+                    if (e.data.type === 'SIZE') {
+                        const sel = window.getSelection();
+                        if (!sel.rangeCount) return;
+                        const el = sel.getRangeAt(0).startContainer.parentElement;
+                        if (el) {
+                            const current = parseFloat(window.getComputedStyle(el).fontSize);
+                            el.style.fontSize = (current + e.data.delta) + 'px';
+                        }
+                    }
+                });
+            `
+            doc.head.appendChild(script)
+
+            // Styling for edit mode
+            const style = doc.createElement('style')
+            style.textContent = `
+                [data-field]:hover { outline: 1px dashed rgba(197, 160, 89, 0.4) !important; }
+                [contenteditable="true"]:focus { outline: 2px solid #c5a059 !important; background: rgba(197, 160, 89, 0.02); }
+            `
+            doc.head.appendChild(style)
+        }
+
+        iframe.addEventListener('load', onIframeLoad)
+        if (iframe.contentDocument?.readyState === 'complete') onIframeLoad()
+        return () => iframe.removeEventListener('load', onIframeLoad)
+    }, [htmlContent])
+
+    const applyFormat = (cmd: string, val?: string) => {
+        const iframe = document.getElementById('visual-preview') as HTMLIFrameElement
+        iframe?.contentWindow?.postMessage({ type: 'FORMAT', cmd, val }, '*')
+    }
+
+    const changeSize = (delta: number) => {
+        const iframe = document.getElementById('visual-preview') as HTMLIFrameElement
+        iframe?.contentWindow?.postMessage({ type: 'SIZE', delta }, '*')
+    }
 
     const updateField = (field: keyof WebsiteContent, value: any) => {
         setContent(prev => ({ ...prev, [field]: value }))
@@ -1017,8 +1223,8 @@ export default function VisualEditor({
                         </div>
                         )}
 
-                        {/* Hero Button (CTA) - Show for styles that use buttons (A, C, E, F) */}
-                        {(heroFields.usesButton || heroStyle === 'E' || heroStyle === 'F' || heroStyle === '5' || heroStyle === '6') && (
+                        {/* Hero Button (CTA) - Show for styles that use buttons */}
+                        {(heroFields.usesButton || heroStyle === 'E' || heroStyle === 'F' || heroStyle === 'G' || heroStyle === '5' || heroStyle === '6' || heroStyle === '7') && (
                         <div
                             onMouseEnter={() => highlightElement('.cta-button')}
                             onMouseLeave={removeHighlight}
@@ -1028,6 +1234,7 @@ export default function VisualEditor({
                                     : 'border-gray-200 bg-gray-50 opacity-60'
                             }`}
                         >
+                            <label className="text-sm font-medium text-gray-700 block mb-3">CTA Buttons</label>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
                                     {content.visibility?.hero_button !== false ? (
@@ -1086,7 +1293,7 @@ export default function VisualEditor({
                                     />
                                 </div>
                             </div>
-                            {heroStyle === 'F' && (
+                            {(heroStyle === 'F' || heroStyle === 'G' || heroStyle === '6' || heroStyle === '7') && (
                                 <>
                                     <div className="mt-4 pt-3 border-t border-gray-200">
                                         <label className="block text-xs text-gray-500 mb-1 font-medium">Secondary Button</label>
@@ -1127,7 +1334,7 @@ export default function VisualEditor({
                                     </div>
                                 </>
                             )}
-                            <p className="text-xs text-gray-500 mt-2">Call-to-action button{heroStyle === 'F' ? 's' : ''} displayed in the hero section</p>
+                            <p className="text-xs text-gray-500 mt-2">Call-to-action button{(heroStyle === 'F' || heroStyle === 'G') ? 's' : ''} displayed in the hero section</p>
                         </div>
                         )}
 
@@ -1630,6 +1837,35 @@ export default function VisualEditor({
                                     />
                                     <p className="text-xs text-gray-500 mt-1">Large headline text on the left side of the about section</p>
                                 </div>
+                                )}
+
+                                {/* Style G Specific About Fields - Signature */}
+                                {(aboutStyle === 'G' || aboutStyle === '7') && (
+                                    <div className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                                        <label className="text-sm font-medium text-gray-700 mb-3 block">Executive Signature</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="text-xs text-gray-500 mb-1 block">Name</label>
+                                                <input
+                                                    type="text"
+                                                    value={content.about_signature_name || ''}
+                                                    onChange={(e) => updateField('about_signature_name', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    placeholder="e.g. Alexander Rossi"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-500 mb-1 block">Role</label>
+                                                <input
+                                                    type="text"
+                                                    value={content.about_signature_role || ''}
+                                                    onChange={(e) => updateField('about_signature_role', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    placeholder="e.g. Executive Chef"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
 
                                 {/* About Description - Now Editable */}
@@ -3384,6 +3620,57 @@ export default function VisualEditor({
                                     </div>
                                 </div>
 
+                                {/* Style G Specific Contact Fields */}
+                                {(contactStyle === 'G' || contactStyle === '7') && (
+                                    <div className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all">
+                                        <label className="text-sm font-medium text-gray-700 mb-3 block">Premium Footer Content</label>
+                                        <div className="space-y-3">
+                                            <div>
+                                                <label className="text-xs text-gray-500 mb-1 block">Badge Text</label>
+                                                <input
+                                                    type="text"
+                                                    value={content.footer_badge || ''}
+                                                    onChange={(e) => updateField('footer_badge', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    placeholder="e.g. Reservations"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs text-gray-500 mb-1 block">Headline</label>
+                                                <input
+                                                    type="text"
+                                                    value={content.footer_headline || ''}
+                                                    onChange={(e) => updateField('footer_headline', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    placeholder="e.g. Experience Excellence"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <label className="text-xs text-gray-500 mb-1 block">Service Days</label>
+                                                    <input
+                                                        type="text"
+                                                        value={content.footer_days || ''}
+                                                        onChange={(e) => updateField('footer_days', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                        placeholder="e.g. Mon - Sun"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-xs text-gray-500 mb-1 block">Service Hours</label>
+                                                    <input
+                                                        type="text"
+                                                        value={content.footer_hours || ''}
+                                                        onChange={(e) => updateField('footer_hours', e.target.value)}
+                                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                        placeholder="e.g. 11:00 AM - 11:00 PM"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Contact Info Editable */}
                                 <div
                                     className={`p-4 rounded-lg border transition-all ${
@@ -3580,12 +3867,12 @@ export default function VisualEditor({
             </div>
 
             {/* Right Panel - Live Preview */}
-            <div className="w-full lg:w-1/2 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden">
+            <div className="w-full lg:w-1/2 bg-gray-100 rounded-lg border border-gray-200 overflow-hidden relative">
                 <div className="bg-white border-b border-gray-200 p-3">
                     <h3 className="text-sm font-semibold text-gray-900">Live Preview</h3>
-                    <p className="text-xs text-gray-500">Hover over fields to see where they appear. Click images in preview to edit.</p>
+                    <p className="text-xs text-gray-500">Select text in preview to format. Hover over fields to see where they appear.</p>
                 </div>
-                <div className="h-[400px] lg:h-full overflow-auto">
+                <div ref={previewContainerRef} className="h-[400px] lg:h-full overflow-auto relative">
                     <iframe
                         id="visual-preview"
                         srcDoc={htmlContent}
@@ -3593,8 +3880,126 @@ export default function VisualEditor({
                         title="Website Preview"
                         sandbox="allow-same-origin allow-scripts"
                     />
+
+                    {/* Text Format Toolbar - Vertical sidebar on the right */}
+                    {textFormatToolbar.visible && (
+                        <div
+                            className="absolute right-0 z-50 flex flex-col items-center gap-1 bg-white/95 backdrop-blur-md border border-gray-200 rounded-l-xl shadow-xl px-2 py-3 transition-all duration-200"
+                            style={{ top: `${textFormatToolbar.top}px` }}
+                            onMouseDown={(e) => e.preventDefault()}
+                        >
+                            {/* Font Family Selector */}
+                            <div className="flex flex-col items-center gap-0.5 pb-2 border-b border-gray-100 w-full">
+                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Font</span>
+                                <select 
+                                    className="w-10 px-0.5 py-1 text-[10px] border border-gray-200 rounded bg-gray-50 hover:bg-white cursor-pointer focus:ring-1 focus:ring-blue-500 transition-all font-medium appearance-none text-center"
+                                    onChange={(e) => applyFormat('fontName', e.target.value)}
+                                    defaultValue={''}
+                                >
+                                    <option value="" disabled>Aa</option>
+                                    <option value="'Playfair Display', serif">Elegant</option>
+                                    <option value="'Montserrat', sans-serif">Modern</option>
+                                    <option value="'Dancing Script', cursive">Script</option>
+                                    <option value="'Cormorant Garamond', serif">Luxury</option>
+                                    <option value="'Inter', sans-serif">Clean</option>
+                                </select>
+                            </div>
+
+                            {/* Font Size */}
+                            <div className="flex flex-col items-center gap-0.5 pb-2 border-b border-gray-100 w-full mt-1">
+                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">Size</span>
+                                <div className="flex flex-col items-center">
+                                    <button
+                                        onClick={() => changeSize(2)}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-600 hover:text-blue-700 transition-all font-bold group"
+                                        title="Increase size"
+                                    >
+                                        <span className="group-active:scale-125 transition-transform">+</span>
+                                    </button>
+                                    <span className="text-[10px] font-mono font-black text-gray-800 tabular-nums py-0.5 min-w-[20px] text-center">
+                                        {textFormatToolbar.fontSize}
+                                    </span>
+                                    <button
+                                        onClick={() => changeSize(-2)}
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-600 hover:text-blue-700 transition-all font-bold group"
+                                        title="Decrease size"
+                                    >
+                                        <span className="group-active:scale-125 transition-transform">−</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Formatting Buttons */}
+                            <div className="flex flex-col items-center gap-1.5 py-2 border-b border-gray-100 w-full mb-1">
+                                <button
+                                    onClick={() => applyFormat('bold')}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-all ${
+                                        textFormatToolbar.isBold
+                                            ? 'bg-blue-600 text-white shadow-lg scale-95'
+                                            : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-sm border border-gray-100 bg-white'
+                                    }`}
+                                    title="Bold"
+                                >
+                                    <span className="font-extrabold">B</span>
+                                </button>
+
+                                <button
+                                    onClick={() => applyFormat('italic')}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-all ${
+                                        textFormatToolbar.isItalic
+                                            ? 'bg-blue-600 text-white shadow-lg scale-95'
+                                            : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-sm border border-gray-100 bg-white'
+                                    }`}
+                                    title="Italic"
+                                >
+                                    <span className="italic font-serif font-bold">I</span>
+                                </button>
+
+                                <button
+                                    onClick={() => applyFormat('underline')}
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-all ${
+                                        textFormatToolbar.isUnderline
+                                            ? 'bg-blue-600 text-white shadow-lg scale-95'
+                                            : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900 shadow-sm border border-gray-100 bg-white'
+                                    }`}
+                                    title="Underline"
+                                >
+                                    <span style={{ textDecoration: 'underline' }} className="font-bold">U</span>
+                                </button>
+                            </div>
+
+                            {/* Color */}
+                            <div className="flex flex-col items-center gap-0.5 pt-2 w-full">
+                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Color</span>
+                                <label 
+                                    className="w-8 h-8 rounded-full border-2 border-white shadow-md overflow-hidden cursor-pointer hover:scale-110 active:scale-95 transition-all ring-1 ring-gray-200 bg-white" 
+                                    title="Font Color"
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                >
+                                    <input
+                                        type="color"
+                                        value={textFormatToolbar.fontColor}
+                                        onChange={(e) => {
+                                            applyFormat('foreColor', e.target.value)
+                                            setTextFormatToolbar(prev => ({ ...prev, fontColor: e.target.value }))
+                                        }}
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    />
+                                    <div
+                                        className="w-full h-full"
+                                        style={{ backgroundColor: textFormatToolbar.fontColor }}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
-        </div >
+        </div>
     )
 }

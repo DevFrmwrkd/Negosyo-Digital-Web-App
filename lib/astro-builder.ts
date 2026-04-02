@@ -21,6 +21,13 @@ interface ExtractedContent {
     hero_badge_text?: string
     hero_testimonial?: string
     visibility?: Record<string, boolean>
+    // Style G extra fields
+    footer_badge?: string
+    footer_headline?: string
+    footer_hours?: string
+    footer_days?: string
+    about_signature_name?: string
+    about_signature_role?: string
     about_headline?: string
     about_description?: string
     about_tagline?: string
@@ -72,7 +79,7 @@ interface Customizations {
  */
 function mapStyleToLetter(numericStyle: string | undefined, fallback: string = 'A'): string {
     if (!numericStyle) return fallback
-    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F' }
+    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F', '7': 'G' }
     return map[numericStyle] || numericStyle // Pass through if already a letter
 }
 
@@ -176,6 +183,8 @@ function transformToAstroData(
             tagline: content.about_tagline,
             tags: content.about_tags,
             usps: content.unique_selling_points,
+            signatureName: content.about_signature_name,
+            signatureRole: content.about_signature_role,
             photos: content.about_images?.length ? content.about_images : photos,
             visibility: {
                 aboutBadge: vis.about_badge !== false,
@@ -232,6 +241,10 @@ function transformToAstroData(
             whatsapp: content.contact?.whatsapp,
             messenger: content.contact?.messenger,
             description: content.footer?.brand_blurb,
+            badgeText: content.footer_badge,
+            headline: content.footer_headline,
+            days: content.footer_days,
+            hours: content.footer_hours,
             socialLinks: content.footer?.social_links,
             photos,
             visibility: {

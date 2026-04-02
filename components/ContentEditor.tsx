@@ -37,7 +37,8 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'C': { label: 'Carousel', description: 'Narrative-driven slides with intuitive navigation.' },
         'D': { label: 'Agency Dark', description: 'Bold services-first list with a sophisticated dark theme.' },
         'E': { label: 'Visual Narrative', description: 'Modern, layered composition with floating elements.' },
-        'F': { label: 'Luxury Elegant', description: 'Minimalist high-end layout with refined spacing.' }
+        'F': { label: 'Luxury Elegant', description: 'Minimalist high-end layout with refined spacing.' },
+        'G': { label: 'First Class', description: 'Cinematic luxury with ornate gold accents and motion.' }
     },
     aboutStyle: {
         'A': { label: 'Gallery Split', description: 'Balanced layout with integrated mini-gallery.' },
@@ -45,7 +46,8 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'C': { label: 'Tags Card', description: 'Structured information cards for quick readability.' },
         'D': { label: 'Corporate Quote', description: 'Trust-focused layout with brand carousel.' },
         'E': { label: 'Immersive DNA', description: 'Deep storytelling with parallax backgrounds.' },
-        'F': { label: 'Luxury Story', description: 'Magazine-style layout with elegant editorial feel.' }
+        'F': { label: 'Luxury Story', description: 'Magazine-style layout with elegant editorial feel.' },
+        'G': { label: 'Michelin Star', description: 'Asymmetric luxury with executive chef signatures.' }
     },
     servicesStyle: {
         'A': { label: 'Accordion', description: 'Interactive expandable lists with contextual imagery.' },
@@ -53,7 +55,8 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'C': { label: 'Action Cards', description: 'Clickable feature cards with subtle hover effects.' },
         'D': { label: 'Stats Focus', description: 'Data-driven layout with social proof integration.' },
         'E': { label: 'Capabilities Mosaic', description: 'Asymmetric grid for a creative, modern display.' },
-        'F': { label: 'Luxury Mosaic', description: 'Refined grid with premium hover states and spacing.' }
+        'F': { label: 'Luxury Mosaic', description: 'Refined grid with premium hover states and spacing.' },
+        'G': { label: 'Curated Menu', description: 'Sophisticated dark menu with numbered experiences.' }
     },
     galleryStyle: {
         'A': { label: 'Scroll Reveal', description: 'Smooth entrance animations on scroll.' },
@@ -61,7 +64,8 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'C': { label: 'Fixed Grid', description: 'Standard high-visibility image grid.' },
         'D': { label: 'Staggered Masonry', description: 'Creative vertical flow for diverse asset sizes.' },
         'E': { label: 'Fluid Mosaic', description: 'Edge-to-edge immersive experience.' },
-        'F': { label: 'Luxury Showcase', description: 'Premium focus on single items with elegant framing.' }
+        'F': { label: 'Luxury Showcase', description: 'Premium focus on single items with elegant framing.' },
+        'G': { label: 'Epicurean Tour', description: 'High-contrast immersion with immersive vignettes.' }
     },
     contactStyle: {
         'A': { label: 'Grid Dark', description: 'High-contrast footer with structured contact info.' },
@@ -69,7 +73,8 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'C': { label: 'Bold CTA', description: 'Loud, center-aligned call to action section.' },
         'D': { label: 'Marquee Rows', description: 'Dynamic moving visuals with overlayed info.' },
         'E': { label: 'Glass Tiles', description: 'Premium interactive tiles with blur effects.' },
-        'F': { label: 'Luxury Concierge', description: 'The peak of refined contact experiences.' }
+        'F': { label: 'Luxury Concierge', description: 'The peak of refined contact experiences.' },
+        'G': { label: 'Reserve Elite', description: 'Prestigious brand sign-off with gold brand detailing.' }
     }
 }
 
@@ -87,6 +92,7 @@ const StylePreviewBadge = ({ style, type, colorScheme = 'blue' }: { style: strin
         'yellow': 'bg-yellow-500',
         'maroon': 'bg-rose-900',
         'black': 'bg-black',
+        'gold': 'bg-amber-600',
         'auto': 'bg-blue-600'
     }
     const color = themeColors[colorScheme] || themeColors.blue
@@ -157,16 +163,20 @@ const StylePreviewBadge = ({ style, type, colorScheme = 'blue' }: { style: strin
                         <div className={`col-span-2 ${color} opacity-10 border border-gray-200 rounded-sm`} />
                     </div>
                 )
-            case 'F': // Luxury / Premium
+            case 'G': // First Class / Fine Dining
                 return (
-                    <div className="h-full w-full border border-gray-100 p-2 flex flex-col items-center justify-center gap-2 bg-white rounded">
-                        <div className={`w-8 h-[1px] ${color} opacity-20`} />
-                        <div className="flex flex-col gap-1 items-center">
-                            <div className={`h-1.5 w-12 ${color} rounded-sm`} />
-                            <div className="h-1 w-8 bg-gray-100 rounded-full" />
+                    <div className="h-full w-full bg-[#050505] rounded overflow-hidden flex flex-col items-center justify-center p-2 relative border border-amber-900/40">
+                        <div className="absolute top-1 left-1 w-2 h-2 border-t border-l border-amber-500/50" />
+                        <div className="absolute top-1 right-1 w-2 h-2 border-t border-r border-amber-500/50" />
+                        <div className="absolute bottom-1 left-1 w-2 h-2 border-b border-l border-amber-500/50" />
+                        <div className="absolute bottom-1 right-1 w-2 h-2 border-b border-r border-amber-500/50" />
+                        <div className="z-10 flex flex-col items-center gap-1.5 w-full">
+                            <div className="w-6 h-[0.5px] bg-amber-500/30" />
+                            <div className={`h-1 w-3/4 bg-white opacity-90 rounded-full`} />
+                            <div className="h-0.5 w-1/2 bg-white/30 rounded-full" />
+                            <div className={`h-1.5 w-1/3 bg-amber-500/80 rounded-sm mt-0.5`} />
+                            <div className="w-6 h-[0.5px] bg-amber-500/30" />
                         </div>
-                        <div className={`w-8 h-[1px] ${color} opacity-20`} />
-                        <div className={`h-2 w-10 border border-gray-100 rounded-sm`} />
                     </div>
                 )
             default: return <div className="bg-gray-50 h-full w-full rounded" />
@@ -358,6 +368,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="yellow">Yellow Bright</option>
                                     <option value="maroon">Maroon Rich</option>
                                     <option value="black">Black Monochrome</option>
+                                    <option value="gold">Gold Premium</option>
                                 </select>
                             </div>
 
@@ -382,6 +393,7 @@ export default function ContentEditor({ initialCustomizations, onUpdate, disable
                                     <option value="tech">Tech Mono</option>
                                     <option value="friendly">Friendly Rounded</option>
                                     <option value="luxury">Luxury Serif</option>
+                                    <option value="gourmet">Gourmet Elegant</option>
                                 </select>
                             </div>
                         </div>

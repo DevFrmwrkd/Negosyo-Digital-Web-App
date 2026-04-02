@@ -1093,6 +1093,7 @@ export default function SubmissionDetailPage() {
                                         aboutStyle={websiteCustomizations?.aboutStyle || 'A'}
                                         servicesStyle={websiteCustomizations?.servicesStyle || 'A'}
                                         galleryStyle={websiteCustomizations?.galleryStyle || websiteCustomizations?.featuredStyle || 'A'}
+                                        contactStyle={websiteCustomizations?.contactStyle || websiteCustomizations?.footerStyle || 'A'}
                                         availableImages={[
                                             // Include enhanced images first (priority), then original photos
                                             ...(enhancedImagesByCategory?.allUrls?.map(u => resolveEnhancedUrl(u)).filter((url): url is string => url !== null) || []),
