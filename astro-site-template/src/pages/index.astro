@@ -9,6 +9,9 @@ import HeroD from '../components/heroes/HeroD.astro';
 import HeroE from '../components/heroes/HeroE.astro';
 import HeroF from '../components/heroes/HeroF.astro';
 import HeroG from '../components/heroes/HeroG.astro';
+import HeroH from '../components/heroes/HeroH.astro';
+import HeroI from '../components/heroes/HeroI.astro';
+import HeroJ from '../components/heroes/HeroJ.astro';
 
 // About components
 import AboutA from '../components/about/AboutA.astro';
@@ -18,6 +21,9 @@ import AboutD from '../components/about/AboutD.astro';
 import AboutE from '../components/about/AboutE.astro';
 import AboutF from '../components/about/AboutF.astro';
 import AboutG from '../components/about/AboutG.astro';
+import AboutH from '../components/about/AboutH.astro';
+import AboutI from '../components/about/AboutI.astro';
+import AboutJ from '../components/about/AboutJ.astro';
 
 // Services components
 import ServicesA from '../components/services/ServicesA.astro';
@@ -27,6 +33,9 @@ import ServicesD from '../components/services/ServicesD.astro';
 import ServicesE from '../components/services/ServicesE.astro';
 import ServicesF from '../components/services/ServicesF.astro';
 import ServicesG from '../components/services/ServicesG.astro';
+import ServicesH from '../components/services/ServicesH.astro';
+import ServicesI from '../components/services/ServicesI.astro';
+import ServicesJ from '../components/services/ServicesJ.astro';
 
 // Gallery components
 import GalleryA from '../components/gallery/GalleryA.astro';
@@ -36,6 +45,9 @@ import GalleryD from '../components/gallery/GalleryD.astro';
 import GalleryE from '../components/gallery/GalleryE.astro';
 import GalleryF from '../components/gallery/GalleryF.astro';
 import GalleryG from '../components/gallery/GalleryG.astro';
+import GalleryH from '../components/gallery/GalleryH.astro';
+import GalleryI from '../components/gallery/GalleryI.astro';
+import GalleryJ from '../components/gallery/GalleryJ.astro';
 
 // Contact components
 import ContactA from '../components/contact/ContactA.astro';
@@ -45,16 +57,19 @@ import ContactD from '../components/contact/ContactD.astro';
 import ContactE from '../components/contact/ContactE.astro';
 import ContactF from '../components/contact/ContactF.astro';
 import ContactG from '../components/contact/ContactG.astro';
+import ContactH from '../components/contact/ContactH.astro';
+import ContactI from '../components/contact/ContactI.astro';
+import ContactJ from '../components/contact/ContactJ.astro';
 
 // Import site data
 import siteData from '../data/site-data.json';
 
 // Component maps
-const heroComponents: Record<string, any> = { A: HeroA, B: HeroB, C: HeroC, D: HeroD, E: HeroE, F: HeroF, G: HeroG };
-const aboutComponents: Record<string, any> = { A: AboutA, B: AboutB, C: AboutC, D: AboutD, E: AboutE, F: AboutF, G: AboutG };
-const servicesComponents: Record<string, any> = { A: ServicesA, B: ServicesB, C: ServicesC, D: ServicesD, E: ServicesE, F: ServicesF, G: ServicesG };
-const galleryComponents: Record<string, any> = { A: GalleryA, B: GalleryB, C: GalleryC, D: GalleryD, E: GalleryE, F: GalleryF, G: GalleryG };
-const contactComponents: Record<string, any> = { A: ContactA, B: ContactB, C: ContactC, D: ContactD, E: ContactE, F: ContactF, G: ContactG };
+const heroComponents: Record<string, any> = { A: HeroA, B: HeroB, C: HeroC, D: HeroD, E: HeroE, F: HeroF, G: HeroG, H: HeroH, I: HeroI, J: HeroJ };
+const aboutComponents: Record<string, any> = { A: AboutA, B: AboutB, C: AboutC, D: AboutD, E: AboutE, F: AboutF, G: AboutG, H: AboutH, I: AboutI, J: AboutJ };
+const servicesComponents: Record<string, any> = { A: ServicesA, B: ServicesB, C: ServicesC, D: ServicesD, E: ServicesE, F: ServicesF, G: ServicesG, H: ServicesH, I: ServicesI, J: ServicesJ };
+const galleryComponents: Record<string, any> = { A: GalleryA, B: GalleryB, C: GalleryC, D: GalleryD, E: GalleryE, F: GalleryF, G: GalleryG, H: GalleryH, I: GalleryI, J: GalleryJ };
+const contactComponents: Record<string, any> = { A: ContactA, B: ContactB, C: ContactC, D: ContactD, E: ContactE, F: ContactF, G: ContactG, H: ContactH, I: ContactI, J: ContactJ };
 
 // Select components based on customizations
 const HeroComponent = heroComponents[siteData.customizations.heroStyle] || HeroA;
@@ -75,6 +90,7 @@ const vis = siteData.visibility;
   colorScheme={siteData.layout.colorScheme}
   fontPairing={siteData.layout.fontPairing}
   contact={siteData.layout.contact}
+  navbarStyle={siteData.customizations.heroStyle}
 >
   {vis.heroSection !== false && (
     <HeroComponent {...siteData.hero} />

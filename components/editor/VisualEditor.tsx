@@ -98,13 +98,14 @@ interface WebsiteContent {
         services_subheadline?: boolean
         services_image?: boolean
         services_list?: boolean
+        services_button?: boolean // For style 8, 9, 10
         // Featured section visibility
         featured_section?: boolean // Master toggle for entire featured section
         featured_headline?: boolean
         featured_subheadline?: boolean
         featured_products?: boolean
         featured_images?: boolean // For style 3 gallery
-        // Footer section visibility
+        featured_button?: boolean // For style 8, 9, 10
         footer_section?: boolean // Master toggle for entire footer section
         footer_badge?: boolean
         footer_headline?: boolean
@@ -143,6 +144,10 @@ interface WebsiteContent {
     featured_images?: string[] // For style 3 gallery
     featured_cta_text?: string // CTA button text for style 4
     featured_cta_link?: string // CTA button link for style 4
+    gallery_cta?: { // For style 8, 9, 10
+        label: string
+        link: string
+    }
 }
 
 interface VisualEditorProps {
@@ -197,6 +202,7 @@ export default function VisualEditor({
     const [resolvedServicesImage, setResolvedServicesImage] = useState<string | null>(null)
     const [resolvedFeaturedImages, setResolvedFeaturedImages] = useState<string[]>([])
     const [resolvedProductImages, setResolvedProductImages] = useState<Record<number, string>>({})
+    const [heroSlotIndex, setHeroSlotIndex] = useState(0)
     const [textFormatToolbar, setTextFormatToolbar] = useState<{
         visible: boolean
         top: number
@@ -830,7 +836,7 @@ export default function VisualEditor({
                     position: relative;
                 }
                 .editor-highlight::before {
-                    content: '✏️ Editing';
+                    content: 'âœï¸ Editing';
                     position: absolute;
                     top: -30px;
                     left: 0;
@@ -902,9 +908,7 @@ export default function VisualEditor({
                                     content.visibility?.navbar !== false ? 'bg-blue-600' : 'bg-gray-300'
                                 }`}
                             >
-                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                    content.visibility?.navbar !== false ? 'translate-x-4.5' : 'translate-x-1'
-                                }`} />
+                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${content.visibility?.about_badge !== false ? 'translate-x-4.5' : 'translate-x-1'}`} />
                             </button>
                         </div>
 
@@ -1224,7 +1228,7 @@ export default function VisualEditor({
                         )}
 
                         {/* Hero Button (CTA) - Show for styles that use buttons */}
-                        {(heroFields.usesButton || heroStyle === 'E' || heroStyle === 'F' || heroStyle === 'G' || heroStyle === '5' || heroStyle === '6' || heroStyle === '7') && (
+                        {(heroFields.usesButton || ['E', 'F', 'G', 'H', 'I', 'J', '5', '6', '7', '8', '9', '10'].includes(heroStyle)) && (
                         <div
                             onMouseEnter={() => highlightElement('.cta-button')}
                             onMouseLeave={removeHighlight}
@@ -1293,7 +1297,7 @@ export default function VisualEditor({
                                     />
                                 </div>
                             </div>
-                            {(heroStyle === 'F' || heroStyle === 'G' || heroStyle === '6' || heroStyle === '7') && (
+                            {(['F', 'G', 'H', 'I', 'J', '6', '7', '8', '9', '10'].includes(heroStyle)) && (
                                 <>
                                     <div className="mt-4 pt-3 border-t border-gray-200">
                                         <label className="block text-xs text-gray-500 mb-1 font-medium">Secondary Button</label>
@@ -1334,7 +1338,7 @@ export default function VisualEditor({
                                     </div>
                                 </>
                             )}
-                            <p className="text-xs text-gray-500 mt-2">Call-to-action button{(heroStyle === 'F' || heroStyle === 'G') ? 's' : ''} displayed in the hero section</p>
+                            <p className="text-xs text-gray-500 mt-2">Call-to-action button{(['F', 'G', 'H', 'I', 'J', '6', '7', '8', '9', '10'].includes(heroStyle)) ? 's' : ''} displayed in the hero section</p>
                         </div>
                         )}
 
@@ -1372,9 +1376,7 @@ export default function VisualEditor({
                                         content.visibility?.hero_image !== false ? 'translate-x-4.5' : 'translate-x-1'
                                     }`} />
                                 </button>
-                            </div>
-
-                            {/* For carousel style (style 3), show all images in a grid */}
+                            </div>                             {/* For carousel style (style 3), show all images in a grid */}
                             {heroStyle === '3' ? (
                                 <>
                                     {content.images && content.images.length > 0 ? (
@@ -1404,7 +1406,7 @@ export default function VisualEditor({
                                                             className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                                                             title="Remove image"
                                                         >
-                                                            ×
+                                                            Ã—
                                                         </button>
                                                         <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
                                                             {index + 1}
@@ -1423,6 +1425,56 @@ export default function VisualEditor({
                                         </div>
                                     )}
                                 </>
+                            ) : (heroStyle === 'I' || heroStyle === '9') ? (
+                                <div className="space-y-4 mb-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Main Hero Image</label>
+                                            <div 
+                                                onClick={() => { setHeroSlotIndex(0); setShowImagePicker(true); }}
+                                                className={`relative group aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                                                    heroSlotIndex === 0 ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 bg-gray-50'
+                                                }`}
+                                            >
+                                                {resolvedImages[0] ? (
+                                                    <img src={resolvedImages[0]} alt="Main Hero" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                        <ImageIcon className="w-6 h-6 opacity-40" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <span className="text-white text-[10px] font-medium">Edit Slot 1</span>
+                                                </div>
+                                                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded">Slot 1</div>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Secondary Inset</label>
+                                            <div 
+                                                onClick={() => { setHeroSlotIndex(1); setShowImagePicker(true); }}
+                                                className={`relative group aspect-square rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
+                                                    heroSlotIndex === 1 ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200 bg-gray-50'
+                                                }`}
+                                            >
+                                                {resolvedImages[1] ? (
+                                                    <img src={resolvedImages[1]} alt="Secondary Inset" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                        <ImageIcon className="w-6 h-6 opacity-40" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <span className="text-white text-[10px] font-medium">Edit Slot 2</span>
+                                                </div>
+                                                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded">Slot 2</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 bg-blue-50 p-2 rounded border border-blue-100">
+                                        Click on a slot to set its photo. Images will be updated in the order selected or by clicking above.
+                                    </p>
+                                </div>
                             ) : (
                                 <>
                                     {/* Show current hero image (first image) for non-carousel styles */}
@@ -1589,6 +1641,15 @@ export default function VisualEditor({
                                                                             updateField('images', newImages)
                                                                             toast.success('Image added to carousel')
                                                                         }
+                                                                    } else if (heroStyle === 'I' || heroStyle === '9') {
+                                                                        const currentImages = content.images || []
+                                                                        const newImages = [...currentImages]
+                                                                        while (newImages.length < 2) newImages.push('')
+                                                                        newImages[heroSlotIndex] = imageUrl
+                                                                        updateField('images', newImages)
+                                                                        setHeroSlotIndex((heroSlotIndex + 1) % 2)
+                                                                        setShowImagePicker(false)
+                                                                        toast.success(`Slot ${heroSlotIndex + 1} updated`)
                                                                     } else {
                                                                         const newImages = content.images ? [...content.images] : []
                                                                         newImages[0] = imageUrl
@@ -1603,7 +1664,7 @@ export default function VisualEditor({
                                                             >
                                                                 <img src={imageUrl} alt={`Original ${index + 1}`} className="w-full h-full object-cover" />
                                                                 {isSelected && (
-                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">âœ“</div>
                                                                 )}
                                                             </button>
                                                         )
@@ -1632,6 +1693,15 @@ export default function VisualEditor({
                                                                             updateField('images', newImages)
                                                                             toast.success('Image added to carousel')
                                                                         }
+                                                                    } else if (heroStyle === 'I' || heroStyle === '9') {
+                                                                        const currentImages = content.images || []
+                                                                        const newImages = [...currentImages]
+                                                                        while (newImages.length < 2) newImages.push('')
+                                                                        newImages[heroSlotIndex] = imageUrl
+                                                                        updateField('images', newImages)
+                                                                        setHeroSlotIndex((heroSlotIndex + 1) % 2)
+                                                                        setShowImagePicker(false)
+                                                                        toast.success(`Slot ${heroSlotIndex + 1} updated`)
                                                                     } else {
                                                                         const newImages = content.images ? [...content.images] : []
                                                                         newImages[0] = imageUrl
@@ -1646,7 +1716,7 @@ export default function VisualEditor({
                                                             >
                                                                 <img src={imageUrl} alt={`Enhanced ${index + 1}`} className="w-full h-full object-cover" />
                                                                 {isSelected && (
-                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">âœ“</div>
                                                                 )}
                                                             </button>
                                                         )
@@ -1673,6 +1743,17 @@ export default function VisualEditor({
                                                                         updateField('images', newImages)
                                                                         toast.success('Image added to carousel')
                                                                     }
+                                                                } else if (heroStyle === 'I' || heroStyle === '9') {
+                                                                    const currentImages = content.images || []
+                                                                    const newImages = [...currentImages]
+                                                                    if (newImages.length < 2) {
+                                                                        newImages.push(imageUrl)
+                                                                    } else {
+                                                                        newImages[currentImages.length % 2] = imageUrl
+                                                                    }
+                                                                    updateField('images', newImages)
+                                                                    setShowImagePicker(false)
+                                                                    toast.success('Hero image updated')
                                                                 } else {
                                                                     const newImages = content.images ? [...content.images] : []
                                                                     newImages[0] = imageUrl
@@ -1687,7 +1768,7 @@ export default function VisualEditor({
                                                         >
                                                             <img src={imageUrl} alt={`Option ${index + 1}`} className="w-full h-full object-cover" />
                                                             {isSelected && (
-                                                                <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">âœ“</div>
                                                             )}
                                                         </button>
                                                     )
@@ -1782,9 +1863,7 @@ export default function VisualEditor({
                                                 content.visibility?.about_badge !== false ? 'bg-blue-600' : 'bg-gray-300'
                                             }`}
                                         >
-                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                                                content.visibility?.about_badge !== false ? 'translate-x-4.5' : 'translate-x-1'
-                                            }`} />
+                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${content.visibility?.about_badge !== false ? 'translate-x-4.5' : 'translate-x-1'}`} />
                                         </button>
                                     </div>
                                     <p className="text-xs text-gray-500">Toggle the &quot;About us&quot; badge visibility above the headline</p>
@@ -1792,7 +1871,7 @@ export default function VisualEditor({
                                 )}
 
                                 {/* About Headline - Only show if about style uses it */}
-                                {aboutFields.usesHeadline && (
+                                {(aboutFields.usesHeadline || ['H', 'I', 'J', '8', '9', '10'].includes(aboutStyle)) && (
                                 <div
                                     onMouseEnter={() => highlightElement('.about-refit .headline')}
                                     onMouseLeave={removeHighlight}
@@ -2299,7 +2378,7 @@ export default function VisualEditor({
                                                                         <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
                                                                         {isSelected && (
                                                                             <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                                                                                {aboutSingleImage ? '✓' : selectedIndex + 1}
+                                                                                {aboutSingleImage ? 'âœ“' : selectedIndex + 1}
                                                                             </div>
                                                                         )}
                                                                     </button>
@@ -2652,6 +2731,70 @@ export default function VisualEditor({
                                 </div>
                                 )}
 
+                                {/* Services CTA Button - Only show if services style uses it */}
+                                {(servicesFields.usesCta || ['H', 'I', 'J', '8', '9', '10'].includes(servicesStyle)) && (
+                                <div
+                                    onMouseEnter={() => highlightElement('.services-refit .services-cta')}
+                                    onMouseLeave={removeHighlight}
+                                    className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                                        content.visibility?.services_button !== false
+                                            ? 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                            : 'border-gray-200 bg-gray-50 opacity-60'
+                                    }`}
+                                >
+                                    <div className="flex items-center justify-between mb-3">
+                                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                            {content.visibility?.services_button !== false ? (
+                                                <Eye className="w-4 h-4" />
+                                            ) : (
+                                                <EyeOff className="w-4 h-4 text-gray-400" />
+                                            )}
+                                            Services CTA Button
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => updateField('visibility', {
+                                                ...content.visibility,
+                                                services_button: content.visibility?.services_button !== false ? false : true
+                                            })}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                                content.visibility?.services_button !== false ? 'bg-blue-600' : 'bg-gray-300'
+                                            }`}
+                                        >
+                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                                content.visibility?.services_button !== false ? 'translate-x-4.5' : 'translate-x-1'
+                                            }`} />
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-500 mb-1 block">Button Label</label>
+                                            <input
+                                                type="text"
+                                                value={content.services_cta?.label ?? 'Learn More'}
+                                                onChange={(e) => updateField('services_cta', { ...content.services_cta, label: e.target.value })}
+                                                disabled={content.visibility?.services_button === false}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 placeholder:text-gray-400"
+                                                placeholder="e.g. Learn More"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-500 mb-1 block">Button Link</label>
+                                            <input
+                                                type="text"
+                                                value={content.services_cta?.link ?? '#contact'}
+                                                onChange={(e) => updateField('services_cta', { ...content.services_cta, link: e.target.value })}
+                                                disabled={content.visibility?.services_button === false}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 placeholder:text-gray-400"
+                                                placeholder="e.g. #contact"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-2">The call-to-action button in the services section</p>
+                                </div>
+                                )}
+
                                 {/* Services List Toggle */}
                                 <div
                                     onMouseEnter={() => highlightElement('.services-refit .services-list')}
@@ -2787,7 +2930,7 @@ export default function VisualEditor({
                                                                 >
                                                                     <img src={imageUrl} alt={`${label || 'Option'} ${index + 1}`} className="w-full h-full object-cover" />
                                                                     {content.services_image === imageUrl && (
-                                                                        <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">✓</div>
+                                                                        <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">âœ“</div>
                                                                     )}
                                                                 </button>
                                                             ))}
@@ -2939,17 +3082,41 @@ export default function VisualEditor({
                                     <p className="text-xs text-gray-500 mt-1">Description text below the headline</p>
                                 </div>
 
-                                {/* Featured CTA Button - Show for styles that use CTA (D, F) */}
-                                {(galleryFields.usesCta || galleryStyle === 'D' || galleryStyle === 'F' || galleryStyle === '4' || galleryStyle === '6') && (
+                                {/* Featured CTA Button - Show for styles that use CTA (D, F, H, I, J) */}
+                                {(galleryFields.usesCta || ['D', 'F', 'H', 'I', 'J', '4', '6', '8', '9', '10'].includes(galleryStyle)) && (
                                     <div
                                         onMouseEnter={() => highlightElement('.featured-masonry .cta-button')}
                                         onMouseLeave={removeHighlight}
-                                        className="p-4 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer"
+                                        className={`p-4 rounded-lg border transition-all cursor-pointer ${
+                                            content.visibility?.featured_button !== false
+                                                ? 'border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                                                : 'border-gray-200 bg-gray-50 opacity-60'
+                                        }`}
                                     >
-                                        <label className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
-                                            <Eye className="w-4 h-4" />
-                                            CTA Button
-                                        </label>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                                {content.visibility?.featured_button !== false ? (
+                                                    <Eye className="w-4 h-4" />
+                                                ) : (
+                                                    <EyeOff className="w-4 h-4 text-gray-400" />
+                                                )}
+                                                Gallery CTA Button
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={() => updateField('visibility', {
+                                                    ...content.visibility,
+                                                    featured_button: content.visibility?.featured_button !== false ? false : true
+                                                })}
+                                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                                    content.visibility?.featured_button !== false ? 'bg-blue-600' : 'bg-gray-300'
+                                                }`}
+                                            >
+                                                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                                                    content.visibility?.featured_button !== false ? 'translate-x-4.5' : 'translate-x-1'
+                                                }`} />
+                                            </button>
+                                        </div>
                                         <div className="space-y-3">
                                             <div>
                                                 <label className="text-xs text-gray-500 mb-1 block">Button Text</label>
@@ -3839,7 +4006,7 @@ export default function VisualEditor({
                     <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 z-10 flex justify-between items-center shadow-lg">
                         <div className="text-sm">
                             {hasChanges ? (
-                                <span className="text-yellow-600 font-medium">⚠️ Unsaved changes</span>
+                                <span className="text-yellow-600 font-medium">âš ï¸ Unsaved changes</span>
                             ) : (
                                 <span className="text-gray-500">All changes saved</span>
                             )}
@@ -3926,7 +4093,7 @@ export default function VisualEditor({
                                         className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-blue-50 text-gray-600 hover:text-blue-700 transition-all font-bold group"
                                         title="Decrease size"
                                     >
-                                        <span className="group-active:scale-125 transition-transform">−</span>
+                                        <span className="group-active:scale-125 transition-transform">âˆ’</span>
                                     </button>
                                 </div>
                             </div>
