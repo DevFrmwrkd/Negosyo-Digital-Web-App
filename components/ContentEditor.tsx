@@ -38,7 +38,10 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'D': { label: 'Agency Dark', description: 'Bold services-first list with a sophisticated dark theme.' },
         'E': { label: 'Visual Narrative', description: 'Modern, layered composition with floating elements.' },
         'F': { label: 'Luxury Elegant', description: 'Minimalist high-end layout with refined spacing.' },
-        'G': { label: 'First Class', description: 'Cinematic luxury with ornate gold accents and motion.' }
+        'G': { label: 'First Class', description: 'Cinematic luxury with ornate gold accents and motion.' },
+        'H': { label: 'Nexus Forge', description: 'Deep cinematic impact with high-contrast typography.' },
+        'I': { label: 'Meridian Strategy', description: 'Refined editorial luxury with warm tones.' },
+        'J': { label: 'Atelier Creative', description: 'Immersive cinematic studio aesthetic with bold focus.' }
     },
     aboutStyle: {
         'A': { label: 'Gallery Split', description: 'Balanced layout with integrated mini-gallery.' },
@@ -47,7 +50,10 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'D': { label: 'Corporate Quote', description: 'Trust-focused layout with brand carousel.' },
         'E': { label: 'Immersive DNA', description: 'Deep storytelling with parallax backgrounds.' },
         'F': { label: 'Luxury Story', description: 'Magazine-style layout with elegant editorial feel.' },
-        'G': { label: 'Michelin Star', description: 'Asymmetric luxury with executive chef signatures.' }
+        'G': { label: 'Michelin Star', description: 'Asymmetric luxury with executive chef signatures.' },
+        'H': { label: 'Nexus Forge', description: 'Deep cinematic impact with high-contrast typography.' },
+        'I': { label: 'Meridian Strategic', description: 'Refined editorial luxury with warm tones.' },
+        'J': { label: 'Atelier Identities', description: 'Immersive cinematic studio aesthetic with bold focus.' }
     },
     servicesStyle: {
         'A': { label: 'Accordion', description: 'Interactive expandable lists with contextual imagery.' },
@@ -56,7 +62,10 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'D': { label: 'Stats Focus', description: 'Data-driven layout with social proof integration.' },
         'E': { label: 'Capabilities Mosaic', description: 'Asymmetric grid for a creative, modern display.' },
         'F': { label: 'Luxury Mosaic', description: 'Refined grid with premium hover states and spacing.' },
-        'G': { label: 'Curated Menu', description: 'Sophisticated dark menu with numbered experiences.' }
+        'G': { label: 'Curated Menu', description: 'Sophisticated dark menu with numbered experiences.' },
+        'H': { label: 'Nexus Forge', description: 'Deep cinematic impact with high-contrast typography.' },
+        'I': { label: 'Meridian Specialties', description: 'Refined editorial luxury with warm tones.' },
+        'J': { label: 'Atelier Mastercraft', description: 'Immersive cinematic studio aesthetic with bold focus.' }
     },
     galleryStyle: {
         'A': { label: 'Scroll Reveal', description: 'Smooth entrance animations on scroll.' },
@@ -65,7 +74,10 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'D': { label: 'Staggered Masonry', description: 'Creative vertical flow for diverse asset sizes.' },
         'E': { label: 'Fluid Mosaic', description: 'Edge-to-edge immersive experience.' },
         'F': { label: 'Luxury Showcase', description: 'Premium focus on single items with elegant framing.' },
-        'G': { label: 'Epicurean Tour', description: 'High-contrast immersion with immersive vignettes.' }
+        'G': { label: 'Epicurean Tour', description: 'High-contrast immersion with immersive vignettes.' },
+        'H': { label: 'Nexus Forge', description: 'Deep cinematic impact with high-contrast typography.' },
+        'I': { label: 'Meridian Portfolio', description: 'Refined editorial luxury with warm tones.' },
+        'J': { label: 'Atelier Work', description: 'Immersive cinematic studio aesthetic with bold focus.' }
     },
     contactStyle: {
         'A': { label: 'Grid Dark', description: 'High-contrast footer with structured contact info.' },
@@ -74,7 +86,10 @@ const STYLE_METADATA: Record<string, Record<string, { label: string, description
         'D': { label: 'Marquee Rows', description: 'Dynamic moving visuals with overlayed info.' },
         'E': { label: 'Glass Tiles', description: 'Premium interactive tiles with blur effects.' },
         'F': { label: 'Luxury Concierge', description: 'The peak of refined contact experiences.' },
-        'G': { label: 'Reserve Elite', description: 'Prestigious brand sign-off with gold brand detailing.' }
+        'G': { label: 'Reserve Elite', description: 'Prestigious brand sign-off with gold brand detailing.' },
+        'H': { label: 'Nexus Forge', description: 'Deep cinematic impact with high-contrast typography.' },
+        'I': { label: 'Meridian Concierge', description: 'Refined editorial luxury with warm tones.' },
+        'J': { label: 'Atelier Studio', description: 'Immersive cinematic studio aesthetic with bold focus.' }
     }
 }
 
@@ -176,6 +191,29 @@ const StylePreviewBadge = ({ style, type, colorScheme = 'blue' }: { style: strin
                             <div className="h-0.5 w-1/2 bg-white/30 rounded-full" />
                             <div className={`h-1.5 w-1/3 bg-amber-500/80 rounded-sm mt-0.5`} />
                             <div className="w-6 h-[0.5px] bg-amber-500/30" />
+                        </div>
+                    </div>
+                )
+            case 'I': // Meridian Strategy / Warm editorial
+                return (
+                    <div className="h-full w-full bg-[#f2ede4] rounded overflow-hidden flex flex-col gap-1 p-2 relative">
+                        <div className="w-1/2 h-full bg-[#d9d4cc] rounded-lg p-1.5 space-y-1">
+                            <div className="h-1 w-full bg-[#e38c6d] opacity-80 rounded-full" />
+                            <div className="h-2 w-full bg-black opacity-10 rounded-sm" />
+                            <div className="h-1.5 w-3/4 bg-black opacity-5 rounded-full" />
+                        </div>
+                        <div className="absolute right-2 bottom-2 w-1/3 h-2/3 bg-[#d9d4cc] rounded border-2 border-[#f2ede4] shadow-sm" />
+                    </div>
+                )
+            case 'J': // Atelier Creative / Studio dark
+                return (
+                    <div className="h-full w-full bg-gray-900 rounded overflow-hidden flex flex-col items-center justify-center p-2 relative border border-gray-800">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-60" />
+                        <div className="z-10 flex flex-col items-center gap-1 w-full scale-90">
+                           <div className="h-0.5 w-4 bg-white/20 rounded-full" />
+                           <div className="h-3 w-1/2 bg-white opacity-90 rounded-sm" />
+                           <div className="h-1.5 w-3/4 bg-white/30 rounded-full mt-1" />
+                           <div className={`h-2.5 w-1/3 border border-white/40 rounded-full mt-1.5`} />
                         </div>
                     </div>
                 )

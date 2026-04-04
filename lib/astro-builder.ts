@@ -36,6 +36,7 @@ interface ExtractedContent {
     services_headline?: string
     services_subheadline?: string
     services_image?: string
+    services_cta?: { label: string; link: string }
     featured_headline?: string
     featured_subheadline?: string
     featured_products?: Array<{
@@ -79,7 +80,7 @@ interface Customizations {
  */
 function mapStyleToLetter(numericStyle: string | undefined, fallback: string = 'A'): string {
     if (!numericStyle) return fallback
-    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F', '7': 'G' }
+    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F', '7': 'G', '8': 'H', '9': 'I', '10': 'J' }
     return map[numericStyle] || numericStyle // Pass through if already a letter
 }
 
@@ -114,6 +115,7 @@ function transformToAstroData(
             colorScheme: customizations.colorSchemeId || customizations.colorScheme || 'auto',
             fontPairing: customizations.fontPairingId || customizations.fontPairing || 'modern',
             contact: content.contact || {},
+            navbarStyle: heroStyle,
         },
         customizations: {
             heroStyle,
@@ -148,6 +150,7 @@ function transformToAstroData(
             gallerySubheadline: vis.featured_subheadline !== false,
             galleryItems: vis.featured_products !== false,
             galleryImages: vis.featured_images !== false,
+            galleryCta: vis.featured_cta !== false,
             contactSection: vis.footer_section !== false,
             contactBadge: vis.footer_badge !== false,
             contactHeadline: vis.footer_headline !== false,
@@ -204,12 +207,15 @@ function transformToAstroData(
                 { name: 'Service 3', description: 'Reliable service' },
             ],
             photos: content.services_image ? [content.services_image] : (photos.length > 0 ? [photos[0]] : []),
+            ctaLabel: content.services_cta?.label,
+            ctaLink: content.services_cta?.link,
             visibility: {
                 servicesBadge: vis.services_badge !== false,
                 servicesHeadline: vis.services_headline !== false,
                 servicesSubheadline: vis.services_subheadline !== false,
                 servicesImage: vis.services_image !== false,
                 servicesList: vis.services_list !== false,
+                servicesButton: vis.services_button !== false,
             },
         },
         gallery: {
@@ -231,6 +237,7 @@ function transformToAstroData(
                 gallerySubheadline: vis.featured_subheadline !== false,
                 galleryItems: vis.featured_products !== false,
                 galleryImages: vis.featured_images !== false,
+                galleryCta: vis.featured_cta !== false,
             },
         },
         contact: {

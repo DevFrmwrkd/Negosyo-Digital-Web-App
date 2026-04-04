@@ -1,7 +1,7 @@
 {
   "layout": {
-    "businessName": "Nutribite Bars",
-    "tagline": "<b><i><u><font color=\"#f7eeee\">Bite into Wellness</font></u></i></b>",
+    "businessName": "String and frets",
+    "tagline": "Hit the Right Note",
     "navLinks": [
       {
         "href": "#about",
@@ -21,20 +21,21 @@
       }
     ],
     "socialLinks": [],
-    "colorScheme": "auto",
-    "fontPairing": "modern",
+    "colorScheme": "gold",
+    "fontPairing": "classic",
     "contact": {
-      "address": "321 Vitality Street, Makati",
+      "address": "435 Harmony Street, Quezon City",
       "email": "azedge17@gmail.com",
-      "phone": "925 265 4567"
-    }
+      "phone": "956 456 4567"
+    },
+    "navbarStyle": "H"
   },
   "customizations": {
-    "heroStyle": "G",
-    "aboutStyle": "G",
-    "servicesStyle": "G",
-    "galleryStyle": "G",
-    "contactStyle": "G"
+    "heroStyle": "H",
+    "aboutStyle": "H",
+    "servicesStyle": "H",
+    "galleryStyle": "H",
+    "contactStyle": "J"
   },
   "visibility": {
     "heroSection": true,
@@ -62,6 +63,7 @@
     "gallerySubheadline": true,
     "galleryItems": true,
     "galleryImages": true,
+    "galleryCta": true,
     "contactSection": true,
     "contactBadge": true,
     "contactHeadline": true,
@@ -70,34 +72,29 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "Nutribite Bars",
-    "headline": "<b><i><u><font color=\"#f7eeee\">Bite into Wellness</font></u></i></b>",
-    "description": "Nutribite Bars is a proud Filipino brand offering organic snack bars made with natural ingredients, perfect for health-conscious individuals",
-    "badgeText": "Gourmet Experience",
-    "ctaLabel": "Reserve a Table",
-    "ctaLink": "#contact",
-    "ctaSecondaryLabel": "View Menu",
-    "ctaSecondaryLink": "#services",
+    "businessName": "String and frets",
+    "headline": "Hit the Right Note",
+    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/d9ebe679-a7f8-4602-9563-16ad622ceb12",
-      "https://diligent-ibex-454.convex.cloud/api/storage/3a2c8bbc-a6bb-4320-b13f-c7761451048c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/0d5c65d9-11cc-4c9a-9054-c99bcf71caa8",
-      "https://diligent-ibex-454.convex.cloud/api/storage/db47a9df-7420-43ae-95a4-523292b66de9",
-      "https://diligent-ibex-454.convex.cloud/api/storage/5528261a-09ed-4e02-96f9-f45fedfa69ed",
-      "https://diligent-ibex-454.convex.cloud/api/storage/83e64743-009a-4a7f-bec9-36a3d541bfd0"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
+      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
+      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8",
+      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
+      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
     ],
     "services": [
       {
-        "description": "Create your own snack bar with our variety of natural ingredients",
-        "name": "Customized Snack Bars"
+        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
+        "name": "Guitar Sales"
       },
       {
-        "description": "Get a monthly supply of our organic snack bars delivered to your doorstep",
-        "name": "Snack Bar Subscription"
+        "description": "Get a bespoke guitar tailored to your playing style and preferences",
+        "name": "Customization"
       },
       {
-        "description": "Provide healthy snack options for your employees or clients with our customized snack bar services",
-        "name": "Corporate Snack Solutions"
+        "description": "Trust our skilled technicians to restore your instrument to its former glory",
+        "name": "Instrument Repair"
       }
     ],
     "visibility": {
@@ -110,18 +107,18 @@
     }
   },
   "about": {
-    "businessName": "Nutribite Bars",
-    "description": "Nutribite Bars is a proud Filipino brand offering organic snack bars made with natural ingredients, perfect for health-conscious individuals",
+    "businessName": "String and frets",
+    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
     "headline": "About Us",
     "usps": [
-      "Organic Ingredients",
-      "Variety of Flavors",
-      "Convenient and Healthy"
+      "Customized Guitars",
+      "Wide Instrument Range",
+      "Personalized Service"
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/3a2c8bbc-a6bb-4320-b13f-c7761451048c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/0d5c65d9-11cc-4c9a-9054-c99bcf71caa8",
-      "https://diligent-ibex-454.convex.cloud/api/storage/db47a9df-7420-43ae-95a4-523292b66de9"
+      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
+      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -136,106 +133,108 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Create your own snack bar with our variety of natural ingredients",
-        "name": "Customized Snack Bars"
+        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
+        "name": "Guitar Sales"
       },
       {
-        "description": "Get a monthly supply of our organic snack bars delivered to your doorstep",
-        "name": "Snack Bar Subscription"
+        "description": "Get a bespoke guitar tailored to your playing style and preferences",
+        "name": "Customization"
       },
       {
-        "description": "Provide healthy snack options for your employees or clients with our customized snack bar services",
-        "name": "Corporate Snack Solutions"
+        "description": "Trust our skilled technicians to restore your instrument to its former glory",
+        "name": "Instrument Repair"
       }
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/d9ebe679-a7f8-4602-9563-16ad622ceb12"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1"
     ],
     "visibility": {
       "servicesBadge": true,
       "servicesHeadline": true,
       "servicesSubheadline": true,
       "servicesImage": true,
-      "servicesList": true
+      "servicesList": true,
+      "servicesButton": true
     }
   },
   "gallery": {
     "headline": "Featured Products",
-    "subheadline": "Our best-selling snack bars, made with love and care to provide you with a delicious and healthy snacking experience",
+    "subheadline": "Discover our handpicked selection of exceptional guitars",
     "items": [
       {
-        "title": "Oat and Nuts Delight",
-        "description": "Our best-selling snack bar made with rolled oats, crunchy nuts, and a hint of honey. Perfect for a quick energy boost, this bar is packed with fiber and protein to keep you going throughout the day. With its delicious taste and wholesome ingredients, it's no wonder why this bar is a customer favorite.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/d9ebe679-a7f8-4602-9563-16ad622ceb12",
+        "title": "Electric Dream",
+        "description": "This stunning electric guitar is designed for the modern player, with a sleek body and versatile pickups. Its rich, resonant tone is perfect for rock, pop, and beyond. With its comfortable neck and precise fretwork, you'll be playing like a pro in no time.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
         "tags": [
-          "Snack Bar",
-          "1-2 weeks"
+          "Electric Guitar",
+          "6-8 weeks"
         ],
         "testimonial": {
-          "author": "Emily Chen",
-          "quote": "I've been snacking on Nutribite's Oat and Nuts Delight bar for a week now, and I can already feel the difference in my energy levels. It's the perfect pick-me-up for my busy mornings!"
+          "author": "Mark Reyes",
+          "quote": "I've never played a guitar that felt so right. The Electric Dream is my go-to instrument for gigs and recordings. The customization options were incredibly helpful in finding my perfect sound."
         }
       },
       {
-        "title": "Dried Fruits and Honey Crunch",
-        "description": "Indulge in the sweet and tangy taste of our Dried Fruits and Honey Crunch snack bar, made with a mix of dried fruits and a drizzle of pure honey. This bar is not only delicious but also packed with antioxidants and fiber to support a healthy digestive system. Whether you're a fitness enthusiast or a busy professional, this bar is the perfect companion for your active lifestyle.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/3a2c8bbc-a6bb-4320-b13f-c7761451048c",
+        "title": "Acoustic Masterpiece",
+        "description": "Experience the warmth and intimacy of our handcrafted acoustic guitar, featuring a solid wood body and delicate inlays. Its balanced tone and impressive projection make it ideal for folk, country, and singer-songwriter performances. Whether you're playing solo or with a band, this guitar is sure to impress.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
         "tags": [
-          "Snack Bar",
-          "1-3 weeks"
+          "Acoustic Guitar",
+          "8-10 weeks"
         ],
         "testimonial": {
-          "author": "Mark Santos",
-          "quote": "I was blown away by the flavor and texture of Nutribite's Dried Fruits and Honey Crunch bar. It's the perfect snack to take with me on my hikes and outdoor adventures!"
+          "author": "Lia Santos",
+          "quote": "The Acoustic Masterpiece has become my trusted companion for songwriting and live shows. The attention to detail and craftsmanship are exceptional, and the sound is nothing short of breathtaking."
         }
       },
       {
-        "title": "Nutribite's Variety Pack",
-        "description": "Can't choose just one flavor? Our Variety Pack is the perfect solution, featuring a selection of our best-selling snack bars. From our Oat and Nuts Delight to our Dried Fruits and Honey Crunch, this pack has something for everyone. Whether you're looking to try new flavors or share with friends and family, our Variety Pack is the way to go.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/0d5c65d9-11cc-4c9a-9054-c99bcf71caa8",
+        "title": "Bass Beauty",
+        "description": "Get ready to rumble with our powerful bass guitar, designed for the modern bassist. With its sleek design, active pickups, and versatile tone controls, you'll be able to craft the perfect low-end sound for any genre. From jazz to metal, this bass can handle it all.",
+        "image": "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
         "tags": [
-          "Snack Bar Pack",
-          "2-4 weeks"
+          "Bass Guitar",
+          "4-6 weeks"
         ],
         "testimonial": {
-          "author": "Rachel Lee",
-          "quote": "I purchased Nutribite's Variety Pack for my office, and it was a huge hit! Everyone loved the different flavors and the convenience of having a healthy snack option available."
+          "author": "Ryan Tan",
+          "quote": "I was blown away by the Bass Beauty's tone and playability. The customization process was seamless, and the result is an instrument that perfectly complements my playing style. It's now my primary bass for all my gigs and recordings."
         }
       }
     ],
     "images": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/5528261a-09ed-4e02-96f9-f45fedfa69ed",
-      "https://diligent-ibex-454.convex.cloud/api/storage/83e64743-009a-4a7f-bec9-36a3d541bfd0"
+      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
+      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/d9ebe679-a7f8-4602-9563-16ad622ceb12",
-      "https://diligent-ibex-454.convex.cloud/api/storage/3a2c8bbc-a6bb-4320-b13f-c7761451048c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/0d5c65d9-11cc-4c9a-9054-c99bcf71caa8",
-      "https://diligent-ibex-454.convex.cloud/api/storage/db47a9df-7420-43ae-95a4-523292b66de9",
-      "https://diligent-ibex-454.convex.cloud/api/storage/5528261a-09ed-4e02-96f9-f45fedfa69ed",
-      "https://diligent-ibex-454.convex.cloud/api/storage/83e64743-009a-4a7f-bec9-36a3d541bfd0"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
+      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
+      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8",
+      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
+      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
     ],
     "visibility": {
       "galleryHeadline": true,
       "gallerySubheadline": true,
       "galleryItems": true,
-      "galleryImages": true
+      "galleryImages": true,
+      "galleryCta": true
     }
   },
   "contact": {
-    "businessName": "Nutribite Bars",
+    "businessName": "String and frets",
     "email": "azedge17@gmail.com",
-    "phone": "925 265 4567",
-    "address": "321 Vitality Street, Makati",
+    "phone": "956 456 4567",
+    "address": "435 Harmony Street, Quezon City",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/d9ebe679-a7f8-4602-9563-16ad622ceb12",
-      "https://diligent-ibex-454.convex.cloud/api/storage/3a2c8bbc-a6bb-4320-b13f-c7761451048c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/0d5c65d9-11cc-4c9a-9054-c99bcf71caa8",
-      "https://diligent-ibex-454.convex.cloud/api/storage/db47a9df-7420-43ae-95a4-523292b66de9",
-      "https://diligent-ibex-454.convex.cloud/api/storage/5528261a-09ed-4e02-96f9-f45fedfa69ed",
-      "https://diligent-ibex-454.convex.cloud/api/storage/83e64743-009a-4a7f-bec9-36a3d541bfd0"
+      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
+      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
+      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
+      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8",
+      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
+      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
     ],
     "visibility": {
       "contactBadge": true,

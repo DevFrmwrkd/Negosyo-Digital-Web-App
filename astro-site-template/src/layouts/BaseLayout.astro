@@ -13,6 +13,7 @@ interface Props {
     email?: string;
     address?: string;
   };
+  navbarStyle?: string;
 }
 
 const {
@@ -23,6 +24,7 @@ const {
   colorScheme = 'auto',
   fontPairing = 'modern',
   contact = {},
+  navbarStyle = 'A',
 } = Astro.props;
 
 // Font pairings
@@ -162,17 +164,41 @@ const year = new Date().getFullYear();
 </head>
 <body class="min-h-screen bg-[var(--bg)] text-[var(--text)] antialiased" style={`font-family: '${fonts.body}', sans-serif;`}>
   <!-- Navbar -->
-  <nav class="fixed top-0 left-0 right-0 z-50 bg-[var(--nav-bg)] backdrop-blur-md border-b border-[var(--nav-border)]" id="navbar">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16 md:h-18">
-        <a href="#" class="text-lg font-semibold tracking-tight text-[var(--nav-text)]" style={`font-family: '${fonts.heading}', sans-serif;`}>
+  <nav 
+    class:list={[
+      "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+      navbarStyle === 'H' || navbarStyle === 'I' || navbarStyle === 'J'
+        ? "bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--text)]/5 py-10" 
+        : "bg-[var(--nav-bg)] backdrop-blur-md border-b border-[var(--nav-border)] h-16 md:h-18 translate-y-0"
+    ]} 
+    id="navbar"
+    style={(navbarStyle === 'H' || navbarStyle === 'I' || navbarStyle === 'J') ? "padding-top: 2.5rem;" : ""}
+  >
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-12">
+      <div class="flex items-center justify-between h-full">
+        <a href="#" 
+           class:list={[
+             "transition-all duration-300",
+             navbarStyle === 'H' || navbarStyle === 'I' || navbarStyle === 'J'
+               ? "text-[var(--fs-sm)] font-black tracking-[0.3em] uppercase text-[var(--text)]" 
+               : "text-lg font-semibold tracking-tight text-[var(--nav-text)]"
+           ]} 
+           style={`font-family: ${navbarStyle === 'H' || navbarStyle === 'I' || navbarStyle === 'J' ? 'var(--heading-font)' : `'${fonts.heading}', sans-serif`};`}
+        >
           {businessName}
         </a>
 
         <!-- Desktop Nav -->
-        <div class="hidden md:flex items-center gap-8">
+        <div class="hidden md:flex items-center gap-10">
           {navLinks.map((link) => (
-            <a href={link.href} class="text-sm font-medium text-[var(--nav-link)] hover:text-[var(--nav-text)] transition-colors">
+            <a href={link.href} 
+               class:list={[
+                 "transition-all duration-300 uppercase tracking-[0.2em] font-black",
+                 navbarStyle === 'H' || navbarStyle === 'I' || navbarStyle === 'J'
+                   ? "text-[10px] text-[var(--text-muted)] hover:text-[var(--text)]"
+                   : "text-sm font-medium text-[var(--nav-link)] hover:text-[var(--nav-text)]"
+               ]}
+            >
               {link.label}
             </a>
           ))}
