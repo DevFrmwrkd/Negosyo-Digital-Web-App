@@ -142,29 +142,29 @@ export default function PayoutsPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Pending Requests</p>
                     <p className="text-3xl font-bold text-amber-600">{stats?.totalPending || 0}</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Pending Amount</p>
                     <p className="text-3xl font-bold text-gray-900">₱{(stats?.totalPendingAmount || 0).toLocaleString()}</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Paid This Week</p>
                     <p className="text-3xl font-bold text-green-600">{stats?.paidThisWeek || 0}</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Paid Amount (Week)</p>
                     <p className="text-3xl font-bold text-green-600">₱{(stats?.paidThisWeekAmount || 0).toLocaleString()}</p>
                 </div>
             </div>
 
             {/* Filter Tabs */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
                 <div className="flex gap-2">
                     {(['all', 'pending', 'paid'] as PayoutStatus[]).map((status) => (
                         <button
@@ -199,7 +199,7 @@ export default function PayoutsPage() {
             )}
 
             {/* Payouts Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>

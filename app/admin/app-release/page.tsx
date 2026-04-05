@@ -164,7 +164,7 @@ export default function AppReleasePage() {
                 </p>
 
                 {/* Current APK Status */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+                <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm p-6 mb-6">
                     <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Current Release</h2>
 
                     {apkUrl ? (
@@ -224,7 +224,7 @@ export default function AppReleasePage() {
                 </div>
 
                 {/* Upload Section */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm p-6">
                     <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
                         {apkUrl ? "Replace APK" : "Upload APK"}
                     </h2>

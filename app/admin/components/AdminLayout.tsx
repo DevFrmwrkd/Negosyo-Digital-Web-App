@@ -81,27 +81,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Sidebar */}
             <aside className={`
-                w-64 bg-white border-r border-gray-100 flex flex-col fixed inset-y-0 left-0 z-50 
+                w-64 bg-emerald-950 border-r border-emerald-900 flex flex-col fixed inset-y-0 left-0 z-50
                 transition-all duration-300 ease-in-out shadow-[4px_0_24px_-4px_rgba(0,0,0,0.02)]
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
             `}>
                 <div className="px-6 py-8 flex items-center justify-between mb-2">
-                    <Link href="/" className="flex items-center gap-3 group">
+                    <Link href="/admin" className="flex items-center gap-3 group">
                         <div className="relative w-10 h-10 transition-transform duration-500 group-hover:scale-110">
-                            <Image 
-                                src="/logo.png" 
-                                alt="Negosyo Digital Logo" 
-                                fill 
+                            <Image
+                                src="/logo.png"
+                                alt="Negosyo Digital Logo"
+                                fill
                                 className="object-contain"
                                 priority
                             />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-base font-black text-gray-900 tracking-tight leading-none group-hover:text-green-600 transition-colors">NEGOSYO</span>
-                            <span className="text-[10px] font-bold text-green-500 uppercase tracking-[0.2em] mt-0.5">Digital Admin</span>
+                            <span className="text-base font-black text-white tracking-tight leading-none group-hover:text-emerald-300 transition-colors">NEGOSYO</span>
+                            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-[0.2em] mt-0.5">Digital Admin</span>
                         </div>
                     </Link>
-                    <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors">
+                    <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1.5 rounded-full hover:bg-emerald-900 text-emerald-400 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -118,22 +118,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 className={`
                                     flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 group
                                     ${isActive
-                                        ? "bg-green-50 text-green-700 shadow-sm shadow-green-100/50"
-                                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}
+                                        ? "bg-emerald-800 text-emerald-50 shadow-sm shadow-emerald-900/50"
+                                        : "text-emerald-400 hover:bg-emerald-900 hover:text-emerald-100"}
                                 `}
                             >
                                 <div className="flex items-center gap-3.5">
-                                    <Icon 
-                                        size={20} 
-                                        className={`transition-colors ${isActive ? "text-green-600" : "text-gray-400 group-hover:text-gray-600"}`}
+                                    <Icon
+                                        size={20}
+                                        className={`transition-colors ${isActive ? "text-emerald-200" : "text-emerald-500 group-hover:text-emerald-300"}`}
                                         strokeWidth={isActive ? 2.5 : 2}
                                     />
                                     <span>{item.label}</span>
                                 </div>
                                 {isActive && (
-                                    <motion.div 
-                                        layoutId="active-pill" 
-                                        className="w-1.5 h-1.5 rounded-full bg-green-500"
+                                    <motion.div
+                                        layoutId="active-pill"
+                                        className="w-1.5 h-1.5 rounded-full bg-emerald-400"
                                         transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                                     />
                                 )}
@@ -143,23 +143,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </nav>
 
                 <div className="px-4 py-6 mt-auto">
-                    <div className="p-4 rounded-2xl bg-gray-50/50 border border-gray-100 mb-4 lg:hidden">
+                    <div className="p-4 rounded-2xl bg-emerald-900/50 border border-emerald-800/50 mb-4 lg:hidden">
                         <div className="flex items-center gap-3 mb-2">
-                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                <Users size={14} className="text-green-600" />
+                            <div className="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center border border-emerald-700/50">
+                                <Users size={14} className="text-emerald-300" />
                             </div>
-                            <span className="text-xs font-bold text-gray-900">Quick Tools</span>
+                            <span className="text-xs font-bold text-emerald-100">Quick Tools</span>
                         </div>
                     </div>
-                    
+
                     <button
                         onClick={handleLogout}
                         className="
-                            flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold text-gray-500 
-                            hover:bg-red-50 hover:text-red-600 w-full transition-all duration-300 group
+                            flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold text-white
+                            hover:bg-red-500/10 hover:text-red-400 w-full transition-all duration-300 group
                         "
                     >
-                        <LogOut size={20} className="text-gray-400 group-hover:text-red-500 transition-colors" />
+                        <LogOut size={20} className="text-white group-hover:text-red-400 transition-colors" />
                         <span>Logout</span>
                     </button>
                 </div>

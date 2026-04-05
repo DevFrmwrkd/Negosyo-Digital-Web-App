@@ -108,29 +108,29 @@ export default function AuditLogsPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Total Events</p>
                     <p className="text-3xl font-bold text-gray-900">{logStats.total}</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Approvals</p>
                     <p className="text-3xl font-bold text-green-600">{logStats.approvals}</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Rejections</p>
                     <p className="text-3xl font-bold text-red-600">{logStats.rejections}</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Payments</p>
                     <p className="text-3xl font-bold text-orange-600">{logStats.payments}</p>
                 </div>
             </div>
 
             {/* Filter Tabs */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
                 <div className="flex gap-2 overflow-x-auto">
                     {FILTER_TABS.map((tab) => (
                         <button
@@ -149,7 +149,7 @@ export default function AuditLogsPage() {
             </div>
 
             {/* Audit Logs Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
