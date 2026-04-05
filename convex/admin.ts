@@ -797,6 +797,40 @@ export const markPayoutPaid = mutation({
 });
 
 /**
+ * Check if there's any backfill needed for websiteUrl on submissions and publishedUrl on generatedWebsites.
+ */
+export const checkBackfillNeeded = query({
+    args: {},
+    handler: async (ctx) => {
+        const targetStatuses = ['deployed', 'pending_payment', 'paid', 'completed'] as const;
+
+        for (const status of targetStatuses) {
+            const submissions = await ctx.db
+                .query('submissions')
+                .withIndex('by_status', (q) => q.eq('status', status))
+                .collect();
+
+            for (const submission of submissions) {
+                const website = await ctx.db
+                    .query('generatedWebsites')
+                    .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+                    .first();
+
+                if (!submission.websiteUrl && website?.publishedUrl) {
+                    return true;
+                }
+
+                if (website && !website.publishedUrl && submission.websiteUrl) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    },
+});
+
+/**
  * Backfill websiteUrl on submissions and publishedUrl on generatedWebsites
  * for all records with status: deployed, pending_payment, paid, or completed.
  * Syncs both directions: submission ← generatedWebsite and generatedWebsite ← submission.

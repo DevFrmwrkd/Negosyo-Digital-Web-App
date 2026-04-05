@@ -234,7 +234,7 @@ export default function CreatorsPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
                 <button
                     onClick={() => setStatusFilter('all')}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'all' ? "border-green-400 ring-2 ring-green-100" : "border-gray-100 hover:border-gray-200"}`}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'all' ? "border-green-400 ring-2 ring-green-100" : "border-emerald-500 hover:border-emerald-600"}`}
                 >
                     <p className="text-xs font-medium text-gray-500 mb-2">Total Creators</p>
                     <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
@@ -242,7 +242,7 @@ export default function CreatorsPage() {
 
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'active' ? "border-green-400 ring-2 ring-green-100" : "border-gray-100 hover:border-gray-200"}`}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'active' ? "border-green-400 ring-2 ring-green-100" : "border-emerald-500 hover:border-emerald-600"}`}
                 >
                     <p className="text-xs font-medium text-gray-500 mb-2">Active</p>
                     <p className="text-3xl font-bold text-green-600">{stats.active}</p>
@@ -250,7 +250,7 @@ export default function CreatorsPage() {
 
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'pending' ? "border-amber-400 ring-2 ring-amber-100" : "border-gray-100 hover:border-gray-200"}`}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'pending' ? "border-amber-400 ring-2 ring-amber-100" : "border-emerald-500 hover:border-emerald-600"}`}
                 >
                     <p className="text-xs font-medium text-gray-500 mb-2">Pending</p>
                     <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
@@ -258,7 +258,7 @@ export default function CreatorsPage() {
 
                 <button
                     onClick={() => setStatusFilter(statusFilter === 'suspended' ? 'all' : 'suspended')}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'suspended' ? "border-red-400 ring-2 ring-red-100" : "border-gray-100 hover:border-gray-200"}`}
+                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${statusFilter === 'suspended' ? "border-red-400 ring-2 ring-red-100" : "border-emerald-500 hover:border-emerald-600"}`}
                 >
                     <p className="text-xs font-medium text-gray-500 mb-2">Suspended</p>
                     <p className="text-3xl font-bold text-red-600">{stats.suspended}</p>
@@ -266,7 +266,7 @@ export default function CreatorsPage() {
             </div>
 
             {/* Nav Filter + Search */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
                 {/* Role Filter Tabs */}
                 <div className="flex items-center gap-1 mb-4 border-b border-gray-100 pb-3">
                     {[
@@ -359,7 +359,7 @@ export default function CreatorsPage() {
             </div>
 
             {/* Creators Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>

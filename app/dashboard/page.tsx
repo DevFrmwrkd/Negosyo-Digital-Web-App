@@ -130,7 +130,7 @@ export default function DashboardPage() {
 
             <main className="px-4 space-y-5">
                 {/* Balance Card */}
-                <div className="bg-zinc-900 text-white rounded-3xl p-5 relative overflow-hidden shadow-xl shadow-zinc-900/20">
+                <div className="bg-zinc-900 text-white rounded-3xl p-5 relative overflow-hidden shadow-xl shadow-emerald-500/20 border border-emerald-500">
                     {/* Abstract background effect */}
                     <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
 
@@ -150,17 +150,17 @@ export default function DashboardPage() {
 
                 {/* Quick Stats */}
                 <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white p-3 rounded-xl border border-zinc-100 shadow-sm text-center">
+                    <div className="bg-white p-3 rounded-2xl border border-emerald-500 shadow-sm text-center">
                         <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mb-1">Submissions</p>
                         <p className="text-lg font-bold text-zinc-900">{submissions?.length ?? 0}</p>
                     </div>
-                    <div className="bg-white p-3 rounded-xl border border-zinc-100 shadow-sm text-center">
+                    <div className="bg-white p-3 rounded-2xl border border-emerald-500 shadow-sm text-center">
                         <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mb-1">In Review</p>
                         <p className="text-lg font-bold text-yellow-600">
                             {submissions?.filter(s => s.status === 'submitted' || s.status === 'in_review').length ?? 0}
                         </p>
                     </div>
-                    <div className="bg-white p-3 rounded-xl border border-zinc-100 shadow-sm text-center">
+                    <div className="bg-white p-3 rounded-2xl border border-emerald-500 shadow-sm text-center">
                         <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mb-1">Verified</p>
                         <p className="text-lg font-bold text-emerald-600">
                             {submissions?.filter(s => s.status === 'approved' || s.status === 'paid' || s.status === 'deployed' || s.status === 'completed').length ?? 0}
@@ -201,7 +201,7 @@ export default function DashboardPage() {
 
                             return (
                                 <Link key={sub._id} href={`/submissions/${sub._id}`}>
-                                    <div className="bg-white rounded-xl p-3 border border-zinc-100 shadow-sm flex items-center justify-between hover:border-zinc-200 hover:shadow-md transition-all cursor-pointer">
+                                    <div className="bg-white rounded-2xl p-3 border border-emerald-500 shadow-sm flex items-center justify-between hover:border-emerald-600 hover:shadow-md transition-all cursor-pointer">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${getStatusBg()}`}>
                                                 {isDraft ? <Clock className="w-5 h-5" /> : <Store className="w-5 h-5" />}
@@ -221,7 +221,7 @@ export default function DashboardPage() {
                             )
                         })}
                         {recentSubmissions.length === 0 && (
-                            <div className="text-center py-6 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                            <div className="text-center py-6 bg-emerald-50/10 rounded-2xl border border-dashed border-emerald-500">
                                 <p className="text-zinc-500 text-xs">No submissions yet.</p>
                             </div>
                         )}

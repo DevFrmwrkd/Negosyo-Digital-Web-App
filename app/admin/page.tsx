@@ -68,6 +68,7 @@ export default function AdminDashboard() {
     const itemsPerPage = 5
     const [backfilling, setBackfilling] = useState(false)
     const [backfillResult, setBackfillResult] = useState<{ updatedSubmissions: number; updatedWebsites: number } | null>(null)
+    const isBackfillNeeded = useQuery(api.admin.checkBackfillNeeded)
     const backfillWebsiteUrls = useMutation(api.admin.backfillWebsiteUrls)
 
     // Delete submission state
@@ -404,7 +405,7 @@ export default function AdminDashboard() {
                         key={stat.id}
                         onClick={() => setActiveFilter(activeFilter === stat.id ? "all" : stat.id as any)}
                         className={`
-                            relative overflow-hidden bg-white p-6 rounded-[24px] border border-gray-100 
+                            relative overflow-hidden bg-white p-6 rounded-[24px] border border-emerald-500 
                             text-left transition-all duration-300 group
                             ${activeFilter === stat.id ? stat.activeBg : "hover:shadow-xl hover:shadow-gray-200/40 hover:-translate-y-1"}
                         `}
@@ -431,7 +432,7 @@ export default function AdminDashboard() {
             <motion.div 
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-[32px] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 sm:p-8 mb-8 relative overflow-hidden"
+                className="bg-white rounded-[32px] border border-emerald-500 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 sm:p-8 mb-8 relative overflow-hidden"
             >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-green-50/30 blur-[100px] -mr-32 -mt-32 rounded-full pointer-events-none" />
                 
@@ -487,13 +488,15 @@ export default function AdminDashboard() {
                             )}
                         </div>
                     </div>
-                    <button
-                        onClick={handleBackfill}
-                        disabled={backfilling}
-                        className="px-4 py-2 text-sm font-semibold text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 shrink-0"
-                    >
-                        {backfilling ? "Running..." : "Run Backfill"}
-                    </button>
+                    {isBackfillNeeded === true && (
+                        <button
+                            onClick={handleBackfill}
+                            disabled={backfilling}
+                            className="px-4 py-2 text-sm font-semibold text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                        >
+                            {backfilling ? "Running..." : "Run Backfill"}
+                        </button>
+                    )}
                 </div>
             )}
 
@@ -566,7 +569,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Submissions Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
