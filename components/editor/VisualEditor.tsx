@@ -2573,8 +2573,8 @@ export default function VisualEditor({
                                 </div>
                                 )}
 
-                                {/* Services Image - Only show if services style uses it */}
-                                {servicesFields.usesImage && (
+                                {/* Services Image - Available for all variants */}
+                                {availableImages.length > 0 && (
                                 <div
                                     onMouseEnter={() => highlightElement('.services-refit .image-section')}
                                     onMouseLeave={removeHighlight}
@@ -3441,8 +3441,8 @@ export default function VisualEditor({
                                 </div>
                                 )}
 
-                                {/* Featured Images Gallery - Only show if style uses images (Style 3) */}
-                                {galleryFields.usesImages && (
+                                {/* Featured Images Gallery - Available for all variants */}
+                                {availableImages.length > 0 && (
                                 <div
                                     onMouseEnter={() => highlightElement('.featured-gallery .gallery-grid')}
                                     onMouseLeave={removeHighlight}

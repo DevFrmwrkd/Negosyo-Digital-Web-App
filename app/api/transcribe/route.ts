@@ -7,6 +7,9 @@ import { Id } from '@/convex/_generated/dataModel'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
+// Allow up to 2 minutes for large file chunked transcription
+export const maxDuration = 120
+
 export async function POST(request: NextRequest) {
     let submissionId: string | undefined
 
@@ -67,6 +70,7 @@ export async function POST(request: NextRequest) {
                     id: submissionId as Id<"submissions">,
                     transcript: transcript,
                     transcriptionStatus: 'complete',
+                    transcriptionUpdatedAt: Date.now(),
                 })
             } catch (err) {
                 console.error('Error updating submission:', err)

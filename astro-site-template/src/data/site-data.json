@@ -1,7 +1,7 @@
 {
   "layout": {
-    "businessName": "String and frets",
-    "tagline": "Hit the Right Note",
+    "businessName": "BoldThreads",
+    "tagline": "Wear Your Personality",
     "navLinks": [
       {
         "href": "#about",
@@ -21,21 +21,21 @@
       }
     ],
     "socialLinks": [],
-    "colorScheme": "gold",
-    "fontPairing": "classic",
+    "colorScheme": "auto",
+    "fontPairing": "modern",
     "contact": {
-      "address": "435 Harmony Street, Quezon City",
+      "address": " 789 Trend Street, Barangay Mabini, Manila",
       "email": "azedge17@gmail.com",
-      "phone": "956 456 4567"
+      "phone": "9871234151"
     },
-    "navbarStyle": "H"
+    "navbarStyle": "B"
   },
   "customizations": {
-    "heroStyle": "H",
-    "aboutStyle": "H",
-    "servicesStyle": "H",
-    "galleryStyle": "H",
-    "contactStyle": "J"
+    "heroStyle": "B",
+    "aboutStyle": "A",
+    "servicesStyle": "A",
+    "galleryStyle": "A",
+    "contactStyle": "A"
   },
   "visibility": {
     "heroSection": true,
@@ -72,29 +72,26 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "String and frets",
-    "headline": "Hit the Right Note",
-    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
+    "businessName": "BoldThreads",
+    "headline": "Wear Your Personality",
+    "description": "BoldThreads is a modern t-shirt brand in Manila that creates stylish, comfortable, and expressive tees. Our designs range from minimalist basics to bold graphic prints, catering to fashion-forward individuals. We aim to make t-shirts more than just casual clothing, but statements of identity and creativity.",
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
-      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
-      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
-      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "services": [
       {
-        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
-        "name": "Guitar Sales"
+        "description": "Create your own unique t-shirt design with our expert designers",
+        "name": "Custom Tee Design"
       },
       {
-        "description": "Get a bespoke guitar tailored to your playing style and preferences",
-        "name": "Customization"
+        "description": "High-quality printing services for your custom tee designs",
+        "name": "T-Shirt Printing"
       },
       {
-        "description": "Trust our skilled technicians to restore your instrument to its former glory",
-        "name": "Instrument Repair"
+        "description": "Get personalized fashion advice from our experts to find your perfect tee",
+        "name": "Personalized Fashion Consultation"
       }
     ],
     "visibility": {
@@ -107,18 +104,18 @@
     }
   },
   "about": {
-    "businessName": "String and frets",
-    "description": "String and Fretz is a premier guitar shop offering a wide range of instruments and customized solutions. With almost 10 years of experience, we cater to musicians' unique needs. Our expertise lies in crafting personalized guitars that exceed customer expectations.",
+    "businessName": "BoldThreads",
+    "description": "BoldThreads is a modern t-shirt brand in Manila that creates stylish, comfortable, and expressive tees. Our designs range from minimalist basics to bold graphic prints, catering to fashion-forward individuals. We aim to make t-shirts more than just casual clothing, but statements of identity and creativity.",
     "headline": "About Us",
     "usps": [
-      "Customized Guitars",
-      "Wide Instrument Range",
+      "Unique Designs",
+      "Comfortable Materials",
       "Personalized Service"
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
-      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -133,20 +130,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Explore our extensive collection of electric, acoustic, and specialty guitars",
-        "name": "Guitar Sales"
+        "description": "Create your own unique t-shirt design with our expert designers",
+        "name": "Custom Tee Design"
       },
       {
-        "description": "Get a bespoke guitar tailored to your playing style and preferences",
-        "name": "Customization"
+        "description": "High-quality printing services for your custom tee designs",
+        "name": "T-Shirt Printing"
       },
       {
-        "description": "Trust our skilled technicians to restore your instrument to its former glory",
-        "name": "Instrument Repair"
+        "description": "Get personalized fashion advice from our experts to find your perfect tee",
+        "name": "Personalized Fashion Consultation"
       }
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -159,59 +156,52 @@
   },
   "gallery": {
     "headline": "Featured Products",
-    "subheadline": "Discover our handpicked selection of exceptional guitars",
+    "subheadline": "Our latest and greatest tee designs, showcasing our quality work",
     "items": [
       {
-        "title": "Electric Dream",
-        "description": "This stunning electric guitar is designed for the modern player, with a sleek body and versatile pickups. Its rich, resonant tone is perfect for rock, pop, and beyond. With its comfortable neck and precise fretwork, you'll be playing like a pro in no time.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
+        "title": "Bold Graphic Tee",
+        "description": "This bold graphic tee features a unique design that's sure to turn heads. Made from high-quality materials, it's both comfortable and stylish. Perfect for making a statement",
+        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
         "tags": [
-          "Electric Guitar",
-          "6-8 weeks"
+          "Graphic Tee",
+          "1-2 weeks"
         ],
         "testimonial": {
-          "author": "Mark Reyes",
-          "quote": "I've never played a guitar that felt so right. The Electric Dream is my go-to instrument for gigs and recordings. The customization options were incredibly helpful in finding my perfect sound."
+          "author": "Rachel M.",
+          "quote": "I love my new bold graphic tee from BoldThreads! The design is so unique and the material is super comfy. I've been wearing it nonstop since I got it"
         }
       },
       {
-        "title": "Acoustic Masterpiece",
-        "description": "Experience the warmth and intimacy of our handcrafted acoustic guitar, featuring a solid wood body and delicate inlays. Its balanced tone and impressive projection make it ideal for folk, country, and singer-songwriter performances. Whether you're playing solo or with a band, this guitar is sure to impress.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
+        "title": "Minimalist Basics Tee",
+        "description": "Our minimalist basics tee is perfect for everyday wear. With its simple design and high-quality materials, it's a versatile addition to any wardrobe. Great for dressing up or down",
+        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
         "tags": [
-          "Acoustic Guitar",
-          "8-10 weeks"
+          "Basic Tee",
+          "1 week"
         ],
         "testimonial": {
-          "author": "Lia Santos",
-          "quote": "The Acoustic Masterpiece has become my trusted companion for songwriting and live shows. The attention to detail and craftsmanship are exceptional, and the sound is nothing short of breathtaking."
+          "author": "Mark K.",
+          "quote": "I was blown away by the quality of the minimalist basics tee from BoldThreads. It's so soft and comfortable, and the design is perfect for everyday wear"
         }
       },
       {
-        "title": "Bass Beauty",
-        "description": "Get ready to rumble with our powerful bass guitar, designed for the modern bassist. With its sleek design, active pickups, and versatile tone controls, you'll be able to craft the perfect low-end sound for any genre. From jazz to metal, this bass can handle it all.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
+        "title": "Customized Tee",
+        "description": "Our customized tee service allows you to create your own unique design. With our expert designers and high-quality materials, you can create a truly one-of-a-kind tee. Perfect for special occasions or as a gift",
+        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0",
         "tags": [
-          "Bass Guitar",
-          "4-6 weeks"
+          "Custom Tee",
+          "2-3 weeks"
         ],
         "testimonial": {
-          "author": "Ryan Tan",
-          "quote": "I was blown away by the Bass Beauty's tone and playability. The customization process was seamless, and the result is an instrument that perfectly complements my playing style. It's now my primary bass for all my gigs and recordings."
+          "author": "Emily G.",
+          "quote": "I created a customized tee with BoldThreads for my birthday and it turned out amazing! The design process was so easy and the final product is stunning"
         }
       }
     ],
-    "images": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
-      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
-    ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
-      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
-      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
-      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -222,19 +212,16 @@
     }
   },
   "contact": {
-    "businessName": "String and frets",
+    "businessName": "BoldThreads",
     "email": "azedge17@gmail.com",
-    "phone": "956 456 4567",
-    "address": "435 Harmony Street, Quezon City",
+    "phone": "9871234151",
+    "address": " 789 Trend Street, Barangay Mabini, Manila",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/e06b92f4-75d8-45df-af1e-5b009727e7d1",
-      "https://diligent-ibex-454.convex.cloud/api/storage/a8dceff5-32b2-43a8-a821-22a00960fe3a",
-      "https://diligent-ibex-454.convex.cloud/api/storage/42b0557b-c8db-47c5-8b01-834f63364436",
-      "https://diligent-ibex-454.convex.cloud/api/storage/13b478b7-8475-4118-ac06-089bfd38d5d8",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c623cef2-83b4-47a9-8cf8-6f47341ad406",
-      "https://diligent-ibex-454.convex.cloud/api/storage/4de747b2-81d9-498e-bee4-151ee07d9f24"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "visibility": {
       "contactBadge": true,

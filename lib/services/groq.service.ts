@@ -1,4 +1,8 @@
-import Groq from "groq-sdk"
+import Groq, { toFile } from "groq-sdk"
+import fs from "fs"
+import os from "os"
+import path from "path"
+import { chunkMediaFile, getFileExtension } from './media-chunker'
 
 // Lazy-load Groq client to avoid build-time errors
 let groqInstance: Groq | null = null
@@ -14,41 +18,159 @@ function getGroqClient(): Groq {
     return groqInstance
 }
 
+/**
+ * Write buffer to a temp file and return the path.
+ * Groq SDK works best with fs.createReadStream() in Node.js.
+ */
+function writeTempFile(buffer: ArrayBuffer | Uint8Array, filename: string): string {
+    const tmpDir = os.tmpdir()
+    const tmpPath = path.join(tmpDir, `groq-${Date.now()}-${filename}`)
+    const data = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer)
+    fs.writeFileSync(tmpPath, data)
+    return tmpPath
+}
+
+/**
+ * Clean up temp file, ignoring errors.
+ */
+function cleanupTempFile(filePath: string): void {
+    try { fs.unlinkSync(filePath) } catch { /* ignore */ }
+}
+
 export const groqService = {
     /**
-     * Transcribe audio file to text using Whisper
+     * Transcribe audio buffer to text using Whisper via temp file + stream.
+     * Retries up to 3 times on transient connection errors.
      */
-    async transcribeAudio(audioFile: File): Promise<string> {
+    async transcribeBuffer(buffer: ArrayBuffer, filename: string, retries = 3): Promise<string> {
+        const tmpPath = writeTempFile(buffer, filename)
         try {
-            const groq = getGroqClient()
-            const transcription = await groq.audio.transcriptions.create({
-                file: audioFile,
-                model: "whisper-large-v3",
-                language: "en",
-                response_format: "json",
-            })
-
-            return transcription.text
-        } catch (error) {
-            console.error('Groq transcription error:', error)
-            throw new Error('Failed to transcribe audio')
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    const groq = getGroqClient()
+                    // Use toFile() to explicitly set filename (Groq validates extension)
+                    const fileData = await toFile(fs.createReadStream(tmpPath), filename)
+                    const transcription = await groq.audio.transcriptions.create({
+                        file: fileData,
+                        model: "whisper-large-v3",
+                        response_format: "json",
+                    })
+                    return transcription.text
+                } catch (error: any) {
+                    const isTransient = error?.code === 'ECONNRESET' ||
+                        error?.cause?.code === 'ECONNRESET' ||
+                        error?.message?.includes('Connection error')
+                    if (isTransient && attempt < retries) {
+                        console.warn(`Groq connection error (attempt ${attempt}/${retries}), retrying in ${attempt * 3}s...`)
+                        await new Promise(r => setTimeout(r, attempt * 3000))
+                        continue
+                    }
+                    console.error('Groq transcription error:', error)
+                    throw new Error(error?.message || 'Failed to transcribe audio')
+                }
+            }
+            throw new Error('Failed to transcribe audio after retries')
+        } finally {
+            cleanupTempFile(tmpPath)
         }
     },
 
     /**
-     * Transcribe audio from URL
+     * Transcribe audio File object (legacy interface, used by small files).
+     */
+    async transcribeAudio(audioFile: File): Promise<string> {
+        const buffer = await audioFile.arrayBuffer()
+        return this.transcribeBuffer(buffer, audioFile.name)
+    },
+
+    /**
+     * Transcribe audio from URL.
+     * For files over 25MB, chunks into valid segments and transcribes each.
+     * Uses temp files + fs.createReadStream for reliable Groq uploads.
      */
     async transcribeAudioFromUrl(audioUrl: string): Promise<string> {
-        try {
-            // Fetch the audio file
-            const response = await fetch(audioUrl)
-            const blob = await response.blob()
-            const file = new File([blob], 'audio.mp3', { type: blob.type })
+        const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB Groq limit
 
-            return await this.transcribeAudio(file)
-        } catch (error) {
+        try {
+            const response = await fetch(audioUrl)
+            const arrayBuffer = await response.arrayBuffer()
+            const contentType = response.headers.get('content-type') || 'audio/mpeg'
+            const ext = getFileExtension(contentType)
+            const sizeMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(1)
+
+            console.log(`Transcribing file: ${sizeMB}MB, type: ${contentType}`)
+
+            // Small file — send directly via temp file
+            if (arrayBuffer.byteLength <= MAX_FILE_SIZE) {
+                return await this.transcribeBuffer(arrayBuffer, `audio.${ext}`)
+            }
+
+            // Large file — chunk, then release original buffer before transcribing
+            console.log(`File exceeds 25MB limit, chunking...`)
+            const chunks = chunkMediaFile(arrayBuffer, contentType)
+
+            // MP4 video → extracted as audio-only MP4 → use .m4a extension
+            const chunkExt = contentType.includes('video') ? 'm4a' : ext
+
+            // Write all chunks to temp files FIRST, then release the large buffer
+            const tmpPaths: string[] = []
+            for (let i = 0; i < chunks.length; i++) {
+                const tmpPath = writeTempFile(chunks[i], `chunk_${i}.${chunkExt}`)
+                tmpPaths.push(tmpPath)
+            }
+
+            // Release references to the large original buffer and chunks
+            // @ts-ignore - intentional nullification for GC
+            chunks.length = 0
+
+            // Force GC hint (won't guarantee collection but helps)
+            if (global.gc) global.gc()
+
+            console.log(`Wrote ${tmpPaths.length} chunks to temp files, transcribing...`)
+
+            const transcripts: string[] = []
+            try {
+                for (let i = 0; i < tmpPaths.length; i++) {
+                    const stat = fs.statSync(tmpPaths[i])
+                    console.log(`Transcribing chunk ${i + 1}/${tmpPaths.length} (${(stat.size / 1024 / 1024).toFixed(1)}MB)`)
+
+                    for (let attempt = 1; attempt <= 3; attempt++) {
+                        try {
+                            const groq = getGroqClient()
+                            const chunkFilename = `chunk_${i}.${chunkExt}`
+                            const fileData = await toFile(fs.createReadStream(tmpPaths[i]), chunkFilename)
+                            const transcription = await groq.audio.transcriptions.create({
+                                file: fileData,
+                                model: "whisper-large-v3",
+                                response_format: "json",
+                            })
+                            if (transcription.text?.trim()) {
+                                transcripts.push(transcription.text.trim())
+                            }
+                            break
+                        } catch (error: any) {
+                            const isTransient = error?.cause?.code === 'ECONNRESET' ||
+                                error?.message?.includes('Connection error')
+                            if (isTransient && attempt < 3) {
+                                console.warn(`Chunk ${i + 1} connection error (attempt ${attempt}/3), retrying...`)
+                                await new Promise(r => setTimeout(r, attempt * 3000))
+                                continue
+                            }
+                            throw error
+                        }
+                    }
+                }
+            } finally {
+                // Clean up all temp files
+                tmpPaths.forEach(cleanupTempFile)
+            }
+
+            const fullTranscript = transcripts.join(' ')
+            console.log(`Transcription complete: ${tmpPaths.length} chunks, ${fullTranscript.length} characters`)
+            return fullTranscript
+        } catch (error: any) {
             console.error('Groq transcription from URL error:', error)
-            throw new Error('Failed to transcribe audio from URL')
+            throw new Error(error.message || 'Failed to transcribe audio from URL')
         }
     },
 
