@@ -216,29 +216,42 @@ IMPORTANT:
 
             if (enhancedImages && typeof enhancedImages === 'object') {
                 // Extract URLs from enhancedImages object
-                // Structure: { headshot: { url, storageId }, interior_1: { url, storageId }, ... }
+                // Structure: { 
+                //   enhanced_headshot: { url, storageId }, 
+                //   enhanced_headshot_v1: { url, storageId },
+                //   enhanced_headshot_v2: { url, storageId },
+                //   interior_1: { url, storageId }, 
+                //   ... 
+                // }
                 for (const [key, img] of Object.entries(enhancedImages)) {
                     const imgData = img as any
                     if (imgData && (imgData.url || imgData.storageId)) {
                         const url = imgData.url || imgData.storageId
                         enhancedImageUrls.push(url)
+                        
+                        // Extract base field name, removing "enhanced_" prefix and version suffix (_v1, _v2, etc.)
+                        // Examples: enhanced_headshot_v1 → headshot, enhanced_interior_1 → interior_1
+                        let baseKey = key.replace(/^enhanced_/, '').replace(/_v\d+$/, '')
+                        
                         // Categorize for section-specific mapping
-                        if (key.startsWith('interior') || key === 'headshot') {
+                        if (baseKey.startsWith('interior') || baseKey === 'headshot') {
                             enhancedImagesByCategory.about = enhancedImagesByCategory.about || []
                             enhancedImagesByCategory.about.push(url)
                         }
-                        if (key.startsWith('product')) {
+                        if (baseKey.startsWith('product')) {
                             enhancedImagesByCategory.featured = enhancedImagesByCategory.featured || []
                             enhancedImagesByCategory.featured.push(url)
                         }
-                        if (key === 'exterior' || key === 'headshot') {
+                        if (baseKey === 'exterior' || baseKey === 'headshot') {
                             enhancedImagesByCategory.hero = enhancedImagesByCategory.hero || []
                             enhancedImagesByCategory.hero.push(url)
                         }
-                        if (key.startsWith('interior') || key === 'exterior') {
+                        if (baseKey.startsWith('interior') || baseKey === 'exterior') {
                             enhancedImagesByCategory.services = enhancedImagesByCategory.services || []
                             enhancedImagesByCategory.services.push(url)
                         }
+                        
+                        console.log(`Categorized ${key} (base: ${baseKey}) → hero: ${enhancedImagesByCategory.hero?.includes(url)}, about: ${enhancedImagesByCategory.about?.includes(url)}, services: ${enhancedImagesByCategory.services?.includes(url)}, featured: ${enhancedImagesByCategory.featured?.includes(url)}`)
                     }
                 }
             }

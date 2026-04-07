@@ -65,6 +65,7 @@ export default defineSchema({
         transcript: v.optional(v.string()),
         transcriptionStatus: v.optional(v.string()), // Status of audio transcription
         transcriptionError: v.optional(v.string()), // Error message if Groq Whisper transcription failed
+        transcriptionUpdatedAt: v.optional(v.number()), // Timestamp of last transcription generation/update
 
         // Extended address fields
         province: v.optional(v.string()),
@@ -215,7 +216,9 @@ export default defineSchema({
             v.literal('payment_confirmed'),
             v.literal('submission_deleted'),
             v.literal('creator_updated'),
-            v.literal('manual_override')
+            v.literal('manual_override'),
+            v.literal('transcription_regenerated'),
+            v.literal('images_enhanced')
         ),
         targetType: v.union(
             v.literal('submission'),

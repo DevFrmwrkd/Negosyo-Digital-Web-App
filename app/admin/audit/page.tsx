@@ -13,9 +13,12 @@ type AuditAction =
     | 'website_generated'
     | 'website_deployed'
     | 'payment_sent'
+    | 'payment_confirmed'
     | 'submission_deleted'
     | 'creator_updated'
     | 'manual_override'
+    | 'transcription_regenerated'
+    | 'images_enhanced'
 
 const ACTION_LABELS: Record<AuditAction, string> = {
     submission_approved: 'Approved',
@@ -23,9 +26,12 @@ const ACTION_LABELS: Record<AuditAction, string> = {
     website_generated: 'Website Generated',
     website_deployed: 'Deployed',
     payment_sent: 'Payment Sent',
+    payment_confirmed: 'Payment Confirmed',
     submission_deleted: 'Deleted',
     creator_updated: 'Creator Updated',
     manual_override: 'Manual Override',
+    transcription_regenerated: 'Transcription Regenerated',
+    images_enhanced: 'Images Enhanced',
 }
 
 const ACTION_COLORS: Record<AuditAction, { bg: string; text: string }> = {
@@ -34,9 +40,12 @@ const ACTION_COLORS: Record<AuditAction, { bg: string; text: string }> = {
     website_generated: { bg: 'bg-purple-50', text: 'text-purple-700' },
     website_deployed: { bg: 'bg-blue-50', text: 'text-blue-700' },
     payment_sent: { bg: 'bg-orange-50', text: 'text-orange-700' },
+    payment_confirmed: { bg: 'bg-orange-50', text: 'text-orange-700' },
     submission_deleted: { bg: 'bg-gray-100', text: 'text-gray-700' },
     creator_updated: { bg: 'bg-cyan-50', text: 'text-cyan-700' },
     manual_override: { bg: 'bg-amber-50', text: 'text-amber-700' },
+    transcription_regenerated: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
+    images_enhanced: { bg: 'bg-amber-50', text: 'text-amber-700' },
 }
 
 const FILTER_TABS = [
@@ -62,6 +71,7 @@ function timeAgo(timestamp: number): string {
 export default function AuditLogsPage() {
     const { isAdmin, loading: authLoading } = useAdminAuth()
     const [activeFilter, setActiveFilter] = useState('all')
+    const [selectedLog, setSelectedLog] = useState<any>(null)
 
     const auditLogs = useQuery(
         api.auditLogs.getRecent,
@@ -172,7 +182,7 @@ export default function AuditLogsPage() {
                                 filteredLogs.map((log: any) => {
                                     const actionColor = ACTION_COLORS[log.action as AuditAction] || { bg: 'bg-gray-100', text: 'text-gray-700' }
                                     return (
-                                        <tr key={log._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                                        <tr key={log._id} onClick={() => setSelectedLog(log)} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer">
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <p className="text-sm text-gray-900">{timeAgo(log.timestamp)}</p>
                                                 <p className="text-xs text-gray-500">
@@ -243,6 +253,93 @@ export default function AuditLogsPage() {
                     </p>
                 </div>
             </div>
+            {/* Detail Modal */}
+            {selectedLog && (() => {
+                const actionColor = ACTION_COLORS[selectedLog.action as AuditAction] || { bg: 'bg-gray-100', text: 'text-gray-700' }
+                const meta = selectedLog.metadata || {}
+                const metaEntries = Object.entries(meta).filter(([, v]) => v !== undefined && v !== null && v !== '')
+                return (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedLog(null)}>
+                        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden" onClick={e => e.stopPropagation()}>
+                            {/* Header */}
+                            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-gray-900">Audit Log Detail</h3>
+                                <button onClick={() => setSelectedLog(null)} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-5 space-y-4 overflow-y-auto max-h-[60vh]">
+                                {/* Action badge */}
+                                <div className="flex items-center gap-3">
+                                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold ${actionColor.bg} ${actionColor.text}`}>
+                                        {ACTION_LABELS[selectedLog.action as AuditAction] || selectedLog.action}
+                                    </span>
+                                </div>
+
+                                {/* Info grid */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-medium mb-1">Admin</p>
+                                        <p className="text-sm font-medium text-gray-900">{selectedLog.adminName || selectedLog.adminId}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-medium mb-1">Timestamp</p>
+                                        <p className="text-sm text-gray-900">{new Date(selectedLog.timestamp).toLocaleString()}</p>
+                                        <p className="text-xs text-gray-500">{timeAgo(selectedLog.timestamp)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-medium mb-1">Target Type</p>
+                                        <p className="text-sm text-gray-900 capitalize">{selectedLog.targetType}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-medium mb-1">Target ID</p>
+                                        <p className="text-xs text-gray-700 font-mono break-all">{selectedLog.targetId}</p>
+                                    </div>
+                                </div>
+
+                                {/* Metadata */}
+                                {metaEntries.length > 0 && (
+                                    <div>
+                                        <p className="text-xs text-gray-500 uppercase font-medium mb-2">Details</p>
+                                        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                                            {metaEntries.map(([key, value]) => (
+                                                <div key={key} className="flex items-start gap-2">
+                                                    <span className="text-xs text-gray-500 font-medium min-w-[100px] capitalize">{key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}</span>
+                                                    <span className="text-sm text-gray-900 break-all">
+                                                        {typeof value === 'string' && value.startsWith('http') ? (
+                                                            <a href={value as string} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{value as string}</a>
+                                                        ) : typeof value === 'number' && key.toLowerCase().includes('at') ? (
+                                                            new Date(value).toLocaleString()
+                                                        ) : (
+                                                            String(value)
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {metaEntries.length === 0 && (
+                                    <div className="bg-gray-50 rounded-xl p-4 text-center">
+                                        <p className="text-sm text-gray-500">No additional details recorded</p>
+                                    </div>
+                                )}
+
+                                {/* Link to submission */}
+                                {selectedLog.targetType === 'submission' && (
+                                    <Link
+                                        href={`/admin/submissions/${selectedLog.targetId}`}
+                                        className="block w-full text-center px-4 py-2.5 bg-green-500 text-white rounded-xl font-medium text-sm hover:bg-green-600 transition-colors"
+                                    >
+                                        View Submission
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            })()}
         </AdminLayout>
     )
 }

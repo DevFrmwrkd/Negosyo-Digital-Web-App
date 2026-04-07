@@ -577,7 +577,7 @@ export default function AdminDashboard() {
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Business Entity</th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Owner Representative</th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Workflow Status</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Compliance Agent</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Creator</th>
                                 <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Submission Date</th>
                                 <th className="px-6 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] pr-10">Management</th>
                             </tr>
@@ -627,9 +627,11 @@ export default function AdminDashboard() {
                                                 </td>
                                                 <td className="px-6 py-5">
                                                     <div className="flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
                                                         <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
-                                                            {submission.reviewed_by || "Unassigned"}
+                                                            {submission.creators 
+                                                                ? `${submission.creators.first_name} ${submission.creators.last_name}`.trim() 
+                                                                : "Unknown Creator"}
                                                         </span>
                                                     </div>
                                                 </td>
