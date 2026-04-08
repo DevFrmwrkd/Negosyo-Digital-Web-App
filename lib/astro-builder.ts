@@ -1,5 +1,6 @@
-import { promises as fs } from 'fs'
+import { promises as fs, existsSync } from 'fs'
 import path from 'path'
+import os from 'os'
 import { execSync } from 'child_process'
 
 interface ExtractedContent {
@@ -266,15 +267,60 @@ function transformToAstroData(
 }
 
 /**
+ * Recursively copy a directory, skipping specified folder names.
+ */
+async function copyDir(src: string, dest: string, skip: Set<string> = new Set()): Promise<void> {
+    await fs.mkdir(dest, { recursive: true })
+    const entries = await fs.readdir(src, { withFileTypes: true })
+    for (const entry of entries) {
+        if (skip.has(entry.name)) continue
+        const srcPath = path.join(src, entry.name)
+        const destPath = path.join(dest, entry.name)
+        if (entry.isDirectory()) {
+            await copyDir(srcPath, destPath, skip)
+        } else {
+            await fs.copyFile(srcPath, destPath)
+        }
+    }
+}
+
+/**
  * Build an Astro site from extracted content and customizations.
  * Writes site-data.json, runs astro build, and returns the generated HTML.
+ *
+ * On Vercel (read-only filesystem), copies the template to /tmp/ and builds there.
  */
 export async function buildAstroSite(
     content: ExtractedContent,
     customizations: Customizations,
     photos: string[]
 ): Promise<string> {
-    const astroDir = path.join(process.cwd(), 'astro-site-template')
+    const sourceDir = path.join(process.cwd(), 'astro-site-template')
+
+    // Detect read-only filesystem (Vercel) by checking if we can write to the source dir
+    const isReadOnly = await fs.writeFile(
+        path.join(sourceDir, '.write-test'), ''
+    ).then(() => {
+        fs.unlink(path.join(sourceDir, '.write-test')).catch(() => {})
+        return false
+    }).catch(() => true)
+
+    let astroDir: string
+    if (isReadOnly) {
+        // Copy template to /tmp/ (writable on Vercel), symlink node_modules to avoid copying
+        astroDir = path.join(os.tmpdir(), `astro-build-${Date.now()}`)
+        console.log(`[ASTRO] Read-only filesystem detected, building in ${astroDir}`)
+        await copyDir(sourceDir, astroDir, new Set(['node_modules', 'dist', '.astro']))
+        // Symlink node_modules from the source directory
+        const srcNodeModules = path.join(sourceDir, 'node_modules')
+        const destNodeModules = path.join(astroDir, 'node_modules')
+        if (existsSync(srcNodeModules)) {
+            await fs.symlink(srcNodeModules, destNodeModules, 'junction')
+        }
+    } else {
+        astroDir = sourceDir
+    }
+
     const dataPath = path.join(astroDir, 'src', 'data', 'site-data.json')
     const outputPath = path.join(astroDir, 'dist', 'index.html')
 
@@ -299,12 +345,19 @@ export async function buildAstroSite(
     }
 
     // 4. Read output HTML
+    let html: string
     try {
-        const html = await fs.readFile(outputPath, 'utf-8')
-        return html
+        html = await fs.readFile(outputPath, 'utf-8')
     } catch {
         throw new Error('Astro build completed but output file not found at ' + outputPath)
     }
+
+    // 5. Clean up temp directory if we created one
+    if (astroDir !== sourceDir) {
+        fs.rm(astroDir, { recursive: true, force: true }).catch(() => {})
+    }
+
+    return html
 }
 
 export { transformToAstroData, mapStyleToLetter }
