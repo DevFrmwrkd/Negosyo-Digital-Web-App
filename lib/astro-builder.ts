@@ -310,18 +310,16 @@ export async function buildAstroSite(
     let astroDir: string
     if (isReadOnly) {
         // Copy template source to /tmp/ (Vercel filesystem is read-only)
-        // Skip node_modules/dist/.astro — we'll resolve modules from root node_modules
         astroDir = path.join(os.tmpdir(), `astro-build-${Date.now()}`)
         console.log(`[ASTRO] Read-only filesystem detected, building in ${astroDir}`)
         await copyDir(sourceDir, astroDir, new Set(['node_modules', 'dist', '.astro']))
-        // Symlink node_modules so Astro config imports (e.g. @tailwindcss/vite) resolve from cwd
-        // This works on Vercel: /tmp is writable, symlinks to /var/task/ are followed
+        // Symlink node_modules so astro.config.mjs imports (e.g. @tailwindcss/vite) resolve
         const destNodeModules = path.join(astroDir, 'node_modules')
         try {
             await fs.symlink(rootNodeModules, destNodeModules, 'dir')
-            console.log(`[ASTRO] Symlinked node_modules from ${rootNodeModules}`)
+            console.log(`[ASTRO] Symlinked node_modules → ${rootNodeModules}`)
         } catch (e) {
-            console.warn(`[ASTRO] Symlink failed (NODE_PATH fallback will be used):`, e)
+            console.warn(`[ASTRO] Symlink failed, will rely on NODE_PATH:`, e)
         }
     } else {
         astroDir = sourceDir
@@ -333,22 +331,27 @@ export async function buildAstroSite(
     // 1. Transform data to Astro format
     const siteData = transformToAstroData(content, customizations, photos)
 
-    // 2. Write site-data.json
+    // 2. Write site-data.json + ensure .astro cache dir exists
     await fs.writeFile(dataPath, JSON.stringify(siteData, null, 2), 'utf-8')
+    await fs.mkdir(path.join(astroDir, '.astro'), { recursive: true })
 
-    // 3. Run astro build
-    //    - Use absolute path to astro binary from root node_modules (avoids npx/symlink issues)
-    //    - Set NODE_PATH so astro resolves all dependencies from root node_modules
-    //    - On Vercel: symlinks don't work, npx can't mkdir in sandbox home dir
-    const astroBin = path.join(rootNodeModules, 'astro', 'astro.js')
-    console.log(`[ASTRO] Running: node "${astroBin}" build (cwd: ${astroDir})`)
+    // 3. Run astro build via standalone worker script
+    //    Astro uses dynamic requires, native binaries (esbuild, lightningcss), and ESM internals
+    //    that break webpack bundling. Running as a child process lets Node.js resolve all 278+
+    //    transitive deps from node_modules at runtime — no webpack tracing needed.
+    const workerScript = path.join(process.cwd(), 'lib', 'astro-build-worker.mjs')
+    console.log(`[ASTRO] Building site from ${astroDir} via worker`)
     try {
-        execSync(`node "${astroBin}" build`, {
+        const output = execSync(`node "${workerScript}" "${astroDir}"`, {
             cwd: astroDir,
             stdio: 'pipe',
-            timeout: 60000, // 60 second timeout
-            env: { ...process.env, NODE_ENV: 'production', NODE_PATH: rootNodeModules },
+            timeout: 60000,
+            env: { ...process.env, NODE_ENV: 'production' },
         })
+        const stdout = output.toString()
+        if (!stdout.includes('ASTRO_BUILD_SUCCESS')) {
+            throw new Error(stdout)
+        }
     } catch (error: any) {
         const stderr = error.stderr?.toString() || ''
         const stdout = error.stdout?.toString() || ''
@@ -368,6 +371,7 @@ export async function buildAstroSite(
         fs.rm(astroDir, { recursive: true, force: true }).catch(() => {})
     }
 
+    console.log(`[ASTRO] Build complete: ${(html.length / 1024).toFixed(0)}KB HTML`)
     return html
 }
 
