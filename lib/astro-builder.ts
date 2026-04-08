@@ -2,6 +2,11 @@ import { promises as fs } from 'fs'
 import path from 'path'
 import os from 'os'
 import { execSync } from 'child_process'
+// Static imports for @vercel/nft tracing — serverExternalPackages prevents webpack from bundling
+// these, but nft still traces them and deploys all transitive deps to /var/task/node_modules/.
+// They're used by the worker script (astro-build-worker.mjs) at runtime.
+import 'astro'
+import '@tailwindcss/vite'
 
 interface ExtractedContent {
     business_name: string
@@ -305,21 +310,19 @@ export async function buildAstroSite(
         return false
     }).catch(() => true)
 
-    const rootNodeModules = path.join(process.cwd(), 'node_modules')
-
     let astroDir: string
     if (isReadOnly) {
         // Copy template source to /tmp/ (Vercel filesystem is read-only)
         astroDir = path.join(os.tmpdir(), `astro-build-${Date.now()}`)
         console.log(`[ASTRO] Read-only filesystem detected, building in ${astroDir}`)
         await copyDir(sourceDir, astroDir, new Set(['node_modules', 'dist', '.astro']))
-        // Symlink node_modules so astro.config.mjs imports (e.g. @tailwindcss/vite) resolve
-        const destNodeModules = path.join(astroDir, 'node_modules')
+        // Symlink node_modules so the worker's import 'astro' resolves from /var/task/node_modules
+        const rootNM = path.join(process.cwd(), 'node_modules')
         try {
-            await fs.symlink(rootNodeModules, destNodeModules, 'dir')
-            console.log(`[ASTRO] Symlinked node_modules → ${rootNodeModules}`)
+            await fs.symlink(rootNM, path.join(astroDir, 'node_modules'), 'dir')
+            console.log(`[ASTRO] Symlinked node_modules → ${rootNM}`)
         } catch (e) {
-            console.warn(`[ASTRO] Symlink failed, will rely on NODE_PATH:`, e)
+            console.warn(`[ASTRO] Symlink failed:`, e)
         }
     } else {
         astroDir = sourceDir
@@ -335,10 +338,11 @@ export async function buildAstroSite(
     await fs.writeFile(dataPath, JSON.stringify(siteData, null, 2), 'utf-8')
     await fs.mkdir(path.join(astroDir, '.astro'), { recursive: true })
 
-    // 3. Run astro build via standalone worker script
-    //    Astro uses dynamic requires, native binaries (esbuild, lightningcss), and ESM internals
-    //    that break webpack bundling. Running as a child process lets Node.js resolve all 278+
-    //    transitive deps from node_modules at runtime — no webpack tracing needed.
+    // 3. Run astro build via worker script (child process with cwd = astroDir)
+    //    - Worker runs with cwd set to the build dir, so Astro's .astro/ cache resolves correctly
+    //    - astro & @tailwindcss/vite are statically imported above for nft tracing only
+    //    - serverExternalPackages ensures they're deployed to /var/task/node_modules/
+    //    - Worker resolves them via node_modules symlink (local) or /var/task/node_modules (Vercel)
     const workerScript = path.join(process.cwd(), 'lib', 'astro-build-worker.mjs')
     console.log(`[ASTRO] Building site from ${astroDir} via worker`)
     try {
