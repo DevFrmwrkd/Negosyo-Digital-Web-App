@@ -1,4 +1,4 @@
-import { promises as fs, existsSync } from 'fs'
+import { promises as fs } from 'fs'
 import path from 'path'
 import os from 'os'
 import { execSync } from 'child_process'
@@ -305,22 +305,24 @@ export async function buildAstroSite(
         return false
     }).catch(() => true)
 
+    const rootNodeModules = path.join(process.cwd(), 'node_modules')
+
     let astroDir: string
     if (isReadOnly) {
-        // Copy template to /tmp/ (writable on Vercel), symlink node_modules to avoid copying
+        // Copy template source to /tmp/ (Vercel filesystem is read-only)
+        // Skip node_modules/dist/.astro — we'll resolve modules from root node_modules
         astroDir = path.join(os.tmpdir(), `astro-build-${Date.now()}`)
         console.log(`[ASTRO] Read-only filesystem detected, building in ${astroDir}`)
         await copyDir(sourceDir, astroDir, new Set(['node_modules', 'dist', '.astro']))
-        // Symlink node_modules — prefer astro-site-template's own, fall back to root
-        // On Vercel, only root node_modules exists (subdirectory deps aren't installed)
-        const astroNodeModules = path.join(sourceDir, 'node_modules')
-        const rootNodeModules = path.join(process.cwd(), 'node_modules')
-        const srcNodeModules = existsSync(astroNodeModules) ? astroNodeModules : rootNodeModules
+        // Symlink node_modules so Astro config imports (e.g. @tailwindcss/vite) resolve from cwd
+        // This works on Vercel: /tmp is writable, symlinks to /var/task/ are followed
         const destNodeModules = path.join(astroDir, 'node_modules')
-        // Use 'dir' for Linux (Vercel), 'junction' for Windows (local dev)
-        const symlinkType = process.platform === 'win32' ? 'junction' : 'dir'
-        await fs.symlink(srcNodeModules, destNodeModules, symlinkType)
-        console.log(`[ASTRO] Symlinked node_modules from ${srcNodeModules}`)
+        try {
+            await fs.symlink(rootNodeModules, destNodeModules, 'dir')
+            console.log(`[ASTRO] Symlinked node_modules from ${rootNodeModules}`)
+        } catch (e) {
+            console.warn(`[ASTRO] Symlink failed (NODE_PATH fallback will be used):`, e)
+        }
     } else {
         astroDir = sourceDir
     }
@@ -334,16 +336,18 @@ export async function buildAstroSite(
     // 2. Write site-data.json
     await fs.writeFile(dataPath, JSON.stringify(siteData, null, 2), 'utf-8')
 
-    // 3. Run astro build — invoke the CLI directly via node to avoid npx/npm
-    //    (npx fails on Vercel: ENOENT mkdir /home/sbx_user1051 — sandbox has no writable home dir)
-    const astroBin = path.join(astroDir, 'node_modules', 'astro', 'astro.js')
+    // 3. Run astro build
+    //    - Use absolute path to astro binary from root node_modules (avoids npx/symlink issues)
+    //    - Set NODE_PATH so astro resolves all dependencies from root node_modules
+    //    - On Vercel: symlinks don't work, npx can't mkdir in sandbox home dir
+    const astroBin = path.join(rootNodeModules, 'astro', 'astro.js')
     console.log(`[ASTRO] Running: node "${astroBin}" build (cwd: ${astroDir})`)
     try {
         execSync(`node "${astroBin}" build`, {
             cwd: astroDir,
             stdio: 'pipe',
             timeout: 60000, // 60 second timeout
-            env: { ...process.env, NODE_ENV: 'production' },
+            env: { ...process.env, NODE_ENV: 'production', NODE_PATH: rootNodeModules },
         })
     } catch (error: any) {
         const stderr = error.stderr?.toString() || ''
