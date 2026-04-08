@@ -168,8 +168,8 @@ const year = new Date().getFullYear();
     class:list={[
       "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
       navbarStyle === 'H' || navbarStyle === 'I' || navbarStyle === 'J'
-        ? "bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--text)]/5 py-10" 
-        : "bg-[var(--nav-bg)] backdrop-blur-md border-b border-[var(--nav-border)] h-16 md:h-18 translate-y-0"
+        ? "bg-[var(--bg)]/80 backdrop-blur-xl border-b border-[var(--text)]/5 py-10"
+        : "bg-[var(--nav-bg)] backdrop-blur-md border-b border-[var(--nav-border)] py-4 md:py-5"
     ]} 
     id="navbar"
     style={(navbarStyle === 'H' || navbarStyle === 'I' || navbarStyle === 'J') ? "padding-top: 2.5rem;" : ""}
