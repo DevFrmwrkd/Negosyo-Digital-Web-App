@@ -25,10 +25,13 @@ try {
         configFile: false,
         output: 'static',
         logLevel: 'silent',
+        // Astro writes content cache to cacheDir (defaults to node_modules/.astro/)
+        // On Vercel the symlinked node_modules is read-only, so redirect to the writable build dir
+        cacheDir: path.join(astroDir, '.astro-cache'),
         vite: {
             plugins: [tailwindcssVite()],
             build: { cssMinify: true },
-            // Vite cache must be in a writable location — the symlinked node_modules is read-only
+            // Vite cache must also be writable — defaults to node_modules/.vite/
             cacheDir: path.join(astroDir, '.vite-cache'),
         },
         build: {
