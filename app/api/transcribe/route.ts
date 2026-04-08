@@ -7,8 +7,8 @@ import { Id } from '@/convex/_generated/dataModel'
 
 const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
-// Allow up to 2 minutes for large file chunked transcription
-export const maxDuration = 120
+// Allow up to 3 minutes for large file chunked transcription (500MB+ files)
+export const maxDuration = 180
 
 export async function POST(request: NextRequest) {
     let submissionId: string | undefined
@@ -60,6 +60,27 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Check file size before transcribing
+        try {
+            const headResponse = await fetch(mediaUrl, { method: 'HEAD' })
+            const contentLength = headResponse.headers.get('content-length')
+            if (contentLength) {
+                const fileSizeMB = parseInt(contentLength) / 1024 / 1024
+                console.log(`Media file size: ${fileSizeMB.toFixed(1)}MB`)
+                // Note: Files larger than 20MB will be chunked by groqService
+                // This is just an early warning for extremely large files
+                if (fileSizeMB > 1000) {
+                    return NextResponse.json(
+                        { error: `File is extremely large (${fileSizeMB.toFixed(1)}MB). Transcription may fail. Please use a file under 500MB.` },
+                        { status: 413 }
+                    )
+                }
+            }
+        } catch (err) {
+            console.warn('Could not check file size:', err)
+            // Continue anyway, will catch errors during transcription
+        }
+
         // Transcribe audio
         const transcript = await groqService.transcribeAudioFromUrl(mediaUrl)
 
@@ -85,6 +106,20 @@ export async function POST(request: NextRequest) {
     } catch (error: any) {
         console.error('Transcription API error:', error)
 
+        // Check for specific error types
+        let statusCode = 500
+        let errorMessage = error.message || 'Failed to transcribe audio'
+
+        if (error.message?.includes('413') || error.message?.includes('Entity Too Large')) {
+            statusCode = 413
+            errorMessage = 'File is too large for transcription. Please upload a smaller file.'
+        } else if (error.message?.includes('Invalid file')) {
+            errorMessage = 'Invalid audio/video file format. Please use MP3, WAV, MP4, or WebM.'
+        } else if (error.message?.includes('timeout') || error.message?.includes('Timeout')) {
+            statusCode = 504
+            errorMessage = 'Transcription took too long. Please try again with a shorter file.'
+        }
+
         // Set transcription status to failed
         if (submissionId) {
             try {
@@ -98,8 +133,8 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json(
-            { error: error.message || 'Failed to transcribe audio' },
-            { status: 500 }
+            { error: errorMessage },
+            { status: statusCode }
         )
     }
 }
