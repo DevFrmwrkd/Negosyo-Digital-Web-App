@@ -128,6 +128,81 @@ Optimized database queries, fixed file chunking logic, and improved UI validatio
 
 ---
 
+## 0.1. Transcription Format Detection & Chunking Fixes (April 8, 2026)
+
+### Problem Solved
+1. Transcription failing on Vercel with `400 invalid_request_error`: "file must be one of the following types: [flac mp3 mp4 mpeg mpga m4a ogg opus wav webm]"
+2. Transcription failing with "File is too large even after chunking" on Vercel while working locally
+3. MP4 files with extracted audio >22MB returned as single oversized chunk (unimplemented multi-chunk splitting)
+
+### Root Cause
+- **Format detection failure**: R2/Convex storage URLs on Vercel return generic `content-type` headers (e.g., `application/octet-stream`) instead of proper MIME types. The `detectFormat()` function returned `'unknown'`, causing `chunkMediaFile()` to skip chunking entirely and send the full file to Groq → 413 error.
+- **Invalid file extension**: Chunk filenames used `.aac` extension which is not in Groq's allowed file type list, causing 400 errors.
+- **MP4 audio overflow**: When extracted audio-only MP4 exceeded 22MB, it was returned as a single chunk (marked as `TODO` in code).
+
+### Solution Implemented
+Added multi-tier format detection fallback chain, implemented MP4→ADTS multi-chunk splitting, and added extension validation safeguard.
+
+### Files Modified
+
+#### `lib/services/media-chunker.ts`
+- **NEW FUNCTION**: `detectFormatFromUrl(url)`
+  - Parses URL pathname to detect format from file extension
+  - Supports `.webm`, `.mp3`, `.wav`, `.mp4`, `.m4a`
+  - Used as fallback when content-type is unhelpful (e.g., `application/octet-stream`)
+
+- **NEW FUNCTION**: `detectFormatFromBytes(data)`
+  - Detects format from file magic bytes as final fallback
+  - Identifies WAV (RIFF header), MP3 (ID3/sync word), WebM (EBML header), MP4 (ftyp atom)
+  - Works regardless of content-type or URL extension
+
+- **MODIFIED**: `chunkMediaFile(buffer, contentType, maxChunkSize, sourceUrl?)`
+  - **New parameter**: `sourceUrl` (optional) — passed through for URL-based format detection
+  - **3-tier format detection fallback chain**:
+    1. Content-type header (existing behavior)
+    2. URL file extension (new — handles CDN/R2 generic content-types)
+    3. File magic bytes (new — handles completely unknown content-types)
+  - Logs which detection method was used for debugging
+
+- **MODIFIED**: `getFileExtension(contentType, sourceUrl?)`
+  - **New parameter**: `sourceUrl` (optional) — falls back to URL extension detection
+  - Ensures correct extension is used even when content-type is generic
+
+- **MODIFIED**: `chunkMP4()` — MP4 multi-chunk splitting
+  - Previously returned single oversized chunk with `// TODO` comment when extracted audio >22MB
+  - **Now converts to ADTS (Audio Data Transport Stream) format** when audio-only MP4 exceeds chunk size limit:
+    - Reads AAC config (objectType, sampleRateIndex, channelConfig) from original MP4
+    - Wraps each audio sample with 7-byte ADTS header
+    - Splits ADTS stream at frame boundaries into chunks under 22MB
+  - Logs conversion progress and chunk sizes
+
+#### `lib/services/groq.service.ts`
+- **MODIFIED**: `transcribeBuffer()`
+  - **NEW**: Extension validation safeguard before sending to Groq
+  - Checks filename extension against Groq's allowed list: `flac mp3 mp4 mpeg mpga m4a ogg opus wav webm`
+  - If extension is not in the allowed list, automatically renames to `.mp3` with warning log
+  - Prevents 400 `invalid_request_error` regardless of how the file was named
+
+- **MODIFIED**: `transcribeAudioFromUrl()`
+  - Passes `audioUrl` to `chunkMediaFile()` for URL-based format detection fallback
+  - Passes `audioUrl` to `getFileExtension()` for correct extension detection
+  - **Changed chunk extension** from `.aac` to `.m4a` for MP4/video sources (`.m4a` is in Groq's allowed list, `.aac` is not)
+
+### Testing Results
+- ✅ Files with `application/octet-stream` content-type now correctly detected via URL extension
+- ✅ Files with unknown content-type and no URL extension detected via magic bytes
+- ✅ MP4 files with >22MB audio correctly split into multiple ADTS chunks
+- ✅ All chunk filenames use Groq-accepted extensions (no more 400 errors)
+- ✅ Transcription works on Vercel deployment matching local behavior
+- ✅ Backward compatible — existing working files unaffected
+
+### Performance Impact
+- **Format detection**: Negligible overhead (~1ms for URL parsing + byte inspection)
+- **MP4→ADTS conversion**: Minimal CPU — copies existing AAC frames with 7-byte headers, no re-encoding
+- **Extension validation**: Single array lookup per `transcribeBuffer()` call
+
+---
+
 ## 1. Enhanced Image Management - Multi-Version Support
 
 ### Problem Solved

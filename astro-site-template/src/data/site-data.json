@@ -1,37 +1,37 @@
 {
   "layout": {
-    "businessName": "BoldThreads",
-    "tagline": "Wear Your Personality",
+    "businessName": "StepRight Shoes",
+    "tagline": "Step into Style",
     "navLinks": [
       {
-        "href": "#about",
-        "label": "About"
+        "label": "About",
+        "href": "#about"
       },
       {
-        "href": "#services",
-        "label": "Services"
+        "label": "Services",
+        "href": "#services"
       },
       {
-        "href": "#featured",
-        "label": "Featured"
+        "label": "Featured",
+        "href": "#featured"
       },
       {
-        "href": "#contact",
-        "label": "Contacts"
+        "label": "Contacts",
+        "href": "#contact"
       }
     ],
     "socialLinks": [],
     "colorScheme": "auto",
     "fontPairing": "modern",
     "contact": {
-      "address": " 789 Trend Street, Barangay Mabini, Manila",
       "email": "azedge17@gmail.com",
-      "phone": "9871234151"
+      "phone": "912 345 4567",
+      "address": "andrea.villanueva@example.com, Manila"
     },
-    "navbarStyle": "B"
+    "navbarStyle": "A"
   },
   "customizations": {
-    "heroStyle": "B",
+    "heroStyle": "A",
     "aboutStyle": "A",
     "servicesStyle": "A",
     "galleryStyle": "A",
@@ -72,26 +72,27 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "BoldThreads",
-    "headline": "Wear Your Personality",
-    "description": "BoldThreads is a modern t-shirt brand in Manila that creates stylish, comfortable, and expressive tees. Our designs range from minimalist basics to bold graphic prints, catering to fashion-forward individuals. We aim to make t-shirts more than just casual clothing, but statements of identity and creativity.",
+    "businessName": "StepRight Shoes",
+    "headline": "Step into Style",
+    "description": "StepRight Shoes offers a wide range of stylish and comfortable shoes for men, women, and children, blending fashion with function. With a focus on customer care and personalized service, we help customers find the perfect fit for every occasion. Our vision is to provide high-quality footwear that ensures customers always step out with confidence.",
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692022832-itgf9vxg.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692024256-3rvxbby0.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025005-h22pak89.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025716-bseg52yl.jpg"
     ],
     "services": [
       {
-        "description": "Create your own unique t-shirt design with our expert designers",
-        "name": "Custom Tee Design"
+        "name": "Shoe Fitting",
+        "description": "Expert shoe fitting services to ensure the perfect fit"
       },
       {
-        "description": "High-quality printing services for your custom tee designs",
-        "name": "T-Shirt Printing"
+        "name": "Shoe Styling",
+        "description": "Personalized shoe styling advice to complete your outfit"
       },
       {
-        "description": "Get personalized fashion advice from our experts to find your perfect tee",
-        "name": "Personalized Fashion Consultation"
+        "name": "Shoe Care",
+        "description": "Tips and guidance on how to care for and maintain your shoes"
       }
     ],
     "visibility": {
@@ -104,18 +105,19 @@
     }
   },
   "about": {
-    "businessName": "BoldThreads",
-    "description": "BoldThreads is a modern t-shirt brand in Manila that creates stylish, comfortable, and expressive tees. Our designs range from minimalist basics to bold graphic prints, catering to fashion-forward individuals. We aim to make t-shirts more than just casual clothing, but statements of identity and creativity.",
+    "businessName": "StepRight Shoes",
+    "description": "StepRight Shoes offers a wide range of stylish and comfortable shoes for men, women, and children, blending fashion with function. With a focus on customer care and personalized service, we help customers find the perfect fit for every occasion. Our vision is to provide high-quality footwear that ensures customers always step out with confidence.",
     "headline": "About Us",
     "usps": [
-      "Unique Designs",
-      "Comfortable Materials",
-      "Personalized Service"
+      "High-quality materials",
+      "Trendy designs",
+      "Affordable prices"
     ],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692022832-itgf9vxg.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692024256-3rvxbby0.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025005-h22pak89.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025716-bseg52yl.jpg"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -130,20 +132,20 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Create your own unique t-shirt design with our expert designers",
-        "name": "Custom Tee Design"
+        "name": "Shoe Fitting",
+        "description": "Expert shoe fitting services to ensure the perfect fit"
       },
       {
-        "description": "High-quality printing services for your custom tee designs",
-        "name": "T-Shirt Printing"
+        "name": "Shoe Styling",
+        "description": "Personalized shoe styling advice to complete your outfit"
       },
       {
-        "description": "Get personalized fashion advice from our experts to find your perfect tee",
-        "name": "Personalized Fashion Consultation"
+        "name": "Shoe Care",
+        "description": "Tips and guidance on how to care for and maintain your shoes"
       }
     ],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692022832-itgf9vxg.jpg"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -156,52 +158,56 @@
   },
   "gallery": {
     "headline": "Featured Products",
-    "subheadline": "Our latest and greatest tee designs, showcasing our quality work",
+    "subheadline": "Discover our latest collections, from casual sneakers to formal leather shoes",
     "items": [
       {
-        "title": "Bold Graphic Tee",
-        "description": "This bold graphic tee features a unique design that's sure to turn heads. Made from high-quality materials, it's both comfortable and stylish. Perfect for making a statement",
-        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+        "title": "Summer Sandals Collection",
+        "description": "Our summer sandals collection features stylish and comfortable designs perfect for warm weather. With a range of colors and styles to choose from, you're sure to find the perfect pair to complement your summer outfit. Made from high-quality materials, our sandals are durable and long-lasting.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692022832-itgf9vxg.jpg",
         "tags": [
-          "Graphic Tee",
-          "1-2 weeks"
+          "Sandals",
+          "Summer",
+          "3-6 months"
         ],
         "testimonial": {
-          "author": "Rachel M.",
-          "quote": "I love my new bold graphic tee from BoldThreads! The design is so unique and the material is super comfy. I've been wearing it nonstop since I got it"
+          "quote": "I recently purchased a pair of sandals from StepRight Shoes and I'm absolutely loving them! The quality is exceptional and the style is so on-trend. I've been wearing them non-stop all summer.",
+          "author": "Emily Chen"
         }
       },
       {
-        "title": "Minimalist Basics Tee",
-        "description": "Our minimalist basics tee is perfect for everyday wear. With its simple design and high-quality materials, it's a versatile addition to any wardrobe. Great for dressing up or down",
-        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+        "title": "Leather Boots Collection",
+        "description": "Our leather boots collection features elegant and sophisticated designs perfect for formal occasions. With a range of styles to choose from, including ankle boots and knee-high boots, you're sure to find the perfect pair to complete your outfit. Made from high-quality leather, our boots are durable and long-lasting.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692024256-3rvxbby0.jpg",
         "tags": [
-          "Basic Tee",
-          "1 week"
+          "Boots",
+          "Formal",
+          "6-12 months"
         ],
         "testimonial": {
-          "author": "Mark K.",
-          "quote": "I was blown away by the quality of the minimalist basics tee from BoldThreads. It's so soft and comfortable, and the design is perfect for everyday wear"
+          "quote": "I purchased a pair of leather boots from StepRight Shoes and I'm so impressed with the quality and craftsmanship. The boots are comfortable and stylish, and I've received so many compliments on them.",
+          "author": "David Lee"
         }
       },
       {
-        "title": "Customized Tee",
-        "description": "Our customized tee service allows you to create your own unique design. With our expert designers and high-quality materials, you can create a truly one-of-a-kind tee. Perfect for special occasions or as a gift",
-        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0",
+        "title": "Sneakers Collection",
+        "description": "Our sneakers collection features stylish and comfortable designs perfect for casual wear. With a range of colors and styles to choose from, you're sure to find the perfect pair to complement your outfit. Made from high-quality materials, our sneakers are durable and long-lasting.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025005-h22pak89.jpg",
         "tags": [
-          "Custom Tee",
-          "2-3 weeks"
+          "Sneakers",
+          "Casual",
+          "1-3 months"
         ],
         "testimonial": {
-          "author": "Emily G.",
-          "quote": "I created a customized tee with BoldThreads for my birthday and it turned out amazing! The design process was so easy and the final product is stunning"
+          "quote": "I recently purchased a pair of sneakers from StepRight Shoes and I'm loving them! The quality is great and the style is so on-trend. I've been wearing them all the time, from running errands to hanging out with friends.",
+          "author": "Sarah Kim"
         }
       }
     ],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692022832-itgf9vxg.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692024256-3rvxbby0.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025005-h22pak89.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025716-bseg52yl.jpg"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -212,16 +218,17 @@
     }
   },
   "contact": {
-    "businessName": "BoldThreads",
+    "businessName": "StepRight Shoes",
     "email": "azedge17@gmail.com",
-    "phone": "9871234151",
-    "address": " 789 Trend Street, Barangay Mabini, Manila",
+    "phone": "912 345 4567",
+    "address": "andrea.villanueva@example.com, Manila",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
-      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692022832-itgf9vxg.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692024256-3rvxbby0.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025005-h22pak89.jpg",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1769692025716-bseg52yl.jpg"
     ],
     "visibility": {
       "contactBadge": true,
