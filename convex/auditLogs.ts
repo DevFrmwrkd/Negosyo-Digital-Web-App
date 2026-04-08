@@ -18,7 +18,9 @@ export const log = internalMutation({
             v.literal('payment_confirmed'),
             v.literal('submission_deleted'),
             v.literal('creator_updated'),
-            v.literal('manual_override')
+            v.literal('manual_override'),
+            v.literal('transcription_regenerated'),
+            v.literal('images_enhanced')
         ),
         targetType: v.union(
             v.literal('submission'),

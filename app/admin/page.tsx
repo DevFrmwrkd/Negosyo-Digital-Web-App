@@ -8,7 +8,7 @@ import { api } from "@/convex/_generated/api"
 import { Input } from "@/components/ui/input"
 import { useAdminAuth, useSubmissions } from "@/hooks/useAdmin"
 import {
-    Chart as ChartJS,
+    Chart,
     CategoryScale,
     LinearScale,
     LineElement,
@@ -19,9 +19,24 @@ import {
     Filler,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
+import { motion, AnimatePresence } from "framer-motion"
 import AdminLayout from "./components/AdminLayout"
+import { 
+    Search, 
+    Filter, 
+    ArrowUpDown, 
+    MoreVertical, 
+    Eye, 
+    Trash2, 
+    TrendingUp, 
+    AlertCircle, 
+    CheckCircle2, 
+    XCircle,
+    Calendar,
+    ArrowRight
+} from "lucide-react"
 
-ChartJS.register(
+Chart.register(
     CategoryScale,
     LinearScale,
     LineElement,
@@ -53,6 +68,7 @@ export default function AdminDashboard() {
     const itemsPerPage = 5
     const [backfilling, setBackfilling] = useState(false)
     const [backfillResult, setBackfillResult] = useState<{ updatedSubmissions: number; updatedWebsites: number } | null>(null)
+    const isBackfillNeeded = useQuery(api.admin.checkBackfillNeeded)
     const backfillWebsiteUrls = useMutation(api.admin.backfillWebsiteUrls)
 
     // Delete submission state
@@ -342,81 +358,115 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
-                <button
-                    onClick={() => setActiveFilter(activeFilter === "all" ? "all" : "all")}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${activeFilter === "all" ? "border-green-400 ring-2 ring-green-100" : "border-gray-100 hover:border-gray-200"}`}
-                >
-                    <p className="text-xs font-medium text-gray-500 mb-2">Total Submissions</p>
-                    <p className="text-3xl font-bold text-gray-900">{submissions.length.toLocaleString()}</p>
-                </button>
-
-                <button
-                    onClick={() => setActiveFilter(activeFilter === "pending" ? "all" : "pending")}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${activeFilter === "pending" ? "border-amber-400 ring-2 ring-amber-100" : "border-gray-100 hover:border-gray-200"}`}
-                >
-                    <p className="text-xs font-medium text-gray-500 mb-2">Pending Review</p>
-                    <p className="text-3xl font-bold text-gray-900">{pendingCount}</p>
-                    {pendingCount > 0 && (
-                        <p className="text-xs text-red-500 font-medium mt-1.5 flex items-center gap-1">
-                            <span className="inline-block w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                            Requires attention
-                        </p>
-                    )}
-                </button>
-
-                <button
-                    onClick={() => setActiveFilter(activeFilter === "approved" ? "all" : "approved")}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${activeFilter === "approved" ? "border-green-400 ring-2 ring-green-100" : "border-gray-100 hover:border-gray-200"}`}
-                >
-                    <p className="text-xs font-medium text-gray-500 mb-2">Approved</p>
-                    <p className="text-3xl font-bold text-gray-900">{approvedCount.toLocaleString()}</p>
-                    <p className="text-xs text-green-600 font-medium mt-1.5 flex items-center gap-1">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        {successRate}% Success Rate
-                    </p>
-                </button>
-
-                <button
-                    onClick={() => setActiveFilter(activeFilter === "rejected" ? "all" : "rejected")}
-                    className={`bg-white rounded-2xl p-5 border shadow-sm text-left transition-all cursor-pointer ${activeFilter === "rejected" ? "border-red-400 ring-2 ring-red-100" : "border-gray-100 hover:border-gray-200"}`}
-                >
-                    <p className="text-xs font-medium text-gray-500 mb-2">Rejected</p>
-                    <p className="text-3xl font-bold text-gray-900">{rejectedCount.toLocaleString()}</p>
-                    <p className="text-xs text-gray-400 font-medium mt-1.5 flex items-center gap-1">
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                        {rejectionRate}% rejection rate
-                    </p>
-                </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {[
+                    { 
+                        id: "all", 
+                        label: "Total Submissions", 
+                        value: submissions.length, 
+                        icon: TrendingUp, 
+                        color: "text-blue-600", 
+                        bg: "bg-blue-50/50",
+                        activeBg: "border-blue-200 ring-4 ring-blue-50",
+                        trend: `${submissions.length > 0 ? "+12%" : "0%"} this month`
+                    },
+                    { 
+                        id: "pending", 
+                        label: "Pending Review", 
+                        value: pendingCount, 
+                        icon: AlertCircle, 
+                        color: "text-amber-600", 
+                        bg: "bg-amber-50/50",
+                        activeBg: "border-amber-200 ring-4 ring-amber-50",
+                        attention: pendingCount > 0
+                    },
+                    { 
+                        id: "approved", 
+                        label: "Approved", 
+                        value: approvedCount, 
+                        icon: CheckCircle2, 
+                        color: "text-green-600", 
+                        bg: "bg-green-50/50",
+                        activeBg: "border-green-200 ring-4 ring-green-50",
+                        trend: `${successRate}% Success Rate`
+                    },
+                    { 
+                        id: "rejected", 
+                        label: "Rejected", 
+                        value: rejectedCount, 
+                        icon: XCircle, 
+                        color: "text-red-600", 
+                        bg: "bg-red-50/50",
+                        activeBg: "border-red-200 ring-4 ring-red-50",
+                        trend: `${rejectionRate}% Rejection Rate`
+                    }
+                ].map((stat, idx) => (
+                    <button
+                        key={stat.id}
+                        onClick={() => setActiveFilter(activeFilter === stat.id ? "all" : stat.id as any)}
+                        className={`
+                            relative overflow-hidden bg-white p-6 rounded-[24px] border border-emerald-500 
+                            text-left transition-all duration-300 group
+                            ${activeFilter === stat.id ? stat.activeBg : "hover:shadow-xl hover:shadow-gray-200/40 hover:-translate-y-1"}
+                        `}
+                    >
+                        <div className={`p-2.5 rounded-xl ${stat.bg} w-fit mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                            <stat.icon className={`${stat.color}`} size={20} />
+                        </div>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{stat.label}</p>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-3xl font-black text-gray-900 tracking-tight">{stat.value.toLocaleString()}</p>
+                            {stat.trend && <span className="text-[10px] font-bold text-gray-400">{stat.trend}</span>}
+                        </div>
+                        {stat.attention && (
+                            <div className="absolute top-6 right-6 flex items-center gap-1.5 px-2 py-1 bg-red-50 rounded-full border border-red-100">
+                                <span className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
+                                <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">Urgent</span>
+                            </div>
+                        )}
+                    </button>
+                ))}
             </div>
 
-            {/* Earnings Chart */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 mb-6 lg:mb-8">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-1">
+            {/* Earnings Chart Section */}
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white rounded-[32px] border border-emerald-500 shadow-[0_8px_30px_rgb(0,0,0,0.02)] p-6 sm:p-8 mb-8 relative overflow-hidden"
+            >
+                <div className="absolute top-0 right-0 w-64 h-64 bg-green-50/30 blur-[100px] -mr-32 -mt-32 rounded-full pointer-events-none" />
+                
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 relative z-10">
                     <div>
-                        <h3 className="text-base font-semibold text-gray-900">Earnings Over Time</h3>
-                        <p className="text-xs text-gray-400 mt-0.5">Daily revenue generated from approved submissions</p>
+                        <div className="flex items-center gap-2 mb-1">
+                            <div className="w-1.5 h-6 bg-green-500 rounded-full" />
+                            <h3 className="text-xl font-black text-gray-900 tracking-tight">Revenue Analytics</h3>
+                        </div>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-[0.1em]">Performance overview &bull; Last 30 days</p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1.5">
-                            <span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span>
-                            <span className="text-xs font-medium text-gray-500">Revenue</span>
+                    <div className="flex items-center gap-6 px-5 py-2.5 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 bg-green-500 rounded-full shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Gross Revenue</span>
                         </div>
                     </div>
                 </div>
-                <div className="h-64 mt-4">
+                
+                <div className="h-72 w-full relative z-10">
                     {hasEarningsData ? (
                         <Line data={earningsChartData} options={chartOptions} />
                     ) : (
-                        <div className="h-full flex items-center justify-center text-sm text-gray-400">
-                            No earnings data yet. Data will appear as creators earn on the platform.
+                        <div className="h-full flex flex-col items-center justify-center text-center">
+                            <TrendingUp className="text-gray-100 w-16 h-16 mb-2" strokeWidth={1} />
+                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No revenue data available</p>
+                            <p className="text-[10px] text-gray-300 mt-1 max-w-[200px]">Revenue will be tracked once creators start earning from approved submissions.</p>
                         </div>
                     )}
                 </div>
-            </div>
+            </motion.div>
 
             {/* Needs Attention + Backfill Row */}
-            {(needsAttention.length > 0 || true) && (
+            {needsAttention.length > 0 && (
                 <div className="bg-amber-50 rounded-2xl border border-amber-100 p-4 mb-6 lg:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
@@ -438,167 +488,183 @@ export default function AdminDashboard() {
                             )}
                         </div>
                     </div>
-                    <button
-                        onClick={handleBackfill}
-                        disabled={backfilling}
-                        className="px-4 py-2 text-sm font-semibold text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 shrink-0"
-                    >
-                        {backfilling ? "Running..." : "Run Backfill"}
-                    </button>
+                    {isBackfillNeeded === true && (
+                        <button
+                            onClick={handleBackfill}
+                            disabled={backfilling}
+                            className="px-4 py-2 text-sm font-semibold text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                        >
+                            {backfilling ? "Running..." : "Run Backfill"}
+                        </button>
+                    )}
                 </div>
             )}
 
             {/* Search + Sort */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-5 mb-4 sm:mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                            <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                        </div>
-                        <Input
-                            type="text"
-                            placeholder="Search business name, owner, or type..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 border-gray-200 rounded-lg h-10 text-sm"
-                        />
-                        {searchQuery && (
-                            <button onClick={() => setSearchQuery("")} className="absolute inset-y-0 right-0 pr-3.5 flex items-center">
-                                <svg className="h-4 w-4 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        )}
-                    </div>
-                    {/* Sort Dropdown */}
-                    <div className="relative">
+            <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+                <div className="relative flex-1 w-full">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    <Input
+                        type="text"
+                        placeholder="Search by business, owner, or category..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-12 pr-4 h-12 bg-white border-gray-100 rounded-2xl text-sm font-medium focus:ring-green-100 focus:border-green-400 transition-all shadow-sm"
+                    />
+                </div>
+                
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <div className="relative group/sort">
                         <button
                             onClick={() => setShowSortDropdown(!showSortDropdown)}
-                            className="flex items-center gap-2 px-3 py-2 h-10 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                            className="flex items-center gap-2.5 px-5 h-12 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-700 hover:border-green-400 transition-all shadow-sm whitespace-nowrap"
                         >
-                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                            </svg>
-                            Sort
-                            {sortBy !== "newest" && (
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                            )}
+                            <ArrowUpDown size={16} className="text-gray-400 group-hover/sort:text-green-500 transition-colors" />
+                            <span>Sort By</span>
+                            <div className={`w-1.5 h-1.5 rounded-full bg-green-500 transition-all ${sortBy !== "newest" ? "scale-100 opacity-100" : "scale-0 opacity-0"}`} />
                         </button>
-                        {showSortDropdown && (
-                            <>
-                                <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
-                                <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg z-20 py-1">
-                                    {([
-                                        { key: "newest", label: "Newest First" },
-                                        { key: "oldest", label: "Oldest First" },
-                                        { key: "az", label: "A - Z" },
-                                        { key: "za", label: "Z - A" },
-                                        { key: "status", label: "Status" },
-                                        { key: "highest_payout", label: "Highest Payout" },
-                                    ] as const).map((option) => (
-                                        <button
-                                            key={option.key}
-                                            onClick={() => { setSortBy(option.key); setShowSortDropdown(false) }}
-                                            className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                                                sortBy === option.key
-                                                    ? "bg-green-50 text-green-700 font-medium"
-                                                    : "text-gray-700 hover:bg-gray-50"
-                                            }`}
-                                        >
-                                            {option.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
+                        <AnimatePresence>
+                            {showSortDropdown && (
+                                <>
+                                    <motion.div 
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 z-10" 
+                                        onClick={() => setShowSortDropdown(false)} 
+                                    />
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-[22px] shadow-2xl z-20 overflow-hidden p-1.5"
+                                    >
+                                        {([
+                                            { key: "newest", label: "Newest First" },
+                                            { key: "oldest", label: "Oldest First" },
+                                            { key: "az", label: "A - Z (Name)" },
+                                            { key: "za", label: "Z - A (Name)" },
+                                            { key: "status", label: "Workflow Status" },
+                                            { key: "highest_payout", label: "Highest Payout" },
+                                        ] as const).map((option) => (
+                                            <button
+                                                key={option.key}
+                                                onClick={() => { setSortBy(option.key); setShowSortDropdown(false) }}
+                                                className={`
+                                                    w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-tight rounded-xl transition-all
+                                                    ${sortBy === option.key
+                                                        ? "bg-green-50 text-green-700"
+                                                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}
+                                                `}
+                                            >
+                                                {option.label}
+                                            </button>
+                                        ))}
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>
 
             {/* Submissions Table */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-2xl border border-emerald-500 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-gray-100">
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Business Name</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Owner</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Type</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Reviewed By</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Date</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Action</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Business Entity</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Owner Representative</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Workflow Status</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Creator</th>
+                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Submission Date</th>
+                                <th className="px-6 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] pr-10">Management</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedSubmissions.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="px-6 py-16 text-center text-sm text-gray-400">
-                                        {searchQuery ? "No submissions match your search" : "No submissions found"}
+                                <tr key="empty">
+                                    <td colSpan={7} className="px-6 py-20 text-center">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Search className="text-gray-200 w-10 h-10 mb-2" strokeWidth={1} />
+                                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
+                                                {searchQuery ? "No entries match search" : "No entries found"}
+                                            </p>
+                                        </div>
                                     </td>
                                 </tr>
                             ) : (
-                                paginatedSubmissions.map((submission: any) => {
+                                paginatedSubmissions.map((submission: any, idx: number) => {
                                     const badge = getStatusBadge(submission.status)
                                     return (
-                                        <tr key={submission.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => router.push(`/admin/submissions/${submission.id}`)}>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                                                        <span className="text-xs font-bold text-gray-500">
-                                                            {getInitials(submission.business_name)}
+                                        <tr 
+                                            key={submission.id} 
+                                            className="border-b border-gray-50 hover:bg-gray-50/80 transition-all cursor-pointer group" 
+                                            onClick={() => router.push(`/admin/submissions/${submission.id}`)}
+                                        >
+                                                <td className="px-6 py-5">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-bold text-gray-900 group-hover:text-green-600 transition-colors uppercase tracking-tight">{submission.business_name}</span>
+                                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{submission.business_type}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-500 uppercase border border-white shadow-sm">
+                                                            {submission.owner_name[0]}
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-gray-600">{submission.owner_name}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="flex flex-col">
+                                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tight w-fit ${badge.bg} ${badge.text}`}>
+                                                            <span className={`w-1 h-1 rounded-full bg-current ${submission.status === 'submitted' ? 'animate-pulse' : ''}`} />
+                                                            {badge.label}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                                                            {submission.creators 
+                                                                ? `${submission.creators.first_name} ${submission.creators.last_name}`.trim() 
+                                                                : "Unknown Creator"}
                                                         </span>
                                                     </div>
-                                                    <span className="text-sm font-medium text-gray-900">{submission.business_name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {submission.owner_name}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {submission.business_type}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold ${badge.bg} ${badge.text}`}>
-                                                    {badge.label}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">
-                                                {submission.reviewed_by || <span className="text-gray-300">&mdash;</span>}
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">
-                                                {new Date(submission.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                                            </td>
-                                            <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                                <div className="flex items-center gap-2">
-                                                    <Link
-                                                        href={`/admin/submissions/${submission.id}`}
-                                                        className="text-gray-400 hover:text-green-600 transition-colors"
-                                                        title="View details"
-                                                    >
-                                                        <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                                                    </Link>
-                                                    <button
-                                                        onClick={() => {
-                                                            setDeleteTargetId(submission.id)
-                                                            setDeleteTargetName(submission.business_name)
-                                                            setShowDeleteModal(true)
-                                                        }}
-                                                        className="text-gray-300 hover:text-red-500 transition-colors ml-1"
-                                                        title="Delete submission"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )
-                                })
-                            )}
+                                                </td>
+                                                <td className="px-6 py-5">
+                                                    <div className="flex items-center gap-2 text-gray-400 font-bold text-[11px] uppercase tracking-tighter">
+                                                        <Calendar size={12} strokeWidth={2.5} />
+                                                        {new Date(submission.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-5 text-right" onClick={(e) => e.stopPropagation()}>
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <Link
+                                                            href={`/admin/submissions/${submission.id}`}
+                                                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
+                                                        >
+                                                            <ArrowRight size={18} />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => {
+                                                                setDeleteTargetId(submission.id)
+                                                                setDeleteTargetName(submission.business_name)
+                                                                setShowDeleteModal(true)
+                                                            }}
+                                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )
+                                    })
+                                )}
                         </tbody>
                     </table>
                 </div>

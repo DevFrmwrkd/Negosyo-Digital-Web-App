@@ -1037,6 +1037,7 @@ Registers device for push notifications. Checks physical device requirement, req
 | `transcript` | string | No | Transcribed text from Groq Whisper |
 | `transcriptionStatus` | string | No | `"processing"` / `"complete"` / `"failed"` / `"skipped"` |
 | `transcriptionError` | string | No | Error message if transcription failed |
+| `transcriptionUpdatedAt` | number | No | **NEW** — Timestamp when transcription was last generated/updated (milliseconds since epoch). Used for UI display: "Generated 3 hours ago" |
 | `aiGeneratedContent` | any | No | AI-extracted content from transcript (services, USPs) |
 | `status` | string | Yes | `"draft"` → `"submitted"` → `"approved"` / `"rejected"` → `"website_generated"` → `"deployed"` → `"paid"` |
 | `rejectionReason` | string | No | Admin feedback |
@@ -1313,16 +1314,24 @@ Consolidated into `generatedWebsites`. Kept for backwards compatibility with exi
 
 ### `auditLogs` — Admin action tracking
 
+**Enhanced with Media Operation Tracking (Updated)**
+
+Now includes audit logging for transcription regeneration and image enhancement:
+
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `adminId` | string | Yes | Clerk ID of admin |
-| `action` | union | Yes | `"submission_approved"` / `"submission_rejected"` / `"website_generated"` / `"website_deployed"` / `"payment_sent"` / `"submission_deleted"` / `"creator_updated"` / `"manual_override"` / `"payment_confirmed"` |
+| `action` | union | Yes | `"submission_approved"` / `"submission_rejected"` / `"website_generated"` / `"website_deployed"` / `"payment_sent"` / `"submission_deleted"` / `"creator_updated"` / `"manual_override"` / `"payment_confirmed"` / `"transcription_regenerated"` / `"images_enhanced"` |
 | `targetType` | union | Yes | `"submission"` / `"creator"` / `"website"` / `"withdrawal"` |
 | `targetId` | string | Yes | |
-| `metadata` | any | No | Context (old/new values, reasons) |
+| `metadata` | any | No | Context (old/new values, reasons, business name for media operations) |
 | `timestamp` | number | Yes | |
 
 **Indexes:** `by_admin` (adminId), `by_target` (targetType, targetId), `by_action` (action), `by_timestamp` (timestamp)
+
+**New Action Types:**
+- `transcription_regenerated`: Admin manually regenerated transcription (non-blocking, logged via scheduler)
+- `images_enhanced`: Admin re-triggered Airtable image enhancement (non-blocking, logged via scheduler)
 
 ---
 
@@ -1355,10 +1364,18 @@ Consolidated into `generatedWebsites`. Kept for backwards compatibility with exi
 
 ### `submissions.ts` — Submission lifecycle
 
+**Enhanced Transcription Support (Updated)**
+
+Now supports transcription re-triggering from admin UI with timestamp tracking:
+- **`transcriptionUpdatedAt`**: Timestamp when transcription was last generated (shows "Generated 3 hours ago" in UI)
+- **Re-trigger capability**: Admin can manually regenerate transcription if needed
+- **Large file support**: Automatically chunks files >25MB for processing
+- **Audit logging**: All transcription regenerations logged to audit trail
+
 | Function | Type | Purpose |
 |---|---|---|
 | `create(creatorId, businessName, ...)` | Mutation | Creates draft, increments `submissionCount` |
-| `update(id, ...)` | Mutation | Updates fields; triggers transcription if media uploaded |
+| `update(id, ...)` | Mutation | Updates fields; triggers transcription if media uploaded. Now supports `transcriptionUpdatedAt` field |
 | `submit(id)` | Mutation | Status → `"submitted"`, sets amount=1000, creates lead, triggers Airtable push, increments analytics |
 | `getById(id)` | Query | Fetch single submission |
 | `getByIdWithCreator(id)` | Query | Submission + creator info + deployed URL |
@@ -1369,9 +1386,13 @@ Consolidated into `generatedWebsites`. Kept for backwards compatibility with exi
 | `getByStatus(status)` | Query | Filter by status (admin) |
 | `updateTranscription(submissionId, transcription)` | Internal Mutation | Save transcript |
 | `updateTranscriptionStatus(submissionId, status, error?)` | Internal Mutation | Update transcription status |
-| `transcribeMedia(submissionId, storageId, mediaType)` | Internal Action | Calls Groq Whisper API (max 25MB) |
+| `transcribeMedia(submissionId, storageId, mediaType)` | Internal Action | Calls Groq Whisper API with intelligent chunking for files >25MB |
 
 ### `admin.ts` — Admin operations
+
+**Enhanced with Audit Logging for Media Operations (Updated)**
+
+New non-blocking audit logging for transcription and image regeneration actions:
 
 | Function | Type | Purpose |
 |---|---|---|
@@ -1381,6 +1402,8 @@ Consolidated into `generatedWebsites`. Kept for backwards compatibility with exi
 | `markDeployed(id, websiteUrl, adminId)` | Mutation | Status → `"deployed"`, increments `websitesLive` |
 | `markPaid(id, adminId)` | Mutation | Status → `"paid"`, adds payout to balance, creates earning, checks referral qualification |
 | `getAllSubmissionsWithCreators()` | Query | All submissions with creator details |
+| `logTranscriptionRegenerated(submissionId, adminId, businessName)` | Internal Mutation | **NEW** — Create non-blocking audit log when admin manually regenerates transcription. Scheduled via `ctx.scheduler.runAfter(0, ...)` |
+| `logImagesEnhanced(submissionId, adminId, businessName)` | Internal Mutation | **NEW** — Create non-blocking audit log when admin re-triggers Airtable image enhancement. Scheduled via `ctx.scheduler.runAfter(0, ...)` |
 
 ### `withdrawals.ts` — Payout management
 
@@ -1403,12 +1426,23 @@ Consolidated into `generatedWebsites`. Kept for backwards compatibility with exi
 
 ### `airtable.ts` — AI content pipeline
 
+**Multi-Version Image Support (Updated)**
+
+Airtable stores AI-enhanced images as arrays of attachments per field (e.g., `enhanced_headshot` can have multiple versions). The system now extracts **all image variations** with automatic versioning:
+
+- **Single image**: Stored as original field name (e.g., `enhanced_headshot`)
+- **Multiple images**: Stored with version suffix (e.g., `enhanced_headshot_v1`, `enhanced_headshot_v2`)
+- **Extraction**: `getAllAttachmentUrls()` function iterates all attachment arrays and builds versioned keys
+- **Re-triggering**: Removed duplicate prevention — admins can re-enhance images, and new versions are added
+
 | Function | Type | Purpose |
 |---|---|---|
-| `pushToAirtable(submissionId)` | Action | Push submission data + photos to Airtable, schedule polling |
+| `pushToAirtable(submissionId)` | Action | Push submission data + photos to Airtable, schedule polling. Supports re-triggering: attempts to PATCH existing record to reset status, creates new record as fallback |
 | `pushToAirtableInternal(submissionId)` | Internal Action | Internal wrapper with error handling |
-| `fetchEnhancedContentWithRetry(submissionId, airtableRecordId, retryCount, hasProducts)` | Internal Action | Poll Airtable for AI-generated content with exponential backoff |
-| `saveEnhancedContent(submissionId, enhancedImages, aiTextFields)` | Internal Mutation | Create/update `generatedWebsites` record with all AI content |
+| `fetchEnhancedContentWithRetry(submissionId, airtableRecordId, retryCount, hasProducts)` | Internal Action | Poll Airtable for AI-generated content with exponential backoff. Extracts all image variations from attachment arrays and creates versioned keys |
+| `getAllAttachmentUrls(field: unknown)` | Internal Function | **NEW** — Extracts all URLs from Airtable attachment arrays (not just first). Handles empty fields, single attachments, and multi-item arrays |
+| `triggerAirtablePush(submissionId)` | Public Mutation | **NEW** — Manually re-trigger Airtable enhancement from admin UI. Resets sync status to `pending_push` and schedules push immediately |
+| `saveEnhancedContent(submissionId, enhancedImages, aiTextFields)` | Internal Mutation | Create/update `generatedWebsites` record with all AI content (including all versioned images) |
 | `downloadAndStoreEnhancedImage(submissionId, sourceImageUrl)` | Internal Action | Download image from URL and store in Convex storage |
 | `updateAirtableRecordId(submissionId, airtableRecordId)` | Internal Mutation | Store Airtable record ID in submission |
 | `updateSyncStatus(submissionId, status)` | Internal Mutation | Update `airtableSyncStatus` field |
@@ -1480,7 +1514,60 @@ Consolidated into `generatedWebsites`. Kept for backwards compatibility with exi
 
 ---
 
-## Services (`services/wise.ts`)
+## Next.js API Routes (`app/api/`)
+
+**Enhanced Media Handling (Updated)**
+
+New endpoints for media operations with large file support and admin-triggered regeneration:
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/transcribe` | **UPDATED** — Transcribe audio/video to text. Now supports files up to ~150MB via intelligent chunking. Accepts `videoUrl` or `audioUrl` (R2 or Convex storage ID). Returns transcribed text + `transcriptionUpdatedAt` timestamp. Max duration: 120s (2 minutes). Large files split into ≤24MB chunks at format-specific boundaries |
+| GET | `/download-media` | **NEW** — Download recording audio/video. Query params: `url` (media URL), `filename`. Requires Clerk authentication. Streams file with proper `Content-Type` and `Content-Disposition` headers |
+
+**Media Chunking Strategy** (for `/transcribe`):
+- **≤25MB**: Sent directly to Groq Whisper API
+- **>25MB**: Automatically split using `chunkMediaFile()` with format-specific logic:
+  - **WebM**: Split at Cluster boundaries (0x1F43B675), duplicate EBML header
+  - **MP3**: Split at frame sync markers (0xFFE0 mask), preserve ID3v2 header
+  - **WAV**: Split at PCM block boundaries, reconstruct WAV header with updated sizes
+  - **MP4**: Extract audio stream, create valid audio-only MP4 with ADTS headers
+- Each chunk transcribed independently, results concatenated with space separator
+- Progress logging shows "Transcribing chunk 1/5 (3.2MB)"
+
+---
+
+## Services (`services/wise.ts` / `services/groq.service.ts` / `services/media-chunker.ts`)
+
+**Enhanced Transcription Service (Updated)**
+
+### `groq.service.ts` — Groq Whisper integration
+
+Pure transcription service with large file chunking support:
+
+| Function | Purpose |
+|---|---|
+| `transcribeAudioFromUrl(audioUrl)` | Download media from URL, auto-detect size/format, chunk if necessary, transcribe with 3 retries. Intelligently chunks files >25MB |
+| `transcribeBuffer(buffer, filename, retries=3)` | Transcribe buffer with exponential backoff retry logic (3 attempts, 3s-9s delays). Uses temp file + stream for reliability |
+| `writeTempFile(buffer, filename)` | Create temp file in OS temp directory for Groq SDK |
+| `cleanupTempFile(filePath)` | Remove temp file after transcription |
+
+### `media-chunker.ts` — Intelligent media splitting (NEW FILE - 1084 lines)
+
+Format-specific media file splitter for files >25MB:
+
+| Function | Purpose |
+|---|---|
+| `getFileExtension(contentType)` | Detect media format from Content-Type |
+| `chunkMediaFile(buffer, contentType, maxSize)` | Main API: returns array of valid media buffers, each <maxSize. Automatically routes to format-specific chunker |
+| `chunkWebM(buffer, maxSize)` | Split WebM at cluster boundaries, preserve EBML header |
+| `chunkMP3(buffer, maxSize)` | Split MP3 at frame sync markers, preserve ID3v2 header |
+| `chunkWAV(buffer, maxSize)` | Split PCM data at block boundaries, duplicate WAV header with adjusted sizes |
+| `chunkMP4(buffer, maxSize)` | Extract audio from video, create audio-only MP4 chunks with ADTS headers, reconstruct atom structure |
+
+**Default chunk size:** 24MB (with 1MB headroom for headers/metadata)
+
+### `wise.ts` — Wise API client
 
 Pure Wise API client (no Convex dependencies). Used by `convex/wise.ts` internal action.
 
@@ -1536,6 +1623,51 @@ draft → submitted → approved → website_generated → deployed → paid
 3. `sendPushNotification()` → fetches active tokens → POST to `https://exp.host/--/api/v2/push/send`
 4. Invalid tokens auto-deactivated
 
+### Transcription Regeneration Workflow (Admin)
+
+**New Feature (Updated)**
+
+Admins can manually regenerate transcriptions if they contain errors or need updating:
+
+1. **Initiate regeneration** — Admin clicks "Regenerate Transcription" button in submission detail page
+2. **API request** — POST `/api/transcribe` with `videoUrl` or `audioUrl`
+3. **Media detection** — System fetches file, detects format and size
+4. **Smart chunking** — If >25MB, uses `chunkMediaFile()` to split at format-specific boundaries:
+   - WebM: Cluster boundaries (preserves EBML header)
+   - MP3: Frame sync markers (preserves ID3v2)
+   - WAV: PCM block boundaries (reconstructs WAV header)
+   - MP4: Extracts audio, creates ADTS-wrapped audio chunks
+5. **Transcription** — Each chunk sent to Groq Whisper with 3 retries (exponential backoff)
+6. **Concatenation** — Chunk transcripts combined with spaces into final transcript
+7. **Storage** — Transcript saved, `transcriptionUpdatedAt` timestamp recorded
+8. **Audit logging** — Non-blocking audit record created via scheduler (doesn't delay response)
+9. **Display** — UI shows timestamp: "Generated 2 hours ago" (via `transcriptionUpdatedAt`)
+
+### Image Enhancement Re-trigger Workflow (Admin)
+
+**New Feature (Updated)**
+
+Admins can re-trigger Airtable image enhancement if initial batch had issues:
+
+1. **Initiate re-trigger** — Admin clicks "Enhance Images" button in submission detail page
+2. **Airtable interaction** — `triggerAirtablePush(submissionId)` mutation:
+   - Resets `airtableSyncStatus` to `pending_push`
+   - Schedules `pushToAirtableInternal()` immediately
+3. **PATCH vs new record** — Attempts to PATCH existing Airtable record to reset status
+   - If PATCH succeeds (200): Record re-processes enhancement
+   - If PATCH fails (403/404): Creates new Airtable record as fallback
+4. **Polling** — `fetchEnhancedContentWithRetry()` polls for updated images
+5. **Multi-version extraction** — `getAllAttachmentUrls()` extracts ALL image variations:
+   - Single image: Stores with original key (e.g., `enhanced_headshot`)
+   - Multiple images: Stores with version suffixes (e.g., `enhanced_headshot_v1`, `enhanced_headshot_v2`)
+6. **Storage** — Images downloaded and stored in Convex storage
+7. **Categorization** — Website generation auto-categorizes all versions:
+   - Strips version suffix with regex: `field_name_vN → field_name`
+   - Case-insensitive matching to appropriate UI sections
+   - All image variations available for website builder
+8. **Audit logging** — Non-blocking audit record created via scheduler
+9. **UI feedback** — Admin sees "Airtable enhancement triggered! Enhanced images will be available shortly."
+
 ---
 
 ## Creator Earnings
@@ -1546,6 +1678,46 @@ draft → submitted → approved → website_generated → deployed → paid
 | Approved audio submission | PHP 300 | Admin marks paid |
 | Referral bonus | PHP 1,000 | Referred creator's first submission paid |
 | Lead bonus | Planned | Website generates a lead |
+
+---
+
+## Admin UI Features (Updated)
+
+**Enhanced Submission Management Dashboard**
+
+The submission detail page (`app/admin/submissions/[id]/page.tsx`) now includes new features for managing media and content:
+
+### Media Regeneration Controls
+
+- **Transcription Regenerate Button**: 
+  - Icon button with spinner animation
+  - Available when audio/video media exists
+  - Tooltip: "Regenerate transcription from audio/video"
+  - Triggers POST `/api/transcribe` with media URL
+  - Shows loading spinner during processing
+  - Displays timestamp: "Generated 3 hours ago" (via `transcriptionUpdatedAt`)
+  - Logs audit trail: `transcription_regenerated` action
+
+- **Enhance Images Button** (Amber color):
+  - Available for statuses: submitted, in_review, website_generated, approved, deployed
+  - Text: "Enhance Images" or "Re-enhance Images"
+  - Shows spinner during enhancement
+  - Triggers `triggerAirtablePushMutation(submissionId)`
+  - Feedback message: "Airtable enhancement triggered! Enhanced images will be available shortly."
+  - Logs audit trail: `images_enhanced` action
+
+### Image Categorization Improvements
+
+- **Multi-version support**: Images with version suffixes (`_v1`, `_v2`, etc.) automatically categorized
+- **Base name extraction**: Regex strips version suffix: `enhanced_headshot_v1` → `headshot`
+- **Case-insensitive matching**: Handles various field naming conventions
+- **All variants available**: Every image version flows through to website builder (no loss)
+
+### Photo Handling
+
+- **Mixed URL sources**: Properly resolves both HTTP URLs (R2) and Convex storage IDs
+- **Lazy resolution**: Storage IDs resolved only when needed
+- **Consolidated display**: All photo sources merged into single array for preview
 
 ---
 

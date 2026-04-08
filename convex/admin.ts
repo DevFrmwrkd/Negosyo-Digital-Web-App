@@ -797,6 +797,40 @@ export const markPayoutPaid = mutation({
 });
 
 /**
+ * Check if there's any backfill needed for websiteUrl on submissions and publishedUrl on generatedWebsites.
+ */
+export const checkBackfillNeeded = query({
+    args: {},
+    handler: async (ctx) => {
+        const targetStatuses = ['deployed', 'pending_payment', 'paid', 'completed'] as const;
+
+        for (const status of targetStatuses) {
+            const submissions = await ctx.db
+                .query('submissions')
+                .withIndex('by_status', (q) => q.eq('status', status))
+                .collect();
+
+            for (const submission of submissions) {
+                const website = await ctx.db
+                    .query('generatedWebsites')
+                    .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+                    .first();
+
+                if (!submission.websiteUrl && website?.publishedUrl) {
+                    return true;
+                }
+
+                if (website && !website.publishedUrl && submission.websiteUrl) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    },
+});
+
+/**
  * Backfill websiteUrl on submissions and publishedUrl on generatedWebsites
  * for all records with status: deployed, pending_payment, paid, or completed.
  * Syncs both directions: submission ← generatedWebsite and generatedWebsite ← submission.
@@ -844,6 +878,52 @@ export const backfillWebsiteUrls = mutation({
 /**
  * Bulk mark payouts as paid
  */
+/**
+ * Log a transcription regeneration event in audit logs.
+ */
+export const logTranscriptionRegenerated = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        businessName: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'transcription_regenerated' as const,
+            targetType: 'submission' as const,
+            targetId: args.submissionId,
+            metadata: {
+                businessName: args.businessName,
+                reason: 'Admin triggered transcription regeneration',
+            },
+        });
+    },
+});
+
+/**
+ * Log an image enhancement event in audit logs.
+ */
+export const logImagesEnhanced = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        businessName: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
+            adminId: args.adminId,
+            action: 'images_enhanced' as const,
+            targetType: 'submission' as const,
+            targetId: args.submissionId,
+            metadata: {
+                businessName: args.businessName,
+                reason: 'Admin triggered Airtable image enhancement',
+            },
+        });
+    },
+});
+
 export const bulkMarkPayoutsPaid = mutation({
     args: { submissionIds: v.array(v.id('submissions')) },
     handler: async (ctx, args) => {

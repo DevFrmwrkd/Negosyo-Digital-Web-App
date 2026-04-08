@@ -37,13 +37,37 @@ export default function SubmissionDetailPage() {
 
     // Resolve photo storage IDs to actual URLs (only for legacy Convex storage IDs)
     // R2 URLs start with http and don't need resolution
-    const needsPhotoResolution = submissionData?.photos?.some(p => p.startsWith('convex:') || !p.startsWith('http'))
-    const photoUrls = useQuery(
+    const needsPhotoResolution = submissionData?.photos?.some(p => !p.startsWith('http'))
+    const photoStorageIdsForQuery = submissionData?.photos?.filter(p => !p.startsWith('http')) || []
+    const photoViaResolve = useQuery(
         api.files.getMultipleUrls,
-        needsPhotoResolution && submissionData?.photos && submissionData.photos.length > 0
-            ? { storageIds: submissionData.photos }
-            : "skip"
+        photoStorageIdsForQuery.length > 0 ? { storageIds: photoStorageIdsForQuery } : "skip"
     )
+
+    // Build consolidated photo URLs - include both direct HTTP and resolved storage IDs
+    const photoUrls = (() => {
+        const result: string[] = []
+        
+        // Add direct HTTP URLs from submission photos
+        if (submissionData?.photos) {
+            for (const photo of submissionData.photos) {
+                if (photo.startsWith('http')) {
+                    result.push(photo)
+                }
+            }
+        }
+        
+        // Add resolved storage URLs
+        if (photoViaResolve && Array.isArray(photoViaResolve)) {
+            for (const url of photoViaResolve) {
+                if (url && typeof url === 'string') {
+                    result.push(url)
+                }
+            }
+        }
+        
+        return result
+    })()
 
     // Load existing generated website if available (moved up for heroImageUrls dependency)
     const existingWebsite = useQuery(
@@ -69,9 +93,13 @@ export default function SubmissionDetailPage() {
 
     // Extract enhanced image URLs from all possible sources (same priority as generate-website route)
     const enhancedImageData = (() => {
-        // Source 1: generatedWebsites.extractedContent.enhancedImages
-        let enhancedImages = (existingWebsite?.extractedContent as any)?.enhancedImages || null
-        // Source 2: websiteContent.enhancedImages
+        // Source 1: generatedWebsites.enhancedImages (top-level, saved by Airtable sync)
+        let enhancedImages = (existingWebsite as any)?.enhancedImages || null
+        // Source 2: generatedWebsites.extractedContent.enhancedImages (nested)
+        if (!enhancedImages) {
+            enhancedImages = (existingWebsite?.extractedContent as any)?.enhancedImages || null
+        }
+        // Source 3: websiteContent.enhancedImages
         if (!enhancedImages) {
             enhancedImages = (websiteContentRecord as any)?.enhancedImages || null
         }
@@ -85,24 +113,35 @@ export default function SubmissionDetailPage() {
         const categories: Record<string, string[]> = {}
         const allUrls: string[] = []
         for (const [key, img] of Object.entries(enhancedImageData)) {
-            const url = img?.url || img?.storageId
-            if (!url) continue
-            allUrls.push(url)
-            if (key.startsWith('interior') || key === 'headshot') {
+            // Get the URL directly from the image object, handle both direct URLs and objects with url/storageId
+            let imageUrl = ''
+            if (typeof img === 'string') {
+                imageUrl = img
+            } else if (img && typeof img === 'object') {
+                imageUrl = (img as any).url || (img as any).storageId || ''
+            }
+            
+            if (!imageUrl) continue
+            allUrls.push(imageUrl)
+            
+            // Enhanced images from Airtable may have prefixes, handle both
+            const lowerKey = key.toLowerCase()
+            
+            if (lowerKey.includes('interior') || lowerKey.includes('headshot')) {
                 categories.about = categories.about || []
-                categories.about.push(url)
+                categories.about.push(imageUrl)
             }
-            if (key.startsWith('product')) {
+            if (lowerKey.includes('product')) {
                 categories.featured = categories.featured || []
-                categories.featured.push(url)
+                categories.featured.push(imageUrl)
             }
-            if (key === 'exterior' || key === 'headshot') {
+            if (lowerKey.includes('exterior') || lowerKey.includes('headshot')) {
                 categories.hero = categories.hero || []
-                categories.hero.push(url)
+                categories.hero.push(imageUrl)
             }
-            if (key.startsWith('interior') || key === 'exterior') {
+            if (lowerKey.includes('interior') || lowerKey.includes('exterior')) {
                 categories.services = categories.services || []
-                categories.services.push(url)
+                categories.services.push(imageUrl)
             }
         }
         return { categories, allUrls }
@@ -111,6 +150,7 @@ export default function SubmissionDetailPage() {
     // Resolve enhanced image URLs (they may be storage IDs that need resolution)
     const enhancedUrls = enhancedImagesByCategory?.allUrls || []
     const enhancedStorageIds = enhancedUrls.filter(u => !u.startsWith('http'))
+    const enhancedHttpUrls = enhancedUrls.filter(u => u.startsWith('http'))
     const resolvedEnhancedUrls = useQuery(
         api.files.getMultipleUrls,
         enhancedStorageIds.length > 0 ? { storageIds: enhancedStorageIds } : "skip"
@@ -124,13 +164,19 @@ export default function SubmissionDetailPage() {
                 if (resolvedEnhancedUrls[i]) map[sid] = resolvedEnhancedUrls[i]!
             })
         }
+        // Add direct HTTP URLs to the map as well for consistency
+        enhancedHttpUrls.forEach(url => {
+            map[url] = url
+        })
         return map
     })()
 
     // Helper to resolve an enhanced URL (storage ID or http URL)
     const resolveEnhancedUrl = (url: string): string | null => {
+        if (!url) return null
         if (url.startsWith('http')) return url
-        return enhancedUrlMap[url] || null
+        // Try to find resolved URL in map, or return the original ID as fallback
+        return enhancedUrlMap[url] || url || null
     }
 
     const hasEnhancedImages = (enhancedImagesByCategory?.allUrls?.length ?? 0) > 0
@@ -169,10 +215,21 @@ export default function SubmissionDetailPage() {
     const rejectSubmissionMutation = useMutation(api.admin.rejectSubmission)
     const markDeployedMutation = useMutation(api.admin.markDeployed)
     const markPaidMutation = useMutation(api.admin.markPaid)
+    const logTranscriptionRegeneratedMutation = useMutation(api.admin.logTranscriptionRegenerated)
+    const logImagesEnhancedMutation = useMutation(api.admin.logImagesEnhanced)
+
+    // Airtable push mutation
+    const triggerAirtablePushMutation = useMutation(api.airtable.triggerAirtablePush)
 
     const authLoading = !isLoaded || (user && currentCreator === undefined)
     const dataLoading = isAdmin && submissionData === undefined
     const [updating, setUpdating] = useState(false)
+
+    // Transcription retrigger state
+    const [transcribing, setTranscribing] = useState(false)
+
+    // Airtable enhance state
+    const [enhancing, setEnhancing] = useState(false)
 
     // Map Convex data to expected format
     const submission = submissionData ? {
@@ -504,6 +561,92 @@ export default function SubmissionDetailPage() {
         })
     }
 
+    // Re-generate transcription from audio/video
+    const handleRetriggerTranscription = async () => {
+        if (transcribing || !submissionData) return
+
+        setTranscribing(true)
+        try {
+            const response = await fetch('/api/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    submissionId: submissionData._id,
+                    videoUrl: videoUrl || submissionData.videoUrl,
+                    audioUrl: audioUrl || submissionData.audioUrl,
+                    useConvexStorage: !!(submissionData.videoStorageId || submissionData.audioStorageId),
+                    videoStorageId: submissionData.videoStorageId,
+                    audioStorageId: submissionData.audioStorageId,
+                }),
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Failed to transcribe')
+            }
+
+            // Log audit trail
+            if (user) {
+                try {
+                    await logTranscriptionRegeneratedMutation({
+                        submissionId: submissionData._id,
+                        adminId: user.id,
+                        businessName: submissionData.businessName,
+                    })
+                } catch (auditErr) {
+                    console.error('Audit log error (non-blocking):', auditErr)
+                }
+            }
+
+            setModalType('success')
+            setModalMessage('Transcription generated successfully!')
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Transcription error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to generate transcription')
+            setShowModal(true)
+        } finally {
+            setTranscribing(false)
+        }
+    }
+
+    // Trigger Airtable push for enhanced images & content
+    const handleTriggerEnhancedImages = async () => {
+        if (enhancing || !submissionData) return
+
+        setEnhancing(true)
+        try {
+            await triggerAirtablePushMutation({
+                submissionId: submissionData._id,
+            })
+
+            // Log audit trail
+            if (user) {
+                try {
+                    await logImagesEnhancedMutation({
+                        submissionId: submissionData._id,
+                        adminId: user.id,
+                        businessName: submissionData.businessName,
+                    })
+                } catch (auditErr) {
+                    console.error('Audit log error (non-blocking):', auditErr)
+                }
+            }
+
+            setModalType('success')
+            setModalMessage('Airtable enhancement triggered! Enhanced images will be available shortly.')
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Airtable push error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to trigger Airtable enhancement')
+            setShowModal(true)
+        } finally {
+            setEnhancing(false)
+        }
+    }
+
     const handleStatusUpdate = async (newStatus: string) => {
         if (!submissionData || !user) return
 
@@ -768,6 +911,29 @@ export default function SubmissionDetailPage() {
                                     className="bg-yellow-500 hover:bg-yellow-600 text-white"
                                 >
                                     {updating ? 'Updating...' : '📋 Mark as In Review'}
+                                </Button>
+                            )}
+
+                            {/* Enhance Images via Airtable AI (available for submitted and beyond) */}
+                            {(submission.status === 'submitted' || submission.status === 'in_review' || submission.status === 'website_generated' || submission.status === 'approved' || submission.status === 'deployed') && (
+                                <Button
+                                    onClick={handleTriggerEnhancedImages}
+                                    disabled={enhancing}
+                                    className="bg-amber-500 hover:bg-amber-600 text-white"
+                                >
+                                    {enhancing ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Enhancing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            {submissionData?.airtableRecordId ? 'Re-enhance Images' : 'Enhance Images'}
+                                        </>
+                                    )}
                                 </Button>
                             )}
 
@@ -1093,14 +1259,15 @@ export default function SubmissionDetailPage() {
                                         aboutStyle={websiteCustomizations?.aboutStyle || 'A'}
                                         servicesStyle={websiteCustomizations?.servicesStyle || 'A'}
                                         galleryStyle={websiteCustomizations?.galleryStyle || websiteCustomizations?.featuredStyle || 'A'}
+                                        contactStyle={websiteCustomizations?.contactStyle || websiteCustomizations?.footerStyle || 'A'}
                                         availableImages={[
                                             // Include enhanced images first (priority), then original photos
                                             ...(enhancedImagesByCategory?.allUrls?.map(u => resolveEnhancedUrl(u)).filter((url): url is string => url !== null) || []),
-                                            ...(heroImageUrls?.filter((url): url is string => url !== null) || []),
-                                            ...(photoUrls?.filter((url): url is string => url !== null) || [])
+                                            ...(photoUrls || []),
+                                            ...(heroImageUrls?.filter((url): url is string => url !== null) || [])
                                         ].filter((url, index, self) => self.indexOf(url) === index)}
                                         originalImages={[
-                                            ...(photoUrls?.filter((url): url is string => url !== null) || []),
+                                            ...(photoUrls || []),
                                             ...(heroImageUrls?.filter((url): url is string => url !== null) || [])
                                         ].filter((url, index, self) => self.indexOf(url) === index)}
                                         onSave={async (content: any) => {
@@ -1339,32 +1506,82 @@ export default function SubmissionDetailPage() {
                             </div>
 
                             {/* Transcript Section */}
-                            {(submission.transcript || isEditing) && (
+                            {(submission.transcript || isEditing || submission.video_url || submission.audio_url) && (
                                 <div className="mb-6">
                                     <div className="flex items-center justify-between mb-3">
-                                        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                                            AI Transcript
-                                        </h3>
-                                        {!isEditing && (
-                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                                                Generated
-                                            </span>
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                                                AI Transcript
+                                            </h3>
+                                            {!isEditing && (submission.video_url || submission.audio_url) && (
+                                                <button
+                                                    onClick={handleRetriggerTranscription}
+                                                    disabled={transcribing}
+                                                    title={submission.transcript ? 'Regenerate transcription' : 'Generate transcription'}
+                                                    className="text-gray-400 hover:text-blue-500 transition-colors disabled:opacity-50"
+                                                >
+                                                    {transcribing ? (
+                                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                                    ) : (
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                            )}
+                                        </div>
+                                        {!isEditing && submission.transcript && (
+                                            <div className="flex items-center gap-2">
+                                                {submissionData?.transcriptionUpdatedAt && (
+                                                    <span className="text-xs text-gray-400">
+                                                        {new Date(submissionData.transcriptionUpdatedAt).toLocaleString()}
+                                                    </span>
+                                                )}
+                                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                                                    Generated
+                                                </span>
+                                            </div>
                                         )}
                                     </div>
-                                    {isEditing ? (
+                                    {transcribing && (
+                                        <div className="bg-gray-50 rounded-xl p-4 space-y-3 animate-pulse">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                                <span className="text-sm text-blue-600 font-medium">Generating transcription...</span>
+                                            </div>
+                                            <div className="h-3 bg-gray-200 rounded w-full"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-4/6"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-full"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-3/6"></div>
+                                        </div>
+                                    )}
+                                    {!transcribing && !submission.transcript && !isEditing && (
+                                        <div className="bg-gray-50 rounded-xl p-4 text-center">
+                                            <p className="text-sm text-gray-500 mb-2">No transcript generated yet</p>
+                                            <button
+                                                onClick={handleRetriggerTranscription}
+                                                disabled={transcribing}
+                                                className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+                                            >
+                                                Generate Transcription
+                                            </button>
+                                        </div>
+                                    )}
+                                    {!transcribing && (isEditing ? (
                                         <textarea
                                             value={editedData.transcript}
                                             onChange={(e) => setEditedData({ ...editedData, transcript: e.target.value })}
                                             className="w-full h-96 p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm text-gray-700 leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             placeholder="Transcript will appear here after AI processing..."
                                         />
-                                    ) : (
+                                    ) : submission.transcript ? (
                                         <div className="bg-gray-50 rounded-xl p-4 max-h-96 overflow-y-auto">
                                             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
                                                 {submission.transcript}
                                             </p>
                                         </div>
-                                    )}
+                                    ) : null)}
                                 </div>
                             )}
 
@@ -1391,9 +1608,22 @@ export default function SubmissionDetailPage() {
 
                             {/* Media Player */}
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                                    {submission.transcript ? 'Original Recording' : 'Recording'}
-                                </h3>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                                        {submission.transcript ? 'Original Recording' : 'Recording'}
+                                    </h3>
+                                    {(submission.video_url || submission.audio_url) && (
+                                        <a
+                                            href={`/api/download-media?url=${encodeURIComponent(submission.video_url || submission.audio_url || '')}&filename=${encodeURIComponent(`${submission.business_name?.replace(/\s+/g, '-') || 'recording'}-interview.mp4`)}`}
+                                            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-600 transition-colors"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                            Download
+                                        </a>
+                                    )}
+                                </div>
                                 {submission.video_url ? (
                                     <div className="relative bg-black rounded-xl overflow-hidden aspect-video">
                                         <video

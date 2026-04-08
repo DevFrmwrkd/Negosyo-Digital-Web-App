@@ -21,6 +21,13 @@ interface ExtractedContent {
     hero_badge_text?: string
     hero_testimonial?: string
     visibility?: Record<string, boolean>
+    // Style G extra fields
+    footer_badge?: string
+    footer_headline?: string
+    footer_hours?: string
+    footer_days?: string
+    about_signature_name?: string
+    about_signature_role?: string
     about_headline?: string
     about_description?: string
     about_tagline?: string
@@ -29,6 +36,7 @@ interface ExtractedContent {
     services_headline?: string
     services_subheadline?: string
     services_image?: string
+    services_cta?: { label: string; link: string }
     featured_headline?: string
     featured_subheadline?: string
     featured_products?: Array<{
@@ -72,7 +80,7 @@ interface Customizations {
  */
 function mapStyleToLetter(numericStyle: string | undefined, fallback: string = 'A'): string {
     if (!numericStyle) return fallback
-    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F' }
+    const map: Record<string, string> = { '1': 'A', '2': 'B', '3': 'C', '4': 'D', '5': 'E', '6': 'F', '7': 'G', '8': 'H', '9': 'I', '10': 'J' }
     return map[numericStyle] || numericStyle // Pass through if already a letter
 }
 
@@ -107,6 +115,7 @@ function transformToAstroData(
             colorScheme: customizations.colorSchemeId || customizations.colorScheme || 'auto',
             fontPairing: customizations.fontPairingId || customizations.fontPairing || 'modern',
             contact: content.contact || {},
+            navbarStyle: heroStyle,
         },
         customizations: {
             heroStyle,
@@ -141,6 +150,7 @@ function transformToAstroData(
             gallerySubheadline: vis.featured_subheadline !== false,
             galleryItems: vis.featured_products !== false,
             galleryImages: vis.featured_images !== false,
+            galleryCta: vis.featured_cta !== false,
             contactSection: vis.footer_section !== false,
             contactBadge: vis.footer_badge !== false,
             contactHeadline: vis.footer_headline !== false,
@@ -176,6 +186,8 @@ function transformToAstroData(
             tagline: content.about_tagline,
             tags: content.about_tags,
             usps: content.unique_selling_points,
+            signatureName: content.about_signature_name,
+            signatureRole: content.about_signature_role,
             photos: content.about_images?.length ? content.about_images : photos,
             visibility: {
                 aboutBadge: vis.about_badge !== false,
@@ -195,12 +207,15 @@ function transformToAstroData(
                 { name: 'Service 3', description: 'Reliable service' },
             ],
             photos: content.services_image ? [content.services_image] : (photos.length > 0 ? [photos[0]] : []),
+            ctaLabel: content.services_cta?.label,
+            ctaLink: content.services_cta?.link,
             visibility: {
                 servicesBadge: vis.services_badge !== false,
                 servicesHeadline: vis.services_headline !== false,
                 servicesSubheadline: vis.services_subheadline !== false,
                 servicesImage: vis.services_image !== false,
                 servicesList: vis.services_list !== false,
+                servicesButton: vis.services_button !== false,
             },
         },
         gallery: {
@@ -222,6 +237,7 @@ function transformToAstroData(
                 gallerySubheadline: vis.featured_subheadline !== false,
                 galleryItems: vis.featured_products !== false,
                 galleryImages: vis.featured_images !== false,
+                galleryCta: vis.featured_cta !== false,
             },
         },
         contact: {
@@ -232,6 +248,10 @@ function transformToAstroData(
             whatsapp: content.contact?.whatsapp,
             messenger: content.contact?.messenger,
             description: content.footer?.brand_blurb,
+            badgeText: content.footer_badge,
+            headline: content.footer_headline,
+            days: content.footer_days,
+            hours: content.footer_hours,
             socialLinks: content.footer?.social_links,
             photos,
             visibility: {

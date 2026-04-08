@@ -272,6 +272,7 @@ export const update = mutation({
         transcript: v.optional(v.string()),
         transcriptionStatus: v.optional(v.string()), // processing, complete, failed
         transcriptionError: v.optional(v.string()),
+        transcriptionUpdatedAt: v.optional(v.number()),
         websiteUrl: v.optional(v.string()),
         websiteCode: v.optional(v.string()),
         amount: v.optional(v.number()),

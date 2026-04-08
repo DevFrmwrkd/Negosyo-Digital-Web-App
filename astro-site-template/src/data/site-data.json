@@ -1,36 +1,37 @@
 {
   "layout": {
-    "businessName": "JuiceShow",
-    "tagline": "Sip Fresh, Smile Always",
+    "businessName": "BoldThreads",
+    "tagline": "Wear Your Personality",
     "navLinks": [
       {
-        "label": "About",
-        "href": "#about"
+        "href": "#about",
+        "label": "About"
       },
       {
-        "label": "Services",
-        "href": "#services"
+        "href": "#services",
+        "label": "Services"
       },
       {
-        "label": "Featured",
-        "href": "#featured"
+        "href": "#featured",
+        "label": "Featured"
       },
       {
-        "label": "Contacts",
-        "href": "#contact"
+        "href": "#contact",
+        "label": "Contacts"
       }
     ],
     "socialLinks": [],
     "colorScheme": "auto",
     "fontPairing": "modern",
     "contact": {
-      "email": "angela.santos@example.com",
-      "phone": "9652342424",
-      "address": " 101 Fresh Lane, Barangay Mabini,  Makati City"
-    }
+      "address": " 789 Trend Street, Barangay Mabini, Manila",
+      "email": "azedge17@gmail.com",
+      "phone": "9871234151"
+    },
+    "navbarStyle": "B"
   },
   "customizations": {
-    "heroStyle": "A",
+    "heroStyle": "B",
     "aboutStyle": "A",
     "servicesStyle": "A",
     "galleryStyle": "A",
@@ -62,6 +63,7 @@
     "gallerySubheadline": true,
     "galleryItems": true,
     "galleryImages": true,
+    "galleryCta": true,
     "contactSection": true,
     "contactBadge": true,
     "contactHeadline": true,
@@ -70,26 +72,26 @@
     "contactSocial": true
   },
   "hero": {
-    "businessName": "JuiceShow",
-    "headline": "Sip Fresh, Smile Always",
-    "description": "JuiceShow is a beverage company based in Makati City, providing a variety of delicious and refreshing juices to quench your thirst. Our unique flavors and seasonal delights will bring a smile to your face. With a focus on quality and customer satisfaction, we strive to be your go-to destination for all your juice needs.",
+    "businessName": "BoldThreads",
+    "headline": "Wear Your Personality",
+    "description": "BoldThreads is a modern t-shirt brand in Manila that creates stylish, comfortable, and expressive tees. Our designs range from minimalist basics to bold graphic prints, catering to fashion-forward individuals. We aim to make t-shirts more than just casual clothing, but statements of identity and creativity.",
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "services": [
       {
-        "name": "Custom Juice Orders",
-        "description": "Create your own unique juice flavor"
+        "description": "Create your own unique t-shirt design with our expert designers",
+        "name": "Custom Tee Design"
       },
       {
-        "name": "Seasonal Juice Subscriptions",
-        "description": "Get a new juice flavor every season"
+        "description": "High-quality printing services for your custom tee designs",
+        "name": "T-Shirt Printing"
       },
       {
-        "name": "Juice Tastings and Events",
-        "description": "Host your events with our specialty juices"
+        "description": "Get personalized fashion advice from our experts to find your perfect tee",
+        "name": "Personalized Fashion Consultation"
       }
     ],
     "visibility": {
@@ -102,18 +104,18 @@
     }
   },
   "about": {
-    "businessName": "JuiceShow",
-    "description": "JuiceShow is a beverage company based in Makati City, providing a variety of delicious and refreshing juices to quench your thirst. Our unique flavors and seasonal delights will bring a smile to your face. With a focus on quality and customer satisfaction, we strive to be your go-to destination for all your juice needs.",
+    "businessName": "BoldThreads",
+    "description": "BoldThreads is a modern t-shirt brand in Manila that creates stylish, comfortable, and expressive tees. Our designs range from minimalist basics to bold graphic prints, catering to fashion-forward individuals. We aim to make t-shirts more than just casual clothing, but statements of identity and creativity.",
     "headline": "About Us",
     "usps": [
-      "Unique Flavor Combinations",
-      "High-Quality Ingredients",
-      "Personalized Customer Service"
+      "Unique Designs",
+      "Comfortable Materials",
+      "Personalized Service"
     ],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -128,96 +130,98 @@
     "headline": "Our Services",
     "services": [
       {
-        "name": "Custom Juice Orders",
-        "description": "Create your own unique juice flavor"
+        "description": "Create your own unique t-shirt design with our expert designers",
+        "name": "Custom Tee Design"
       },
       {
-        "name": "Seasonal Juice Subscriptions",
-        "description": "Get a new juice flavor every season"
+        "description": "High-quality printing services for your custom tee designs",
+        "name": "T-Shirt Printing"
       },
       {
-        "name": "Juice Tastings and Events",
-        "description": "Host your events with our specialty juices"
+        "description": "Get personalized fashion advice from our experts to find your perfect tee",
+        "name": "Personalized Fashion Consultation"
       }
     ],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s"
     ],
     "visibility": {
       "servicesBadge": true,
       "servicesHeadline": true,
       "servicesSubheadline": true,
       "servicesImage": true,
-      "servicesList": true
+      "servicesList": true,
+      "servicesButton": true
     }
   },
   "gallery": {
     "headline": "Featured Products",
-    "subheadline": "Our top picks for the season, featuring the freshest ingredients and most refreshing flavors",
+    "subheadline": "Our latest and greatest tee designs, showcasing our quality work",
     "items": [
       {
-        "title": "Summer Sunrise Juice",
-        "description": "A refreshing blend of orange, pineapple, and mango juices, perfect for hot summer days. Made with 100% fresh and natural ingredients, this juice is sure to quench your thirst and revitalize your senses. With its unique flavor combination and high-quality ingredients, this juice is a must-try for any juice lover.",
-        "image": "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
+        "title": "Bold Graphic Tee",
+        "description": "This bold graphic tee features a unique design that's sure to turn heads. Made from high-quality materials, it's both comfortable and stylish. Perfect for making a statement",
+        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
         "tags": [
-          "Juice",
-          "Summer"
-        ],
-        "testimonial": {
-          "quote": "I tried the Summer Sunrise Juice at JuiceShow and it was love at first sip! The combination of flavors was so unique and refreshing, I ended up ordering a subscription for the whole summer. The quality of the ingredients was top-notch and the customer service was exceptional.",
-          "author": "Rachel M."
-        }
-      },
-      {
-        "title": "Tropical Temptation Smoothie",
-        "description": "A creamy and delicious blend of tropical fruits, including papaya, guava, and passionfruit. This smoothie is not only a treat for your taste buds but also provides a boost of essential vitamins and minerals. With its personalized service, JuiceShow ensures that every smoothie is made to order, using only the freshest ingredients and tailored to each customer's preferences.",
-        "image": "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
-        "tags": [
-          "Smoothie",
+          "Graphic Tee",
           "1-2 weeks"
         ],
         "testimonial": {
-          "quote": "I ordered the Tropical Temptation Smoothie for my birthday party and it was a huge hit! The flavors were so rich and creamy, and the presentation was beautiful. The team at JuiceShow was very accommodating and helped me customize the smoothie to fit my party's theme.",
-          "author": "Mark K."
+          "author": "Rachel M.",
+          "quote": "I love my new bold graphic tee from BoldThreads! The design is so unique and the material is super comfy. I've been wearing it nonstop since I got it"
         }
       },
       {
-        "title": "Autumn Harvest Juice",
-        "description": "A seasonal blend of apple, pear, and cranberry juices, perfectly capturing the essence of autumn. This juice is made with locally sourced ingredients and is available for a limited time only, making it a unique and exclusive offering from JuiceShow. With its focus on quality and customer satisfaction, JuiceShow ensures that every juice is made with love and care, providing a truly exceptional drinking experience.",
-        "image": "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU",
+        "title": "Minimalist Basics Tee",
+        "description": "Our minimalist basics tee is perfect for everyday wear. With its simple design and high-quality materials, it's a versatile addition to any wardrobe. Great for dressing up or down",
+        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
         "tags": [
-          "Juice",
-          "Fall"
+          "Basic Tee",
+          "1 week"
         ],
         "testimonial": {
-          "quote": "I tried the Autumn Harvest Juice at JuiceShow and it was the perfect drink for the season. The combination of flavors was so warm and comforting, it felt like a hug in a cup. The team at JuiceShow was very knowledgeable and helped me choose the perfect juice for my taste preferences.",
-          "author": "Emily W."
+          "author": "Mark K.",
+          "quote": "I was blown away by the quality of the minimalist basics tee from BoldThreads. It's so soft and comfortable, and the design is perfect for everyday wear"
+        }
+      },
+      {
+        "title": "Customized Tee",
+        "description": "Our customized tee service allows you to create your own unique design. With our expert designers and high-quality materials, you can create a truly one-of-a-kind tee. Perfect for special occasions or as a gift",
+        "image": "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0",
+        "tags": [
+          "Custom Tee",
+          "2-3 weeks"
+        ],
+        "testimonial": {
+          "author": "Emily G.",
+          "quote": "I created a customized tee with BoldThreads for my birthday and it turned out amazing! The design process was so easy and the final product is stunning"
         }
       }
     ],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "visibility": {
       "galleryHeadline": true,
       "gallerySubheadline": true,
       "galleryItems": true,
-      "galleryImages": true
+      "galleryImages": true,
+      "galleryCta": true
     }
   },
   "contact": {
-    "businessName": "JuiceShow",
-    "email": "angela.santos@example.com",
-    "phone": "9652342424",
-    "address": " 101 Fresh Lane, Barangay Mabini,  Makati City",
+    "businessName": "BoldThreads",
+    "email": "azedge17@gmail.com",
+    "phone": "9871234151",
+    "address": " 789 Trend Street, Barangay Mabini, Manila",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/pTCUFojUYO0H4Au5da3kOw/_5Rm-caYYFf0Tu6jOoxRp6Dv9Z0Kpn1C_3sDEwiDxFRXKUMc_H2LfBZIGhJBiTU8qsOMin55Cdig817ouRPJO9wpdBSny91sOBBBBlk8c3HERE0kfh9fyC6U1cCigOpkC270b0ZmfqiPTI3oYDNahVeWH2_v4xN7_hWX6fZenlMURCnmv1EZ3HOOJdCkI0yT/7gkKeJWEP8iA6FE6kj0sz1Kmk_CEET6TemF3ZpqVrL8",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/CktMT3VyvxJzGqnDHTNjbQ/ebxLjHNZIsrFNjznHgJ3fT3MhNBnfKQXDvjteQFoCTqGT_nOouxy9hUV71s6Mj0k5SJmWAu8iipMp29c_AqhE4FwDW9fVuXj1BvngR-md8hRX2bbo19ncLu8NxavnHLN9W7T-7HFSTrIG2lf2xptaeqLWmhuIhVb5FDNdid9S5WPlvruxAhXQ9CiW9FLXFe2/Z-wOJ_8ZsuqRcWMtuTGm0htOY3t_fgbVcaAwc5kF9JM",
-      "https://v5.airtableusercontent.com/v3/u/51/51/1773590400000/nIT1MDSekDVR4L7_F9xdTg/2nk3ZCr_5JuxypNOTUouoz8LYBxcMGZ8I-6kYX2ftx3AyFdiImUTZpFeNLX_1RE1HX7xLVFDKoAZbZ_iuCzFR_BT5UowjOCQ5KSqEdBQrXX5ymVXG1PeNoiEx_K8riR_lK1Xag2NUqViIAWwSqbUGVqvxrc4TVM5cXO-T6wHnSg7-Q7L5xosIhZn664DCmlf/ypxBXzW42wRkdPW8iCFYplpp82p8kg3ug2mjIERpKjU"
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/bN243sUrWEzWZQz_yPEWAg/KNqIew94LjHwsHlciooTrc2ONEO7HVrqLfRveSpKZpakkqI8LILtBmpU6U2EcyoY93gTKB8FNe4kjY7IsOiaQGKbrqK9RiLyKTeiBSYCFTrIYs1Vv_QSki-PZ2zXwj7DYp1DY-f0Ux2lUvZmYZBo2YZ6t5g5A6ZEr0hE8hMHyAB9B9pTCTsCz-obyE66Qg6W/uHlo0pKIaWVrw6-46mC3KmhHnqaYyIYK_M8SIq3AxdY",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/iCAw4F2n9s8EKaz13xKKOQ/EUvDJZTMKM0KP7k9Zfx-KNoLyIs70jNUDzTS0Un_xOfv1nVjWpzTMXV1KlYwN2T5Kq3e6gfcINQT6Mtoip3VHN8PV-TDOUUaWcGI7CukSeQJK7YYHkjb_Zq3RqvUI00MGe1hJW3CiUTs7IvcT5BWcgWeCA8Y5BnFK1IMZKa62iN6XugxXq6D2dP8UdtoWLgJ/yjJUucJ-cd8wubtK38nKFZWGiaZojznR1dCbIn-bx9s",
+      "https://v5.airtableusercontent.com/v3/u/52/52/1775498400000/WzYH-x1gmNK7NACLSw8blQ/B_XqpCvbbS-AWjb8HlNc5rRk893joyGnLuNeuHDVU76EOZ8ZaWHo7jhTE_6fAWZUjpypDVPSaSEfYGPA2AGE7aupGfgQClQKPcPa0wVrv_v8n8BL4s8S5HGZbmB_4eVip93WeCl4B6H6KAubB5PNC5sYxSYwfMlowQtdswxlpR1o2cA0s63NBwv0PudQaV9k/rbOq55nbmgiH7N0Rcif4loTI32qQNzLqV0pacde8UE0"
     ],
     "visibility": {
       "contactBadge": true,
