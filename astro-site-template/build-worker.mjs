@@ -11,6 +11,7 @@
 
 import { build } from 'astro'
 import tailwindcssVite from '@tailwindcss/vite'
+import path from 'path'
 
 const astroDir = process.argv[2]
 if (!astroDir) {
@@ -27,6 +28,8 @@ try {
         vite: {
             plugins: [tailwindcssVite()],
             build: { cssMinify: true },
+            // Vite cache must be in a writable location — the symlinked node_modules is read-only
+            cacheDir: path.join(astroDir, '.vite-cache'),
         },
         build: {
             inlineStylesheets: 'always',
