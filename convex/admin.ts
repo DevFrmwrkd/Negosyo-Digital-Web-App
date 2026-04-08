@@ -802,31 +802,37 @@ export const markPayoutPaid = mutation({
 export const checkBackfillNeeded = query({
     args: {},
     handler: async (ctx) => {
-        const targetStatuses = ['deployed', 'pending_payment', 'paid', 'completed'] as const;
+        try {
+            const targetStatuses = ['deployed', 'pending_payment', 'paid', 'completed'] as const;
 
-        for (const status of targetStatuses) {
-            const submissions = await ctx.db
-                .query('submissions')
-                .withIndex('by_status', (q) => q.eq('status', status))
-                .collect();
-
-            for (const submission of submissions) {
-                const website = await ctx.db
-                    .query('generatedWebsites')
-                    .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+            for (const status of targetStatuses) {
+                // Use .first() to get one result at a time instead of .collect() to avoid memory issues
+                let submission = await ctx.db
+                    .query('submissions')
+                    .withIndex('by_status', (q) => q.eq('status', status))
                     .first();
 
-                if (!submission.websiteUrl && website?.publishedUrl) {
-                    return true;
-                }
+                if (submission) {
+                    const website = await ctx.db
+                        .query('generatedWebsites')
+                        .withIndex('by_submissionId', (q) => q.eq('submissionId', submission._id))
+                        .first();
 
-                if (website && !website.publishedUrl && submission.websiteUrl) {
-                    return true;
+                    if (!submission.websiteUrl && website?.publishedUrl) {
+                        return true;
+                    }
+
+                    if (website && !website.publishedUrl && submission.websiteUrl) {
+                        return true;
+                    }
                 }
             }
-        }
 
-        return false;
+            return false;
+        } catch (error) {
+            console.error('Error in checkBackfillNeeded:', error);
+            return false;
+        }
     },
 });
 
