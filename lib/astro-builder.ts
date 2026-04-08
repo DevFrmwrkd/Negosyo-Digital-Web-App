@@ -334,9 +334,12 @@ export async function buildAstroSite(
     // 2. Write site-data.json
     await fs.writeFile(dataPath, JSON.stringify(siteData, null, 2), 'utf-8')
 
-    // 3. Run astro build (use npx to resolve binary from symlinked node_modules)
+    // 3. Run astro build — invoke the CLI directly via node to avoid npx/npm
+    //    (npx fails on Vercel: ENOENT mkdir /home/sbx_user1051 — sandbox has no writable home dir)
+    const astroBin = path.join(astroDir, 'node_modules', 'astro', 'astro.js')
+    console.log(`[ASTRO] Running: node "${astroBin}" build (cwd: ${astroDir})`)
     try {
-        execSync('npx astro build', {
+        execSync(`node "${astroBin}" build`, {
             cwd: astroDir,
             stdio: 'pipe',
             timeout: 60000, // 60 second timeout
