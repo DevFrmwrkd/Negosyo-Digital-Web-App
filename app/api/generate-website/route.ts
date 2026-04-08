@@ -226,29 +226,27 @@ IMPORTANT:
                 for (const [key, img] of Object.entries(enhancedImages)) {
                     const imgData = img as any
                     if (imgData && (imgData.url || imgData.storageId)) {
-                        const url = imgData.url || imgData.storageId
+                        // Prefer storageId (resolves to fresh Convex URL) over imgData.url
+                        // (which may be an expired Airtable attachment URL)
+                        const url = imgData.storageId || imgData.url
                         enhancedImageUrls.push(url)
                         
                         // Extract base field name, removing "enhanced_" prefix and version suffix (_v1, _v2, etc.)
                         // Examples: enhanced_headshot_v1 → headshot, enhanced_interior_1 → interior_1
                         let baseKey = key.replace(/^enhanced_/, '').replace(/_v\d+$/, '')
                         
-                        // Categorize for section-specific mapping
+                        // Categorize for section-specific mapping (use same storageId-preferred url)
                         if (baseKey.startsWith('interior') || baseKey === 'headshot') {
-                            enhancedImagesByCategory.about = enhancedImagesByCategory.about || []
-                            enhancedImagesByCategory.about.push(url)
+                            ;(enhancedImagesByCategory.about ??= []).push(url)
                         }
                         if (baseKey.startsWith('product')) {
-                            enhancedImagesByCategory.featured = enhancedImagesByCategory.featured || []
-                            enhancedImagesByCategory.featured.push(url)
+                            ;(enhancedImagesByCategory.featured ??= []).push(url)
                         }
                         if (baseKey === 'exterior' || baseKey === 'headshot') {
-                            enhancedImagesByCategory.hero = enhancedImagesByCategory.hero || []
-                            enhancedImagesByCategory.hero.push(url)
+                            ;(enhancedImagesByCategory.hero ??= []).push(url)
                         }
                         if (baseKey.startsWith('interior') || baseKey === 'exterior') {
-                            enhancedImagesByCategory.services = enhancedImagesByCategory.services || []
-                            enhancedImagesByCategory.services.push(url)
+                            ;(enhancedImagesByCategory.services ??= []).push(url)
                         }
                         
                         console.log(`Categorized ${key} (base: ${baseKey}) → hero: ${enhancedImagesByCategory.hero?.includes(url)}, about: ${enhancedImagesByCategory.about?.includes(url)}, services: ${enhancedImagesByCategory.services?.includes(url)}, featured: ${enhancedImagesByCategory.featured?.includes(url)}`)
@@ -270,23 +268,30 @@ IMPORTANT:
             : (hasEnhancedImages ? enhancedImageUrls : ((extractedContent as any).images || submission.photos || []))
         let photos: string[] = []
 
+        console.log(`[IMAGES] photoStorageIds (${photoStorageIds.length}):`, photoStorageIds.map((id: string) => id?.startsWith('http') ? 'HTTP' : 'STORAGE_ID'))
+
         if (photoStorageIds.length > 0) {
             try {
-                // Enhanced image URLs may already be resolved — check and only resolve storage IDs
-                const needsResolution = photoStorageIds.some((id: string) => !id.startsWith('http'))
-                if (needsResolution) {
+                // Split into HTTP URLs (already resolved) and storage IDs (need resolution)
+                const httpUrls = photoStorageIds.filter((id: string) => id && id.startsWith('http'))
+                const storageIds = photoStorageIds.filter((id: string) => id && !id.startsWith('http'))
+
+                let resolvedFromStorage: string[] = []
+                if (storageIds.length > 0) {
                     const resolvedUrls = await fetchQuery(api.files.getMultipleUrls, {
-                        storageIds: photoStorageIds
+                        storageIds: storageIds
                     })
-                    photos = resolvedUrls.filter((url): url is string => url !== null)
-                } else {
-                    photos = photoStorageIds.filter((url: string) => url && url.startsWith('http'))
+                    resolvedFromStorage = resolvedUrls.filter((url): url is string => url !== null)
+                    console.log(`[IMAGES] Resolved ${resolvedFromStorage.length}/${storageIds.length} storage IDs`)
                 }
+
+                photos = [...httpUrls, ...resolvedFromStorage]
             } catch (error) {
                 console.error('Error resolving photo URLs:', error)
                 photos = photoStorageIds.filter((url: string) => url && url.startsWith('http'))
             }
         }
+        console.log(`[IMAGES] Final photos array: ${photos.length} URLs`)
 
         // Resolve about_images: prefer user-edited, then enhancedImages.about, then extractedContent.about_images
         const hasUserEditedAboutImages = existingWebsite?.extractedContent && (extractedContent as any)?.about_images?.length > 0
