@@ -68,7 +68,8 @@ export default function AdminDashboard() {
     const itemsPerPage = 5
     const [backfilling, setBackfilling] = useState(false)
     const [backfillResult, setBackfillResult] = useState<{ updatedSubmissions: number; updatedWebsites: number } | null>(null)
-    const isBackfillNeeded = useQuery(api.admin.checkBackfillNeeded)
+    // Safely handle checkBackfillNeeded query with error fallback
+    const isBackfillNeeded = useQuery(api.admin.checkBackfillNeeded) ?? false
     const backfillWebsiteUrls = useMutation(api.admin.backfillWebsiteUrls)
 
     // Delete submission state
