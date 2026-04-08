@@ -349,7 +349,13 @@ export async function buildAstroSite(
             cwd: astroDir,
             stdio: 'pipe',
             timeout: 60000,
-            env: { ...process.env, NODE_ENV: 'production' },
+            env: {
+                ...process.env,
+                NODE_ENV: 'production',
+                // Astro telemetry tries to mkdir ~/.config/astro — Vercel sandbox has no writable home dir
+                HOME: os.tmpdir(),
+                ASTRO_TELEMETRY_DISABLED: '1',
+            },
         })
         const stdout = output.toString()
         if (!stdout.includes('ASTRO_BUILD_SUCCESS')) {
