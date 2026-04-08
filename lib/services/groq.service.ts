@@ -89,24 +89,26 @@ export const groqService = {
      * Uses temp files + fs.createReadStream for reliable Groq uploads.
      */
     async transcribeAudioFromUrl(audioUrl: string): Promise<string> {
-        const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25MB Groq limit
+        const MAX_FILE_SIZE = 22 * 1024 * 1024 // 22MB threshold for chunking (aligned with chunk size)
 
         try {
+            const startTime = Date.now()
             const response = await fetch(audioUrl)
             const arrayBuffer = await response.arrayBuffer()
             const contentType = response.headers.get('content-type') || 'audio/mpeg'
             const ext = getFileExtension(contentType)
             const sizeMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(1)
 
-            console.log(`Transcribing file: ${sizeMB}MB, type: ${contentType}`)
+            console.log(`[GROQ] Starting transcription: ${sizeMB}MB file (${contentType})`)
 
             // Small file — send directly via temp file
             if (arrayBuffer.byteLength <= MAX_FILE_SIZE) {
+                console.log(`[GROQ] File size ${sizeMB}MB ≤ ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB threshold, sending directly`)
                 return await this.transcribeBuffer(arrayBuffer, `audio.${ext}`)
             }
 
             // Large file — chunk, then release original buffer before transcribing
-            console.log(`File exceeds 25MB limit, chunking...`)
+            console.log(`[GROQ] File size ${sizeMB}MB > ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB threshold, chunking...`)
             const chunks = chunkMediaFile(arrayBuffer, contentType)
 
             // MP4 video → extracted as audio-only MP4 → use .m4a extension
@@ -126,15 +128,17 @@ export const groqService = {
             // Force GC hint (won't guarantee collection but helps)
             if (global.gc) global.gc()
 
-            console.log(`Wrote ${tmpPaths.length} chunks to temp files, transcribing...`)
+            console.log(`[GROQ] Wrote ${tmpPaths.length} chunks to temp files, starting transcription...`)
 
             const transcripts: string[] = []
             try {
                 for (let i = 0; i < tmpPaths.length; i++) {
                     const stat = fs.statSync(tmpPaths[i])
-                    console.log(`Transcribing chunk ${i + 1}/${tmpPaths.length} (${(stat.size / 1024 / 1024).toFixed(1)}MB)`)
+                    const chunkSizeMB = (stat.size / 1024 / 1024).toFixed(1)
+                    console.log(`[GROQ] Processing chunk ${i + 1}/${tmpPaths.length} (${chunkSizeMB}MB)`)
 
-                    for (let attempt = 1; attempt <= 3; attempt++) {
+                    let transcribed = false
+                    for (let attempt = 1; attempt <= 5; attempt++) {
                         try {
                             const groq = getGroqClient()
                             const chunkFilename = `chunk_${i}.${chunkExt}`
@@ -147,17 +151,40 @@ export const groqService = {
                             if (transcription.text?.trim()) {
                                 transcripts.push(transcription.text.trim())
                             }
+                            console.log(`[GROQ] ✓ Chunk ${i + 1} transcribed successfully`)
+                            transcribed = true
                             break
                         } catch (error: any) {
                             const isTransient = error?.cause?.code === 'ECONNRESET' ||
                                 error?.message?.includes('Connection error')
-                            if (isTransient && attempt < 3) {
-                                console.warn(`Chunk ${i + 1} connection error (attempt ${attempt}/3), retrying...`)
-                                await new Promise(r => setTimeout(r, attempt * 3000))
+                            const is413 = error?.status === 413 || error?.message?.includes('413') || error?.message?.includes('Entity Too Large')
+                            
+                            if (is413) {
+                                // 413 might be temporary rate limiting or actual size issue
+                                if (attempt < 5) {
+                                    // Retry with exponential backoff (8s, 16s, 32s, 64s)
+                                    const backoffMs = Math.pow(2, attempt + 2) * 1000
+                                    console.warn(`[GROQ] Chunk ${i + 1} size error (413), retry ${attempt}/5 after ${backoffMs}ms...`)
+                                    await new Promise(r => setTimeout(r, backoffMs))
+                                    continue
+                                } else {
+                                    console.error(`[GROQ] Chunk ${i + 1} (${chunkSizeMB}MB) permanently failed: File too large for Groq`)
+                                    throw new Error(`Chunk ${i + 1} (${chunkSizeMB}MB) exceeds Groq size limit even after retries. Try uploading a shorter video or re-encoding at lower bitrate.`)
+                                }
+                            }
+                            
+                            if (isTransient && attempt < 5) {
+                                const backoffMs = attempt * 3000
+                                console.warn(`[GROQ] Chunk ${i + 1} connection error (attempt ${attempt}/5), retrying in ${backoffMs}ms...`)
+                                await new Promise(r => setTimeout(r, backoffMs))
                                 continue
                             }
                             throw error
                         }
+                    }
+                    
+                    if (!transcribed) {
+                        throw new Error(`Failed to transcribe chunk ${i + 1} after all retries`)
                     }
                 }
             } finally {
@@ -166,7 +193,8 @@ export const groqService = {
             }
 
             const fullTranscript = transcripts.join(' ')
-            console.log(`Transcription complete: ${tmpPaths.length} chunks, ${fullTranscript.length} characters`)
+            const elapsedSec = ((Date.now() - startTime) / 1000).toFixed(1)
+            console.log(`[GROQ] ✓ Transcription complete: ${tmpPaths.length} chunks processed in ${elapsedSec}s, ${fullTranscript.length} chars output`)
             return fullTranscript
         } catch (error: any) {
             console.error('Groq transcription from URL error:', error)

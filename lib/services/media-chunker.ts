@@ -8,7 +8,7 @@
  * - WAV: Split PCM data with header duplication
  */
 
-const DEFAULT_MAX_CHUNK_SIZE = 24 * 1024 * 1024 // 24MB (1MB headroom under 25MB limit)
+const DEFAULT_MAX_CHUNK_SIZE = 22 * 1024 * 1024 // 22MB (3MB headroom under 25MB limit, accounting for multipart headers + form boundaries)
 
 // ==================== WEBM CHUNKING ====================
 

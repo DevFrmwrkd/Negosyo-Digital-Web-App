@@ -604,7 +604,19 @@ export default function SubmissionDetailPage() {
         } catch (error: any) {
             console.error('Transcription error:', error)
             setModalType('error')
-            setModalMessage(error.message || 'Failed to generate transcription')
+            const errorMsg = error.message || 'Failed to generate transcription'
+            // Parse API error details if available
+            if (errorMsg.includes('exceeds Groq size limit')) {
+                setModalMessage('File is too large even after chunking. Try:\n1. Re-encoding at lower bitrate\n2. Trimming unnecessary segments\n3. Using a shorter video')
+            } else if (errorMsg.includes('413') || errorMsg.includes('Entity Too Large')) {
+                setModalMessage('File size issue during upload. This is usually temporary. Try again in a moment.')
+            } else if (errorMsg.includes('Invalid')) {
+                setModalMessage('Invalid file format. Please use MP3, WAV, MP4, or WebM.')
+            } else if (errorMsg.includes('timeout')) {
+                setModalMessage('Transcription took too long. Please try a shorter file.')
+            } else {
+                setModalMessage(errorMsg)
+            }
             setShowModal(true)
         } finally {
             setTranscribing(false)
@@ -914,8 +926,8 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Enhance Images via Airtable AI (available for submitted and beyond) */}
-                            {(submission.status === 'submitted' || submission.status === 'in_review' || submission.status === 'website_generated' || submission.status === 'approved' || submission.status === 'deployed') && (
+                            {/* Enhance Images via Airtable AI (available for submitted and beyond, but only if transcription is ready) */}
+                            {(submission.status === 'submitted' || submission.status === 'in_review' || submission.status === 'website_generated' || submission.status === 'approved' || submission.status === 'deployed') && submission.transcript && (
                                 <Button
                                     onClick={handleTriggerEnhancedImages}
                                     disabled={enhancing}
@@ -935,6 +947,16 @@ export default function SubmissionDetailPage() {
                                         </>
                                     )}
                                 </Button>
+                            )}
+
+                            {/* Show tooltip if enhance button is hidden due to missing transcription */}
+                            {(submission.status === 'submitted' || submission.status === 'in_review' || submission.status === 'website_generated' || submission.status === 'approved' || submission.status === 'deployed') && !submission.transcript && (
+                                <div className="text-sm text-gray-500 px-3 py-2 rounded-lg bg-gray-100 flex items-center gap-2">
+                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span>Generate transcription first to enable image enhancement</span>
+                                </div>
                             )}
 
                             {/* Step 2: Generate Website (for in_review, website_generated, approved, or deployed status) */}
