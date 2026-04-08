@@ -311,12 +311,16 @@ export async function buildAstroSite(
         astroDir = path.join(os.tmpdir(), `astro-build-${Date.now()}`)
         console.log(`[ASTRO] Read-only filesystem detected, building in ${astroDir}`)
         await copyDir(sourceDir, astroDir, new Set(['node_modules', 'dist', '.astro']))
-        // Symlink node_modules from the source directory
-        const srcNodeModules = path.join(sourceDir, 'node_modules')
+        // Symlink node_modules — prefer astro-site-template's own, fall back to root
+        // On Vercel, only root node_modules exists (subdirectory deps aren't installed)
+        const astroNodeModules = path.join(sourceDir, 'node_modules')
+        const rootNodeModules = path.join(process.cwd(), 'node_modules')
+        const srcNodeModules = existsSync(astroNodeModules) ? astroNodeModules : rootNodeModules
         const destNodeModules = path.join(astroDir, 'node_modules')
-        if (existsSync(srcNodeModules)) {
-            await fs.symlink(srcNodeModules, destNodeModules, 'junction')
-        }
+        // Use 'dir' for Linux (Vercel), 'junction' for Windows (local dev)
+        const symlinkType = process.platform === 'win32' ? 'junction' : 'dir'
+        await fs.symlink(srcNodeModules, destNodeModules, symlinkType)
+        console.log(`[ASTRO] Symlinked node_modules from ${srcNodeModules}`)
     } else {
         astroDir = sourceDir
     }
@@ -330,9 +334,9 @@ export async function buildAstroSite(
     // 2. Write site-data.json
     await fs.writeFile(dataPath, JSON.stringify(siteData, null, 2), 'utf-8')
 
-    // 3. Run astro build
+    // 3. Run astro build (use npx to resolve binary from symlinked node_modules)
     try {
-        execSync('npm run build', {
+        execSync('npx astro build', {
             cwd: astroDir,
             stdio: 'pipe',
             timeout: 60000, // 60 second timeout

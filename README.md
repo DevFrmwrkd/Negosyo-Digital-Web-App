@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Negosyo Digital
+
+A platform that digitalizes Filipino micro, small, and medium enterprises (MSMEs) by generating AI-powered business websites from creator-submitted interviews, photos, and business information.
+
+## How It Works
+
+1. **Creators** sign up, complete training modules, and pass a certification quiz
+2. Certified creators visit local businesses, record an interview, and upload photos
+3. **AI pipeline** transcribes the audio (Groq Whisper), extracts business content (Llama LLM), and generates a full website using the Astro template system
+4. **Admins** review, approve, and publish the website to Cloudflare Pages
+5. **Business owners** receive a live website with lead tracking, and creators earn payouts
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, Framer Motion |
+| Backend | Convex (serverless DB + functions) |
+| Auth | Clerk |
+| AI/ML | Groq (Whisper transcription, Llama 3.3 70B content extraction) |
+| Website Generation | Astro 5 static site builder with Tailwind v4 |
+| File Storage | Cloudflare R2 |
+| Website Hosting | Cloudflare Pages |
+| App Hosting | Vercel |
+| CMS Sync | Airtable (bidirectional) |
+| Email | Nodemailer + Gmail |
+| Analytics | Chart.js, Vercel Analytics |
+
+## Project Structure
+
+```
+app/
+  admin/              # Admin dashboard, submissions, creators, payouts, audit
+  submit/             # Multi-step submission flow (info → interview → photos → review → success)
+  dashboard/          # Creator dashboard
+  wallet/             # Earnings & withdrawals (GCash, Maya, bank transfer, Wise)
+  referrals/          # Referral code sharing & tracking
+  training/           # Training modules & certification quiz
+  api/
+    generate-website/ # AI content extraction + Astro build pipeline
+    publish-website/  # Deploy to Cloudflare Pages
+    transcribe/       # Groq Whisper with chunked large-file support
+    upload-image/     # R2 file uploads
+    send-*-email/     # Transactional emails
+
+astro-site-template/  # Astro SSG template with 10 style variants per section
+  src/
+    components/       # Hero, About, Services, Gallery, Contact (A-J variants)
+    layouts/          # BaseLayout with Navbar & Footer
+    data/             # site-data.json (generated at build time)
+
+convex/               # Backend schema, mutations, queries, actions
+lib/
+  astro-builder.ts    # Writes site-data.json, runs astro build, returns HTML
+  services/
+    groq.service.ts   # Transcription + LLM content extraction
+    media-chunker.ts  # Format-aware chunking for large audio/video files
+  email/              # Email templates & sender
+  template-fields.ts  # Template field definitions & style mappings
+
+components/
+  editor/             # Visual website editor (ContentEditor, VisualEditor)
+  landing/            # Marketing site components
+  ui/                 # Shared UI primitives
+  providers/          # ConvexClerkProvider
+```
+
+## Key Features
+
+- **AI Website Generation** -- Audio transcription, content extraction, and Astro-based static site generation with 10 style variants per section
+- **Multi-format Media Chunking** -- Splits large files (WebM, MP3, WAV, MP4) at format-specific boundaries for Groq's 25MB limit
+- **Creator Earnings System** -- Wallet with GCash, Maya, bank transfer, and Wise withdrawals
+- **Referral Program** -- Unique referral codes with bonus tracking
+- **Lead Tracking** -- Website visitors generate leads linked back to creators
+- **Admin Dashboard** -- Submission review, approval workflow, payout management, and audit logging
+- **Airtable Sync** -- Bidirectional sync for CMS and AI image enhancement
+- **Visual Website Editor** -- Inline content editing with live preview
+
+## Environment Variables
+
+| Variable | Service |
+|----------|---------|
+| `NEXT_PUBLIC_CONVEX_URL` | Convex backend |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` | Clerk auth |
+| `GROQ_API_KEY` | Groq AI (Whisper + Llama) |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ACCOUNT_ID`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL` | Cloudflare R2 storage |
+| `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` | Cloudflare Pages deployment |
+| `AIRTABLE_PAT`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE_ID` | Airtable CMS sync |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Email sending |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install dependencies
+npm install
+
+# Set up Convex
+npx convex dev
+
+# Run Next.js dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deployment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The app deploys to **Vercel** (main app) and **Cloudflare Pages** (generated business websites).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+On Vercel, the Astro build pipeline runs inside serverless functions by copying the template to `/tmp/` (read-only filesystem) and symlinking `node_modules` from the root.

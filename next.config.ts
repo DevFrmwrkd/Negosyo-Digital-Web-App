@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   staticPageGenerationTimeout: 120,
+  outputFileTracingIncludes: {
+    '/api/generate-website': ['./astro-site-template/src/**/*', './astro-site-template/astro.config.mjs', './astro-site-template/tsconfig.json', './astro-site-template/package.json'],
+  },
   images: {
     remotePatterns: [
       {
