@@ -43,6 +43,13 @@ export const groqService = {
      * Retries up to 3 times on transient connection errors.
      */
     async transcribeBuffer(buffer: ArrayBuffer, filename: string, retries = 3): Promise<string> {
+        // Ensure filename has a Groq-accepted extension
+        const GROQ_ALLOWED_EXTS = ['flac', 'mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'ogg', 'opus', 'wav', 'webm']
+        const ext = filename.split('.').pop()?.toLowerCase() || ''
+        if (!GROQ_ALLOWED_EXTS.includes(ext)) {
+            console.warn(`[GROQ] Filename "${filename}" has unsupported extension ".${ext}", defaulting to .mp3`)
+            filename = filename.replace(/\.[^.]+$/, '.mp3') || 'audio.mp3'
+        }
         const tmpPath = writeTempFile(buffer, filename)
         try {
             for (let attempt = 1; attempt <= retries; attempt++) {
@@ -111,9 +118,8 @@ export const groqService = {
             console.log(`[GROQ] File size ${sizeMB}MB > ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB threshold, chunking...`)
             const chunks = chunkMediaFile(arrayBuffer, contentType, undefined, audioUrl)
 
-            // MP4 video → extracted as audio-only (MP4 or ADTS) → use .aac extension for ADTS chunks, .m4a for MP4
-            // ADTS chunks from large MP4s need .aac extension for Groq to recognize the format
-            const chunkExt = contentType.includes('video') || contentType.includes('mp4') ? 'aac' : ext
+            // MP4 video → extracted as audio-only MP4 or ADTS → use .m4a extension (in Groq's allowed list)
+            const chunkExt = contentType.includes('video') || contentType.includes('mp4') ? 'm4a' : ext
 
             // Write all chunks to temp files FIRST, then release the large buffer
             const tmpPaths: string[] = []
