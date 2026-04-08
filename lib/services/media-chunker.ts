@@ -1000,9 +1000,49 @@ function chunkMP4(data: Uint8Array, maxChunkSize: number): Uint8Array[] {
         return [mp4]
     }
 
-    // TODO: split into multiple MP4s if audio > maxChunkSize
-    // For now, return as single chunk (3.5MB audio won't need splitting)
-    return [mp4]
+    // Audio-only MP4 still too large — convert to ADTS (streaming AAC) and chunk
+    // ADTS is a simple frame-based format that can be split at any frame boundary
+
+    const audioConfig = readAudioConfig(data, stsdOff, stsdOff + stsdSize)
+    if (!audioConfig) {
+        console.warn('MP4: cannot read AAC config for ADTS conversion, returning single chunk')
+        return [mp4]
+    }
+
+    const { objectType, sampleRateIndex, channelConfig } = audioConfig
+
+    // Build ADTS stream: each sample gets a 7-byte ADTS header
+    let adtsTotalSize = 0
+    for (const size of sampleSizes) adtsTotalSize += 7 + size
+    const adtsData = new Uint8Array(adtsTotalSize)
+    let adtsWritePos = 0
+    let sampleReadPos = 0
+    for (const size of sampleSizes) {
+        const header = makeAdtsHeader(size, objectType, sampleRateIndex, channelConfig)
+        adtsData.set(header, adtsWritePos)
+        adtsData.set(audioData.subarray(sampleReadPos, sampleReadPos + size), adtsWritePos + 7)
+        adtsWritePos += 7 + size
+        sampleReadPos += size
+    }
+
+    // Split ADTS at frame boundaries (each frame = 7-byte header + AAC data)
+    const adtsChunks: Uint8Array[] = []
+    let chunkStartByte = 0
+    let chunkAccum = 0
+
+    for (let i = 0; i < sampleSizes.length; i++) {
+        const frameSize = 7 + sampleSizes[i]
+        if (chunkAccum + frameSize > maxChunkSize && chunkAccum > 0) {
+            adtsChunks.push(adtsData.slice(chunkStartByte, chunkStartByte + chunkAccum))
+            chunkStartByte += chunkAccum
+            chunkAccum = 0
+        }
+        chunkAccum += frameSize
+    }
+    if (chunkAccum > 0) {
+        adtsChunks.push(adtsData.slice(chunkStartByte, chunkStartByte + chunkAccum))
+    }
+    return adtsChunks
 }
 
 // ==================== PUBLIC API ====================
@@ -1022,10 +1062,45 @@ function detectFormat(contentType: string): MediaFormat {
 }
 
 /**
+ * Detect media format from URL extension as fallback when content-type is unhelpful.
+ */
+function detectFormatFromUrl(url: string): MediaFormat {
+    try {
+        const pathname = new URL(url).pathname.toLowerCase()
+        if (pathname.endsWith('.webm')) return 'webm'
+        if (pathname.endsWith('.mp3')) return 'mp3'
+        if (pathname.endsWith('.wav')) return 'wav'
+        if (pathname.endsWith('.mp4') || pathname.endsWith('.m4a')) return 'mp4'
+    } catch { /* ignore invalid URLs */ }
+    return 'unknown'
+}
+
+/**
+ * Detect format from file magic bytes as final fallback.
+ */
+function detectFormatFromBytes(data: Uint8Array): MediaFormat {
+    if (data.length < 12) return 'unknown'
+    // RIFF....WAVE = WAV
+    if (data[0] === 0x52 && data[1] === 0x49 && data[2] === 0x46 && data[3] === 0x46 &&
+        data[8] === 0x57 && data[9] === 0x41 && data[10] === 0x56 && data[11] === 0x45) return 'wav'
+    // ID3 or 0xFFE0+ sync = MP3
+    if ((data[0] === 0x49 && data[1] === 0x44 && data[2] === 0x33) ||
+        (data[0] === 0xFF && (data[1] & 0xE0) === 0xE0)) return 'mp3'
+    // 0x1A45DFA3 = EBML (WebM/Matroska)
+    if (data[0] === 0x1A && data[1] === 0x45 && data[2] === 0xDF && data[3] === 0xA3) return 'webm'
+    // ftyp at offset 4 = MP4
+    if (data[4] === 0x66 && data[5] === 0x74 && data[6] === 0x79 && data[7] === 0x70) return 'mp4'
+    return 'unknown'
+}
+
+/**
  * Get file extension for a media format.
  */
-export function getFileExtension(contentType: string): string {
-    const format = detectFormat(contentType)
+export function getFileExtension(contentType: string, sourceUrl?: string): string {
+    let format = detectFormat(contentType)
+    if (format === 'unknown' && sourceUrl) {
+        format = detectFormatFromUrl(sourceUrl)
+    }
     switch (format) {
         case 'webm': return 'webm'
         case 'mp3': return 'mp3'
@@ -1047,7 +1122,8 @@ export function getFileExtension(contentType: string): string {
 export function chunkMediaFile(
     buffer: ArrayBuffer,
     contentType: string,
-    maxChunkSize: number = DEFAULT_MAX_CHUNK_SIZE
+    maxChunkSize: number = DEFAULT_MAX_CHUNK_SIZE,
+    sourceUrl?: string
 ): ArrayBuffer[] {
     const data = new Uint8Array(buffer)
 
@@ -1056,7 +1132,20 @@ export function chunkMediaFile(
         return [buffer]
     }
 
-    const format = detectFormat(contentType)
+    // Detect format with fallback chain: content-type → URL extension → magic bytes
+    let format = detectFormat(contentType)
+    if (format === 'unknown' && sourceUrl) {
+        format = detectFormatFromUrl(sourceUrl)
+        if (format !== 'unknown') {
+            console.log(`[CHUNKER] Content-type "${contentType}" unhelpful, detected ${format} from URL`)
+        }
+    }
+    if (format === 'unknown') {
+        format = detectFormatFromBytes(data)
+        if (format !== 'unknown') {
+            console.log(`[CHUNKER] Detected ${format} from file magic bytes`)
+        }
+    }
     console.log(`Chunking ${format} file: ${(data.length / 1024 / 1024).toFixed(1)}MB into <${(maxChunkSize / 1024 / 1024).toFixed(0)}MB chunks`)
 
     let chunks: Uint8Array[]

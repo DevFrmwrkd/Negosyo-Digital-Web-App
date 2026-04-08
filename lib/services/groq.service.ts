@@ -96,7 +96,7 @@ export const groqService = {
             const response = await fetch(audioUrl)
             const arrayBuffer = await response.arrayBuffer()
             const contentType = response.headers.get('content-type') || 'audio/mpeg'
-            const ext = getFileExtension(contentType)
+            const ext = getFileExtension(contentType, audioUrl)
             const sizeMB = (arrayBuffer.byteLength / 1024 / 1024).toFixed(1)
 
             console.log(`[GROQ] Starting transcription: ${sizeMB}MB file (${contentType})`)
@@ -109,10 +109,11 @@ export const groqService = {
 
             // Large file — chunk, then release original buffer before transcribing
             console.log(`[GROQ] File size ${sizeMB}MB > ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)}MB threshold, chunking...`)
-            const chunks = chunkMediaFile(arrayBuffer, contentType)
+            const chunks = chunkMediaFile(arrayBuffer, contentType, undefined, audioUrl)
 
-            // MP4 video → extracted as audio-only MP4 → use .m4a extension
-            const chunkExt = contentType.includes('video') ? 'm4a' : ext
+            // MP4 video → extracted as audio-only (MP4 or ADTS) → use .aac extension for ADTS chunks, .m4a for MP4
+            // ADTS chunks from large MP4s need .aac extension for Groq to recognize the format
+            const chunkExt = contentType.includes('video') || contentType.includes('mp4') ? 'aac' : ext
 
             // Write all chunks to temp files FIRST, then release the large buffer
             const tmpPaths: string[] = []
