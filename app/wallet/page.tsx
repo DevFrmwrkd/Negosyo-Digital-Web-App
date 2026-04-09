@@ -284,7 +284,7 @@ export default function WalletPage() {
                     <h2 className="text-base font-bold text-zinc-900 mb-3">Recent Earnings</h2>
                     <div className="space-y-3">
                         {earnings && earnings.length > 0 ? (
-                            earnings.slice(0, 10).map((earning) => (
+                            earnings.slice(0, 10).map((earning: any) => (
                                 <div
                                     key={earning._id}
                                     className="bg-white rounded-xl p-3 border border-zinc-100 shadow-sm flex items-center justify-between"
@@ -323,7 +323,7 @@ export default function WalletPage() {
                     <h2 className="text-base font-bold text-zinc-900 mb-3">Withdrawal History</h2>
                     <div className="space-y-3">
                         {withdrawals && withdrawals.length > 0 ? (
-                            withdrawals.map((withdrawal) => {
+                            withdrawals.map((withdrawal: any) => {
                                 let bankLabel = "Bank Transfer"
                                 try {
                                     const details = JSON.parse(withdrawal.accountDetails)

@@ -172,12 +172,12 @@ export default function AdminDashboard() {
     }, [searchQuery, activeFilter, sortBy])
 
     // Needs attention items
-    const needsAttention = submissions.filter((s) => s.status === "submitted" || s.status === "in_review")
+    const needsAttention = submissions.filter((s: any) => s.status === "submitted" || s.status === "in_review")
 
     // Stats
-    const pendingCount = submissions.filter((s) => ["draft", "submitted", "in_review"].includes(s.status)).length
-    const approvedCount = submissions.filter((s) => ["approved", "deployed", "pending_payment", "paid", "completed", "website_generated"].includes(s.status)).length
-    const rejectedCount = submissions.filter((s) => s.status === "rejected").length
+    const pendingCount = submissions.filter((s: any) => ["draft", "submitted", "in_review"].includes(s.status)).length
+    const approvedCount = submissions.filter((s: any) => ["approved", "deployed", "pending_payment", "paid", "completed", "website_generated"].includes(s.status)).length
+    const rejectedCount = submissions.filter((s: any) => s.status === "rejected").length
     const successRate = submissions.length > 0 ? Math.round((approvedCount / submissions.length) * 100) : 0
     const rejectionRate = submissions.length > 0 ? Math.round((rejectedCount / submissions.length) * 100) : 0
 
@@ -185,8 +185,8 @@ export default function AdminDashboard() {
 
     const earningsTimeSeries = useMemo(() => {
         if (!allAnalytics) return []
-        const daily = allAnalytics.filter((r) => r.periodType === "daily")
-        const source = daily.length > 0 ? daily : allAnalytics.filter((r) => r.periodType === "monthly")
+        const daily = allAnalytics.filter((r: any) => r.periodType === "daily")
+        const source = daily.length > 0 ? daily : allAnalytics.filter((r: any) => r.periodType === "monthly")
         const byPeriod: Record<string, number> = {}
         for (const r of source) {
             byPeriod[r.period] = (byPeriod[r.period] ?? 0) + r.earningsTotal

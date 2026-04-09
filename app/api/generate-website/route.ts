@@ -337,7 +337,7 @@ IMPORTANT:
                     const resolvedUrls = await fetchQuery(api.files.getMultipleUrls, {
                         storageIds: storageIds
                     })
-                    resolvedFromStorage = resolvedUrls.filter((url): url is string => url !== null)
+                    resolvedFromStorage = resolvedUrls.filter((url: any): url is string => url !== null)
                     console.log(`[IMAGES] Resolved ${resolvedFromStorage.length}/${storageIds.length} storage IDs`)
                 }
 
@@ -358,7 +358,7 @@ IMPORTANT:
                 let resolved: string[] = []
                 if (storagePhotos.length > 0) {
                     const urls = await fetchQuery(api.files.getMultipleUrls, { storageIds: storagePhotos })
-                    resolved = urls.filter((u): u is string => u !== null)
+                    resolved = urls.filter((u: any): u is string => u !== null)
                 }
                 photos = [...httpPhotos, ...resolved]
             } catch (error) {

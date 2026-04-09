@@ -91,7 +91,7 @@ export const sendPushNotification = internalAction({
         if (tokens.length === 0) return;
 
         // Build Expo push messages
-        const messages = tokens.map((t) => ({
+        const messages = tokens.map((t: any) => ({
             to: t.token,
             sound: 'default' as const,
             title: args.title,

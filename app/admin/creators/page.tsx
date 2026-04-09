@@ -79,7 +79,7 @@ export default function CreatorsPage() {
     const filteredCreators = useMemo(() => {
         if (!creators) return []
 
-        let result = creators.filter(creator => {
+        let result = creators.filter((creator: any) => {
             if (statusFilter !== 'all' && creator.status !== statusFilter) {
                 return false
             }
@@ -123,9 +123,9 @@ export default function CreatorsPage() {
     // Stats
     const stats = useMemo(() => ({
         total: creators?.length || 0,
-        active: creators?.filter(c => c.status === 'active').length || 0,
-        pending: creators?.filter(c => c.status === 'pending').length || 0,
-        suspended: creators?.filter(c => c.status === 'suspended').length || 0,
+        active: creators?.filter((c: any) => c.status === 'active').length || 0,
+        pending: creators?.filter((c: any) => c.status === 'pending').length || 0,
+        suspended: creators?.filter((c: any) => c.status === 'suspended').length || 0,
     }), [creators])
 
     const getStatusBadge = (status: CreatorStatus | undefined) => {
@@ -383,7 +383,7 @@ export default function CreatorsPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredCreators.map((creator) => (
+                                filteredCreators.map((creator: any) => (
                                     <tr
                                         key={creator._id}
                                         className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors cursor-pointer"

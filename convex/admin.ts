@@ -340,97 +340,11 @@ export const markPaid = mutation({
         adminId: v.string(),
     },
     handler: async (ctx, args) => {
-        const submission = await ctx.db.get(args.submissionId);
-        if (!submission) throw new Error('Submission not found');
-
-        const payoutAmount = submission.creatorPayout ?? 0;
-
-        // Update submission
-        await ctx.db.patch(args.submissionId, {
-            creatorPaidAt: Date.now(),
-            status: 'completed',
-        });
-
-        // Update creator earnings
-        const creator = await ctx.db.get(submission.creatorId);
-        if (creator) {
-            await ctx.db.patch(submission.creatorId, {
-                balance: (creator.balance || 0) + payoutAmount,
-                totalEarnings: (creator.totalEarnings || 0) + payoutAmount,
-            });
-        }
-
-        // Create earning record
-        await ctx.scheduler.runAfter(0, internal.earnings.create, {
-            creatorId: submission.creatorId,
+        // Delegate to shared credit logic (also used by auto-payment webhook)
+        await ctx.scheduler.runAfter(0, internal.payments.creditCreatorForPayment, {
             submissionId: args.submissionId,
-            amount: payoutAmount,
-            type: 'submission_approved',
+            triggeredBy: `admin:${args.adminId}`,
         });
-
-        // Audit log
-        await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
-            adminId: args.adminId,
-            action: 'payment_sent',
-            targetType: 'submission',
-            targetId: args.submissionId,
-            metadata: {
-                businessName: submission.businessName,
-                amount: payoutAmount,
-                creatorId: submission.creatorId,
-            },
-        });
-
-        // Notification to creator
-        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
-            creatorId: submission.creatorId,
-            type: 'payout_sent',
-            title: 'Payment Received!',
-            body: `You received ₱${payoutAmount} for "${submission.businessName}".`,
-            data: { submissionId: args.submissionId, amount: payoutAmount },
-        });
-
-        // Analytics
-        const today = new Date().toISOString().split('T')[0];
-        const month = today.substring(0, 7);
-        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
-            creatorId: submission.creatorId,
-            period: today,
-            periodType: 'daily',
-            field: 'earningsTotal',
-            delta: payoutAmount,
-        });
-        await ctx.scheduler.runAfter(0, internal.analytics.incrementStat, {
-            creatorId: submission.creatorId,
-            period: month,
-            periodType: 'monthly',
-            field: 'earningsTotal',
-            delta: payoutAmount,
-        });
-
-        // Referral check: if this is the creator's first paid submission, qualify the referral
-        const referral = await ctx.db
-            .query('referrals')
-            .withIndex('by_referred', (q) => q.eq('referredId', submission.creatorId))
-            .filter((q) => q.eq(q.field('status'), 'pending'))
-            .first();
-
-        if (referral) {
-            // Check if this is the first paid submission
-            const paidSubmissions = await ctx.db
-                .query('submissions')
-                .withIndex('by_creatorId', (q) => q.eq('creatorId', submission.creatorId))
-                .filter((q) => q.eq(q.field('status'), 'completed'))
-                .collect();
-
-            // Count 1 because we just marked this one as completed/paid
-            if (paidSubmissions.length <= 1) {
-                await ctx.scheduler.runAfter(0, internal.referrals.qualifyByCreator, {
-                    referredId: submission.creatorId,
-                    bonusAmount: 1000, // ₱1,000 referral bonus
-                });
-            }
-        }
 
         return args.submissionId;
     },

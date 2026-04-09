@@ -31,7 +31,7 @@ export default function SubmissionDetailPage() {
 
     // Get resolved photo URLs (only for legacy Convex storage IDs)
     // R2 URLs start with http and don't need resolution
-    const needsResolution = submission?.photos?.some(p => p.startsWith('convex:') || !p.startsWith('http'))
+    const needsResolution = submission?.photos?.some((p: any) => p.startsWith('convex:') || !p.startsWith('http'))
     const photoUrls = useQuery(
         api.files.getMultipleUrls,
         needsResolution && submission?.photos?.length ? { storageIds: submission.photos } : "skip"

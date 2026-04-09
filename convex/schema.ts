@@ -218,13 +218,19 @@ export default defineSchema({
             v.literal('creator_updated'),
             v.literal('manual_override'),
             v.literal('transcription_regenerated'),
-            v.literal('images_enhanced')
+            v.literal('images_enhanced'),
+            v.literal('payment_auto_matched'),
+            v.literal('payment_partial'),
+            v.literal('payment_unmatched'),
+            v.literal('payout_sent'),
+            v.literal('payout_admin_override')
         ),
         targetType: v.union(
             v.literal('submission'),
             v.literal('creator'),
             v.literal('website'),
-            v.literal('withdrawal')
+            v.literal('withdrawal'),
+            v.literal('payment')
         ),
         targetId: v.string(),
         metadata: v.optional(v.any()),
@@ -274,6 +280,11 @@ export default defineSchema({
         wiseEmail: v.optional(v.string()), // Wise payout email
         wiseRecipientId: v.optional(v.string()),
         wiseTransferId: v.optional(v.string()),
+        wiseTransactionId: v.optional(v.string()), // Wise API transaction ID
+        wiseStatus: v.optional(v.string()), // Status from Wise API (PROCESSING, COMPLETED, etc)
+        reference: v.optional(v.string()), // Unique reference for tracking
+        errorMessage: v.optional(v.string()), // Error details if transfer failed
+        adminNotes: v.optional(v.string()), // Admin notes for manual interventions
         status: v.union(
             v.literal('pending'),
             v.literal('processing'),
@@ -590,4 +601,61 @@ export default defineSchema({
     })
         .index('by_websiteId', ['websiteId'])
         .index('by_submissionId', ['submissionId']),
+
+    // ==================== PAYMENT REFERENCES ====================
+    // Tracks payment reference codes sent to business owners for auto-matching incoming Wise deposits
+    paymentReferences: defineTable({
+        submissionId: v.id('submissions'),
+        code: v.string(),                               // ND-XXXX-YYYY format
+        expectedAmount: v.number(),                      // PHP amount expected
+        receivedAmount: v.optional(v.number()),          // Actual amount received from Wise
+        currency: v.optional(v.string()),                // Should be PHP
+        status: v.union(
+            v.literal('pending'),                        // Generated, awaiting payment
+            v.literal('matched'),                        // Payment received and matched
+            v.literal('partial'),                        // Amount received < expected
+            v.literal('overpaid'),                       // Amount received > expected
+            v.literal('expired'),                        // No payment in time window
+            v.literal('cancelled')                       // Submission cancelled
+        ),
+        wiseTransactionId: v.optional(v.string()),       // Wise deposit transaction ID
+        senderName: v.optional(v.string()),              // From Wise webhook payload
+        matchedAt: v.optional(v.number()),
+        createdAt: v.number(),
+        expiresAt: v.optional(v.number()),               // Optional expiry window
+    })
+        .index('by_code', ['code'])
+        .index('by_submissionId', ['submissionId'])
+        .index('by_status', ['status']),
+
+    // ==================== PAYMENT TOKENS ====================
+    // Cryptographic tokens for secure payment links (one-time use, expiring)
+    paymentTokens: defineTable({
+        submissionId: v.id('submissions'),
+        token: v.string(),                              // 64-char hex token (32 random bytes)
+        referenceCode: v.string(),                      // ND-XXXX-YYYY format
+        amount: v.number(),                             // PHP amount expected
+        
+        status: v.union(
+            v.literal('pending'),                       // Created, not used
+            v.literal('paid'),                          // Payment received
+            v.literal('expired'),                       // Expired without payment
+            v.literal('cancelled')                      // Admin cancelled
+        ),
+        
+        createdAt: v.number(),
+        expiresAt: v.number(),                          // 30 days from creation
+        usedAt: v.optional(v.number()),                 // When token was consumed
+        
+        emailSentAt: v.optional(v.number()),            // When payment link email was sent
+        paymentReceivedAt: v.optional(v.number()),      // When payment confirmed
+        
+        wiseTransactionId: v.optional(v.string()),      // Wise transaction ID when paid
+        adminNotes: v.optional(v.string()),
+    })
+        .index('by_token', ['token'])
+        .index('by_reference', ['referenceCode'])
+        .index('by_submissionId', ['submissionId'])
+        .index('by_status', ['status'])
+        .index('by_expiresAt', ['expiresAt']),
 });

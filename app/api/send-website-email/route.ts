@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { fetchQuery, fetchMutation } from 'convex/nextjs'
+import { fetchQuery, fetchMutation, fetchAction } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { sendApprovalEmail } from '@/lib/email/service'
+import { sendPaymentLinkEmail } from '@/lib/email/service'
+import { getPaymentConfig } from '@/lib/payment/config'
 
 /**
- * Send website URL to business owner via email
- * Uses existing nodemailer configuration with Convex for data
+ * Send payment link to business owner via email (replaces old approval email)
+ * Generates cryptographic payment token for secure, one-time payment verification
  * POST /api/send-website-email
  */
 export async function POST(request: NextRequest) {
@@ -44,7 +45,40 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Business owner email not found' }, { status: 400 })
         }
 
-        // Get published URL from generated_websites if not provided
+        // Check if payment token already exists for this submission
+        const existingToken = await fetchQuery(api.paymentTokens.getBySubmissionId, {
+            submissionId: submissionId as Id<"submissions">
+        })
+
+        let paymentToken = existingToken
+
+        // If no token exists, create one
+        if (!paymentToken) {
+            // Use existing payment reference or generate a new one
+            let referenceCode = submission.paymentReference
+            if (!referenceCode) {
+                // Generate a reference code locally (same logic as paymentReferences.ts)
+                const SAFE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'
+                const chars: string[] = []
+                for (let i = 0; i < 8; i++) {
+                    chars.push(SAFE_ALPHABET[Math.floor(Math.random() * SAFE_ALPHABET.length)])
+                }
+                referenceCode = `ND-${chars.slice(0, 4).join('')}-${chars.slice(4).join('')}`
+            }
+
+            // Create payment token
+            paymentToken = await fetchAction(api.paymentTokens.createPaymentToken, {
+                submissionId: submissionId as Id<"submissions">,
+                referenceCode: referenceCode,
+                amount: submission.amount ?? 0,
+            })
+        }
+
+        if (!paymentToken) {
+            throw new Error('Failed to create payment token')
+        }
+
+        // Get published website URL
         let publishedUrl = websiteUrl
         if (!publishedUrl) {
             const website = await fetchQuery(api.generatedWebsites.getBySubmissionId, {
@@ -53,21 +87,26 @@ export async function POST(request: NextRequest) {
             publishedUrl = website?.publishedUrl
         }
 
-        if (!publishedUrl) {
-            return NextResponse.json({ error: 'Website URL is required. Publish the website first.' }, { status: 400 })
-        }
+        const paymentConfig = getPaymentConfig()
+        const paymentLink = paymentConfig.getPaymentLink(paymentToken.token)
 
-        // Send email using existing nodemailer service
-        await sendApprovalEmail({
+        // Send payment link email
+        await sendPaymentLinkEmail({
             businessName: submission.businessName,
             businessOwnerName: submission.ownerName,
             businessOwnerEmail: submission.ownerEmail,
-            websiteUrl: publishedUrl,
             amount: submission.amount ?? 0,
-            submissionId: submissionId
+            paymentLink,
+            referenceCode: paymentToken.referenceCode,
+            platformEmail: process.env.WISE_EMAIL,
         })
 
-        // Mark email as sent: sets status → pending_payment and records sentEmailAt timestamp
+        // Record email sent timestamp
+        await fetchMutation(api.paymentTokens.recordEmailSent, {
+            token: paymentToken.token,
+        })
+
+        // Mark status as pending_payment and record sentEmailAt
         await fetchMutation(api.admin.markEmailSent, {
             submissionId: submissionId as Id<"submissions">,
             adminId: userId,
@@ -75,13 +114,15 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: `Email sent successfully to ${submission.ownerEmail}`
+            message: `Payment link sent successfully to ${submission.ownerEmail}`,
+            paymentLink,
+            referenceCode: paymentToken.referenceCode,
         })
 
     } catch (error: any) {
-        console.error('Send email error:', error)
+        console.error('Send payment link error:', error)
         return NextResponse.json(
-            { error: error.message || 'Failed to send email' },
+            { error: error.message || 'Failed to send payment link' },
             { status: 500 }
         )
     }

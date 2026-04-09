@@ -2,14 +2,14 @@ import { v } from 'convex/values';
 import { internalQuery, internalMutation, internalAction } from './_generated/server';
 import { internal } from './_generated/api';
 
-const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
 
 /**
- * Internal query: find pending_payment submissions whose sentEmailAt is older than 24 hours.
+ * Internal query: find pending_payment submissions whose sentEmailAt is older than 3 days.
  */
 export const getOverdueSubmissions = internalQuery({
     handler: async (ctx) => {
-        const deadline = Date.now() - TWENTY_FOUR_HOURS;
+        const deadline = Date.now() - THREE_DAYS;
 
         const submissions = await ctx.db
             .query('submissions')

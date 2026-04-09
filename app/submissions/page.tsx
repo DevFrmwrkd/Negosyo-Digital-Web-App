@@ -37,7 +37,7 @@ export default function SubmissionsPage() {
     }
 
     const totalEarned = creator?.totalEarnings || 0
-    const inReviewCount = submissions?.filter(s =>
+    const inReviewCount = submissions?.filter((s: any) =>
         s.status === 'submitted' || s.status === 'in_review'
     ).length || 0
 
@@ -120,7 +120,7 @@ export default function SubmissionsPage() {
                 {/* Submissions List */}
                 <div className="space-y-3">
                     {submissions && submissions.length > 0 ? (
-                        submissions.map((sub) => (
+                        submissions.map((sub: any) => (
                             <Link key={sub._id} href={`/submissions/${sub._id}`}>
                                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:border-gray-200 hover:shadow-md transition-all cursor-pointer">
                                     <div className="flex items-center gap-3">

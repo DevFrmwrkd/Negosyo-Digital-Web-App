@@ -157,13 +157,13 @@ export default function DashboardPage() {
                     <div className="bg-white p-3 rounded-2xl border border-emerald-500 shadow-sm text-center">
                         <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mb-1">In Review</p>
                         <p className="text-lg font-bold text-yellow-600">
-                            {submissions?.filter(s => s.status === 'submitted' || s.status === 'in_review').length ?? 0}
+                            {submissions?.filter((s: any) => s.status === 'submitted' || s.status === 'in_review').length ?? 0}
                         </p>
                     </div>
                     <div className="bg-white p-3 rounded-2xl border border-emerald-500 shadow-sm text-center">
                         <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider mb-1">Verified</p>
                         <p className="text-lg font-bold text-emerald-600">
-                            {submissions?.filter(s => s.status === 'approved' || s.status === 'paid' || s.status === 'deployed' || s.status === 'completed').length ?? 0}
+                            {submissions?.filter((s: any) => s.status === 'approved' || s.status === 'paid' || s.status === 'deployed' || s.status === 'completed').length ?? 0}
                         </p>
                     </div>
                 </div>
@@ -175,7 +175,7 @@ export default function DashboardPage() {
                         <Link href="/submissions" className="text-xs font-semibold text-emerald-600 hover:text-emerald-700">View All</Link>
                     </div>
                     <div className="space-y-3">
-                        {recentSubmissions.map((sub) => {
+                        {recentSubmissions.map((sub: any) => {
                             const isIncomplete = (!sub.photos || sub.photos.length === 0) || (!sub.videoStorageId && !sub.audioStorageId && !sub.videoUrl && !sub.audioUrl)
                             const isDraft = sub.status === 'draft' || isIncomplete
 

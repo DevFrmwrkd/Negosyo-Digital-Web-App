@@ -84,7 +84,7 @@ export default function AuditLogsPage() {
 
         const tab = FILTER_TABS.find(t => t.key === activeFilter)
         if (!tab || !tab.actions) return auditLogs
-        return auditLogs.filter(log => tab.actions!.includes(log.action))
+        return auditLogs.filter((log: any) => tab.actions!.includes(log.action))
     }, [auditLogs, activeFilter])
 
     // Stats
@@ -92,9 +92,9 @@ export default function AuditLogsPage() {
         if (!auditLogs) return { total: 0, approvals: 0, rejections: 0, payments: 0 }
         return {
             total: auditLogs.length,
-            approvals: auditLogs.filter(l => l.action === 'submission_approved').length,
-            rejections: auditLogs.filter(l => l.action === 'submission_rejected').length,
-            payments: auditLogs.filter(l => l.action === 'payment_sent').length,
+            approvals: auditLogs.filter((l: any) => l.action === 'submission_approved').length,
+            rejections: auditLogs.filter((l: any) => l.action === 'submission_rejected').length,
+            payments: auditLogs.filter((l: any) => l.action === 'payment_sent').length,
         }
     }, [auditLogs])
 
