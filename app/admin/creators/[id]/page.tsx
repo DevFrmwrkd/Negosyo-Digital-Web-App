@@ -319,7 +319,7 @@ export default function CreatorDetailPage() {
                                 </div>
                             ) : (
                                 <div className="divide-y divide-gray-200">
-                                    {submissions.map((submission) => (
+                                    {submissions.map((submission: any) => (
                                         <div key={submission._id} className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => router.push(`/admin/submissions/${submission._id}`)}>
                                             <div className="flex items-center justify-between">
                                                 <div>

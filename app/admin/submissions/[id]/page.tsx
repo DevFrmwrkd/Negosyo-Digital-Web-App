@@ -37,8 +37,8 @@ export default function SubmissionDetailPage() {
 
     // Resolve photo storage IDs to actual URLs (only for legacy Convex storage IDs)
     // R2 URLs start with http and don't need resolution
-    const needsPhotoResolution = submissionData?.photos?.some(p => !p.startsWith('http'))
-    const photoStorageIdsForQuery = submissionData?.photos?.filter(p => !p.startsWith('http')) || []
+    const needsPhotoResolution = submissionData?.photos?.some((p: any) => !p.startsWith('http'))
+    const photoStorageIdsForQuery = submissionData?.photos?.filter((p: any) => !p.startsWith('http')) || []
     const photoViaResolve = useQuery(
         api.files.getMultipleUrls,
         photoStorageIdsForQuery.length > 0 ? { storageIds: photoStorageIdsForQuery } : "skip"
@@ -1288,14 +1288,14 @@ export default function SubmissionDetailPage() {
                                         contactStyle={websiteCustomizations?.contactStyle || websiteCustomizations?.footerStyle || 'A'}
                                         availableImages={[
                                             // Include enhanced images first (priority), then original photos
-                                            ...(enhancedImagesByCategory?.allUrls?.map(u => resolveEnhancedUrl(u)).filter((url): url is string => url !== null) || []),
+                                            ...(enhancedImagesByCategory?.allUrls?.map(u => resolveEnhancedUrl(u)).filter((url: any): url is string => url !== null) || []),
                                             ...(photoUrls || []),
-                                            ...(heroImageUrls?.filter((url): url is string => url !== null) || [])
-                                        ].filter((url, index, self) => self.indexOf(url) === index)}
+                                            ...(heroImageUrls?.filter((url: any): url is string => url !== null) || [])
+                                        ].filter((url: any, index: number, self: any) => self.indexOf(url) === index)}
                                         originalImages={[
                                             ...(photoUrls || []),
-                                            ...(heroImageUrls?.filter((url): url is string => url !== null) || [])
-                                        ].filter((url, index, self) => self.indexOf(url) === index)}
+                                            ...(heroImageUrls?.filter((url: any): url is string => url !== null) || [])
+                                        ].filter((url: any, index: number, self: any) => self.indexOf(url) === index)}
                                         onSave={async (content: any) => {
                                             const response = await fetch('/api/save-content', {
                                                 method: 'POST',

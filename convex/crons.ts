@@ -10,7 +10,7 @@ crons.daily(
     internal.analyticsJobs.aggregateDailyToMonthly
 );
 
-// Hourly: auto-unpublish websites for submissions that haven't paid within 24 hours
+// Hourly: auto-unpublish websites for submissions that haven't paid within 3 days
 crons.hourly(
     'auto-unpublish-overdue-websites',
     { minuteUTC: 0 },

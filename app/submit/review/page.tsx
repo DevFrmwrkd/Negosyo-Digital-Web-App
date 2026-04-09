@@ -185,7 +185,7 @@ export default function ReviewSubmissionPage() {
                         </div>
                         <div className="p-4">
                             <div className="grid grid-cols-4 gap-2 mb-2">
-                                {(photoUrls || submission.photos || []).slice(0, 4).map((url, i) => (
+                                {(photoUrls || submission.photos || []).slice(0, 4).map((url: any, i: any) => (
                                     <div key={i} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
                                         {url && !url.startsWith('convex:') ? (
                                             <img
