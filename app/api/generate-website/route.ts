@@ -223,34 +223,74 @@ IMPORTANT:
                 //   interior_1: { url, storageId }, 
                 //   ... 
                 // }
+                // First pass: collect storage IDs that need resolution
+                const enhancedEntries: Array<{ key: string; storageId?: string; url?: string }> = []
                 for (const [key, img] of Object.entries(enhancedImages)) {
                     const imgData = img as any
                     if (imgData && (imgData.url || imgData.storageId)) {
-                        // Prefer storageId (resolves to fresh Convex URL) over imgData.url
-                        // (which may be an expired Airtable attachment URL)
-                        const url = imgData.storageId || imgData.url
-                        enhancedImageUrls.push(url)
-                        
-                        // Extract base field name, removing "enhanced_" prefix and version suffix (_v1, _v2, etc.)
-                        // Examples: enhanced_headshot_v1 → headshot, enhanced_interior_1 → interior_1
-                        let baseKey = key.replace(/^enhanced_/, '').replace(/_v\d+$/, '')
-                        
-                        // Categorize for section-specific mapping (use same storageId-preferred url)
-                        if (baseKey.startsWith('interior') || baseKey === 'headshot') {
-                            ;(enhancedImagesByCategory.about ??= []).push(url)
-                        }
-                        if (baseKey.startsWith('product')) {
-                            ;(enhancedImagesByCategory.featured ??= []).push(url)
-                        }
-                        if (baseKey === 'exterior' || baseKey === 'headshot') {
-                            ;(enhancedImagesByCategory.hero ??= []).push(url)
-                        }
-                        if (baseKey.startsWith('interior') || baseKey === 'exterior') {
-                            ;(enhancedImagesByCategory.services ??= []).push(url)
-                        }
-                        
-                        console.log(`Categorized ${key} (base: ${baseKey}) → hero: ${enhancedImagesByCategory.hero?.includes(url)}, about: ${enhancedImagesByCategory.about?.includes(url)}, services: ${enhancedImagesByCategory.services?.includes(url)}, featured: ${enhancedImagesByCategory.featured?.includes(url)}`)
+                        enhancedEntries.push({ key, storageId: imgData.storageId, url: imgData.url })
                     }
+                }
+
+                // Batch-resolve all storage IDs at once
+                const storageIdsToResolve = enhancedEntries
+                    .map(e => e.storageId)
+                    .filter((id): id is string => !!id && !id.startsWith('http'))
+                let resolvedStorageUrls: (string | null)[] = []
+                if (storageIdsToResolve.length > 0) {
+                    try {
+                        resolvedStorageUrls = await fetchQuery(api.files.getMultipleUrls, {
+                            storageIds: storageIdsToResolve
+                        })
+                        console.log(`[IMAGES] Resolved ${resolvedStorageUrls.filter(Boolean).length}/${storageIdsToResolve.length} enhanced image storage IDs`)
+                    } catch (error) {
+                        console.error('[IMAGES] Failed to resolve enhanced image storage IDs:', error)
+                    }
+                }
+
+                // Build resolved URL map: storageId → resolved URL
+                const storageUrlMap: Record<string, string> = {}
+                storageIdsToResolve.forEach((id, i) => {
+                    if (resolvedStorageUrls[i]) storageUrlMap[id] = resolvedStorageUrls[i]!
+                })
+
+                // Second pass: categorize with resolved URLs
+                for (const entry of enhancedEntries) {
+                    // Priority: resolved storageId URL → direct HTTP url (if not expired Airtable)
+                    let resolvedUrl = ''
+                    if (entry.storageId && storageUrlMap[entry.storageId]) {
+                        resolvedUrl = storageUrlMap[entry.storageId]
+                    } else if (entry.url && entry.url.startsWith('http') && !entry.url.includes('airtableusercontent.com')) {
+                        // Only use direct URL if it's NOT an Airtable URL (which expire)
+                        resolvedUrl = entry.url
+                    }
+
+                    if (!resolvedUrl) {
+                        console.warn(`[IMAGES] Skipping ${entry.key}: no resolved URL (storageId=${entry.storageId ? 'yes' : 'no'}, url=${entry.url ? 'airtable' : 'none'})`)
+                        continue
+                    }
+
+                    const url = resolvedUrl
+                    enhancedImageUrls.push(url)
+
+                    // Extract base field name, removing "enhanced_" prefix and version suffix (_v1, _v2, etc.)
+                    let baseKey = entry.key.replace(/^enhanced_/, '').replace(/_v\d+$/, '')
+
+                    // Categorize for section-specific mapping
+                    if (baseKey.startsWith('interior') || baseKey === 'headshot') {
+                        ;(enhancedImagesByCategory.about ??= []).push(url)
+                    }
+                    if (baseKey.startsWith('product')) {
+                        ;(enhancedImagesByCategory.featured ??= []).push(url)
+                    }
+                    if (baseKey === 'exterior' || baseKey === 'headshot') {
+                        ;(enhancedImagesByCategory.hero ??= []).push(url)
+                    }
+                    if (baseKey.startsWith('interior') || baseKey === 'exterior') {
+                        ;(enhancedImagesByCategory.services ??= []).push(url)
+                    }
+
+                    console.log(`[IMAGES] ${entry.key} (${baseKey}) → ${url.substring(0, 50)}...`)
                 }
             }
         } catch (error) {
