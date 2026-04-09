@@ -299,21 +299,22 @@ IMPORTANT:
 
         const hasEnhancedImages = enhancedImageUrls.length > 0
 
-        // Inject content with default customizations if none provided
-        // Get photos: prefer user-edited extractedContent.images, then enhancedImages, then submission.photos
-        // If extractedContent has images, it means the user explicitly selected them in the content editor
-        const hasUserEditedImages = existingWebsite?.extractedContent && (extractedContent as any)?.images?.length > 0
-        const photoStorageIds = hasUserEditedImages
-            ? (extractedContent as any).images
-            : (hasEnhancedImages ? enhancedImageUrls : ((extractedContent as any).images || submission.photos || []))
+        // Helper: filter out expired Airtable URLs (they return 410 Gone)
+        const isValidImageUrl = (url: string) => url && url.startsWith('http') && !url.includes('airtableusercontent.com')
+
+        // Get photos: prefer enhanced images (already resolved above), then submission.photos
+        // Skip previously-saved extractedContent.images as they may contain expired Airtable URLs
+        const photoStorageIds = hasEnhancedImages
+            ? enhancedImageUrls
+            : (submission.photos || [])
         let photos: string[] = []
 
-        console.log(`[IMAGES] photoStorageIds (${photoStorageIds.length}):`, photoStorageIds.map((id: string) => id?.startsWith('http') ? 'HTTP' : 'STORAGE_ID'))
+        console.log(`[IMAGES] photoStorageIds (${photoStorageIds.length}):`, photoStorageIds.map((id: string) => id?.startsWith('http') ? (id.includes('airtable') ? 'AIRTABLE_EXPIRED' : 'HTTP') : 'STORAGE_ID'))
 
         if (photoStorageIds.length > 0) {
             try {
-                // Split into HTTP URLs (already resolved) and storage IDs (need resolution)
-                const httpUrls = photoStorageIds.filter((id: string) => id && id.startsWith('http'))
+                // Split into valid HTTP URLs and storage IDs that need resolution
+                const validHttpUrls = photoStorageIds.filter((id: string) => isValidImageUrl(id))
                 const storageIds = photoStorageIds.filter((id: string) => id && !id.startsWith('http'))
 
                 let resolvedFromStorage: string[] = []
@@ -325,21 +326,40 @@ IMPORTANT:
                     console.log(`[IMAGES] Resolved ${resolvedFromStorage.length}/${storageIds.length} storage IDs`)
                 }
 
-                photos = [...httpUrls, ...resolvedFromStorage]
+                photos = [...validHttpUrls, ...resolvedFromStorage]
             } catch (error) {
                 console.error('Error resolving photo URLs:', error)
-                photos = photoStorageIds.filter((url: string) => url && url.startsWith('http'))
+                photos = photoStorageIds.filter((url: string) => isValidImageUrl(url))
+            }
+        }
+
+        // Fallback: if no photos resolved from enhanced images, use original submission photos
+        if (photos.length === 0 && submission.photos?.length > 0) {
+            console.log(`[IMAGES] No enhanced images resolved, falling back to submission.photos`)
+            try {
+                const subPhotos = submission.photos
+                const httpPhotos = subPhotos.filter((p: string) => isValidImageUrl(p))
+                const storagePhotos = subPhotos.filter((p: string) => p && !p.startsWith('http'))
+                let resolved: string[] = []
+                if (storagePhotos.length > 0) {
+                    const urls = await fetchQuery(api.files.getMultipleUrls, { storageIds: storagePhotos })
+                    resolved = urls.filter((u): u is string => u !== null)
+                }
+                photos = [...httpPhotos, ...resolved]
+            } catch (error) {
+                console.error('Error resolving submission photos:', error)
             }
         }
         console.log(`[IMAGES] Final photos array: ${photos.length} URLs`)
 
-        // Resolve about_images: prefer user-edited, then enhancedImages.about, then extractedContent.about_images
-        const hasUserEditedAboutImages = existingWebsite?.extractedContent && (extractedContent as any)?.about_images?.length > 0
-        const aboutImageStorageIds = hasUserEditedAboutImages
-            ? (extractedContent as any).about_images
-            : ((hasEnhancedImages && enhancedImagesByCategory.about?.length)
-                ? enhancedImagesByCategory.about
-                : ((extractedContent as any)?.about_images || []))
+        // Resolve about_images: prefer freshly-resolved enhanced images, then extractedContent (filtered)
+        const rawAboutImages = (hasEnhancedImages && enhancedImagesByCategory.about?.length)
+            ? enhancedImagesByCategory.about
+            : ((extractedContent as any)?.about_images || [])
+        // Filter out expired Airtable URLs from any source
+        const aboutImageStorageIds = rawAboutImages.filter((img: string) =>
+            img && (!img.startsWith('http') || isValidImageUrl(img))
+        )
         let resolvedAboutImages: string[] = []
 
         if (aboutImageStorageIds.length > 0) {
@@ -375,13 +395,12 @@ IMPORTANT:
             }
         }
 
-        // Resolve services_image: prefer user-edited, then enhancedImages.services[0], then extractedContent.services_image
-        const hasUserEditedServicesImage = existingWebsite?.extractedContent && (extractedContent as any)?.services_image
-        const servicesImageStorageId = hasUserEditedServicesImage
-            ? (extractedContent as any).services_image
-            : ((hasEnhancedImages && enhancedImagesByCategory.services?.length)
-                ? enhancedImagesByCategory.services[0]
-                : (extractedContent as any)?.services_image)
+        // Resolve services_image: prefer freshly-resolved enhanced images, then extractedContent (filtered)
+        const rawServicesImage = (hasEnhancedImages && enhancedImagesByCategory.services?.length)
+            ? enhancedImagesByCategory.services[0]
+            : (extractedContent as any)?.services_image
+        const servicesImageStorageId = rawServicesImage && (!rawServicesImage.startsWith('http') || isValidImageUrl(rawServicesImage))
+            ? rawServicesImage : undefined
         let resolvedServicesImage: string | undefined = undefined
 
         if (servicesImageStorageId && !servicesImageStorageId.startsWith('http')) {
@@ -399,13 +418,13 @@ IMPORTANT:
             resolvedServicesImage = servicesImageStorageId
         }
 
-        // Resolve featured_images: prefer user-edited, then enhancedImages.featured, then extractedContent.featured_images
-        const hasUserEditedFeaturedImages = existingWebsite?.extractedContent && (extractedContent as any)?.featured_images?.length > 0
-        const featuredImageStorageIds = hasUserEditedFeaturedImages
-            ? (extractedContent as any).featured_images
-            : ((hasEnhancedImages && enhancedImagesByCategory.featured?.length)
-                ? enhancedImagesByCategory.featured
-                : ((extractedContent as any)?.featured_images || []))
+        // Resolve featured_images: prefer freshly-resolved enhanced images, then extractedContent (filtered)
+        const rawFeaturedImages = (hasEnhancedImages && enhancedImagesByCategory.featured?.length)
+            ? enhancedImagesByCategory.featured
+            : ((extractedContent as any)?.featured_images || [])
+        const featuredImageStorageIds = rawFeaturedImages.filter((img: string) =>
+            img && (!img.startsWith('http') || isValidImageUrl(img))
+        )
         let resolvedFeaturedImages: string[] = []
 
         if (featuredImageStorageIds.length > 0) {
