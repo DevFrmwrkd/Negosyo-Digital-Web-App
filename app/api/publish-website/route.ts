@@ -205,14 +205,17 @@ function deployWithWrangler(
         // Write HTML to temp directory
         writeFileSync(join(tmpDir, 'index.html'), htmlContent, 'utf-8')
 
-        // Run wrangler pages deploy
+        // Run wrangler pages deploy — use node to invoke wrangler directly
+        // (npx fails on Vercel: ENOENT mkdir /home/sbx_user1051 — sandbox has no writable home dir)
+        const wranglerBin = join(process.cwd(), 'node_modules', 'wrangler', 'bin', 'wrangler.js')
         const result = execSync(
-            `npx wrangler pages deploy "${tmpDir}" --project-name="${projectName}" --branch=main --commit-dirty=true`,
+            `node "${wranglerBin}" pages deploy "${tmpDir}" --project-name="${projectName}" --branch=main --commit-dirty=true`,
             {
                 env: {
                     ...process.env,
                     CLOUDFLARE_API_TOKEN: token,
                     CLOUDFLARE_ACCOUNT_ID: accountId,
+                    HOME: tmpdir(),
                 },
                 timeout: 60000,
                 encoding: 'utf-8',
