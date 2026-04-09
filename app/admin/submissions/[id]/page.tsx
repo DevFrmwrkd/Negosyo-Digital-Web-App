@@ -113,15 +113,17 @@ export default function SubmissionDetailPage() {
         const categories: Record<string, string[]> = {}
         const allUrls: string[] = []
         for (const [key, img] of Object.entries(enhancedImageData)) {
-            // Get the URL directly from the image object, handle both direct URLs and objects with url/storageId
+            // Prefer storageId (Convex, resolves to fresh URL) over url (Airtable, expires)
             let imageUrl = ''
             if (typeof img === 'string') {
                 imageUrl = img
             } else if (img && typeof img === 'object') {
-                imageUrl = (img as any).url || (img as any).storageId || ''
+                imageUrl = (img as any).storageId || (img as any).url || ''
             }
-            
+
             if (!imageUrl) continue
+            // Skip expired Airtable URLs — they'll show as broken images
+            if (imageUrl.includes('airtableusercontent.com')) continue
             allUrls.push(imageUrl)
             
             // Enhanced images from Airtable may have prefixes, handle both
@@ -164,19 +166,21 @@ export default function SubmissionDetailPage() {
                 if (resolvedEnhancedUrls[i]) map[sid] = resolvedEnhancedUrls[i]!
             })
         }
-        // Add direct HTTP URLs to the map as well for consistency
-        enhancedHttpUrls.forEach(url => {
-            map[url] = url
-        })
+        // Add direct HTTP URLs (excluding expired Airtable URLs)
+        enhancedHttpUrls
+            .filter(url => !url.includes('airtableusercontent.com'))
+            .forEach(url => { map[url] = url })
         return map
     })()
 
     // Helper to resolve an enhanced URL (storage ID or http URL)
     const resolveEnhancedUrl = (url: string): string | null => {
         if (!url) return null
+        // Never return expired Airtable URLs
+        if (url.includes('airtableusercontent.com')) return null
         if (url.startsWith('http')) return url
-        // Try to find resolved URL in map, or return the original ID as fallback
-        return enhancedUrlMap[url] || url || null
+        // Resolve storage ID from map
+        return enhancedUrlMap[url] || null
     }
 
     const hasEnhancedImages = (enhancedImagesByCategory?.allUrls?.length ?? 0) > 0
