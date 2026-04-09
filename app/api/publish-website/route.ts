@@ -3,10 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { fetchQuery, fetchMutation } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { execSync } from 'child_process'
-import { mkdtempSync, writeFileSync, rmSync } from 'fs'
-import { join } from 'path'
-import { tmpdir } from 'os'
+import { createHash } from 'crypto'
 
 /**
  * Publish a generated website to Cloudflare Pages
@@ -78,13 +75,13 @@ export async function POST(request: NextRequest) {
             cfProject = await createCfPagesProject(cfApiToken, cfAccountId, projectName)
         }
 
-        // Deploy using wrangler CLI (if project was deleted externally, recreate and retry)
+        // Deploy via Cloudflare Pages Direct Upload API (no wrangler CLI dependency)
         try {
-            await deployWithWrangler(cfApiToken, cfAccountId, cfProject, website.htmlContent)
+            await deployToCfPages(cfApiToken, cfAccountId, cfProject, website.htmlContent)
         } catch (deployError: any) {
-            if (deployError.message?.includes('Project not found') || deployError.message?.includes('could not find project')) {
+            if (deployError.message?.includes('Project not found') || deployError.message?.includes('could not find project') || deployError.message?.includes('not found')) {
                 cfProject = await createCfPagesProject(cfApiToken, cfAccountId, projectName)
-                await deployWithWrangler(cfApiToken, cfAccountId, cfProject, website.htmlContent)
+                await deployToCfPages(cfApiToken, cfAccountId, cfProject, website.htmlContent)
             } else {
                 throw deployError
             }
@@ -190,42 +187,45 @@ async function createCfPagesProject(
 }
 
 /**
- * Deploy HTML content to Cloudflare Pages using wrangler CLI.
- * Writes HTML to a temp directory and runs `wrangler pages deploy`.
+ * Deploy HTML content to Cloudflare Pages via Direct Upload API.
+ * No wrangler CLI needed — uses pure HTTP requests.
+ * https://developers.cloudflare.com/pages/configuration/api/
  */
-function deployWithWrangler(
+async function deployToCfPages(
     token: string,
     accountId: string,
     projectName: string,
     htmlContent: string,
 ): Promise<void> {
-    const tmpDir = mkdtempSync(join(tmpdir(), 'cf-pages-'))
+    const htmlBuffer = Buffer.from(htmlContent, 'utf-8')
+    const fileHash = createHash('sha256').update(htmlBuffer).digest('hex')
 
-    try {
-        // Write HTML to temp directory
-        writeFileSync(join(tmpDir, 'index.html'), htmlContent, 'utf-8')
+    // Build the manifest: maps file paths to their content hashes
+    const manifest = JSON.stringify({ '/index.html': fileHash })
 
-        // Run wrangler pages deploy — use node to invoke wrangler directly
-        // (npx fails on Vercel: ENOENT mkdir /home/sbx_user1051 — sandbox has no writable home dir)
-        const wranglerBin = join(process.cwd(), 'node_modules', 'wrangler', 'bin', 'wrangler.js')
-        const result = execSync(
-            `node "${wranglerBin}" pages deploy "${tmpDir}" --project-name="${projectName}" --branch=main --commit-dirty=true`,
-            {
-                env: {
-                    ...process.env,
-                    CLOUDFLARE_API_TOKEN: token,
-                    CLOUDFLARE_ACCOUNT_ID: accountId,
-                    HOME: tmpdir(),
-                },
-                timeout: 60000,
-                encoding: 'utf-8',
-            }
-        )
+    // Create multipart form with manifest + file content (keyed by hash)
+    const formData = new FormData()
+    formData.append('manifest', manifest)
+    formData.append(fileHash, new Blob([htmlBuffer]), 'index.html')
 
-    } finally {
-        // Clean up temp directory
-        rmSync(tmpDir, { recursive: true, force: true })
+    // Direct Upload deployment
+    const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`,
+        {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+        }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        const errorMsg = data?.errors?.map((e: any) => e.message).join(', ') || JSON.stringify(data)
+        throw new Error(`Cloudflare Pages deploy failed: ${errorMsg}`)
     }
 
-    return Promise.resolve()
+    console.log(`[CF Pages] Deployed ${projectName}: ${data.result?.url || 'success'}`)
 }
