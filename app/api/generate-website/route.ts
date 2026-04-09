@@ -612,9 +612,10 @@ IMPORTANT:
             navbar_cta_text: (extractedContent as any)?.navbar_cta_text,
             navbar_cta_link: (extractedContent as any)?.navbar_cta_link,
             navbar_headline: (extractedContent as any)?.navbar_headline,
-            // Images: use the already-resolved photos array (storage IDs → real URLs)
-            // This ensures no expired Airtable URLs or raw storage IDs leak into the HTML
-            images: photos,
+            // Images: preserve user's per-slot image selections if valid, otherwise use resolved photos
+            // This keeps the user's content editor choices (slot 1 = X, slot 2 = Y) intact
+            // while filtering out expired Airtable URLs
+            images: hasValidUserEditedImages ? userEditedImages : photos,
             // Contact info from submission (or from existing extracted content if edited)
             contact: (extractedContent as any)?.contact || {
                 email: submission.owner_email || 'contact@example.com',
