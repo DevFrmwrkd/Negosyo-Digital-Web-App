@@ -44,7 +44,7 @@ export default function PayoutsPage() {
     const filteredPayouts = useMemo(() => {
         if (!payouts) return []
 
-        return payouts.filter(payout => {
+        return payouts.filter((payout: any) => {
             if (statusFilter === 'pending') return !payout.creatorPaidAt
             if (statusFilter === 'paid') return !!payout.creatorPaidAt
             return true
@@ -53,12 +53,12 @@ export default function PayoutsPage() {
 
     // Select all visible
     const handleSelectAll = () => {
-        if (selectedIds.size === filteredPayouts.filter(p => !p.creatorPaidAt).length) {
+        if (selectedIds.size === filteredPayouts.filter((p: any) => !p.creatorPaidAt).length) {
             setSelectedIds(new Set())
         } else {
             const pendingIds = filteredPayouts
-                .filter(p => !p.creatorPaidAt)
-                .map(p => p._id)
+                .filter((p: any) => !p.creatorPaidAt)
+                .map((p: any) => p._id)
             setSelectedIds(new Set(pendingIds))
         }
     }
@@ -141,24 +141,14 @@ export default function PayoutsPage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
-                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Pending Requests</p>
-                    <p className="text-3xl font-bold text-amber-600">{stats?.totalPending || 0}</p>
-                </div>
-
-                <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Pending Amount</p>
-                    <p className="text-3xl font-bold text-gray-900">₱{(stats?.totalPendingAmount || 0).toLocaleString()}</p>
-                </div>
-
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 mb-6 lg:mb-8">
                 <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
                     <p className="text-xs font-medium text-gray-500 mb-2">Paid This Week</p>
                     <p className="text-3xl font-bold text-green-600">{stats?.paidThisWeek || 0}</p>
                 </div>
 
                 <div className="bg-white rounded-2xl p-5 border border-emerald-500 shadow-sm">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Paid Amount (Week)</p>
+                    <p className="text-xs font-medium text-gray-500 mb-2">Total Paid Out</p>
                     <p className="text-3xl font-bold text-green-600">₱{(stats?.paidThisWeekAmount || 0).toLocaleString()}</p>
                 </div>
             </div>
@@ -207,7 +197,7 @@ export default function PayoutsPage() {
                                 <th className="px-4 py-3.5 text-left">
                                     <input
                                         type="checkbox"
-                                        checked={selectedIds.size > 0 && selectedIds.size === filteredPayouts.filter(p => !p.creatorPaidAt).length}
+                                        checked={selectedIds.size > 0 && selectedIds.size === filteredPayouts.filter((p: any) => !p.creatorPaidAt).length}
                                         onChange={handleSelectAll}
                                         className="rounded border-gray-300 text-green-500 focus:ring-green-500"
                                     />
@@ -229,7 +219,7 @@ export default function PayoutsPage() {
                                     </td>
                                 </tr>
                             ) : (
-                                filteredPayouts.map((payout) => (
+                                filteredPayouts.map((payout: any) => (
                                     <tr key={payout._id} className={`border-b border-gray-50 hover:bg-gray-50/50 transition-colors ${selectedIds.has(payout._id) ? 'bg-green-50/50' : ''}`}>
                                         <td className="px-4 py-4">
                                             {!payout.creatorPaidAt && (

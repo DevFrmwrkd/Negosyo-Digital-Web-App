@@ -94,4 +94,54 @@ http.route({
     }),
 });
 
+// POST /wise-deposit-webhook
+// Wise fires this when money is deposited into the platform's Wise account.
+// Extracts reference code from payment note, matches to submission, auto-credits creator.
+http.route({
+    path: '/wise-deposit-webhook',
+    method: 'POST',
+    handler: httpAction(async (ctx, request) => {
+        try {
+            const body = await request.json();
+
+            // Parse the Wise deposit event
+            const { parseDepositWebhook } = await import('../lib/payments/webhookParser');
+            const result = parseDepositWebhook(body);
+
+            if (!result.success || !result.event) {
+                // Not a balance credit event or invalid payload — acknowledge and ignore
+                console.log(`[WISE-DEPOSIT] Ignored: ${result.error}`);
+                return new Response(JSON.stringify({ status: 'ignored', reason: result.error }), {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+
+            const { transactionId, amount, currency, reference, senderName } = result.event;
+
+            console.log(`[WISE-DEPOSIT] Received: ₱${amount} ${currency}, ref="${reference}", sender="${senderName}", txn=${transactionId}`);
+
+            // Schedule async processing (return 200 immediately — Wise requires fast response)
+            await ctx.scheduler.runAfter(0, internal.payments.processDeposit, {
+                referenceText: reference,
+                amount,
+                currency,
+                transactionId,
+                senderName: senderName || undefined,
+            });
+
+            return new Response(JSON.stringify({ status: 'ok', transactionId }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        } catch (error: any) {
+            console.error('[WISE-DEPOSIT] Error:', error);
+            return new Response(JSON.stringify({ error: 'Internal error' }), {
+                status: 200, // Return 200 to prevent Wise from retrying
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+    }),
+});
+
 export default http;

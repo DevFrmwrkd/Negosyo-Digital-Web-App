@@ -3,13 +3,20 @@
  * These functions return raw HTML strings without sending any email.
  */
 
+import { getPaymentConfig } from '@/lib/payment/config'
+
+const paymentConfig = getPaymentConfig()
+
 export function getPaymentConfirmationEmailHtml(params: {
     businessName: string
     businessOwnerName: string
     websiteUrl: string
     amount: number
+    wiseEmail?: string
 }): string {
-    const { businessName, businessOwnerName, websiteUrl, amount } = params
+    const { businessName, businessOwnerName, websiteUrl, amount, wiseEmail: customWiseEmail } = params
+    
+    const wiseEmail = customWiseEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
 
     return `
 <!DOCTYPE html>
@@ -130,7 +137,7 @@ export function getPaymentConfirmationEmailHtml(params: {
                                 <tr>
                                     <td style="padding:18px 24px;text-align:center;">
                                         <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">Questions? We're here to help.</p>
-                                        <a href="mailto:frmwrkd.media@gmail.com" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">frmwrkd.media@gmail.com</a>
+                                        <a href="mailto:${wiseEmail}" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">${wiseEmail}</a>
                                     </td>
                                 </tr>
                             </table>
@@ -145,6 +152,150 @@ export function getPaymentConfirmationEmailHtml(params: {
                         </td>
                     </tr>
 
+    `
+}
+
+export function getPaymentLinkEmailHtml(params: {
+    businessName: string
+    businessOwnerName: string
+    amount: number
+    paymentLink: string
+    referenceCode: string
+    platformEmail?: string
+}): string {
+    const { businessName, businessOwnerName, amount, paymentLink, referenceCode, platformEmail } = params
+
+    const displayEmail = platformEmail || paymentConfig.wiseEmail || 'support@negosyo.digital'
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Payment — ${businessName}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+            <td align="center" style="padding:40px 16px;">
+
+                <!-- Card -->
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:#1a1a1a;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+
+                    <!-- Hero gradient header -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#10b981 0%,#059669 50%,#06b6d4 100%);padding:48px 40px 40px;text-align:center;">
+                            <!-- Logo mark -->
+                            <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
+                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">NEGOSYO DIGITAL</span>
+                            </div>
+                            <h1 style="margin:0 0 12px;color:#ffffff;font-size:32px;font-weight:800;line-height:1.2;letter-spacing:-0.5px;">
+                                Ready to Go Live!
+                            </h1>
+                            <p style="margin:0;color:rgba(255,255,255,0.75);font-size:16px;line-height:1.6;">
+                                Complete payment to activate your website
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Greeting -->
+                    <tr>
+                        <td style="padding:36px 40px 0;">
+                            <p style="margin:0 0 24px;font-size:15px;color:#9ca3af;line-height:1.7;">
+                                Hi <strong style="color:#ffffff;">${businessOwnerName}</strong>,
+                            </p>
+                            <p style="margin:0 0 24px;font-size:15px;color:#9ca3af;line-height:1.7;">
+                                Your website for <strong style="color:#10b981;">${businessName}</strong> is ready! To activate it and make it live, we need you to complete a quick payment.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Payment details box -->
+                    <tr>
+                        <td style="padding:0 40px;">
+                            <table role="presentation" width="100%"  cellspacing="0" cellpadding="0" border="0" style="background-color:#0f0f0f;border:1px solid #2d2d2d;border-radius:12px;padding:24px;margin:0 0 24px;">
+                                <tr>
+                                    <td>
+                                        <p style="margin:0 0 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Payment Amount</p>
+                                        <p style="margin:0 0 20px;font-size:32px;color:#10b981;font-weight:800;">₱${amount.toLocaleString('en-PH')}</p>
+                                        
+                                        <p style="margin:0 0 8px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Reference Code</p>
+                                        <p style="margin:0;font-size:16px;color:#ffffff;font-family:monospace;letter-spacing:1px;font-weight:700;">${referenceCode}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- CTA Button -->
+                    <tr>
+                        <td style="padding:0 40px 24px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td align="center">
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                                            <tr>
+                                                <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);border-radius:8px;padding:3px;">
+                                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                                                        <tr>
+                                                            <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);border-radius:6px;padding:14px 32px;">
+                                                                <a href="${paymentLink}" style="display:inline-block;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;line-height:1.2;letter-spacing:0.3px;">
+                                                                    Complete Payment →
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Instructions -->
+                    <tr>
+                        <td style="padding:0 40px 32px;">
+                            <div style="background-color:#0f0f0f;border:1px solid #2d2d2d;border-radius:8px;padding:20px;">
+                                <p style="margin:0 0 12px;font-size:13px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">How It Works</p>
+                                
+                                <ol style="margin:0;padding-left:20px;color:#9ca3af;font-size:14px;line-height:1.8;">
+                                    <li style="margin-bottom:8px;">Click the button above to view payment details</li>
+                                    <li style="margin-bottom:8px;">Open your Wise app and send the payment</li>
+                                    <li style="margin-bottom:8px;">Use reference code: <strong style="color:#10b981;font-family:monospace;">${referenceCode}</strong></li>
+                                    <li>Your website will go live automatically once payment is confirmed</li>
+                                </ol>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Payment details (if Wise account provided) -->
+                    ${platformEmail ? `
+                    <tr>
+                        <td style="padding:0 40px 32px;">
+                            <p style="margin:0 0 12px;font-size:13px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Send Payment To</p>
+                            <p style="margin:0;padding:12px;background-color:#0f0f0f;border:1px solid #2d2d2d;border-radius:8px;font-size:14px;color:#e5e7eb;font-family:monospace;">
+                                📧 ${platformEmail}
+                            </p>
+                        </td>
+                    </tr>
+                    ` : ''}
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding:32px 40px;border-top:1px solid #2d2d2d;text-align:center;">
+                            <p style="margin:0 0 12px;font-size:13px;color:#6b7280;">
+                                Questions? <a href="mailto:support@negosyo.digital" style="color:#10b981;text-decoration:none;font-weight:600;">Contact support</a>
+                            </p>
+                            <p style="margin:0;font-size:12px;color:#4b5563;">
+                                © Negosyo Digital. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+
                 </table>
             </td>
         </tr>
@@ -153,20 +304,20 @@ export function getPaymentConfirmationEmailHtml(params: {
 </body>
 </html>
     `
-}
-
-export function getApprovalEmailHtml(params: {
+}export function getApprovalEmailHtml(params: {
     businessName: string
     businessOwnerName: string
     websiteUrl: string
     amount: number
     submissionId: string
+    paymentReference?: string
 }): string {
     const { businessName, businessOwnerName, websiteUrl, amount, submissionId } = params
 
-    const wiseEmail = process.env.WISE_EMAIL || 'frmwrkd.media@gmail.com'
+    const wiseEmail = paymentConfig.wiseEmail || 'support@negosyo.digital'
     const wiseAccountName = process.env.WISE_ACCOUNT_NAME || 'Negosyo Digital'
-    const reference = submissionId.substring(0, 8).toUpperCase()
+    // Use the auto-generated payment reference code, or fallback to old format
+    const reference = params.paymentReference || submissionId.substring(0, 8).toUpperCase()
 
     return `
 <!DOCTYPE html>
@@ -313,7 +464,7 @@ export function getApprovalEmailHtml(params: {
                         </td>
                     </tr>
 
-                    <!-- 24-hour urgency warning -->
+                    <!-- 3-day urgency warning -->
                     <tr>
                         <td style="padding:20px 40px 0;">
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:linear-gradient(135deg,#052e16,#064e3b);border-radius:12px;border:1px solid #065f46;">
@@ -323,9 +474,9 @@ export function getApprovalEmailHtml(params: {
                                             <tr>
                                                 <td style="vertical-align:top;padding-right:14px;font-size:22px;line-height:1;">&#9201;</td>
                                                 <td>
-                                                    <p style="margin:0 0 6px;font-size:14px;color:#6ee7b7;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Action Required Within 24 Hours</p>
+                                                    <p style="margin:0 0 6px;font-size:14px;color:#6ee7b7;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Action Required Within 3 Days</p>
                                                     <p style="margin:0;font-size:14px;color:#a7f3d0;line-height:1.6;">
-                                                        Your website preview will be <strong>automatically taken offline</strong> if payment is not received within <strong>24 hours</strong> of this email. Complete your payment now to keep it live.
+                                                        Your website preview will be <strong>automatically taken offline</strong> if payment is not received within <strong>3 days</strong> of this email. Complete your payment now to keep it live.
                                                     </p>
                                                 </td>
                                             </tr>
@@ -370,7 +521,7 @@ export function getApprovalEmailHtml(params: {
                                 <tr>
                                     <td style="padding:18px 24px;text-align:center;">
                                         <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">Questions? We're here to help.</p>
-                                        <a href="mailto:frmwrkd.media@gmail.com" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">frmwrkd.media@gmail.com</a>
+                                        <a href="mailto:${wiseEmail}" style="color:#10b981;font-size:14px;font-weight:600;text-decoration:none;">${wiseEmail}</a>
                                     </td>
                                 </tr>
                             </table>

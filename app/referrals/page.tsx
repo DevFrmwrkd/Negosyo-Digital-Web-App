@@ -194,7 +194,7 @@ export default function ReferralsPage() {
                     <h2 className="text-base font-bold text-zinc-900 mb-3">Referred Creators</h2>
                     <div className="space-y-3">
                         {referrals && referrals.length > 0 ? (
-                            referrals.map((referral) => (
+                            referrals.map((referral: any) => (
                                 <div
                                     key={referral._id}
                                     className="bg-white rounded-xl p-3 border border-zinc-100 shadow-sm flex items-center justify-between"
