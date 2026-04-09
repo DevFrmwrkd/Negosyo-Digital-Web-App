@@ -187,14 +187,11 @@ async function createCfPagesProject(
 }
 
 /**
- * Deploy HTML content to Cloudflare Pages via Direct Upload API.
- * Follows the same 3-step flow as wrangler:
- * 1. Get JWT upload token
- * 2. Upload files (base64-encoded JSON payload)
- * 3. Create deployment with manifest
+ * Deploy HTML content to Cloudflare Pages via the public Create Deployment API.
+ * Single multipart POST with manifest + file content.
+ * https://developers.cloudflare.com/api/resources/pages/subresources/projects/subresources/deployments/methods/create/
  *
- * Hash format matches wrangler: SHA-256 of (base64(content) + extension), truncated to 32 hex chars.
- * (wrangler uses BLAKE3 but Cloudflare accepts any consistent hash as an identifier)
+ * Hash: SHA-256 of (base64(content) + extension), truncated to 32 hex chars (matches wrangler format).
  */
 async function deployToCfPages(
     token: string,
@@ -202,71 +199,39 @@ async function deployToCfPages(
     projectName: string,
     htmlContent: string,
 ): Promise<void> {
-    const cfApi = `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}`
-    const headers = { 'Authorization': `Bearer ${token}` }
-
-    // Compute file hash (matches wrangler format: hash of base64+extension, 32 hex chars)
     const htmlBuffer = Buffer.from(htmlContent, 'utf-8')
     const base64Content = htmlBuffer.toString('base64')
+    // Hash format: wrangler hashes base64(content)+extension, truncated to 32 hex chars
     const fileHash = createHash('sha256').update(base64Content + 'html').digest('hex').slice(0, 32)
 
-    console.log(`[CF Pages] Deploying to ${projectName}, file hash: ${fileHash}, size: ${htmlBuffer.length}B`)
+    console.log(`[CF Pages] Deploying to ${projectName}, hash: ${fileHash}, size: ${htmlBuffer.length}B`)
 
-    // Step 1: Get JWT upload token
-    const tokenResponse = await fetch(`${cfApi}/upload-token`, {
-        method: 'POST',
-        headers,
-    })
-    const tokenData = await tokenResponse.json() as any
-    if (!tokenResponse.ok) {
-        throw new Error(`Failed to get upload token: ${JSON.stringify(tokenData.errors || tokenData)}`)
-    }
-    const jwt = tokenData.result?.jwt
-    if (!jwt) {
-        throw new Error('No JWT in upload token response')
-    }
-
-    // Step 2: Upload file content (base64-encoded JSON payload, same as wrangler)
-    const uploadPayload = [{
-        key: fileHash,
-        value: base64Content,
-        metadata: { contentType: 'text/html' },
-        base64: true,
-    }]
-
-    const uploadResponse = await fetch('https://api.cloudflare.com/client/v4/pages/assets/upload', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${jwt}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(uploadPayload),
-    })
-
-    if (!uploadResponse.ok) {
-        const uploadError = await uploadResponse.text()
-        throw new Error(`File upload failed: ${uploadError}`)
-    }
-    console.log(`[CF Pages] File uploaded successfully`)
-
-    // Step 3: Create deployment with manifest
+    // Build multipart form: manifest + file (keyed by hash)
+    // The manifest maps paths → hashes, and each hash has a matching file field
     const manifest = JSON.stringify({ '/index.html': fileHash })
+
+    // Use Blob with explicit type for proper multipart encoding in Node.js fetch
     const formData = new FormData()
     formData.append('manifest', manifest)
-    formData.append('branch', 'main')
-    formData.append('commit_message', 'Deploy website')
+    formData.append(fileHash, new Blob([htmlBuffer], { type: 'text/html' }), 'index.html')
 
-    const deployResponse = await fetch(`${cfApi}/deployments`, {
-        method: 'POST',
-        headers,
-        body: formData,
-    })
+    const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`,
+        {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData,
+        }
+    )
 
-    const deployData = await deployResponse.json() as any
-    if (!deployResponse.ok) {
-        const errorMsg = deployData?.errors?.map((e: any) => e.message).join(', ') || JSON.stringify(deployData)
-        throw new Error(`Deployment creation failed: ${errorMsg}`)
+    const data = await response.json() as any
+
+    if (!response.ok) {
+        const errorMsg = data?.errors?.map((e: any) => e.message).join(', ') || JSON.stringify(data)
+        throw new Error(`CF Pages deploy failed (${response.status}): ${errorMsg}`)
     }
 
-    console.log(`[CF Pages] Deployed ${projectName}: ${deployData.result?.url || 'success'}`)
+    // Log the deployment URL and wait a moment for propagation
+    const deployUrl = data.result?.url || data.result?.aliases?.[0] || `https://${projectName}.pages.dev`
+    console.log(`[CF Pages] Deployed: ${deployUrl} (id: ${data.result?.id})`)
 }
