@@ -68,11 +68,12 @@ export async function POST(request: NextRequest) {
         const businessName = submission.businessName || 'business'
         const projectName = generateProjectName(businessName)
 
-        // Use existing project or create one
+        // Use existing project or create/find one
         let cfProject = website.cfPagesProjectName
 
         if (!cfProject) {
-            cfProject = await createCfPagesProject(cfApiToken, cfAccountId, projectName)
+            // Try to use the base project name first (check if it exists)
+            cfProject = await findOrCreateCfPagesProject(cfApiToken, cfAccountId, projectName)
         }
 
         // Deploy via Cloudflare Pages Direct Upload API (no wrangler CLI dependency)
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
             await deployToCfPages(cfApiToken, cfAccountId, cfProject, website.htmlContent)
         } catch (deployError: any) {
             if (deployError.message?.includes('Project not found') || deployError.message?.includes('could not find project') || deployError.message?.includes('not found')) {
-                cfProject = await createCfPagesProject(cfApiToken, cfAccountId, projectName)
+                cfProject = await findOrCreateCfPagesProject(cfApiToken, cfAccountId, projectName)
                 await deployToCfPages(cfApiToken, cfAccountId, cfProject, website.htmlContent)
             } else {
                 throw deployError
@@ -149,6 +150,28 @@ function generateProjectName(businessName: string): string {
 }
 
 /**
+ * Find an existing Cloudflare Pages project or create a new one.
+ * Avoids creating duplicate projects with random suffixes.
+ */
+async function findOrCreateCfPagesProject(
+    token: string,
+    accountId: string,
+    name: string,
+): Promise<string> {
+    // Check if project already exists
+    const checkResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${name}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+    )
+    if (checkResponse.ok) {
+        console.log(`[CF Pages] Found existing project: ${name}`)
+        return name
+    }
+    // Project doesn't exist, create it
+    return createCfPagesProject(token, accountId, name)
+}
+
+/**
  * Create a new Cloudflare Pages project via REST API.
  * Returns the actual project name (may have suffix if name was taken).
  */
@@ -187,11 +210,9 @@ async function createCfPagesProject(
 }
 
 /**
- * Deploy HTML content to Cloudflare Pages via the public Create Deployment API.
- * Single multipart POST with manifest + file content.
+ * Deploy HTML content to Cloudflare Pages via the Create Deployment API.
+ * Constructs multipart body manually to avoid Node.js FormData/Blob encoding issues.
  * https://developers.cloudflare.com/api/resources/pages/subresources/projects/subresources/deployments/methods/create/
- *
- * Hash: SHA-256 of (base64(content) + extension), truncated to 32 hex chars (matches wrangler format).
  */
 async function deployToCfPages(
     token: string,
@@ -201,26 +222,45 @@ async function deployToCfPages(
 ): Promise<void> {
     const htmlBuffer = Buffer.from(htmlContent, 'utf-8')
     const base64Content = htmlBuffer.toString('base64')
-    // Hash format: wrangler hashes base64(content)+extension, truncated to 32 hex chars
     const fileHash = createHash('sha256').update(base64Content + 'html').digest('hex').slice(0, 32)
+    const manifest = JSON.stringify({ '/index.html': fileHash })
 
     console.log(`[CF Pages] Deploying to ${projectName}, hash: ${fileHash}, size: ${htmlBuffer.length}B`)
 
-    // Build multipart form: manifest + file (keyed by hash)
-    // The manifest maps paths → hashes, and each hash has a matching file field
-    const manifest = JSON.stringify({ '/index.html': fileHash })
+    // Build multipart body manually — Node.js FormData+Blob has encoding issues with Cloudflare
+    const boundary = `----CFDeploy${Date.now()}`
+    const parts: Buffer[] = []
 
-    // Use Blob with explicit type for proper multipart encoding in Node.js fetch
-    const formData = new FormData()
-    formData.append('manifest', manifest)
-    formData.append(fileHash, new Blob([htmlBuffer], { type: 'text/html' }), 'index.html')
+    // Part 1: manifest
+    parts.push(Buffer.from(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="manifest"\r\n\r\n` +
+        `${manifest}\r\n`
+    ))
+
+    // Part 2: the HTML file (keyed by hash, with filename)
+    parts.push(Buffer.from(
+        `--${boundary}\r\n` +
+        `Content-Disposition: form-data; name="${fileHash}"; filename="index.html"\r\n` +
+        `Content-Type: text/html\r\n\r\n`
+    ))
+    parts.push(htmlBuffer)
+    parts.push(Buffer.from(`\r\n`))
+
+    // Closing boundary
+    parts.push(Buffer.from(`--${boundary}--\r\n`))
+
+    const body = Buffer.concat(parts)
 
     const response = await fetch(
         `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`,
         {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` },
-            body: formData,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': `multipart/form-data; boundary=${boundary}`,
+            },
+            body,
         }
     )
 
@@ -231,7 +271,6 @@ async function deployToCfPages(
         throw new Error(`CF Pages deploy failed (${response.status}): ${errorMsg}`)
     }
 
-    // Log the deployment URL and wait a moment for propagation
-    const deployUrl = data.result?.url || data.result?.aliases?.[0] || `https://${projectName}.pages.dev`
+    const deployUrl = data.result?.url || `https://${projectName}.pages.dev`
     console.log(`[CF Pages] Deployed: ${deployUrl} (id: ${data.result?.id})`)
 }
