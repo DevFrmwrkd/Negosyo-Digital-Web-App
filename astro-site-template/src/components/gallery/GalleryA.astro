@@ -112,7 +112,7 @@ const showItems = visibility?.galleryItems !== false;
             )}
 
             {/* Testimonial */}
-            {item.testimonial && (
+            {item.testimonial && (item.testimonial.quote || item.testimonial.author) && (
               <div class={`border-t border-[var(--text)]/10 pt-10 relative`}>
                 <svg
                   class={`absolute -top-4 -left-2 h-12 w-12 ${tagText} opacity-20`}
