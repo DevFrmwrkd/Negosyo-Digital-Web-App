@@ -259,27 +259,33 @@ export default function VisualEditor({
     // Convex mutation for file upload
     const generateUploadUrl = useMutation(api.files.generateUploadUrl)
 
+    // Helper: check if a URL is usable (not an expired Airtable URL)
+    const isUsableUrl = (url: string) => url?.startsWith('http') && !url.includes('airtableusercontent.com')
+
     // Resolve hero image URL - handles both convex:xxx format and raw storage IDs
     const heroImage = content.images?.[0]
-    const needsResolution = heroImage && !heroImage.startsWith('http')
+    const heroNeedsResolution = heroImage && !isUsableUrl(heroImage)
     const resolvedImageUrls = useQuery(
         api.files.getMultipleUrls,
-        needsResolution && heroImage ? { storageIds: [heroImage] } : 'skip'
+        heroNeedsResolution && heroImage ? { storageIds: [heroImage.replace(/^https?:\/\/.*/, '').trim() || heroImage] } : 'skip'
     )
 
     // Update resolved hero image when query returns
     useEffect(() => {
         if (resolvedImageUrls && resolvedImageUrls[0]) {
             setResolvedHeroImage(resolvedImageUrls[0])
-        } else if (heroImage?.startsWith('http')) {
-            // It's already a regular URL
+        } else if (heroImage && isUsableUrl(heroImage)) {
             setResolvedHeroImage(heroImage)
+        } else {
+            // Fallback: use first available image if current one is expired
+            const fallback = availableImages.find(img => isUsableUrl(img))
+            if (fallback) setResolvedHeroImage(fallback)
         }
-    }, [resolvedImageUrls, heroImage])
+    }, [resolvedImageUrls, heroImage, availableImages])
 
     // Resolve all hero images for carousel (style 3)
     const allHeroImages = content.images || []
-    const heroStorageIdsToResolve = allHeroImages.filter(img => img && !img.startsWith('http'))
+    const heroStorageIdsToResolve = allHeroImages.filter(img => img && !isUsableUrl(img))
     const resolvedAllHeroImageUrls = useQuery(
         api.files.getMultipleUrls,
         heroStorageIdsToResolve.length > 0 ? { storageIds: heroStorageIdsToResolve } : 'skip'
@@ -289,7 +295,7 @@ export default function VisualEditor({
     useEffect(() => {
         if (allHeroImages.length > 0) {
             const resolved = allHeroImages.map((img) => {
-                if (img?.startsWith('http')) {
+                if (img && isUsableUrl(img)) {
                     return img
                 }
                 // Find the resolved URL for this storage ID
@@ -305,10 +311,10 @@ export default function VisualEditor({
         }
     }, [resolvedAllHeroImageUrls, allHeroImages.join(','), heroStorageIdsToResolve.join(',')])
 
-    // Resolve about images URLs - handles both convex:xxx format and raw storage IDs
+    // Resolve about images URLs - handles both convex:xxx format, raw storage IDs, and expired Airtable URLs
     const aboutImagesFromContent = content.about_images || []
     const aboutStorageIdsToResolve = aboutImagesFromContent
-        .filter(img => img && !img.startsWith('http'))
+        .filter(img => img && !isUsableUrl(img))
     const resolvedAboutImageUrls = useQuery(
         api.files.getMultipleUrls,
         aboutStorageIdsToResolve.length > 0 ? { storageIds: aboutStorageIdsToResolve } : 'skip'
@@ -318,9 +324,9 @@ export default function VisualEditor({
     useEffect(() => {
         const currentAboutImages = content.about_images || []
         if (currentAboutImages.length > 0) {
-            const storageIdsToResolve = currentAboutImages.filter(img => img && !img.startsWith('http'))
+            const storageIdsToResolve = currentAboutImages.filter(img => img && !isUsableUrl(img))
             const resolved = currentAboutImages.map((img) => {
-                if (img?.startsWith('http')) {
+                if (img && isUsableUrl(img)) {
                     return img
                 }
                 // Find the resolved URL for this storage ID
@@ -336,9 +342,9 @@ export default function VisualEditor({
         }
     }, [resolvedAboutImageUrls, content.about_images])
 
-    // Resolve services image URL - handles both convex:xxx format and raw storage IDs
+    // Resolve services image URL - handles both convex:xxx format, raw storage IDs, and expired Airtable URLs
     const servicesImage = content.services_image
-    const servicesNeedsResolution = servicesImage && !servicesImage.startsWith('http')
+    const servicesNeedsResolution = servicesImage && !isUsableUrl(servicesImage)
     const resolvedServicesImageUrls = useQuery(
         api.files.getMultipleUrls,
         servicesNeedsResolution && servicesImage ? { storageIds: [servicesImage] } : 'skip'
@@ -348,17 +354,17 @@ export default function VisualEditor({
     useEffect(() => {
         if (resolvedServicesImageUrls && resolvedServicesImageUrls[0]) {
             setResolvedServicesImage(resolvedServicesImageUrls[0])
-        } else if (servicesImage?.startsWith('http')) {
+        } else if (servicesImage && isUsableUrl(servicesImage)) {
             setResolvedServicesImage(servicesImage)
         } else {
             setResolvedServicesImage(null)
         }
     }, [resolvedServicesImageUrls, servicesImage])
 
-    // Resolve featured images URLs - handles both convex:xxx format and raw storage IDs
+    // Resolve featured images URLs - handles both convex:xxx format, raw storage IDs, and expired Airtable URLs
     const featuredImagesFromContent = content.featured_images || []
     const featuredStorageIdsToResolve = featuredImagesFromContent
-        .filter(img => img && !img.startsWith('http'))
+        .filter(img => img && !isUsableUrl(img))
     const resolvedFeaturedImageUrls = useQuery(
         api.files.getMultipleUrls,
         featuredStorageIdsToResolve.length > 0 ? { storageIds: featuredStorageIdsToResolve } : 'skip'
@@ -368,9 +374,9 @@ export default function VisualEditor({
     useEffect(() => {
         const currentFeaturedImages = content.featured_images || []
         if (currentFeaturedImages.length > 0) {
-            const storageIdsToResolve = currentFeaturedImages.filter(img => img && !img.startsWith('http'))
+            const storageIdsToResolve = currentFeaturedImages.filter(img => img && !isUsableUrl(img))
             const resolved = currentFeaturedImages.map((img) => {
-                if (img?.startsWith('http')) {
+                if (img && isUsableUrl(img)) {
                     return img
                 }
                 // Find the resolved URL for this storage ID
