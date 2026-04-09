@@ -3,7 +3,6 @@ import { auth } from '@clerk/nextjs/server'
 import { fetchQuery, fetchMutation } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { createHash } from 'crypto'
 
 /**
  * Publish a generated website to Cloudflare Pages
@@ -68,34 +67,20 @@ export async function POST(request: NextRequest) {
         const businessName = submission.businessName || 'business'
         const projectName = generateProjectName(businessName)
 
-        // Use existing project or create/find one
-        let cfProject = website.cfPagesProjectName
+        // Deploy as a Cloudflare Worker (simple PUT request, no Pages Direct Upload hassles)
+        const workerName = website.cfPagesProjectName || projectName
+        await deployAsWorker(cfApiToken, cfAccountId, workerName, website.htmlContent)
 
-        if (!cfProject) {
-            // Try to use the base project name first (check if it exists)
-            cfProject = await findOrCreateCfPagesProject(cfApiToken, cfAccountId, projectName)
-        }
-
-        // Deploy via Cloudflare Pages Direct Upload API (no wrangler CLI dependency)
-        try {
-            await deployToCfPages(cfApiToken, cfAccountId, cfProject, website.htmlContent)
-        } catch (deployError: any) {
-            if (deployError.message?.includes('Project not found') || deployError.message?.includes('could not find project') || deployError.message?.includes('not found')) {
-                cfProject = await findOrCreateCfPagesProject(cfApiToken, cfAccountId, projectName)
-                await deployToCfPages(cfApiToken, cfAccountId, cfProject, website.htmlContent)
-            } else {
-                throw deployError
-            }
-        }
-
-        const publishedUrl = `https://${cfProject}.pages.dev`
+        // Get the workers.dev subdomain for this account
+        const workerSubdomain = await getWorkersSubdomain(cfApiToken, cfAccountId)
+        const publishedUrl = `https://${workerName}.${workerSubdomain}.workers.dev`
 
         // Update generated website in Convex with published info
         try {
             await fetchMutation(api.generatedWebsites.publish, {
                 submissionId: submissionId as Id<"submissions">,
                 publishedUrl,
-                cfPagesProjectName: cfProject,
+                cfPagesProjectName: workerName,
             })
         } catch (updateError: any) {
             console.error('Database update error:', updateError?.message || updateError)
@@ -123,7 +108,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             url: publishedUrl,
-            projectName: cfProject,
+            projectName: workerName,
             message: `Website published successfully to ${publishedUrl}`
         })
 
@@ -137,114 +122,95 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Generate a URL-safe project name from business name.
- * CF Pages project names: lowercase, alphanumeric + hyphens, max 58 chars.
+ * Generate a URL-safe worker name from business name.
+ * Workers names: lowercase, alphanumeric + hyphens, max 63 chars.
  */
 function generateProjectName(businessName: string): string {
     return businessName
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '')
-        .substring(0, 58)
+        .substring(0, 63)
         || 'business'
 }
 
 /**
- * Find an existing Cloudflare Pages project or create a new one.
- * Avoids creating duplicate projects with random suffixes.
+ * Get the workers.dev subdomain for this Cloudflare account.
  */
-async function findOrCreateCfPagesProject(
-    token: string,
-    accountId: string,
-    name: string,
-): Promise<string> {
-    // Check if project already exists
-    const checkResponse = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${name}`,
+async function getWorkersSubdomain(token: string, accountId: string): Promise<string> {
+    const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`,
         { headers: { 'Authorization': `Bearer ${token}` } }
     )
-    if (checkResponse.ok) {
-        console.log(`[CF Pages] Found existing project: ${name}`)
-        return name
+    const data = await response.json() as any
+    if (response.ok && data.result?.subdomain) {
+        return data.result.subdomain
     }
-    // Project doesn't exist, create it
-    return createCfPagesProject(token, accountId, name)
+    // Fallback: use account ID as subdomain (shouldn't happen for active accounts)
+    throw new Error('Could not determine workers.dev subdomain. Ensure Workers is enabled on your Cloudflare account.')
 }
 
 /**
- * Create a new Cloudflare Pages project via REST API.
- * Returns the actual project name (may have suffix if name was taken).
+ * Deploy HTML as a Cloudflare Worker.
+ * Single PUT request — no multipart, no hashes, no Pages Direct Upload issues.
+ * The Worker serves the HTML with proper content-type headers.
+ * URL: https://{workerName}.{subdomain}.workers.dev
  */
-async function createCfPagesProject(
+async function deployAsWorker(
     token: string,
     accountId: string,
-    name: string,
-): Promise<string> {
-    const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`,
-        {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name,
-                production_branch: 'main',
-            }),
-        }
-    )
-
-    const data = await response.json()
-
-    if (!response.ok) {
-        // If name is taken, retry with timestamp suffix
-        if (response.status === 409 || data?.errors?.some((e: any) => e.code === 8000007)) {
-            const uniqueName = `${name}-${Date.now().toString(36)}`.substring(0, 58)
-            return createCfPagesProject(token, accountId, uniqueName)
-        }
-        throw new Error(`Failed to create CF Pages project: ${JSON.stringify(data.errors || data)}`)
-    }
-
-    return data.result.name
-}
-
-/**
- * Deploy HTML content to Cloudflare Pages via the Create Deployment API.
- * Constructs multipart body manually to avoid Node.js FormData/Blob encoding issues.
- * https://developers.cloudflare.com/api/resources/pages/subresources/projects/subresources/deployments/methods/create/
- */
-async function deployToCfPages(
-    token: string,
-    accountId: string,
-    projectName: string,
+    workerName: string,
     htmlContent: string,
 ): Promise<void> {
-    const htmlBuffer = Buffer.from(htmlContent, 'utf-8')
-    const base64Content = htmlBuffer.toString('base64')
-    const fileHash = createHash('sha256').update(base64Content + 'html').digest('hex').slice(0, 32)
-    const manifest = JSON.stringify({ '/index.html': fileHash })
+    // Escape backticks and ${} in HTML to safely embed in template literal
+    const escapedHtml = htmlContent
+        .replace(/\\/g, '\\\\')
+        .replace(/`/g, '\\`')
+        .replace(/\$\{/g, '\\${')
 
-    console.log(`[CF Pages] Deploying to ${projectName}, hash: ${fileHash}, size: ${htmlBuffer.length}B`)
+    // Worker script that serves the static HTML
+    const workerScript = `
+export default {
+  async fetch(request) {
+    const html = \`${escapedHtml}\`;
+    return new Response(html, {
+      headers: {
+        "content-type": "text/html;charset=UTF-8",
+        "cache-control": "public, max-age=3600",
+        "access-control-allow-origin": "*",
+      },
+    });
+  },
+};
+`
 
-    // Build multipart body manually — Node.js FormData+Blob has encoding issues with Cloudflare
-    const boundary = `----CFDeploy${Date.now()}`
+    console.log(`[CF Worker] Deploying ${workerName}, script size: ${(workerScript.length / 1024).toFixed(0)}KB`)
+
+    // Deploy Worker script via PUT — ESM format (module worker)
+    // https://developers.cloudflare.com/api/resources/workers/subresources/scripts/methods/update/
+    const metadata = JSON.stringify({
+        main_module: 'worker.js',
+        compatibility_date: '2024-01-01',
+    })
+
+    const boundary = `----WorkerDeploy${Date.now()}`
     const parts: Buffer[] = []
 
-    // Part 1: manifest
+    // Part 1: metadata
     parts.push(Buffer.from(
         `--${boundary}\r\n` +
-        `Content-Disposition: form-data; name="manifest"\r\n\r\n` +
-        `${manifest}\r\n`
+        `Content-Disposition: form-data; name="metadata"; filename="metadata.json"\r\n` +
+        `Content-Type: application/json\r\n\r\n` +
+        `${metadata}\r\n`
     ))
 
-    // Part 2: the HTML file (keyed by hash, with filename)
+    // Part 2: worker script
     parts.push(Buffer.from(
         `--${boundary}\r\n` +
-        `Content-Disposition: form-data; name="${fileHash}"; filename="index.html"\r\n` +
-        `Content-Type: text/html\r\n\r\n`
+        `Content-Disposition: form-data; name="worker.js"; filename="worker.js"\r\n` +
+        `Content-Type: application/javascript+module\r\n\r\n`
     ))
-    parts.push(htmlBuffer)
+    parts.push(Buffer.from(workerScript, 'utf-8'))
     parts.push(Buffer.from(`\r\n`))
 
     // Closing boundary
@@ -253,9 +219,9 @@ async function deployToCfPages(
     const body = Buffer.concat(parts)
 
     const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`,
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}`,
         {
-            method: 'POST',
+            method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': `multipart/form-data; boundary=${boundary}`,
@@ -268,9 +234,25 @@ async function deployToCfPages(
 
     if (!response.ok) {
         const errorMsg = data?.errors?.map((e: any) => e.message).join(', ') || JSON.stringify(data)
-        throw new Error(`CF Pages deploy failed (${response.status}): ${errorMsg}`)
+        throw new Error(`Worker deploy failed (${response.status}): ${errorMsg}`)
     }
 
-    const deployUrl = data.result?.url || `https://${projectName}.pages.dev`
-    console.log(`[CF Pages] Deployed: ${deployUrl} (id: ${data.result?.id})`)
+    // Enable the workers.dev route for this worker
+    try {
+        await fetch(
+            `https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/subdomain`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ enabled: true }),
+            }
+        )
+    } catch (e) {
+        console.warn('[CF Worker] Could not enable subdomain route (may already be enabled)')
+    }
+
+    console.log(`[CF Worker] Deployed ${workerName} successfully`)
 }
