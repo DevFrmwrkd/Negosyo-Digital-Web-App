@@ -302,11 +302,19 @@ IMPORTANT:
         // Helper: filter out expired Airtable URLs (they return 410 Gone)
         const isValidImageUrl = (url: string) => url && url.startsWith('http') && !url.includes('airtableusercontent.com')
 
-        // Get photos: prefer enhanced images (already resolved above), then submission.photos
-        // Skip previously-saved extractedContent.images as they may contain expired Airtable URLs
-        const photoStorageIds = hasEnhancedImages
-            ? enhancedImageUrls
-            : (submission.photos || [])
+        // Get photos priority:
+        // 1. User-edited images from content editor (saved in extractedContent.images) — but filter out expired Airtable URLs
+        // 2. Freshly-resolved enhanced images from Airtable (storageIds already resolved above)
+        // 3. Original submission photos
+        const userEditedImages = ((extractedContent as any)?.images || [])
+            .filter((img: string) => img && isValidImageUrl(img))
+        const hasValidUserEditedImages = userEditedImages.length > 0
+
+        const photoStorageIds = hasValidUserEditedImages
+            ? userEditedImages
+            : (hasEnhancedImages ? enhancedImageUrls : (submission.photos || []))
+
+        console.log(`[IMAGES] Source: ${hasValidUserEditedImages ? 'user-edited' : hasEnhancedImages ? 'enhanced' : 'submission'}`)
         let photos: string[] = []
 
         console.log(`[IMAGES] photoStorageIds (${photoStorageIds.length}):`, photoStorageIds.map((id: string) => id?.startsWith('http') ? (id.includes('airtable') ? 'AIRTABLE_EXPIRED' : 'HTTP') : 'STORAGE_ID'))
@@ -352,10 +360,14 @@ IMPORTANT:
         }
         console.log(`[IMAGES] Final photos array: ${photos.length} URLs`)
 
-        // Resolve about_images: prefer freshly-resolved enhanced images, then extractedContent (filtered)
-        const rawAboutImages = (hasEnhancedImages && enhancedImagesByCategory.about?.length)
-            ? enhancedImagesByCategory.about
-            : ((extractedContent as any)?.about_images || [])
+        // Resolve about_images: prefer user-edited, then enhanced, then extractedContent
+        const userEditedAboutImages = ((extractedContent as any)?.about_images || [])
+            .filter((img: string) => img && isValidImageUrl(img))
+        const rawAboutImages = userEditedAboutImages.length > 0
+            ? userEditedAboutImages
+            : ((hasEnhancedImages && enhancedImagesByCategory.about?.length)
+                ? enhancedImagesByCategory.about
+                : ((extractedContent as any)?.about_images || []))
         // Filter out expired Airtable URLs from any source
         const aboutImageStorageIds = rawAboutImages.filter((img: string) =>
             img && (!img.startsWith('http') || isValidImageUrl(img))
@@ -395,10 +407,13 @@ IMPORTANT:
             }
         }
 
-        // Resolve services_image: prefer freshly-resolved enhanced images, then extractedContent (filtered)
-        const rawServicesImage = (hasEnhancedImages && enhancedImagesByCategory.services?.length)
-            ? enhancedImagesByCategory.services[0]
-            : (extractedContent as any)?.services_image
+        // Resolve services_image: prefer user-edited, then enhanced, then extractedContent
+        const userEditedServicesImage = (extractedContent as any)?.services_image
+        const rawServicesImage = (userEditedServicesImage && isValidImageUrl(userEditedServicesImage))
+            ? userEditedServicesImage
+            : ((hasEnhancedImages && enhancedImagesByCategory.services?.length)
+                ? enhancedImagesByCategory.services[0]
+                : (extractedContent as any)?.services_image)
         const servicesImageStorageId = rawServicesImage && (!rawServicesImage.startsWith('http') || isValidImageUrl(rawServicesImage))
             ? rawServicesImage : undefined
         let resolvedServicesImage: string | undefined = undefined
@@ -418,10 +433,14 @@ IMPORTANT:
             resolvedServicesImage = servicesImageStorageId
         }
 
-        // Resolve featured_images: prefer freshly-resolved enhanced images, then extractedContent (filtered)
-        const rawFeaturedImages = (hasEnhancedImages && enhancedImagesByCategory.featured?.length)
-            ? enhancedImagesByCategory.featured
-            : ((extractedContent as any)?.featured_images || [])
+        // Resolve featured_images: prefer user-edited, then enhanced, then extractedContent
+        const userEditedFeaturedImages = ((extractedContent as any)?.featured_images || [])
+            .filter((img: string) => img && isValidImageUrl(img))
+        const rawFeaturedImages = userEditedFeaturedImages.length > 0
+            ? userEditedFeaturedImages
+            : ((hasEnhancedImages && enhancedImagesByCategory.featured?.length)
+                ? enhancedImagesByCategory.featured
+                : ((extractedContent as any)?.featured_images || []))
         const featuredImageStorageIds = rawFeaturedImages.filter((img: string) =>
             img && (!img.startsWith('http') || isValidImageUrl(img))
         )
