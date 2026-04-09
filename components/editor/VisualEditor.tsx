@@ -193,6 +193,7 @@ export default function VisualEditor({
     const [isUploadingFeaturedImage, setIsUploadingFeaturedImage] = useState(false)
     const [uploadingProductIndex, setUploadingProductIndex] = useState<number | null>(null)
     const [showImagePicker, setShowImagePicker] = useState(false)
+    const [productImagePickerIndex, setProductImagePickerIndex] = useState<number | null>(null)
     const [showAboutImagePicker, setShowAboutImagePicker] = useState(false)
     const [showServicesImagePicker, setShowServicesImagePicker] = useState(false)
     const [showFeaturedImagePicker, setShowFeaturedImagePicker] = useState(false)
@@ -1431,7 +1432,7 @@ export default function VisualEditor({
                                         </div>
                                     )}
                                 </>
-                            ) : (heroStyle === 'I' || heroStyle === '9') ? (
+                            ) : (heroStyle === 'I' || heroStyle === '9' || heroStyle === 'E' || heroStyle === '5') ? (
                                 <div className="space-y-4 mb-4">
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="space-y-2">
@@ -1647,7 +1648,7 @@ export default function VisualEditor({
                                                                             updateField('images', newImages)
                                                                             toast.success('Image added to carousel')
                                                                         }
-                                                                    } else if (heroStyle === 'I' || heroStyle === '9') {
+                                                                    } else if (heroStyle === 'I' || heroStyle === '9' || heroStyle === 'E' || heroStyle === '5') {
                                                                         const currentImages = content.images || []
                                                                         const newImages = [...currentImages]
                                                                         while (newImages.length < 2) newImages.push('')
@@ -1699,7 +1700,7 @@ export default function VisualEditor({
                                                                             updateField('images', newImages)
                                                                             toast.success('Image added to carousel')
                                                                         }
-                                                                    } else if (heroStyle === 'I' || heroStyle === '9') {
+                                                                    } else if (heroStyle === 'I' || heroStyle === '9' || heroStyle === 'E' || heroStyle === '5') {
                                                                         const currentImages = content.images || []
                                                                         const newImages = [...currentImages]
                                                                         while (newImages.length < 2) newImages.push('')
@@ -1749,7 +1750,7 @@ export default function VisualEditor({
                                                                         updateField('images', newImages)
                                                                         toast.success('Image added to carousel')
                                                                     }
-                                                                } else if (heroStyle === 'I' || heroStyle === '9') {
+                                                                } else if (heroStyle === 'I' || heroStyle === '9' || heroStyle === 'E' || heroStyle === '5') {
                                                                     const currentImages = content.images || []
                                                                     const newImages = [...currentImages]
                                                                     if (newImages.length < 2) {
@@ -2975,7 +2976,7 @@ export default function VisualEditor({
                                 ) : (
                                     <EyeOff className="w-4 h-4" />
                                 )}
-                                Gallery Section
+                                Featured Products / Services
                             </h4>
                             <button
                                 type="button"
@@ -3250,42 +3251,13 @@ export default function VisualEditor({
                                                                         </div>
                                                                     )}
                                                                     <div className="flex-1 space-y-1.5">
-                                                                        <select
-                                                                            value={project.image?.startsWith('http') ? project.image : (project.image ? '' : (fallbackImage || ''))}
-                                                                            onChange={(e) => {
-                                                                                const newProjects = [...(content.featured_products || [])]
-                                                                                newProjects[index] = { ...newProjects[index], image: e.target.value || undefined }
-                                                                                updateField('featured_products', newProjects)
-                                                                            }}
-                                                                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                                                        <button
+                                                                            onClick={() => setProductImagePickerIndex(index)}
+                                                                            className="w-full px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-1.5 font-medium"
                                                                         >
-                                                                            {project.image && !project.image.startsWith('http') && (
-                                                                                <option value="">Uploaded Image</option>
-                                                                            )}
-                                                                            {hasOriginalImages && (
-                                                                                <optgroup label="Original Photos">
-                                                                                    {originalImages.map((img, imgIndex) => (
-                                                                                        <option key={`orig-${imgIndex}`} value={img}>
-                                                                                            Original {imgIndex + 1}
-                                                                                        </option>
-                                                                                    ))}
-                                                                                </optgroup>
-                                                                            )}
-                                                                            {hasEnhancedOnlyImages && (
-                                                                                <optgroup label="AI-Enhanced Photos">
-                                                                                    {enhancedOnlyImages.map((img, imgIndex) => (
-                                                                                        <option key={`enh-${imgIndex}`} value={img}>
-                                                                                            Enhanced {imgIndex + 1}
-                                                                                        </option>
-                                                                                    ))}
-                                                                                </optgroup>
-                                                                            )}
-                                                                            {!hasOriginalImages && !hasEnhancedOnlyImages && availableImages.map((img, imgIndex) => (
-                                                                                <option key={imgIndex} value={img}>
-                                                                                    Image {imgIndex + 1}
-                                                                                </option>
-                                                                            ))}
-                                                                        </select>
+                                                                            <ImageIcon className="w-3.5 h-3.5" />
+                                                                            Choose Image
+                                                                        </button>
                                                                         {/* Upload new image for this product */}
                                                                         <input
                                                                             type="file"
@@ -4173,6 +4145,107 @@ export default function VisualEditor({
                     )}
                 </div>
             </div>
+
+            {/* Product Image Picker Modal */}
+            {productImagePickerIndex !== null && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                        <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                Select Image for: {content.featured_products?.[productImagePickerIndex]?.title || `Product ${productImagePickerIndex + 1}`}
+                            </h3>
+                            <button
+                                onClick={() => setProductImagePickerIndex(null)}
+                                className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+                            >
+                                &times;
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto max-h-[60vh]">
+                            <p className="text-sm text-gray-500 mb-4">Choose an image for this product/service:</p>
+                            {hasOriginalImages && (
+                                <>
+                                    <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">Original Photos</p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                                        {originalImages.map((imageUrl, imgIdx) => {
+                                            const isSelected = content.featured_products?.[productImagePickerIndex]?.image === imageUrl
+                                            return (
+                                                <button
+                                                    key={`prod-orig-${imgIdx}`}
+                                                    onClick={() => {
+                                                        const newProjects = [...(content.featured_products || [])]
+                                                        newProjects[productImagePickerIndex] = { ...newProjects[productImagePickerIndex], image: imageUrl }
+                                                        updateField('featured_products', newProjects)
+                                                        setProductImagePickerIndex(null)
+                                                        toast.success('Product image updated')
+                                                    }}
+                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                        isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                    }`}
+                                                >
+                                                    <img src={imageUrl} alt={`Original ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                                    {isSelected && (
+                                                        <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">&#10003;</div>
+                                                    )}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </>
+                            )}
+                            {hasEnhancedOnlyImages && (
+                                <>
+                                    <p className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">AI-Enhanced Photos</p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                        {enhancedOnlyImages.map((imageUrl, imgIdx) => {
+                                            const isSelected = content.featured_products?.[productImagePickerIndex]?.image === imageUrl
+                                            return (
+                                                <button
+                                                    key={`prod-enh-${imgIdx}`}
+                                                    onClick={() => {
+                                                        const newProjects = [...(content.featured_products || [])]
+                                                        newProjects[productImagePickerIndex] = { ...newProjects[productImagePickerIndex], image: imageUrl }
+                                                        updateField('featured_products', newProjects)
+                                                        setProductImagePickerIndex(null)
+                                                        toast.success('Product image updated')
+                                                    }}
+                                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:border-blue-500 ${
+                                                        isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                                    }`}
+                                                >
+                                                    <img src={imageUrl} alt={`Enhanced ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                                    {isSelected && (
+                                                        <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">&#10003;</div>
+                                                    )}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </>
+                            )}
+                            {!hasOriginalImages && !hasEnhancedOnlyImages && availableImages.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {availableImages.map((imageUrl, imgIdx) => (
+                                        <button
+                                            key={`prod-avail-${imgIdx}`}
+                                            onClick={() => {
+                                                const newProjects = [...(content.featured_products || [])]
+                                                newProjects[productImagePickerIndex] = { ...newProjects[productImagePickerIndex], image: imageUrl }
+                                                updateField('featured_products', newProjects)
+                                                setProductImagePickerIndex(null)
+                                                toast.success('Product image updated')
+                                            }}
+                                            className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200 transition-all hover:border-blue-500"
+                                        >
+                                            <img src={imageUrl} alt={`Image ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
