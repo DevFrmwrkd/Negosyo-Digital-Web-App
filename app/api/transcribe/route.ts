@@ -20,6 +20,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Rate limit: expensive operation (5/min)
+        const { checkRateLimit, RATE_LIMITS } = await import('@/lib/security')
+        const { allowed } = checkRateLimit(`transcribe:${userId}`, RATE_LIMITS.expensive.maxRequests, RATE_LIMITS.expensive.windowMs)
+        if (!allowed) {
+            return NextResponse.json({ error: 'Too many transcription requests. Please wait a moment.' }, { status: 429 })
+        }
+
         const body = await request.json()
         const { audioUrl, useConvexStorage, videoStorageId, audioStorageId, videoUrl } = body
         submissionId = body.submissionId
