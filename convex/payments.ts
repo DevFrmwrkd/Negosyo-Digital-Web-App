@@ -1,9 +1,8 @@
 import { v } from 'convex/values'
 import { internalAction, internalMutation } from './_generated/server'
 import { internal } from './_generated/api'
-import { Id } from './_generated/dataModel'
 import { extractReferenceFromText } from '../lib/payments/referenceCode'
-import { parseDepositWebhook, determinePaymentStatus, calculateCreditAmount } from '../lib/payments/webhookParser'
+import { determinePaymentStatus } from '../lib/payments/webhookParser'
 
 // ==================== SHARED CREDIT LOGIC ====================
 // Used by both admin.markPaid (manual) and auto-payment (webhook)
@@ -120,6 +119,16 @@ export const creditCreatorForPayment = internalMutation({
         }
 
         console.log(`[PAYMENTS] Credited ₱${payoutAmount} to creator ${submission.creatorId} for submission ${args.submissionId} (triggered by ${args.triggeredBy})`)
+
+        // 8. Custom domain auto-setup
+        // If this submission has a requested custom domain, kick off the registration pipeline
+        const subm = submission as any
+        if (subm.requestedDomain && subm.submissionType === 'with_custom_domain') {
+            console.log(`[PAYMENTS] Scheduling domain setup for ${subm.requestedDomain}`)
+            await ctx.scheduler.runAfter(0, internal.domains.setupForSubmission, {
+                submissionId: args.submissionId,
+            })
+        }
     },
 })
 
@@ -128,6 +137,11 @@ export const creditCreatorForPayment = internalMutation({
 /**
  * Process an incoming Wise deposit.
  * Called by the /wise-deposit-webhook handler.
+ *
+ * Uses the existing paymentTokens system:
+ * - paymentTokens.referenceCode matches the code in the Wise payment note
+ * - paymentTokens has the expected amount and submissionId
+ * - paymentTokens.markUsed marks it as paid
  */
 export const processDeposit = internalAction({
     args: {
@@ -140,7 +154,7 @@ export const processDeposit = internalAction({
     handler: async (ctx, args) => {
         console.log(`[PAYMENTS] Processing deposit: ₱${args.amount} ${args.currency}, ref="${args.referenceText}", txn=${args.transactionId}`)
 
-        // 1. Extract reference code from free-text
+        // 1. Extract reference code from free-text (e.g., "Payment for ND-7K3M-X9P2 thank you")
         const refCode = extractReferenceFromText(args.referenceText)
         if (!refCode) {
             console.warn(`[PAYMENTS] No reference code found in: "${args.referenceText}"`)
@@ -160,10 +174,10 @@ export const processDeposit = internalAction({
             return
         }
 
-        // 2. Look up payment reference
-        const paymentRef = await ctx.runQuery(internal.paymentReferences.getByCode, { code: refCode })
-        if (!paymentRef) {
-            console.warn(`[PAYMENTS] Reference code ${refCode} not found in database`)
+        // 2. Look up payment token by reference code
+        const paymentToken = await ctx.runQuery(internal.paymentTokens.getByReferenceInternal, { referenceCode: refCode })
+        if (!paymentToken) {
+            console.warn(`[PAYMENTS] Reference code ${refCode} not found in paymentTokens`)
             await ctx.runMutation(internal.auditLogs.log, {
                 adminId: 'system:auto-payment',
                 action: 'payment_unmatched' as any,
@@ -174,43 +188,25 @@ export const processDeposit = internalAction({
             return
         }
 
-        // 3. Check if already matched (duplicate payment)
-        if (paymentRef.status === 'matched' || paymentRef.status === 'overpaid') {
-            console.warn(`[PAYMENTS] Reference ${refCode} already matched (duplicate deposit)`)
+        // 3. Check if already paid (duplicate payment)
+        if (paymentToken.status === 'paid') {
+            console.warn(`[PAYMENTS] Reference ${refCode} already paid (duplicate deposit)`)
             await ctx.runMutation(internal.auditLogs.log, {
                 adminId: 'system:auto-payment',
                 action: 'payment_unmatched' as any,
                 targetType: 'payment' as any,
                 targetId: args.transactionId,
-                metadata: { refCode, amount: args.amount, reason: 'Duplicate payment — reference already matched' },
+                metadata: { refCode, amount: args.amount, reason: 'Duplicate payment — already marked paid' },
             })
             return
         }
 
-        // 4. Determine payment status
-        const paymentStatus = determinePaymentStatus(args.amount, paymentRef.expectedAmount)
+        // 4. Determine payment status (matched/partial/overpaid)
+        const paymentStatus = determinePaymentStatus(args.amount, paymentToken.amount)
+        console.log(`[PAYMENTS] Reference ${refCode} status=${paymentStatus}, expected=₱${paymentToken.amount}, received=₱${args.amount}`)
 
-        // 5. Mark the reference as matched
-        await ctx.runMutation(internal.paymentReferences.markMatched, {
-            code: refCode,
-            receivedAmount: args.amount,
-            currency: args.currency,
-            wiseTransactionId: args.transactionId,
-            senderName: args.senderName,
-            status: paymentStatus,
-        })
-
-        console.log(`[PAYMENTS] Reference ${refCode} matched: status=${paymentStatus}, expected=₱${paymentRef.expectedAmount}, received=₱${args.amount}`)
-
-        // 6. Auto-complete if matched or overpaid
-        if (paymentStatus === 'matched' || paymentStatus === 'overpaid') {
-            await ctx.runMutation(internal.payments.creditCreatorForPayment, {
-                submissionId: paymentRef.submissionId,
-                triggeredBy: 'system:auto-payment',
-                paymentRefCode: refCode,
-            })
-        } else {
-            // Partial payment — log for admin review
+        // 5. If partial, log and stop (admin must handle manually)
+        if (paymentStatus === 'partial') {
             await ctx.runMutation(internal.auditLogs.log, {
                 adminId: 'system:auto-payment',
                 action: 'payment_partial' as any,
@@ -218,11 +214,25 @@ export const processDeposit = internalAction({
                 targetId: args.transactionId,
                 metadata: {
                     refCode,
-                    expectedAmount: paymentRef.expectedAmount,
+                    expectedAmount: paymentToken.amount,
                     receivedAmount: args.amount,
-                    submissionId: paymentRef.submissionId,
+                    submissionId: paymentToken.submissionId,
                 },
             })
+            return
         }
+
+        // 6. Mark payment token as paid (uses existing markUsed mutation)
+        await ctx.runMutation(internal.paymentTokens.markUsed, {
+            token: paymentToken.token,
+            wiseTransactionId: args.transactionId,
+        })
+
+        // 7. Credit creator via shared logic
+        await ctx.runMutation(internal.payments.creditCreatorForPayment, {
+            submissionId: paymentToken.submissionId,
+            triggeredBy: 'system:auto-payment',
+            paymentRefCode: refCode,
+        })
     },
 })

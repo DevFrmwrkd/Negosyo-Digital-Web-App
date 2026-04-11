@@ -118,13 +118,39 @@ export default defineSchema({
         // Airtable sync
         airtableRecordId: v.optional(v.string()),
         airtableSyncStatus: v.optional(v.string()),
+
+        // ==================== CUSTOM DOMAIN ====================
+        // Pricing tier chosen at submission time
+        submissionType: v.optional(v.union(
+            v.literal('standard'),              // ₱1,000 — free subdomain
+            v.literal('with_custom_domain')     // TEST: ₱100 (normally ₱1,500) — includes custom domain
+        )),
+        // The domain the creator picked on the review page
+        requestedDomain: v.optional(v.string()),
+        // Domain lifecycle (independent of submission status)
+        domainStatus: v.optional(v.union(
+            v.literal('not_requested'),      // Standard tier — no domain needed
+            v.literal('pending_payment'),    // Awaiting business owner payment
+            v.literal('registering'),        // Porkbun registration in progress
+            v.literal('configuring_dns'),    // Cloudflare zone + Pages attachment
+            v.literal('provisioning_ssl'),   // Waiting for SSL certificate
+            v.literal('live'),               // Domain is live, serving the website
+            v.literal('failed')              // Setup failed — admin review required
+        )),
+        domainFailureReason: v.optional(v.string()),
+        // Registrar metadata
+        registrarOrderId: v.optional(v.string()),
+        domainExpiresAt: v.optional(v.number()),
+        // Cloudflare zone for this custom domain
+        cloudflareZoneId: v.optional(v.string()),
     })
         .index('by_creatorId', ['creatorId'])
         .index('by_status', ['status'])
         .index('by_payoutRequested', ['payoutRequestedAt'])
         .index('by_airtable_sync', ['airtableSyncStatus'])
         .index('by_creator_status', ['creatorId', 'status'])
-        .index('by_city', ['city']),
+        .index('by_city', ['city'])
+        .index('by_domainStatus', ['domainStatus']),
 
     // Generated websites - technical/deployment data + content (mobile branch merged websiteContent fields here)
     generatedWebsites: defineTable({
@@ -294,6 +320,10 @@ export default defineSchema({
         processedAt: v.optional(v.number()),
         transactionRef: v.optional(v.string()),
         createdAt: v.number(),
+        // Status follow-up tracking (cron job polls Wise API for stalled transfers)
+        lastStatusCheckAt: v.optional(v.number()),       // Last time we polled Wise API
+        lastStatusEmailAt: v.optional(v.number()),       // Last time we sent a status email to creator
+        wiseDetailedState: v.optional(v.string()),       // The latest detailed Wise state (e.g. "verifying", "outgoing_payment_sent")
     })
         .index('by_creator', ['creatorId'])
         .index('by_status', ['status']),
@@ -601,32 +631,6 @@ export default defineSchema({
     })
         .index('by_websiteId', ['websiteId'])
         .index('by_submissionId', ['submissionId']),
-
-    // ==================== PAYMENT REFERENCES ====================
-    // Tracks payment reference codes sent to business owners for auto-matching incoming Wise deposits
-    paymentReferences: defineTable({
-        submissionId: v.id('submissions'),
-        code: v.string(),                               // ND-XXXX-YYYY format
-        expectedAmount: v.number(),                      // PHP amount expected
-        receivedAmount: v.optional(v.number()),          // Actual amount received from Wise
-        currency: v.optional(v.string()),                // Should be PHP
-        status: v.union(
-            v.literal('pending'),                        // Generated, awaiting payment
-            v.literal('matched'),                        // Payment received and matched
-            v.literal('partial'),                        // Amount received < expected
-            v.literal('overpaid'),                       // Amount received > expected
-            v.literal('expired'),                        // No payment in time window
-            v.literal('cancelled')                       // Submission cancelled
-        ),
-        wiseTransactionId: v.optional(v.string()),       // Wise deposit transaction ID
-        senderName: v.optional(v.string()),              // From Wise webhook payload
-        matchedAt: v.optional(v.number()),
-        createdAt: v.number(),
-        expiresAt: v.optional(v.number()),               // Optional expiry window
-    })
-        .index('by_code', ['code'])
-        .index('by_submissionId', ['submissionId'])
-        .index('by_status', ['status']),
 
     // ==================== PAYMENT TOKENS ====================
     // Cryptographic tokens for secure payment links (one-time use, expiring)

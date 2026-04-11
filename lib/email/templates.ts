@@ -165,7 +165,7 @@ export function getPaymentLinkEmailHtml(params: {
 }): string {
     const { businessName, businessOwnerName, amount, paymentLink, referenceCode, platformEmail } = params
 
-    const displayEmail = platformEmail || paymentConfig.wiseEmail || 'support@negosyo.digital'
+    const displayEmail = platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
 
     return `
 <!DOCTYPE html>
@@ -288,7 +288,7 @@ export function getPaymentLinkEmailHtml(params: {
                     <tr>
                         <td style="padding:32px 40px;border-top:1px solid #2d2d2d;text-align:center;">
                             <p style="margin:0 0 12px;font-size:13px;color:#6b7280;">
-                                Questions? <a href="mailto:support@negosyo.digital" style="color:#10b981;text-decoration:none;font-weight:600;">Contact support</a>
+                                Questions? <a href="mailto:frmwrkd.media@gmail.com" style="color:#10b981;text-decoration:none;font-weight:600;">Contact support</a>
                             </p>
                             <p style="margin:0;font-size:12px;color:#4b5563;">
                                 © Negosyo Digital. All rights reserved.
@@ -314,7 +314,7 @@ export function getPaymentLinkEmailHtml(params: {
 }): string {
     const { businessName, businessOwnerName, websiteUrl, amount, submissionId } = params
 
-    const wiseEmail = paymentConfig.wiseEmail || 'support@negosyo.digital'
+    const wiseEmail = paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
     const wiseAccountName = process.env.WISE_ACCOUNT_NAME || 'Negosyo Digital'
     // Use the auto-generated payment reference code, or fallback to old format
     const reference = params.paymentReference || submissionId.substring(0, 8).toUpperCase()
@@ -541,6 +541,186 @@ export function getPaymentLinkEmailHtml(params: {
         </tr>
     </table>
 
+</body>
+</html>
+    `
+}
+
+// ==================== DOMAIN LIVE EMAIL ====================
+
+export function getDomainLiveEmailHtml(params: {
+    businessName: string
+    businessOwnerName: string
+    customDomain: string
+    expiresAt: number
+}): string {
+    const { businessName, businessOwnerName, customDomain, expiresAt } = params
+    const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    })
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${customDomain} is Live</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #f5f5f5;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #0a0a0a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background: #1a1a1a; border-radius: 16px; overflow: hidden; max-width: 600px;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 48px 40px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800;">🎉 Your Website is Live!</h1>
+                            <p style="margin: 12px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">${businessName}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; color: #f5f5f5; font-size: 16px; line-height: 1.6;">Hi ${businessOwnerName},</p>
+                            <p style="margin: 0 0 24px; color: #d4d4d4; font-size: 16px; line-height: 1.6;">
+                                Great news! Your custom domain has been registered and your website is now live at:
+                            </p>
+                            <div style="background: #0a0a0a; border: 2px solid #10b981; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                                <a href="https://${customDomain}" style="color: #10b981; font-size: 24px; font-weight: 700; text-decoration: none;">${customDomain}</a>
+                            </div>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 32px 0;">
+                                <tr>
+                                    <td style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 24px;">
+                                        <h2 style="margin: 0 0 12px; color: #78350f; font-size: 18px; font-weight: 700;">⚠ Important: Domain Renewal Notice</h2>
+                                        <p style="margin: 0 0 12px; color: #78350f; font-size: 14px; line-height: 1.6;">
+                                            <strong>The first year of your custom domain is included FREE</strong> with your Negosyo Digital website package.
+                                        </p>
+                                        <p style="margin: 0 0 12px; color: #78350f; font-size: 14px; line-height: 1.6;">
+                                            Your domain will expire on <strong>${expiryDate}</strong>.
+                                        </p>
+                                        <p style="margin: 0 0 12px; color: #78350f; font-size: 14px; line-height: 1.6;">
+                                            <strong>After year 1, renewal is approximately ₱1,120 ($20) per year</strong> and is the business owner's responsibility. We do <strong>NOT</strong> auto-renew the domain — this is intentional, so you have full control.
+                                        </p>
+                                        <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">
+                                            We'll send you a reminder email 30 days before the expiry date so you don't lose the domain.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style="margin: 24px 0 0; color: #a3a3a3; font-size: 14px; line-height: 1.6;">
+                                You can renew through any registrar (we recommend Hostinger or Cloudflare) or transfer the domain to your own account.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #0a0a0a; padding: 24px 40px; text-align: center; border-top: 1px solid #262626;">
+                            <p style="margin: 0; color: #737373; font-size: 12px;">© ${new Date().getFullYear()} Negosyo Digital. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `
+}
+
+// ==================== WITHDRAWAL STATUS EMAIL ====================
+
+export function getWithdrawalStatusEmailHtml(params: {
+    creatorName: string
+    creatorEmail: string
+    amount: number
+    statusLabel: string
+    statusDescription: string
+    isFinal: boolean
+    referenceCode?: string
+    submittedAt: number
+}): string {
+    const { creatorName, amount, statusLabel, statusDescription, isFinal, referenceCode, submittedAt } = params
+    const submittedDate = new Date(submittedAt).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    })
+    const accentColor = isFinal ? '#10b981' : '#f59e0b'
+    const accentBg = isFinal ? '#d1fae5' : '#fef3c7'
+    const accentText = isFinal ? '#065f46' : '#78350f'
+    const icon = isFinal ? '✅' : '⏳'
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdrawal Update</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #f5f5f5;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #0a0a0a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background: #1a1a1a; border-radius: 16px; overflow: hidden; max-width: 600px;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, ${accentColor} 0%, ${accentColor}cc 100%); padding: 48px 40px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800;">${icon} Withdrawal Update</h1>
+                            <p style="margin: 12px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">₱${amount.toLocaleString()}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; color: #f5f5f5; font-size: 16px; line-height: 1.6;">Hi ${creatorName},</p>
+                            <p style="margin: 0 0 24px; color: #d4d4d4; font-size: 16px; line-height: 1.6;">
+                                Here's the latest update on your withdrawal request:
+                            </p>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 24px;">
+                                <tr>
+                                    <td style="background: ${accentBg}; border-left: 4px solid ${accentColor}; border-radius: 8px; padding: 24px;">
+                                        <h2 style="margin: 0 0 8px; color: ${accentText}; font-size: 20px; font-weight: 700;">${statusLabel}</h2>
+                                        <p style="margin: 0; color: ${accentText}; font-size: 14px; line-height: 1.6;">${statusDescription}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #0a0a0a; border: 1px solid #262626; border-radius: 8px; padding: 0; margin: 0 0 24px;">
+                                <tr>
+                                    <td style="padding: 16px 20px; border-bottom: 1px solid #262626;">
+                                        <p style="margin: 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Amount</p>
+                                        <p style="margin: 4px 0 0; color: #f5f5f5; font-size: 18px; font-weight: 700;">₱${amount.toLocaleString()}</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 16px 20px; ${referenceCode ? 'border-bottom: 1px solid #262626;' : ''}">
+                                        <p style="margin: 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Submitted</p>
+                                        <p style="margin: 4px 0 0; color: #f5f5f5; font-size: 14px;">${submittedDate}</p>
+                                    </td>
+                                </tr>
+                                ${referenceCode ? `
+                                <tr>
+                                    <td style="padding: 16px 20px;">
+                                        <p style="margin: 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Wise Reference</p>
+                                        <p style="margin: 4px 0 0; color: #f5f5f5; font-size: 13px; font-family: monospace;">${referenceCode}</p>
+                                    </td>
+                                </tr>` : ''}
+                            </table>
+                            ${!isFinal ? `
+                            <p style="margin: 0 0 16px; color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                                Wise transfers usually complete within minutes after Wise verification, but some can take 1-2 business days depending on the recipient bank. Your funds are safe and being processed.
+                            </p>
+                            <p style="margin: 0; color: #a3a3a3; font-size: 13px; line-height: 1.6;">
+                                We'll send you another update as soon as the status changes. If you have questions, just reply to this email.
+                            </p>` : `
+                            <p style="margin: 0; color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                                Thank you for your patience! If you have any questions, just reply to this email.
+                            </p>`}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #0a0a0a; padding: 24px 40px; text-align: center; border-top: 1px solid #262626;">
+                            <p style="margin: 0; color: #737373; font-size: 12px;">© ${new Date().getFullYear()} Negosyo Digital. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
     `

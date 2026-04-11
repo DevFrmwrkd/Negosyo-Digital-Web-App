@@ -371,3 +371,156 @@ export const updateByWiseTransferId = internalMutation({
         await ctx.db.patch(withdrawal._id, updates);
     },
 });
+
+// ==================== STATUS FOLLOW-UP (cron + email) ====================
+
+/**
+ * Internal query: get withdrawals that need a status follow-up check.
+ * Returns processing withdrawals that haven't been polled in the last hour.
+ */
+export const getStaleProcessing = internalMutation({
+    args: {},
+    handler: async (ctx) => {
+        const oneHourAgo = Date.now() - 60 * 60 * 1000
+        const processing = await ctx.db
+            .query('withdrawals')
+            .withIndex('by_status', (q) => q.eq('status', 'processing'))
+            .collect()
+        // Only those not checked in the last hour AND with a wiseTransferId we can poll
+        return processing.filter(
+            (w) => w.wiseTransferId && (!w.lastStatusCheckAt || w.lastStatusCheckAt < oneHourAgo)
+        )
+    },
+})
+
+/**
+ * Internal mutation: record the result of a status check (used by the action below).
+ */
+export const recordStatusCheck = internalMutation({
+    args: {
+        withdrawalId: v.id('withdrawals'),
+        wiseDetailedState: v.string(),
+        sendEmail: v.boolean(),
+    },
+    handler: async (ctx, args) => {
+        const updates: any = {
+            lastStatusCheckAt: Date.now(),
+            wiseDetailedState: args.wiseDetailedState,
+        }
+        if (args.sendEmail) {
+            updates.lastStatusEmailAt = Date.now()
+        }
+        await ctx.db.patch(args.withdrawalId, updates)
+    },
+})
+
+/**
+ * Cron-triggered action: poll Wise for stalled withdrawals + send follow-up emails.
+ * Runs every hour. For each processing withdrawal:
+ *   1. Calls Wise GET /v1/transfers/{id} to get current state
+ *   2. Records the new state
+ *   3. If state changed OR last email was sent > 24h ago, sends a follow-up email to the creator
+ */
+export const checkProcessingStatusCron = internalAction({
+    args: {},
+    handler: async (ctx) => {
+        const stale: any[] = await ctx.runMutation(internal.withdrawals.getStaleProcessing, {})
+        if (stale.length === 0) {
+            console.log('[WITHDRAWAL-FOLLOWUP] No stale processing withdrawals')
+            return
+        }
+
+        console.log(`[WITHDRAWAL-FOLLOWUP] Checking ${stale.length} stale withdrawals`)
+
+        const { getTransferStatus, describeWiseStatus } = await import('./lib/wise')
+
+        for (const w of stale) {
+            try {
+                const status = await getTransferStatus(w.wiseTransferId!)
+                const stateChanged = w.wiseDetailedState !== status.detailedStatus
+                const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000
+                const noRecentEmail = !w.lastStatusEmailAt || w.lastStatusEmailAt < oneDayAgo
+                const shouldEmail = stateChanged || noRecentEmail
+
+                await ctx.runMutation(internal.withdrawals.recordStatusCheck, {
+                    withdrawalId: w._id,
+                    wiseDetailedState: status.detailedStatus,
+                    sendEmail: shouldEmail,
+                })
+
+                if (shouldEmail) {
+                    const description = describeWiseStatus(status.detailedStatus)
+
+                    // Fetch creator email
+                    const creator = await ctx.runQuery(internal.creators.getByIdInternal, { id: w.creatorId })
+                    if (!creator?.email) {
+                        console.warn(`[WITHDRAWAL-FOLLOWUP] No email for creator ${w.creatorId}, skipping`)
+                        continue
+                    }
+
+                    // Schedule the email send via Next.js endpoint
+                    await ctx.scheduler.runAfter(0, internal.withdrawals.sendStatusEmailAction, {
+                        withdrawalId: w._id,
+                        creatorEmail: creator.email,
+                        creatorName: `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Creator',
+                        amount: w.amount,
+                        statusLabel: description.label,
+                        statusDescription: description.description,
+                        isFinal: description.isFinal,
+                        referenceCode: w.wiseTransferId,
+                        submittedAt: w.createdAt,
+                    })
+                }
+            } catch (error) {
+                console.error(`[WITHDRAWAL-FOLLOWUP] Error checking withdrawal ${w._id}:`, error)
+            }
+        }
+    },
+})
+
+/**
+ * Internal action: send the withdrawal status email via the Next.js endpoint.
+ */
+export const sendStatusEmailAction = internalAction({
+    args: {
+        withdrawalId: v.id('withdrawals'),
+        creatorEmail: v.string(),
+        creatorName: v.string(),
+        amount: v.number(),
+        statusLabel: v.string(),
+        statusDescription: v.string(),
+        isFinal: v.boolean(),
+        referenceCode: v.optional(v.string()),
+        submittedAt: v.number(),
+    },
+    handler: async (ctx, args) => {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || 'https://negosyo-digital.vercel.app'
+        const internalSecret = process.env.INTERNAL_API_SECRET || ''
+
+        try {
+            const response = await fetch(`${baseUrl}/api/internal/send-withdrawal-status-email`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Internal-Secret': internalSecret,
+                },
+                body: JSON.stringify({
+                    creatorEmail: args.creatorEmail,
+                    creatorName: args.creatorName,
+                    amount: args.amount,
+                    statusLabel: args.statusLabel,
+                    statusDescription: args.statusDescription,
+                    isFinal: args.isFinal,
+                    referenceCode: args.referenceCode,
+                    submittedAt: args.submittedAt,
+                }),
+            })
+            if (!response.ok) {
+                const text = await response.text()
+                console.error(`[WITHDRAWAL-FOLLOWUP] Email send failed: ${response.status} ${text}`)
+            }
+        } catch (error) {
+            console.error('[WITHDRAWAL-FOLLOWUP] Error sending status email:', error)
+        }
+    },
+})

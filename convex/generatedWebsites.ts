@@ -1,8 +1,19 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { mutation, query, internalQuery } from './_generated/server';
 
 // Get generated website by submission ID
 export const getBySubmissionId = query({
+    args: { submissionId: v.id('submissions') },
+    handler: async (ctx, args) => {
+        return await ctx.db
+            .query('generatedWebsites')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+    },
+});
+
+// Internal version callable from actions
+export const getBySubmissionInternal = internalQuery({
     args: { submissionId: v.id('submissions') },
     handler: async (ctx, args) => {
         return await ctx.db

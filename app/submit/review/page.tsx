@@ -10,7 +10,19 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Loader2 } from "lucide-react"
+import { Loader2, Globe, CheckCircle2, XCircle, Search } from "lucide-react"
+
+interface DomainCheckResult {
+    valid: boolean
+    available?: boolean
+    domain?: string
+    priceUSD?: number
+    pricePHP?: number
+    withinBudget?: boolean
+    reason?: string
+    error?: string
+    suggestions?: Array<{ domain: string; pricePHP: number; withinBudget: boolean }>
+}
 
 export default function ReviewSubmissionPage() {
     const router = useRouter()
@@ -20,6 +32,16 @@ export default function ReviewSubmissionPage() {
     const [error, setError] = useState<string | null>(null)
     const [agreed, setAgreed] = useState(false)
     const [submissionId, setSubmissionId] = useState<string | null>(null)
+
+    // Custom domain state — tier is auto-derived from whether the input has content
+    const [domainInput, setDomainInput] = useState('')
+    const [domainCheck, setDomainCheck] = useState<DomainCheckResult | null>(null)
+    const [checkingDomain, setCheckingDomain] = useState(false)
+    // Auto-derived: if user typed something, tier is "with_custom_domain"
+    const wantsCustomDomain = domainInput.trim().length > 0
+    const tier: 'standard' | 'with_custom_domain' = wantsCustomDomain ? 'with_custom_domain' : 'standard'
+    // TEST PRICING: custom domain is temporarily ₱100 instead of ₱1,500 (revert via plans/REVERT-CUSTOM-DOMAIN-PRICING.md)
+    const totalAmount = wantsCustomDomain ? 100 : 1000
 
     // Get creator from Convex
     const creator = useQuery(
@@ -53,6 +75,40 @@ export default function ReviewSubmissionPage() {
 
     // Mutations
     const submitSubmission = useMutation(api.submissions.submit)
+    const setDomainTier = useMutation(api.submissions.setDomainTier)
+
+    // Debounced domain availability check (500ms after typing stops)
+    useEffect(() => {
+        if (!domainInput.trim()) {
+            setDomainCheck(null)
+            return
+        }
+        const timer = setTimeout(async () => {
+            setCheckingDomain(true)
+            try {
+                const response = await fetch('/api/check-domain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ domain: domainInput.trim().toLowerCase(), maxBudgetPHP: 500 }),
+                })
+                const data = await response.json()
+                setDomainCheck(data)
+            } catch (err) {
+                setDomainCheck({ valid: false, error: 'Network error' })
+            } finally {
+                setCheckingDomain(false)
+            }
+        }, 500)
+        return () => clearTimeout(timer)
+    }, [domainInput])
+
+    // Pre-fill from existing submission if it has a saved domain
+    useEffect(() => {
+        if (submission) {
+            const subAny = submission as any
+            if (subAny.requestedDomain) setDomainInput(subAny.requestedDomain)
+        }
+    }, [submission])
 
     // Redirect if not authenticated
     useEffect(() => {
@@ -74,10 +130,25 @@ export default function ReviewSubmissionPage() {
     const handleSubmit = async () => {
         if (!submission || !agreed || !submissionId) return
 
+        // If user typed a domain, it must be valid + within budget
+        if (wantsCustomDomain) {
+            if (!domainCheck?.available || !domainCheck?.withinBudget) {
+                setError('The custom domain you typed is not available or exceeds the ₱500 budget. Either pick a different domain or clear the field to submit without a custom domain.')
+                return
+            }
+        }
+
         setSubmitting(true)
         setError(null)
 
         try {
+            // Save tier + domain choice (auto-derived from input)
+            await setDomainTier({
+                id: submissionId as Id<"submissions">,
+                submissionType: tier,
+                requestedDomain: wantsCustomDomain ? domainInput.trim().toLowerCase() : undefined,
+            })
+
             // Update status to submitted
             await submitSubmission({ id: submissionId as Id<"submissions"> })
 
@@ -271,6 +342,113 @@ export default function ReviewSubmissionPage() {
                         </div>
                     </div>
 
+                    {/* Custom Domain (optional) — typing here auto-flags submission as ₱100 (TEST PRICING — normally ₱1,500) */}
+                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                                <Globe size={18} className="text-emerald-600" />
+                                Custom Domain (Optional)
+                            </h3>
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${wantsCustomDomain ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                {wantsCustomDomain ? 'TEST: ₱100' : 'Not included'}
+                            </span>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            <p className="text-xs text-gray-500">
+                                Leave this blank for the standard package (₱1,000, free subdomain). Type a domain to add a custom domain — your fee automatically becomes ₱100 (TEST PRICING) and includes year 1 of the domain.
+                            </p>
+
+                            <div>
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={domainInput}
+                                        onChange={(e) => setDomainInput(e.target.value)}
+                                        placeholder="e.g. yourbusiness.com (leave blank for standard)"
+                                        className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        {checkingDomain ? (
+                                            <Loader2 className="animate-spin text-gray-400" size={18} />
+                                        ) : domainCheck?.available && domainCheck?.withinBudget ? (
+                                            <CheckCircle2 className="text-green-600" size={18} />
+                                        ) : domainCheck && !domainCheck.available ? (
+                                            <XCircle className="text-red-600" size={18} />
+                                        ) : (
+                                            <Search className="text-gray-400" size={18} />
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Result */}
+                            {wantsCustomDomain && domainCheck && !checkingDomain && (
+                                <div className="text-xs">
+                                    {domainCheck.available && domainCheck.withinBudget && (
+                                        <p className="text-green-700 font-semibold">
+                                            ✓ Available · ₱{domainCheck.pricePHP} (within budget — included in your ₱100 test fee)
+                                        </p>
+                                    )}
+                                    {domainCheck.available && !domainCheck.withinBudget && (
+                                        <p className="text-amber-700 font-semibold">
+                                            ⚠ Available but ₱{domainCheck.pricePHP} exceeds the ₱500 included budget. Pick another domain.
+                                        </p>
+                                    )}
+                                    {!domainCheck.available && (
+                                        <p className="text-red-700 font-semibold">
+                                            ✗ {domainCheck.reason || 'Not available'}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Suggestions */}
+                            {wantsCustomDomain && domainCheck?.suggestions && domainCheck.suggestions.length > 0 && (
+                                <div>
+                                    <p className="text-xs font-semibold text-gray-700 mb-2">Try these alternatives:</p>
+                                    <div className="space-y-1.5">
+                                        {domainCheck.suggestions.slice(0, 5).map((sug) => (
+                                            <button
+                                                key={sug.domain}
+                                                type="button"
+                                                onClick={() => setDomainInput(sug.domain)}
+                                                disabled={!sug.withinBudget}
+                                                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-left text-xs transition-all ${
+                                                    sug.withinBudget
+                                                        ? 'bg-white hover:border-emerald-400 border-gray-200'
+                                                        : 'bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed'
+                                                }`}
+                                            >
+                                                <span className="font-mono font-semibold text-gray-900">{sug.domain}</span>
+                                                <span className={`font-semibold ${sug.withinBudget ? 'text-green-700' : 'text-amber-700'}`}>
+                                                    ₱{sug.pricePHP} {sug.withinBudget ? '✓' : '(over)'}
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Renewal disclaimer (only when domain is being added) */}
+                            {wantsCustomDomain && (
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                                        <strong>Year 1 included free.</strong> After year 1, the domain renewal is approximately
+                                        <strong> ₱1,120/year ($20)</strong> and is the business owner's responsibility.
+                                        We do <strong>NOT</strong> auto-renew — full control stays with you. We'll send a reminder
+                                        30 days before expiry.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Total amount summary */}
+                    <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <span className="text-sm font-semibold text-gray-700">Total business owner fee</span>
+                        <span className="text-2xl font-black text-emerald-700">₱{totalAmount.toLocaleString()}</span>
+                    </div>
+
                     {/* Terms */}
                     <div className="flex items-start gap-3 p-4 bg-gray-100 rounded-xl">
                         <Checkbox
@@ -284,7 +462,7 @@ export default function ReviewSubmissionPage() {
                                 I confirm this is a real business
                             </Label>
                             <p className="text-xs text-gray-500">
-                                By submitting, I confirm that the business owner has agreed to the ₱1000 service fee and that all information provided is accurate.
+                                By submitting, I confirm that the business owner has agreed to the ₱{totalAmount.toLocaleString()} service fee and that all information provided is accurate.
                             </p>
                         </div>
                     </div>
