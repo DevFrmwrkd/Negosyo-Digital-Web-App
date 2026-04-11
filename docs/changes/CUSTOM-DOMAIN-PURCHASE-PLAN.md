@@ -1,0 +1,926 @@
+# Custom Domain — Bundled Submission Plan
+
+**Status:** Draft / Planning
+**Date:** April 10, 2026
+**Supersedes:** [CUSTOM_DOMAIN_AUTOMATION_PLAN.md](./CUSTOM_DOMAIN_AUTOMATION_PLAN.md) (which used a separate post-approval purchase flow)
+**Depends on:** [WISE_PAYMENT_FLOW.md](./WISE_PAYMENT_FLOW.md)
+
+---
+
+## 1. Core Concept
+
+The custom domain is **bundled into the business owner's submission payment**, not purchased separately by the creator afterwards.
+
+Two pricing tiers, picked by the creator on the review page:
+
+| Tier | Price | What's included |
+|---|---|---|
+| **Standard** | ₱1,000 | Website on free subdomain (`juan-shop.frmwrkd.medai.workers.dev`) |
+| **Standard + Custom Domain** | ₱1,500 | Website + creator-chosen custom domain (e.g. `juansbakery.com`) |
+
+The extra ₱500 covers domain registration cost (~₱580 for a .com via Porkbun) plus a small platform margin. The creator picks the domain on the review page; the **business owner pays the bundled total**, and as soon as that payment is confirmed, the domain is automatically registered, attached to the Cloudflare Pages project, and the website goes live on it — **no manual work**.
+
+---
+
+## 2. Why This Is Better Than the Old Plan
+
+| Aspect | Old plan (separate domain purchase) | This plan (bundled) |
+|---|---|---|
+| Who pays | Creator from their wallet | Business owner (bundled in submission price) |
+| When | After approval, separately | During the same Wise webhook that confirms submission payment |
+| Extra payment flow | Yes — second `paymentToken` | No — same token, just larger amount |
+| Creator UX | Search after approval, pay again | Pick on review page, done |
+| Failure cost | Creator pays again if domain fails | Business owner refund flow already exists |
+| Number of approvals | 2 (admin approves Wise twice) | 1 (admin approves Wise once) |
+
+---
+
+## 3. Stack
+
+- **Domain registrar:** **Hostinger** (~$8.99 .com, public API at `POST /api/domains/v1/portfolio`, native Philippines payment support, charged to a saved Visa card on file)
+- **DNS + hosting:** Cloudflare Pages (already in use) + Cloudflare DNS
+- **SSL:** Cloudflare auto-provisions for free
+- **Auto-renewal:** **DISABLED** immediately after registration (cost protection — platform pays year 1 only)
+- **Blocked TLDs:** `.ph` (~$50/year — too expensive for the included budget)
+- **WHOIS registrant:** Business owner's info from the submission (`ownerName`, `ownerEmail`, `ownerPhone`, `address`, `city`, `province`, `postalCode`)
+
+---
+
+## 4. End-to-End Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 1 — Creator picks tier on review page                    │
+│                                                                 │
+│  ○ Standard          ₱1,000                                     │
+│  ● Standard + Custom Domain  ₱1,500                             │
+│                                                                 │
+│  ┌──────────────────────────────────────────────┐              │
+│  │ Custom domain                                │              │
+│  │ [juansbakery.com               ]  ✓ available│              │
+│  └──────────────────────────────────────────────┘              │
+│                                                                 │
+│  💡 Suggestions if taken:                                       │
+│     • juansbakery.ph    ₱1,250 cost (we cover up to ₱500)       │
+│     • juansbakeryph.com ✓ available                             │
+│     • juans-bakery.com  ✓ available                             │
+│                                                                 │
+│  ⚠ Note: ₱500 of the ₱1,500 covers your domain registration.    │
+│    The website will go LIVE on this domain automatically once   │
+│    the business owner pays.                                     │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 2 — Creator submits                                      │
+│                                                                 │
+│  submissions.submit() runs:                                     │
+│  - Validates: if tier="with_custom_domain", requestedDomain     │
+│    must be set + available (final re-check)                     │
+│  - Sets submission.amount = 1500 (vs. 1000 standard)            │
+│  - Marks submission.status = "submitted"                        │
+│  - Submission flows to admin for review                         │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 3 — Admin reviews + generates website                    │
+│                                                                 │
+│  Same as today:                                                 │
+│  - Admin approves                                               │
+│  - Website generated by AI                                      │
+│  - Deployed to Cloudflare Pages on the default subdomain        │
+│    (e.g. juan-shop.frmwrkd.medai.workers.dev)                   │
+│  - Status: "deployed"                                           │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 4 — Admin sends payment link to business owner           │
+│                                                                 │
+│  Admin clicks "Send to Client" in admin dashboard.              │
+│  paymentTokens.createPaymentToken() runs:                       │
+│  - Generates token + reference code                             │
+│  - Sets amount = submission.amount (₱1,000 or ₱1,500)           │
+│  - Sends payment link via email to business owner               │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 5 — Business owner pays via Wise                         │
+│                                                                 │
+│  - Owner opens link, sees amount (₱1,500), reference code       │
+│  - Sends Wise transfer with reference                           │
+│  - Admin approves the incoming payment in Wise dashboard        │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 6 — Wise webhook fires → Convex http.ts                  │
+│                                                                 │
+│  paymentTokens.processWiseIncomingPayment():                    │
+│  1. Validate token (status, expiry, amount match)               │
+│  2. Mark token as "paid"                                        │
+│  3. Credit creator balance (creator earnings still flow)        │
+│  4. Update submission.status = "paid"                           │
+│  5. Check: does this submission have requestedDomain?           │
+│     → YES: schedule domains.setupForSubmission                  │
+│     → NO:  done                                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  STAGE 7 — Automated domain setup (background action)           │
+│                                                                 │
+│  domains.setupForSubmission action:                             │
+│                                                                 │
+│  Step 1: Re-verify availability (race condition guard)          │
+│          → Porkbun.checkAvailability(domain)                    │
+│                                                                 │
+│  Step 2: Register domain                                        │
+│          → Porkbun.registerDomain(domain, years=1)              │
+│          → Auto-sets Cloudflare nameservers                     │
+│                                                                 │
+│  Step 3: Create Cloudflare Zone                                 │
+│          → POST /zones { name: domain }                         │
+│          → Wait for status === "active" (~30s)                  │
+│                                                                 │
+│  Step 4: Attach to Cloudflare Pages project                     │
+│          → Look up generatedWebsites.cfPagesProjectName         │
+│          → POST /pages/projects/{projectName}/domains           │
+│            { name: domain }                                     │
+│          → Cloudflare auto-creates DNS records                  │
+│                                                                 │
+│  Step 5: Wait for SSL provisioning                              │
+│          → Poll until cert.status === "active" (1-5 min)        │
+│                                                                 │
+│  Step 6: Update database                                        │
+│          → generatedWebsites.customDomain = domain              │
+│          → generatedWebsites.deployedUrl = "https://" + domain  │
+│          → submissions.domainStatus = "live"                    │
+│                                                                 │
+│  Step 7: Notify everyone                                        │
+│          → Push to creator: "Your business website is now live  │
+│            at juansbakery.com!"                                 │
+│          → Email to business owner with the new URL             │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  RESULT                                                         │
+│                                                                 │
+│  ✓ https://juansbakery.com  ← LIVE with SSL                     │
+│  ✓ https://juan-shop.frmwrkd.medai.workers.dev  ← still works   │
+│                                                                 │
+│  Total time from admin Wise approval: ~2-6 minutes              │
+│  Manual steps required: ZERO                                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 5. Schema Changes
+
+### `submissions` table (extend)
+
+```ts
+submissions: defineTable({
+  // ... existing fields ...
+
+  // NEW: Pricing tier
+  submissionType: v.optional(
+    v.union(
+      v.literal("standard"),              // ₱1,000
+      v.literal("with_custom_domain"),    // ₱1,500
+    )
+  ),
+
+  // EXISTING: requestedDomain (already added)
+  requestedDomain: v.optional(v.string()),
+
+  // NEW: Domain lifecycle (independent of submission status)
+  domainStatus: v.optional(
+    v.union(
+      v.literal("not_requested"),     // Standard tier, no domain
+      v.literal("pending_payment"),   // Awaiting business owner payment
+      v.literal("registering"),       // Registration in progress with Porkbun
+      v.literal("configuring_dns"),   // Cloudflare zone + Pages attachment
+      v.literal("provisioning_ssl"),  // Waiting for cert
+      v.literal("live"),              // Domain is live, website serving
+      v.literal("failed"),            // Setup failed
+    )
+  ),
+  domainFailureReason: v.optional(v.string()),
+
+  // NEW: Registrar metadata
+  registrarOrderId: v.optional(v.string()),
+  domainExpiresAt: v.optional(v.number()),
+
+  // NEW: Cloudflare metadata for the custom domain
+  cloudflareZoneId: v.optional(v.string()),
+})
+```
+
+### `generatedWebsites` table — no schema changes needed
+
+Already has:
+- `customDomain: v.optional(v.string())`
+- `cfPagesProjectName: v.optional(v.string())`
+- `deployedUrl: v.optional(v.string())` ← gets overwritten with `https://juansbakery.com`
+
+---
+
+## 6. Backend Implementation
+
+### `convex/lib/hostinger.ts`
+
+```ts
+const BASE_URL = "https://api.porkbun.com/api/json/v3";
+
+interface PorkbunCreds {
+  apikey: string;
+  secretapikey: string;
+}
+
+export async function checkAvailability(
+  creds: PorkbunCreds,
+  domain: string,
+): Promise<{ available: boolean; priceUSD: number; premium: boolean }> {
+  // POST /pricing/check passing apikey + secret
+  // Returns availability + price for the TLD
+}
+
+export async function suggestAlternatives(
+  creds: PorkbunCreds,
+  baseName: string,        // "juansbakery"
+  takenTld: string,        // "com"
+): Promise<Array<{ domain: string; available: boolean; priceUSD: number }>> {
+  // Try common TLDs: .ph, .net, .org, .biz, .co, .shop, .store
+  // Try common variants: -ph, -shop, my-, the-, get-
+  // Return list of available alternatives sorted by price
+}
+
+export async function registerDomain(
+  creds: PorkbunCreds,
+  domain: string,
+  years: number,
+): Promise<{ orderId: string; expiresAt: number }> {
+  // POST /domain/register/{domain}
+  // Auto-sets Cloudflare nameservers
+}
+
+export async function getDomainStatus(creds: PorkbunCreds, domain: string) {
+  // GET /domain/info/{domain}
+}
+```
+
+### `convex/lib/cloudflare.ts`
+
+```ts
+const CF_API = "https://api.cloudflare.com/client/v4";
+
+export async function createZone(domain: string): Promise<{
+  zoneId: string;
+  nameservers: string[];
+}> {
+  // POST /zones { name: domain, type: "full" }
+}
+
+export async function getZoneStatus(zoneId: string): Promise<"pending" | "active" | "moved"> {
+  // GET /zones/{zoneId}
+}
+
+export async function isDomainOwnedByUs(domain: string): Promise<boolean> {
+  // GET /zones?name={domain}
+  // Returns true if it's already in our Cloudflare account
+  // (unlikely but worth checking before triggering Porkbun)
+}
+
+export async function addCustomDomainToPages(
+  projectName: string,
+  domain: string,
+): Promise<{ id: string }> {
+  // POST /accounts/{accountId}/pages/projects/{projectName}/domains
+  // Body: { name: domain }
+  // Cloudflare auto-creates the DNS records pointing to the Pages project
+}
+
+export async function getCustomDomainStatus(
+  projectName: string,
+  domain: string,
+): Promise<{ status: string; certificateStatus: string }> {
+  // GET /accounts/{accountId}/pages/projects/{projectName}/domains/{domain}
+}
+```
+
+### `convex/domains.ts`
+
+```ts
+// PUBLIC ACTION (called from mobile review page on every keystroke, debounced)
+export const checkDomainAvailability = action({
+  args: { domain: v.string() },
+  handler: async (ctx, args) => {
+    // 1. Validate format
+    // 2. Check if WE already own it (Cloudflare zone exists in our account)
+    //    → return { available: false, reason: "owned_by_us" }
+    // 3. Call Porkbun.checkAvailability
+    // 4. If unavailable, also fetch suggestions
+    // 5. Return: {
+    //      available: boolean,
+    //      priceUSD: number,
+    //      pricePHP: number,
+    //      withinBudget: boolean,  // ≤ ₱500 cost?
+    //      suggestions?: Array<{domain, priceUSD, pricePHP, withinBudget}>
+    //    }
+  },
+});
+
+// INTERNAL ACTION (called from paymentTokens.processWiseIncomingPayment)
+export const setupForSubmission = internalAction({
+  args: { submissionId: v.id("submissions") },
+  handler: async (ctx, args) => {
+    const submission = await ctx.runQuery(internal.submissions.getByIdInternal, {
+      id: args.submissionId,
+    });
+    if (!submission?.requestedDomain) return;
+
+    try {
+      // Step 1: Re-verify
+      await ctx.runMutation(internal.submissions.setDomainStatus, {
+        id: args.submissionId,
+        status: "registering",
+      });
+
+      const avail = await porkbun.checkAvailability(creds, submission.requestedDomain);
+      if (!avail.available) {
+        throw new Error(`Domain ${submission.requestedDomain} is no longer available`);
+      }
+
+      // Step 2: Register via Porkbun
+      const reg = await porkbun.registerDomain(creds, submission.requestedDomain, 1);
+      await ctx.runMutation(internal.submissions.setRegistrarMetadata, {
+        id: args.submissionId,
+        registrarOrderId: reg.orderId,
+        domainExpiresAt: reg.expiresAt,
+      });
+
+      // Step 3: Create Cloudflare zone
+      await ctx.runMutation(internal.submissions.setDomainStatus, {
+        id: args.submissionId,
+        status: "configuring_dns",
+      });
+      const zone = await cloudflare.createZone(submission.requestedDomain);
+      await ctx.runMutation(internal.submissions.setCloudflareZone, {
+        id: args.submissionId,
+        zoneId: zone.zoneId,
+      });
+
+      // Step 4: Wait for zone to be active (poll up to 2 min)
+      await pollUntil(
+        () => cloudflare.getZoneStatus(zone.zoneId).then((s) => s === "active"),
+        { intervalMs: 5000, timeoutMs: 120_000 },
+      );
+
+      // Step 5: Attach to Pages project
+      const generatedWebsite = await ctx.runQuery(
+        internal.generatedWebsites.getBySubmissionInternal,
+        { submissionId: args.submissionId },
+      );
+      if (!generatedWebsite?.cfPagesProjectName) {
+        throw new Error("Pages project name not set on generatedWebsite");
+      }
+      await cloudflare.addCustomDomainToPages(
+        generatedWebsite.cfPagesProjectName,
+        submission.requestedDomain,
+      );
+
+      // Step 6: Wait for SSL
+      await ctx.runMutation(internal.submissions.setDomainStatus, {
+        id: args.submissionId,
+        status: "provisioning_ssl",
+      });
+      await pollUntil(
+        () =>
+          cloudflare
+            .getCustomDomainStatus(generatedWebsite.cfPagesProjectName!, submission.requestedDomain!)
+            .then((s) => s.certificateStatus === "active"),
+        { intervalMs: 10_000, timeoutMs: 600_000 },
+      );
+
+      // Step 7: Overwrite the deployed URL on the website
+      await ctx.runMutation(internal.generatedWebsites.setCustomDomain, {
+        submissionId: args.submissionId,
+        customDomain: submission.requestedDomain,
+        deployedUrl: `https://${submission.requestedDomain}`,
+      });
+
+      // Step 8: Mark live + notify
+      await ctx.runMutation(internal.submissions.setDomainStatus, {
+        id: args.submissionId,
+        status: "live",
+      });
+
+      await ctx.runMutation(internal.notifications.createAndSend, {
+        creatorId: submission.creatorId,
+        type: "website_live",
+        title: "Your website is now live!",
+        body: `${submission.requestedDomain} is up and running. Tap to view.`,
+        data: { submissionId: args.submissionId, url: `https://${submission.requestedDomain}` },
+      });
+
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      await ctx.runMutation(internal.submissions.setDomainFailed, {
+        id: args.submissionId,
+        reason,
+      });
+      // TODO: notify admin via dashboard alert
+      // (Don't refund here — the website is still working on the subdomain.
+      //  Admin should manually retry or refund the ₱500 difference.)
+    }
+  },
+});
+```
+
+### `convex/paymentTokens.ts` — extend `processWiseIncomingPayment`
+
+After the existing flow that marks token as paid + credits creator + sets submission to `paid`, **add**:
+
+```ts
+// If this submission has a requestedDomain, kick off automated setup
+const submission = await ctx.db.get(paymentToken.submissionId);
+if (submission?.requestedDomain && submission?.submissionType === "with_custom_domain") {
+  await ctx.db.patch(paymentToken.submissionId, {
+    domainStatus: "registering",
+  });
+  await ctx.scheduler.runAfter(0, internal.domains.setupForSubmission, {
+    submissionId: paymentToken.submissionId,
+  });
+}
+```
+
+### `convex/submissions.ts` — extend `submit` mutation
+
+```ts
+export const submit = mutation({
+  args: { id: v.id("submissions") },
+  handler: async (ctx, args) => {
+    // ... existing auth + ownership checks ...
+
+    // Determine amount based on tier
+    const isWithDomain = submission.submissionType === "with_custom_domain";
+
+    // Validate domain if tier requires it
+    if (isWithDomain) {
+      if (!submission.requestedDomain) {
+        throw new Error("Custom domain is required for this submission tier");
+      }
+      // Final availability re-check before locking the price
+      const avail = await ctx.scheduler.runAfter(0, ...); // OR do sync via action
+      // Note: actions can't be called from mutations directly — see "Open Question 1" below
+    }
+
+    await ctx.db.patch(args.id, {
+      status: "submitted",
+      amount: isWithDomain ? 1500 : 1000,
+      domainStatus: isWithDomain ? "pending_payment" : "not_requested",
+      airtableSyncStatus: "pending_push",
+    });
+    // ... rest of existing logic ...
+  },
+});
+```
+
+---
+
+## 7. Mobile UI Changes — Review Page
+
+### Tier picker (above the existing payout card)
+
+```
+┌────────────────────────────────────────────┐
+│ 📦 Choose Your Package                     │
+├────────────────────────────────────────────┤
+│ ○ Standard                       ₱1,000    │
+│   Website on free subdomain                │
+│                                            │
+│ ● Standard + Custom Domain       ₱1,500    │
+│   Website + your own .com domain           │
+└────────────────────────────────────────────┘
+```
+
+### Conditional custom domain field (only when "with_custom_domain" is selected)
+
+```
+┌────────────────────────────────────────────┐
+│ 🌐 Choose Your Custom Domain               │
+├────────────────────────────────────────────┤
+│ ┌──────────────────────────────────────┐   │
+│ │ juansbakery.com               [✓]    │   │  ← live availability
+│ └──────────────────────────────────────┘   │
+│ ✓ Available · ₱580 cost (within ₱500       │
+│   budget — we cover the rest)              │
+│                                            │
+│ ⚠ Note: ₱500 of the ₱1,500 fee covers      │
+│   your domain registration. Once your      │
+│   client pays, the website will go live    │
+│   on this domain automatically.            │
+└────────────────────────────────────────────┘
+```
+
+### When the typed domain is taken or over budget
+
+```
+┌────────────────────────────────────────────┐
+│ ┌──────────────────────────────────────┐   │
+│ │ juansbakery.com               [✗]    │   │
+│ └──────────────────────────────────────┘   │
+│ ✗ Already taken                            │
+│                                            │
+│ Try one of these instead:                  │
+│ ┌──────────────────────────────────────┐   │
+│ │ • juansbakery.ph        ✓ ₱650 (over)│   │  ← over budget = disabled
+│ │ • juansbakeryph.com     ✓ ₱580       │   │
+│ │ • juans-bakery.com      ✓ ₱580       │   │
+│ │ • juansbakery.shop      ✓ ₱520       │   │
+│ │ • juansbakery.store     ✓ ₱490       │   │
+│ └──────────────────────────────────────┘   │
+└────────────────────────────────────────────┘
+```
+
+### Implementation notes
+
+- Debounce the input by 500ms before calling `checkDomainAvailability`
+- Show a small spinner inside the input field while checking
+- Disable the **Submit** button if tier is `with_custom_domain` AND domain isn't available
+- Pre-fill from `submission.requestedDomain` (already saved from earlier visits)
+- Save selected tier + domain on every change via `submissions.update`
+
+---
+
+## 8. Failure Handling
+
+| Failure point | Recovery |
+|---|---|
+| Domain became unavailable between review and payment | At submit time we re-check. If gone, force creator to pick another. |
+| Domain becomes unavailable AFTER business owner pays | Mark `domainStatus: failed`, **website still works on subdomain**, notify admin to manually refund the ₱500 difference (or pick an alternative domain with creator) |
+| Porkbun API down during registration | Retry 3x with backoff, then mark failed |
+| Cloudflare zone creation fails | Retry 3x, then mark failed |
+| SSL provisioning stuck >10 min | Mark live anyway with caveat (Cloudflare will continue retrying in background) |
+| Business owner never pays | Submission stays at `pending_payment`, no domain registered, no money lost |
+
+**Key principle:** the website is **always working on the subdomain** as a safety net. Custom domain failure never breaks the live site — it just means the domain didn't get attached.
+
+---
+
+## 9. Pricing Math
+
+| Component | USD | PHP (₱56/USD) |
+|---|---|---|
+| Porkbun .com | $10.37 | ~₱580 |
+| **Customer pays** (markup) | — | **₱500** |
+| **Platform shortfall** | — | **-₱80** per .com |
+
+Wait — this is **a small loss per .com**. Options:
+
+1. **Bump to ₱1,600** (₱600 domain budget) — covers .com comfortably with ₱20 margin
+2. **Restrict to TLDs ≤ ₱500** (hides .com from picker, only shows .shop / .store / .xyz)
+3. **Eat the small loss on .com** to keep round numbers — recoup via the existing ₱1,000 markup on website creation
+4. **Bump to ₱1,500** but limit domain budget to ₱500 strict — show "Available within budget" filter
+
+**Recommendation: Option 1 (₱1,600)** — clean number, sustainable, .com is what most customers want.
+
+Or if ₱1,500 is non-negotiable, **Option 2** with a curated TLD list.
+
+> **Decision needed from product:** Which pricing model? The plan below assumes **₱1,500** with **strict ₱500 cap** — only show alternatives within budget, and if .com is unavailable suggest .shop/.store/.xyz.
+
+---
+
+## 10. Required Env Vars
+
+```bash
+# Hostinger (replaces Porkbun)
+npx convex env set HOSTINGER_API_KEY "..."             # Bearer token from Hostinger Profile → API tokens
+npx convex env set HOSTINGER_PAYMENT_METHOD_ID "..."   # Saved Visa card ID from Hostinger Billing → Payment Methods
+
+# Cloudflare (some may already exist)
+npx convex env set CLOUDFLARE_API_TOKEN "..."          # needs Pages:Edit, Zone:Edit, DNS:Edit
+npx convex env set CLOUDFLARE_ACCOUNT_ID "..."
+
+# Wise (for withdrawal status follow-up cron)
+npx convex env set WISE_API_TOKEN "..."                # Wise Business API token
+npx convex env set WISE_SANDBOX "false"
+
+# Internal API auth (for Convex → Next.js email endpoints)
+npx convex env set INTERNAL_API_SECRET "<random-32-char-string>"
+```
+
+### Hostinger setup (one-time)
+1. **Hostinger account** → Profile → **API tokens** → create token → copy
+2. **Add Visa card**: Hostinger → Billing → **Payment Methods** → add card → save → copy the payment method ID
+3. **Set env vars** above
+4. **Verify Cloudflare token** has `Zone:Edit` and `DNS:Edit` permissions
+
+---
+
+## 11. Implementation Phases
+
+### Phase 1 — Foundation (1 day)
+- [ ] Add `submissionType`, `domainStatus`, registrar fields to `submissions` table
+- [ ] Build `convex/lib/hostinger.ts` (check, suggest, register)
+- [ ] Build `convex/lib/cloudflare.ts` (createZone, addCustomDomainToPages, status)
+- [ ] Set Porkbun + Cloudflare env vars
+
+### Phase 2 — Backend Domain Action (2 days)
+- [ ] `domains.checkDomainAvailability` action (with suggestions)
+- [ ] `domains.setupForSubmission` internal action (full pipeline)
+- [ ] Hook into `paymentTokens.processWiseIncomingPayment`
+- [ ] Update `submissions.submit` to set amount based on tier
+- [ ] Helpers: `setDomainStatus`, `setRegistrarMetadata`, `setCloudflareZone`, `setDomainFailed`
+
+### Phase 3 — Mobile UI (1-2 days)
+- [ ] Add tier picker to review.tsx
+- [ ] Convert existing custom domain field to live availability checker (debounced)
+- [ ] Add suggestions list for taken/over-budget domains
+- [ ] Disable Submit button if tier requires domain but domain isn't available
+- [ ] Update payout card to show different amounts based on tier
+
+### Phase 4 — Testing (1 day)
+- [ ] Test with a cheap TLD (e.g., .xyz) to validate end-to-end
+- [ ] Test failure paths (race condition, API down, SSL stuck)
+- [ ] Test offline mode (tier picker should still work, availability check should gracefully degrade)
+
+### Phase 5 — Production
+- [ ] Set Porkbun + Cloudflare env vars on prod Convex
+- [ ] Soft launch to select creators
+- [ ] Monitor first 5 purchases manually
+- [ ] Open to all creators
+
+---
+
+## 12. Open Questions
+
+1. **Synchronous availability re-check on submit:** Convex mutations can't call actions directly. Two options:
+   - **(a)** Trust the client-side check + re-verify in `setupForSubmission` (refund if it fails). Simpler.
+   - **(b)** Use a `submissions.requestSubmit` action that re-checks then calls the mutation. More robust.
+   - **Recommendation: (a)** — failure at setup time is rare and the website still works on the subdomain.
+
+2. **Pricing tier (see Section 9):** ₱1,500 strict, ₱1,500 with curated TLDs, or ₱1,600?
+
+3. **Domain ownership:** Should the creator (or business owner) be able to transfer the domain to their own registrar later? Phase 6 if requested.
+
+4. **Renewal:** First year is included. After year 1, what happens?
+   - **Option A:** Auto-renew from Wise balance, charge admin
+   - **Option B:** Notify creator + business owner 30 days before expiry, charge ₱500 again
+   - **Recommendation: Option B** — explicit consent each year, simpler accounting.
+
+5. **What if business owner pays the wrong amount?** (E.g. they paid ₱1,000 thinking it was the standard tier.)
+   - Webhook validates exact amount match (±₱1 tolerance)
+   - If amount doesn't match → log warning, don't credit, don't register domain
+   - Admin handles manually (refund or top-up)
+
+---
+
+## 13. Files Touched / Created
+
+### New
+- `convex/lib/hostinger.ts`
+- `convex/lib/cloudflare.ts`
+- `convex/domains.ts`
+
+### Modified
+- `convex/schema.ts` — add `submissionType`, `domainStatus`, registrar fields to submissions
+- `convex/submissions.ts` — `submit()` reads tier, sets amount accordingly; new internal helpers
+- `convex/paymentTokens.ts` — `processWiseIncomingPayment` triggers `domains.setupForSubmission`
+- `convex/generatedWebsites.ts` — internal mutation `setCustomDomain` to overwrite `deployedUrl`
+- `app/(app)/submit/review.tsx` — tier picker, live availability checker, suggestions
+
+### Env vars
+- `PORKBUN_API_KEY`
+- `PORKBUN_SECRET_KEY`
+- `CLOUDFLARE_API_TOKEN` (Pages:Edit, Zone:Edit, DNS:Edit)
+- `CLOUDFLARE_ACCOUNT_ID`
+
+---
+
+## 14. Success Criteria
+
+> A creator picks **Standard + Custom Domain (₱1,500)** on the review page, types `juansbakery.com`, sees a green checkmark, submits. Admin reviews and generates the website (deployed to subdomain). Admin sends payment link to business owner. Business owner pays ₱1,500 via Wise. Admin approves the Wise payment **once**. Within **2-6 minutes**, the website automatically goes live at `https://juansbakery.com` with valid SSL — no further action from anyone. The deployed URL on `generatedWebsites` is overwritten so the creator and business owner both see the new domain everywhere in the app.
+
+---
+
+## 15. What Stays the Same
+
+The existing systems are untouched:
+
+- ✅ Wise webhook handler (`http.ts`)
+- ✅ Payment token validation
+- ✅ Creator earnings + balance (still credited normally)
+- ✅ Manual Wise approval flow (admin still approves once)
+- ✅ Free subdomain deployment (always happens, regardless of tier)
+- ✅ Creator wallet / withdrawals
+- ✅ Referral system
+
+This plan **only adds** the bundled tier + post-payment domain automation. Nothing existing breaks.
+
+---
+
+## 16. Admin-Side Build Prompt (Web App)
+
+> **Use this section as a complete brief for the agent/engineer building the admin web app side.** It assumes the mobile app + Convex backend pieces from sections 1–15 are already in place (creator picks the domain, submission stores `requestedDomain`, amount is auto-set to ₱1,500).
+
+### What you're building
+
+Update the existing admin web app (Next.js + Convex client) so that:
+
+1. **The submission detail page surfaces the requested custom domain** and the bundled price
+2. **The "Send to Client" payment flow** uses the correct amount (₱1,000 or ₱1,500) automatically — **no manual price entry**
+3. **The admin can monitor the domain setup pipeline** (registering → DNS → SSL → live) without leaving the dashboard
+4. **Failure handling**: if domain setup fails after payment, the admin sees a clear alert and a retry button
+
+### Context the agent should know
+
+- **Mobile app already does:** stores `submission.requestedDomain` when creator types one on the review page; `submissions.submit()` auto-sets `submission.amount = 1500` if a domain is set, else `1000`
+- **Convex schema already has:** `submissions.requestedDomain`, `submissions.domainStatus` (planned), `generatedWebsites.customDomain`, `generatedWebsites.cfPagesProjectName`, `generatedWebsites.deployedUrl`
+- **Convex backend already does:** payment token creation via `paymentTokens.createPaymentToken`, Wise webhook handling via `http.ts /wise-webhook`, payment confirmation via `paymentTokens.processWiseIncomingPayment`
+- **The new piece (Phase 2 in this doc):** `domains.setupForSubmission` internal action that gets triggered from `processWiseIncomingPayment` when the paid submission has a `requestedDomain`
+
+### Required UI changes — Admin Web App
+
+#### 1. Submissions list page (`/admin/submissions`)
+
+Add a small badge next to submissions that requested a custom domain:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ Juan's Bakery  ⭐ CUSTOM DOMAIN   ₱1,500   pending payment │
+│ Maria's Cafe                       ₱1,000   approved        │
+│ Pedro's Hardware  ⭐ CUSTOM DOMAIN  ₱1,500   live           │
+└────────────────────────────────────────────────────────────┘
+```
+
+- Filter chip: "Show only custom domain submissions"
+- Sort by `submission.amount` to see paid-priority items first
+
+#### 2. Submission detail page (`/admin/submissions/[id]`)
+
+Add a **new "Custom Domain" panel** between the Business Info card and the Generated Website card. Render conditionally based on `submission.requestedDomain`.
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ 🌐 CUSTOM DOMAIN REQUESTED                               │
+├──────────────────────────────────────────────────────────┤
+│ Domain:           juansbakery.com                        │
+│ Bundled price:    ₱1,500                                 │
+│ Status:           ⏳ Pending payment                     │
+│                                                          │
+│ [VERIFY AVAILABILITY]   [RE-CHECK NOW]                   │
+└──────────────────────────────────────────────────────────┘
+```
+
+States to render based on `submission.domainStatus`:
+
+| Status | Visual | Action button |
+|---|---|---|
+| `not_requested` | Hide panel | — |
+| `pending_payment` | ⏳ Pending payment | "Send Payment Link" (existing button) |
+| `registering` | 🔧 Registering with Porkbun… | "View logs" |
+| `configuring_dns` | 🌐 Setting up DNS… | "View logs" |
+| `provisioning_ssl` | 🔒 Provisioning SSL… | "View logs" |
+| `live` | ✅ Live at https://juansbakery.com | "Visit site ↗" |
+| `failed` | ❌ Setup failed: {reason} | "Retry setup" + "Refund ₱500" |
+
+#### 3. Payment link UX — auto-pricing
+
+The existing **"Send to Client"** button must:
+
+- Read `submission.amount` from the database (already 1,000 or 1,500)
+- **Do not let the admin override the amount** — it's locked to whatever the creator selected
+- Show a clear summary in the email:
+  ```
+  Subject: Payment for Juan's Bakery website (₱1,500)
+  Body:
+  Your business website is ready. To make it live, please pay:
+  
+    Website creation:  ₱1,000
+    Custom domain:     ₱  500    (juansbakery.com)
+    -----------------------------
+    TOTAL:             ₱1,500
+  
+  [PAY NOW BUTTON → /pay/{token}]
+  ```
+- The payment page (`/pay/[token]`) should also show this breakdown when `paymentToken.amount === 1500` and the linked submission has a `requestedDomain`
+
+#### 4. Real-time domain status updates
+
+Use `useQuery(api.submissions.getById, { id })` — Convex reactivity will auto-update the page as `domainStatus` transitions through the pipeline. **No polling or manual refresh needed.**
+
+Add a small live progress indicator:
+
+```
+○ Payment received
+○ Registering domain
+● Configuring DNS    ← currently here
+○ Provisioning SSL
+○ Live
+```
+
+#### 5. Failure recovery actions
+
+When `domainStatus === "failed"`, render two action buttons:
+
+1. **Retry Setup** — calls a new mutation `domains.retrySetup({ submissionId })` which re-runs the `setupForSubmission` action. Convex action; no manual API plumbing needed.
+
+2. **Refund ₱500** — calls a new mutation `domains.refundDomainPortion({ submissionId, reason })` which:
+   - Creates an audit log entry
+   - Reduces `submission.amount` from 1500 → 1000 (so reports stay accurate)
+   - Sends a notification to the creator
+   - Optionally: triggers a manual Wise refund transfer back to the business owner (via the existing `withdrawals.create` flow but flagged as a refund)
+
+### Required Convex mutations to add
+
+These should live in `convex/domains.ts` next to `setupForSubmission`:
+
+```ts
+// Admin-only: retry the domain setup pipeline after a failure
+export const retrySetup = mutation({
+  args: { submissionId: v.id("submissions") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const submission = await ctx.db.get(args.submissionId);
+    if (!submission) throw new Error("Submission not found");
+    if (submission.domainStatus !== "failed") {
+      throw new Error("Can only retry failed domain setups");
+    }
+    await ctx.db.patch(args.submissionId, {
+      domainStatus: "registering",
+      domainFailureReason: undefined,
+    });
+    await ctx.scheduler.runAfter(0, internal.domains.setupForSubmission, {
+      submissionId: args.submissionId,
+    });
+  },
+});
+
+// Admin-only: refund the ₱500 domain portion (e.g. if it permanently fails)
+export const refundDomainPortion = mutation({
+  args: {
+    submissionId: v.id("submissions"),
+    reason: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    // 1. Audit log
+    // 2. Patch submission.amount: 1500 -> 1000
+    // 3. Clear submission.requestedDomain + domainStatus
+    // 4. Send notification to creator
+    // 5. (Manual step from admin) initiate ₱500 Wise refund to business owner
+  },
+});
+
+// Admin-only: query to get domain pipeline status with metadata
+export const getDomainStatus = query({
+  args: { submissionId: v.id("submissions") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const submission = await ctx.db.get(args.submissionId);
+    return {
+      requestedDomain: submission?.requestedDomain,
+      status: submission?.domainStatus,
+      failureReason: submission?.domainFailureReason,
+      registrarOrderId: submission?.registrarOrderId,
+      cloudflareZoneId: submission?.cloudflareZoneId,
+      domainExpiresAt: submission?.domainExpiresAt,
+    };
+  },
+});
+```
+
+### Edge cases the admin UI must handle
+
+1. **Submission has `requestedDomain` but no payment yet** → show as pending payment, no domain registered
+2. **Payment received but Porkbun is down** → show "Registering" then transition to "failed" with retry button
+3. **Domain became unavailable between submission and payment** → setup fails, show clear error message, offer refund or alternative-domain workflow
+4. **SSL stuck for >10 min** → mark as "live" anyway with a yellow warning ("SSL provisioning is taking longer than expected — Cloudflare will retry automatically")
+5. **Admin manually overrides domain** → add a "Change Domain" button that lets the admin replace `requestedDomain` and re-trigger setup (useful when the creator's first choice was bad)
+
+### Acceptance criteria
+
+- [ ] Admin can see at a glance which submissions have a custom domain requested (badge in list view)
+- [ ] Submission detail page shows the requested domain prominently with current pipeline status
+- [ ] "Send to Client" auto-prices the payment link based on `submission.amount` (no manual entry)
+- [ ] Payment email shows the price breakdown when amount is ₱1,500
+- [ ] Domain setup status updates in real-time without page refresh (Convex reactivity)
+- [ ] Failed setups show a retry button + refund option
+- [ ] Admin never has to manually configure DNS, SSL, or Cloudflare Pages — everything is automated post-payment
+- [ ] Audit logs capture: domain requested, domain registered, domain went live, domain setup failed, domain refunded
+
+### Out of scope for this prompt
+
+- Building Porkbun + Cloudflare integration libs (covered in Phase 1-2 of this doc)
+- Creating the `domains.setupForSubmission` internal action (covered in Phase 2)
+- Adding `domainStatus` field to schema (covered in Section 5)
+- Mobile-side review page changes (already built ✅)
+
+### How to start
+
+1. Confirm `submission.requestedDomain` and `submission.amount` are correctly populated in the dev database (test by submitting from the mobile app with a custom domain)
+2. Add the "Custom Domain" panel to the submission detail page (read-only first, just displays the data)
+3. Wire up the live status indicator using `useQuery` reactivity
+4. Update the existing "Send to Client" flow to read amount from `submission.amount` (remove any hardcoded ₱1,000)
+5. Add the retry + refund mutations and wire them to buttons
+6. Test end-to-end with a real submission once the Porkbun + Cloudflare libs are deployed (Phase 1-2)
+

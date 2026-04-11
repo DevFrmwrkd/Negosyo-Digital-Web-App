@@ -180,6 +180,7 @@ export default function AdminDashboard() {
     const rejectedCount = submissions.filter((s: any) => s.status === "rejected").length
     const successRate = submissions.length > 0 ? Math.round((approvedCount / submissions.length) * 100) : 0
     const rejectionRate = submissions.length > 0 ? Math.round((rejectedCount / submissions.length) * 100) : 0
+    const reviewedCount = approvedCount + rejectedCount
 
     // ==================== EARNINGS ANALYTICS ====================
 
@@ -194,6 +195,19 @@ export default function AdminDashboard() {
         return Object.entries(byPeriod)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([period, earnings]) => ({ period, earnings }))
+    }, [allAnalytics])
+
+    // Total earnings across all time (for stat widget)
+    const totalEarnings = useMemo(() => {
+        if (!allAnalytics) return 0
+        // Use monthly to avoid double-counting (monthly aggregates daily)
+        const monthly = allAnalytics.filter((r: any) => r.periodType === "monthly")
+        if (monthly.length > 0) {
+            return monthly.reduce((sum: number, r: any) => sum + (r.earningsTotal || 0), 0)
+        }
+        // Fallback to daily if no monthly data
+        const daily = allAnalytics.filter((r: any) => r.periodType === "daily")
+        return daily.reduce((sum: number, r: any) => sum + (r.earningsTotal || 0), 0)
     }, [allAnalytics])
 
     const earningsChartData = {
@@ -358,75 +372,56 @@ export default function AdminDashboard() {
                 <p className="text-sm text-gray-500 mt-1">Manage and review business applications across the platform.</p>
             </div>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {[
-                    { 
-                        id: "all", 
-                        label: "Total Submissions", 
-                        value: submissions.length, 
-                        icon: TrendingUp, 
-                        color: "text-blue-600", 
-                        bg: "bg-blue-50/50",
-                        activeBg: "border-blue-200 ring-4 ring-blue-50",
-                        trend: `${submissions.length > 0 ? "+12%" : "0%"} this month`
-                    },
-                    { 
-                        id: "pending", 
-                        label: "Pending Review", 
-                        value: pendingCount, 
-                        icon: AlertCircle, 
-                        color: "text-amber-600", 
-                        bg: "bg-amber-50/50",
-                        activeBg: "border-amber-200 ring-4 ring-amber-50",
-                        attention: pendingCount > 0
-                    },
-                    { 
-                        id: "approved", 
-                        label: "Approved", 
-                        value: approvedCount, 
-                        icon: CheckCircle2, 
-                        color: "text-green-600", 
-                        bg: "bg-green-50/50",
-                        activeBg: "border-green-200 ring-4 ring-green-50",
-                        trend: `${successRate}% Success Rate`
-                    },
-                    { 
-                        id: "rejected", 
-                        label: "Rejected", 
-                        value: rejectedCount, 
-                        icon: XCircle, 
-                        color: "text-red-600", 
-                        bg: "bg-red-50/50",
-                        activeBg: "border-red-200 ring-4 ring-red-50",
-                        trend: `${rejectionRate}% Rejection Rate`
-                    }
-                ].map((stat, idx) => (
-                    <button
-                        key={stat.id}
-                        onClick={() => setActiveFilter(activeFilter === stat.id ? "all" : stat.id as any)}
-                        className={`
-                            relative overflow-hidden bg-white p-6 rounded-[24px] border border-emerald-500 
-                            text-left transition-all duration-300 group
-                            ${activeFilter === stat.id ? stat.activeBg : "hover:shadow-xl hover:shadow-gray-200/40 hover:-translate-y-1"}
-                        `}
-                    >
-                        <div className={`p-2.5 rounded-xl ${stat.bg} w-fit mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                            <stat.icon className={`${stat.color}`} size={20} />
+            {/* Stats Cards (3 widgets, read-only) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+                {/* Widget 1: Total Earnings */}
+                <div className="relative overflow-hidden bg-white p-6 rounded-[24px] border border-emerald-500 hover:shadow-xl hover:shadow-gray-200/40 hover:-translate-y-1 transition-all duration-300 group">
+                    <div className="p-2.5 rounded-xl bg-green-50/50 w-fit mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <TrendingUp className="text-green-600" size={20} />
+                    </div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Earnings</p>
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-3xl font-black text-gray-900 tracking-tight">₱{totalEarnings.toLocaleString()}</p>
+                        <span className="text-[10px] font-bold text-gray-400">All time</span>
+                    </div>
+                </div>
+
+                {/* Widget 2: Submissions (total + pending review combined) */}
+                <div className="relative overflow-hidden bg-white p-6 rounded-[24px] border border-emerald-500 hover:shadow-xl hover:shadow-gray-200/40 hover:-translate-y-1 transition-all duration-300 group">
+                    <div className="p-2.5 rounded-xl bg-blue-50/50 w-fit mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <AlertCircle className="text-blue-600" size={20} />
+                    </div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Submissions</p>
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-3xl font-black text-gray-900 tracking-tight">{submissions.length.toLocaleString()}</p>
+                        <span className="text-[10px] font-bold text-amber-600">{pendingCount} pending review</span>
+                    </div>
+                    {pendingCount > 0 && (
+                        <div className="absolute top-6 right-6 flex items-center gap-1.5 px-2 py-1 bg-red-50 rounded-full border border-red-100">
+                            <span className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
+                            <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">Urgent</span>
                         </div>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{stat.label}</p>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-3xl font-black text-gray-900 tracking-tight">{stat.value.toLocaleString()}</p>
-                            {stat.trend && <span className="text-[10px] font-bold text-gray-400">{stat.trend}</span>}
-                        </div>
-                        {stat.attention && (
-                            <div className="absolute top-6 right-6 flex items-center gap-1.5 px-2 py-1 bg-red-50 rounded-full border border-red-100">
-                                <span className="w-1 h-1 bg-red-500 rounded-full animate-ping" />
-                                <span className="text-[9px] font-black text-red-600 uppercase tracking-tighter">Urgent</span>
-                            </div>
-                        )}
-                    </button>
-                ))}
+                    )}
+                </div>
+
+                {/* Widget 3: Reviewed (accepted + rejected combined) */}
+                <div className="relative overflow-hidden bg-white p-6 rounded-[24px] border border-emerald-500 hover:shadow-xl hover:shadow-gray-200/40 hover:-translate-y-1 transition-all duration-300 group">
+                    <div className="p-2.5 rounded-xl bg-emerald-50/50 w-fit mb-4 group-hover:scale-110 transition-transform duration-300">
+                        <CheckCircle2 className="text-emerald-600" size={20} />
+                    </div>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Reviewed</p>
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-3xl font-black text-gray-900 tracking-tight">{reviewedCount.toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 text-[10px] font-bold">
+                        <span className="text-green-600 flex items-center gap-1">
+                            <CheckCircle2 size={11} /> {approvedCount} approved
+                        </span>
+                        <span className="text-red-600 flex items-center gap-1">
+                            <XCircle size={11} /> {rejectedCount} rejected
+                        </span>
+                    </div>
+                </div>
             </div>
 
             {/* Earnings Chart Section */}

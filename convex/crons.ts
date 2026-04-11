@@ -17,4 +17,12 @@ crons.hourly(
     internal.unpublish.checkAndUnpublish
 );
 
+// Hourly (offset by 30 min): poll Wise for stalled withdrawals + send creator follow-up emails
+// Catches transfers that are stuck in "processing" between admin approval and final delivery
+crons.hourly(
+    'withdrawal-status-followup',
+    { minuteUTC: 30 },
+    internal.withdrawals.checkProcessingStatusCron
+);
+
 export default crons;

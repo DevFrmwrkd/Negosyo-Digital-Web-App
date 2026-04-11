@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   staticPageGenerationTimeout: 120,
+  async rewrites() {
+    return [
+      {
+        source: '/clerk-proxy/:path*',
+        destination: 'https://clerk.negosyo-digital.com/:path*',
+      },
+    ]
+  },
   outputFileTracingIncludes: {
     '/api/generate-website': [
       // Astro template: source, config, and its own self-contained node_modules

@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { query, mutation } from './_generated/server';
+import { query, mutation, internalQuery } from './_generated/server';
 import { internal } from './_generated/api';
 
 // ==================== QUERIES ====================
@@ -21,6 +21,16 @@ export const getByClerkId = query({
  * Get creator by ID
  */
 export const getById = query({
+    args: { id: v.id('creators') },
+    handler: async (ctx, args) => {
+        return await ctx.db.get(args.id);
+    },
+});
+
+/**
+ * Internal version of getById (callable from actions)
+ */
+export const getByIdInternal = internalQuery({
     args: { id: v.id('creators') },
     handler: async (ctx, args) => {
         return await ctx.db.get(args.id);

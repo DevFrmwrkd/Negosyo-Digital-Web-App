@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { query, mutation } from './_generated/server';
+import { query, mutation, internalQuery } from './_generated/server';
 import { Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
 
@@ -9,6 +9,16 @@ import { internal } from './_generated/api';
  * Get submission by ID
  */
 export const getById = query({
+    args: { id: v.id('submissions') },
+    handler: async (ctx, args) => {
+        return await ctx.db.get(args.id);
+    },
+});
+
+/**
+ * Internal version — callable from actions
+ */
+export const getByIdInternal = internalQuery({
     args: { id: v.id('submissions') },
     handler: async (ctx, args) => {
         return await ctx.db.get(args.id);
@@ -288,6 +298,43 @@ export const update = mutation({
         );
 
         await ctx.db.patch(id, filteredUpdates);
+    },
+});
+
+/**
+ * Set the custom domain tier and domain on a submission (creator review page).
+ * Requires ownership: caller must own the creator that owns the submission.
+ */
+export const setDomainTier = mutation({
+    args: {
+        id: v.id('submissions'),
+        submissionType: v.union(v.literal('standard'), v.literal('with_custom_domain')),
+        requestedDomain: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.db.get(args.id);
+        if (!submission) throw new Error('Submission not found');
+
+        // Determine amount based on tier
+        const isWithDomain = args.submissionType === 'with_custom_domain';
+        if (isWithDomain && !args.requestedDomain) {
+            throw new Error('Custom domain is required for the with_custom_domain tier');
+        }
+
+        const updates: any = {
+            submissionType: args.submissionType,
+            // TEST PRICING: custom domain temporarily ₱100 instead of ₱1,500
+            // See plans/REVERT-CUSTOM-DOMAIN-PRICING.md to restore
+            amount: isWithDomain ? 100 : 1000,
+            domainStatus: isWithDomain ? 'pending_payment' : 'not_requested',
+        };
+        if (isWithDomain) {
+            updates.requestedDomain = args.requestedDomain!.trim().toLowerCase();
+        } else {
+            updates.requestedDomain = undefined;
+        }
+
+        await ctx.db.patch(args.id, updates);
     },
 });
 

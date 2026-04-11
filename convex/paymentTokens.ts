@@ -129,6 +129,19 @@ export const getByReference = query({
     },
 })
 
+// Internal version of getByReference (used by actions)
+export const getByReferenceInternal = internalQuery({
+    args: { referenceCode: v.string() },
+    handler: async (ctx, args) => {
+        const token = await ctx.db
+            .query('paymentTokens')
+            .withIndex('by_reference', (q) => q.eq('referenceCode', args.referenceCode))
+            .first()
+
+        return token || null
+    },
+})
+
 // Get payment token by submission ID
 export const getBySubmissionId = query({
     args: { submissionId: v.id('submissions') },

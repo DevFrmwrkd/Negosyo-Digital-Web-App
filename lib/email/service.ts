@@ -1,5 +1,11 @@
 import nodemailer from 'nodemailer'
-import { getApprovalEmailHtml, getPaymentConfirmationEmailHtml, getPaymentLinkEmailHtml } from './templates'
+import {
+    getApprovalEmailHtml,
+    getPaymentConfirmationEmailHtml,
+    getPaymentLinkEmailHtml,
+    getDomainLiveEmailHtml,
+    getWithdrawalStatusEmailHtml,
+} from './templates'
 
 interface ApprovalEmailData {
     businessName: string
@@ -149,6 +155,76 @@ export async function sendPaymentConfirmationEmail(data: PaymentConfirmationEmai
         return { success: true, messageId: info.messageId }
     } catch (error: any) {
         console.error('Error in sendPaymentConfirmationEmail:', error)
+        throw error
+    }
+}
+
+interface DomainLiveEmailData {
+    businessName: string
+    businessOwnerName: string
+    businessOwnerEmail: string
+    customDomain: string
+    expiresAt: number
+}
+
+export async function sendDomainLiveEmail(data: DomainLiveEmailData) {
+    const { businessName, businessOwnerEmail, customDomain } = data
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASSWORD,
+            },
+        })
+        const emailHtml = getDomainLiveEmailHtml(data)
+        const info = await transporter.sendMail({
+            from: `"Negosyo Digital" <${process.env.GMAIL_USER}>`,
+            to: businessOwnerEmail,
+            subject: `🎉 ${customDomain} is Live — Your ${businessName} Website is Online!`,
+            html: emailHtml,
+        })
+        return { success: true, messageId: info.messageId }
+    } catch (error: any) {
+        console.error('Error in sendDomainLiveEmail:', error)
+        throw error
+    }
+}
+
+interface WithdrawalStatusEmailData {
+    creatorName: string
+    creatorEmail: string
+    amount: number
+    statusLabel: string                   // e.g. "Verifying your details"
+    statusDescription: string             // longer human-readable explanation
+    isFinal: boolean                      // true = completed/failed, false = still in progress
+    referenceCode?: string                // Wise transfer ID
+    submittedAt: number
+}
+
+export async function sendWithdrawalStatusEmail(data: WithdrawalStatusEmailData) {
+    const { creatorEmail, amount, statusLabel, isFinal } = data
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASSWORD,
+            },
+        })
+        const emailHtml = getWithdrawalStatusEmailHtml(data)
+        const subject = isFinal
+            ? `✅ Withdrawal of ₱${amount} — ${statusLabel}`
+            : `⏳ Withdrawal Update: ₱${amount} — ${statusLabel}`
+        const info = await transporter.sendMail({
+            from: `"Negosyo Digital" <${process.env.GMAIL_USER}>`,
+            to: creatorEmail,
+            subject,
+            html: emailHtml,
+        })
+        return { success: true, messageId: info.messageId }
+    } catch (error: any) {
+        console.error('Error in sendWithdrawalStatusEmail:', error)
         throw error
     }
 }
