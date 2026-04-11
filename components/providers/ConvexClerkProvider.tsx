@@ -11,6 +11,10 @@ export function ConvexClerkProvider({ children }: { children: ReactNode }) {
     return (
         <ClerkProvider
             publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!}
+            // Optional Clerk proxy — only enabled when NEXT_PUBLIC_CLERK_PROXY_URL is set.
+            // Use an absolute URL (e.g. "https://negosyo-digital.com/clerk-proxy") — relative paths
+            // break SSR because Clerk tries to resolve them against window.location.
+            proxyUrl={process.env.NEXT_PUBLIC_CLERK_PROXY_URL || undefined}
             appearance={{
                 layout: {
                     socialButtonsPlacement: "bottom",

@@ -1,0 +1,141 @@
+/**
+ * Wise (TransferWise) API client.
+ * https://api-docs.wise.com/
+ *
+ * Used by withdrawals.ts cron job to poll status of in-flight transfers
+ * and send follow-up emails to creators.
+ */
+
+const SANDBOX_URL = 'https://api.sandbox.transferwise.tech'
+const PROD_URL = 'https://api.wise.com'
+
+function getBaseUrl(): string {
+    return process.env.WISE_SANDBOX === 'true' ? SANDBOX_URL : PROD_URL
+}
+
+function getWiseToken(): string {
+    const token = process.env.WISE_API_TOKEN
+    if (!token) throw new Error('WISE_API_TOKEN env var must be set')
+    return token
+}
+
+async function wiseRequest(path: string, options: RequestInit = {}): Promise<any> {
+    const token = getWiseToken()
+    const response = await fetch(`${getBaseUrl()}${path}`, {
+        ...options,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(options.headers || {}),
+        },
+    })
+
+    let data: any = null
+    try {
+        data = await response.json()
+    } catch {
+        // Empty body OK
+    }
+
+    if (!response.ok) {
+        const errorMsg = data?.errors?.[0]?.message || data?.message || `HTTP ${response.status}`
+        throw new Error(`Wise API error (${response.status}): ${errorMsg}`)
+    }
+    return data
+}
+
+// ==================== TRANSFER STATUS ====================
+
+export interface TransferStatus {
+    id: string
+    status: string                  // Wise's raw state
+    detailedStatus: string          // Verbose status (e.g. "verifying_recipient", "outgoing_payment_sent")
+    isFinal: boolean                // True if transfer is in a terminal state (completed/failed/cancelled)
+    isCompleted: boolean            // True if successfully completed
+    failureReason?: string
+}
+
+/**
+ * Get the current status of a Wise transfer by its ID.
+ * Used to poll transfers that are stuck in "processing" state.
+ */
+export async function getTransferStatus(transferId: string): Promise<TransferStatus> {
+    const data = await wiseRequest(`/v1/transfers/${transferId}`)
+
+    const rawStatus = String(data?.status || '').toLowerCase()
+    const detailedStatus = String(data?.details?.status || data?.status || '').toLowerCase()
+
+    // Map Wise states to our concepts
+    const completedStates = ['outgoing_payment_sent', 'funds_converted', 'paid_out']
+    const failedStates = ['cancelled', 'funds_refunded', 'bounced_back', 'charged_back', 'rejected']
+    const isCompleted = completedStates.some((s) => rawStatus.includes(s) || detailedStatus.includes(s))
+    const isFailed = failedStates.some((s) => rawStatus.includes(s) || detailedStatus.includes(s))
+
+    return {
+        id: String(data?.id || transferId),
+        status: rawStatus,
+        detailedStatus,
+        isFinal: isCompleted || isFailed,
+        isCompleted,
+        failureReason: isFailed ? (data?.details?.reason || rawStatus) : undefined,
+    }
+}
+
+/**
+ * Map a Wise detailed status to a user-friendly label + description.
+ * Used when sending follow-up status emails to creators.
+ */
+export function describeWiseStatus(detailedStatus: string): { label: string; description: string; isFinal: boolean } {
+    const status = detailedStatus.toLowerCase()
+
+    if (status.includes('outgoing_payment_sent') || status.includes('paid_out')) {
+        return {
+            label: 'Completed',
+            description: "Your funds have been sent to your Wise account! It may take a few minutes to appear depending on your bank.",
+            isFinal: true,
+        }
+    }
+    if (status.includes('funds_converted')) {
+        return {
+            label: 'Converting funds',
+            description: 'Wise has converted your funds and is preparing to send them to your bank. This usually completes within minutes.',
+            isFinal: false,
+        }
+    }
+    if (status.includes('processing')) {
+        return {
+            label: 'Processing',
+            description: "Wise is processing your transfer. This usually takes a few minutes but can take 1-2 business days for some banks.",
+            isFinal: false,
+        }
+    }
+    if (status.includes('verifying') || status.includes('recipient')) {
+        return {
+            label: 'Verifying your details',
+            description: "Wise is verifying the recipient details you provided. Once verified, your transfer will move to processing.",
+            isFinal: false,
+        }
+    }
+    if (status.includes('cancelled')) {
+        return {
+            label: 'Cancelled',
+            description: "The transfer was cancelled. Your balance has been restored. Please contact support if you didn't request this.",
+            isFinal: true,
+        }
+    }
+    if (status.includes('refunded') || status.includes('bounced') || status.includes('charged_back') || status.includes('rejected')) {
+        return {
+            label: 'Failed',
+            description: "Unfortunately, the transfer didn't go through. Your balance has been restored. Please double-check your Wise email and try again.",
+            isFinal: true,
+        }
+    }
+
+    // Unknown / generic
+    return {
+        label: 'In progress',
+        description: `Current status: ${detailedStatus}. We'll send you another update when it changes.`,
+        isFinal: false,
+    }
+}
