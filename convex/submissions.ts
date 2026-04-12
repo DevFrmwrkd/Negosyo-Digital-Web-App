@@ -41,7 +41,7 @@ export const getByIdWithCreator = query({
         if (submission.reviewedBy) {
             const reviewer = await ctx.db
                 .query('creators')
-                .withIndex('by_clerkId', (q) => q.eq('clerkId', submission.reviewedBy!))
+                .withIndex('by_clerk_id', (q) => q.eq('clerkId', submission.reviewedBy!))
                 .unique();
             reviewedByName = reviewer ? `${reviewer.firstName} ${reviewer.lastName}` : null;
         }
@@ -69,7 +69,7 @@ export const getByCreatorId = query({
     handler: async (ctx, args) => {
         return await ctx.db
             .query('submissions')
-            .withIndex('by_creatorId', (q) => q.eq('creatorId', args.creatorId))
+            .withIndex('by_creator_id', (q) => q.eq('creatorId', args.creatorId))
             .order('desc')
             .collect();
     },
@@ -83,7 +83,7 @@ export const getDraftByCreatorId = query({
     handler: async (ctx, args) => {
         const drafts = await ctx.db
             .query('submissions')
-            .withIndex('by_creatorId', (q) => q.eq('creatorId', args.creatorId))
+            .withIndex('by_creator_id', (q) => q.eq('creatorId', args.creatorId))
             .filter((q) => q.eq(q.field('status'), 'draft'))
             .order('desc')
             .take(1);
@@ -122,7 +122,7 @@ export const getAllWithCreator = query({
                     if (!reviewerCache.has(submission.reviewedBy)) {
                         const reviewer = await ctx.db
                             .query('creators')
-                            .withIndex('by_clerkId', (q) => q.eq('clerkId', submission.reviewedBy!))
+                            .withIndex('by_clerk_id', (q) => q.eq('clerkId', submission.reviewedBy!))
                             .unique();
                         reviewerCache.set(
                             submission.reviewedBy,

@@ -4,42 +4,38 @@ import { v } from 'convex/values';
 export default defineSchema({
     // Creators table (users - both creators and admins)
     creators: defineTable({
-        clerkId: v.string(), // Clerk user ID
-        phone: v.optional(v.string()),
-        firstName: v.string(),
+        clerkId: v.string(),
+        email: v.string(), // Required (mobile requires it)
+        firstName: v.optional(v.string()), // Optional (mobile has optional)
         middleName: v.optional(v.string()),
-        lastName: v.string(),
-        email: v.optional(v.string()),
-        wiseEmail: v.optional(v.string()), // For Wise payouts
-        referralCode: v.string(),
+        lastName: v.optional(v.string()),  // Optional (mobile has optional)
+        phone: v.optional(v.string()),
+        balance: v.optional(v.number()),   // Optional (mobile has optional)
+        totalEarnings: v.optional(v.number()),
+        totalWithdrawn: v.optional(v.number()),
+        submissionCount: v.optional(v.number()),
+        createdAt: v.optional(v.number()),
+        updatedAt: v.optional(v.number()),
+        lastActiveAt: v.optional(v.number()),
+        referralCode: v.optional(v.string()), // Optional (mobile has optional)
+        referredByCode: v.optional(v.string()),
+        role: v.optional(v.string()),    // v.string() for cross-deploy safety (mobile uses string)
+        status: v.optional(v.string()),  // v.string() for cross-deploy safety
+        profileImage: v.optional(v.string()),
+        wiseEmail: v.optional(v.string()),
+        certifiedAt: v.optional(v.number()),
+        isDeleted: v.optional(v.boolean()),
+        deletedAt: v.optional(v.number()),
+        // Admin-only extras (kept as optional, mobile doesn't have these)
         referredBy: v.optional(v.id('creators')),
-        referredByCode: v.optional(v.string()), // Referral code used during signup
-        balance: v.number(),
-        totalEarnings: v.optional(v.number()), // Optional for legacy records
-        totalWithdrawn: v.optional(v.number()), // Lifetime total withdrawn
-        submissionCount: v.optional(v.number()), // Total submissions created
-        referredByName: v.optional(v.string()), // Full name of the referrer
-        status: v.optional(v.union(
-            v.literal('pending'),
-            v.literal('active'),
-            v.literal('suspended'),
-            v.literal('deleted')
-        )), // Optional for legacy records
-        role: v.optional(v.union(v.literal('creator'), v.literal('admin'))), // Optional for legacy records
+        referredByName: v.optional(v.string()),
         payoutMethod: v.optional(v.string()),
         payoutDetails: v.optional(v.string()),
-        createdAt: v.optional(v.number()), // Timestamp from legacy records
-        updatedAt: v.optional(v.number()), // Last profile update
-        lastActiveAt: v.optional(v.number()), // Last activity timestamp
-        profileImage: v.optional(v.string()), // Profile image URL (R2)
-        certifiedAt: v.optional(v.number()), // Timestamp when creator was certified
-        isDeleted: v.optional(v.boolean()), // Soft delete flag
-        deletedAt: v.optional(v.number()), // Timestamp when creator was deleted
     })
-        .index('by_clerkId', ['clerkId'])
+        // Use mobile's index names (by_clerk_id, not by_clerkId)
+        .index('by_clerk_id', ['clerkId'])
         .index('by_email', ['email'])
-        .index('by_referralCode', ['referralCode'])
-        .index('by_role', ['role'])
+        .index('by_referral_code', ['referralCode'])
         .index('by_status', ['status']),
 
     // Business submissions
@@ -55,10 +51,11 @@ export default defineSchema({
         address: v.string(),
         city: v.string(),
 
-        // Files - store as storage IDs for Convex file storage or URL strings (legacy)
-        photos: v.array(v.string()), // URLs or storage IDs
-        videoStorageId: v.optional(v.union(v.id('_storage'), v.string())), // Storage ID or URL string
-        audioStorageId: v.optional(v.union(v.id('_storage'), v.string())), // Storage ID or URL string
+        // Files — mobile uses v.optional + v.string(), admin used v.union(v.id, v.string())
+        // Use the looser types for cross-deploy safety
+        photos: v.optional(v.array(v.string())),
+        videoStorageId: v.optional(v.string()),
+        audioStorageId: v.optional(v.string()),
         // R2 URLs (preferred over storage IDs for new uploads)
         videoUrl: v.optional(v.string()),
         audioUrl: v.optional(v.string()),
@@ -86,22 +83,10 @@ export default defineSchema({
         rejectionReason: v.optional(v.string()),
         platformFee: v.optional(v.number()), // Platform fee charged
 
-        // Status workflow: submitted -> in_review -> approved -> deployed -> pending_payment -> paid
-        // Note: 'pending', 'completed' and 'website_generated' kept for backward compatibility with existing data
-        status: v.union(
-            v.literal('draft'),
-            v.literal('pending'),
-            v.literal('submitted'),
-            v.literal('in_review'),
-            v.literal('approved'),
-            v.literal('rejected'),
-            v.literal('deployed'),
-            v.literal('pending_payment'),
-            v.literal('paid'),
-            v.literal('completed'),
-            v.literal('website_generated'),
-            v.literal('unpublished')
-        ),
+        // Status — v.string() for cross-deploy safety (mobile uses v.string(), admin used v.union())
+        // Valid values: draft, pending, submitted, in_review, approved, rejected, deployed,
+        // pending_payment, paid, completed, website_generated, unpublished
+        status: v.string(),
 
         // Payment
         amount: v.optional(v.number()),
@@ -144,7 +129,8 @@ export default defineSchema({
         // Cloudflare zone for this custom domain
         cloudflareZoneId: v.optional(v.string()),
     })
-        .index('by_creatorId', ['creatorId'])
+        // Use mobile's index name (by_creator_id, not by_creatorId)
+        .index('by_creator_id', ['creatorId'])
         .index('by_status', ['status'])
         .index('by_payoutRequested', ['payoutRequestedAt'])
         .index('by_airtable_sync', ['airtableSyncStatus'])
@@ -232,32 +218,9 @@ export default defineSchema({
 
     // ==================== AUDIT LOGS ====================
     auditLogs: defineTable({
-        adminId: v.string(), // Clerk user ID of the admin
-        action: v.union(
-            v.literal('submission_approved'),
-            v.literal('submission_rejected'),
-            v.literal('website_generated'),
-            v.literal('website_deployed'),
-            v.literal('payment_sent'),
-            v.literal('payment_confirmed'),
-            v.literal('submission_deleted'),
-            v.literal('creator_updated'),
-            v.literal('manual_override'),
-            v.literal('transcription_regenerated'),
-            v.literal('images_enhanced'),
-            v.literal('payment_auto_matched'),
-            v.literal('payment_partial'),
-            v.literal('payment_unmatched'),
-            v.literal('payout_sent'),
-            v.literal('payout_admin_override')
-        ),
-        targetType: v.union(
-            v.literal('submission'),
-            v.literal('creator'),
-            v.literal('website'),
-            v.literal('withdrawal'),
-            v.literal('payment')
-        ),
+        adminId: v.string(),
+        action: v.string(),     // v.string() for cross-deploy safety — both apps may add new action types
+        targetType: v.string(), // v.string() for cross-deploy safety
         targetId: v.string(),
         metadata: v.optional(v.any()),
         timestamp: v.number(),
@@ -272,16 +235,8 @@ export default defineSchema({
         creatorId: v.id('creators'),
         submissionId: v.id('submissions'),
         amount: v.number(),
-        type: v.union(
-            v.literal('submission_approved'),
-            v.literal('referral_bonus'),
-            v.literal('lead_bonus')
-        ),
-        status: v.union(
-            v.literal('pending'),
-            v.literal('available'),
-            v.literal('withdrawn')
-        ),
+        type: v.string(),   // "submission_approved" | "referral_bonus" | "lead_bonus"
+        status: v.string(), // "pending" | "available" | "withdrawn"
         createdAt: v.number(),
     })
         .index('by_creator', ['creatorId'])
@@ -291,12 +246,9 @@ export default defineSchema({
     withdrawals: defineTable({
         creatorId: v.id('creators'),
         amount: v.number(),
-        payoutMethod: v.union(
-            v.literal('gcash'),
-            v.literal('maya'),
-            v.literal('bank_transfer'),
-            v.literal('wise_email')
-        ),
+        // v.string() for cross-deploy safety — mobile has only wise_email + bank_transfer,
+        // admin also has gcash + maya. String avoids union conflicts.
+        payoutMethod: v.string(),
         accountDetails: v.string(),
         accountHolderName: v.optional(v.string()),
         accountNumber: v.optional(v.string()),
@@ -326,17 +278,13 @@ export default defineSchema({
         wiseDetailedState: v.optional(v.string()),       // The latest detailed Wise state (e.g. "verifying", "outgoing_payment_sent")
     })
         .index('by_creator', ['creatorId'])
-        .index('by_status', ['status']),
+        .index('by_status', ['status'])
+        .index('by_transactionRef', ['transactionRef']), // Mobile index
 
     // ==================== PAYOUT METHODS ====================
     payoutMethods: defineTable({
         creatorId: v.id('creators'),
-        type: v.union(
-            v.literal('gcash'),
-            v.literal('maya'),
-            v.literal('bank_transfer'),
-            v.literal('wise_email')
-        ),
+        type: v.string(), // "gcash" | "maya" | "bank_transfer" | "wise_email"
         accountName: v.string(),
         accountNumber: v.string(),
         bankName: v.optional(v.string()),
@@ -350,22 +298,12 @@ export default defineSchema({
         submissionId: v.optional(v.id('submissions')), // Optional — standalone leads don't need a submission
         creatorId: v.optional(v.id('creators')),        // Optional — auto-filled from submission if linked
         businessOwnerId: v.optional(v.string()),
-        source: v.union(
-            v.literal('website'),
-            v.literal('qr_code'),
-            v.literal('direct')
-        ),
+        source: v.string(), // "website" | "qr_code" | "direct"
         name: v.string(),
         phone: v.string(),
         email: v.optional(v.string()),
         message: v.optional(v.string()),
-        status: v.union(
-            v.literal('new'),
-            v.literal('contacted'),
-            v.literal('qualified'),
-            v.literal('converted'),
-            v.literal('lost')
-        ),
+        status: v.string(), // "new" | "contacted" | "qualified" | "converted" | "lost"
         createdAt: v.number(),
     })
         .index('by_submission', ['submissionId'])
@@ -384,18 +322,7 @@ export default defineSchema({
     // ==================== NOTIFICATIONS ====================
     notifications: defineTable({
         creatorId: v.id('creators'),
-        type: v.union(
-            v.literal('submission_approved'),
-            v.literal('submission_rejected'),
-            v.literal('submission_created'),
-            v.literal('new_lead'),
-            v.literal('payout_sent'),
-            v.literal('website_live'),
-            v.literal('profile_updated'),
-            v.literal('password_changed'),
-            v.literal('certification'),
-            v.literal('system')
-        ),
+        type: v.string(), // Cross-deploy safe — mobile may add new notification types
         title: v.string(),
         body: v.string(),
         data: v.optional(v.any()),
@@ -409,11 +336,7 @@ export default defineSchema({
     pushTokens: defineTable({
         creatorId: v.id('creators'),
         token: v.string(),
-        platform: v.union(
-            v.literal('ios'),
-            v.literal('android'),
-            v.literal('web')
-        ),
+        platform: v.string(), // "ios" | "android" | "web"
         active: v.boolean(),
     })
         .index('by_creator', ['creatorId'])
@@ -424,11 +347,7 @@ export default defineSchema({
         referrerId: v.id('creators'),
         referredId: v.id('creators'),
         referralCode: v.string(),
-        status: v.union(
-            v.literal('pending'),
-            v.literal('qualified'),
-            v.literal('paid')
-        ),
+        status: v.string(), // "pending" | "qualified" | "paid"
         bonusAmount: v.optional(v.number()),
         qualifiedAt: v.optional(v.number()),
         paidAt: v.optional(v.number()),
@@ -662,4 +581,12 @@ export default defineSchema({
         .index('by_submissionId', ['submissionId'])
         .index('by_status', ['status'])
         .index('by_expiresAt', ['expiresAt']),
+
+    // ==================== RATE LIMITS (from mobile) ====================
+    rateLimits: defineTable({
+        key: v.string(),
+        count: v.number(),
+        windowStart: v.number(),
+    })
+        .index('by_key', ['key']),
 });

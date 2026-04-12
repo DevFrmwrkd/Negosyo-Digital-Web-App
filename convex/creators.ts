@@ -12,7 +12,7 @@ export const getByClerkId = query({
     handler: async (ctx, args) => {
         return await ctx.db
             .query('creators')
-            .withIndex('by_clerkId', (q) => q.eq('clerkId', args.clerkId))
+            .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
             .unique();
     },
 });
@@ -58,7 +58,7 @@ export const getByReferralCode = query({
     handler: async (ctx, args) => {
         return await ctx.db
             .query('creators')
-            .withIndex('by_referralCode', (q) => q.eq('referralCode', args.referralCode))
+            .withIndex('by_referral_code', (q) => q.eq('referralCode', args.referralCode))
             .unique();
     },
 });
@@ -85,7 +85,7 @@ export const getAllWithStats = query({
             creators.map(async (creator) => {
                 const submissions = await ctx.db
                     .query('submissions')
-                    .withIndex('by_creatorId', (q) => q.eq('creatorId', creator._id))
+                    .withIndex('by_creator_id', (q) => q.eq('creatorId', creator._id))
                     .collect();
 
                 return {
@@ -120,7 +120,7 @@ export const create = mutation({
         // Check if creator already exists
         const existing = await ctx.db
             .query('creators')
-            .withIndex('by_clerkId', (q) => q.eq('clerkId', args.clerkId))
+            .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
             .unique();
 
         if (existing) {
@@ -132,9 +132,9 @@ export const create = mutation({
             firstName: args.firstName,
             middleName: args.middleName,
             lastName: args.lastName,
-            email: args.email,
+            email: args.email || '',
             phone: args.phone,
-            referralCode: args.referralCode,
+            referralCode: args.referralCode || '',
             referredBy: args.referredBy,
             referredByCode: args.referredByCode,
             balance: 0,
@@ -150,7 +150,7 @@ export const create = mutation({
         if (args.referredByCode) {
             const referrer = await ctx.db
                 .query('creators')
-                .withIndex('by_referralCode', (q) => q.eq('referralCode', args.referredByCode!))
+                .withIndex('by_referral_code', (q) => q.eq('referralCode', args.referredByCode!))
                 .first();
 
             if (referrer && referrer._id !== creatorId) {
@@ -300,7 +300,7 @@ export const applyReferralCode = mutation({
         // Find the referrer by code
         const referrer = await ctx.db
             .query('creators')
-            .withIndex('by_referralCode', (q) => q.eq('referralCode', args.referredByCode))
+            .withIndex('by_referral_code', (q) => q.eq('referralCode', args.referredByCode))
             .first();
         if (!referrer) {
             throw new Error('Invalid referral code');
@@ -335,7 +335,7 @@ export const updateLastActive = mutation({
     handler: async (ctx, args) => {
         const creator = await ctx.db
             .query('creators')
-            .withIndex('by_clerkId', (q) => q.eq('clerkId', args.clerkId))
+            .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
             .unique();
 
         if (creator) {
