@@ -142,6 +142,28 @@ export const getByReferenceInternal = internalQuery({
     },
 })
 
+/**
+ * Find pending payment tokens matching a specific amount.
+ * Used as fallback when Wise webhook doesn't include a reference code.
+ * Returns ALL pending tokens with that amount — caller decides if exactly 1 = auto-match.
+ */
+export const findPendingByAmount = internalQuery({
+    args: { amount: v.number(), tolerance: v.optional(v.number()) },
+    handler: async (ctx, args) => {
+        const tol = args.tolerance ?? 1 // ₱1 tolerance for rounding/fees
+        const allPending = await ctx.db
+            .query('paymentTokens')
+            .withIndex('by_status', (q) => q.eq('status', 'pending'))
+            .collect()
+
+        // Filter by amount within tolerance
+        return allPending.filter((t) => {
+            const diff = Math.abs(t.amount - args.amount)
+            return diff <= tol
+        })
+    },
+})
+
 // Get payment token by submission ID
 export const getBySubmissionId = query({
     args: { submissionId: v.id('submissions') },
