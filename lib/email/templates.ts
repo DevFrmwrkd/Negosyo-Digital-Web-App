@@ -217,7 +217,7 @@ export function getPaymentLinkEmailHtml(params: {
                                 Hi <strong>${businessOwnerName}</strong>,
                             </p>
                             <p style="margin:0;font-size:16px;color:#374151;line-height:1.7;">
-                                Your website for <strong style="color:#10b981;">${businessName}</strong> has been built and is ready to go live! To activate it, please send a payment using the Wise app by following the simple steps below.
+                                Your website for <strong style="color:#10b981;">${businessName}</strong> has been built and is ready to go live! To activate it, please send a payment using <strong>GCash, Maya, any bank app, or the Wise app</strong> — whichever is easiest for you.
                             </p>
                         </td>
                     </tr>
@@ -264,92 +264,77 @@ export function getPaymentLinkEmailHtml(params: {
                         </td>
                     </tr>
 
-                    <!-- Step-by-step instructions -->
+                    <!-- Bank Account Details -->
+                    <tr>
+                        <td style="padding:0 40px 24px;">
+                            <h2 style="margin:0 0 16px;font-size:20px;color:#111827;font-weight:700;">Send Your Payment To</h2>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#ffffff;border:2px solid #d1d5db;border-radius:12px;overflow:hidden;">
+                                <tr><td style="padding:18px 20px;border-bottom:1px solid #f3f4f6;">
+                                    <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Account Holder Name</p>
+                                    <p style="margin:0;font-size:20px;color:#111827;font-weight:700;">VONAS, OPC</p>
+                                </td></tr>
+                                <tr><td style="padding:18px 20px;border-bottom:1px solid #f3f4f6;">
+                                    <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Account Number (copy this)</p>
+                                    <p style="margin:0;font-size:28px;color:#111827;font-weight:800;font-family:'Courier New',Courier,monospace;letter-spacing:3px;">2006436346</p>
+                                </td></tr>
+                                <tr><td style="padding:18px 20px;border-bottom:1px solid #f3f4f6;">
+                                    <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Bank</p>
+                                    <p style="margin:0;font-size:16px;color:#111827;font-weight:600;">Wise Pilipinas Inc. (via InstaPay)</p>
+                                </td></tr>
+                                <tr><td style="padding:18px 20px;">
+                                    <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Amount</p>
+                                    <p style="margin:0;font-size:28px;color:#059669;font-weight:800;">₱${amount.toLocaleString('en-PH')}</p>
+                                </td></tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Pay from any app -->
+                    <tr>
+                        <td style="padding:0 40px 24px;">
+                            <div style="padding:16px 20px;background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+                                <p style="margin:0;font-size:15px;color:#1e40af;line-height:1.6;">
+                                    💡 <strong>You can pay from any of these apps:</strong> GCash, Maya, BDO, BPI, UnionBank, Metrobank, Landbank, or any bank app. Just choose <strong>"Send via InstaPay"</strong> and enter the account details above.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Reference Code -->
+                    <tr>
+                        <td style="padding:0 40px 24px;">
+                            <div style="padding:24px;background-color:#fefce8;border:2px solid #fde68a;border-radius:12px;text-align:center;">
+                                <p style="margin:0 0 8px;font-size:15px;color:#92400e;font-weight:700;">⚠ IMPORTANT — Include this code when sending:</p>
+                                <p style="margin:0 0 12px;font-size:32px;color:#78350f;font-weight:800;font-family:'Courier New',Courier,monospace;letter-spacing:5px;">${referenceCode}</p>
+                                <p style="margin:0;font-size:14px;color:#92400e;line-height:1.6;">Put this in the <strong>"Reference"</strong>, <strong>"Note"</strong>, or <strong>"Message"</strong> field. This lets us automatically activate your website.</p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- 3 Easy Steps -->
                     <tr>
                         <td style="padding:0 40px 32px;">
-                            <h2 style="margin:0 0 20px;font-size:20px;color:#111827;font-weight:700;">How to Send Payment</h2>
+                            <h2 style="margin:0 0 16px;font-size:18px;color:#111827;font-weight:700;">3 Easy Steps</h2>
 
                             <!-- Step 1 -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:12px;">
                                 <tr>
-                                    <td valign="top" width="40">
-                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">1</div>
-                                    </td>
-                                    <td style="padding-left:12px;">
-                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Open your Wise app</p>
-                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
-                                            Open the Wise app on your phone, or go to <strong>wise.com</strong> on your computer. If you don't have a Wise account yet, you can create one for free at <a href="https://wise.com" style="color:#10b981;font-weight:600;">wise.com</a>.
-                                        </p>
-                                    </td>
+                                    <td valign="top" width="36"><div style="width:28px;height:28px;background-color:#10b981;border-radius:50%;text-align:center;line-height:28px;color:#ffffff;font-weight:800;font-size:14px;">1</div></td>
+                                    <td style="padding-left:10px;"><p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Open <strong>GCash, Maya, or your bank app</strong> and choose <strong>"Send Money" → "InstaPay"</strong></p></td>
                                 </tr>
                             </table>
-
                             <!-- Step 2 -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:12px;">
                                 <tr>
-                                    <td valign="top" width="40">
-                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">2</div>
-                                    </td>
-                                    <td style="padding-left:12px;">
-                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Tap "Send money"</p>
-                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
-                                            Choose <strong>"Send to someone"</strong> and enter the email address below as the recipient:
-                                        </p>
-                                        <div style="margin:12px 0;padding:14px 18px;background-color:#f9fafb;border:2px solid #e5e7eb;border-radius:8px;">
-                                            <p style="margin:0;font-size:18px;color:#111827;font-weight:700;font-family:monospace;letter-spacing:0.5px;">${wiseEmail}</p>
-                                        </div>
-                                    </td>
+                                    <td valign="top" width="36"><div style="width:28px;height:28px;background-color:#10b981;border-radius:50%;text-align:center;line-height:28px;color:#ffffff;font-weight:800;font-size:14px;">2</div></td>
+                                    <td style="padding-left:10px;"><p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Enter: Bank = <strong>Wise Pilipinas Inc.</strong>, Account = <strong style="font-family:monospace;">2006436346</strong>, Amount = <strong>₱${amount.toLocaleString('en-PH')}</strong></p></td>
                                 </tr>
                             </table>
-
                             <!-- Step 3 -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
-                                <tr>
-                                    <td valign="top" width="40">
-                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">3</div>
-                                    </td>
-                                    <td style="padding-left:12px;">
-                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Enter the amount: ₱${amount.toLocaleString('en-PH')}</p>
-                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
-                                            Set the currency to <strong>PHP</strong> and enter <strong>₱${amount.toLocaleString('en-PH')}</strong> as the amount.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Step 4 -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
-                                <tr>
-                                    <td valign="top" width="40">
-                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">4</div>
-                                    </td>
-                                    <td style="padding-left:12px;">
-                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Add this reference code in the note</p>
-                                        <p style="margin:0 0 8px;font-size:14px;color:#6b7280;line-height:1.6;">
-                                            When Wise asks for a <strong>"Reference"</strong> or <strong>"Note"</strong>, type this code exactly:
-                                        </p>
-                                        <div style="margin:0;padding:16px 20px;background-color:#fefce8;border:2px solid #fde68a;border-radius:8px;text-align:center;">
-                                            <p style="margin:0;font-size:24px;color:#92400e;font-weight:800;font-family:monospace;letter-spacing:3px;">${referenceCode}</p>
-                                        </div>
-                                        <p style="margin:8px 0 0;font-size:13px;color:#92400e;font-weight:600;">
-                                            ⚠ This code is important! It helps us match your payment to your website so it goes live automatically.
-                                        </p>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <!-- Step 5 -->
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                    <td valign="top" width="40">
-                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">5</div>
-                                    </td>
-                                    <td style="padding-left:12px;">
-                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Confirm and send</p>
-                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
-                                            Review the details and tap <strong>"Confirm"</strong> to send the payment. Once we receive it, your website will go live automatically — no further action needed from you!
-                                        </p>
-                                    </td>
+                                    <td valign="top" width="36"><div style="width:28px;height:28px;background-color:#10b981;border-radius:50%;text-align:center;line-height:28px;color:#ffffff;font-weight:800;font-size:14px;">3</div></td>
+                                    <td style="padding-left:10px;"><p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Add reference code <strong style="color:#92400e;font-family:monospace;">${referenceCode}</strong> in the note/message field, then <strong>confirm and send</strong>. Your website goes live automatically!</p></td>
                                 </tr>
                             </table>
                         </td>
