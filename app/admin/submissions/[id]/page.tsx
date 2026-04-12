@@ -1337,16 +1337,45 @@ export default function SubmissionDetailPage() {
                         <div className="bg-white rounded-xl p-6 border border-gray-200">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-lg font-bold text-gray-900">Business Information</h2>
-                                {!isEditing && (
-                                    <button
-                                        onClick={handleEdit}
-                                        className="text-gray-400 hover:text-blue-500 transition-colors"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                        </svg>
-                                    </button>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {!isEditing && (
+                                        <button
+                                            onClick={() => {
+                                                const info = [
+                                                    `Business Name: ${submission.business_name}`,
+                                                    `Business Type: ${submission.business_type}`,
+                                                    `Owner Name: ${submission.owner_name}`,
+                                                    `Phone: ${submission.owner_phone}`,
+                                                    `Email: ${submission.owner_email || 'N/A'}`,
+                                                    `City: ${submission.city}`,
+                                                    `Address: ${submission.address}`,
+                                                ].join('\n')
+                                                navigator.clipboard.writeText(info)
+                                                    .then(() => {
+                                                        const btn = document.getElementById('copy-biz-info')
+                                                        if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = ''; btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>' }, 1500) }
+                                                    })
+                                            }}
+                                            id="copy-biz-info"
+                                            title="Copy business info"
+                                            className="text-gray-400 hover:text-emerald-600 transition-colors p-1"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                    {!isEditing && (
+                                        <button
+                                            onClick={handleEdit}
+                                            className="text-gray-400 hover:text-blue-500 transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -1563,6 +1592,19 @@ export default function SubmissionDetailPage() {
                                                         {new Date(submissionData.transcriptionUpdatedAt).toLocaleString()}
                                                     </span>
                                                 )}
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(submission.transcript || '')
+                                                            .then(() => {
+                                                                const btn = document.getElementById('copy-transcript')
+                                                                if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = 'Copy' }, 1500) }
+                                                            })
+                                                    }}
+                                                    id="copy-transcript"
+                                                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-full font-medium transition-colors"
+                                                >
+                                                    Copy
+                                                </button>
                                                 <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
                                                     Generated
                                                 </span>

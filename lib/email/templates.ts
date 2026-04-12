@@ -13,8 +13,9 @@ export function getPaymentConfirmationEmailHtml(params: {
     websiteUrl: string
     amount: number
     wiseEmail?: string
+    customDomain?: string // If set, shows "domain being configured" notice
 }): string {
-    const { businessName, businessOwnerName, websiteUrl, amount, wiseEmail: customWiseEmail } = params
+    const { businessName, businessOwnerName, websiteUrl, amount, wiseEmail: customWiseEmail, customDomain } = params
     
     const wiseEmail = customWiseEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
 
@@ -92,6 +93,24 @@ export function getPaymentConfirmationEmailHtml(params: {
                         </td>
                     </tr>
 
+                    ${customDomain ? `
+                    <!-- Custom Domain Notice -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#0c1f17;border:1px solid #065f46;border-radius:12px;overflow:hidden;">
+                                <tr>
+                                    <td style="padding:24px;">
+                                        <p style="margin:0 0 8px;font-size:14px;color:#10b981;font-weight:700;">🌐 Custom Domain: ${customDomain}</p>
+                                        <p style="margin:0;font-size:13px;color:#6ee7b7;line-height:1.6;">
+                                            Your custom domain is being configured and will be live within 5 minutes. You'll receive a separate email with your domain details and renewal information once it's ready.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    ` : ''}
+
                     <!-- Website CTA -->
                     <tr>
                         <td style="padding:28px 40px 0;">
@@ -162,8 +181,9 @@ export function getPaymentLinkEmailHtml(params: {
     paymentLink: string
     referenceCode: string
     platformEmail?: string
+    customDomain?: string // If set, email shows a breakdown: website ₱1,000 + domain ₱500
 }): string {
-    const { businessName, businessOwnerName, amount, paymentLink, referenceCode, platformEmail } = params
+    const { businessName, businessOwnerName, amount, paymentLink, referenceCode, platformEmail, customDomain } = params
 
     const displayEmail = platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
 
@@ -219,8 +239,39 @@ export function getPaymentLinkEmailHtml(params: {
                                 <tr>
                                     <td>
                                         <p style="margin:0 0 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Payment Amount</p>
-                                        <p style="margin:0 0 20px;font-size:32px;color:#10b981;font-weight:800;">₱${amount.toLocaleString('en-PH')}</p>
-                                        
+                                        <p style="margin:0 0 8px;font-size:32px;color:#10b981;font-weight:800;">₱${amount.toLocaleString('en-PH')}</p>
+                                        ${customDomain ? `
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 20px;background:#0a0a0a;border-radius:8px;overflow:hidden;">
+                                            <tr>
+                                                <td style="padding:12px 16px;border-bottom:1px solid #262626;">
+                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                                        <tr>
+                                                            <td style="font-size:13px;color:#9ca3af;">Website Package</td>
+                                                            <td align="right" style="font-size:13px;color:#e5e7eb;font-weight:600;">₱1,000</td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:12px 16px;border-bottom:1px solid #262626;">
+                                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                                        <tr>
+                                                            <td style="font-size:13px;color:#9ca3af;">Custom Domain: <strong style="color:#10b981;">${customDomain}</strong></td>
+                                                            <td align="right" style="font-size:13px;color:#e5e7eb;font-weight:600;">₱500</td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding:10px 16px;background:#111;">
+                                                    <p style="margin:0;font-size:11px;color:#6b7280;line-height:1.5;">
+                                                        Year 1 of your custom domain is <strong style="color:#10b981;">included free</strong>. After year 1, renewal is ~₱1,120/year and is your responsibility. We do NOT auto-renew.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        ` : '<div style="margin-bottom:20px;"></div>'}
+
                                         <p style="margin:0 0 8px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Reference Code</p>
                                         <p style="margin:0;font-size:16px;color:#ffffff;font-family:monospace;letter-spacing:1px;font-weight:700;">${referenceCode}</p>
                                     </td>
