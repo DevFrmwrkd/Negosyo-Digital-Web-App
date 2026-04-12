@@ -8,6 +8,7 @@ import {
     registerDomain as registrarRegister,
     disableAutoRenewal as registrarDisableAutoRenewal,
     findSubscriptionForDomain as registrarFindSubscription,
+    getCatalogItemId as registrarGetCatalogItemId,
     updateNameservers,
     getPaymentMethodStatus as registrarGetPaymentMethodStatus,
     type RegistrantContact,
@@ -360,7 +361,7 @@ export const setupForSubmission = internalAction({
         try {
             console.log(`[DOMAINS] Starting setup for ${domain} (submission ${args.submissionId})`)
 
-            // Step 1: Re-verify availability + get the catalog item_id (required for purchase)
+            // Step 1: Re-verify availability
             await ctx.runMutation(internal.domains.setDomainStatus, {
                 submissionId: args.submissionId,
                 status: 'registering',
@@ -369,13 +370,24 @@ export const setupForSubmission = internalAction({
             if (!availCheck.available) {
                 throw new Error(`Domain ${domain} is no longer available`)
             }
-            if (!availCheck.itemId) {
-                throw new Error(`No Hostinger catalog item_id returned for ${domain} — cannot purchase`)
-            }
 
-            // Step 2: Build registrant contact from business owner info + register with item_id
+            // Step 1b: Get catalog item_id (required for purchase)
+            // Try from availability response first, then catalog endpoint, then use domain name as fallback
+            let itemId: string | undefined = availCheck.itemId
+            if (!itemId) {
+                const tld = domain.split('.').slice(1).join('.')
+                console.log(`[DOMAINS] No item_id from availability check, looking up catalog for .${tld}`)
+                itemId = (await registrarGetCatalogItemId(tld)) ?? undefined
+            }
+            if (!itemId) {
+                console.log(`[DOMAINS] No item_id from catalog either, using domain name as item_id fallback`)
+                itemId = domain
+            }
+            console.log(`[DOMAINS] Using item_id: ${itemId} for ${domain}`)
+
+            // Step 2: Build registrant contact from business owner info + register
             const contact = buildContactFromSubmission(submission)
-            const reg = await registrarRegister(domain, availCheck.itemId, contact)
+            const reg = await registrarRegister(domain, itemId!, contact)
             await ctx.runMutation(internal.domains.setRegistrarMetadata, {
                 submissionId: args.submissionId,
                 orderId: reg.orderId,
