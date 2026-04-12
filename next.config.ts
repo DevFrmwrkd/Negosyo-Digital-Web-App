@@ -2,19 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   staticPageGenerationTimeout: 120,
-  async redirects() {
-    return [
-      // Force www → apex so the Clerk proxy (which lives on apex) matches the host.
-      // Without this, requests to www.negosyo-digital.com/clerk-proxy/... get blocked
-      // by CORS because the browser sees a cross-origin request (www vs apex).
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.negosyo-digital.com' }],
-        destination: 'https://negosyo-digital.com/:path*',
-        permanent: true,
-      },
-    ]
-  },
   async rewrites() {
     return [
       {
