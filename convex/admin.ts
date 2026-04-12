@@ -12,7 +12,7 @@ export const isAdmin = query({
     handler: async (ctx, args) => {
         const creator = await ctx.db
             .query('creators')
-            .withIndex('by_clerkId', (q) => q.eq('clerkId', args.clerkId))
+            .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
             .unique();
 
         return creator?.role === 'admin';
@@ -537,7 +537,7 @@ export const deleteCreatorRecords = mutation({
         // 1. Delete all submissions and their related records
         const submissions = await ctx.db
             .query('submissions')
-            .withIndex('by_creatorId', (q) => q.eq('creatorId', args.creatorId))
+            .withIndex('by_creator_id', (q) => q.eq('creatorId', args.creatorId))
             .collect();
 
         for (const submission of submissions) {

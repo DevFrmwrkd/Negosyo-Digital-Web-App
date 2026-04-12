@@ -88,20 +88,20 @@ export const getRecent = query({
             .take(limit);
 
         // Resolve admin names from creators table
-        const adminCache = new Map<string, { firstName: string; lastName: string } | null>();
+        const adminCache = new Map<string, { firstName?: string; lastName?: string } | null>();
         const enrichedLogs = await Promise.all(
             logs.map(async (log) => {
                 if (!adminCache.has(log.adminId)) {
                     const creator = await ctx.db
                         .query('creators')
-                        .withIndex('by_clerkId', (q) => q.eq('clerkId', log.adminId))
+                        .withIndex('by_clerk_id', (q) => q.eq('clerkId', log.adminId))
                         .unique();
                     adminCache.set(log.adminId, creator ? { firstName: creator.firstName, lastName: creator.lastName } : null);
                 }
                 const admin = adminCache.get(log.adminId);
                 return {
                     ...log,
-                    adminName: admin ? `${admin.firstName} ${admin.lastName}` : log.adminId,
+                    adminName: admin ? `${admin.firstName || ''} ${admin.lastName || ''}`.trim() : log.adminId,
                 };
             })
         );

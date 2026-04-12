@@ -106,7 +106,7 @@ export const creditCreatorForPayment = internalMutation({
         if (referral) {
             const paidSubmissions = await ctx.db
                 .query('submissions')
-                .withIndex('by_creatorId', (q) => q.eq('creatorId', submission.creatorId))
+                .withIndex('by_creator_id', (q) => q.eq('creatorId', submission.creatorId))
                 .filter((q) => q.eq(q.field('status'), 'completed'))
                 .collect()
 
