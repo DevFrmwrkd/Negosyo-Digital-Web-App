@@ -146,25 +146,26 @@ describe('Payment Flow Tests', () => {
 
     describe('Webhook Parsing - Valid Events', () => {
         test('14. Should parse valid Wise balance credit webhook', () => {
+            // Verified payload format from Wise docs:
+            // https://docs.wise.com/guides/developer/webhooks/event-types
             const payload = {
                 event_type: 'balances#credit',
                 data: {
-                    resource: {
-                        id: 12345,
-                        type: 'balance-credit',
-                        amount: { value: 5000, currency: 'PHP' },
-                        reference: 'ND-7K3M-X9P2',
-                        sender_name: 'Juan Dela Cruz',
-                    },
+                    resource: { type: 'balance-account', id: 12345, profile_id: 222 },
+                    transaction_type: 'credit',
+                    amount: 5000,
+                    currency: 'PHP',
+                    post_transaction_balance_amount: 6000,
+                    occurred_at: '2026-04-13T12:00:00.000Z',
                 },
+                subscription_id: '01234567-89ab',
+                schema_version: '4.0.0',
             }
             const result = parseDepositWebhook(payload)
             expect(result.success).toBe(true)
             expect(result.event?.transactionId).toBe('12345')
             expect(result.event?.amount).toBe(5000)
             expect(result.event?.currency).toBe('PHP')
-            expect(result.event?.reference).toBe('ND-7K3M-X9P2')
-            expect(result.event?.senderName).toBe('Juan Dela Cruz')
         })
     })
 
