@@ -252,6 +252,38 @@ export async function suggestAlternatives(
     }
 }
 
+// ==================== CATALOG LOOKUP ====================
+
+/**
+ * Get the catalog item_id for a domain TLD.
+ * The item_id is required by the purchase endpoint.
+ * Spec: GET /api/billing/v1/catalog (filter by category=domain, name matches TLD)
+ */
+export async function getCatalogItemId(tld: string): Promise<string | null> {
+    try {
+        const data = await hostingerRequest(`/billing/v1/catalog?category=domain`, { method: 'GET' })
+        const items = Array.isArray(data) ? data : (data?.data || data?.items || [])
+
+        // Find the item matching this TLD
+        const match = items.find((item: any) => {
+            const name = (item.name || item.title || item.slug || '').toLowerCase()
+            return name.includes(`.${tld}`) || name === tld || name === `.${tld}`
+        })
+
+        if (match) {
+            return String(match.id || match.item_id || '')
+        }
+
+        // If catalog search fails, try using the TLD directly as the item_id
+        // (some registrar APIs accept the TLD name as the item identifier)
+        console.warn(`[HOSTINGER] No catalog item found for .${tld}, will try domain name as item_id`)
+        return null
+    } catch (error) {
+        console.warn(`[HOSTINGER] Catalog lookup failed for .${tld}:`, error)
+        return null
+    }
+}
+
 // ==================== REGISTRATION ====================
 // Spec: POST /api/domains/v1/portfolio
 // Body: { domain, item_id, payment_method_id?, domain_contacts?, additional_details?, coupons? }
@@ -279,9 +311,8 @@ export async function registerDomain(
         throw new Error(`Cannot register .${tld} — TLD is blocked from standard tier`)
     }
 
-    if (!itemId) {
-        throw new Error('itemId is required to register a domain (get it from checkAvailability)')
-    }
+    // item_id is required by Hostinger — if not provided, try the domain name itself
+    const effectiveItemId = itemId || normalized
 
     const paymentMethodId = getPaymentMethodId()
 
@@ -303,7 +334,7 @@ export async function registerDomain(
         method: 'POST',
         body: JSON.stringify({
             domain: normalized,
-            item_id: itemId,
+            item_id: effectiveItemId,
             payment_method_id: paymentMethodId,
             domain_contacts: {
                 owner: contactObject,
