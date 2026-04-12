@@ -181,11 +181,10 @@ export function getPaymentLinkEmailHtml(params: {
     paymentLink: string
     referenceCode: string
     platformEmail?: string
-    customDomain?: string // If set, email shows a breakdown: website ₱1,000 + domain ₱500
+    customDomain?: string
 }): string {
-    const { businessName, businessOwnerName, amount, paymentLink, referenceCode, platformEmail, customDomain } = params
-
-    const displayEmail = platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
+    const { businessName, businessOwnerName, amount, referenceCode, platformEmail, customDomain } = params
+    const wiseEmail = platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
 
     return `
 <!DOCTYPE html>
@@ -193,156 +192,223 @@ export function getPaymentLinkEmailHtml(params: {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Payment — ${businessName}</title>
+    <title>Payment Instructions — ${businessName}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
 
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6;">
         <tr>
             <td align="center" style="padding:40px 16px;">
 
-                <!-- Card -->
-                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:#1a1a1a;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
 
-                    <!-- Hero gradient header -->
+                    <!-- Header -->
                     <tr>
-                        <td style="background:linear-gradient(135deg,#10b981 0%,#059669 50%,#06b6d4 100%);padding:48px 40px 40px;text-align:center;">
-                            <!-- Logo mark -->
-                            <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
-                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">NEGOSYO DIGITAL</span>
-                            </div>
-                            <h1 style="margin:0 0 12px;color:#ffffff;font-size:32px;font-weight:800;line-height:1.2;letter-spacing:-0.5px;">
-                                Ready to Go Live!
-                            </h1>
-                            <p style="margin:0;color:rgba(255,255,255,0.75);font-size:16px;line-height:1.6;">
-                                Complete payment to activate your website
-                            </p>
+                        <td style="background-color:#10b981;padding:32px 40px;text-align:center;">
+                            <p style="margin:0 0 4px;font-size:13px;color:rgba(255,255,255,0.8);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Negosyo Digital</p>
+                            <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;">Your Website is Ready!</h1>
                         </td>
                     </tr>
 
                     <!-- Greeting -->
                     <tr>
-                        <td style="padding:36px 40px 0;">
-                            <p style="margin:0 0 24px;font-size:15px;color:#9ca3af;line-height:1.7;">
-                                Hi <strong style="color:#ffffff;">${businessOwnerName}</strong>,
+                        <td style="padding:32px 40px 0;">
+                            <p style="margin:0 0 16px;font-size:18px;color:#111827;line-height:1.6;">
+                                Hi <strong>${businessOwnerName}</strong>,
                             </p>
-                            <p style="margin:0 0 24px;font-size:15px;color:#9ca3af;line-height:1.7;">
-                                Your website for <strong style="color:#10b981;">${businessName}</strong> is ready! To activate it and make it live, we need you to complete a quick payment.
+                            <p style="margin:0;font-size:16px;color:#374151;line-height:1.7;">
+                                Your website for <strong style="color:#10b981;">${businessName}</strong> has been built and is ready to go live! To activate it, please send a payment using the Wise app by following the simple steps below.
                             </p>
                         </td>
                     </tr>
 
-                    <!-- Payment details box -->
+                    <!-- Amount Box -->
                     <tr>
-                        <td style="padding:0 40px;">
-                            <table role="presentation" width="100%"  cellspacing="0" cellpadding="0" border="0" style="background-color:#0f0f0f;border:1px solid #2d2d2d;border-radius:12px;padding:24px;margin:0 0 24px;">
+                        <td style="padding:24px 40px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;">
                                 <tr>
-                                    <td>
-                                        <p style="margin:0 0 16px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Payment Amount</p>
-                                        <p style="margin:0 0 8px;font-size:32px;color:#10b981;font-weight:800;">₱${amount.toLocaleString('en-PH')}</p>
-                                        ${customDomain ? `
-                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 20px;background:#0a0a0a;border-radius:8px;overflow:hidden;">
+                                    <td style="padding:24px;text-align:center;">
+                                        <p style="margin:0 0 4px;font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Total Amount to Pay</p>
+                                        <p style="margin:0;font-size:40px;color:#059669;font-weight:800;">₱${amount.toLocaleString('en-PH')}</p>
+                                    </td>
+                                </tr>
+                                ${customDomain ? `
+                                <tr>
+                                    <td style="padding:0 24px 16px;">
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#ffffff;border-radius:8px;border:1px solid #d1fae5;">
                                             <tr>
-                                                <td style="padding:12px 16px;border-bottom:1px solid #262626;">
+                                                <td style="padding:12px 16px;border-bottom:1px solid #ecfdf5;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                                         <tr>
-                                                            <td style="font-size:13px;color:#9ca3af;">Website Package</td>
-                                                            <td align="right" style="font-size:13px;color:#e5e7eb;font-weight:600;">₱1,000</td>
+                                                            <td style="font-size:14px;color:#374151;">Website Package</td>
+                                                            <td align="right" style="font-size:14px;color:#111827;font-weight:700;">₱1,000</td>
                                                         </tr>
                                                     </table>
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td style="padding:12px 16px;border-bottom:1px solid #262626;">
+                                                <td style="padding:12px 16px;">
                                                     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                                         <tr>
-                                                            <td style="font-size:13px;color:#9ca3af;">Custom Domain: <strong style="color:#10b981;">${customDomain}</strong></td>
-                                                            <td align="right" style="font-size:13px;color:#e5e7eb;font-weight:600;">₱500</td>
+                                                            <td style="font-size:14px;color:#374151;">Custom Domain: <strong style="color:#059669;">${customDomain}</strong></td>
+                                                            <td align="right" style="font-size:14px;color:#111827;font-weight:700;">₱500</td>
                                                         </tr>
                                                     </table>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:10px 16px;background:#111;">
-                                                    <p style="margin:0;font-size:11px;color:#6b7280;line-height:1.5;">
-                                                        Year 1 of your custom domain is <strong style="color:#10b981;">included free</strong>. After year 1, renewal is ~₱1,120/year and is your responsibility. We do NOT auto-renew.
-                                                    </p>
                                                 </td>
                                             </tr>
                                         </table>
-                                        ` : '<div style="margin-bottom:20px;"></div>'}
-
-                                        <p style="margin:0 0 8px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Reference Code</p>
-                                        <p style="margin:0;font-size:16px;color:#ffffff;font-family:monospace;letter-spacing:1px;font-weight:700;">${referenceCode}</p>
                                     </td>
                                 </tr>
+                                ` : ''}
                             </table>
                         </td>
                     </tr>
 
-                    <!-- CTA Button -->
+                    <!-- Step-by-step instructions -->
                     <tr>
-                        <td style="padding:0 40px 24px;">
+                        <td style="padding:0 40px 32px;">
+                            <h2 style="margin:0 0 20px;font-size:20px;color:#111827;font-weight:700;">How to Send Payment</h2>
+
+                            <!-- Step 1 -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
+                                <tr>
+                                    <td valign="top" width="40">
+                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">1</div>
+                                    </td>
+                                    <td style="padding-left:12px;">
+                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Open your Wise app</p>
+                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                            Open the Wise app on your phone, or go to <strong>wise.com</strong> on your computer. If you don't have a Wise account yet, you can create one for free at <a href="https://wise.com" style="color:#10b981;font-weight:600;">wise.com</a>.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Step 2 -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
+                                <tr>
+                                    <td valign="top" width="40">
+                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">2</div>
+                                    </td>
+                                    <td style="padding-left:12px;">
+                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Tap "Send money"</p>
+                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                            Choose <strong>"Send to someone"</strong> and enter the email address below as the recipient:
+                                        </p>
+                                        <div style="margin:12px 0;padding:14px 18px;background-color:#f9fafb;border:2px solid #e5e7eb;border-radius:8px;">
+                                            <p style="margin:0;font-size:18px;color:#111827;font-weight:700;font-family:monospace;letter-spacing:0.5px;">${wiseEmail}</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Step 3 -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
+                                <tr>
+                                    <td valign="top" width="40">
+                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">3</div>
+                                    </td>
+                                    <td style="padding-left:12px;">
+                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Enter the amount: ₱${amount.toLocaleString('en-PH')}</p>
+                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                            Set the currency to <strong>PHP</strong> and enter <strong>₱${amount.toLocaleString('en-PH')}</strong> as the amount.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Step 4 -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:16px;">
+                                <tr>
+                                    <td valign="top" width="40">
+                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">4</div>
+                                    </td>
+                                    <td style="padding-left:12px;">
+                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Add this reference code in the note</p>
+                                        <p style="margin:0 0 8px;font-size:14px;color:#6b7280;line-height:1.6;">
+                                            When Wise asks for a <strong>"Reference"</strong> or <strong>"Note"</strong>, type this code exactly:
+                                        </p>
+                                        <div style="margin:0;padding:16px 20px;background-color:#fefce8;border:2px solid #fde68a;border-radius:8px;text-align:center;">
+                                            <p style="margin:0;font-size:24px;color:#92400e;font-weight:800;font-family:monospace;letter-spacing:3px;">${referenceCode}</p>
+                                        </div>
+                                        <p style="margin:8px 0 0;font-size:13px;color:#92400e;font-weight:600;">
+                                            ⚠ This code is important! It helps us match your payment to your website so it goes live automatically.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Step 5 -->
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
-                                    <td align="center">
-                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                                            <tr>
-                                                <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);border-radius:8px;padding:3px;">
-                                                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
-                                                        <tr>
-                                                            <td style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);border-radius:6px;padding:14px 32px;">
-                                                                <a href="${paymentLink}" style="display:inline-block;color:#ffffff;font-weight:700;font-size:15px;text-decoration:none;line-height:1.2;letter-spacing:0.3px;">
-                                                                    Complete Payment →
-                                                                </a>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
+                                    <td valign="top" width="40">
+                                        <div style="width:32px;height:32px;background-color:#10b981;border-radius:50%;text-align:center;line-height:32px;color:#ffffff;font-weight:800;font-size:16px;">5</div>
+                                    </td>
+                                    <td style="padding-left:12px;">
+                                        <p style="margin:0 0 4px;font-size:16px;color:#111827;font-weight:700;">Confirm and send</p>
+                                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;">
+                                            Review the details and tap <strong>"Confirm"</strong> to send the payment. Once we receive it, your website will go live automatically — no further action needed from you!
+                                        </p>
                                     </td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
 
-                    <!-- Instructions -->
+                    ${customDomain ? `
+                    <!-- Domain note -->
                     <tr>
-                        <td style="padding:0 40px 32px;">
-                            <div style="background-color:#0f0f0f;border:1px solid #2d2d2d;border-radius:8px;padding:20px;">
-                                <p style="margin:0 0 12px;font-size:13px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">How It Works</p>
-                                
-                                <ol style="margin:0;padding-left:20px;color:#9ca3af;font-size:14px;line-height:1.8;">
-                                    <li style="margin-bottom:8px;">Click the button above to view payment details</li>
-                                    <li style="margin-bottom:8px;">Open your Wise app and send the payment</li>
-                                    <li style="margin-bottom:8px;">Use reference code: <strong style="color:#10b981;font-family:monospace;">${referenceCode}</strong></li>
-                                    <li>Your website will go live automatically once payment is confirmed</li>
-                                </ol>
+                        <td style="padding:0 40px 24px;">
+                            <div style="padding:16px 20px;background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;">
+                                <p style="margin:0 0 4px;font-size:14px;color:#1e40af;font-weight:700;">About your custom domain: ${customDomain}</p>
+                                <p style="margin:0;font-size:13px;color:#3b82f6;line-height:1.6;">
+                                    Year 1 is <strong>included free</strong> with your payment. After year 1, renewal is approximately ₱1,120/year and is your responsibility. We do NOT auto-renew — you have full control.
+                                </p>
                             </div>
-                        </td>
-                    </tr>
-
-                    <!-- Payment details (if Wise account provided) -->
-                    ${platformEmail ? `
-                    <tr>
-                        <td style="padding:0 40px 32px;">
-                            <p style="margin:0 0 12px;font-size:13px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Send Payment To</p>
-                            <p style="margin:0;padding:12px;background-color:#0f0f0f;border:1px solid #2d2d2d;border-radius:8px;font-size:14px;color:#e5e7eb;font-family:monospace;">
-                                📧 ${platformEmail}
-                            </p>
                         </td>
                     </tr>
                     ` : ''}
 
+                    <!-- Summary box -->
+                    <tr>
+                        <td style="padding:0 40px 32px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+                                <tr><td style="padding:16px 20px;border-bottom:1px solid #e5e7eb;">
+                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                        <tr>
+                                            <td style="font-size:14px;color:#6b7280;">Send to</td>
+                                            <td align="right" style="font-size:14px;color:#111827;font-weight:700;">${wiseEmail}</td>
+                                        </tr>
+                                    </table>
+                                </td></tr>
+                                <tr><td style="padding:16px 20px;border-bottom:1px solid #e5e7eb;">
+                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                        <tr>
+                                            <td style="font-size:14px;color:#6b7280;">Amount</td>
+                                            <td align="right" style="font-size:14px;color:#111827;font-weight:700;">₱${amount.toLocaleString('en-PH')}</td>
+                                        </tr>
+                                    </table>
+                                </td></tr>
+                                <tr><td style="padding:16px 20px;">
+                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                        <tr>
+                                            <td style="font-size:14px;color:#6b7280;">Reference code</td>
+                                            <td align="right" style="font-size:14px;color:#111827;font-weight:700;font-family:monospace;">${referenceCode}</td>
+                                        </tr>
+                                    </table>
+                                </td></tr>
+                            </table>
+                        </td>
+                    </tr>
+
                     <!-- Footer -->
                     <tr>
-                        <td style="padding:32px 40px;border-top:1px solid #2d2d2d;text-align:center;">
-                            <p style="margin:0 0 12px;font-size:13px;color:#6b7280;">
-                                Questions? <a href="mailto:frmwrkd.media@gmail.com" style="color:#10b981;text-decoration:none;font-weight:600;">Contact support</a>
+                        <td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                            <p style="margin:0 0 8px;font-size:14px;color:#6b7280;">
+                                Questions? Reply to this email or contact us at <a href="mailto:frmwrkd.media@gmail.com" style="color:#10b981;font-weight:600;text-decoration:none;">frmwrkd.media@gmail.com</a>
                             </p>
-                            <p style="margin:0;font-size:12px;color:#4b5563;">
-                                © Negosyo Digital. All rights reserved.
+                            <p style="margin:0;font-size:12px;color:#9ca3af;">
+                                &copy; ${new Date().getFullYear()} Negosyo Digital. Empowering Filipino businesses.
                             </p>
                         </td>
                     </tr>
