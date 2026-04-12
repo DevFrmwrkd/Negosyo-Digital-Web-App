@@ -1043,15 +1043,44 @@ export default function SubmissionDetailPage() {
                                 </Button>
                             )}
 
-                            {/* Step 6: Mark as Paid (for pending_payment status) */}
+                            {/* Step 6: Mark as Paid + Re-send Email (for pending_payment status) */}
                             {submission.status === 'pending_payment' && (
-                                <Button
-                                    onClick={() => setShowMarkPaidModal(true)}
-                                    disabled={markingPaid}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                >
-                                    {markingPaid ? 'Processing...' : '💰 Mark as Paid'}
-                                </Button>
+                                <>
+                                    <Button
+                                        onClick={async () => {
+                                            try {
+                                                const res = await fetch('/api/send-website-email', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ submissionId }),
+                                                })
+                                                if (res.ok) {
+                                                    setModalType('success')
+                                                    setModalMessage('Payment email re-sent to the business owner.')
+                                                    setShowModal(true)
+                                                } else {
+                                                    const data = await res.json()
+                                                    throw new Error(data.error || 'Failed to send email')
+                                                }
+                                            } catch (err: any) {
+                                                setModalType('error')
+                                                setModalMessage(err.message || 'Failed to re-send email')
+                                                setShowModal(true)
+                                            }
+                                        }}
+                                        variant="outline"
+                                        className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                                    >
+                                        📧 Re-send Payment Email
+                                    </Button>
+                                    <Button
+                                        onClick={() => setShowMarkPaidModal(true)}
+                                        disabled={markingPaid}
+                                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    >
+                                        {markingPaid ? 'Processing...' : '💰 Mark as Paid'}
+                                    </Button>
+                                </>
                             )}
 
                             {/* Unpublished: allow republishing */}
