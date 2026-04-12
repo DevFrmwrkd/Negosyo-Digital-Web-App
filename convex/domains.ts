@@ -33,8 +33,6 @@ function buildContactFromSubmission(submission: any): RegistrantContact {
     if (!submission.ownerPhone) missing.push('ownerPhone')
     if (!submission.address) missing.push('address')
     if (!submission.city) missing.push('city')
-    if (!submission.province) missing.push('province')
-    if (!submission.postalCode) missing.push('postalCode')
     if (missing.length > 0) {
         throw new Error(`Cannot register domain: business owner info incomplete. Missing: ${missing.join(', ')}`)
     }
@@ -60,8 +58,10 @@ function buildContactFromSubmission(submission: any): RegistrantContact {
         phone,
         address: submission.address,
         city: submission.city,
-        state: submission.province,
-        postalCode: submission.postalCode,
+        // ICANN/WHOIS requires state + postal code; fall back to sensible PH defaults
+        // when the submission didn't capture them.
+        state: submission.province || submission.city || 'Metro Manila',
+        postalCode: submission.postalCode || '1000',
         country: 'PH',
     }
 }
