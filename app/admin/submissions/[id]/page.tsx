@@ -1823,6 +1823,88 @@ export default function SubmissionDetailPage() {
                                 </div>
                             </div>
                         )}
+
+                        {/* Pricing & Custom Domain */}
+                        <div className="bg-white rounded-xl p-6 border border-gray-200">
+                            <h2 className="text-lg font-bold text-gray-900 mb-4">Pricing & Domain</h2>
+                            <div className="space-y-3">
+                                {/* Package type */}
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase font-medium">Package</label>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {(submissionData as any)?.requestedDomain ? (
+                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" /></svg>
+                                                Standard + Custom Domain
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+                                                Standard
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Amount */}
+                                <div>
+                                    <label className="text-xs text-gray-500 uppercase font-medium">Business Owner Fee</label>
+                                    {/* TEST PRICING: ₱100 for custom domain, normally ₱1,500 — see plans/REVERT-CUSTOM-DOMAIN-PRICING.md */}
+                                    <p className="text-2xl font-black text-gray-900 mt-1">
+                                        ₱{((submissionData as any)?.amount || ((submissionData as any)?.requestedDomain ? 100 : 1000)).toLocaleString()}
+                                    </p>
+                                    {(submissionData as any)?.requestedDomain && (
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            Website ₱1,000 + Domain ₱500 included
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Custom Domain (if requested) */}
+                                {(submissionData as any)?.requestedDomain && (
+                                    <div>
+                                        <label className="text-xs text-gray-500 uppercase font-medium">Custom Domain</label>
+                                        <div className="mt-1 flex items-center gap-2">
+                                            <p className="font-mono font-semibold text-emerald-700 text-sm">
+                                                {(submissionData as any).requestedDomain}
+                                            </p>
+                                            {(submissionData as any)?.domainStatus && (
+                                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                    (submissionData as any).domainStatus === 'live'
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : (submissionData as any).domainStatus === 'failed'
+                                                            ? 'bg-red-100 text-red-700'
+                                                            : 'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                    {(submissionData as any).domainStatus}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {(submissionData as any)?.domainStatus === 'live' && (
+                                            <a
+                                                href={`https://${(submissionData as any).requestedDomain}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-emerald-600 hover:text-emerald-700 font-medium mt-1 inline-flex items-center gap-1"
+                                            >
+                                                Visit live site
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                            </a>
+                                        )}
+                                        {(submissionData as any)?.domainFailureReason && (
+                                            <p className="text-xs text-red-500 mt-1">{(submissionData as any).domainFailureReason}</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* No domain */}
+                                {!(submissionData as any)?.requestedDomain && (
+                                    <div>
+                                        <label className="text-xs text-gray-500 uppercase font-medium">Custom Domain</label>
+                                        <p className="text-sm text-gray-400 mt-1">Not requested (standard package)</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
