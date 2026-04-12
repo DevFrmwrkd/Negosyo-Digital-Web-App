@@ -104,12 +104,14 @@ http.route({
         try {
             const body = await request.json();
 
+            // Log the RAW payload so we can debug the exact Wise event shape
+            console.log(`[WISE-DEPOSIT] Raw payload: ${JSON.stringify(body).substring(0, 1000)}`);
+
             // Parse the Wise deposit event
             const { parseDepositWebhook } = await import('../lib/payments/webhookParser');
             const result = parseDepositWebhook(body);
 
             if (!result.success || !result.event) {
-                // Not a balance credit event or invalid payload — acknowledge and ignore
                 console.log(`[WISE-DEPOSIT] Ignored: ${result.error}`);
                 return new Response(JSON.stringify({ status: 'ignored', reason: result.error }), {
                     status: 200,
