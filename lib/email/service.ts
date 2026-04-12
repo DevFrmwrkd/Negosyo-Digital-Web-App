@@ -66,7 +66,8 @@ interface PaymentLinkEmailData {
     amount: number
     paymentLink: string
     referenceCode: string
-    platformEmail?: string // Platform's Wise account email
+    platformEmail?: string
+    customDomain?: string // If set, shows breakdown (website ₱1,000 + domain ₱500)
 }
 
 export async function sendPaymentLinkEmail(data: PaymentLinkEmailData) {
@@ -96,6 +97,7 @@ export async function sendPaymentLinkEmail(data: PaymentLinkEmailData) {
             paymentLink,
             referenceCode,
             platformEmail,
+            customDomain: data.customDomain,
         })
 
         const info = await transporter.sendMail({

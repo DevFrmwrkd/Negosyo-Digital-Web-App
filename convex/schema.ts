@@ -347,8 +347,8 @@ export default defineSchema({
 
     // ==================== LEADS ====================
     leads: defineTable({
-        submissionId: v.id('submissions'),
-        creatorId: v.id('creators'),
+        submissionId: v.optional(v.id('submissions')), // Optional — standalone leads don't need a submission
+        creatorId: v.optional(v.id('creators')),        // Optional — auto-filled from submission if linked
         businessOwnerId: v.optional(v.string()),
         source: v.union(
             v.literal('website'),

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         const paymentConfig = getPaymentConfig()
         const paymentLink = paymentConfig.getPaymentLink(paymentToken.token)
 
-        // Send payment link email
+        // Send payment link email (includes custom domain breakdown if applicable)
         await sendPaymentLinkEmail({
             businessName: submission.businessName,
             businessOwnerName: submission.ownerName,
@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
             paymentLink,
             referenceCode: paymentToken.referenceCode,
             platformEmail: process.env.WISE_EMAIL,
+            customDomain: (submission as any).requestedDomain || undefined,
         })
 
         // Record email sent timestamp

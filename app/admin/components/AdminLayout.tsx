@@ -7,13 +7,14 @@ import Image from "next/image"
 import { useClerk } from "@clerk/nextjs"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
-    LayoutDashboard, 
-    Users, 
-    CreditCard, 
-    History, 
-    Download, 
-    LogOut, 
-    Menu, 
+    LayoutDashboard,
+    Users,
+    CreditCard,
+    History,
+    Download,
+    FileText,
+    LogOut,
+    Menu,
     X,
     ChevronRight
 } from "lucide-react"
@@ -28,6 +29,11 @@ const navItems = [
         label: "Creators",
         href: "/admin/creators",
         icon: Users,
+    },
+    {
+        label: "Leads",
+        href: "/admin/leads",
+        icon: FileText,
     },
     {
         label: "Payouts",

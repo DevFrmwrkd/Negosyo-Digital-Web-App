@@ -15,7 +15,7 @@ const termsSections = [
   {
     icon: <Scale className="w-8 h-8 text-[#00F0FF]" />,
     title: "1. Acceptance of Terms",
-    content: "By accessing or using the Negosyo Digital platform (including our mobile app and web portal), you agree to be strictly bound by these Terms of Service. You must be at least 18 years of age to register as a Creator."
+    content: "By accessing or using the Negosyo Digital platform (including our mobile app and web portal), you agree to be strictly bound by these Terms of Service. Users of all ages are welcome, including students and young entrepreneurs."
   },
   {
     icon: <Award className="w-8 h-8 text-[#00FF66]" />,

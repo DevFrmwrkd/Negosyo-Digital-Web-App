@@ -117,8 +117,8 @@ const policySections = [
   },
   {
     icon: <AlertTriangle className="w-8 h-8 text-[#00F0FF]" />,
-    title: "9. Children's Privacy",
-    content: "Negosyo Digital is not intended for use by individuals under the age of 18. We do not knowingly collect personal information from children. The app requires users to be of legal age to enter into contracts and perform field work as independent creators. If we become aware that we have collected data from a minor, we will take immediate steps to delete such information."
+    title: "9. Open Platform for All Ages",
+    content: "Negosyo Digital is open to users of all ages — including students, young entrepreneurs, and anyone who wants to help digitalize local businesses and earn from it. There are no age restrictions to use the platform or register as a Creator. We believe in empowering the next generation of Filipino digital entrepreneurs."
   },
   {
     icon: <MessageSquare className="w-8 h-8 text-[#00FF66]" />,

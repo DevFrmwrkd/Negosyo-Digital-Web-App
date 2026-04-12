@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "cross-env NODE_OPTIONS=--no-node-snapshot next dev",
     "build": "cd astro-site-template && npm install --omit=dev && cd .. && next build",
     "start": "next start",
     "test": "jest",
@@ -42,6 +42,7 @@
     "@types/nodemailer": "^7.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "jest": "^30.3.0",
