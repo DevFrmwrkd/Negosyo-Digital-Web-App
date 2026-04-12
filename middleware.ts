@@ -20,15 +20,24 @@ const isAdminRoute = createRouteMatcher([
     '/admin(.*)',
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-    // Allow public routes
-    if (isPublicRoute(req)) {
-        return;
-    }
+export default clerkMiddleware(
+    async (auth, req) => {
+        // Allow public routes
+        if (isPublicRoute(req)) {
+            return;
+        }
 
-    // Protect all other routes
-    await auth.protect();
-});
+        // Protect all other routes
+        await auth.protect();
+    },
+    {
+        // Clerk proxy — only enabled when CLERK_PROXY_URL env var is set.
+        // Set to the absolute URL of the proxy endpoint (e.g. "https://negosyo-digital.com/clerk-proxy").
+        // Requires the Clerk custom domain (clerk.negosyo-digital.com) to be configured
+        // in the Clerk dashboard + DNS CNAME pointing to Clerk's frontend API.
+        ...(process.env.CLERK_PROXY_URL ? { proxyUrl: process.env.CLERK_PROXY_URL } : {}),
+    }
+);
 
 export const config = {
     matcher: [
