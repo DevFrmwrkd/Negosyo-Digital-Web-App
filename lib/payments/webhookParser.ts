@@ -46,56 +46,120 @@ export interface ParseResult {
  *   }
  * }
  */
+/**
+ * Parse Wise deposit webhook. Handles all 4 documented event types:
+ *
+ * 1. "balances#credit" — multicurrency account credit
+ *    data.amount (number), data.currency (string), data.resource.id
+ *
+ * 2. "balances#update" — balance change (filter transaction_type === "credit")
+ *    data.amount (number), data.currency (string), data.transfer_reference (string)
+ *
+ * 3. "account-details-payment#state-change" — incoming pay-in
+ *    data.transfer.amount (number), data.transfer.currency, data.sender.name
+ *
+ * 4. "swift-in#credit" — SWIFT incoming
+ *    data.resource.settled_amount.value, data.resource.reference, data.resource.sender.name
+ *
+ * Ref: https://docs.wise.com/guides/developer/webhooks/event-types
+ */
 export function parseDepositWebhook(payload: unknown): ParseResult {
     if (!payload || typeof payload !== 'object') {
         return { success: false, error: 'Invalid payload: not an object' }
     }
 
-    const data = payload as Record<string, any>
-    const eventType = data.event_type
+    const root = payload as Record<string, any>
+    const eventType = root.event_type
 
-    // Only process balance credit events
     if (!eventType) {
         return { success: false, error: 'Missing event_type' }
     }
 
-    if (eventType !== 'balances#credit') {
-        return { success: false, error: `Ignored event type: ${eventType}` }
+    const d = root.data // shorthand for the data envelope
+
+    // ── balances#credit ──
+    // { data: { resource: { id }, amount: 1.23, currency: "PHP", transaction_type: "credit" } }
+    if (eventType === 'balances#credit') {
+        const amount = parseFloat(d?.amount ?? 0)
+        if (!amount || amount <= 0) return { success: false, error: `Invalid amount: ${d?.amount}` }
+        return {
+            success: true,
+            event: {
+                transactionId: String(d?.resource?.id || d?.step_id || root.subscription_id || ''),
+                amount,
+                currency: d?.currency || 'PHP',
+                reference: '', // balances#credit doesn't include a reference — we'll need to match by amount+timing
+                senderName: null,
+                eventType,
+            },
+        }
     }
 
-    const resource = data.data?.resource
-    if (!resource) {
-        return { success: false, error: 'Missing data.resource' }
+    // ── balances#update (credit only) ──
+    // { data: { amount: 70, currency: "GBP", transaction_type: "credit", transfer_reference: "BNK-123", step_id: 123 } }
+    if (eventType === 'balances#update') {
+        if (d?.transaction_type !== 'credit') {
+            return { success: false, error: `Ignored balances#update with transaction_type: ${d?.transaction_type}` }
+        }
+        const amount = parseFloat(d?.amount ?? 0)
+        if (!amount || amount <= 0) return { success: false, error: `Invalid amount: ${d?.amount}` }
+        return {
+            success: true,
+            event: {
+                transactionId: String(d?.step_id || d?.resource?.id || root.subscription_id || ''),
+                amount,
+                currency: d?.currency || 'PHP',
+                reference: d?.transfer_reference || d?.channel_name || '',
+                senderName: null,
+                eventType,
+            },
+        }
     }
 
-    const transactionId = String(resource.id || '')
-    if (!transactionId) {
-        return { success: false, error: 'Missing transaction ID' }
+    // ── account-details-payment#state-change ──
+    // { data: { transfer: { id, amount, currency }, sender: { name }, current_state: "COMPLETED" } }
+    if (eventType === 'account-details-payment#state-change') {
+        // Only process completed deposits
+        if (d?.current_state !== 'COMPLETED') {
+            return { success: false, error: `Ignored account-details-payment state: ${d?.current_state}` }
+        }
+        const transfer = d?.transfer
+        const amount = parseFloat(transfer?.amount ?? 0)
+        if (!amount || amount <= 0) return { success: false, error: `Invalid amount: ${transfer?.amount}` }
+        return {
+            success: true,
+            event: {
+                transactionId: String(transfer?.id || d?.resource?.id || ''),
+                amount,
+                currency: transfer?.currency || 'PHP',
+                reference: d?.reference || '',
+                senderName: d?.sender?.name || null,
+                eventType,
+            },
+        }
     }
 
-    const amount = resource.amount?.value
-    const currency = resource.amount?.currency
-    if (typeof amount !== 'number' || amount <= 0) {
-        return { success: false, error: `Invalid amount: ${amount}` }
-    }
-    if (!currency) {
-        return { success: false, error: 'Missing currency' }
+    // ── swift-in#credit ──
+    // { data: { resource: { reference, settled_amount: { value, currency }, sender: { name } }, action: { id } } }
+    if (eventType === 'swift-in#credit') {
+        const res = d?.resource
+        const amount = parseFloat(res?.settled_amount?.value ?? res?.instructed_amount?.value ?? 0)
+        if (!amount || amount <= 0) return { success: false, error: `Invalid amount in swift-in` }
+        return {
+            success: true,
+            event: {
+                transactionId: String(d?.action?.id || res?.id || ''),
+                amount,
+                currency: res?.settled_amount?.currency || 'PHP',
+                reference: res?.reference || '',
+                senderName: res?.sender?.name || null,
+                eventType,
+            },
+        }
     }
 
-    const reference = String(resource.reference || resource.details?.reference || '')
-    const senderName = resource.sender_name || resource.details?.sender_name || null
-
-    return {
-        success: true,
-        event: {
-            transactionId,
-            amount,
-            currency,
-            reference,
-            senderName,
-            eventType,
-        },
-    }
+    // Unknown event type — ignore
+    return { success: false, error: `Ignored event type: ${eventType}` }
 }
 
 /**
