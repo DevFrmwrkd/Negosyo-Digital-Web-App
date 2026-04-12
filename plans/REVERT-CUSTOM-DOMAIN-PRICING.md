@@ -82,6 +82,18 @@ When testing is complete, all changes below must be reverted before production l
 
 ---
 
+### 4. `app/admin/submissions/[id]/page.tsx`
+
+**Pricing & Domain widget** — the fallback amount for custom domain:
+
+```diff
+  {/* TEST PRICING: ₱100 for custom domain, normally ₱1,500 — see plans/REVERT-CUSTOM-DOMAIN-PRICING.md */}
+- ₱{((submissionData as any)?.amount || ((submissionData as any)?.requestedDomain ? 100 : 1000)).toLocaleString()}
++ ₱{((submissionData as any)?.amount || ((submissionData as any)?.requestedDomain ? 1500 : 1000)).toLocaleString()}
+```
+
+---
+
 ## Quick revert (search & replace)
 
 If you'd rather grep your way through:
@@ -91,7 +103,8 @@ If you'd rather grep your way through:
 grep -rn "TEST PRICING\|TEST: ₱100\|? 100 :" \
   app/submit/review/page.tsx \
   convex/submissions.ts \
-  convex/schema.ts
+  convex/schema.ts \
+  app/admin/submissions/\[id\]/page.tsx
 
 # Then manually fix each match per the diffs above
 ```
