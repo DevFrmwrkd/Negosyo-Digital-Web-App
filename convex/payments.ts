@@ -154,58 +154,92 @@ export const processDeposit = internalAction({
     handler: async (ctx, args) => {
         console.log(`[PAYMENTS] Processing deposit: ₱${args.amount} ${args.currency}, ref="${args.referenceText}", txn=${args.transactionId}`)
 
-        // 1. Extract reference code from free-text (e.g., "Payment for ND-7K3M-X9P2 thank you")
+        // ── STRATEGY 1: Match by reference code (most precise) ──
         const refCode = extractReferenceFromText(args.referenceText)
-        if (!refCode) {
-            console.warn(`[PAYMENTS] No reference code found in: "${args.referenceText}"`)
-            await ctx.runMutation(internal.auditLogs.log, {
-                adminId: 'system:auto-payment',
-                action: 'payment_unmatched' as any,
-                targetType: 'payment' as any,
-                targetId: args.transactionId,
-                metadata: {
-                    amount: args.amount,
-                    currency: args.currency,
-                    referenceText: args.referenceText,
-                    senderName: args.senderName,
-                    reason: 'No valid reference code found in payment note',
-                },
-            })
-            return
+        let paymentToken: any = null
+        let matchMethod = ''
+
+        if (refCode) {
+            paymentToken = await ctx.runQuery(internal.paymentTokens.getByReferenceInternal, { referenceCode: refCode })
+            if (paymentToken) {
+                matchMethod = 'reference_code'
+                console.log(`[PAYMENTS] Matched by reference code: ${refCode}`)
+            }
         }
 
-        // 2. Look up payment token by reference code
-        const paymentToken = await ctx.runQuery(internal.paymentTokens.getByReferenceInternal, { referenceCode: refCode })
+        // ── STRATEGY 2: Match by amount (fallback when Wise doesn't include reference) ──
+        // Wise's balances#credit event doesn't include the payment note/reference.
+        // So we find ALL pending payment tokens with a matching amount.
+        // If exactly 1 match → auto-credit. If 0 or 2+ → log for admin.
         if (!paymentToken) {
-            console.warn(`[PAYMENTS] Reference code ${refCode} not found in paymentTokens`)
-            await ctx.runMutation(internal.auditLogs.log, {
-                adminId: 'system:auto-payment',
-                action: 'payment_unmatched' as any,
-                targetType: 'payment' as any,
-                targetId: args.transactionId,
-                metadata: { refCode, amount: args.amount, reason: 'Reference code not found' },
+            console.log(`[PAYMENTS] No reference match, trying amount-based matching for ₱${args.amount}`)
+            const candidates = await ctx.runQuery(internal.paymentTokens.findPendingByAmount, {
+                amount: args.amount,
+                tolerance: 1, // ₱1 tolerance for InstaPay rounding/fees
             })
-            return
+
+            if (candidates.length === 1) {
+                paymentToken = candidates[0]
+                matchMethod = 'amount_single_match'
+                console.log(`[PAYMENTS] ✓ Single pending token matched by amount: ₱${paymentToken.amount}, ref=${paymentToken.referenceCode}, submission=${paymentToken.submissionId}`)
+            } else if (candidates.length === 0) {
+                console.warn(`[PAYMENTS] No pending payment tokens found for ₱${args.amount}`)
+                await ctx.runMutation(internal.auditLogs.log, {
+                    adminId: 'system:auto-payment',
+                    action: 'payment_unmatched' as any,
+                    targetType: 'payment' as any,
+                    targetId: args.transactionId,
+                    metadata: {
+                        amount: args.amount,
+                        currency: args.currency,
+                        referenceText: args.referenceText,
+                        senderName: args.senderName,
+                        reason: 'No pending payment token found matching this amount. Admin: click "Mark as Paid" on the submission manually.',
+                        matchAttempt: refCode ? 'reference_failed_then_amount_zero' : 'amount_zero',
+                    },
+                })
+                return
+            } else {
+                // Multiple pending tokens with the same amount — ambiguous, admin must resolve
+                console.warn(`[PAYMENTS] ${candidates.length} pending tokens match ₱${args.amount} — ambiguous, skipping auto-match`)
+                await ctx.runMutation(internal.auditLogs.log, {
+                    adminId: 'system:auto-payment',
+                    action: 'payment_unmatched' as any,
+                    targetType: 'payment' as any,
+                    targetId: args.transactionId,
+                    metadata: {
+                        amount: args.amount,
+                        currency: args.currency,
+                        senderName: args.senderName,
+                        reason: `${candidates.length} pending submissions have the same amount (₱${args.amount}). Cannot auto-match — admin must click "Mark as Paid" on the correct submission.`,
+                        candidateSubmissionIds: candidates.map((c: any) => c.submissionId),
+                        candidateRefCodes: candidates.map((c: any) => c.referenceCode),
+                    },
+                })
+                return
+            }
         }
 
-        // 3. Check if already paid (duplicate payment)
+        // ── Token found (by reference or amount) — process the payment ──
+
+        // Check if already paid (duplicate)
         if (paymentToken.status === 'paid') {
-            console.warn(`[PAYMENTS] Reference ${refCode} already paid (duplicate deposit)`)
+            console.warn(`[PAYMENTS] Token ${paymentToken.referenceCode} already paid (duplicate deposit)`)
             await ctx.runMutation(internal.auditLogs.log, {
                 adminId: 'system:auto-payment',
                 action: 'payment_unmatched' as any,
                 targetType: 'payment' as any,
                 targetId: args.transactionId,
-                metadata: { refCode, amount: args.amount, reason: 'Duplicate payment — already marked paid' },
+                metadata: { refCode: paymentToken.referenceCode, amount: args.amount, reason: 'Duplicate — already paid' },
             })
             return
         }
 
-        // 4. Determine payment status (matched/partial/overpaid)
+        // Determine payment status
         const paymentStatus = determinePaymentStatus(args.amount, paymentToken.amount)
-        console.log(`[PAYMENTS] Reference ${refCode} status=${paymentStatus}, expected=₱${paymentToken.amount}, received=₱${args.amount}`)
+        console.log(`[PAYMENTS] Token ${paymentToken.referenceCode}: status=${paymentStatus}, expected=₱${paymentToken.amount}, received=₱${args.amount}, matched_by=${matchMethod}`)
 
-        // 5. If partial, log and stop (admin must handle manually)
+        // If partial, log and stop
         if (paymentStatus === 'partial') {
             await ctx.runMutation(internal.auditLogs.log, {
                 adminId: 'system:auto-payment',
@@ -213,7 +247,7 @@ export const processDeposit = internalAction({
                 targetType: 'payment' as any,
                 targetId: args.transactionId,
                 metadata: {
-                    refCode,
+                    refCode: paymentToken.referenceCode,
                     expectedAmount: paymentToken.amount,
                     receivedAmount: args.amount,
                     submissionId: paymentToken.submissionId,
@@ -222,17 +256,18 @@ export const processDeposit = internalAction({
             return
         }
 
-        // 6. Mark payment token as paid (uses existing markUsed mutation)
+        // Mark token as paid
         await ctx.runMutation(internal.paymentTokens.markUsed, {
             token: paymentToken.token,
             wiseTransactionId: args.transactionId,
         })
 
-        // 7. Credit creator via shared logic
+        // Credit creator + trigger domain pipeline
+        console.log(`[PAYMENTS] ✓ Auto-crediting submission ${paymentToken.submissionId} (matched_by=${matchMethod})`)
         await ctx.runMutation(internal.payments.creditCreatorForPayment, {
             submissionId: paymentToken.submissionId,
             triggeredBy: 'system:auto-payment',
-            paymentRefCode: refCode,
+            paymentRefCode: paymentToken.referenceCode,
         })
     },
 })
