@@ -102,7 +102,7 @@ export default function CreatorDetailPage() {
         }
     }
 
-    const getStatusBadge = (status: CreatorStatus | undefined) => {
+    const getStatusBadge = (status: string | undefined) => {
         const safeStatus = status || 'pending'
         const styles: Record<string, string> = {
             active: 'bg-green-100 text-green-800 border-green-200',
@@ -231,11 +231,11 @@ export default function CreatorDetailPage() {
                         <div className="bg-white rounded-xl p-6 border border-gray-200">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xl font-bold">
-                                    {creator.firstName.charAt(0)}{creator.lastName.charAt(0)}
+                                    {(creator.firstName || 'U').charAt(0)}{(creator.lastName || '').charAt(0)}
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-gray-900">
-                                        {creator.firstName} {creator.lastName}
+                                        {creator.firstName || ''} {creator.lastName || ''}
                                     </h2>
                                     <div className="flex items-center gap-2 mt-1">
                                         {getStatusBadge(creator.status)}

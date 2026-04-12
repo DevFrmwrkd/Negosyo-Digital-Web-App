@@ -349,10 +349,10 @@ IMPORTANT:
         }
 
         // Fallback: if no photos resolved from enhanced images, use original submission photos
-        if (photos.length === 0 && submission.photos?.length > 0) {
+        if (photos.length === 0 && (submission.photos?.length ?? 0) > 0) {
             console.log(`[IMAGES] No enhanced images resolved, falling back to submission.photos`)
             try {
-                const subPhotos = submission.photos
+                const subPhotos = submission.photos || []
                 const httpPhotos = subPhotos.filter((p: string) => isValidImageUrl(p))
                 const storagePhotos = subPhotos.filter((p: string) => p && !p.startsWith('http'))
                 let resolved: string[] = []

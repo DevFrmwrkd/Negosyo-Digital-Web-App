@@ -70,7 +70,7 @@ export default function ReferralsPage() {
 
     const handleCopy = async () => {
         try {
-            await navigator.clipboard.writeText(creator.referralCode)
+            await navigator.clipboard.writeText(creator.referralCode || '')
             setCopied(true)
             setTimeout(() => setCopied(false), 2000)
         } catch {
