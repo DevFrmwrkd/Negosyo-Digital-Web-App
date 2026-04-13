@@ -15,6 +15,8 @@ interface EmailPreview {
     html: string
     /** API endpoint to POST { submissionId } to in order to (re)send this email */
     sendEndpoint: string
+    /** Optional `type` body field forwarded to the send endpoint */
+    sendType?: string
 }
 
 export default function EmailsSentPage() {
@@ -53,6 +55,7 @@ export default function EmailsSentPage() {
                 label: string
                 description: string
                 sendEndpoint: string
+                sendType?: string
             }[] = []
 
             if (['pending_payment', 'paid', 'completed'].includes(submissionData.status)) {
@@ -91,6 +94,26 @@ export default function EmailsSentPage() {
                 })
             }
 
+            // Custom-domain-only emails: setup in progress + 30-day renewal reminder
+            if (hasCustomDomain && ['paid', 'completed'].includes(submissionData.status)) {
+                emailsToFetch.push({
+                    type: 'domain_setup_progress',
+                    label: 'Domain Setup In Progress Email',
+                    description:
+                        'Auto-sent when SSL provisioning starts. Tells the business owner the domain is registered and DNS is pointed, SSL cert is being issued by Cloudflare (2–10 min).',
+                    sendEndpoint: '/api/send-completed-website-email',
+                    sendType: 'domain_setup_progress',
+                })
+                emailsToFetch.push({
+                    type: 'domain_renewal_reminder',
+                    label: 'Domain Renewal Reminder Email',
+                    description:
+                        'Auto-scheduled to send 30 days before the domain expires. Reminds the business owner that year 2 onwards is their responsibility.',
+                    sendEndpoint: '/api/send-completed-website-email',
+                    sendType: 'domain_renewal_reminder',
+                })
+            }
+
             if (emailsToFetch.length === 0) {
                 setEmails([])
                 setLoading(false)
@@ -99,13 +122,13 @@ export default function EmailsSentPage() {
 
             try {
                 const results = await Promise.all(
-                    emailsToFetch.map(async ({ type, label, description, sendEndpoint }) => {
+                    emailsToFetch.map(async ({ type, label, description, sendEndpoint, sendType }) => {
                         const response = await fetch(
                             `/api/preview-email?submissionId=${submissionData._id}&type=${type}`
                         )
                         if (!response.ok) throw new Error(`Failed to load ${label}`)
                         const html = await response.text()
-                        return { type, label, description, html, sendEndpoint }
+                        return { type, label, description, html, sendEndpoint, sendType }
                     })
                 )
                 setEmails(results)
@@ -127,7 +150,10 @@ export default function EmailsSentPage() {
             const response = await fetch(email.sendEndpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ submissionId: submissionData._id }),
+                body: JSON.stringify({
+                    submissionId: submissionData._id,
+                    ...(email.sendType ? { type: email.sendType } : {}),
+                }),
             })
             const json = await response.json().catch(() => ({}))
             if (!response.ok) {

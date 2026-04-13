@@ -6,6 +6,8 @@ import { Id } from '@/convex/_generated/dataModel'
 import {
     sendDomainLiveEmail,
     sendPaymentConfirmationEmail,
+    sendDomainSetupInProgressEmail,
+    sendDomainRenewalReminderEmail,
 } from '@/lib/email/service'
 
 /**
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { submissionId } = body
+        const { submissionId, type } = body as { submissionId?: string; type?: string }
         if (!submissionId) {
             return NextResponse.json({ error: 'submissionId required' }, { status: 400 })
         }
@@ -62,6 +64,36 @@ export async function POST(request: NextRequest) {
         const submissionAny = submission as any
         const customDomain = submissionAny.requestedDomain as string | undefined
 
+        // Explicit type → setup-in-progress email
+        if (type === 'domain_setup_progress') {
+            if (!customDomain) {
+                return NextResponse.json({ error: 'No custom domain on submission' }, { status: 400 })
+            }
+            await sendDomainSetupInProgressEmail({
+                businessName: submission.businessName,
+                businessOwnerName: submission.ownerName,
+                businessOwnerEmail: submission.ownerEmail,
+                customDomain,
+            })
+            return NextResponse.json({ success: true, type: 'domain_setup_progress', sentTo: submission.ownerEmail })
+        }
+
+        // Explicit type → 30-day renewal reminder
+        if (type === 'domain_renewal_reminder') {
+            if (!customDomain) {
+                return NextResponse.json({ error: 'No custom domain on submission' }, { status: 400 })
+            }
+            await sendDomainRenewalReminderEmail({
+                businessName: submission.businessName,
+                businessOwnerName: submission.ownerName,
+                businessOwnerEmail: submission.ownerEmail,
+                customDomain,
+                expiresAt: submissionAny.domainExpiresAt || Date.now() + 365 * 24 * 60 * 60 * 1000,
+            })
+            return NextResponse.json({ success: true, type: 'domain_renewal_reminder', sentTo: submission.ownerEmail })
+        }
+
+        // Default behavior: completed website email (branches on requestedDomain)
         if (customDomain) {
             await sendDomainLiveEmail({
                 businessName: submission.businessName,

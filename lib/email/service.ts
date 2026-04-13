@@ -4,6 +4,8 @@ import {
     getPaymentConfirmationEmailHtml,
     getPaymentLinkEmailHtml,
     getDomainLiveEmailHtml,
+    getDomainSetupInProgressEmailHtml,
+    getDomainRenewalReminderEmailHtml,
     getWithdrawalStatusEmailHtml,
 } from './templates'
 
@@ -189,6 +191,69 @@ export async function sendDomainLiveEmail(data: DomainLiveEmailData) {
         return { success: true, messageId: info.messageId }
     } catch (error: any) {
         console.error('Error in sendDomainLiveEmail:', error)
+        throw error
+    }
+}
+
+interface DomainSetupInProgressEmailData {
+    businessName: string
+    businessOwnerName: string
+    businessOwnerEmail: string
+    customDomain: string
+}
+
+export async function sendDomainSetupInProgressEmail(data: DomainSetupInProgressEmailData) {
+    const { businessName, businessOwnerEmail, customDomain } = data
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASSWORD,
+            },
+        })
+        const emailHtml = getDomainSetupInProgressEmailHtml(data)
+        const info = await transporter.sendMail({
+            from: `"Negosyo Digital" <${process.env.GMAIL_USER}>`,
+            to: businessOwnerEmail,
+            subject: `⏳ Setting up ${customDomain} — ${businessName}`,
+            html: emailHtml,
+        })
+        return { success: true, messageId: info.messageId }
+    } catch (error: any) {
+        console.error('Error in sendDomainSetupInProgressEmail:', error)
+        throw error
+    }
+}
+
+interface DomainRenewalReminderEmailData {
+    businessName: string
+    businessOwnerName: string
+    businessOwnerEmail: string
+    customDomain: string
+    expiresAt: number
+}
+
+export async function sendDomainRenewalReminderEmail(data: DomainRenewalReminderEmailData) {
+    const { businessName, businessOwnerEmail, customDomain } = data
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_APP_PASSWORD,
+            },
+        })
+        const emailHtml = getDomainRenewalReminderEmailHtml(data)
+        const info = await transporter.sendMail({
+            from: `"Negosyo Digital" <${process.env.GMAIL_USER}>`,
+            to: businessOwnerEmail,
+            subject: `⏰ Renew ${customDomain} — ${businessName}`,
+            html: emailHtml,
+        })
+        return { success: true, messageId: info.messageId }
+    } catch (error: any) {
+        console.error('Error in sendDomainRenewalReminderEmail:', error)
         throw error
     }
 }
