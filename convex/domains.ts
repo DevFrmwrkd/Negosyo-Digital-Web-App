@@ -11,14 +11,19 @@ import {
     getCatalogItemId as registrarGetCatalogItemId,
     updateNameservers,
     getPaymentMethodStatus as registrarGetPaymentMethodStatus,
+    listPaymentMethods as registrarListPaymentMethods,
+    listWhoisProfiles as registrarListWhoisProfiles,
     type RegistrantContact,
 } from './lib/hostinger'
 import {
     createZone,
     getZoneStatus,
     isDomainOwnedByUs,
-    addCustomDomainToPages,
-    getCustomDomainStatus,
+    addCustomDomainToWorker,
+    getWorkerCustomDomainStatus,
+    removeCustomDomainFromPages,
+    listDnsRecords,
+    deleteDnsRecord,
 } from './lib/cloudflare'
 
 /**
@@ -371,8 +376,8 @@ export const setupForSubmission = internalAction({
                 throw new Error(`Domain ${domain} is no longer available`)
             }
 
-            // Step 1b: Get catalog item_id (required for purchase)
-            // Try from availability response first, then catalog endpoint, then use domain name as fallback
+            // Step 1b: Get catalog item_id (required for purchase).
+            // Hostinger rejects arbitrary values — must come from availability response or catalog endpoint.
             let itemId: string | undefined = availCheck.itemId
             if (!itemId) {
                 const tld = domain.split('.').slice(1).join('.')
@@ -380,14 +385,13 @@ export const setupForSubmission = internalAction({
                 itemId = (await registrarGetCatalogItemId(tld)) ?? undefined
             }
             if (!itemId) {
-                console.log(`[DOMAINS] No item_id from catalog either, using domain name as item_id fallback`)
-                itemId = domain
+                throw new Error(`Could not resolve Hostinger catalog item_id for ${domain}. Catalog lookup returned no match — check Hostinger logs.`)
             }
             console.log(`[DOMAINS] Using item_id: ${itemId} for ${domain}`)
 
-            // Step 2: Build registrant contact from business owner info + register
-            const contact = buildContactFromSubmission(submission)
-            const reg = await registrarRegister(domain, itemId!, contact)
+            // Step 2: Register. Hostinger will use the pre-created WHOIS profile
+            // for this TLD (verified inside registrarRegister).
+            const reg = await registrarRegister(domain, itemId!)
             await ctx.runMutation(internal.domains.setRegistrarMetadata, {
                 submissionId: args.submissionId,
                 orderId: reg.orderId,
@@ -459,68 +463,35 @@ export const setupForSubmission = internalAction({
                 console.warn(`[DOMAINS] Zone ${zone.zoneId} not active after 2min, continuing anyway`)
             }
 
-            // Step 6: Attach to Cloudflare Pages
-            await addCustomDomainToPages(website.cfPagesProjectName, domain)
-            console.log(`[DOMAINS] Attached ${domain} to Pages project ${website.cfPagesProjectName}`)
+            // Step 6: Attach to Cloudflare Worker (CF auto-creates DNS + SSL)
+            await addCustomDomainToWorker(website.cfPagesProjectName, domain, zone.zoneId)
+            console.log(`[DOMAINS] Attached ${domain} to Worker ${website.cfPagesProjectName}`)
 
-            // Step 7: Wait for SSL (poll up to 10 min)
-            await ctx.runMutation(internal.domains.setDomainStatus, {
-                submissionId: args.submissionId,
-                status: 'provisioning_ssl',
-            })
-            let sslReady = false
-            for (let i = 0; i < 60; i++) {
-                try {
-                    const status = await getCustomDomainStatus(website.cfPagesProjectName, domain)
-                    if (status.status === 'active') {
-                        sslReady = true
-                        break
-                    }
-                } catch {
-                    // Continue polling
-                }
-                await new Promise((r) => setTimeout(r, 10000))
-            }
-
-            // Step 8: Update website record + mark live
+            // Step 7: Update website record + status NOW. We set customDomain
+            // immediately so the UI switches over even while SSL is provisioning —
+            // browsers will auto-redirect to HTTPS once the cert is issued.
             await ctx.runMutation(internal.domains.setCustomDomainOnWebsite, {
                 submissionId: args.submissionId,
                 customDomain: domain,
             })
             await ctx.runMutation(internal.domains.setDomainStatus, {
                 submissionId: args.submissionId,
-                status: 'live',
+                status: 'provisioning_ssl',
             })
 
-            // Notify creator (push)
-            await ctx.runMutation(internal.notifications.createAndSend, {
-                creatorId: submission.creatorId,
-                type: 'website_live',
-                title: 'Your website is now live!',
-                body: `${domain} is up and running.${sslReady ? '' : ' (SSL still provisioning)'}`,
-                data: { submissionId: args.submissionId, url: `https://${domain}` },
-            })
-
-            // Send domain-live email to business owner with renewal disclaimer
-            await ctx.scheduler.runAfter(0, internal.domains.sendDomainLiveEmailAction, {
+            // Step 8: Schedule SSL polling in a follow-up action. Convex actions
+            // cap at 10 minutes; SSL issuance can sometimes exceed that, so we chain
+            // self-rescheduling invocations via pollDomainSsl.
+            await ctx.scheduler.runAfter(30_000, internal.domains.pollDomainSsl, {
                 submissionId: args.submissionId,
+                projectName: website.cfPagesProjectName,
+                domain,
+                attempt: 0,
+                orderId: reg.orderId,
+                zoneId: zone.zoneId,
             })
 
-            // Audit log
-            await ctx.runMutation(internal.auditLogs.log, {
-                adminId: 'system:domain-setup',
-                action: 'website_deployed',
-                targetType: 'submission',
-                targetId: args.submissionId,
-                metadata: {
-                    action: 'custom_domain_live',
-                    domain,
-                    orderId: reg.orderId,
-                    zoneId: zone.zoneId,
-                },
-            })
-
-            console.log(`[DOMAINS] ✓ Setup complete for ${domain}`)
+            console.log(`[DOMAINS] ✓ Setup handoff complete for ${domain} — SSL poll scheduled`)
         } catch (error: any) {
             console.error(`[DOMAINS] Setup failed for ${domain}:`, error)
             await ctx.runMutation(internal.domains.setDomainFailed, {
@@ -555,20 +526,346 @@ export const getHostingerPaymentMethodStatus = action({
     },
 })
 
+/**
+ * Admin-only diagnostic. Verifies that the Hostinger account is actually ready to
+ * register domains: payment method ID points at a real saved method, and a WHOIS
+ * profile exists for the requested TLD. Run this whenever a domain purchase fails.
+ */
+/**
+ * Recovery action: resume the domain setup pipeline for a submission whose domain
+ * is ALREADY registered at Hostinger, skipping the registration step. Use this when
+ * a manual curl/direct registration succeeded but Convex never wrote the metadata.
+ *
+ * Args: submissionId, orderId (Hostinger), subscriptionId (Hostinger).
+ * Runs: setRegistrarMetadata → (assumes auto-renewal already disabled) → Cloudflare
+ * zone → nameservers → wait for active → Pages attach → SSL → mark live → notify.
+ */
+export const resumeAfterRegistration = internalAction({
+    args: {
+        submissionId: v.id('submissions'),
+        orderId: v.string(),
+        subscriptionId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const submission = await ctx.runQuery(internal.submissions.getByIdInternal, {
+            id: args.submissionId,
+        })
+        if (!submission) throw new Error(`Submission ${args.submissionId} not found`)
+        const domain = (submission as any).requestedDomain
+        if (!domain) throw new Error('Submission has no requestedDomain')
+
+        const website = await ctx.runQuery(internal.generatedWebsites.getBySubmissionInternal, {
+            submissionId: args.submissionId,
+        })
+        if (!website?.cfPagesProjectName) throw new Error('No Cloudflare Pages project for submission')
+
+        console.log(`[DOMAINS] Resuming post-registration setup for ${domain}`)
+
+        const expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000
+        await ctx.runMutation(internal.domains.setRegistrarMetadata, {
+            submissionId: args.submissionId,
+            orderId: args.orderId,
+            expiresAt,
+        })
+
+        await ctx.runMutation(internal.domains.setDomainStatus, {
+            submissionId: args.submissionId,
+            status: 'configuring_dns',
+        })
+        const zone = await createZone(domain)
+        await ctx.runMutation(internal.domains.setCloudflareZone, {
+            submissionId: args.submissionId,
+            zoneId: zone.zoneId,
+        })
+        console.log(`[DOMAINS] Created Cloudflare zone ${zone.zoneId} for ${domain}`)
+
+        try {
+            await updateNameservers(domain, zone.nameservers)
+            console.log(`[DOMAINS] Updated nameservers for ${domain}`)
+        } catch (nsError) {
+            console.warn(`[DOMAINS] Failed to update nameservers:`, nsError)
+        }
+
+        let zoneActive = false
+        for (let i = 0; i < 24; i++) {
+            const status = await getZoneStatus(zone.zoneId)
+            if (status === 'active') { zoneActive = true; break }
+            await new Promise((r) => setTimeout(r, 5000))
+        }
+        if (!zoneActive) console.warn(`[DOMAINS] Zone ${zone.zoneId} not active after 2min, continuing`)
+
+        await addCustomDomainToWorker(website.cfPagesProjectName, domain, zone.zoneId)
+        console.log(`[DOMAINS] Attached ${domain} to Worker ${website.cfPagesProjectName}`)
+
+        // Set customDomain immediately so the submission UI reflects the new URL,
+        // then hand off SSL polling to a self-rescheduling follow-up action.
+        await ctx.runMutation(internal.domains.setCustomDomainOnWebsite, {
+            submissionId: args.submissionId,
+            customDomain: domain,
+        })
+        await ctx.runMutation(internal.domains.setDomainStatus, {
+            submissionId: args.submissionId,
+            status: 'provisioning_ssl',
+        })
+
+        await ctx.scheduler.runAfter(30_000, internal.domains.pollDomainSsl, {
+            submissionId: args.submissionId,
+            projectName: website.cfPagesProjectName,
+            domain,
+            attempt: 0,
+            orderId: args.orderId,
+            zoneId: zone.zoneId,
+        })
+
+        console.log(`[DOMAINS] ✓ Resume handoff complete for ${domain} — SSL poll scheduled`)
+        return { ok: true, zoneId: zone.zoneId }
+    },
+})
+
+/**
+ * Self-rescheduling SSL status poll. Runs short invocations well under the 10-minute
+ * Convex action limit, then either marks the domain live or reschedules itself.
+ *
+ * One invocation = up to 5 checks × 10s = 50s of work max.
+ * Total window = MAX_ATTEMPTS × invocation delay ≈ 20 × 30s = 10 min of real time,
+ * plus a grace period on the final attempt — after which we mark live anyway
+ * (the customer can hit HTTP while HTTPS finishes in the background).
+ */
+export const pollDomainSsl = internalAction({
+    args: {
+        submissionId: v.id('submissions'),
+        projectName: v.string(),
+        domain: v.string(),
+        attempt: v.number(),
+        orderId: v.string(),
+        zoneId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const MAX_ATTEMPTS = 20
+        const POLLS_PER_INVOCATION = 5
+        const POLL_INTERVAL_MS = 10_000
+        const RESCHEDULE_DELAY_MS = 30_000
+
+        let sslReady = false
+        for (let i = 0; i < POLLS_PER_INVOCATION; i++) {
+            try {
+                const status = await getWorkerCustomDomainStatus(args.domain)
+                if (status.status === 'active') {
+                    sslReady = true
+                    break
+                }
+            } catch {
+                // Transient Cloudflare error — keep polling
+            }
+            if (i < POLLS_PER_INVOCATION - 1) {
+                await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
+            }
+        }
+
+        if (!sslReady && args.attempt + 1 < MAX_ATTEMPTS) {
+            console.log(
+                `[DOMAINS] SSL not ready for ${args.domain} (attempt ${args.attempt + 1}/${MAX_ATTEMPTS}), rescheduling`
+            )
+            await ctx.scheduler.runAfter(RESCHEDULE_DELAY_MS, internal.domains.pollDomainSsl, {
+                ...args,
+                attempt: args.attempt + 1,
+            })
+            return { sslReady: false, rescheduled: true }
+        }
+
+        // Either SSL is ready, or we exhausted retries — mark live either way.
+        // If SSL still pending at this point, the site will auto-upgrade to HTTPS
+        // once Cloudflare finishes issuing the cert in the background.
+        const submission = await ctx.runQuery(internal.submissions.getByIdInternal, {
+            id: args.submissionId,
+        })
+        if (!submission) {
+            console.error(`[DOMAINS] Submission ${args.submissionId} vanished during SSL poll`)
+            return { sslReady, rescheduled: false }
+        }
+
+        await ctx.runMutation(internal.domains.setDomainStatus, {
+            submissionId: args.submissionId,
+            status: 'live',
+        })
+
+        await ctx.runMutation(internal.notifications.createAndSend, {
+            creatorId: submission.creatorId,
+            type: 'website_live',
+            title: 'Your website is now live!',
+            body: `${args.domain} is up and running.${sslReady ? '' : ' (SSL still provisioning — HTTPS will activate shortly)'}`,
+            data: { submissionId: args.submissionId, url: `https://${args.domain}` },
+        })
+
+        await ctx.scheduler.runAfter(0, internal.domains.sendDomainLiveEmailAction, {
+            submissionId: args.submissionId,
+        })
+
+        await ctx.runMutation(internal.auditLogs.log, {
+            adminId: 'system:domain-setup',
+            action: 'website_deployed',
+            targetType: 'submission',
+            targetId: args.submissionId,
+            metadata: {
+                action: 'custom_domain_live',
+                domain: args.domain,
+                orderId: args.orderId,
+                zoneId: args.zoneId,
+                sslReady,
+                totalAttempts: args.attempt + 1,
+            },
+        })
+
+        console.log(
+            `[DOMAINS] ✓ ${args.domain} marked live (sslReady: ${sslReady}, attempts: ${args.attempt + 1})`
+        )
+        return { sslReady, rescheduled: false }
+    },
+})
+
+/**
+ * Migrate a custom domain from a legacy Pages project attachment onto the
+ * current Worker deployment. Does NOT touch any generated website content —
+ * only reassigns the hostname.
+ *
+ * Steps:
+ *   1. Detach the hostname from the old Pages project (if still attached)
+ *   2. Delete the apex + www CNAME records that pointed at {project}.pages.dev
+ *   3. Attach the hostname to the Worker (CF auto-creates correct DNS + SSL)
+ *
+ * Idempotent: each step swallows "not found" errors so re-running is safe.
+ */
+export const migrateDomainToWorker = internalAction({
+    args: {
+        domain: v.string(),
+        zoneId: v.string(),
+        workerName: v.string(),
+        oldPagesProjectName: v.optional(v.string()),
+    },
+    handler: async (_ctx, args) => {
+        const { domain, zoneId, workerName, oldPagesProjectName } = args
+        const report: any = { domain, steps: {} }
+
+        // Step 1: detach from old Pages project (if any)
+        if (oldPagesProjectName) {
+            try {
+                await removeCustomDomainFromPages(oldPagesProjectName, domain)
+                report.steps.detachedFromPages = true
+                console.log(`[DOMAINS] Detached ${domain} from Pages project ${oldPagesProjectName}`)
+            } catch (e: any) {
+                report.steps.detachedFromPages = `skipped: ${e.message || e}`
+                console.log(`[DOMAINS] Pages detach skipped (likely already detached): ${e.message}`)
+            }
+        }
+
+        // Step 2: delete the apex + www CNAMEs we previously created
+        try {
+            const records = await listDnsRecords(zoneId)
+            const toDelete = records.filter(
+                (r: any) =>
+                    r.type === 'CNAME' &&
+                    (r.name === domain || r.name === `www.${domain}`)
+            )
+            for (const r of toDelete) {
+                await deleteDnsRecord(zoneId, r.id)
+                console.log(`[DOMAINS] Deleted stale CNAME ${r.name} (id ${r.id})`)
+            }
+            report.steps.deletedCnames = toDelete.length
+        } catch (e: any) {
+            report.steps.deletedCnames = `error: ${e.message || e}`
+        }
+
+        // Step 3: attach to the Worker (CF auto-handles DNS + SSL)
+        try {
+            const result = await addCustomDomainToWorker(workerName, domain, zoneId)
+            report.steps.attachedToWorker = { id: result.id, service: result.service }
+            console.log(`[DOMAINS] Attached ${domain} to Worker ${workerName} (id ${result.id})`)
+        } catch (e: any) {
+            report.steps.attachedToWorker = `error: ${e.message || e}`
+            throw new Error(`Worker attach failed: ${e.message || e}`)
+        }
+
+        console.log('[DOMAINS] migrateDomainToWorker report:', JSON.stringify(report, null, 2))
+        return report
+    },
+})
+
+export const diagnoseHostingerSetup = internalAction({
+    args: { tld: v.optional(v.string()) },
+    handler: async (_ctx, args) => {
+        const tld = (args.tld || 'com').replace(/^\./, '').toLowerCase()
+        const report: any = { tld, checks: {} }
+
+        try {
+            const methods = await registrarListPaymentMethods()
+            const envId = process.env.HOSTINGER_PAYMENT_METHOD_ID || ''
+            const match = methods.find(
+                (m: any) => String(m.id ?? m.payment_method_id ?? '') === envId
+            )
+            report.checks.paymentMethods = {
+                count: methods.length,
+                envId: envId || '(not set)',
+                envIdMatchesSavedMethod: !!match,
+                savedMethods: methods.map((m: any) => ({
+                    id: m.id ?? m.payment_method_id,
+                    brand: m.brand ?? m.card_brand ?? m.type ?? 'UNKNOWN',
+                    last4: m.last_four ?? m.last4 ?? m.card_last_four ?? '????',
+                    isDefault: m.is_default ?? m.default ?? false,
+                })),
+            }
+        } catch (e: any) {
+            report.checks.paymentMethods = { error: e.message || String(e) }
+        }
+
+        try {
+            const profiles = await registrarListWhoisProfiles(tld)
+            report.checks.whoisProfiles = {
+                tld,
+                count: profiles.length,
+                profiles: profiles.map((p: any) => ({
+                    id: p.id ?? p.whois_id,
+                    tld: p.tld,
+                    entityType: p.entity_type,
+                    country: p.country,
+                })),
+                ready: profiles.length > 0,
+            }
+        } catch (e: any) {
+            report.checks.whoisProfiles = { tld, error: e.message || String(e) }
+        }
+
+        report.ready =
+            report.checks.paymentMethods?.envIdMatchesSavedMethod === true &&
+            report.checks.whoisProfiles?.ready === true
+
+        console.log('[DOMAINS] diagnoseHostingerSetup report:', JSON.stringify(report, null, 2))
+        return report
+    },
+})
+
 // ==================== EMAIL: DOMAIN LIVE NOTIFICATION ====================
 
 /**
- * Internal action that calls the Next.js endpoint to send the domain-live email
- * (with renewal disclaimer) to the business owner.
+ * Internal action that calls the Next.js endpoint to send the "your website is
+ * complete" email to the business owner. The endpoint branches on whether the
+ * submission has a custom domain, so this single call works for both flows.
+ *
+ * Requires NEXT_PUBLIC_APP_URL (or SITE_URL) to be set in Convex env vars to the
+ * production Next.js host. The internal shared secret authorizes the call.
  */
 export const sendDomainLiveEmailAction = internalAction({
     args: { submissionId: v.id('submissions') },
-    handler: async (ctx, args) => {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || 'https://negosyo-digital.vercel.app'
+    handler: async (_ctx, args) => {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL
         const internalSecret = process.env.INTERNAL_API_SECRET || ''
 
+        if (!baseUrl) {
+            console.error('[DOMAINS] NEXT_PUBLIC_APP_URL / SITE_URL not set — cannot send completed-website email')
+            return
+        }
+
         try {
-            const response = await fetch(`${baseUrl}/api/internal/send-domain-live-email`, {
+            const response = await fetch(`${baseUrl}/api/send-completed-website-email`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -578,10 +875,12 @@ export const sendDomainLiveEmailAction = internalAction({
             })
             if (!response.ok) {
                 const text = await response.text()
-                console.error(`[DOMAINS] Failed to send domain-live email: ${response.status} ${text}`)
+                console.error(`[DOMAINS] Failed to send completed-website email: ${response.status} ${text.slice(0, 200)}`)
+            } else {
+                console.log(`[DOMAINS] Sent completed-website email for submission ${args.submissionId}`)
             }
         } catch (error) {
-            console.error('[DOMAINS] Error sending domain-live email:', error)
+            console.error('[DOMAINS] Error sending completed-website email:', error)
         }
     },
 })
