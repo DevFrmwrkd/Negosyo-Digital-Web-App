@@ -397,6 +397,18 @@ export const setupForSubmission = internalAction({
                 orderId: reg.orderId,
                 expiresAt: reg.expiresAt,
             })
+
+            // Schedule the 30-day-before-expiry renewal reminder email.
+            // Convex schedulers persist long-future jobs reliably.
+            const reminderAt = reg.expiresAt - 30 * 24 * 60 * 60 * 1000
+            if (reminderAt > Date.now()) {
+                await ctx.scheduler.runAt(
+                    reminderAt,
+                    internal.domains.sendDomainRenewalReminderEmailAction,
+                    { submissionId: args.submissionId }
+                )
+                console.log(`[DOMAINS] Scheduled renewal reminder for ${domain} at ${new Date(reminderAt).toISOString()}`)
+            }
             console.log(`[DOMAINS] Registered ${domain} with Hostinger, orderId: ${reg.orderId}`)
 
             // Step 2b: CRITICAL — find the subscription created by the purchase, then disable auto-renewal
@@ -489,6 +501,12 @@ export const setupForSubmission = internalAction({
                 attempt: 0,
                 orderId: reg.orderId,
                 zoneId: zone.zoneId,
+            })
+
+            // Step 8b: Send the "your domain is being set up, SSL is provisioning"
+            // email to the business owner so they know what to expect.
+            await ctx.scheduler.runAfter(0, internal.domains.sendDomainSetupInProgressEmailAction, {
+                submissionId: args.submissionId,
             })
 
             console.log(`[DOMAINS] ✓ Setup handoff complete for ${domain} — SSL poll scheduled`)
@@ -615,6 +633,11 @@ export const resumeAfterRegistration = internalAction({
             attempt: 0,
             orderId: args.orderId,
             zoneId: zone.zoneId,
+        })
+
+        // Send the setup-in-progress email so the owner knows what's happening.
+        await ctx.scheduler.runAfter(0, internal.domains.sendDomainSetupInProgressEmailAction, {
+            submissionId: args.submissionId,
         })
 
         console.log(`[DOMAINS] ✓ Resume handoff complete for ${domain} — SSL poll scheduled`)
@@ -846,41 +869,66 @@ export const diagnoseHostingerSetup = internalAction({
 // ==================== EMAIL: DOMAIN LIVE NOTIFICATION ====================
 
 /**
- * Internal action that calls the Next.js endpoint to send the "your website is
- * complete" email to the business owner. The endpoint branches on whether the
- * submission has a custom domain, so this single call works for both flows.
- *
- * Requires NEXT_PUBLIC_APP_URL (or SITE_URL) to be set in Convex env vars to the
- * production Next.js host. The internal shared secret authorizes the call.
+ * Internal helper: POST to the unified send endpoint with an optional type.
+ * Used by all three domain-related email actions below.
+ */
+async function postSendEmail(submissionId: string, type?: string): Promise<void> {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL
+    const internalSecret = process.env.INTERNAL_API_SECRET || ''
+    if (!baseUrl) {
+        console.error(`[DOMAINS] NEXT_PUBLIC_APP_URL / SITE_URL not set — cannot send ${type || 'completed'} email`)
+        return
+    }
+    try {
+        const response = await fetch(`${baseUrl}/api/send-completed-website-email`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Internal-Secret': internalSecret,
+            },
+            body: JSON.stringify({ submissionId, ...(type ? { type } : {}) }),
+        })
+        if (!response.ok) {
+            const text = await response.text()
+            console.error(`[DOMAINS] Failed to send ${type || 'completed'} email: ${response.status} ${text.slice(0, 200)}`)
+        } else {
+            console.log(`[DOMAINS] Sent ${type || 'completed'} email for submission ${submissionId}`)
+        }
+    } catch (error) {
+        console.error(`[DOMAINS] Error sending ${type || 'completed'} email:`, error)
+    }
+}
+
+/**
+ * Sends the "your website is complete" email to the business owner. The endpoint
+ * branches on whether the submission has a custom domain, so this single call
+ * works for both flows.
  */
 export const sendDomainLiveEmailAction = internalAction({
     args: { submissionId: v.id('submissions') },
     handler: async (_ctx, args) => {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL
-        const internalSecret = process.env.INTERNAL_API_SECRET || ''
+        await postSendEmail(args.submissionId)
+    },
+})
 
-        if (!baseUrl) {
-            console.error('[DOMAINS] NEXT_PUBLIC_APP_URL / SITE_URL not set — cannot send completed-website email')
-            return
-        }
+/**
+ * Sends the "we're setting up your domain, SSL is provisioning" email.
+ * Triggered when the SSL polling phase begins.
+ */
+export const sendDomainSetupInProgressEmailAction = internalAction({
+    args: { submissionId: v.id('submissions') },
+    handler: async (_ctx, args) => {
+        await postSendEmail(args.submissionId, 'domain_setup_progress')
+    },
+})
 
-        try {
-            const response = await fetch(`${baseUrl}/api/send-completed-website-email`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Internal-Secret': internalSecret,
-                },
-                body: JSON.stringify({ submissionId: args.submissionId }),
-            })
-            if (!response.ok) {
-                const text = await response.text()
-                console.error(`[DOMAINS] Failed to send completed-website email: ${response.status} ${text.slice(0, 200)}`)
-            } else {
-                console.log(`[DOMAINS] Sent completed-website email for submission ${args.submissionId}`)
-            }
-        } catch (error) {
-            console.error('[DOMAINS] Error sending completed-website email:', error)
-        }
+/**
+ * Sends the 30-day-before-expiry domain renewal reminder. Scheduled via runAt
+ * immediately after a successful registration (see setupForSubmission step 4b).
+ */
+export const sendDomainRenewalReminderEmailAction = internalAction({
+    args: { submissionId: v.id('submissions') },
+    handler: async (_ctx, args) => {
+        await postSendEmail(args.submissionId, 'domain_renewal_reminder')
     },
 })
