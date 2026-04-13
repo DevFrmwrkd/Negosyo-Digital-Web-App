@@ -265,11 +265,52 @@ export const setRegistrarMetadata = internalMutation({
         submissionId: v.id('submissions'),
         orderId: v.string(),
         expiresAt: v.number(),
+        costPHP: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const patch: any = {
+            registrarOrderId: args.orderId,
+            domainExpiresAt: args.expiresAt,
+        }
+        if (args.costPHP !== undefined && args.costPHP > 0) {
+            patch.domainCostPHP = args.costPHP
+        }
+        await ctx.db.patch(args.submissionId, patch)
+    },
+})
+
+/**
+ * Sum of all Hostinger custom-domain registration fees the platform has paid.
+ * Subtracted from gross earnings on the admin dashboard to show net revenue.
+ */
+export const getTotalHostingerDomainCostsPHP = query({
+    args: {},
+    handler: async (ctx) => {
+        const submissions = await ctx.db
+            .query('submissions')
+            .withIndex('by_domainStatus')
+            .collect()
+        let total = 0
+        for (const s of submissions) {
+            const cost = (s as any).domainCostPHP
+            if (typeof cost === 'number' && cost > 0) total += cost
+        }
+        return total
+    },
+})
+
+/**
+ * One-off backfill: set a submission's `domainCostPHP` field manually for
+ * registrations that happened before cost capture was wired into the pipeline.
+ */
+export const backfillDomainCostPHP = internalMutation({
+    args: {
+        submissionId: v.id('submissions'),
+        costPHP: v.number(),
     },
     handler: async (ctx, args) => {
         await ctx.db.patch(args.submissionId, {
-            registrarOrderId: args.orderId,
-            domainExpiresAt: args.expiresAt,
+            domainCostPHP: args.costPHP,
         } as any)
     },
 })
@@ -396,7 +437,9 @@ export const setupForSubmission = internalAction({
                 submissionId: args.submissionId,
                 orderId: reg.orderId,
                 expiresAt: reg.expiresAt,
+                costPHP: reg.totalPHP,
             })
+            console.log(`[DOMAINS] Hostinger charged $${reg.totalUSD.toFixed(2)} (₱${reg.totalPHP.toFixed(2)}) for ${domain}`)
 
             // Schedule the 30-day-before-expiry renewal reminder email.
             // Convex schedulers persist long-future jobs reliably.
