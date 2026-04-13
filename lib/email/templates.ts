@@ -712,6 +712,12 @@ export function getDomainLiveEmailHtml(params: {
                             <p style="margin: 24px 0 0; color: #a3a3a3; font-size: 14px; line-height: 1.6;">
                                 You can renew through any registrar (we recommend Hostinger or Cloudflare) or transfer the domain to your own account.
                             </p>
+                            <div style="margin: 24px 0 0; padding: 20px; background: #0f1f17; border: 1px solid #10b981; border-radius: 12px;">
+                                <p style="margin: 0 0 8px; color: #10b981; font-size: 14px; font-weight: 700;">💬 Want us to handle the renewal for you?</p>
+                                <p style="margin: 0; color: #d4d4d4; font-size: 14px; line-height: 1.6;">
+                                    Just reply to this email and our team will help you renew <strong>${customDomain}</strong> on your behalf — no need to deal with the registrar yourself.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                     <tr>
@@ -901,6 +907,10 @@ export function getDomainRenewalReminderEmailHtml(params: {
         '<table width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:8px;"><tr><td style="padding:20px;">',
         '<p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#92400e;">How to renew:</p>',
         `<ol style="margin:0;padding-left:20px;font-size:13px;color:#78350f;line-height:1.7;"><li>Visit your domain registrar (or transfer to one of your choice)</li><li>Search for <strong>${customDomain}</strong> and follow their renewal process</li><li>Pay the standard yearly registration fee (around 500 to 1200 PHP depending on registrar)</li></ol>`,
+        '</td></tr></table>',
+        '<table width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:16px 0 0;background:#ecfdf5;border:1px solid #10b981;border-radius:8px;"><tr><td style="padding:16px 20px;">',
+        '<p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#065f46;">Want us to handle the renewal for you?</p>',
+        `<p style="margin:0;font-size:13px;color:#065f46;line-height:1.6;">Just reply to this email and our team will renew <strong>${customDomain}</strong> on your behalf — no need to deal with the registrar yourself.</p>`,
         '</td></tr></table>',
         '<p style="margin:24px 0 0;font-size:14px;color:#6b7280;line-height:1.6;">If you have any questions or need help transferring the domain to your own account, just reply to this email and we will guide you through it.</p>',
         '</td></tr>',
