@@ -81,6 +81,8 @@ export default function AdminDashboard() {
 
     // Analytics data
     const allAnalytics = useQuery(api.analytics.getAllAnalytics, {})
+    // Hostinger custom-domain fees the platform paid (deducted from gross earnings)
+    const totalHostingerCosts = useQuery(api.domains.getTotalHostingerDomainCostsPHP, {})
 
     const handleBackfill = async () => {
         setBackfilling(true)
@@ -197,8 +199,8 @@ export default function AdminDashboard() {
             .map(([period, earnings]) => ({ period, earnings }))
     }, [allAnalytics])
 
-    // Total earnings across all time (for stat widget)
-    const totalEarnings = useMemo(() => {
+    // Gross earnings across all time (sum of creator payouts before fees)
+    const grossEarnings = useMemo(() => {
         if (!allAnalytics) return 0
         // Use monthly to avoid double-counting (monthly aggregates daily)
         const monthly = allAnalytics.filter((r: any) => r.periodType === "monthly")
@@ -209,6 +211,10 @@ export default function AdminDashboard() {
         const daily = allAnalytics.filter((r: any) => r.periodType === "daily")
         return daily.reduce((sum: number, r: any) => sum + (r.earningsTotal || 0), 0)
     }, [allAnalytics])
+
+    // Net earnings = gross minus Hostinger custom-domain fees the platform paid
+    const hostingerCosts = totalHostingerCosts ?? 0
+    const totalEarnings = Math.max(0, grossEarnings - hostingerCosts)
 
     const earningsChartData = {
         labels: earningsTimeSeries.map((r) => {
@@ -379,11 +385,16 @@ export default function AdminDashboard() {
                     <div className="p-2.5 rounded-xl bg-green-50/50 w-fit mb-4 group-hover:scale-110 transition-transform duration-300">
                         <TrendingUp className="text-green-600" size={20} />
                     </div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Earnings</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total Earnings (Net)</p>
                     <div className="flex items-baseline gap-2">
                         <p className="text-3xl font-black text-gray-900 tracking-tight">₱{totalEarnings.toLocaleString()}</p>
                         <span className="text-[10px] font-bold text-gray-400">All time</span>
                     </div>
+                    {hostingerCosts > 0 && (
+                        <p className="text-[10px] font-medium text-gray-400 mt-2">
+                            Gross ₱{grossEarnings.toLocaleString()} − Hostinger ₱{hostingerCosts.toLocaleString()}
+                        </p>
+                    )}
                 </div>
 
                 {/* Widget 2: Submissions (total + pending review combined) */}
