@@ -50,20 +50,62 @@ export async function GET(request: NextRequest) {
 
         // Dynamically import the template functions to avoid bundling nodemailer on client
         const {
-            getApprovalEmailHtml,
+            getPaymentLinkEmailHtml,
             getPaymentConfirmationEmailHtml,
             getDomainLiveEmailHtml,
+            getDomainSetupInProgressEmailHtml,
+            getDomainRenewalReminderEmailHtml,
         } = await import('@/lib/email/templates')
 
         let html: string
 
         if (type === 'approval') {
-            html = getApprovalEmailHtml({
+            // Render the SAME template that send-website-email actually sends (payment-link
+            // email). Fetch the existing payment token if any so the preview mirrors the
+            // real email; otherwise show placeholder values.
+            const submissionAny = submission as any
+            const customDomain = submissionAny.requestedDomain as string | undefined
+
+            let referenceCode = submission.paymentReference || 'ND-XXXX-XXXX'
+            let paymentLink = '#'
+            try {
+                const token = await fetchQuery(api.paymentTokens.getBySubmissionId, {
+                    submissionId: submissionId as Id<'submissions'>,
+                })
+                if (token) {
+                    referenceCode = token.referenceCode
+                    const { getPaymentConfig } = await import('@/lib/payment/config')
+                    paymentLink = getPaymentConfig().getPaymentLink(token.token)
+                }
+            } catch {
+                // Preview-only — placeholder is fine if token lookup fails
+            }
+
+            html = getPaymentLinkEmailHtml({
                 businessName: submission.businessName,
                 businessOwnerName: submission.ownerName,
-                websiteUrl: publishedUrl || '#',
                 amount: submission.amount ?? 0,
-                submissionId: submission._id,
+                paymentLink,
+                referenceCode,
+                platformEmail: process.env.WISE_EMAIL,
+                customDomain,
+            })
+        } else if (type === 'domain_setup_progress') {
+            const submissionAny = submission as any
+            const customDomain = (submissionAny.requestedDomain as string | undefined) || 'your-domain.com'
+            html = getDomainSetupInProgressEmailHtml({
+                businessName: submission.businessName,
+                businessOwnerName: submission.ownerName,
+                customDomain,
+            })
+        } else if (type === 'domain_renewal_reminder') {
+            const submissionAny = submission as any
+            const customDomain = (submissionAny.requestedDomain as string | undefined) || 'your-domain.com'
+            html = getDomainRenewalReminderEmailHtml({
+                businessName: submission.businessName,
+                businessOwnerName: submission.ownerName,
+                customDomain,
+                expiresAt: submissionAny.domainExpiresAt || Date.now() + 365 * 24 * 60 * 60 * 1000,
             })
         } else if (type === 'completed_website') {
             // Branches on requestedDomain — same logic as send-completed-website-email

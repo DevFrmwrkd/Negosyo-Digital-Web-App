@@ -827,3 +827,84 @@ export function getWithdrawalStatusEmailHtml(params: {
 </html>
     `
 }
+
+// ==================== DOMAIN SETUP IN PROGRESS EMAIL ====================
+// Sent when SSL provisioning starts — domain registered, DNS pointed, SSL pending.
+
+export function getDomainSetupInProgressEmailHtml(params: {
+    businessName: string
+    businessOwnerName: string
+    customDomain: string
+}): string {
+    const { businessName, businessOwnerName, customDomain } = params
+    return [
+        '<!DOCTYPE html>',
+        '<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">',
+        `<title>Setting up ${customDomain}</title></head>`,
+        '<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;">',
+        '<table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f4f6;"><tr><td align="center" style="padding:40px 16px;">',
+        '<table width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">',
+        '<tr><td style="padding:48px 40px;background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);text-align:center;color:#ffffff;">',
+        '<div style="display:inline-block;padding:6px 14px;background:rgba(255,255,255,0.2);border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:16px;">Negosyo Digital</div>',
+        '<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;">Setting up your domain</h1>',
+        `<p style="margin:12px 0 0;font-size:15px;opacity:0.9;">${customDomain}</p>`,
+        '</td></tr>',
+        '<tr><td style="padding:40px;color:#1f2937;">',
+        `<p style="margin:0 0 16px;font-size:16px;">Hi <strong>${businessOwnerName}</strong>,</p>`,
+        `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">Great news — we have successfully registered <strong>${customDomain}</strong> for your <strong>${businessName}</strong> website and pointed it to our servers.</p>`,
+        '<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">We are now provisioning a free SSL certificate so your visitors can browse securely over HTTPS. This usually takes <strong>2 to 10 minutes</strong>. You do not need to do anything — we will send another email as soon as your site is fully live.</p>',
+        '<table width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:8px;"><tr><td style="padding:16px 20px;">',
+        '<p style="margin:0;font-size:13px;color:#1e40af;line-height:1.5;"><strong>What is happening behind the scenes:</strong><br>Domain registered<br>DNS configured<br>SSL certificate being issued by Cloudflare<br>Final activation</p>',
+        '</td></tr></table>',
+        '<p style="margin:24px 0 0;font-size:14px;color:#6b7280;line-height:1.6;">If your site does not load yet, your browser may be cached. Try opening it in an incognito window in a few minutes.</p>',
+        '</td></tr>',
+        '<tr><td style="padding:24px 40px;background:#f9fafb;text-align:center;border-top:1px solid #e5e7eb;"><p style="margin:0;font-size:12px;color:#9ca3af;">Negosyo Digital — Build Your Digital Business</p></td></tr>',
+        '</table></td></tr></table></body></html>',
+    ].join('')
+}
+
+// ==================== DOMAIN RENEWAL REMINDER EMAIL ====================
+// Sent ~30 days before the registered domain's expiry date.
+
+export function getDomainRenewalReminderEmailHtml(params: {
+    businessName: string
+    businessOwnerName: string
+    customDomain: string
+    expiresAt: number
+}): string {
+    const { businessName, businessOwnerName, customDomain, expiresAt } = params
+    const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    })
+    const daysRemaining = Math.max(
+        0,
+        Math.floor((expiresAt - Date.now()) / (1000 * 60 * 60 * 24))
+    )
+    return [
+        '<!DOCTYPE html>',
+        '<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">',
+        `<title>Renew ${customDomain} before it expires</title></head>`,
+        '<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;">',
+        '<table width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f4f6;"><tr><td align="center" style="padding:40px 16px;">',
+        '<table width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.08);">',
+        '<tr><td style="padding:48px 40px;background:linear-gradient(135deg,#f59e0b 0%,#d97706 100%);text-align:center;color:#ffffff;">',
+        '<div style="display:inline-block;padding:6px 14px;background:rgba(255,255,255,0.2);border-radius:999px;font-size:11px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:16px;">Reminder · Negosyo Digital</div>',
+        `<h1 style="margin:0;font-size:28px;font-weight:700;line-height:1.2;">Renew ${customDomain}</h1>`,
+        `<p style="margin:12px 0 0;font-size:15px;opacity:0.95;">${daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Expires soon'}</p>`,
+        '</td></tr>',
+        '<tr><td style="padding:40px;color:#1f2937;">',
+        `<p style="margin:0 0 16px;font-size:16px;">Hi <strong>${businessOwnerName}</strong>,</p>`,
+        `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">This is your friendly reminder that your custom domain <strong>${customDomain}</strong> for <strong>${businessName}</strong> will expire on <strong>${expiryDate}</strong>.</p>`,
+        '<p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">Negosyo Digital paid for your first year of registration. <strong>Year 2 onwards is your responsibility</strong> — if the domain is not renewed before the expiry date, you will lose it and your website will stop being reachable on this address.</p>',
+        '<table width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:8px;"><tr><td style="padding:20px;">',
+        '<p style="margin:0 0 10px;font-size:14px;font-weight:600;color:#92400e;">How to renew:</p>',
+        `<ol style="margin:0;padding-left:20px;font-size:13px;color:#78350f;line-height:1.7;"><li>Visit your domain registrar (or transfer to one of your choice)</li><li>Search for <strong>${customDomain}</strong> and follow their renewal process</li><li>Pay the standard yearly registration fee (around 500 to 1200 PHP depending on registrar)</li></ol>`,
+        '</td></tr></table>',
+        '<p style="margin:24px 0 0;font-size:14px;color:#6b7280;line-height:1.6;">If you have any questions or need help transferring the domain to your own account, just reply to this email and we will guide you through it.</p>',
+        '</td></tr>',
+        '<tr><td style="padding:24px 40px;background:#f9fafb;text-align:center;border-top:1px solid #e5e7eb;"><p style="margin:0;font-size:12px;color:#9ca3af;">Negosyo Digital — Build Your Digital Business</p></td></tr>',
+        '</table></td></tr></table></body></html>',
+    ].join('')
+}
