@@ -49,7 +49,11 @@ export async function GET(request: NextRequest) {
         }
 
         // Dynamically import the template functions to avoid bundling nodemailer on client
-        const { getApprovalEmailHtml, getPaymentConfirmationEmailHtml } = await import('@/lib/email/templates')
+        const {
+            getApprovalEmailHtml,
+            getPaymentConfirmationEmailHtml,
+            getDomainLiveEmailHtml,
+        } = await import('@/lib/email/templates')
 
         let html: string
 
@@ -61,6 +65,25 @@ export async function GET(request: NextRequest) {
                 amount: submission.amount ?? 0,
                 submissionId: submission._id,
             })
+        } else if (type === 'completed_website') {
+            // Branches on requestedDomain — same logic as send-completed-website-email
+            const submissionAny = submission as any
+            const customDomain = submissionAny.requestedDomain as string | undefined
+            if (customDomain) {
+                html = getDomainLiveEmailHtml({
+                    businessName: submission.businessName,
+                    businessOwnerName: submission.ownerName,
+                    customDomain,
+                    expiresAt: submissionAny.domainExpiresAt || Date.now() + 365 * 24 * 60 * 60 * 1000,
+                })
+            } else {
+                html = getPaymentConfirmationEmailHtml({
+                    businessName: submission.businessName,
+                    businessOwnerName: submission.ownerName,
+                    websiteUrl: publishedUrl || '#',
+                    amount: submission.amount ?? 0,
+                })
+            }
         } else {
             html = getPaymentConfirmationEmailHtml({
                 businessName: submission.businessName,

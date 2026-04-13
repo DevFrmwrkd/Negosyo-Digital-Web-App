@@ -50,6 +50,16 @@ function getPaymentMethodId(): number {
     return parsed
 }
 
+function getWhoisProfileId(): number {
+    const id = process.env.HOSTINGER_WHOIS_PROFILE_ID
+    if (!id) {
+        throw new Error('HOSTINGER_WHOIS_PROFILE_ID env var must be set (WHOIS profile ID from GET /api/domains/v1/whois)')
+    }
+    const parsed = parseInt(id, 10)
+    if (isNaN(parsed)) throw new Error('HOSTINGER_WHOIS_PROFILE_ID must be a numeric ID')
+    return parsed
+}
+
 async function hostingerRequest(path: string, options: RequestInit = {}): Promise<any> {
     const token = getHostingerToken()
     const response = await fetch(`${BASE_URL}${path}`, {
@@ -256,27 +266,63 @@ export async function suggestAlternatives(
 
 /**
  * Get the catalog item_id for a domain TLD.
- * The item_id is required by the purchase endpoint.
- * Spec: GET /api/billing/v1/catalog (filter by category=domain, name matches TLD)
+ * Spec (per Hostinger API MCP server docs):
+ *   GET /api/billing/v1/catalog?category=DOMAIN&name=.COM*
+ *   Category is uppercase, name uses leading-dot wildcard (e.g. ".COM*").
+ *
+ * Each catalog item has a `prices` array with one entry per billing period
+ * (1y, 2y, 3y, etc.). The PURCHASE endpoint expects the PRICE id, not the
+ * catalog item id. We pick the shortest-period price (year 1 only — platform
+ * does not pay for renewals).
  */
 export async function getCatalogItemId(tld: string): Promise<string | null> {
     try {
-        const data = await hostingerRequest(`/billing/v1/catalog?category=domain`, { method: 'GET' })
+        const tldUpper = tld.toUpperCase()
+        const url = `/billing/v1/catalog?category=DOMAIN&name=.${encodeURIComponent(tldUpper)}*`
+        const data = await hostingerRequest(url, { method: 'GET' })
         const items = Array.isArray(data) ? data : (data?.data || data?.items || [])
 
-        // Find the item matching this TLD
-        const match = items.find((item: any) => {
-            const name = (item.name || item.title || item.slug || '').toLowerCase()
-            return name.includes(`.${tld}`) || name === tld || name === `.${tld}`
-        })
-
-        if (match) {
-            return String(match.id || match.item_id || '')
+        console.log(`[HOSTINGER] Catalog response for .${tld}: ${items.length} items`)
+        if (items.length > 0) {
+            // Log first item shape so we can see structure if matching fails
+            console.log(`[HOSTINGER] First catalog item:`, JSON.stringify(items[0]).slice(0, 800))
         }
 
-        // If catalog search fails, try using the TLD directly as the item_id
-        // (some registrar APIs accept the TLD name as the item identifier)
-        console.warn(`[HOSTINGER] No catalog item found for .${tld}, will try domain name as item_id`)
+        // Find the item whose name exactly matches ".{tld}" (case-insensitive)
+        const match = items.find((item: any) => {
+            const name = String(item.name || item.title || item.slug || '').toLowerCase()
+            return name === `.${tld}` || name === tld
+        }) || items[0] // fall back to first result if no exact match (wildcard already filtered)
+
+        if (!match) {
+            console.warn(`[HOSTINGER] No catalog item found for .${tld}`)
+            return null
+        }
+
+        // Pick the cheapest / shortest-period price from the prices array.
+        // Hostinger price objects typically have: { id, period, period_unit, price, currency, ... }
+        const prices = Array.isArray(match.prices) ? match.prices : []
+        if (prices.length > 0) {
+            const sorted = [...prices].sort((a: any, b: any) => {
+                const pa = Number(a.period ?? a.duration ?? 999)
+                const pb = Number(b.period ?? b.duration ?? 999)
+                return pa - pb
+            })
+            const chosen = sorted[0]
+            const priceId = String(chosen.id || chosen.item_id || chosen.price_id || '')
+            if (priceId) {
+                console.log(`[HOSTINGER] Selected price id ${priceId} (period: ${chosen.period}) for .${tld}`)
+                return priceId
+            }
+        }
+
+        // No prices array — fall back to the catalog item's own id
+        const itemId = String(match.id || match.item_id || '')
+        if (itemId) {
+            console.log(`[HOSTINGER] No prices array, using catalog item id ${itemId} for .${tld}`)
+            return itemId
+        }
+
         return null
     } catch (error) {
         console.warn(`[HOSTINGER] Catalog lookup failed for .${tld}:`, error)
@@ -293,7 +339,10 @@ export async function getCatalogItemId(tld: string): Promise<string | null> {
  * Register a domain for 1 year using a saved Hostinger payment method.
  * Requires the `itemId` from a prior availability check (returned in AvailabilityResult.itemId).
  *
- * The contact info is used as registrant + admin + tech contact (per ICANN requirements).
+ * Per Hostinger docs: "If no WHOIS information is provided, default contact information
+ * for that TLD will be used. Before making request, ensure WHOIS information for desired
+ * TLD exists in your account." We therefore do NOT send inline `domain_contacts` and rely
+ * on a pre-created WHOIS profile. Verify one exists by calling `listWhoisProfiles(tld)`.
  *
  * IMPORTANT: After successful registration, the caller MUST immediately call:
  *   1. findSubscriptionForDomain(domain) → get subscriptionId
@@ -301,8 +350,7 @@ export async function getCatalogItemId(tld: string): Promise<string | null> {
  */
 export async function registerDomain(
     domain: string,
-    itemId: string,
-    contact: RegistrantContact
+    itemId: string
 ): Promise<RegistrationResult> {
     const normalized = domain.trim().toLowerCase()
     const tld = normalized.split('.').slice(1).join('.')
@@ -310,39 +358,33 @@ export async function registerDomain(
     if (BLOCKED_TLDS.includes(tld)) {
         throw new Error(`Cannot register .${tld} — TLD is blocked from standard tier`)
     }
-
-    // item_id is required by Hostinger — if not provided, try the domain name itself
-    const effectiveItemId = itemId || normalized
+    if (!itemId) {
+        throw new Error('item_id is required for domain registration')
+    }
 
     const paymentMethodId = getPaymentMethodId()
+    const whoisId = getWhoisProfileId()
 
-    // Hostinger expects a `domain_contacts` object. Field names follow common WHOIS conventions.
-    // The exact schema isn't fully documented in the OpenAPI public spec — we send standard fields.
-    const contactObject = {
-        first_name: contact.firstName,
-        last_name: contact.lastName,
-        email: contact.email,
-        phone: contact.phone,
-        address1: contact.address,
-        city: contact.city,
-        state: contact.state,
-        zip: contact.postalCode,
-        country: contact.country,
+    // Per Hostinger OpenAPI spec (Domains.V1.Portfolio.PurchaseRequest), domain_contacts
+    // takes WHOIS record IDs (integers), NOT inline contact details:
+    //   { owner_id, admin_id, billing_id, tech_id }
+    // We reuse the same profile id for all four roles.
+    const requestBody = {
+        domain: normalized,
+        item_id: itemId,
+        payment_method_id: paymentMethodId,
+        domain_contacts: {
+            owner_id: whoisId,
+            admin_id: whoisId,
+            billing_id: whoisId,
+            tech_id: whoisId,
+        },
     }
+    console.log(`[HOSTINGER] POST /domains/v1/portfolio body:`, JSON.stringify({ ...requestBody, payment_method_id: '***' }))
 
     const data = await hostingerRequest('/domains/v1/portfolio', {
         method: 'POST',
-        body: JSON.stringify({
-            domain: normalized,
-            item_id: effectiveItemId,
-            payment_method_id: paymentMethodId,
-            domain_contacts: {
-                owner: contactObject,
-                admin: contactObject,
-                billing: contactObject,
-                tech: contactObject,
-            },
-        }),
+        body: JSON.stringify(requestBody),
     })
 
     // Response is an Order resource. Field names per Billing.V1.Order.OrderResource spec.
@@ -436,6 +478,32 @@ export async function getDomainInfo(domain: string): Promise<{
         expirationDate: data?.expires_at ? new Date(data.expires_at).getTime() : 0,
         nameservers: data?.nameservers || [],
     }
+}
+
+// ==================== DIAGNOSTICS ====================
+
+/**
+ * List all saved payment methods on the Hostinger account.
+ * Used for diagnostics — verify HOSTINGER_PAYMENT_METHOD_ID matches a real method.
+ * Spec: GET /api/billing/v1/payment-methods
+ */
+export async function listPaymentMethods(): Promise<any[]> {
+    const data = await hostingerRequest('/billing/v1/payment-methods', { method: 'GET' })
+    return Array.isArray(data) ? data : (data?.data || data?.payment_methods || [])
+}
+
+/**
+ * List WHOIS contact profiles in the Hostinger account.
+ * Spec: GET /api/domains/v1/whois (optional ?tld= filter, no leading dot)
+ *
+ * Hostinger's purchase endpoint uses these profiles as the default registrant
+ * contact when `domain_contacts` is not provided in the request body.
+ * At least one profile for the target TLD must exist before purchase.
+ */
+export async function listWhoisProfiles(tld?: string): Promise<any[]> {
+    const qs = tld ? `?tld=${encodeURIComponent(tld.replace(/^\./, '').toLowerCase())}` : ''
+    const data = await hostingerRequest(`/domains/v1/whois${qs}`, { method: 'GET' })
+    return Array.isArray(data) ? data : (data?.data || data?.whois || [])
 }
 
 // ==================== PAYMENT METHOD STATUS ====================
