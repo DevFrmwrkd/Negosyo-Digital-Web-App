@@ -13,6 +13,8 @@ interface EmailPreview {
     label: string
     description: string
     html: string
+    /** API endpoint to POST { submissionId } to in order to (re)send this email */
+    sendEndpoint: string
 }
 
 export default function EmailsSentPage() {
@@ -34,6 +36,10 @@ export default function EmailsSentPage() {
     const [emails, setEmails] = useState<EmailPreview[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [sendingType, setSendingType] = useState<string | null>(null)
+    const [sendResult, setSendResult] = useState<{ type: string; ok: boolean; message: string } | null>(null)
+
+    const hasCustomDomain = Boolean((submissionData as any)?.requestedDomain)
 
     useEffect(() => {
         if (!submissionData) return
@@ -42,13 +48,20 @@ export default function EmailsSentPage() {
             setLoading(true)
             setError(null)
 
-            const emailsToFetch: { type: string; label: string; description: string }[] = []
+            const emailsToFetch: {
+                type: string
+                label: string
+                description: string
+                sendEndpoint: string
+            }[] = []
 
             if (['pending_payment', 'paid', 'completed'].includes(submissionData.status)) {
                 emailsToFetch.push({
                     type: 'approval',
                     label: 'Send to Client Email',
-                    description: 'Sent when the website was deployed and shared with the client. Contains website preview link and payment instructions.',
+                    description:
+                        'Sent when the website was deployed and shared with the client. Contains website preview link and payment instructions.',
+                    sendEndpoint: '/api/send-website-email',
                 })
             }
 
@@ -56,7 +69,25 @@ export default function EmailsSentPage() {
                 emailsToFetch.push({
                     type: 'payment_confirmation',
                     label: 'Payment Confirmed Email',
-                    description: 'Sent after the admin confirmed payment was received. Contains payment confirmation and live website link.',
+                    description:
+                        'Sent after the admin confirmed payment was received. Contains payment confirmation and live website link.',
+                    sendEndpoint: '/api/send-completed-website-email',
+                })
+            }
+
+            // Completed-website email — available once the submission has been paid or
+            // marked completed. Branches automatically based on whether a custom domain
+            // is attached.
+            if (['paid', 'completed'].includes(submissionData.status)) {
+                emailsToFetch.push({
+                    type: 'completed_website',
+                    label: hasCustomDomain
+                        ? 'Website Live (Custom Domain) Email'
+                        : 'Website Live Email',
+                    description: hasCustomDomain
+                        ? 'Sent when the custom domain finishes provisioning. Includes the live URL and a year-1-paid renewal disclaimer for the business owner.'
+                        : 'Sent when the website is live on its workers.dev URL. Contains the published link and a thank-you message.',
+                    sendEndpoint: '/api/send-completed-website-email',
                 })
             }
 
@@ -68,11 +99,13 @@ export default function EmailsSentPage() {
 
             try {
                 const results = await Promise.all(
-                    emailsToFetch.map(async ({ type, label, description }) => {
-                        const response = await fetch(`/api/preview-email?submissionId=${submissionData._id}&type=${type}`)
+                    emailsToFetch.map(async ({ type, label, description, sendEndpoint }) => {
+                        const response = await fetch(
+                            `/api/preview-email?submissionId=${submissionData._id}&type=${type}`
+                        )
                         if (!response.ok) throw new Error(`Failed to load ${label}`)
                         const html = await response.text()
-                        return { type, label, description, html }
+                        return { type, label, description, html, sendEndpoint }
                     })
                 )
                 setEmails(results)
@@ -84,7 +117,33 @@ export default function EmailsSentPage() {
         }
 
         fetchEmails()
-    }, [submissionData])
+    }, [submissionData, hasCustomDomain])
+
+    async function handleSend(email: EmailPreview) {
+        if (!submissionData) return
+        setSendingType(email.type)
+        setSendResult(null)
+        try {
+            const response = await fetch(email.sendEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId: submissionData._id }),
+            })
+            const json = await response.json().catch(() => ({}))
+            if (!response.ok) {
+                throw new Error(json.error || `Failed (${response.status})`)
+            }
+            setSendResult({
+                type: email.type,
+                ok: true,
+                message: `Sent to ${submissionData.ownerEmail || 'business owner'}`,
+            })
+        } catch (err: any) {
+            setSendResult({ type: email.type, ok: false, message: err.message || 'Send failed' })
+        } finally {
+            setSendingType(null)
+        }
+    }
 
     const authLoading = !isLoaded || (user && currentCreator === undefined)
 
@@ -156,11 +215,11 @@ export default function EmailsSentPage() {
                                 <div className="px-6 py-4 border-b border-gray-100">
                                     <div className="flex items-start gap-3">
                                         <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                                            email.type === 'payment_confirmation'
+                                            email.type === 'payment_confirmation' || email.type === 'completed_website'
                                                 ? 'bg-emerald-100'
                                                 : 'bg-indigo-100'
                                         }`}>
-                                            {email.type === 'payment_confirmation' ? (
+                                            {email.type === 'payment_confirmation' || email.type === 'completed_website' ? (
                                                 <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                                 </svg>
@@ -170,11 +229,11 @@ export default function EmailsSentPage() {
                                                 </svg>
                                             )}
                                         </div>
-                                        <div>
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <h2 className="text-base font-semibold text-gray-900">{email.label}</h2>
                                                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                                    email.type === 'payment_confirmation'
+                                                    email.type === 'payment_confirmation' || email.type === 'completed_website'
                                                         ? 'bg-emerald-50 text-emerald-700'
                                                         : 'bg-indigo-50 text-indigo-700'
                                                 }`}>
@@ -182,7 +241,33 @@ export default function EmailsSentPage() {
                                                 </span>
                                             </div>
                                             <p className="text-sm text-gray-500 mt-0.5">{email.description}</p>
+                                            {sendResult?.type === email.type && (
+                                                <p className={`text-xs mt-2 font-medium ${sendResult.ok ? 'text-emerald-700' : 'text-red-700'}`}>
+                                                    {sendResult.ok ? '✓ ' : '✗ '}{sendResult.message}
+                                                </p>
+                                            )}
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSend(email)}
+                                            disabled={sendingType === email.type || !submissionData?.ownerEmail}
+                                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                                            title={!submissionData?.ownerEmail ? 'Business owner email is missing' : `Send to ${submissionData.ownerEmail}`}
+                                        >
+                                            {sendingType === email.type ? (
+                                                <>
+                                                    <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    Sending…
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                                    </svg>
+                                                    Send Email
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
 
