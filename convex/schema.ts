@@ -126,6 +126,9 @@ export default defineSchema({
         // Registrar metadata
         registrarOrderId: v.optional(v.string()),
         domainExpiresAt: v.optional(v.number()),
+        // Actual cost the platform paid Hostinger for this registration (PHP).
+        // Used by the admin dashboard to deduct from gross earnings → net earnings.
+        domainCostPHP: v.optional(v.number()),
         // Cloudflare zone for this custom domain
         cloudflareZoneId: v.optional(v.string()),
     })

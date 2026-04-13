@@ -110,6 +110,10 @@ export interface RegistrationResult {
     subscriptionId?: string
     /** Estimated expiry — Hostinger sets this; we approximate as 1 year from now */
     expiresAt: number
+    /** Total amount Hostinger charged for the registration, in USD (parsed from cents) */
+    totalUSD: number
+    /** Total amount in PHP (FX-converted from USD via fxRate at purchase time) */
+    totalPHP: number
 }
 
 export interface RegistrantContact {
@@ -388,12 +392,18 @@ export async function registerDomain(
     })
 
     // Response is an Order resource. Field names per Billing.V1.Order.OrderResource spec.
+    // Prices are in cents per Hostinger spec.
     const orderId = String(data?.id || data?.order_id || data?.data?.id || normalized)
     const expiresAt = Date.now() + 365 * 24 * 60 * 60 * 1000 // 1 year
+    const totalCents = Number(data?.total ?? data?.subtotal ?? 0)
+    const totalUSD = totalCents / 100
+    const totalPHP = totalUSD > 0 ? await usdToPhp(totalUSD) : 0
 
     return {
         orderId,
         expiresAt,
+        totalUSD,
+        totalPHP,
     }
 }
 
