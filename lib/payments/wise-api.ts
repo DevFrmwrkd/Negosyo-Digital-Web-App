@@ -102,16 +102,21 @@ export async function sendWiseTransfer(params: WisePayoutRequest): Promise<WiseT
 
         const transfer = await transferResponse.json();
 
-        // Step 4: Fund the transfer
-        const fundResponse = await fetch(`https://api.wise.com/v1/transfers/${transfer.id}/payments`, {
+        // Step 4: Fund the transfer from the Creator Payout jar when configured,
+        // otherwise fall back to the main PHP balance. Using a dedicated jar keeps
+        // creator withdrawals isolated from operating funds.
+        const creatorPayoutBalanceId = process.env.WISE_CREATOR_PAYOUT_BALANCE_ID;
+        const fundBody: Record<string, unknown> = { type: 'BALANCE' };
+        if (creatorPayoutBalanceId) {
+            fundBody.sourceBalanceId = creatorPayoutBalanceId;
+        }
+        const fundResponse = await fetch(`https://api.wise.com/v3/profiles/${accountId}/transfers/${transfer.id}/payments`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiToken}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                type: 'BALANCE',
-            }),
+            body: JSON.stringify(fundBody),
         });
 
         if (!fundResponse.ok) {

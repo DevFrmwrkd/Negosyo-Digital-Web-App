@@ -108,7 +108,7 @@ export default defineSchema({
         // Pricing tier chosen at submission time
         submissionType: v.optional(v.union(
             v.literal('standard'),              // ₱1,000 — free subdomain
-            v.literal('with_custom_domain')     // TEST: ₱100 (normally ₱1,500) — includes custom domain
+            v.literal('with_custom_domain')     // ₱1,500 — includes custom domain (year 1 + setup)
         )),
         // The domain the creator picked on the review page
         requestedDomain: v.optional(v.string()),
