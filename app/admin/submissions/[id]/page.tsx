@@ -444,6 +444,72 @@ export default function SubmissionDetailPage() {
         }
     }
 
+    // Handler to save edits + regenerate + republish in one action
+    const [saveAndPublishStep, setSaveAndPublishStep] = useState<'idle' | 'saving' | 'generating' | 'publishing'>('idle')
+    const handleSaveAndPublishEdits = async () => {
+        if (saveAndPublishStep !== 'idle' || !submission || !submissionData) return
+
+        try {
+            // Step 1: Save edits if currently in edit mode
+            if (isEditing) {
+                setSaveAndPublishStep('saving')
+                await updateSubmissionMutation({
+                    id: submissionData._id,
+                    businessName: editedData.business_name,
+                    businessType: editedData.business_type,
+                    ownerName: editedData.owner_name,
+                    ownerPhone: editedData.owner_phone,
+                    ownerEmail: editedData.owner_email || undefined,
+                    address: editedData.address,
+                    city: editedData.city,
+                    transcript: editedData.transcript || undefined,
+                    photos: editedData.photos,
+                })
+                setIsEditing(false)
+            }
+
+            // Step 2: Regenerate website so htmlContent reflects the latest submission data
+            setSaveAndPublishStep('generating')
+            const genRes = await fetch('/api/generate-website', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    submissionId,
+                    customizations: websiteCustomizations,
+                }),
+            })
+            if (!genRes.ok) {
+                const errData = await genRes.json().catch(() => ({}))
+                throw new Error(`Regeneration failed: ${errData.error || genRes.statusText}`)
+            }
+
+            // Step 3: Republish to Cloudflare Worker (overwrites existing deployment in place)
+            setSaveAndPublishStep('publishing')
+            const pubRes = await fetch('/api/publish-website', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ submissionId }),
+            })
+            if (!pubRes.ok) {
+                const errData = await pubRes.json().catch(() => ({}))
+                throw new Error(`Publishing failed: ${errData.error || pubRes.statusText}`)
+            }
+            const pubData = await pubRes.json()
+
+            setWebsitePublishedUrl(pubData.url)
+            setModalType('success')
+            setModalMessage(`Changes applied! Live at: ${pubData.url}`)
+            setShowModal(true)
+        } catch (error: any) {
+            console.error('Save & publish error:', error)
+            setModalType('error')
+            setModalMessage(error.message || 'Failed to apply changes to the live site')
+            setShowModal(true)
+        } finally {
+            setSaveAndPublishStep('idle')
+        }
+    }
+
     // Handler to send website URL to business owner
     const [sendingEmail, setSendingEmail] = useState(false)
     const handleSendWebsiteEmail = async () => {
@@ -1185,6 +1251,28 @@ export default function SubmissionDetailPage() {
                                             </svg>
                                             Visit Published Site
                                         </a>
+                                        {/* Save & Publish Edits — pushes latest submission data to the live Cloudflare Worker */}
+                                        <button
+                                            onClick={handleSaveAndPublishEdits}
+                                            disabled={saveAndPublishStep !== 'idle'}
+                                            className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {saveAndPublishStep !== 'idle' ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                                    {saveAndPublishStep === 'saving' && 'Saving...'}
+                                                    {saveAndPublishStep === 'generating' && 'Regenerating...'}
+                                                    {saveAndPublishStep === 'publishing' && 'Publishing...'}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                    Save & Publish Edits
+                                                </>
+                                            )}
+                                        </button>
                                         {/* Unpublish button */}
                                         <button
                                             onClick={handleUnpublishWebsite}
@@ -1877,9 +1965,8 @@ export default function SubmissionDetailPage() {
                                 {/* Amount */}
                                 <div>
                                     <label className="text-xs text-gray-500 uppercase font-medium">Business Owner Fee</label>
-                                    {/* TEST PRICING: ₱100 for custom domain, normally ₱1,500 — see plans/REVERT-CUSTOM-DOMAIN-PRICING.md */}
                                     <p className="text-2xl font-black text-gray-900 mt-1">
-                                        ₱{((submissionData as any)?.amount || ((submissionData as any)?.requestedDomain ? 100 : 1000)).toLocaleString()}
+                                        ₱{((submissionData as any)?.amount || ((submissionData as any)?.requestedDomain ? 1500 : 1000)).toLocaleString()}
                                     </p>
                                     {(submissionData as any)?.requestedDomain && (
                                         <p className="text-xs text-gray-500 mt-0.5">

@@ -323,9 +323,7 @@ export const setDomainTier = mutation({
 
         const updates: any = {
             submissionType: args.submissionType,
-            // TEST PRICING: custom domain temporarily ₱100 instead of ₱1,500
-            // See plans/REVERT-CUSTOM-DOMAIN-PRICING.md to restore
-            amount: isWithDomain ? 100 : 1000,
+            amount: isWithDomain ? 1500 : 1000,
             domainStatus: isWithDomain ? 'pending_payment' : 'not_requested',
         };
         if (isWithDomain) {
@@ -381,9 +379,11 @@ export const submit = mutation({
         }
 
         // 1. Update submission status
+        // Preserve tier-based amount set by setDomainTier (₱1,500 for with_custom_domain, ₱1,000 for standard).
+        const hasCustomDomain = (submission as any).submissionType === 'with_custom_domain';
         await ctx.db.patch(args.id, {
             status: 'submitted',
-            amount: 1000,
+            amount: hasCustomDomain ? 1500 : 1000,
             airtableSyncStatus: 'pending_push',
         });
 
