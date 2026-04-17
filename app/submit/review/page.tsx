@@ -40,8 +40,7 @@ export default function ReviewSubmissionPage() {
     // Auto-derived: if user typed something, tier is "with_custom_domain"
     const wantsCustomDomain = domainInput.trim().length > 0
     const tier: 'standard' | 'with_custom_domain' = wantsCustomDomain ? 'with_custom_domain' : 'standard'
-    // TEST PRICING: custom domain is temporarily ₱100 instead of ₱1,500 (revert via plans/REVERT-CUSTOM-DOMAIN-PRICING.md)
-    const totalAmount = wantsCustomDomain ? 100 : 1000
+    const totalAmount = wantsCustomDomain ? 1500 : 1000
 
     // Get creator from Convex
     const creator = useQuery(
@@ -342,7 +341,7 @@ export default function ReviewSubmissionPage() {
                         </div>
                     </div>
 
-                    {/* Custom Domain (optional) — typing here auto-flags submission as ₱100 (TEST PRICING — normally ₱1,500) */}
+                    {/* Custom Domain (optional) — typing here auto-flags submission as ₱1,500 */}
                     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                         <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -350,12 +349,12 @@ export default function ReviewSubmissionPage() {
                                 Custom Domain (Optional)
                             </h3>
                             <span className={`text-xs font-bold px-2 py-1 rounded-full ${wantsCustomDomain ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                                {wantsCustomDomain ? 'TEST: ₱100' : 'Not included'}
+                                {wantsCustomDomain ? '+₱500' : 'Not included'}
                             </span>
                         </div>
                         <div className="p-4 space-y-3">
                             <p className="text-xs text-gray-500">
-                                Leave this blank for the standard package (₱1,000, free subdomain). Type a domain to add a custom domain — your fee automatically becomes ₱100 (TEST PRICING) and includes year 1 of the domain.
+                                Leave this blank for the standard package (₱1,000, free subdomain). Type a domain to add a custom domain — your fee automatically becomes ₱1,500 and includes year 1 of the domain.
                             </p>
 
                             <div>
@@ -386,7 +385,7 @@ export default function ReviewSubmissionPage() {
                                 <div className="text-xs">
                                     {domainCheck.available && domainCheck.withinBudget && (
                                         <p className="text-green-700 font-semibold">
-                                            ✓ Available · ₱{domainCheck.pricePHP} (within budget — included in your ₱100 test fee)
+                                            ✓ Available · ₱{domainCheck.pricePHP} (within budget — included in your ₱1,500 fee)
                                         </p>
                                     )}
                                     {domainCheck.available && !domainCheck.withinBudget && (

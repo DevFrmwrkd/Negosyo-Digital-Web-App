@@ -1,145 +1,234 @@
-# Revert Custom Domain Pricing: ₱100 → ₱1,500
+# Revert Custom Domain Test Pricing → Production
 
-**Status:** Test pricing currently active
-**Created:** April 2026
-**Purpose:** Temporary low pricing for end-to-end testing of the custom domain purchase pipeline
-
-## Why this exists
-
-The custom domain feature charges business owners ₱1,500 normally (₱500 of which covers a year of domain registration via Hostinger). For end-to-end testing of the full pipeline (Wise payment → webhook → Hostinger purchase → Cloudflare zone → SSL → live site), the ₱1,500 was temporarily lowered to **₱100** so test transactions don't burn real money.
-
-When testing is complete, all changes below must be reverted before production launch.
+**Status:** ✅ REVERTED on April 12, 2026 — pricing is back to ₱1,500 production value
+**Original test applied:** April 10, 2026 (₱100 for easier Wise payment flow testing)
+**Kept for reference** — search this file for each change site if you need to re-apply test pricing in the future.
 
 ---
 
-## Files to revert (4 changes total)
+## ⚠ Also ensure Wise Creator Payout jar is configured
 
-### 1. `app/submit/review/page.tsx`
-
-**Line ~43** — `totalAmount` calculation:
-
-```diff
-- // TEST PRICING: custom domain is temporarily ₱100 instead of ₱1,500 (revert via plans/REVERT-CUSTOM-DOMAIN-PRICING.md)
-- const totalAmount = wantsCustomDomain ? 100 : 1000
-+ const totalAmount = wantsCustomDomain ? 1500 : 1000
-```
-
-**Line ~345** — Section comment:
-
-```diff
-- {/* Custom Domain (optional) — typing here auto-flags submission as ₱100 (TEST PRICING — normally ₱1,500) */}
-+ {/* Custom Domain (optional) — typing here auto-flags submission as ₱1,500 */}
-```
-
-**Line ~353** — Header badge:
-
-```diff
-- {wantsCustomDomain ? 'TEST: ₱100' : 'Not included'}
-+ {wantsCustomDomain ? '+₱500' : 'Not included'}
-```
-
-**Line ~357** — Description text:
-
-```diff
-- Leave this blank for the standard package (₱1,000, free subdomain). Type a domain to add a custom domain — your fee automatically becomes ₱100 (TEST PRICING) and includes year 1 of the domain.
-+ Leave this blank for the standard package (₱1,000, free subdomain). Type a domain to add a custom domain — your fee automatically becomes ₱1,500 and includes year 1 of the domain.
-```
-
-**Line ~390** — Availability success message:
-
-```diff
-- ✓ Available · ₱{domainCheck.pricePHP} (within budget — included in your ₱100 test fee)
-+ ✓ Available · ₱{domainCheck.pricePHP} (within budget — included in your ₱1,500 fee)
-```
-
----
-
-### 2. `convex/submissions.ts`
-
-**Line ~324-328** — `submit` mutation amount:
-
-```diff
-  const updates: any = {
-      submissionType: args.submissionType,
--     // TEST PRICING: custom domain temporarily ₱100 instead of ₱1,500
--     // See plans/REVERT-CUSTOM-DOMAIN-PRICING.md to restore
--     amount: isWithDomain ? 100 : 1000,
-+     amount: isWithDomain ? 1500 : 1000,
-      domainStatus: isWithDomain ? 'pending_payment' : 'not_requested',
-  };
-```
-
----
-
-### 3. `convex/schema.ts`
-
-**Line ~126** — Comment on the `submissionType` literal:
-
-```diff
-- v.literal('with_custom_domain')     // TEST: ₱100 (normally ₱1,500) — includes custom domain
-+ v.literal('with_custom_domain')     // ₱1,500 — includes custom domain
-```
-
----
-
-### 4. `app/admin/submissions/[id]/page.tsx`
-
-**Pricing & Domain widget** — the fallback amount for custom domain:
-
-```diff
-  {/* TEST PRICING: ₱100 for custom domain, normally ₱1,500 — see plans/REVERT-CUSTOM-DOMAIN-PRICING.md */}
-- ₱{((submissionData as any)?.amount || ((submissionData as any)?.requestedDomain ? 100 : 1000)).toLocaleString()}
-+ ₱{((submissionData as any)?.amount || ((submissionData as any)?.requestedDomain ? 1500 : 1000)).toLocaleString()}
-```
-
----
-
-## Quick revert (search & replace)
-
-If you'd rather grep your way through:
+Before going live, confirm that the **Creator Payout jar** is set up so creator withdrawals pull from it instead of the main PHP balance:
 
 ```bash
-# Search for all test-pricing markers
-grep -rn "TEST PRICING\|TEST: ₱100\|? 100 :" \
-  app/submit/review/page.tsx \
-  convex/submissions.ts \
-  convex/schema.ts \
-  app/admin/submissions/\[id\]/page.tsx
+# Required on production Convex
+npx convex env set WISE_CREATOR_PAYOUT_BALANCE_ID "<creator_payout_jar_id>" --prod
+```
 
-# Then manually fix each match per the diffs above
+Find the jar ID via:
+```bash
+curl -H "Authorization: Bearer $WISE_API_TOKEN" \
+  "https://api.wise.com/v4/profiles/$WISE_PROFILE_ID/balances?types=SAVINGS"
+```
+
+Without this env var, creator withdrawals fall back to the main PHP balance, which mixes operating funds with creator payouts. See [WISE_PAYMENT_FLOW.md § Creator Payout Jar](../payments/WISE_PAYMENT_FLOW.md) for details.
+
+**Related code changes (already applied):**
+- `services/wise.ts` — `createQuote` accepts optional `sourceBalanceId`; `WiseConfig.creatorPayoutBalanceId` added
+- `convex/wise.ts` — `getWiseConfig()` reads `WISE_CREATOR_PAYOUT_BALANCE_ID` env var and passes it through `createQuote`
+- `docs/payments/WISE_PAYMENT_FLOW.md` — documents the Creator Payout jar flow
+
+These are permanent — do NOT revert. They apply regardless of the ₱100/₱1,500 pricing.
+
+---
+
+## What changed for testing
+
+When a creator types into the **Custom Domain (Optional)** field on the review page, the submission is auto-flagged with `submissionType: "with_custom_domain"` and the price is currently set to **₱100** instead of the production value of **₱1,500**.
+
+**Standard tier (no custom domain) is unchanged at ₱1,000.** Only the with-custom-domain tier was lowered.
+
+This is intentionally lower than the standard tier so that testing the bundled payment flow with Wise can be done with a minimal amount.
+
+---
+
+## Files changed
+
+### 1. `convex/submissions.ts`
+
+#### Change A — `submit` mutation (~line 218)
+```ts
+// CURRENT (TEST):
+const submissionAmount = hasCustomDomain ? 100 : 1000;
+
+// REVERT TO:
+const submissionAmount = hasCustomDomain ? 1500 : 1000;
+```
+
+Also update the comment above the line:
+```ts
+// CURRENT (TEST):
+// TEMP TEST PRICING: ₱100 for custom domain tier (was ₱1,500).
+// See docs/plans/CUSTOM_DOMAIN_REVERT_PRICING.md to restore.
+
+// REVERT TO:
+// Pricing: ₱1,500 if a custom domain is requested, ₱1,000 otherwise.
+// The extra ₱500 covers domain registration + setup automation.
+```
+
+#### Change B — `setDomainTier` mutation (~line 315)
+```ts
+// CURRENT (TEST):
+// TEMP TEST PRICING: ₱100 for custom domain tier (was ₱1,500)
+amount: args.submissionType === "with_custom_domain" ? 100 : 1000,
+
+// REVERT TO:
+amount: args.submissionType === "with_custom_domain" ? 1500 : 1000,
+```
+
+#### Change C — `setDomainTier` JSDoc (~line 270)
+```ts
+// CURRENT (TEST):
+ *   - "with_custom_domain"   → ₱100 (TEST PRICING — was ₱1,500), requires requestedDomain
+ * ...
+ * See docs/plans/CUSTOM_DOMAIN_REVERT_PRICING.md to restore production pricing.
+
+// REVERT TO:
+ *   - "with_custom_domain"   → ₱1,500, requires requestedDomain
+```
+(Remove the line that links back to this revert doc.)
+
+---
+
+### 2. `convex/domains.ts` (~line 20)
+
+```ts
+// CURRENT (TEST):
+const STANDARD_FEE_PHP = 1000;
+// TEMP TEST PRICING: 100 (was 1500). See docs/plans/CUSTOM_DOMAIN_REVERT_PRICING.md
+const WITH_DOMAIN_FEE_PHP = 100;
+const DEFAULT_DOMAIN_BUDGET_PHP = 500;
+
+// REVERT TO:
+const STANDARD_FEE_PHP = 1000;
+const WITH_DOMAIN_FEE_PHP = 1500;
+const DEFAULT_DOMAIN_BUDGET_PHP = 500;
+```
+
+(Remove the comment line.)
+
+---
+
+### 3. `app/(app)/submit/review.tsx`
+
+#### Change A — `totalAmount` derivation (~line 89)
+```ts
+// CURRENT (TEST):
+// TEMP TEST PRICING: ₱100 for custom domain tier (was ₱1,500).
+// See docs/plans/CUSTOM_DOMAIN_REVERT_PRICING.md to restore.
+const totalAmount = wantsCustomDomain ? 100 : 1000;
+
+// REVERT TO:
+const totalAmount = wantsCustomDomain ? 1500 : 1000;
+```
+
+#### Change B — Body text in the custom domain card (~line 766)
+```tsx
+// CURRENT (TEST):
+<Text className="text-xs text-zinc-600 leading-5 mb-3">
+  Type a domain to add a custom domain — your fee automatically becomes
+  ₱100 (TEST PRICING) and includes year 1 of the domain.
+</Text>
+
+// REVERT TO:
+<Text className="text-xs text-zinc-600 leading-5 mb-3">
+  Type a domain to add a custom domain — your fee automatically becomes
+  ₱1,500 and includes year 1 of the domain.
+</Text>
+```
+
+#### Change C — Header badge (~line 754)
+```tsx
+// CURRENT (TEST):
+{wantsCustomDomain && (
+  <View className="ml-2 px-2 py-0.5 bg-amber-100 rounded-full">
+    <Text className="text-amber-700 text-[10px] font-bold">TEST ₱100</Text>
+  </View>
+)}
+
+// REVERT TO:
+{wantsCustomDomain && (
+  <View className="ml-2 px-2 py-0.5 bg-emerald-100 rounded-full">
+    <Text className="text-emerald-700 text-[10px] font-bold">+₱500</Text>
+  </View>
+)}
+```
+
+#### Change D — Total fee breakdown card (~line 922)
+```tsx
+// CURRENT (TEST):
+{/* TEST MODE notice — replaces the production breakdown card.
+    See docs/plans/CUSTOM_DOMAIN_REVERT_PRICING.md to restore. */}
+{wantsCustomDomain && (
+  <View className="border-t border-amber-200 pt-3 mt-1">
+    <View className="flex-row items-center">
+      <Ionicons name="flask-outline" size={14} color="#d97706" />
+      <Text className="text-amber-700 text-xs font-bold ml-1">
+        TEST PRICING — ₱100 flat (production: ₱1,500)
+      </Text>
+    </View>
+  </View>
+)}
+
+// REVERT TO:
+{/* Breakdown when custom domain is selected */}
+{wantsCustomDomain && (
+  <View className="border-t border-emerald-200 pt-3 mt-1">
+    <View className="flex-row justify-between mb-1">
+      <Text className="text-emerald-700 text-xs">Website creation</Text>
+      <Text className="text-emerald-700 text-xs font-medium">₱1,000</Text>
+    </View>
+    <View className="flex-row justify-between">
+      <Text className="text-emerald-700 text-xs">
+        Custom domain (year 1 + setup)
+      </Text>
+      <Text className="text-emerald-700 text-xs font-medium">₱500</Text>
+    </View>
+  </View>
+)}
 ```
 
 ---
 
-## After reverting
+## Things that DID NOT change (and should stay as-is)
 
-1. **Delete this file** — `plans/REVERT-CUSTOM-DOMAIN-PRICING.md`
-2. **Run** `npm run build` to confirm no broken references
-3. **Run** `npm test` to confirm Jest tests still pass (50 tests)
-4. **Deploy** to Convex: `npx convex deploy` (schema comment change is cosmetic but the deploy refreshes generated types)
-5. **Smoke test**: visit the review page on a draft submission, type a domain, confirm the total summary shows ₱1,500 again
+These reference ₱500 / ₱1,500 for domain budget logic, NOT the bundled fee. **Do not touch them when reverting:**
 
----
-
-## What stays the same (do NOT change)
-
-These are unrelated and should remain at their current values:
-
-- **Standard tier price**: ₱1,000 (only the with_custom_domain tier was lowered)
-- **Domain budget**: ₱500 max for Hostinger registration (this is the budget the platform allocates for the actual domain cost — independent of the tier price)
-- **Renewal disclaimer text**: still mentions "~₱1,120/year for year 2+" — this is the actual Hostinger renewal cost the business owner will eventually pay, not a tier price
-- **Wise payment flow**: still uses `submission.amount` so once you revert to 1500, the payment email and webhook matching will use the correct amount automatically
+- `DEFAULT_DOMAIN_BUDGET_PHP = 500` in `convex/domains.ts` — this is the per-domain registration budget cap (Hostinger price ceiling), not the test fee
+- All `₱500 budget` references in `review.tsx` (e.g. line 239, 815, 979) — these refer to the domain price cap shown in availability errors, not the bundled fee
 
 ---
 
-## Files that mention 1500 but should NOT change
+## How to revert (3-step checklist)
 
-These contain ₱1,500 references in documentation/architecture text — they describe the production pricing model and don't need to be edited for testing:
+1. **Apply the file edits above** — search the codebase for `CUSTOM_DOMAIN_REVERT_PRICING` to find every spot that has a TEST comment pointing here
+2. **Push to Convex production:**
+   ```powershell
+   cd C:\dev\ndm
+   npx convex deploy
+   ```
+3. **Rebuild the mobile APK** with the production env:
+   ```powershell
+   Set-Location 'C:\dev\ndm\android'
+   $env:NODE_OPTIONS='--max-old-space-size=8192'
+   .\gradlew.bat assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+   ```
 
-- `docs/changes/CUSTOM-DOMAIN-PURCHASE-PLAN.md`
-- `docs/changes/HOSTINGER-CUSTOM-DOMAIN.md`
-- `docs/wise/WISE-PAYMENT-RE-ENGINEERING.md`
-- `docs/wise/WISE-PAYMENT-FLOW-MOBILE.md`
-- `docs/wise/WISE-PAYMENT-ARCHITECTURE.md`
+After reverting, do a final sanity check:
+- Open the review page in the rebuilt APK
+- Type a domain → fee should jump to ₱1,500 (not ₱100)
+- Total fee card should show the ₱1,000 + ₱500 breakdown
+- Header badge should be the green `+₱500` chip (not amber `TEST ₱100`)
+- Submit a test submission → check `submissions[id].amount === 1500` in the Convex dashboard
 
-(Doc text still says ₱1,500 because that's the real production price. The code is the only thing currently overriding it for testing.)
+---
+
+## Search keys to find all change sites quickly
+
+```
+grep -r "CUSTOM_DOMAIN_REVERT_PRICING" .
+grep -rn "TEST PRICING" convex app
+grep -n "TEMP TEST PRICING" convex
+```
+
+Each occurrence is paired with a `// REVERT` reminder in the code itself.
