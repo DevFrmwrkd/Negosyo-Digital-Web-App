@@ -1072,4 +1072,36 @@ export default defineSchema({
         .index('by_thread', ['discordThreadId'])
         .index('by_normalized', ['normalizedQuestion', 'status'])
         .index('by_createdAt', ['createdAt']),
+
+    // New creator sign-ups awaiting admin approval, mirrored into Discord's
+    // #pending-approvals channel where a ✅/❌ reaction certifies or rejects them.
+    // One row per posted creator; the poll cron (convex/crons.ts → approvals.pollPending)
+    // reads reactions and drives creators.approveCreatorInternal / rejectCreatorInternal.
+    approvalRequests: defineTable({
+        creatorId: v.id('creators'),
+        // The creator's quizPassedAt at post time — the "pending episode" key.
+        // Dedup is per-episode: a retired (expired/error/denied) row blocks
+        // re-posting the SAME episode, but a re-certification gives the creator a
+        // fresh quizPassedAt (no matching row) so it posts again.
+        quizPassedAt: v.number(),
+        status: v.union(
+            v.literal('pending'), // posted to Discord, awaiting a reaction
+            v.literal('approved'), // ✅ → creator certified
+            v.literal('denied'), // ❌ → creator rejected
+            v.literal('conflict'), // both ✅ and ❌ present — needs a human
+            v.literal('expired'), // no decision within the window — stop polling
+            v.literal('error'),
+        ),
+        discordChannelId: v.optional(v.string()),
+        discordMessageId: v.optional(v.string()),
+        resolvedBy: v.optional(v.string()), // Discord user id who reacted decisively
+        resolvedAt: v.optional(v.number()),
+        error: v.optional(v.string()),
+        lastPolledAt: v.optional(v.number()),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    })
+        .index('by_creator', ['creatorId'])
+        .index('by_status', ['status'])
+        .index('by_message', ['discordMessageId']),
 });

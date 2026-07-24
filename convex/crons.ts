@@ -53,4 +53,14 @@ crons.interval(
     {},
 );
 
+// Every 2 minutes: post new creators awaiting approval to Discord's
+// #pending-approvals channel and read ✅/❌ reactions to certify/reject them.
+// No-op unless DISCORD_APPROVALS_ENABLED (and the channel + bot token are set).
+crons.interval(
+    'poll-pending-approvals',
+    { minutes: 2 },
+    internal.approvals.pollPending,
+    {},
+);
+
 export default crons;

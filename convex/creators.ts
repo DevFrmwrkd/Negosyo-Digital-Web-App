@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { query, mutation, internalQuery } from './_generated/server';
+import { query, mutation, internalQuery, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
 
 // ==================== QUERIES ====================
@@ -551,6 +551,77 @@ export const rejectCreator = mutation({
                 : "Your application wasn't approved this time. You can retake the quiz or contact support.",
             data: { rejectedByAdmin: true },
         });
+    },
+});
+
+/**
+ * Internal approve — same effect as approveCreator (certifiedAt + "You're
+ * approved!" notification) but WITHOUT the Clerk admin gate, for trusted server
+ * callers (the Discord #pending-approvals reaction poller, convex/approvals.ts).
+ * A Discord bot has no Clerk session, so the public approveCreator is unreachable;
+ * trust here comes from the bot-token-gated cron. Idempotent and respects the
+ * certifiedAt/rejectedAt mutex. Returns the outcome + display name so the caller
+ * can report the result back in Discord.
+ */
+export const approveCreatorInternal = internalMutation({
+    args: { id: v.id('creators'), approvedBy: v.optional(v.string()) },
+    handler: async (
+        ctx,
+        args,
+    ): Promise<{ outcome: 'approved' | 'already_approved' | 'already_rejected' | 'not_found'; name: string }> => {
+        const creator = await ctx.db.get(args.id);
+        if (!creator) return { outcome: 'not_found', name: '' };
+        const name = [creator.firstName, creator.lastName].filter(Boolean).join(' ') || creator.email || 'creator';
+        if (creator.certifiedAt) return { outcome: 'already_approved', name };
+        if (creator.rejectedAt) return { outcome: 'already_rejected', name };
+
+        await ctx.db.patch(args.id, { certifiedAt: Date.now(), lastActiveAt: Date.now() });
+        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
+            creatorId: args.id,
+            type: 'certification' as const,
+            title: "You're approved!",
+            body: 'Welcome aboard. You can now submit businesses and earn from your interviews.',
+            data: { approvedByAdmin: true, approvedVia: 'discord', approvedBy: args.approvedBy },
+        });
+        return { outcome: 'approved', name };
+    },
+});
+
+/**
+ * Internal reject — same effect as rejectCreator (rejectedAt + optional reason +
+ * "Verification update" notification) but WITHOUT the Clerk admin gate, for the
+ * Discord reaction poller. Idempotent; refuses if already certified (mutex).
+ */
+export const rejectCreatorInternal = internalMutation({
+    args: { id: v.id('creators'), reason: v.optional(v.string()), rejectedBy: v.optional(v.string()) },
+    handler: async (
+        ctx,
+        args,
+    ): Promise<{ outcome: 'rejected' | 'already_rejected' | 'already_approved' | 'not_found'; name: string }> => {
+        const creator = await ctx.db.get(args.id);
+        if (!creator) return { outcome: 'not_found', name: '' };
+        const name = [creator.firstName, creator.lastName].filter(Boolean).join(' ') || creator.email || 'creator';
+        if (creator.rejectedAt) return { outcome: 'already_rejected', name };
+        if (creator.certifiedAt) return { outcome: 'already_approved', name };
+
+        const trimmed = args.reason?.trim();
+        await ctx.db.patch(args.id, {
+            rejectedAt: Date.now(),
+            rejectionReason: trimmed && trimmed.length > 0 ? trimmed.slice(0, 500) : undefined,
+            rejectedBy: args.rejectedBy,
+            lastActiveAt: Date.now(),
+        });
+        await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
+            creatorId: args.id,
+            type: 'certification' as const,
+            title: 'Verification update',
+            body:
+                trimmed && trimmed.length > 0
+                    ? `Your application wasn't approved this time. Reason: ${trimmed}`
+                    : "Your application wasn't approved this time. You can retake the quiz or contact support.",
+            data: { rejectedByAdmin: true, rejectedVia: 'discord' },
+        });
+        return { outcome: 'rejected', name };
     },
 });
 
