@@ -450,6 +450,10 @@ export const markQuizPassed = mutation({
             quizPassedAt: Date.now(),
             lastActiveAt: Date.now(),
         });
+        // Post to Discord #pending-approvals immediately (seconds), instead of
+        // waiting up to 2 min for the poll cron. createAndPost dedups and no-ops
+        // unless DISCORD_APPROVALS_ENABLED, and the cron stays as the backstop.
+        await ctx.scheduler.runAfter(0, internal.approvals.createAndPost, { creatorId: args.id });
     },
 });
 

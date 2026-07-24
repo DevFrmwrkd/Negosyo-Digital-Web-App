@@ -275,14 +275,21 @@ export const createAndPost = internalAction({
                 discordMessageId: msg.id,
             });
 
-            // Seed the two reaction options — best-effort; a failed seed must not
-            // error the row (team members can still add the reaction themselves).
-            for (const emoji of [APPROVE_EMOJI, DENY_EMOJI]) {
-                await fetch(
-                    `${DISCORD_API}/channels/${channelId}/messages/${msg.id}/reactions/${encodeURIComponent(emoji)}/@me`,
-                    { method: 'PUT', headers: { Authorization: `Bot ${botToken}` } },
-                ).catch(() => {});
-            }
+            // Seed the ✅/❌ options via the scheduler, spaced ~1.2s apart. Adding
+            // two reactions back-to-back reliably 429s the SECOND one (Discord's
+            // reaction rate limit), which used to silently drop the ❌. Spacing +
+            // the 429 retry inside seedReaction makes both land. Best-effort —
+            // team members can still add a reaction manually.
+            await ctx.scheduler.runAfter(0, internal.approvals.seedReaction, {
+                channelId,
+                messageId: msg.id,
+                emoji: APPROVE_EMOJI,
+            });
+            await ctx.scheduler.runAfter(1200, internal.approvals.seedReaction, {
+                channelId,
+                messageId: msg.id,
+                emoji: DENY_EMOJI,
+            });
             console.log('[APPROVALS] posted creator', args.creatorId, 'msg', msg.id);
         } catch (err) {
             console.error('[APPROVALS] post failed:', (err as Error).message);
@@ -290,6 +297,42 @@ export const createAndPost = internalAction({
                 id,
                 status: 'error',
                 error: (err as Error).message,
+            });
+        }
+    },
+});
+
+/**
+ * Add one reaction to a message, retrying on Discord's 429 rate limit by
+ * RESCHEDULING itself with the returned retry_after (the Convex-native way to
+ * delay — no setTimeout). Called via the scheduler from createAndPost so the
+ * two seeds are spaced out; this handles any residual rate-limiting. Best-effort:
+ * gives up after a few attempts (team members can still react manually).
+ */
+export const seedReaction = internalAction({
+    args: {
+        channelId: v.string(),
+        messageId: v.string(),
+        emoji: v.string(),
+        attempt: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+        const botToken = process.env.DISCORD_BOT_TOKEN;
+        if (!botToken) return;
+        const res = await fetch(
+            `${DISCORD_API}/channels/${args.channelId}/messages/${args.messageId}/reactions/${encodeURIComponent(args.emoji)}/@me`,
+            { method: 'PUT', headers: { Authorization: `Bot ${botToken}` } },
+        ).catch(() => null);
+        if (!res || res.ok) return; // success (204) or network error → best-effort
+        const attempt = args.attempt ?? 0;
+        if (res.status === 429 && attempt < 3) {
+            const body = (await res.json().catch(() => ({}))) as { retry_after?: number };
+            const delayMs = Math.min(Math.ceil((body.retry_after ?? 1) * 1000) + 250, 5000);
+            await ctx.scheduler.runAfter(delayMs, internal.approvals.seedReaction, {
+                channelId: args.channelId,
+                messageId: args.messageId,
+                emoji: args.emoji,
+                attempt: attempt + 1,
             });
         }
     },
