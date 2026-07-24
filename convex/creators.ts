@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { query, mutation, internalQuery, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
+import { requireAuth } from './lib/auth';
 
 // ==================== QUERIES ====================
 
@@ -84,6 +85,43 @@ export const isDeletedByEmail = query({
             .withIndex('by_email', (q) => q.eq('email', args.email))
             .first();
         return creator?.isDeleted === true;
+    },
+});
+
+/**
+ * Self-service account deletion (App Store Guideline 5.1.1(v)).
+ *
+ * Mobile-referenced — do NOT remove. The App Store / Google Play binaries call
+ * `api.creators.deleteAccount` from Profile → Edit profile → Delete My Account.
+ * It exists in the mobile repo's codegen mirror but was never added here, so the
+ * deployed backend returns "Could not find public function" and deletion fails
+ * on device. Same class of gap as `isDeletedByEmail` above (2026-04-23 incident).
+ *
+ * Soft delete: flag the row, keep data for the 30-day retention window. The
+ * CLIENT deletes the Clerk user separately (`user.delete()`) — that is what
+ * actually terminates the login, which the guideline requires. This mutation
+ * must run FIRST, because deleting the Clerk session would make `requireAuth`
+ * here throw.
+ *
+ * Unlike `isDeletedByEmail`, this IS auth-guarded: the caller is a signed-in
+ * user deleting their own account, and the ownership check depends on it.
+ */
+export const deleteAccount = mutation({
+    args: { id: v.id('creators') },
+    handler: async (ctx, args) => {
+        const identity = await requireAuth(ctx);
+        const creator = await ctx.db.get(args.id);
+        if (!creator) throw new Error('Creator not found');
+        if (creator.clerkId !== identity.subject) {
+            throw new Error('Forbidden: you can only delete your own account');
+        }
+        if (creator.isDeleted) throw new Error('Account is already deleted');
+
+        await ctx.db.patch(args.id, {
+            isDeleted: true,
+            deletedAt: Date.now(),
+            status: 'deleted',
+        });
     },
 });
 
