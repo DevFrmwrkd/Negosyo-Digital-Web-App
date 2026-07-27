@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<!-- DESIGN-CARD
+{
+  "id": "v2:restaurant",
+  "name": "Smoke & Banana Leaf",
+  "manifesto": "70s Manila ihawan signage: woodblock condensed display over charcoal-and-ember duotone, banana-leaf green accents, a specials ticker that never stops rolling.",
+  "description": "High-heat, high-contrast grill house page. Big vernacular type, smoke-dark photography plates, warm ember accents. Pick when the business is proud, loud, and food-forward.",
+  "mood": ["smoky", "vernacular", "confident", "warm"],
+  "bestFor": ["grills", "lechon houses", "silog joints", "BBQ"],
+  "avoidFor": ["fine dining", "clinics", "corporate services"],
+  "variationIdeas": [
+    "Midnight tapsihan: near-black blue ground, sodium-vapor orange accents",
+    "Beach ihaw-ihaw: sun-bleached cream, faded teal, driftwood texture",
+    "Chinatown panciteria: lacquer red + gold, vertical type accents",
+    "Modern kamayan: olive + linen neutrals, thin-line etiquette icons"
+  ]
+}
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ihaw-ihaw &amp; Grilled Chicken in Marikina — Apoy at Asin Grill House</title>
+<meta name="description" content="Apoy at Asin is a charcoal grill house in Concepcion Uno, Marikina — inihaw na liempo, chicken inasal, and sinugba platters. Dine in, take out, or message us to order.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  "name": "Apoy at Asin Grill House",
+  "servesCuisine": ["Filipino", "Barbecue"],
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "88 Bayan-Bayanan Avenue, Concepcion Uno",
+    "addressLocality": "Marikina",
+    "addressRegion": "Metro Manila",
+    "postalCode": "1807",
+    "addressCountry": "PH"
+  },
+  "telephone": "+63-2-8942-1188",
+  "url": "https://apoyatasin.example.ph",
+  "priceRange": "₱₱",
+  "acceptsReservations": "True"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"Do you accept orders through Messenger?","acceptedAnswer":{"@type":"Answer","text":"Yes — Messenger is the fastest way to order from Apoy at Asin. Send your order and pickup time and we confirm within minutes during service hours."}},
+    {"@type":"Question","name":"Is there parking at the restaurant?","acceptedAnswer":{"@type":"Answer","text":"Yes, we have slots for about six cars in front of the restaurant, plus street parking along Bayan-Bayanan Avenue after 6 PM."}},
+    {"@type":"Question","name":"Do you cater for parties and office events?","acceptedAnswer":{"@type":"Answer","text":"We do — grilled platters and party trays for 10 to 150 heads, with delivery within Marikina and nearby Quezon City barangays. Message us at least two days ahead."}},
+    {"@type":"Question","name":"Can I reserve a table for a large group?","acceptedAnswer":{"@type":"Answer","text":"Yes, groups of six or more can reserve through Messenger or by phone. Weekends fill up fast, so book a day in advance."}},
+    {"@type":"Question","name":"Do you have non-grilled and vegetable dishes?","acceptedAnswer":{"@type":"Answer","text":"Yes — sinigang na baboy, ensaladang talong, pinakbet, and daily gulay round out the ihaw menu, so mixed groups always have options."}},
+    {"@type":"Question","name":"Is Apoy at Asin open on holidays?","acceptedAnswer":{"@type":"Answer","text":"We are open most holidays; hours can change so check our Facebook page or Google listing for the current schedule before heading over."}}
+  ]
+}
+</script>
+<style>
+  :root{
+    --char:#191412; --soot:#241d19; --ash:#3a2f28;
+    --ember:#e8632c; --flame:#f2a03d; --leaf:#5a7d4a;
+    --bone:#f4ead9; --bone-dim:#d9c9b0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--char);color:var(--bone);font-family:'Archivo',sans-serif;font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--flame)} a:hover{color:var(--ember)}
+  img{max-width:100%;display:block}
+  h1,h2,h3{font-family:'Anton',sans-serif;font-weight:400;letter-spacing:.01em;text-transform:uppercase;line-height:.95}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  .kick{font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:var(--ember);font-weight:700}
+  .btn{display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:14px 28px;background:var(--ember);color:var(--char);font-weight:700;text-decoration:none;text-transform:uppercase;letter-spacing:.08em;font-size:14px;border:2px solid var(--ember);transition:background .2s,color .2s}
+  .btn:hover{background:transparent;color:var(--ember)}
+  .btn.ghost{background:transparent;color:var(--bone);border-color:var(--bone-dim)}
+  .btn.ghost:hover{border-color:var(--ember);color:var(--ember)}
+  section{padding:72px 0}
+  .plate{position:relative;overflow:hidden;background:
+    linear-gradient(160deg, rgba(232,99,44,.55), rgba(25,20,18,.9) 70%),
+    repeating-linear-gradient(45deg, #2b221d 0 6px, #241d19 6px 12px);
+    display:flex;align-items:flex-end;min-height:220px}
+  .plate figcaption{padding:12px 14px;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--bone-dim);border-top:1px solid rgba(244,234,217,.25);width:100%}
+  /* ticker — signature interaction */
+  .ticker{overflow:hidden;background:var(--ember);color:var(--char);border-top:3px solid var(--char);border-bottom:3px solid var(--char)}
+  .ticker-track{display:flex;gap:0;width:max-content;animation:roll 26s linear infinite}
+  .ticker span{white-space:nowrap;padding:10px 0;font-family:'Anton';font-size:15px;letter-spacing:.12em;text-transform:uppercase}
+  .ticker b{padding:0 22px;font-weight:400}
+  @keyframes roll{to{transform:translateX(-50%)}}
+  .grid2{display:grid;gap:40px}
+  .cards{display:grid;gap:2px;background:var(--ash)}
+  .card{background:var(--soot);padding:28px 24px}
+  .card h3{font-size:22px;color:var(--flame);margin-bottom:10px}
+  .card p{color:var(--bone-dim);font-size:15px}
+  details{border-bottom:1px solid var(--ash)}
+  summary{cursor:pointer;padding:18px 0;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:16px;min-height:44px;align-items:center}
+  summary::after{content:"+";font-family:'Anton';color:var(--ember);font-size:22px;transition:transform .25s}
+  details[open] summary::after{transform:rotate(45deg)}
+  details p{padding:0 0 18px;color:var(--bone-dim)}
+  @media(min-width:760px){
+    .grid2{grid-template-columns:1fr 1fr;align-items:start}
+    .cards{grid-template-columns:repeat(3,1fr)}
+  }
+</style>
+</head>
+<body>
+
+<!-- BLOCK: HERO [required] -->
+<header data-component="HERO" data-variant="v2" style="position:relative;min-height:92vh;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(10deg,#191412 20%,rgba(25,20,18,.35) 60%,rgba(232,99,44,.28)),repeating-radial-gradient(circle at 70% 20%, #2e241e 0 3px, #241d19 3px 7px)">
+  <!-- IMG: full-bleed background — charcoal grill at night, embers flying, liempo on the grate, shot from above; duotone ember/charcoal -->
+  <div class="wrap" style="padding-top:28px;padding-bottom:56px;width:100%">
+    <nav aria-label="Main" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:min(18vh,140px)">
+      <span style="font-family:'Anton';font-size:20px;letter-spacing:.06em">APOY <span style="color:var(--ember)">AT</span> ASIN</span>
+      <a href="#location" style="text-decoration:none;font-size:13px;letter-spacing:.18em;text-transform:uppercase">Find us ↓</a>
+    </nav>
+    <p class="kick">Charcoal grill house · Concepcion Uno, Marikina</p>
+    <h1 style="font-size:clamp(52px,11vw,140px);margin:14px 0 22px">Fire first.<br>Salt second.<br><span style="color:var(--ember)">Nothing else.</span></h1>
+    <p style="max-width:46ch;color:var(--bone-dim);margin-bottom:30px">Liempo, inasal, and sinugba done over real uling since the tricycle fare was five pesos. Walk in, or message us and it's hot when you arrive.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:14px">
+      <a class="btn" href="https://m.me/apoyatasin">Message to order</a>
+      <a class="btn ghost" href="https://maps.google.com/?q=Apoy+at+Asin+Grill+House+Marikina">Get directions</a>
+    </div>
+  </div>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span><b>Inihaw na liempo</b>◆<b>Chicken inasal</b>◆<b>Sinugbang panga</b>◆<b>Grilled pusit</b>◆<b>Sinigang na baboy</b>◆<b>Party trays for pickup</b>◆</span>
+      <span><b>Inihaw na liempo</b>◆<b>Chicken inasal</b>◆<b>Sinugbang panga</b>◆<b>Grilled pusit</b>◆<b>Sinigang na baboy</b>◆<b>Party trays for pickup</b>◆</span>
+    </div>
+  </div>
+</header>
+<!-- /BLOCK: HERO -->
+
+<!-- BLOCK: TRUST [recommended] -->
+<section data-component="TRUST" data-variant="v2" style="padding:36px 0;border-bottom:1px solid var(--ash)">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:28px;justify-content:space-between;align-items:center">
+    <p style="font-family:'Anton';font-size:20px;text-transform:uppercase">Grilling in Marikina for over a decade</p>
+    <!-- GBP SLOT: rating + review count, e.g. "4.8 ★ · 312 Google reviews" — bind from Google Business Profile, do not hardcode -->
+    <div style="min-width:180px;color:var(--bone-dim);font-size:14px" data-gbp="rating">★ Google rating loads here</div>
+    <!-- GBP SLOT: today's hours — bind from Google Business Profile -->
+    <div style="min-width:180px;color:var(--bone-dim);font-size:14px" data-gbp="hours">Today's hours load here</div>
+  </div>
+</section>
+<!-- /BLOCK: TRUST -->
+
+<!-- BLOCK: ABOUT [recommended] -->
+<section data-component="ABOUT" data-variant="v2">
+  <div class="wrap grid2">
+    <div>
+      <p class="kick">The story</p>
+      <h2 style="font-size:clamp(34px,5vw,56px);margin:12px 0 20px">One grill, one family, one rule</h2>
+      <p style="margin-bottom:16px">Apoy at Asin is a family-run charcoal grill house in Concepcion Uno, Marikina serving inihaw na liempo, chicken inasal, and sinugba seafood to neighborhood families and barkadas. It's for anyone who wants proper uling-grilled food without leaving the barangay.</p>
+      <p style="margin-bottom:16px;color:var(--bone-dim)">The first "branch" was a half-drum grill outside the family gate. Neighbors kept coming back, tables kept multiplying, and eventually the garage gave up and became a dining room. The rule from day one never changed: fire and salt do the work — no shortcuts, no gas grill, no pre-cooked anything.</p>
+      <p style="color:var(--bone-dim)">Today the second generation runs the tongs. Same marinade written in a notebook nobody is allowed to photograph, same suppliers from Marikina Public Market every morning.</p>
+    </div>
+    <figure class="plate" style="min-height:380px">
+      <!-- IMG: the family at the original half-drum grill, smoke rising, warm evening light; treated in ember duotone -->
+      <span role="img" aria-label="The founding family grilling at the original half-drum grill outside their Marikina home" style="position:absolute;inset:0"></span>
+      <figcaption>The original half-drum · Bayan-Bayanan Ave.</figcaption>
+    </figure>
+  </div>
+</section>
+<!-- /BLOCK: ABOUT -->
+
+<!-- BLOCK: SERVICES [required] -->
+<section data-component="SERVICES" data-variant="v2" style="background:var(--soot)">
+  <div class="wrap">
+    <p class="kick">Off the grill</p>
+    <h2 style="font-size:clamp(34px,5vw,56px);margin:12px 0 32px">What we do over fire</h2>
+    <div class="cards">
+      <div class="card"><h3>Inihaw na liempo</h3><p>Thick-cut pork belly, scored and basted until the edges char and the fat turns to glass.</p></div>
+      <div class="card"><h3>Chicken inasal</h3><p>Annatto-and-lemongrass marinated leg quarters, brushed with atsuete oil over live coals.</p></div>
+      <div class="card"><h3>Sinugba seafood</h3><p>Panga ng tuna, pusit, and tilapia straight from the morning market run, grilled in banana leaf.</p></div>
+      <div class="card"><h3>Sabaw &amp; gulay</h3><p>Sinigang na baboy, pinakbet, and ensaladang talong — because somebody in the group always asks.</p></div>
+      <div class="card"><h3>Party trays</h3><p>Mixed ihaw platters for 10 to 150 heads, packed for pickup or delivered within Marikina.</p></div>
+      <div class="card"><h3>Silog mornings</h3><p>Weekend breakfast service: tapsilog, longsilog, and leftover-liempo silog for the early crowd.</p></div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: SERVICES -->
+
+<!-- BLOCK: WHY-US [recommended] -->
+<section data-component="WHY-US" data-variant="v2">
+  <div class="wrap grid2">
+    <h2 style="font-size:clamp(34px,5vw,56px)">Why the line forms here</h2>
+    <ul style="list-style:none;display:grid;gap:22px">
+      <li style="border-left:3px solid var(--ember);padding-left:18px"><strong>Real uling, every day.</strong><br><span style="color:var(--bone-dim)">Charcoal from a single Bulacan supplier — never gas, never electric.</span></li>
+      <li style="border-left:3px solid var(--ember);padding-left:18px"><strong>Market-morning sourcing.</strong><br><span style="color:var(--bone-dim)">Meat and seafood bought at Marikina Public Market the same day they hit the grill.</span></li>
+      <li style="border-left:3px solid var(--ember);padding-left:18px"><strong>Family recipe, second generation.</strong><br><span style="color:var(--bone-dim)">The marinade notebook has survived two floods and zero edits.</span></li>
+      <li style="border-left:3px solid var(--ember);padding-left:18px"><strong>Order-ahead that actually works.</strong><br><span style="color:var(--bone-dim)">Message your order and pickup time; it comes off the grill as you park.</span></li>
+    </ul>
+  </div>
+</section>
+<!-- /BLOCK: WHY-US -->
+
+<!-- BLOCK: HOW-IT-WORKS [recommended] -->
+<section data-component="HOW-IT-WORKS" data-variant="v2" style="background:var(--soot)">
+  <div class="wrap">
+    <p class="kick">Ordering</p>
+    <h2 style="font-size:clamp(34px,5vw,56px);margin:12px 0 32px">Grill to table in three moves</h2>
+    <ol style="list-style:none;display:grid;gap:2px;counter-reset:step">
+      <li style="background:var(--char);padding:24px;display:flex;gap:20px;align-items:baseline"><span style="font-family:'Anton';font-size:40px;color:var(--ember)">1</span><span><strong>Message or walk in.</strong> Send your order on Messenger, call, or just show up — the grill is by the door, you'll smell it first.</span></li>
+      <li style="background:var(--char);padding:24px;display:flex;gap:20px;align-items:baseline"><span style="font-family:'Anton';font-size:40px;color:var(--ember)">2</span><span><strong>We fire it fresh.</strong> Nothing is grilled ahead. Your order goes on the coals when you confirm.</span></li>
+      <li style="background:var(--char);padding:24px;display:flex;gap:20px;align-items:baseline"><span style="font-family:'Anton';font-size:40px;color:var(--ember)">3</span><span><strong>Eat, or take it home.</strong> Dine in with unlimited sawsawan, or grab your tray packed in banana leaf.</span></li>
+    </ol>
+  </div>
+</section>
+<!-- /BLOCK: HOW-IT-WORKS -->
+
+<!-- BLOCK: TESTIMONIALS [recommended] -->
+<section data-component="TESTIMONIALS" data-variant="v2">
+  <div class="wrap">
+    <p class="kick">Word of mouth</p>
+    <h2 style="font-size:clamp(34px,5vw,56px);margin:12px 0 32px">The neighbors talk</h2>
+    <div style="display:grid;gap:20px" class="cards-stack">
+      <blockquote style="border:1px solid var(--ash);padding:26px"><p style="font-size:18px;margin-bottom:14px">"Ordered 4 party trays for my daughter's baptism through Messenger. Confirmed in 10 minutes, ready exactly at 11 AM, still smoking when we opened them at the venue."</p><footer style="color:var(--ember);font-weight:700">Marites D. · Nangka, Marikina</footer></blockquote>
+      <blockquote style="border:1px solid var(--ash);padding:26px"><p style="font-size:18px;margin-bottom:14px">"The liempo edges are crispy talaga, hindi malata. We drive from Pasig every payday Friday — worth the Marcos Highway traffic."</p><footer style="color:var(--ember);font-weight:700">Jerome A. · Santolan, Pasig</footer></blockquote>
+      <blockquote style="border:1px solid var(--ash);padding:26px"><p style="font-size:18px;margin-bottom:14px">"Their inasal is the only one my Ilongga mother approves of in Metro Manila. That's the whole review."</p><footer style="color:var(--ember);font-weight:700">Kristine V. · Concepcion Dos</footer></blockquote>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: TESTIMONIALS -->
+
+<!-- BLOCK: GALLERY [recommended] -->
+<section data-component="GALLERY" data-variant="v2" style="background:var(--soot)">
+  <div class="wrap">
+    <p class="kick">From the grill</p>
+    <h2 style="font-size:clamp(34px,5vw,56px);margin:12px 0 32px">Smoke, up close</h2>
+    <div style="display:grid;gap:2px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <figure class="plate" style="min-height:260px"><!-- IMG: close-up of liempo on the grate, flames licking through --><span role="img" aria-label="Liempo charring over live charcoal" style="position:absolute;inset:0"></span><figcaption>Liempo, minute six</figcaption></figure>
+      <figure class="plate" style="min-height:260px"><!-- IMG: hands basting inasal with atsuete oil brush --><span role="img" aria-label="Basting chicken inasal with atsuete oil" style="position:absolute;inset:0"></span><figcaption>The atsuete brush</figcaption></figure>
+      <figure class="plate" style="min-height:260px"><!-- IMG: full sinugba platter on banana leaf, overhead shot --><span role="img" aria-label="Sinugba platter served on banana leaf" style="position:absolute;inset:0"></span><figcaption>Sinugba platter, para sa lahat</figcaption></figure>
+      <figure class="plate" style="min-height:260px"><!-- IMG: dining room at dinner rush, families at long tables --><span role="img" aria-label="Families dining at long tables during dinner rush" style="position:absolute;inset:0"></span><figcaption>Friday, 7 PM</figcaption></figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: GALLERY -->
+
+<!-- BLOCK: FAQ [recommended] -->
+<section data-component="FAQ" data-variant="v2">
+  <div class="wrap" style="max-width:760px">
+    <p class="kick">Questions</p>
+    <h2 style="font-size:clamp(34px,5vw,56px);margin:12px 0 24px">Before you head over</h2>
+    <details><summary>Do you accept orders through Messenger?</summary><p>Yes — Messenger is the fastest way to order. Send your order and pickup time and we confirm within minutes during service hours.</p></details>
+    <details><summary>Is there parking at the restaurant?</summary><p>Yes, we have slots for about six cars in front, plus street parking along Bayan-Bayanan Avenue after 6 PM.</p></details>
+    <details><summary>Do you cater for parties and office events?</summary><p>We do — grilled platters and party trays for 10 to 150 heads, delivered within Marikina and nearby Quezon City barangays. Message us at least two days ahead.</p></details>
+    <details><summary>Can I reserve a table for a large group?</summary><p>Yes, groups of six or more can reserve through Messenger or by phone. Weekends fill up fast, so book a day in advance.</p></details>
+    <details><summary>Do you have non-grilled and vegetable dishes?</summary><p>Yes — sinigang na baboy, ensaladang talong, pinakbet, and daily gulay round out the ihaw menu.</p></details>
+    <details><summary>Is Apoy at Asin open on holidays?</summary><p>We are open most holidays; hours can change, so check our Facebook page or Google listing before heading over.</p></details>
+  </div>
+</section>
+<!-- /BLOCK: FAQ -->
+
+<!-- BLOCK: SERVICE-AREA [optional] -->
+<section data-component="SERVICE-AREA" data-variant="v2" style="padding:40px 0;border-top:1px solid var(--ash);border-bottom:1px solid var(--ash)">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+    <span class="kick" style="margin-right:8px">Tray delivery area</span>
+    <span style="color:var(--bone-dim)">Concepcion Uno · Concepcion Dos · Nangka · Parang · Marikina Heights · Fortune · SSS Village · Loyola Heights, QC · Santolan, Pasig</span>
+  </div>
+</section>
+<!-- /BLOCK: SERVICE-AREA -->
+
+<!-- BLOCK: CREDENTIALS [optional] -->
+<section data-component="CREDENTIALS" data-variant="v2" style="padding:40px 0">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:32px;color:var(--bone-dim);font-size:14px">
+    <span>✓ DTI-registered business</span>
+    <span>✓ Marikina City business permit</span>
+    <span>✓ Sanitary permit, City Health Office</span>
+    <span>✓ Food handlers' certificates, full kitchen staff</span>
+  </div>
+</section>
+<!-- /BLOCK: CREDENTIALS -->
+
+<!-- BLOCK: LOCATION [required] -->
+<section data-component="LOCATION" data-variant="v2" id="location" style="background:var(--soot)">
+  <div class="wrap grid2">
+    <div>
+      <p class="kick">Find the smoke</p>
+      <h2 style="font-size:clamp(34px,5vw,56px);margin:12px 0 20px">Apoy at Asin Grill House</h2>
+      <address style="font-style:normal;display:grid;gap:10px;color:var(--bone-dim)">
+        <span>88 Bayan-Bayanan Avenue, Concepcion Uno, Marikina, Metro Manila 1807</span>
+        <a href="tel:+63289421188" style="font-size:22px;font-weight:700">(02) 8942-1188</a>
+      </address>
+      <!-- GBP SLOT: full weekly hours table — bind from Google Business Profile -->
+      <div data-gbp="hours-week" style="margin:20px 0;padding:16px;border:1px dashed var(--ash);color:var(--bone-dim);font-size:14px">Weekly hours load here from Google Business Profile</div>
+      <a class="btn" href="https://maps.google.com/?q=Apoy+at+Asin+Grill+House+Marikina">Get directions</a>
+    </div>
+    <figure class="plate" style="min-height:340px">
+      <!-- IMG: map placeholder — pin on Bayan-Bayanan Ave, Concepcion Uno; can be embedded map in production -->
+      <span role="img" aria-label="Map showing Apoy at Asin on Bayan-Bayanan Avenue, Marikina" style="position:absolute;inset:0"></span>
+      <figcaption>Corner of Bayan-Bayanan · look for the smoke</figcaption>
+    </figure>
+  </div>
+</section>
+<!-- /BLOCK: LOCATION -->
+
+<!-- BLOCK: CTA-BAND [recommended] -->
+<section data-component="CTA-BAND" data-variant="v2" style="background:var(--ember);color:var(--char);padding:56px 0">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
+    <h2 style="font-size:clamp(30px,4.5vw,48px)">Hungry na? The coals are lit.</h2>
+    <a class="btn" style="background:var(--char);border-color:var(--char);color:var(--bone)" href="https://m.me/apoyatasin">Message your order</a>
+  </div>
+</section>
+<!-- /BLOCK: CTA-BAND -->
+
+<!-- BLOCK: CLICK-TO-MESSAGE [recommended] -->
+<div data-component="CLICK-TO-MESSAGE" data-variant="v2" style="position:fixed;right:16px;bottom:16px;z-index:50">
+  <a href="https://m.me/apoyatasin" aria-label="Order via Messenger" style="display:flex;align-items:center;gap:10px;background:var(--flame);color:var(--char);text-decoration:none;font-weight:700;padding:14px 20px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.5);min-height:48px">💬 Order via Messenger</a>
+</div>
+<!-- /BLOCK: CLICK-TO-MESSAGE -->
+
+<!-- BLOCK: FOOTER [required] -->
+<footer data-component="FOOTER" data-variant="v2" style="padding:48px 0;border-top:1px solid var(--ash)">
+  <div class="wrap" style="display:grid;gap:14px;color:var(--bone-dim);font-size:14px">
+    <span style="font-family:'Anton';font-size:22px;color:var(--bone)">APOY <span style="color:var(--ember)">AT</span> ASIN GRILL HOUSE</span>
+    <span>88 Bayan-Bayanan Avenue, Concepcion Uno, Marikina, Metro Manila 1807 · <a href="tel:+63289421188">(02) 8942-1188</a></span>
+    <span>Charcoal-grilled Filipino food · Dine in · Take out · Party trays</span>
+  </div>
+</footer>
+<!-- /BLOCK: FOOTER -->
+
+</body>
+</html>
