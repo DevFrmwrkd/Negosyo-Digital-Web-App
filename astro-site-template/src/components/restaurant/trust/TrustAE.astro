@@ -1,0 +1,41 @@
+---
+/**
+ * restaurant / TrustAE — thin charcoal credibility bar under the hero.
+ * Renders content.trust.cells as Anton stat/statement blocks laid across a row
+ * (the design's "Grilling in Marikina for over a decade · rating · hours" strip).
+ * Volatile Google rating / today's-hours slots have no field in the data model,
+ * so they are expressed as ordinary trust cells (num + label).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust-sect">
+    <div class="wrap trust-bar">
+      {cells.map((cell, i) => (
+        <div class="trust-cell reveal">
+          {cell.num && <div class="num" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="lbl" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust-sect { padding: 36px 0; border-bottom: 1px solid var(--ash); }
+  .trust-bar {
+    display: flex; flex-wrap: wrap; gap: 28px 40px;
+    justify-content: space-between; align-items: center;
+  }
+  .trust-cell { min-width: 160px; }
+  .trust-cell .num {
+    font-family: var(--display); font-size: 22px; text-transform: uppercase;
+    color: var(--bone); line-height: 1.05; letter-spacing: .01em;
+  }
+  .trust-cell .lbl {
+    font-family: var(--body); font-size: 13px; color: var(--bone-dim);
+    letter-spacing: .04em; margin-top: 6px;
+  }
+</style>

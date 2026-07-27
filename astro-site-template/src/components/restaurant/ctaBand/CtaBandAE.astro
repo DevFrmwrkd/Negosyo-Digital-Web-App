@@ -1,0 +1,53 @@
+---
+/**
+ * restaurant / CtaBandAE — full-width ember band, charcoal type, "the coals are
+ * lit" closer. Because the band is ember, the CTAs use charcoal fills (scoped
+ * here) instead of the global ember .btn so they stay visible on ember.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || '#location';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band">
+    <div class="wrap cta-inner reveal">
+      <div class="cta-copy">
+        {tag && <p class="cta-tag" data-field="ctaBand.tag">{tag}</p>}
+        {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      </div>
+      {hasButtons && (
+        <div class="cta-actions">
+          {cta1Text && <a class="cta-btn" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="cta-btn ghost" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--ember); color: var(--char); padding: 56px 0; }
+  .cta-inner { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+  .cta-tag { font-size: 12px; letter-spacing: .28em; text-transform: uppercase; font-weight: 700; color: var(--char); opacity: .7; margin-bottom: 8px; }
+  .cta-h { font-size: clamp(30px, 4.5vw, 48px); color: var(--char); }
+  .cta-sub { color: var(--char); opacity: .82; margin-top: 10px; max-width: 46ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+  .cta-btn {
+    display: inline-flex; align-items: center; gap: 10px; min-height: 52px;
+    padding: 14px 28px; background: var(--char); color: var(--bone);
+    font-family: var(--body); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; font-size: 14px; border: 2px solid var(--char);
+    transition: background .2s, color .2s;
+  }
+  .cta-btn:hover { background: transparent; color: var(--char); }
+  .cta-btn.ghost { background: transparent; color: var(--char); border-color: var(--char); }
+  .cta-btn.ghost:hover { background: var(--char); color: var(--ember); }
+</style>

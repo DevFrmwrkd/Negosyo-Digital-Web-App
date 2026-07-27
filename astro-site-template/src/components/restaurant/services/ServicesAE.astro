@@ -1,0 +1,47 @@
+---
+/**
+ * restaurant / ServicesAE — "off the grill" menu grid on the soot-dark band.
+ * Uses the shared .cards / .card primitives (Anton flame titles on soot tiles).
+ * price / duration render only when present in the data.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="svc-sect">
+    <div class="wrap">
+      {tag && <p class="kick" data-field="services.tag">{tag}</p>}
+      {headline && <h2 class="svc-h" data-field="services.headline" set:html={headline}></h2>}
+      {sub && <p class="svc-sub" data-field="services.sub">{sub}</p>}
+      <div class="cards">
+        {items.map((item, i) => (
+          <div class="card reveal">
+            <div class="card-head">
+              <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+              {item.price && <span class="card-price" data-field={`services.items.${i}.price`}>{item.price}</span>}
+            </div>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+            {item.duration && <div class="card-dur" data-field={`services.items.${i}.duration`}>{item.duration}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .svc-sect { background: var(--soot); }
+  .svc-h { font-size: clamp(34px, 5vw, 56px); margin: 12px 0 32px; color: var(--bone); }
+  .svc-sub { max-width: 52ch; color: var(--bone-dim); margin: -18px 0 32px; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; }
+  .card-price { font-family: var(--body); font-weight: 700; font-size: 14px; color: var(--ember); flex-shrink: 0; }
+  .card-dur {
+    font-family: var(--body); text-transform: uppercase; letter-spacing: .14em;
+    font-size: 11px; color: var(--bone-dim); margin-top: 10px; opacity: .8;
+  }
+</style>
