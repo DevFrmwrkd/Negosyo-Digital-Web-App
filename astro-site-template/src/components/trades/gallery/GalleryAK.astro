@@ -1,0 +1,40 @@
+---
+/**
+ * trades / GalleryAK — "Documented work": a grid of art-directed cyanotype
+ * plates (the source's "Fig. 4–7" job photos). Like GalleryAE, tiles are NOT
+ * filtered by image — every item keeps its blueprint gradient as the designed
+ * fallback, and a photo layers over it via data-image-field when set. The
+ * section auto-hides only when there are no items at all.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+---
+{items.length > 0 && (
+  <section class="gal-sect" id="gallery">
+    <div class="wrap">
+      {tag && <span class="label" data-field="gallery.tag">{tag}</span>}
+      {headline && <h2 class="gal-h" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="gal-sub" data-field="gallery.sub">{sub}</p>}
+      <div class="gal-grid reveal">
+        {items.map((item, i) => (
+          <figure class="plate gal-tile">
+            {item.image && <div class="photo" data-image-field={`gallery.items.${i}.image`} style={`background-image:url('${item.image}');`}></div>}
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gal-h { font-size: clamp(32px, 5vw, 54px); margin: 18px 0 26px; color: var(--white); }
+  .gal-sub { max-width: 56ch; color: var(--chalk); margin: -14px 0 26px; }
+  .gal-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .gal-tile { min-height: 240px; }
+</style>

@@ -1,0 +1,45 @@
+---
+/**
+ * education / GalleryAJ — "around the center" plate grid. Every tile keeps its
+ * ink-bordered plate gradient as the designed fallback (tiles are NOT filtered
+ * by image), and a photo layers over it via data-image-field when set. Tiles
+ * carry the design's subtle alternating tilt. The whole section auto-hides only
+ * when there are no items at all.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+---
+{items.length > 0 && (
+  <section class="gal-sect" id="gallery">
+    <div class="wrap">
+      {tag && <span class="note" data-field="gallery.tag">{tag}</span>}
+      {headline && <h2 class="gal-h" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="gal-sub" data-field="gallery.sub">{sub}</p>}
+      <div class="gal-grid reveal">
+        {items.map((item, i) => (
+          <figure class="plate gal-tile">
+            {item.image && <div class="photo" data-image-field={`gallery.items.${i}.image`} style={`background-image:url('${item.image}');`}></div>}
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gal-h { font-size: clamp(32px, 5vw, 52px); margin: 14px 0 28px; color: var(--ink); }
+  .gal-sub { max-width: 52ch; color: var(--ink-soft); margin: -16px 0 28px; }
+  .gal-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .gal-tile { min-height: 250px; }
+  /* Design signature: alternating tilt on the plates. */
+  .gal-tile:nth-child(3n+1) { transform: rotate(-.8deg); }
+  .gal-tile:nth-child(3n+2) { transform: rotate(.6deg); }
+  .gal-tile:nth-child(3n) { transform: rotate(-.5deg); }
+  @media (max-width: 560px) { .gal-tile { transform: none !important; } }
+</style>

@@ -1,0 +1,49 @@
+---
+/**
+ * autoshop / CtaBandAF — full-width ink closing band, hazard headline, "get it
+ * looked at today" call. Because the band is ink, the CTAs use hazard fills /
+ * hazard outlines (scoped here) instead of the global ink .btn so they stay
+ * visible on the dark ground. The chevron sweep is retained on both.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || '#location';
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band">
+    <div class="wrap cta-inner reveal">
+      <div class="cta-copy">
+        {tag && <span class="cta-tag" data-field="ctaBand.tag">{tag}</span>}
+        {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      </div>
+      {hasButtons && (
+        <div class="cta-actions">
+          {cta1Text && <a class="btn cta-fill" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn cta-line" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--ink); color: var(--paper); padding: 56px 0; }
+  .cta-inner { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+  .cta-tag { display: inline-block; font-family: var(--body); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; font-weight: 700; color: var(--haz); margin-bottom: 12px; }
+  .cta-h { font-size: clamp(28px, 4.5vw, 46px); color: var(--haz); }
+  .cta-sub { color: var(--line); margin-top: 10px; max-width: 46ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+  /* Hazard-fill primary + hazard-outline secondary, legible on the ink band. */
+  .cta-fill { background: var(--haz); color: var(--ink); border-color: var(--haz); }
+  .cta-fill:hover { color: var(--ink); }
+  .cta-line { background: transparent; color: var(--haz); border-color: var(--haz); }
+  .cta-line:hover { color: var(--haz); }
+</style>

@@ -1,0 +1,51 @@
+---
+/**
+ * fitness / AboutAI — split "the club" grid: condensed copy left, a slightly
+ * cocked wheat-paste halftone plate (the coach mitt-work photo) right. The plate
+ * keeps its halftone gradient as the designed fallback when no photo is set.
+ *
+ * about.imageCaption is an optional extra field (the source's "Mitts with Coach
+ * · fundamentals class" plate caption); it stays hidden when unset. about.quote
+ * / about.signature render only when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+---
+<section class="about-sect">
+  <div class="wrap grid2">
+    <div class="about-copy reveal">
+      {tag && <span class="stamp" data-field="about.tag">{tag}</span>}
+      {headline && <h2 class="about-h" data-field="about.headline" set:html={headline}></h2>}
+      {paragraphs.map((p: string, i: number) => (
+        <p class="about-p" data-field={`about.paragraphs.${i}`} set:html={p}></p>
+      ))}
+      {quote && <blockquote class="about-quote" data-field="about.quote">“{quote}”</blockquote>}
+      {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
+    </div>
+    <figure class="halftone about-plate reveal">
+      {image && <div class="photo" data-image-field="about.image" style={`background-image:url('${image}');`}></div>}
+      {imageCaption && <figcaption data-field="about.imageCaption">{imageCaption}</figcaption>}
+    </figure>
+  </div>
+</section>
+<style>
+  .about-h { font-size: clamp(36px, 6vw, 64px); margin: 20px 0 20px; color: var(--ink); }
+  .about-p { margin-bottom: 16px; }
+  .about-p:first-of-type { font-weight: 500; }
+  .about-quote {
+    font-family: var(--display); font-size: clamp(20px, 2.4vw, 28px);
+    text-transform: uppercase; line-height: 1.05; color: var(--blood);
+    margin: 24px 0 0; padding-left: 18px; border-left: 6px solid var(--blood);
+  }
+  .about-sign { margin-top: 18px; font-style: italic; color: var(--ink-soft); }
+  .about-plate { min-height: 440px; transform: rotate(1.2deg); }
+  @media (max-width: 799px) { .about-plate { min-height: 300px; transform: none; margin-top: 24px; } }
+</style>

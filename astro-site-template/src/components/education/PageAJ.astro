@@ -1,0 +1,245 @@
+---
+/**
+ * education / PageAJ — "Notebook Modern" (art-directed tutoring / review center).
+ *
+ * A student's-best-notebook page: ruled-paper ground (blue rule lines under the
+ * whole document), ink-blue + highlighter-yellow palette, humanist Lora serif
+ * headings with Caveat margin annotations, and the signature highlighter sweep
+ * on every key phrase. Public Sans body.
+ *
+ * Design isolation: the notebook palette + base primitives are scoped to
+ * `html[data-page="AJ"]` in the global block below so sister education variants
+ * (should any be added later) never inherit this variant's tokens or the
+ * bespoke `.note` / `.hl` / `.plate` / `.card` primitives (and vice-versa).
+ * Because this design's vocabulary (serif Lora display, Caveat script, ruled
+ * paper ground) is unlike any shared spine, the base CSS is inlined here.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned notebook palette wins by default.
+ */
+import HeaderAJ from './header/HeaderAJ.astro';
+import HeroAJ from './hero/HeroAJ.astro';
+import TrustAJ from './trust/TrustAJ.astro';
+import AboutAJ from './about/AboutAJ.astro';
+import ServicesAJ from './services/ServicesAJ.astro';
+import WhyAJ from './why/WhyAJ.astro';
+import HowAJ from './how/HowAJ.astro';
+import TestimonialsAJ from './testimonials/TestimonialsAJ.astro';
+import GalleryAJ from './gallery/GalleryAJ.astro';
+import FaqAJ from './faq/FaqAJ.astro';
+import AreaAJ from './area/AreaAJ.astro';
+import CredentialsAJ from './credentials/CredentialsAJ.astro';
+import LocationAJ from './location/LocationAJ.astro';
+import CtaBandAJ from './ctaBand/CtaBandAJ.astro';
+import FooterAJ from './footer/FooterAJ.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AJ">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,500&family=Public+Sans:wght@400;500;700&family=Caveat:wght@600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- Palette tokens + shared base primitives, scoped to html[data-page="AJ"]
+       so they never leak to sister education variants. -->
+  <style is:global>
+    html[data-page="AJ"] {
+      --paper: #fbf8f1; --line: #dfd9ca; --rule-blue: #c7d3e8;
+      --ink: #20304d; --ink-soft: #54627e; --hl: #f7d84b; --red-pen: #c34a3a;
+      --card-bg: #ffffff; --band: #f3eee2;
+      --serif: "Lora", Georgia, serif;
+      --sans: "Public Sans", system-ui, sans-serif;
+      --script: "Caveat", "Comic Sans MS", cursive;
+      --pad: clamp(20px, 5vw, 60px); --maxw: 1040px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --accent: #20304d; --accent-rgb: 32,48,77;
+      --paper-rgb: 251,248,241; --ink-rgb: 32,48,77;
+      --on-accent: #fbf8f1; --on-ink: #fbf8f1; --on-paper: #20304d;
+      --body: "Public Sans", system-ui, sans-serif;
+      --display: "Lora", Georgia, serif;
+    }
+    html[data-page="AJ"] * { margin: 0; padding: 0; box-sizing: border-box; }
+    html[data-page="AJ"] { scroll-behavior: smooth; }
+    html[data-page="AJ"] body {
+      background: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 16px; line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      /* Signature: ruled-paper ground under the whole document. */
+      background-image: repeating-linear-gradient(transparent 0 31px, var(--rule-blue) 31px 32px);
+    }
+    html[data-page="AJ"] a { color: var(--ink); text-decoration: none; }
+    html[data-page="AJ"] a:hover { color: var(--red-pen); }
+    html[data-page="AJ"] img { max-width: 100%; display: block; }
+    html[data-page="AJ"] h1,
+    html[data-page="AJ"] h2,
+    html[data-page="AJ"] h3 {
+      font-family: var(--serif); font-weight: 600; line-height: 1.08; letter-spacing: -.01em;
+    }
+    html[data-page="AJ"] section { padding: 72px 0; position: relative; }
+
+    html[data-page="AJ"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+    /* Caveat margin annotation — the red-pen note in the margin. */
+    html[data-page="AJ"] .note {
+      font-family: var(--script); font-size: 22px; color: var(--red-pen);
+      transform: rotate(-2deg); display: inline-block;
+    }
+
+    /* Signature: highlighter sweep. .hl animates in on load; .hl2 is static. */
+    html[data-page="AJ"] .hl {
+      background: linear-gradient(100deg, transparent 1%, var(--hl) 3%, var(--hl) 96%, transparent 99%);
+      background-size: 0% 46%; background-repeat: no-repeat; background-position: 0 78%;
+      animation: sweep-aj 1.2s .4s forwards cubic-bezier(.6,0,.3,1);
+      padding: 0 4px; margin: 0 -4px;
+    }
+    @keyframes sweep-aj { to { background-size: 100% 46%; } }
+    html[data-page="AJ"] .hl2 {
+      background: linear-gradient(100deg, transparent 1%, var(--hl) 3%, var(--hl) 96%, transparent 99%);
+      background-size: 100% 46%; background-repeat: no-repeat; background-position: 0 78%;
+      padding: 0 4px; margin: 0 -4px;
+    }
+
+    /* Buttons — ink fill, red-pen hover (design signature). */
+    html[data-page="AJ"] .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 52px; padding: 14px 30px; background: var(--ink); color: var(--paper);
+      text-decoration: none; font-weight: 700; font-size: 15px; border-radius: 6px;
+      font-family: var(--sans); border: 2px solid var(--ink); cursor: pointer;
+      transition: background .2s, color .2s, transform .15s, border-color .2s;
+    }
+    html[data-page="AJ"] .btn:hover { background: var(--red-pen); color: var(--paper); border-color: var(--red-pen); transform: translateY(-2px); }
+    html[data-page="AJ"] .btn.line { background: transparent; color: var(--ink); border: 2px solid var(--ink); }
+    html[data-page="AJ"] .btn.line:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+    /* Art-directed "plate" — the ink-bordered gradient slot that stays as the
+       designed fallback background of every data-image-field photo slot. */
+    html[data-page="AJ"] .plate {
+      position: relative; overflow: hidden; border: 2px solid var(--ink); border-radius: 8px;
+      min-height: 230px; display: flex; align-items: flex-end; background:
+        linear-gradient(150deg, rgba(32,48,77,.78), rgba(84,98,126,.45)),
+        repeating-linear-gradient(90deg, #e8e2d2 0 10px, #efe9da 10px 20px);
+    }
+    html[data-page="AJ"] .plate .photo {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+    }
+    html[data-page="AJ"] .plate figcaption {
+      position: relative; width: 100%; padding: 10px 14px; font-size: 12px; color: var(--ink);
+      background: rgba(251,248,241,.94); border-top: 2px solid var(--ink); font-weight: 500;
+    }
+
+    /* Notebook card — white with ink border + offset drop shadow. */
+    html[data-page="AJ"] .card {
+      background: var(--card-bg); border: 2px solid var(--ink); border-radius: 8px;
+      padding: 24px; box-shadow: 4px 4px 0 var(--line);
+    }
+    html[data-page="AJ"] .card h3 { font-size: 22px; margin-bottom: 8px; }
+    html[data-page="AJ"] .card p { color: var(--ink-soft); font-size: 15px; }
+
+    /* Accordion — ink-bordered rows with the rotating ✎ pen marker. */
+    html[data-page="AJ"] details {
+      background: var(--card-bg); border: 2px solid var(--ink); border-radius: 8px;
+      margin-bottom: 12px; overflow: hidden;
+    }
+    html[data-page="AJ"] summary {
+      cursor: pointer; list-style: none; padding: 16px 20px; font-weight: 700;
+      display: flex; justify-content: space-between; align-items: center; gap: 14px; min-height: 44px;
+    }
+    html[data-page="AJ"] summary::-webkit-details-marker { display: none; }
+    html[data-page="AJ"] summary::after { content: "\270E"; color: var(--red-pen); transition: transform .25s; }
+    html[data-page="AJ"] details[open] summary::after { transform: rotate(-30deg) scale(1.2); }
+    html[data-page="AJ"] details .faq-a { padding: 0 20px 18px; color: var(--ink-soft); }
+
+    html[data-page="AJ"] .grid2 { display: grid; gap: 40px; }
+
+    /* Scroll-reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AJ"] .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s ease; }
+    html[data-page="AJ"] .reveal.in { opacity: 1; transform: none; }
+
+    @media (min-width: 800px) {
+      html[data-page="AJ"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="AJ"] .reveal { opacity: 1; transform: none; transition: none; }
+      html[data-page="AJ"] .hl { background-size: 100% 46%; animation: none; }
+      html[data-page="AJ"] * { animation: none !important; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <HeaderAJ layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroAJ content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAJ content={content} />}
+    {visibility.aboutSection !== false && <AboutAJ content={content} />}
+    {visibility.servicesSection !== false && <ServicesAJ content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAJ content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAJ content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAJ content={content} />}
+    {visibility.gallerySection !== false && <GalleryAJ content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAJ content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAJ content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAJ content={content} />}
+    {visibility.locationBlock !== false && <LocationAJ content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAJ content={content} layout={layout} />}
+  <FooterAJ layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      var hdr = document.querySelector('header.nav');
+      if (hdr) {
+        var onScroll = function () { if (window.scrollY > 40) hdr.classList.add('scrolled'); else hdr.classList.remove('scrolled'); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      }
+      // Education-AJ Leaflet boot — accepts (lat, lng, label) from LocationAJ.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAJ calls this with whatever it resolves).
+      window.__educationAJInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50% 50% 50% 0;background:#c34a3a;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(32,48,77,.5);border:2px solid #20304d;"></div>', iconSize: [18, 18], iconAnchor: [9, 18] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

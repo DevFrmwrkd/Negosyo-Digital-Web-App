@@ -1,0 +1,51 @@
+---
+/**
+ * autoshop / ServicesAF — "work orders we take" grid on the ink band. Hazard-
+ * bordered cards with auto-numbered "01 /" job-order prefixes (decorative, so
+ * the editable title stays clean) over hazard stencil titles + mono copy.
+ * price / duration render only when present in the data.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="svc-sect">
+    <div class="wrap">
+      {tag && <span class="tag tag--haz" data-field="services.tag">{tag}</span>}
+      {headline && <h2 class="svc-h" data-field="services.headline" set:html={headline}></h2>}
+      {sub && <p class="svc-sub" data-field="services.sub">{sub}</p>}
+      <div class="svc-grid">
+        {items.map((item, i) => (
+          <div class="svc-card reveal">
+            <div class="svc-head">
+              <h3 data-field={`services.items.${i}.title`}><span class="svc-num" aria-hidden="true">{String(i + 1).padStart(2, '0')} / </span>{item.title}</h3>
+              {item.price && <span class="svc-price" data-field={`services.items.${i}.price`}>{item.price}</span>}
+            </div>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+            {item.duration && <div class="svc-dur" data-field={`services.items.${i}.duration`}>{item.duration}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .svc-sect { background: var(--ink); color: var(--paper); }
+  .tag--haz { background: var(--haz); color: var(--ink); }
+  .svc-h { font-size: clamp(32px, 4.5vw, 52px); margin: 14px 0 30px; color: var(--haz); }
+  .svc-sub { max-width: 56ch; color: var(--line); margin: -16px 0 30px; }
+  .svc-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .svc-card { border: 2px solid var(--haz); padding: 22px; }
+  .svc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .svc-card h3 { font-size: 20px; color: var(--haz); margin-bottom: 8px; }
+  .svc-num { color: var(--haz); opacity: .6; }
+  .svc-card p { font-size: 14px; color: var(--line); }
+  .svc-price { font-family: var(--body); font-weight: 700; font-size: 14px; color: var(--haz); flex-shrink: 0; }
+  .svc-dur { font-family: var(--body); text-transform: uppercase; letter-spacing: .14em; font-size: 11px; color: var(--line); opacity: .8; margin-top: 10px; }
+</style>

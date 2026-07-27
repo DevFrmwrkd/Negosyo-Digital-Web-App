@@ -1,0 +1,43 @@
+---
+/**
+ * foodcraft / HowAL — "warm bread in three steps" ordering flow: printed cards
+ * with a big deco numeral, a bold step title, and body copy. Reads
+ * content.how.steps (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how-sect">
+    <div class="wrap">
+      {tag && <p class="eyebrow" data-field="how.tag">{tag}</p>}
+      {headline && <h2 class="how-h" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-list">
+        {steps.map((step, i) => (
+          <li class="card how-step reveal">
+            <span class="how-num">{i + 1}</span>
+            <p class="how-copy">
+              <strong data-field={`how.steps.${i}.title`}>{step.title}</strong>
+              {(step.body ?? step.desc ?? step.description) && (
+                <span class="how-body" data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+              )}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-h { font-size: clamp(32px, 5vw, 52px); margin: 14px 0 28px; color: var(--cocoa); }
+  .how-list { list-style: none; display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .how-step { text-align: center; }
+  .how-num { display: block; font-family: var(--display); font-size: 44px; color: var(--terra); line-height: 1; margin-bottom: 6px; }
+  .how-copy { font-size: 15px; color: var(--muted-ink); }
+  .how-copy strong { color: var(--cocoa); }
+</style>

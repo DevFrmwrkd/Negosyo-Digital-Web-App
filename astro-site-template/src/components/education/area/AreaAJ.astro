@@ -1,0 +1,47 @@
+---
+/**
+ * education / AreaAJ — thin "students come from:" strip: a Caveat red-pen note
+ * followed by the served barangays / areas as a dot-separated flowing list.
+ * Reads content.area.places (legacy `items`); optional headline / sub / body
+ * render above the strip when provided (the design ships bare places only).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area-sect">
+    <div class="wrap">
+      {(headline || sub) && (
+        <div class="area-head reveal">
+          {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+          {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+        </div>
+      )}
+      <div class="area-bar reveal">
+        {tag && <span class="note area-note" data-field="area.tag">{tag}</span>}
+        <span class="area-places">
+          {places.map((place, i) => (
+            <>{i > 0 && <span class="sep"> · </span>}<span data-field={`area.places.${i}`}>{place}</span></>
+          ))}
+        </span>
+      </div>
+      {body && <p class="area-body" data-field="area.body">{body}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .area-sect { padding: 30px 0; border-top: 2px solid var(--line); }
+  .area-head { margin-bottom: 18px; }
+  .area-h { font-size: clamp(28px, 4vw, 46px); color: var(--ink); }
+  .area-sub { color: var(--ink-soft); margin-top: 10px; max-width: 52ch; }
+  .area-bar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; font-size: 14px; color: var(--ink-soft); }
+  .area-note { font-size: 20px; margin-right: 6px; }
+  .area-places .sep { color: var(--line); }
+  .area-body { color: var(--ink-soft); margin-top: 14px; max-width: 60ch; }
+</style>

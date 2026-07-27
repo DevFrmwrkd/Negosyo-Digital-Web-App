@@ -1,0 +1,39 @@
+---
+/**
+ * medical / GalleryAH — "the studio" plate grid. Every tile keeps its
+ * art-directed seafoam gradient as the designed fallback, and a photo layers
+ * over it via data-image-field when set. The section auto-hides only when there
+ * are no items at all.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+---
+{items.length > 0 && (
+  <section class="gal-sect" id="gallery">
+    <div class="wrap">
+      {tag && <p class="eyebrow" data-field="gallery.tag">{tag}</p>}
+      {headline && <h2 class="gal-h" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="gal-sub" data-field="gallery.sub">{sub}</p>}
+      <div class="gal-grid reveal">
+        {items.map((item, i) => (
+          <figure class="plate gal-tile">
+            {item.image && <div class="photo" data-image-field={`gallery.items.${i}.image`} style={`background-image:url('${item.image}');`}></div>}
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gal-h { font-size: clamp(34px, 5vw, 54px); margin: 16px 0 30px; color: var(--ink); }
+  .gal-sub { max-width: 52ch; color: var(--muted); margin: -18px 0 30px; }
+  .gal-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .gal-tile { min-height: 280px; }
+</style>

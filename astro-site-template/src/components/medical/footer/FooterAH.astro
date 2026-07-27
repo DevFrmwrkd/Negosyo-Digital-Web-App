@@ -1,0 +1,127 @@
+---
+/**
+ * medical / FooterAH — quiet hairline-topped footer (Cormorant brand, seafoam
+ * links) plus the design's fixed "click-to-message" booking pill. Every column
+ * auto-hides when empty, so with just a brand + address it collapses to the
+ * design's minimal three-line footer.
+ *
+ * The floating pill reuses the hero's primary CTA (content.hero.cta1) — the same
+ * booking action — so it stays editable and in sync; it renders only when that
+ * CTA (or the CTA-band's) has a link.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const f = (content as any).footer || {};
+const brand = f.brand || layout.businessName || 'Your Business';
+const blurb = f.blurb || f.brand_blurb || '';
+const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
+  ? f.visit.lines
+  : ([layout.contact?.address, layout.contact?.phone].filter(Boolean) as string[]);
+const explore: Array<{ text: string; href: string }> = Array.isArray(f.explore?.links) && f.explore.links.length
+  ? f.explore.links
+  : [];
+const hoursRows: Array<{ day: string; time: string }> = Array.isArray(f.hours) ? f.hours : [];
+const social: Array<{ platform: string; url: string }> = Array.isArray(f.social) && f.social.length
+  ? f.social
+  : (Array.isArray(layout.socialLinks) ? layout.socialLinks : []);
+const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
+const phone = layout.contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+
+// Floating message pill — reuse the hero's primary CTA (falls back to CTA-band).
+const hero = (content as any).hero || {};
+const cband = (content as any).ctaBand || {};
+const msgHref = hero.cta1?.href || cband.cta1?.href || '';
+const msgText = hero.cta1?.text || cband.cta1?.text || 'Book an appointment';
+---
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="brand" data-field="footer.brand" set:html={brand}></div>
+        {blurb && <p data-field="footer.blurb">{blurb}</p>}
+        {social.length > 0 && (
+          <div class="foot-social">
+            {social.map((s, i) => (
+              <a href={s.url} target="_blank" rel="noopener noreferrer"
+                 data-field={`footer.social.${i}.platform`}
+                 data-href-field={`footer.social.${i}.url`}>{s.platform}</a>
+            ))}
+          </div>
+        )}
+      </div>
+      {visitLines.length > 0 && (
+        <div class="foot-col">
+          <h4>Visit</h4>
+          {visitLines.map((line, i) => (
+            line === phone && phone
+              ? <a href={`tel:${phoneDigits}`} data-field={`footer.visit.lines.${i}`}>{line}</a>
+              : <span class="li" data-field={`footer.visit.lines.${i}`}>{line}</span>
+          ))}
+        </div>
+      )}
+      {explore.length > 0 && (
+        <div class="foot-col">
+          <h4>Explore</h4>
+          {explore.map((l, i) => (
+            <a href={l.href}
+               data-field={`footer.explore.links.${i}.text`}
+               data-href-field={`footer.explore.links.${i}.href`}>{l.text}</a>
+          ))}
+        </div>
+      )}
+      {hoursRows.length > 0 && (
+        <div class="foot-col foot-hours">
+          <h4>Hours</h4>
+          {hoursRows.map((row, i) => (
+            <div class="hrow">
+              <span data-field={`footer.hours.${i}.day`}>{row.day}</span>
+              <span data-field={`footer.hours.${i}.time`}>{row.time}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+    {notes.length > 0 && (
+      <div class="foot-bottom">
+        {notes.map((n, i) => (<span data-field={`footer.notes.${i}`}>{n}</span>))}
+      </div>
+    )}
+  </div>
+</footer>
+{msgHref && (
+  <div class="c2m">
+    <a href={msgHref} aria-label="Book an appointment" data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+      <span aria-hidden="true">💬</span> {msgText}
+    </a>
+  </div>
+)}
+<style>
+  .foot { padding: 44px 0; border-top: 1px solid var(--rule); }
+  .foot-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 40px; }
+  .foot-brand .brand { font-family: var(--display); font-size: 22px; color: var(--ink); font-weight: 600; }
+  .foot-brand p { color: var(--muted); font-size: 14px; max-width: 34ch; margin: 12px 0 0; }
+  .foot-social { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .foot-social a {
+    font-family: var(--body); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--muted); border: 1px solid var(--rule); padding: 6px 12px; border-radius: 999px;
+    transition: color .2s, border-color .2s;
+  }
+  .foot-social a:hover { color: var(--seafoam-deep); border-color: var(--seafoam-deep); }
+  .foot-col h4 { font-family: var(--body); text-transform: uppercase; letter-spacing: .18em; font-size: 11px; color: var(--seafoam-deep); margin: 0 0 16px; font-weight: 600; }
+  .foot-col a, .foot-col .li { display: block; color: var(--muted); font-size: 14px; padding: 5px 0; }
+  .foot-col a:hover { color: var(--ink); }
+  .foot-hours .hrow { display: flex; justify-content: space-between; max-width: 260px; padding: 2px 0; font-size: 14px; color: var(--muted); gap: 16px; }
+  .foot-bottom { border-top: 1px solid var(--rule); margin-top: 40px; padding: 24px 0 0; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+  @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .foot-grid { grid-template-columns: 1fr; } }
+
+  .c2m { position: fixed; right: 16px; bottom: 16px; z-index: 60; }
+  .c2m a {
+    display: flex; align-items: center; gap: 8px; background: var(--seafoam-deep);
+    color: #fff; font-family: var(--body); font-weight: 600;
+    padding: 14px 20px; border-radius: 999px; box-shadow: 0 6px 20px rgba(31,42,40,.25);
+    min-height: 48px; font-size: 14px;
+  }
+  .c2m a:hover { background: var(--ink); color: #fff; }
+</style>

@@ -1,0 +1,47 @@
+---
+/**
+ * fitness / CtaBandAI — full-width blood band with a 6px ink top rule, paper
+ * Archivo Black closer ("First round's free."), and the jab-skew CTA. The
+ * primary uses the ink `.btn.blk` (a blood button would vanish on the red
+ * ground); an optional second CTA renders as a paper-outlined ghost.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || '#location';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band">
+    <div class="wrap cta-inner reveal">
+      <div class="cta-copy">
+        {tag && <p class="cta-tag" data-field="ctaBand.tag">{tag}</p>}
+        {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      </div>
+      {hasButtons && (
+        <div class="cta-actions">
+          {cta1Text && <a class="btn blk" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn cta-ghost" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--blood); color: var(--paper); border-top: 6px solid var(--ink); padding: 60px 0; }
+  .cta-inner { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+  .cta-tag { font-size: 12px; letter-spacing: .2em; text-transform: uppercase; font-weight: 600; color: var(--paper); opacity: .8; margin-bottom: 8px; }
+  .cta-h { font-size: clamp(32px, 6vw, 64px); color: var(--paper); }
+  .cta-sub { color: var(--paper); opacity: .9; margin-top: 10px; max-width: 46ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+  /* Ghost on the red band: paper outline, fills to paper on hover. */
+  .cta-ghost { background: transparent; color: var(--paper); border-color: var(--paper); box-shadow: 6px 6px 0 rgba(20,18,16,.55); }
+  .cta-ghost:hover { color: var(--blood); background: var(--paper); }
+</style>

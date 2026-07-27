@@ -1,0 +1,36 @@
+---
+/**
+ * education / TrustAJ — thin ink credibility band under the hero, paper type.
+ * Renders content.trust.cells as a flowing row of statements (the design's
+ * "Teaching Davao students for 10+ years · rating · hours · licensed tutors").
+ * Each cell's `num` is the primary Lora statement; `label` is an optional
+ * caption below. Volatile Google rating / today's-hours slots have no field in
+ * the data model, so they are expressed as ordinary trust cells.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust-sect">
+    <div class="wrap trust-bar">
+      {cells.map((cell, i) => (
+        <div class="trust-cell reveal">
+          {cell.num && <span class="num" data-field={`trust.cells.${i}.num`} set:html={cell.num}></span>}
+          {cell.label && <span class="lbl" data-field={`trust.cells.${i}.label`}>{cell.label}</span>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust-sect { padding: 26px 0; background: var(--ink); color: var(--paper); }
+  .trust-bar {
+    display: flex; flex-wrap: wrap; gap: 16px 24px;
+    justify-content: space-between; align-items: center;
+  }
+  .trust-cell { display: flex; flex-direction: column; gap: 2px; }
+  .trust-cell .num { font-family: var(--serif); font-size: 18px; color: var(--paper); line-height: 1.2; }
+  .trust-cell .lbl { font-family: var(--sans); font-size: 13px; color: rgba(251,248,241,.72); }
+</style>

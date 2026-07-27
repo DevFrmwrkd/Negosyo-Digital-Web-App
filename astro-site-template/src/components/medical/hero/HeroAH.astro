@@ -1,0 +1,84 @@
+---
+/**
+ * medical / HeroAH — editorial clinic hero: eyebrow, a quiet two-line Cormorant
+ * headline, a calm sub, and two CTAs (book / call) over an asymmetric 2:1 pair
+ * of art-directed seafoam plates (the design's treatment-room + sterile-setup
+ * shots). Each plate keeps its seafoam gradient as the designed fallback and
+ * layers a photo via data-image-field when set.
+ *
+ * The design ships TWO hero photos + captions; the content model carries one
+ * hero.image, so the secondary plate reads hero.image2 / hero.imageCaption /
+ * hero.imageCaption2 as optional extra fields (auto-hidden when unset — the
+ * plate gradient still shows).
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const heroImage2 = hero.image2 || (hero.photos && hero.photos[1]) || '';
+const imageCaption = hero.imageCaption || '';
+const imageCaption2 = hero.imageCaption2 || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#location';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const tagText = hero.tag || '';
+---
+<section class="hero-ah">
+  <div class="wrap hero-inner">
+    <div class="hero-copy">
+      {kicker && <p class="eyebrow" data-field="hero.kicker">{kicker}</p>}
+      {headlineLines.length > 0 && (
+        <h1 class="hero-h">
+          {headlineLines.map((line: string, i: number) => (
+            <span class="hl-line" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="hero-sub" data-field="hero.sub">{sub}</p>}
+      {(cta1Text || cta2Text) && (
+        <div class="hero-cta">
+          {cta1Text && <a class="btn" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+      {tagText && <p class="hero-tag" data-field="hero.tag">{tagText}</p>}
+    </div>
+    <div class="hero-plates">
+      <figure class="plate hero-plate hero-plate-lg reveal">
+        {heroImage && <div class="photo" data-image-field="hero.image" style={`background-image:url('${heroImage}');`}></div>}
+        {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+      <figure class="plate hero-plate hero-plate-sm reveal">
+        {heroImage2 && <div class="photo" data-image-field="hero.image2" style={`background-image:url('${heroImage2}');`}></div>}
+        {imageCaption2 && <figcaption data-field="hero.imageCaption2">{imageCaption2}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<style>
+  .hero-ah { padding-top: 0; }
+  .hero-inner { display: grid; gap: 40px; padding: 56px 22px 72px; }
+  .hero-copy { max-width: 620px; }
+  .hero-h { font-size: clamp(44px, 8vw, 88px); margin: 20px 0 24px; color: var(--ink); }
+  .hero-h .hl-line { display: block; }
+  .hero-h :global(em) { font-style: normal; color: var(--seafoam-deep); }
+  .hero-sub { color: var(--muted); max-width: 48ch; margin-bottom: 32px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; }
+  .hero-tag {
+    margin-top: 22px; font-family: var(--body); font-size: 12px;
+    letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
+  }
+  .hero-plates { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; align-items: end; }
+  .hero-plate-lg { min-height: 300px; }
+  .hero-plate-sm { min-height: 200px; }
+  @media (max-width: 640px) {
+    .hero-plates { grid-template-columns: 1fr; }
+    .hero-plate-sm { min-height: 180px; }
+  }
+</style>

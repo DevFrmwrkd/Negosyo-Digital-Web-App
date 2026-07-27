@@ -1,0 +1,43 @@
+---
+/**
+ * trades / HowAK — the "Procedure" block ("From call to cold air"): zero-padded
+ * amber Space-Grotesk numerals over blueprint cells laid in an auto-fit grid,
+ * matching the source's numbered procedure. Reads content.how.steps (canonical
+ * `body`, legacy `desc`). Step numbers derive from index (01, 02, …).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how-sect">
+    <div class="wrap">
+      {tag && <span class="label" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="how-h" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-list">
+        {steps.map((step, i) => (
+          <li class="cell how-step reveal">
+            <span class="how-num">{String(i + 1).padStart(2, '0')}</span>
+            <p class="how-copy">
+              <strong data-field={`how.steps.${i}.title`}>{step.title}</strong>
+              {(step.body ?? step.desc ?? step.description) && (
+                <span class="how-body" data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+              )}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-h { font-size: clamp(32px, 5vw, 54px); margin: 18px 0 26px; color: var(--white); }
+  .how-list { list-style: none; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .how-num { font-family: var(--display); font-weight: 700; font-size: 38px; color: var(--amber); display: block; line-height: 1; }
+  .how-copy { font-size: 14px; color: var(--chalk); margin-top: 6px; }
+  .how-copy strong { color: var(--white); }
+</style>

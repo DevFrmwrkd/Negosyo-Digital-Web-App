@@ -1,0 +1,44 @@
+---
+/**
+ * retail / HowAG — "How to buy: counter, list, or truck". A numbered row of
+ * rubber-stamp cards (.stampcard) with big Playfair red numerals. The bold lead
+ * (step title) sits inline ahead of the step body. Reads content.how.steps
+ * (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how-sect">
+    <div class="wrap">
+      {tag && <p class="rubric" data-field="how.tag">{tag}</p>}
+      {headline && <h2 class="how-h" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-list">
+        {steps.map((step, i) => (
+          <li class="stampcard how-step reveal">
+            <span class="how-num">{i + 1}</span>
+            <p class="how-copy">
+              <strong class="how-title" data-field={`how.steps.${i}.title`}>{step.title}</strong>
+              {(step.body ?? step.desc ?? step.description) && (
+                <span class="how-body" data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+              )}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-h { font-size: clamp(32px, 5vw, 54px); margin: 14px 0 26px; color: var(--ink); }
+  .how-list { list-style: none; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .how-num { font-family: var(--display); font-weight: 900; font-size: 44px; color: var(--red); line-height: 1; display: block; }
+  .how-copy { font-size: 15px; margin-top: 4px; }
+  .how-title { color: var(--ink); }
+  .how-body { color: var(--faded); }
+</style>

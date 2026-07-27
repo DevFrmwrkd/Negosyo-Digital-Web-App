@@ -1,0 +1,149 @@
+---
+/**
+ * autoshop / LocationAF — art-directed steel plate holding a Leaflet map left,
+ * a hard-shadowed job-sheet NAP card right. Map strategy mirrors the reference:
+ *
+ *   1. Build-time lat/lng  → render Leaflet directly via
+ *      window.__autoshopAFInitMap(lat, lng, label).
+ *   2. Else any address    → client-side Nominatim (OSM) lookup, then Leaflet.
+ *   3. Else                 → clean fallback tile inside the plate.
+ *
+ * The plate's steel gradient shows until tiles mount, so the slot always looks
+ * designed. location.mapCaption is an optional extra field (the design's
+ * "Km 38 · beside the yellow water tower" caption).
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const loc = content.location || {};
+const tag = loc.tag || '';
+const headline = loc.headline || '';
+const sub = loc.sub || '';
+const address = loc.address || layout.contact?.address || '';
+const addressLines = address ? address.split('\n') : [];
+const phone = loc.phone || layout.contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+const hours: Array<{ day: string; time: string }> = Array.isArray(loc.hours)
+  ? loc.hours
+  : (Array.isArray((content as any).footer?.hours) ? (content as any).footer.hours : []);
+const dirText = loc.directions?.text || 'Directions';
+const dirHref = loc.directions?.href || (address
+  ? `https://maps.google.com/?q=${encodeURIComponent(address.replace(/\n/g, ' '))}`
+  : '#');
+const mapCaption = loc.mapCaption || '';
+const lat = loc.lat != null
+  ? Number(loc.lat)
+  : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
+const lng = loc.lng != null
+  ? Number(loc.lng)
+  : (layout.contact?.lng != null ? Number(layout.contact.lng) : null);
+const label = layout.businessName || 'Our location';
+const mapAria = `Map showing ${label}`;
+const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
+const hasAddress = !!address;
+---
+<section class="loc-sect" id="location">
+  <div class="wrap grid2">
+    <figure class="plate loc-plate reveal">
+      <div id="map" role="img" aria-label={mapAria}>
+        {!hasCoords && !hasAddress && (<div class="map-fallback">No address on file yet.</div>)}
+        {!hasCoords && hasAddress && (<div class="map-fallback" id="map-fallback">Loading map…</div>)}
+      </div>
+      {mapCaption && <figcaption data-field="location.mapCaption">{mapCaption}</figcaption>}
+    </figure>
+    <div class="sheet loc-info reveal">
+      {tag && <span class="tag" data-field="location.tag">{tag}</span>}
+      {headline && <h2 class="loc-h" data-field="location.headline" set:html={headline}></h2>}
+      {sub && <p class="loc-sub" data-field="location.sub">{sub}</p>}
+      {(address || phone) && (
+        <address class="loc-nap">
+          {address && (
+            <span class="loc-addr" data-field="location.address">
+              {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+            </span>
+          )}
+          {phone && <a class="loc-phone" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>}
+        </address>
+      )}
+      {hours.length > 0 && (
+        <div class="loc-hours">
+          {hours.map((row: any, i: number) => (
+            <div class="hrow">
+              <span data-field={`location.hours.${i}.day`}>{row.day}</span>
+              <span data-field={`location.hours.${i}.time`}>{row.time}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <a class="btn" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>
+    </div>
+  </div>
+</section>
+{/* Render path A: build-time coords ready. */}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, label }}>
+    (function init() {
+      if (window.__autoshopAFInitMap) window.__autoshopAFInitMap(lat, lng, label);
+      else setTimeout(init, 80);
+    })();
+  </script>
+)}
+{/* Render path B: no coords but address present — client-side Nominatim. */}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, label }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(lat, lng) {
+        if (window.__autoshopAFInitMap) {
+          window.__autoshopAFInitMap(lat, lng, label);
+        } else if (attempt++ < 25) {
+          setTimeout(function () { tryInit(lat, lng); }, 80);
+        }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) {
+              var el = document.getElementById('map-fallback');
+              if (el) el.textContent = 'Map preview unavailable — use the directions button.';
+              return;
+            }
+            var lat = parseFloat(results[0].lat);
+            var lng = parseFloat(results[0].lon);
+            if (isNaN(lat) || isNaN(lng)) return;
+            tryInit(lat, lng);
+          })
+          .catch(function () {
+            var el = document.getElementById('map-fallback');
+            if (el) el.textContent = 'Map preview unavailable — use the directions button.';
+          });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  .loc-h { font-size: clamp(32px, 4.5vw, 52px); margin: 14px 0 16px; color: var(--ink); }
+  .loc-sub { color: var(--ink-soft); margin-bottom: 16px; max-width: 46ch; }
+  .loc-info { padding: 30px; }
+  .loc-nap { font-style: normal; display: grid; gap: 8px; color: var(--ink-soft); font-size: 14px; }
+  .loc-addr { line-height: 1.5; }
+  .loc-phone { font-size: 22px; font-weight: 700; color: var(--ink); }
+  .loc-phone:hover { color: var(--red); }
+  .loc-hours {
+    margin: 18px 0; padding: 14px; border: 2px dashed var(--line);
+    color: var(--ink-soft); font-size: 13px; display: grid; gap: 4px;
+  }
+  .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; }
+  .loc-info .btn { margin-top: 4px; }
+  .loc-plate { min-height: 360px; }
+  #map { position: absolute; inset: 0; z-index: 0; background: var(--paper-2); }
+  .loc-plate figcaption { z-index: 2; }
+  .map-fallback {
+    display: flex; align-items: center; justify-content: center; height: 100%;
+    color: var(--line); font-family: var(--body); letter-spacing: .08em;
+    text-transform: uppercase; font-size: 12px; padding: 24px; text-align: center;
+  }
+  @media (max-width: 779px) { .loc-plate { min-height: 300px; } }
+</style>

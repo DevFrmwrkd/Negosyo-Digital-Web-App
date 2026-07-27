@@ -1,0 +1,241 @@
+---
+/**
+ * trades / PageAK — "Blueprint Cyanotype" (engineer's plan-sheet landing).
+ *
+ * A deep-cyan blueprint sheet: white line-work + Space Mono annotations over a
+ * gridded ground, caution-amber accents, and the signature self-drawing dashed
+ * service-lines that clip themselves in from the top edge. Space Grotesk
+ * (technical display) over Space Mono (annotation body).
+ *
+ * Built for service-area trades with no storefront (aircon, electrical,
+ * plumbing, solar): the coverage-map "Area" block sits high, right under the
+ * trust bar, so the page reads service-area-first like the source design.
+ *
+ * Design isolation: the cyanotype palette + base primitives (.label, .draw,
+ * .plate, .cell, blueprint grid ground) are scoped to `html[data-page="AK"]`
+ * in the global block below so sibling trades variants never inherit this
+ * variant's tokens or bespoke primitives (and vice-versa). The base CSS is
+ * inlined here because this design has no shared trades spine yet.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned cyanotype palette wins by default.
+ */
+import HeaderAK from './header/HeaderAK.astro';
+import HeroAK from './hero/HeroAK.astro';
+import TrustAK from './trust/TrustAK.astro';
+import AreaAK from './area/AreaAK.astro';
+import AboutAK from './about/AboutAK.astro';
+import ServicesAK from './services/ServicesAK.astro';
+import WhyAK from './why/WhyAK.astro';
+import HowAK from './how/HowAK.astro';
+import TestimonialsAK from './testimonials/TestimonialsAK.astro';
+import GalleryAK from './gallery/GalleryAK.astro';
+import FaqAK from './faq/FaqAK.astro';
+import CredentialsAK from './credentials/CredentialsAK.astro';
+import LocationAK from './location/LocationAK.astro';
+import CtaBandAK from './ctaBand/CtaBandAK.astro';
+import FooterAK from './footer/FooterAK.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- Palette tokens + shared base primitives, scoped to html[data-page="AK"]
+       so they never leak to sister trades variants. -->
+  <style is:global>
+    html[data-page="AK"] {
+      --sheet: #0d3b66; --sheet-deep: #092c4e; --line: rgba(214,233,248,.28);
+      --white: #eaf4fb; --chalk: #bcd7ec; --amber: #ffb703;
+      --sheet-rgb: 13,59,102; --sheet-deep-rgb: 9,44,78;
+      --white-rgb: 234,244,251; --chalk-rgb: 188,215,236; --amber-rgb: 255,183,3;
+      --display: "Space Grotesk", system-ui, sans-serif;
+      --body: "Space Mono", ui-monospace, monospace;
+      --maxw: 1060px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --paper: #0d3b66; --ink: #eaf4fb; --accent: #ffb703;
+      --paper-rgb: 13,59,102; --ink-rgb: 234,244,251; --accent-rgb: 255,183,3;
+      --serif: "Space Grotesk", system-ui, sans-serif; --sans: "Space Mono", ui-monospace, monospace;
+      --on-accent: #092c4e; --on-ink: #092c4e; --on-paper: #eaf4fb;
+    }
+    html[data-page="AK"] * { margin: 0; padding: 0; box-sizing: border-box; }
+    html[data-page="AK"] { scroll-behavior: smooth; }
+    /* Blueprint sheet ground: fine + coarse cyan grid lines (design signature). */
+    html[data-page="AK"] body {
+      background: var(--sheet); color: var(--white);
+      font-family: var(--body); font-size: 15px; line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px),
+        linear-gradient(rgba(214,233,248,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(214,233,248,.08) 1px, transparent 1px);
+      background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px;
+    }
+    html[data-page="AK"] a { color: var(--amber); text-decoration: none; }
+    html[data-page="AK"] a:hover { color: var(--white); }
+    html[data-page="AK"] img { max-width: 100%; display: block; }
+    html[data-page="AK"] h1,
+    html[data-page="AK"] h2,
+    html[data-page="AK"] h3 {
+      font-family: var(--display); font-weight: 700; line-height: 1; letter-spacing: -.02em;
+    }
+    html[data-page="AK"] section { padding: 70px 0; position: relative; }
+
+    html[data-page="AK"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+
+    /* Bordered mono kicker — the design's "Sheet 01 —" plan-sheet label. */
+    html[data-page="AK"] .label {
+      font-size: 11px; letter-spacing: .3em; text-transform: uppercase;
+      color: var(--chalk); border: 1px solid var(--chalk);
+      display: inline-block; padding: 5px 12px; font-family: var(--body);
+    }
+
+    /* Buttons — solid amber fill, hollow amber on hover (design signature). */
+    html[data-page="AK"] .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 52px; padding: 14px 30px; background: var(--amber);
+      color: var(--sheet-deep); text-decoration: none; font-weight: 700;
+      font-size: 15px; letter-spacing: .04em; border: 2px solid var(--amber);
+      font-family: var(--body); cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    html[data-page="AK"] .btn:hover { background: transparent; color: var(--amber); }
+    html[data-page="AK"] .btn.line { background: transparent; color: var(--white); border-color: var(--white); }
+    html[data-page="AK"] .btn.line:hover { border-color: var(--amber); color: var(--amber); }
+
+    /* Signature: self-drawing dashed service-line down the left of a column. */
+    html[data-page="AK"] .draw { position: relative; }
+    html[data-page="AK"] .draw::before {
+      content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+      border-left: 2px dashed var(--amber); animation: drawline-ak 1.6s ease-out both;
+    }
+    @keyframes drawline-ak { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+
+    /* Art-directed cyanotype "plate" — the diagonal-hatch cyan texture that
+       stays as the designed fallback background of every data-image-field slot. */
+    html[data-page="AK"] .plate {
+      position: relative; overflow: hidden; border: 2px solid var(--chalk);
+      min-height: 230px; display: flex; align-items: flex-end;
+      background:
+        linear-gradient(150deg, rgba(9,44,78,.5), rgba(13,59,102,.85)),
+        repeating-linear-gradient(-35deg, rgba(234,244,251,.12) 0 2px, transparent 2px 14px);
+    }
+    html[data-page="AK"] .plate .photo {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+    }
+    html[data-page="AK"] .plate figcaption {
+      position: relative; width: 100%; padding: 9px 13px; font-size: 11px;
+      letter-spacing: .22em; text-transform: uppercase; color: var(--sheet-deep);
+      background: var(--chalk);
+    }
+
+    /* Blueprint "cell" — the boxed spec/list tile. */
+    html[data-page="AK"] .cell { border: 1px solid var(--chalk); padding: 22px; background: rgba(9,44,78,.55); }
+
+    html[data-page="AK"] details { border: 1px solid var(--chalk); margin-bottom: 10px; background: rgba(9,44,78,.55); }
+    html[data-page="AK"] summary {
+      cursor: pointer; list-style: none; padding: 16px 18px; font-weight: 700;
+      display: flex; justify-content: space-between; align-items: center; gap: 14px;
+      min-height: 44px; font-size: 14px;
+    }
+    html[data-page="AK"] summary::-webkit-details-marker { display: none; }
+    html[data-page="AK"] summary::after { content: "[+]"; color: var(--amber); font-size: 13px; }
+    html[data-page="AK"] details[open] summary::after { content: "[–]"; }
+    html[data-page="AK"] details .faq-a { padding: 0 18px 16px; font-size: 14px; color: var(--chalk); }
+
+    html[data-page="AK"] .grid2 { display: grid; gap: 36px; }
+
+    /* Scroll-reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AK"] .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s ease; }
+    html[data-page="AK"] .reveal.in { opacity: 1; transform: none; }
+
+    @media (min-width: 800px) {
+      html[data-page="AK"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="AK"] .reveal { opacity: 1; transform: none; transition: none; }
+      html[data-page="AK"] * { animation: none !important; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <HeaderAK layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroAK content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAK content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAK content={content} />}
+    {visibility.aboutSection !== false && <AboutAK content={content} />}
+    {visibility.servicesSection !== false && <ServicesAK content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAK content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAK content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAK content={content} />}
+    {visibility.gallerySection !== false && <GalleryAK content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAK content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAK content={content} />}
+    {visibility.locationBlock !== false && <LocationAK content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAK content={content} layout={layout} />}
+  <FooterAK layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      var hdr = document.querySelector('header.nav');
+      if (hdr) {
+        var onScroll = function () { if (window.scrollY > 40) hdr.classList.add('scrolled'); else hdr.classList.remove('scrolled'); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      }
+      // Trades-AK Leaflet boot — accepts (lat, lng, label) from LocationAK.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAK calls this with whatever it resolves).
+      window.__tradesAKInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50% 50% 50% 0;background:#ffb703;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.6);border:2px solid #092c4e;"></div>', iconSize: [18, 18], iconAnchor: [9, 18] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

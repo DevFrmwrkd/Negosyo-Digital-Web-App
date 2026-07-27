@@ -1,0 +1,51 @@
+---
+/**
+ * foodcraft / CtaBandAL — centered full-width terracotta band, cream deco type,
+ * the "tomorrow's pandesal is mixing tonight" closer. Because the band is
+ * terra, the CTAs use cream fills (scoped here) instead of the global terra
+ * .btn so they stay visible. cta2 renders only when provided.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || '#location';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band">
+    <div class="wrap cta-inner reveal">
+      {tag && <p class="cta-tag" data-field="ctaBand.tag">{tag}</p>}
+      {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+      {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      {hasButtons && (
+        <div class="cta-actions">
+          {cta1Text && <a class="cta-btn" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="cta-btn line" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--terra); color: var(--cream); padding: 80px 0; text-align: center; }
+  .cta-inner { max-width: 620px; margin: 0 auto; }
+  .cta-tag { font-size: 12px; letter-spacing: .32em; text-transform: uppercase; font-weight: 700; color: var(--cream); opacity: .8; margin-bottom: 10px; }
+  .cta-h { font-size: clamp(32px, 5.5vw, 56px); color: var(--cream); margin-bottom: 14px; }
+  .cta-sub { color: var(--cream); opacity: .85; margin-bottom: 28px; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  .cta-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 52px; padding: 14px 32px; background: var(--cream); color: var(--terra-deep);
+    font-family: var(--body); font-weight: 700; font-size: 15px; border-radius: 999px;
+    border: 2px solid var(--cream); transition: background .25s, color .25s, transform .15s;
+  }
+  .cta-btn:hover { background: var(--cocoa); color: var(--cream); border-color: var(--cocoa); transform: translateY(-2px); }
+  .cta-btn.line { background: transparent; color: var(--cream); border-color: var(--cream); }
+  .cta-btn.line:hover { background: var(--cream); color: var(--terra-deep); border-color: var(--cream); }
+</style>

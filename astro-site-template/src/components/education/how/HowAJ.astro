@@ -1,0 +1,44 @@
+---
+/**
+ * education / HowAJ — "how enrollment works" numbered steps as notebook cards,
+ * each led by a big Caveat red-pen numeral (the design's handwritten "1." "2."
+ * markers, generated from the item index). Reads content.how.steps (canonical
+ * `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how-sect">
+    <div class="wrap">
+      {tag && <span class="note" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="how-h" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-list">
+        {steps.map((step, i) => (
+          <li class="card how-step reveal">
+            <span class="how-num" aria-hidden="true">{i + 1}.</span>
+            <p class="how-copy">
+              <strong data-field={`how.steps.${i}.title`}>{step.title}</strong>
+              {(step.body ?? step.desc ?? step.description) && (
+                <span class="how-body" data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+              )}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-h { font-size: clamp(32px, 5vw, 52px); margin: 14px 0 28px; color: var(--ink); }
+  .how-list { list-style: none; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .how-step { display: block; }
+  .how-num { font-family: var(--script); font-size: 40px; color: var(--red-pen); display: block; line-height: 1; margin-bottom: 4px; }
+  .how-copy { font-size: 15px; color: var(--ink-soft); }
+  .how-copy strong { color: var(--ink); }
+</style>

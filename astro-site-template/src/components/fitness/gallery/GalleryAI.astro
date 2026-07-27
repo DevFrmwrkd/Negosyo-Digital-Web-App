@@ -1,0 +1,41 @@
+---
+/**
+ * fitness / GalleryAI — "paste-up wall" of cocked halftone plates. Unlike a
+ * photo-only gallery, tiles are NOT filtered by image: every item keeps its
+ * art-directed halftone gradient as the designed fallback, and a photo layers
+ * over it via data-image-field when set. Each tile is rotated a hair for the
+ * wheat-paste look. The section auto-hides only when there are no items at all.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+const rot = ['-1deg', '.8deg', '-.6deg', '1.4deg'];
+---
+{items.length > 0 && (
+  <section class="gal-sect" id="gallery">
+    <div class="wrap">
+      {tag && <span class="stamp" data-field="gallery.tag">{tag}</span>}
+      {headline && <h2 class="gal-h" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="gal-sub" data-field="gallery.sub">{sub}</p>}
+      <div class="gal-grid reveal">
+        {items.map((item, i) => (
+          <figure class="halftone gal-tile" style={`transform:rotate(${rot[i % rot.length]});`}>
+            {item.image && <div class="photo" data-image-field={`gallery.items.${i}.image`} style={`background-image:url('${item.image}');`}></div>}
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gal-h { font-size: clamp(36px, 6vw, 64px); margin: 20px 0 28px; color: var(--ink); }
+  .gal-sub { max-width: 52ch; color: var(--ink-soft); margin: -14px 0 28px; }
+  .gal-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .gal-tile { min-height: 260px; }
+</style>

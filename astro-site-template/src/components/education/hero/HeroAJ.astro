@@ -1,0 +1,66 @@
+---
+/**
+ * education / HeroAJ — split notebook hero: Caveat margin note + big Lora
+ * headline (with the signature highlighter sweep on the key phrase), sub, and
+ * two CTAs on the left; an ink-bordered "plate" photo (slightly tilted, the
+ * design's signature) with a caption on the right.
+ *
+ * The headline lines read via set:html so a line can carry the design's
+ * inline `<span class="hl">…</span>` highlighter markup. The photo (hero.image)
+ * layers over the art-directed plate gradient, which stays as the designed
+ * fallback when no photo is set. hero.tag renders as the plate caption.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#location';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || '#programs';
+const tagText = hero.tag || '';
+const imgAria = `${layout.businessName || 'Our center'} — photo`;
+---
+<section class="hero-aj" id="top-hero">
+  <div class="wrap grid2 hero-inner">
+    <div class="hero-copy">
+      {kicker && <span class="note" data-field="hero.kicker">{kicker}</span>}
+      {headlineLines.length > 0 && (
+        <h1 class="hero-h">
+          {headlineLines.map((line: string, i: number) => (
+            <span class="hl-line" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="hero-sub" data-field="hero.sub">{sub}</p>}
+      {(cta1Text || cta2Text) && (
+        <div class="hero-cta">
+          {cta1Text && <a class="btn" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+    <figure class="plate hero-plate">
+      {heroImage && <div class="photo" data-image-field="hero.image" style={`background-image:url('${heroImage}');`} role="img" aria-label={imgAria}></div>}
+      {tagText && <figcaption data-field="hero.tag">{tagText}</figcaption>}
+    </figure>
+  </div>
+</section>
+<style>
+  .hero-aj { padding: 54px 0 66px; }
+  .hero-inner { align-items: center; }
+  .hero-copy { min-width: 0; }
+  .hero-h {
+    font-size: clamp(42px, 7.5vw, 76px); margin: 14px 0 22px; color: var(--ink);
+  }
+  .hero-h .hl-line { display: inline; }
+  .hero-sub { color: var(--ink-soft); max-width: 48ch; margin-bottom: 30px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; }
+  .hero-plate { min-height: 400px; transform: rotate(1deg); }
+  @media (max-width: 799px) { .hero-plate { transform: none; min-height: 300px; } }
+</style>

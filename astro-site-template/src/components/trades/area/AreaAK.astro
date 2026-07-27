@@ -1,0 +1,53 @@
+---
+/**
+ * trades / AreaAK — the "coverage map" service-area block, placed high (right
+ * under the trust bar) so the page reads service-area-first like the source.
+ * Two columns: an art-directed cyanotype plate standing in for the coverage map
+ * (left) and the served cities as blueprint cells (right), closing with
+ * area.body ("Barangay not listed? Message us…").
+ *
+ * The coverage-map plate is a DECORATIVE designed placeholder — content.area has
+ * no image field, and the single live Leaflet map (#map) belongs to LocationAK,
+ * so no data-image-field is attached here; its gradient always looks designed.
+ * area.mapCaption is an optional extra field for the plate's "Fig. 2 —"
+ * annotation (hidden when unset). Per-city status badges from the source
+ * (same-day / next-morning) have no data home and are omitted.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const mapCaption = area.mapCaption || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area-sect">
+    <div class="wrap">
+      {tag && <span class="label" data-field="area.tag">{tag}</span>}
+      {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+      {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+      <div class="grid2">
+        <figure class="plate area-plate reveal">
+          {mapCaption && <figcaption data-field="area.mapCaption">{mapCaption}</figcaption>}
+        </figure>
+        <div class="area-list reveal">
+          {places.map((place, i) => (
+            <div class="cell area-cell" data-field={`area.places.${i}`}>{place}</div>
+          ))}
+          {body && <p class="area-body" data-field="area.body">{body}</p>}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .area-h { font-size: clamp(32px, 5vw, 54px); margin: 18px 0 26px; color: var(--white); }
+  .area-sub { color: var(--chalk); max-width: 56ch; margin: -14px 0 26px; }
+  .area-plate { min-height: 320px; }
+  .area-list { display: grid; gap: 10px; align-content: start; }
+  .area-cell { font-weight: 700; color: var(--white); }
+  .area-body { font-size: 13px; color: var(--chalk); padding: 6px 2px; }
+</style>

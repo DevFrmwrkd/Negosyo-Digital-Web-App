@@ -1,0 +1,51 @@
+---
+/**
+ * retail / ServicesAG — "Classified: departments & services". A grid of
+ * rubber-stamp cards (.stampcard) that tilt on hover — the design's signature
+ * interaction. Oswald red titles over white stock. price / duration render only
+ * when present. The section leads with a double newsprint rule.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="svc-sect">
+    <div class="wrap">
+      {tag && <p class="rubric" data-field="services.tag">{tag}</p>}
+      {headline && <h2 class="svc-h" data-field="services.headline" set:html={headline}></h2>}
+      {sub && <p class="svc-sub" data-field="services.sub">{sub}</p>}
+      <div class="svc-grid">
+        {items.map((item, i) => (
+          <div class="stampcard svc-card reveal">
+            <div class="svc-card-head">
+              <h3 class="svc-title" data-field={`services.items.${i}.title`}>{item.title}</h3>
+              {item.price && <span class="svc-price" data-field={`services.items.${i}.price`}>{item.price}</span>}
+            </div>
+            {item.desc && <p class="svc-desc" data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+            {item.duration && <div class="svc-dur" data-field={`services.items.${i}.duration`}>{item.duration}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .svc-sect { border-top: 4px double var(--ink); }
+  .svc-h { font-size: clamp(32px, 5vw, 54px); margin: 14px 0 28px; color: var(--ink); }
+  .svc-sub { max-width: 52ch; color: var(--faded); margin: -18px 0 28px; }
+  .svc-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+  .svc-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .svc-title { font-size: 17px; color: var(--red); margin-bottom: 8px; }
+  .svc-price { font-family: var(--label); font-weight: 600; font-size: 14px; color: var(--ink); flex-shrink: 0; }
+  .svc-desc { font-size: 15px; color: var(--faded); }
+  .svc-dur {
+    font-family: var(--label); text-transform: uppercase; letter-spacing: .12em;
+    font-size: 11px; color: var(--faded); margin-top: 10px; opacity: .85;
+  }
+</style>

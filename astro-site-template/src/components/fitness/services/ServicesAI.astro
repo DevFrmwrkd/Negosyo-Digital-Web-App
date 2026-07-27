@@ -1,0 +1,53 @@
+---
+/**
+ * fitness / ServicesAI — "on the floor" program grid on the full-bleed blood
+ * band (ink-ruled paper cards). The stamp + heading invert to paper on the red
+ * ground. price / duration render only when present in the data (the source
+ * ships title + desc). id="schedule" is the hero's "See the classes" anchor.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="svc-sect" id="schedule">
+    <div class="wrap">
+      {tag && <span class="stamp svc-stamp" data-field="services.tag">{tag}</span>}
+      {headline && <h2 class="svc-h" data-field="services.headline" set:html={headline}></h2>}
+      {sub && <p class="svc-sub" data-field="services.sub">{sub}</p>}
+      <div class="svc-grid">
+        {items.map((item, i) => (
+          <div class="svc-card reveal">
+            <div class="card-head">
+              <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+              {item.price && <span class="card-price" data-field={`services.items.${i}.price`}>{item.price}</span>}
+            </div>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+            {item.duration && <div class="card-dur" data-field={`services.items.${i}.duration`}>{item.duration}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .svc-sect { background: var(--blood); color: var(--paper); border-top: 6px solid var(--ink); border-bottom: 6px solid var(--ink); }
+  .svc-stamp { border-color: var(--paper); color: var(--paper); }
+  .svc-h { font-size: clamp(36px, 6vw, 64px); margin: 20px 0 30px; color: var(--paper); }
+  .svc-sub { max-width: 52ch; margin: -18px 0 30px; opacity: .92; }
+  .svc-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+  .svc-card { background: var(--paper); color: var(--ink); border: 3px solid var(--ink); padding: 22px; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; }
+  .svc-card h3 { font-size: 20px; margin-bottom: 8px; }
+  .svc-card p { font-size: 14px; }
+  .card-price { font-family: var(--display); font-size: 15px; color: var(--blood); flex-shrink: 0; }
+  .card-dur {
+    font-family: var(--body); text-transform: uppercase; letter-spacing: .14em;
+    font-size: 11px; color: var(--ink-soft); margin-top: 10px;
+  }
+</style>

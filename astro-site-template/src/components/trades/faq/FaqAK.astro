@@ -1,0 +1,34 @@
+---
+/**
+ * trades / FaqAK — the "Frequently asked" accordion. Uses the shared
+ * details/summary primitives from PageAK (amber "[+]" that flips to "[–]" on
+ * open). Constrained to a readable column like the source.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const faq = content.faq || {};
+const tag = faq.tag || '';
+const headline = faq.headline || '';
+type Item = { q: string; a: string };
+const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq) ? faq : []);
+---
+{items.length > 0 && (
+  <section class="faq-sect">
+    <div class="wrap faq-wrap">
+      {tag && <span class="label" data-field="faq.tag">{tag}</span>}
+      {headline && <h2 class="faq-h" data-field="faq.headline" set:html={headline}></h2>}
+      <div class="faq-list">
+        {items.map((item, i) => (
+          <details class="reveal">
+            <summary><span data-field={`faq.items.${i}.q`}>{item.q}</span></summary>
+            <div class="faq-a" data-field={`faq.items.${i}.a`} set:html={item.a}></div>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .faq-wrap { max-width: 760px; }
+  .faq-h { font-size: clamp(32px, 5vw, 54px); margin: 18px 0 22px; color: var(--white); }
+</style>

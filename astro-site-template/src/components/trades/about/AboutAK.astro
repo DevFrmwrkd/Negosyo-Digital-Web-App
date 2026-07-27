@@ -1,0 +1,53 @@
+---
+/**
+ * trades / AboutAK — split "company record" grid: copy on a self-drawing dashed
+ * service-line (.draw) left, art-directed cyanotype plate (about.image over the
+ * blueprint fallback) right. Mirrors the source's ABOUT block.
+ *
+ * about.imageCaption is an optional extra field (the source's "Fig. 3 — crews
+ * 1–4" plate annotation), hidden when unset. about.quote / about.signature are
+ * carried through from the data model and render only when provided (the source
+ * ships neither).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+---
+<section class="about-sect">
+  <div class="wrap grid2">
+    <div class="draw about-copy">
+      {tag && <span class="label" data-field="about.tag">{tag}</span>}
+      {headline && <h2 class="about-h" data-field="about.headline" set:html={headline}></h2>}
+      {paragraphs.map((p: string, i: number) => (
+        <p class="about-p" data-field={`about.paragraphs.${i}`} set:html={p}></p>
+      ))}
+      {quote && <blockquote class="about-quote" data-field="about.quote">“{quote}”</blockquote>}
+      {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
+    </div>
+    <figure class="plate about-plate reveal">
+      {image && <div class="photo" data-image-field="about.image" style={`background-image:url('${image}');`}></div>}
+      {imageCaption && <figcaption data-field="about.imageCaption">{imageCaption}</figcaption>}
+    </figure>
+  </div>
+</section>
+<style>
+  .about-copy { padding-left: 26px; }
+  .about-h { font-size: clamp(32px, 5vw, 54px); margin: 18px 0 20px; color: var(--white); }
+  .about-p { margin-bottom: 16px; color: var(--white); }
+  .about-p:not(:first-of-type) { color: var(--chalk); }
+  .about-quote {
+    font-family: var(--display); font-weight: 700; font-size: clamp(18px, 2.4vw, 24px);
+    line-height: 1.2; color: var(--amber); margin: 22px 0 0;
+    padding-left: 16px; border-left: 3px solid var(--amber);
+  }
+  .about-sign { margin-top: 16px; color: var(--chalk); }
+  .about-plate { min-height: 400px; }
+  @media (max-width: 799px) { .about-plate { min-height: 300px; } }
+</style>
