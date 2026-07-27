@@ -65,6 +65,7 @@ import PageV from '../components/restaurant/PageV.astro';
 import PageW from '../components/restaurant/PageW.astro';
 import PageX from '../components/restaurant/PageX.astro';
 import PageY from '../components/restaurant/PageY.astro';
+import PageAE from '../components/restaurant/PageAE.astro';
 import PageZ from '../components/shirtstore/PageZ.astro';
 import PageAA from '../components/shirtstore/PageAA.astro';
 import PageAB from '../components/shirtstore/PageAB.astro';
@@ -85,7 +86,7 @@ const salonspaMatch = /^salonspa:([K-O])$/.exec(heroStyle);
 const salonspaLetter = salonspaMatch ? salonspaMatch[1] : null;
 const autoshopMatch = /^autoshop:([P-T])$/.exec(heroStyle);
 const autoshopLetter = autoshopMatch ? autoshopMatch[1] : null;
-const restaurantMatch = /^restaurant:([U-Y])$/.exec(heroStyle);
+const restaurantMatch = /^restaurant:([U-Y]|AE)$/.exec(heroStyle);
 const restaurantLetter = restaurantMatch ? restaurantMatch[1] : null;
 const shirtstoreMatch = /^shirtstore:(Z|A[A-D])$/.exec(heroStyle);
 const shirtstoreLetter = shirtstoreMatch ? shirtstoreMatch[1] : null;
@@ -118,6 +119,7 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {restaurantLetter === 'W' && <PageW siteData={siteData} />}
 {restaurantLetter === 'X' && <PageX siteData={siteData} />}
 {restaurantLetter === 'Y' && <PageY siteData={siteData} />}
+{restaurantLetter === 'AE' && <PageAE siteData={siteData} />}
 {shirtstoreLetter === 'Z' && <PageZ siteData={siteData} />}
 {shirtstoreLetter === 'AA' && <PageAA siteData={siteData} />}
 {shirtstoreLetter === 'AB' && <PageAB siteData={siteData} />}
