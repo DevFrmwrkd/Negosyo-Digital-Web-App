@@ -1,0 +1,44 @@
+---
+/**
+ * restaurant / HowAE — "grill to table in three moves" numbered list on the
+ * soot band. Big ember Anton numerals over charcoal step rows. Reads
+ * content.how.steps (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how-sect">
+    <div class="wrap">
+      {tag && <p class="kick" data-field="how.tag">{tag}</p>}
+      {headline && <h2 class="how-h" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-list">
+        {steps.map((step, i) => (
+          <li class="how-step reveal">
+            <span class="how-num">{i + 1}</span>
+            <span class="how-copy">
+              <strong data-field={`how.steps.${i}.title`}>{step.title}</strong>
+              {(step.body ?? step.desc ?? step.description) && (
+                <span class="how-body" data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-sect { background: var(--soot); }
+  .how-h { font-size: clamp(34px, 5vw, 56px); margin: 12px 0 32px; color: var(--bone); }
+  .how-list { list-style: none; display: grid; gap: 2px; }
+  .how-step { background: var(--char); padding: 24px; display: flex; gap: 20px; align-items: baseline; }
+  .how-num { font-family: var(--display); font-size: 40px; color: var(--ember); flex-shrink: 0; line-height: 1; }
+  .how-copy { color: var(--bone-dim); }
+  .how-copy strong { color: var(--bone); }
+</style>

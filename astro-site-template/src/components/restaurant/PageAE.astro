@@ -1,0 +1,231 @@
+---
+/**
+ * restaurant / PageAE — "Smoke & Banana Leaf" (art-directed grill house).
+ *
+ * A hand-tuned charcoal + ember duotone with a banana-leaf green accent and
+ * a rolling specials ticker. Anton (condensed woodblock display) over Archivo.
+ *
+ * Design isolation: the ember/charcoal palette + base primitives are scoped to
+ * `html[data-page="AE"]` in the global block below so sister restaurant
+ * variants (U–Y) never inherit this variant's tokens or the bespoke
+ * `.plate` / `.ticker` / `.card` primitives (and vice-versa). Because this
+ * design's vocabulary (uppercase Anton display, no serif, dark ground) is so
+ * far from RestaurantSpine's rustic-serif base, the shared base CSS is inlined
+ * here instead of importing RestaurantSpine.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned palette wins by default.
+ */
+import HeaderAE from './header/HeaderAE.astro';
+import HeroAE from './hero/HeroAE.astro';
+import TrustAE from './trust/TrustAE.astro';
+import AboutAE from './about/AboutAE.astro';
+import ServicesAE from './services/ServicesAE.astro';
+import WhyAE from './why/WhyAE.astro';
+import HowAE from './how/HowAE.astro';
+import TestimonialsAE from './testimonials/TestimonialsAE.astro';
+import GalleryAE from './gallery/GalleryAE.astro';
+import FaqAE from './faq/FaqAE.astro';
+import AreaAE from './area/AreaAE.astro';
+import CredentialsAE from './credentials/CredentialsAE.astro';
+import LocationAE from './location/LocationAE.astro';
+import CtaBandAE from './ctaBand/CtaBandAE.astro';
+import FooterAE from './footer/FooterAE.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AE">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- Palette tokens + shared base primitives, scoped to html[data-page="AE"]
+       so they never leak to sister restaurant variants (U–Y). -->
+  <style is:global>
+    html[data-page="AE"] {
+      --char: #191412; --soot: #241d19; --ash: #3a2f28;
+      --ember: #e8632c; --flame: #f2a03d; --leaf: #5a7d4a;
+      --bone: #f4ead9; --bone-dim: #d9c9b0;
+      --char-rgb: 25,20,18; --bone-rgb: 244,234,217; --ember-rgb: 232,99,44;
+      --display: "Anton", Impact, sans-serif;
+      --body: "Archivo", system-ui, sans-serif;
+      --pad: clamp(20px, 5vw, 60px); --maxw: 1100px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --paper: #191412; --ink: #f4ead9; --accent: #e8632c;
+      --paper-rgb: 25,20,18; --ink-rgb: 244,234,217; --accent-rgb: 232,99,44;
+      --serif: "Anton", Impact, sans-serif; --sans: "Archivo", system-ui, sans-serif;
+      --on-accent: #191412; --on-ink: #191412; --on-paper: #f4ead9;
+    }
+    html[data-page="AE"] * { margin: 0; padding: 0; box-sizing: border-box; }
+    html[data-page="AE"] { scroll-behavior: smooth; }
+    html[data-page="AE"] body {
+      background: var(--char); color: var(--bone);
+      font-family: var(--body); font-size: 16px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    html[data-page="AE"] a { color: var(--flame); text-decoration: none; }
+    html[data-page="AE"] a:hover { color: var(--ember); }
+    html[data-page="AE"] img { max-width: 100%; display: block; }
+    html[data-page="AE"] h1,
+    html[data-page="AE"] h2,
+    html[data-page="AE"] h3 {
+      font-family: var(--display); font-weight: 400; letter-spacing: .01em;
+      text-transform: uppercase; line-height: .95;
+    }
+    html[data-page="AE"] section { padding: 72px 0; position: relative; }
+
+    html[data-page="AE"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+    html[data-page="AE"] .kick {
+      font-size: 12px; letter-spacing: .28em; text-transform: uppercase;
+      color: var(--ember); font-weight: 700; font-family: var(--body);
+    }
+
+    /* Buttons — solid ember fill, hollow ember on hover (design signature). */
+    html[data-page="AE"] .btn {
+      display: inline-flex; align-items: center; gap: 10px; min-height: 52px;
+      padding: 14px 28px; background: var(--ember); color: var(--char);
+      font-weight: 700; text-decoration: none; text-transform: uppercase;
+      letter-spacing: .08em; font-size: 14px; border: 2px solid var(--ember);
+      font-family: var(--body); cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    html[data-page="AE"] .btn:hover { background: transparent; color: var(--ember); }
+    html[data-page="AE"] .btn.ghost { background: transparent; color: var(--bone); border-color: var(--bone-dim); }
+    html[data-page="AE"] .btn.ghost:hover { border-color: var(--ember); color: var(--ember); }
+
+    /* Art-directed "plate" — the gradient charcoal/ember texture that stays as
+       the designed fallback background of every data-image-field photo slot. */
+    html[data-page="AE"] .plate {
+      position: relative; overflow: hidden; background:
+        linear-gradient(160deg, rgba(232,99,44,.55), rgba(25,20,18,.9) 70%),
+        repeating-linear-gradient(45deg, #2b221d 0 6px, #241d19 6px 12px);
+      display: flex; align-items: flex-end; min-height: 220px;
+    }
+    html[data-page="AE"] .plate .photo {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+    }
+    html[data-page="AE"] .plate figcaption {
+      position: relative; padding: 12px 14px; font-size: 11px; letter-spacing: .22em;
+      text-transform: uppercase; color: var(--bone-dim);
+      border-top: 1px solid rgba(244,234,217,.25); width: 100%;
+      background: linear-gradient(0deg, rgba(25,20,18,.72), transparent);
+    }
+
+    /* Rolling specials ticker — the signature CSS-only interaction. */
+    html[data-page="AE"] .ticker {
+      overflow: hidden; background: var(--ember); color: var(--char);
+      border-top: 3px solid var(--char); border-bottom: 3px solid var(--char);
+    }
+    html[data-page="AE"] .ticker-track { display: flex; gap: 0; width: max-content; animation: roll-ae 26s linear infinite; }
+    html[data-page="AE"] .ticker span { white-space: nowrap; padding: 10px 0; font-family: var(--display); font-size: 15px; letter-spacing: .12em; text-transform: uppercase; }
+    html[data-page="AE"] .ticker b { padding: 0 22px; font-weight: 400; }
+    @keyframes roll-ae { to { transform: translateX(-50%); } }
+
+    html[data-page="AE"] .grid2 { display: grid; gap: 40px; }
+    html[data-page="AE"] .cards { display: grid; gap: 2px; background: var(--ash); }
+    html[data-page="AE"] .card { background: var(--soot); padding: 28px 24px; }
+    html[data-page="AE"] .card h3 { font-size: 22px; color: var(--flame); margin-bottom: 10px; }
+    html[data-page="AE"] .card p { color: var(--bone-dim); font-size: 15px; }
+
+    html[data-page="AE"] details { border-bottom: 1px solid var(--ash); }
+    html[data-page="AE"] summary {
+      cursor: pointer; padding: 18px 0; font-weight: 700; list-style: none;
+      display: flex; justify-content: space-between; gap: 16px; min-height: 44px; align-items: center;
+    }
+    html[data-page="AE"] summary::-webkit-details-marker { display: none; }
+    html[data-page="AE"] summary::after { content: "+"; font-family: var(--display); color: var(--ember); font-size: 22px; transition: transform .25s; }
+    html[data-page="AE"] details[open] summary::after { transform: rotate(45deg); }
+    html[data-page="AE"] details .faq-a { padding: 0 0 18px; color: var(--bone-dim); }
+
+    /* Scroll-reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AE"] .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s ease; }
+    html[data-page="AE"] .reveal.in { opacity: 1; transform: none; }
+
+    @media (min-width: 760px) {
+      html[data-page="AE"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
+      html[data-page="AE"] .cards { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="AE"] .reveal { opacity: 1; transform: none; transition: none; }
+      html[data-page="AE"] * { animation: none !important; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <HeaderAE layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroAE content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAE content={content} />}
+    {visibility.aboutSection !== false && <AboutAE content={content} />}
+    {visibility.servicesSection !== false && <ServicesAE content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAE content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAE content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAE content={content} />}
+    {visibility.gallerySection !== false && <GalleryAE content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAE content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAE content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAE content={content} />}
+    {visibility.locationBlock !== false && <LocationAE content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAE content={content} layout={layout} />}
+  <FooterAE layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      var hdr = document.querySelector('header.nav');
+      if (hdr) {
+        var onScroll = function () { if (window.scrollY > 40) hdr.classList.add('scrolled'); else hdr.classList.remove('scrolled'); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      }
+      // Restaurant-AE Leaflet boot — accepts (lat, lng, label) from LocationAE.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAE calls this with whatever it resolves).
+      window.__restaurantAEInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50% 50% 50% 0;background:#e8632c;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.6);border:2px solid #191412;"></div>', iconSize: [18, 18], iconAnchor: [9, 18] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

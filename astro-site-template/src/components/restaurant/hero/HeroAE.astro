@@ -1,0 +1,95 @@
+---
+/**
+ * restaurant / HeroAE — full-bleed charcoal grill hero. Vernacular Anton
+ * headline stacked at the bottom of a 92vh smoke-dark plate, ember CTAs, and
+ * the signature rolling specials ticker pinned to the base.
+ *
+ * The photo (hero.image) layers over the art-directed charcoal texture, which
+ * stays as the designed fallback when no photo is set. A linear scrim keeps the
+ * copy legible over either. The ticker mirrors the specials off the grill —
+ * sourced from content.services items when present, else a grill-house default.
+ * It is aria-hidden decorative chrome, so it carries no editable field.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#location';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const tagText = hero.tag || '';
+
+// Ticker labels: reflect the specials off the grill (services titles), else a
+// grill-house default so the ticker always reads as designed.
+const services = content.services || {};
+const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+const tickerFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
+const tickerItems = tickerFromServices.length > 0
+  ? tickerFromServices
+  : ['Inihaw na liempo', 'Chicken inasal', 'Sinugbang panga', 'Grilled pusit', 'Sinigang na baboy', 'Party trays for pickup'];
+---
+<header class="hero-ae" id="top-hero">
+  <div class="hero-bg">
+    {heroImage && <div class="photo" data-image-field="hero.image" style={`background-image:url('${heroImage}');`}></div>}
+  </div>
+  <div class="hero-scrim"></div>
+  <div class="wrap hero-inner">
+    {kicker && <p class="kick" data-field="hero.kicker">{kicker}</p>}
+    {headlineLines.length > 0 && (
+      <h1 class="hero-h">
+        {headlineLines.map((line: string, i: number) => (
+          <span class="hl-line" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+        ))}
+      </h1>
+    )}
+    {sub && <p class="hero-sub" data-field="hero.sub">{sub}</p>}
+    {(cta1Text || cta2Text) && (
+      <div class="hero-cta">
+        {cta1Text && <a class="btn" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+        {cta2Text && <a class="btn ghost" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+      </div>
+    )}
+    {tagText && <div class="hero-tag" data-field="hero.tag">{tagText}</div>}
+  </div>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track">
+      <span>{tickerItems.map((t) => (<><b>{t}</b>◆</>))}</span>
+      <span>{tickerItems.map((t) => (<><b>{t}</b>◆</>))}</span>
+    </div>
+  </div>
+</header>
+<style>
+  .hero-ae {
+    position: relative; min-height: 92vh;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    overflow: hidden;
+  }
+  /* Designed fallback: charcoal ember-fleck texture (stays when no photo). */
+  .hero-bg {
+    position: absolute; inset: 0;
+    background: repeating-radial-gradient(circle at 70% 20%, #2e241e 0 3px, #241d19 3px 7px);
+  }
+  .hero-bg .photo { position: absolute; inset: 0; background-size: cover; background-position: center; }
+  /* Legibility scrim + ember wash, always over the photo/texture. */
+  .hero-scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(10deg, #191412 20%, rgba(25,20,18,.35) 60%, rgba(232,99,44,.28));
+  }
+  .hero-inner { position: relative; z-index: 1; padding-top: 120px; padding-bottom: 56px; width: 100%; }
+  .hero-h { font-size: clamp(52px, 11vw, 140px); margin: 14px 0 22px; color: var(--bone); }
+  .hero-h .hl-line { display: block; }
+  .hero-sub { max-width: 46ch; color: var(--bone-dim); margin-bottom: 30px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; }
+  .hero-tag {
+    display: inline-block; margin-top: 26px;
+    background: rgba(var(--char-rgb), .82); border: 1px solid var(--ash);
+    padding: 9px 15px; font-family: var(--body); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .18em; color: var(--bone-dim);
+  }
+</style>
