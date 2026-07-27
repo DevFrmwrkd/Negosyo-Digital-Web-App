@@ -310,7 +310,7 @@ http.route({
             return jsonResponse({ error: 'unauthorized' }, 401);
         }
 
-        let body: { question?: unknown; workspace?: unknown; discordUserId?: unknown };
+        let body: { question?: unknown; workspace?: unknown; discordUserId?: unknown; fieldCoachRef?: unknown };
         try {
             body = await request.json();
         } catch {
@@ -325,6 +325,13 @@ http.route({
         // Help Center. Anything else falls back to 'wiki'.
         const workspace = body.workspace === 'help' ? 'help' : 'wiki';
         const discordUserId = typeof body.discordUserId === 'string' ? body.discordUserId : undefined;
+        // Opaque handle the Field Coach sends so we can call it back once the
+        // escalation is answered. Carried through untouched (never parsed); present
+        // only for Field-Coach asks. Bounded to keep a stray value from bloating rows.
+        const fieldCoachRef =
+            typeof body.fieldCoachRef === 'string' && body.fieldCoachRef.trim()
+                ? body.fieldCoachRef.trim().slice(0, 200)
+                : undefined;
 
         const started = Date.now();
         const result = await ctx.runAction(internal.knowledgeAI.answerQuery, {
@@ -346,6 +353,7 @@ http.route({
                 question: question.slice(0, 500),
                 workspace,
                 origin: 'coach',
+                fieldCoachRef,
             });
         }
 

@@ -1065,6 +1065,12 @@ export default defineSchema({
         error: v.optional(v.string()),
         lastPolledAt: v.optional(v.number()),
         lastPingedAt: v.optional(v.number()), // last reminder ping to the team role
+        // Opaque ref from owner-engine's Field Coach ('coach' origin only). Carried
+        // through untouched; when set and the thread gets answered, we POST it back
+        // to the Field Coach (/kb/answered) so it can relay the answer to the Discord
+        // user who originally asked. Absent for web/direct-Hub asks.
+        fieldCoachRef: v.optional(v.string()),
+        fieldCoachNotifiedAt: v.optional(v.number()), // when the /kb/answered callback was acknowledged
         createdAt: v.number(),
         updatedAt: v.number(),
     })

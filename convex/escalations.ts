@@ -28,6 +28,20 @@ const DISCORD_API = 'https://discord.com/api/v10';
 const repingEveryMs = () => Number(process.env.KB_ESCALATION_REPING_HOURS || 8) * 60 * 60 * 1000;
 const workspaceArg = v.union(v.literal('help'), v.literal('wiki'));
 
+// --- Field Coach answered-callback (owner-engine) ---
+// When a "(via the Field Coach)" escalation is answered, we POST the answer back so
+// the Field Coach can relay it to the Discord user who asked. The Field Coach dedupes
+// by ref, so retries are safe. Override the URL via env if the deployment moves.
+const fieldCoachCallbackUrl = () =>
+    process.env.FIELD_COACH_CALLBACK_URL || 'https://cautious-wildebeest-261.convex.site/kb/answered';
+// The shared secret the Field Coach sends us on /kb/ask (validated against
+// KB_SEARCH_SECRET) — the same value goes back in the callback's x-kb-secret header.
+// TENDSO_KB_SECRET is accepted as an alias for deployments that named it that way.
+const fieldCoachSecret = () => process.env.KB_SEARCH_SECRET || process.env.TENDSO_KB_SECRET || '';
+// Backoff between callback retries, indexed by attempt number (attempt 0 = first
+// try, fired immediately). Length also bounds the retries: 5 backoffs → 6 tries.
+const CALLBACK_BACKOFF_MS = [10_000, 30_000, 90_000, 300_000, 900_000]; // 10s, 30s, 90s, 5m, 15m
+
 function normalizeQuestion(q: string): string {
     return q.toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 300);
 }
@@ -54,6 +68,7 @@ export const insertEscalation = internalMutation({
         normalizedQuestion: v.string(),
         workspace: workspaceArg,
         askerUserId: v.optional(v.string()),
+        fieldCoachRef: v.optional(v.string()),
     },
     handler: async (ctx, args): Promise<Id<'escalations'>> => {
         const now = Date.now();
@@ -62,11 +77,18 @@ export const insertEscalation = internalMutation({
             normalizedQuestion: args.normalizedQuestion,
             workspace: args.workspace,
             askerUserId: args.askerUserId,
+            fieldCoachRef: args.fieldCoachRef,
             status: 'pending',
             createdAt: now,
             updatedAt: now,
         });
     },
+});
+
+/** Load one escalation by id (for the Field-Coach callback's idempotency guard). */
+export const getById = internalQuery({
+    args: { id: v.id('escalations') },
+    handler: async (ctx, args) => ctx.db.get(args.id),
 });
 
 /** Patch any subset of an escalation's mutable fields (Discord ids, status, answer, …). */
@@ -93,6 +115,7 @@ export const patchEscalation = internalMutation({
         error: v.optional(v.string()),
         lastPolledAt: v.optional(v.number()),
         lastPingedAt: v.optional(v.number()),
+        fieldCoachNotifiedAt: v.optional(v.number()),
     },
     handler: async (ctx, args) => {
         const { id, ...rest } = args;
@@ -114,6 +137,11 @@ export const createAndPost = internalAction({
         // = owner-engine's Field Coach forwarded it after its own KB miss; absent
         // = the web/chat Knowledge Hub. Purely cosmetic (labels the post).
         origin: v.optional(v.union(v.literal('web'), v.literal('coach'))),
+        // Opaque handle the Field Coach passes so it can be relayed the answer once
+        // this thread is resolved (see notifyFieldCoach). Only 'coach' asks carry it.
+        // Stored verbatim on the row; if we never create a thread (dedup / off-topic /
+        // Discord unconfigured) it's simply dropped — no thread, no callback.
+        fieldCoachRef: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         const normalizedQuestion = normalizeQuestion(args.question);
@@ -138,6 +166,7 @@ export const createAndPost = internalAction({
             normalizedQuestion,
             workspace: args.workspace,
             askerUserId: args.askerUserId,
+            fieldCoachRef: args.fieldCoachRef,
         });
 
         const channelId = process.env.DISCORD_ESCALATION_CHANNEL_ID;
@@ -250,6 +279,83 @@ export const notifyAsker = internalMutation({
             data: { kbEscalation: true, articleSlug: args.articleSlug },
         });
         return true;
+    },
+});
+
+/**
+ * Call the Field Coach back when a "(via the Field Coach)" escalation is answered.
+ * POSTs the captured answer to owner-engine's /kb/answered so it can relay it to the
+ * Discord user who originally asked. Fired fire-and-forget from pollPending only when
+ * the escalation carries a `fieldCoachRef`.
+ *
+ * Retries are done by RE-SCHEDULING this action with exponential backoff — no long-
+ * held action, survives a cold deploy. The Field Coach dedupes by ref, so a retried
+ * or duplicate callback is safe (it relays exactly once). Terminal outcomes (no
+ * retry): a 200 body (whether {ok:true} = relayed or {ok:false} = ref unknown/already
+ * handled) and running out of attempts.
+ */
+export const notifyFieldCoach = internalAction({
+    args: {
+        escalationId: v.id('escalations'),
+        ref: v.string(),
+        answer: v.string(),
+        question: v.optional(v.string()),
+        attempt: v.number(),
+    },
+    handler: async (ctx, args) => {
+        // Idempotency: a prior attempt may already have been acknowledged.
+        const esc = await ctx.runQuery(internal.escalations.getById, { id: args.escalationId });
+        if (!esc || esc.fieldCoachNotifiedAt) return;
+
+        const secret = fieldCoachSecret();
+        if (!secret) {
+            console.warn('[KB-ESCALATION] KB_SEARCH_SECRET not set — cannot call the Field Coach back for ref', args.ref);
+            return;
+        }
+
+        // Retry by re-scheduling with the next backoff; stop once we run out.
+        const scheduleRetry = async (why: string) => {
+            const delay = CALLBACK_BACKOFF_MS[args.attempt];
+            if (delay === undefined) {
+                console.error(`[KB-ESCALATION] Field Coach callback gave up after ${args.attempt + 1} tries (ref ${args.ref}): ${why}`);
+                return;
+            }
+            console.warn(`[KB-ESCALATION] Field Coach callback attempt ${args.attempt + 1} failed (${why}); retry in ${Math.round(delay / 1000)}s`);
+            await ctx.scheduler.runAfter(delay, internal.escalations.notifyFieldCoach, {
+                ...args,
+                attempt: args.attempt + 1,
+            });
+        };
+
+        let res: Response;
+        try {
+            res = await fetch(fieldCoachCallbackUrl(), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-kb-secret': secret },
+                body: JSON.stringify({ ref: args.ref, answer: args.answer, question: args.question }),
+            });
+        } catch (err) {
+            await scheduleRetry(`network: ${(err as Error).message}`);
+            return;
+        }
+
+        if (!res.ok) {
+            await scheduleRetry(`http ${res.status}`);
+            return;
+        }
+
+        // 2xx — terminal either way. {ok:false} just means there's no one left to
+        // relay to (unknown/already-handled ref); nothing to retry.
+        const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+        if (data.ok === false) {
+            console.log(`[KB-ESCALATION] Field Coach did not relay ref ${args.ref}: ${data.error ?? 'unknown/already-handled'}`);
+        } else {
+            console.log(`[KB-ESCALATION] Field Coach callback delivered for ref ${args.ref}`);
+        }
+        await ctx.runMutation(internal.escalations.patchEscalation, {
+            id: args.escalationId,
+            fieldCoachNotifiedAt: Date.now(),
+        });
     },
 });
 
@@ -379,6 +485,19 @@ export const pollPending = internalAction({
                     learnedArticleId: articleId,
                     lastPolledAt: Date.now(),
                 });
+
+                // If this escalation came from the Field Coach, call it back so it can
+                // relay the answer to the Discord user who asked (retries handled in
+                // notifyFieldCoach). Plain web/Hub asks have no ref → nothing to do.
+                if (esc.fieldCoachRef) {
+                    await ctx.scheduler.runAfter(0, internal.escalations.notifyFieldCoach, {
+                        escalationId: esc._id,
+                        ref: esc.fieldCoachRef,
+                        answer,
+                        question: esc.question,
+                        attempt: 0,
+                    });
+                }
 
                 // Confirm in the thread (best-effort — never fails the learn).
                 await fetch(`${DISCORD_API}/channels/${threadId}/messages`, {
