@@ -1,0 +1,55 @@
+---
+/**
+ * foodcraft / HeaderAL — the design's top bar: deco-serif brand left, phone
+ * (and any nav links) right, on the same warm shell ground the hero sits on so
+ * the two read as one continuous block. Non-sticky, matching the mockup.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+const phone = layout.contact?.phone || (content as any).contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+---
+<header class="site-nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" data-field="footer.brand" set:html={brand}></a>
+    {navLinks.length > 0 && (
+      <nav class="nav-links" aria-label="Main">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+      </nav>
+    )}
+    {phone && (
+      <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone" data-href-field="contact.phone.href">{phone}</a>
+    )}
+  </div>
+</header>
+<style>
+  .site-nav { background: var(--shell); }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; padding-top: 24px; padding-bottom: 4px;
+  }
+  .brand {
+    font-family: var(--display); font-size: 22px; color: var(--cocoa);
+    letter-spacing: .01em;
+  }
+  .brand:hover { color: var(--cocoa); }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a {
+    font-family: var(--body); font-size: 13px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted-ink); font-weight: 700;
+    transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--terra-deep); }
+  .nav-phone {
+    font-family: var(--body); font-weight: 700; font-size: 14px;
+    color: var(--cocoa);
+  }
+  .nav-phone:hover { color: var(--terra-deep); }
+  @media (max-width: 720px) { .nav-links { display: none; } }
+</style>

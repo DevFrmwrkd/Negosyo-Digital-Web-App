@@ -71,6 +71,13 @@ import PageAA from '../components/shirtstore/PageAA.astro';
 import PageAB from '../components/shirtstore/PageAB.astro';
 import PageAC from '../components/shirtstore/PageAC.astro';
 import PageAD from '../components/shirtstore/PageAD.astro';
+import PageAF from '../components/autoshop/PageAF.astro';
+import PageAG from '../components/retail/PageAG.astro';
+import PageAH from '../components/medical/PageAH.astro';
+import PageAI from '../components/fitness/PageAI.astro';
+import PageAJ from '../components/education/PageAJ.astro';
+import PageAK from '../components/trades/PageAK.astro';
+import PageAL from '../components/foodcraft/PageAL.astro';
 import siteData from '../data/site-data.json';
 
 const layout = (siteData as any).layout ?? {};
@@ -84,14 +91,27 @@ const barbershopMatch = /^barbershop:([F-J])$/.exec(heroStyle);
 const barbershopLetter = barbershopMatch ? barbershopMatch[1] : null;
 const salonspaMatch = /^salonspa:([K-O])$/.exec(heroStyle);
 const salonspaLetter = salonspaMatch ? salonspaMatch[1] : null;
-const autoshopMatch = /^autoshop:([P-T])$/.exec(heroStyle);
+const autoshopMatch = /^autoshop:([P-T]|AF)$/.exec(heroStyle);
 const autoshopLetter = autoshopMatch ? autoshopMatch[1] : null;
 const restaurantMatch = /^restaurant:([U-Y]|AE)$/.exec(heroStyle);
 const restaurantLetter = restaurantMatch ? restaurantMatch[1] : null;
 const shirtstoreMatch = /^shirtstore:(Z|A[A-D])$/.exec(heroStyle);
 const shirtstoreLetter = shirtstoreMatch ? shirtstoreMatch[1] : null;
+const retailMatch = /^retail:(AG)$/.exec(heroStyle);
+const retailLetter = retailMatch ? retailMatch[1] : null;
+const medicalMatch = /^medical:(AH)$/.exec(heroStyle);
+const medicalLetter = medicalMatch ? medicalMatch[1] : null;
+const fitnessMatch = /^fitness:(AI)$/.exec(heroStyle);
+const fitnessLetter = fitnessMatch ? fitnessMatch[1] : null;
+const educationMatch = /^education:(AJ)$/.exec(heroStyle);
+const educationLetter = educationMatch ? educationMatch[1] : null;
+const tradesMatch = /^trades:(AK)$/.exec(heroStyle);
+const tradesLetter = tradesMatch ? tradesMatch[1] : null;
+const foodcraftMatch = /^foodcraft:(AL)$/.exec(heroStyle);
+const foodcraftLetter = foodcraftMatch ? foodcraftMatch[1] : null;
 const anyLetter = genericLetter || barbershopLetter || salonspaLetter
-  || autoshopLetter || restaurantLetter || shirtstoreLetter;
+  || autoshopLetter || restaurantLetter || shirtstoreLetter
+  || retailLetter || medicalLetter || fitnessLetter || educationLetter || tradesLetter || foodcraftLetter;
 ---
 
 {genericLetter === 'A' && <PageA siteData={siteData} />}
@@ -114,6 +134,7 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {autoshopLetter === 'R' && <PageR siteData={siteData} />}
 {autoshopLetter === 'S' && <PageS siteData={siteData} />}
 {autoshopLetter === 'T' && <PageT siteData={siteData} />}
+{autoshopLetter === 'AF' && <PageAF siteData={siteData} />}
 {restaurantLetter === 'U' && <PageU siteData={siteData} />}
 {restaurantLetter === 'V' && <PageV siteData={siteData} />}
 {restaurantLetter === 'W' && <PageW siteData={siteData} />}
@@ -125,6 +146,12 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {shirtstoreLetter === 'AB' && <PageAB siteData={siteData} />}
 {shirtstoreLetter === 'AC' && <PageAC siteData={siteData} />}
 {shirtstoreLetter === 'AD' && <PageAD siteData={siteData} />}
+{retailLetter === 'AG' && <PageAG siteData={siteData} />}
+{medicalLetter === 'AH' && <PageAH siteData={siteData} />}
+{fitnessLetter === 'AI' && <PageAI siteData={siteData} />}
+{educationLetter === 'AJ' && <PageAJ siteData={siteData} />}
+{tradesLetter === 'AK' && <PageAK siteData={siteData} />}
+{foodcraftLetter === 'AL' && <PageAL siteData={siteData} />}
 {!anyLetter && (
   <BaseLayout
     businessName={layout.businessName ?? ''}

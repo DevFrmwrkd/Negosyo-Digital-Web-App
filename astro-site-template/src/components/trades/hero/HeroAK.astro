@@ -1,0 +1,70 @@
+---
+/**
+ * trades / HeroAK — the plan-sheet hero: a two-column grid with the copy on a
+ * self-drawing dashed service-line (.draw) left, and the art-directed cyanotype
+ * plate (hero.image over the diagonal-hatch fallback) right.
+ *
+ * Design touches preserved: the last headline line renders amber (the source's
+ * "On schedule." accent) via CSS so it stays data-driven; the plate keeps its
+ * blueprint gradient as the designed fallback when no photo is set. A 2px chalk
+ * rule closes the hero block like the source. hero.imageCaption is an optional
+ * extra field for the plate's "Fig. 1 —" annotation (hidden when unset).
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || '#location';
+const tagText = hero.tag || '';
+const imageCaption = hero.imageCaption || '';
+---
+<header class="hero-ak" id="top-hero">
+  <div class="wrap grid2 hero-inner">
+    <div class="draw hero-copy">
+      {kicker && <span class="label" data-field="hero.kicker">{kicker}</span>}
+      {headlineLines.length > 0 && (
+        <h1 class="hero-h">
+          {headlineLines.map((line: string, i: number) => (
+            <span class="hl-line" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="hero-sub" data-field="hero.sub">{sub}</p>}
+      {(cta1Text || cta2Text) && (
+        <div class="hero-cta">
+          {cta1Text && <a class="btn" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+      {tagText && <div class="hero-tag" data-field="hero.tag">{tagText}</div>}
+    </div>
+    <figure class="plate hero-plate">
+      {heroImage && <div class="photo" data-image-field="hero.image" style={`background-image:url('${heroImage}');`}></div>}
+      {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
+    </figure>
+  </div>
+</header>
+<style>
+  .hero-ak { border-bottom: 2px solid var(--chalk); }
+  .hero-inner { padding: 52px 20px 64px; align-items: center; }
+  .hero-copy { padding-left: 26px; }
+  .hero-h { font-size: clamp(42px, 8vw, 86px); margin: 20px 0; color: var(--white); }
+  .hero-h .hl-line { display: block; }
+  .hero-h .hl-line:last-child { color: var(--amber); }
+  .hero-sub { color: var(--chalk); max-width: 46ch; margin-bottom: 28px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; }
+  .hero-tag {
+    display: inline-block; margin-top: 24px; font-family: var(--body);
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--chalk); border: 1px dashed var(--chalk); padding: 8px 13px;
+  }
+  .hero-plate { min-height: 380px; }
+</style>

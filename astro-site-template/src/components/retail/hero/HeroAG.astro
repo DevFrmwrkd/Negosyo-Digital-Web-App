@@ -1,0 +1,88 @@
+---
+/**
+ * retail / HeroAG — the broadsheet masthead. Centered rubric + giant Playfair
+ * masthead wrapped in double newsprint rules + an Oswald deck line, then a
+ * two-column "front page": an art-directed sepia plate (hero.image) beside a
+ * hairline-ruled pitch column (lead sub, body paragraphs, CTAs).
+ *
+ * Masthead two-tone: lines after the first render in red ink, reproducing the
+ * design's "FERRETERIA <red>REYES</red>" masthead when the name splits across
+ * lines. Falls back to layout.businessName when no headlineLines are set so the
+ * masthead is never blank.
+ *
+ * hero.paragraphs[] (body copy under the lead) and hero.imageCaption (the plate
+ * strap) are optional extras beyond the core hero model — hidden when unset.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : (layout.businessName ? [layout.businessName] : []));
+const deck = hero.tag || '';
+const sub = hero.sub || '';
+const paragraphs: string[] = Array.isArray(hero.paragraphs) ? hero.paragraphs : [];
+const imageCaption = hero.imageCaption || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#location';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+---
+<header class="hero-ag">
+  <div class="wrap hero-head">
+    {kicker && <p class="rubric hero-rubric" data-field="hero.kicker">{kicker}</p>}
+    {headlineLines.length > 0 && (
+      <h1 class="masthead">
+        {headlineLines.map((line: string, i: number) => (
+          <><span class={`mh-line${i > 0 ? ' mh-red' : ''}`} data-field={`hero.headlineLines.${i}`} set:html={line}></span>{i < headlineLines.length - 1 ? ' ' : ''}</>
+        ))}
+      </h1>
+    )}
+    {deck && <p class="hero-deck" data-field="hero.tag">{deck}</p>}
+  </div>
+  <div class="wrap grid2 hero-body">
+    <figure class="plate hero-plate reveal">
+      {heroImage && <div class="photo" data-image-field="hero.image" style={`background-image:url('${heroImage}');`}></div>}
+      {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
+    </figure>
+    <div class="colrule hero-pitch reveal">
+      {sub && <p class="hero-lead" data-field="hero.sub" set:html={sub}></p>}
+      {paragraphs.map((p: string, i: number) => (
+        <p class="hero-para" data-field={`hero.paragraphs.${i}`} set:html={p}></p>
+      ))}
+      {(cta1Text || cta2Text) && (
+        <div class="hero-cta">
+          {cta1Text && <a class="btn" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </div>
+</header>
+<style>
+  .hero-ag { padding-top: 30px; }
+  .hero-head { text-align: center; }
+  .hero-rubric { display: block; }
+  .masthead {
+    font-size: clamp(46px, 9vw, 110px); margin: 16px 0 6px;
+    border-top: 4px double var(--ink); border-bottom: 4px double var(--ink);
+    padding: 22px 0; color: var(--ink);
+  }
+  .mh-line { display: inline; }
+  .mh-red { color: var(--red); }
+  .hero-deck {
+    font-family: var(--label); text-transform: uppercase; letter-spacing: .34em;
+    font-size: clamp(11px, 1.6vw, 15px); color: var(--faded);
+  }
+  .hero-body { padding: 44px 0 20px; }
+  .hero-plate { min-height: 380px; }
+  .hero-lead {
+    font-family: var(--display); font-weight: 700; font-size: clamp(24px, 3vw, 32px);
+    line-height: 1.15; margin-bottom: 16px; color: var(--ink);
+  }
+  .hero-para { color: var(--faded); margin-bottom: 14px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+  @media (max-width: 819px) { .hero-plate { min-height: 300px; } }
+</style>

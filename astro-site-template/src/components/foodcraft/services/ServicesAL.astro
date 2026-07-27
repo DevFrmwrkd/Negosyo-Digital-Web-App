@@ -1,0 +1,50 @@
+---
+/**
+ * foodcraft / ServicesAL — "from the oven" menu grid on the warm shell band.
+ * Printed-card tiles (deco terra titles, offset shell shadow). price / duration
+ * render only when present in the data (the design ships title + desc only).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="svc-sect">
+    <div class="wrap">
+      {tag && <p class="eyebrow" data-field="services.tag">{tag}</p>}
+      {headline && <h2 class="svc-h" data-field="services.headline" set:html={headline}></h2>}
+      {sub && <p class="svc-sub" data-field="services.sub">{sub}</p>}
+      <div class="svc-grid">
+        {items.map((item, i) => (
+          <div class="card svc-card reveal">
+            <div class="svc-head">
+              <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+              {item.price && <span class="svc-price" data-field={`services.items.${i}.price`}>{item.price}</span>}
+            </div>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+            {item.duration && <div class="svc-dur" data-field={`services.items.${i}.duration`}>{item.duration}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .svc-sect { background: var(--shell); }
+  .svc-h { font-size: clamp(32px, 5vw, 52px); margin: 14px 0 30px; color: var(--cocoa); }
+  .svc-sub { max-width: 52ch; color: var(--muted-ink); margin: -16px 0 30px; }
+  .svc-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .svc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .svc-card h3 { font-size: 22px; color: var(--terra-deep); margin-bottom: 8px; }
+  .svc-card p { color: var(--muted-ink); font-size: 15px; }
+  .svc-price { font-family: var(--body); font-weight: 700; font-size: 14px; color: var(--terra-deep); flex-shrink: 0; }
+  .svc-dur {
+    font-family: var(--body); text-transform: uppercase; letter-spacing: .14em;
+    font-size: 11px; color: var(--muted-ink); margin-top: 10px; opacity: .8;
+  }
+</style>

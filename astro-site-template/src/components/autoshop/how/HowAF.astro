@@ -1,0 +1,44 @@
+---
+/**
+ * autoshop / HowAF — "how a job moves" procedure. Numbered job-sheet cards
+ * (hard-shadowed .sheet panels) with a big red Saira numeral over a bold title
+ * + mono body. Reads content.how.steps (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how-sect">
+    <div class="wrap">
+      {tag && <span class="tag" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="how-h" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-list">
+        {steps.map((step, i) => (
+          <li class="sheet how-step reveal">
+            <span class="how-num" aria-hidden="true">{i + 1}</span>
+            <p class="how-copy">
+              <strong data-field={`how.steps.${i}.title`}>{step.title}</strong>
+              {(step.body ?? step.desc ?? step.description) && (
+                <span class="how-body" data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+              )}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-sect .tag { margin-bottom: 14px; }
+  .how-h { font-size: clamp(32px, 4.5vw, 52px); margin: 0 0 28px; color: var(--ink); }
+  .how-list { list-style: none; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .how-step { padding: 22px; }
+  .how-num { font-family: var(--display); font-weight: 800; font-size: 44px; color: var(--red); line-height: 1; }
+  .how-copy { font-size: 14px; color: var(--ink-soft); margin-top: 4px; }
+  .how-copy strong { color: var(--ink); }
+</style>

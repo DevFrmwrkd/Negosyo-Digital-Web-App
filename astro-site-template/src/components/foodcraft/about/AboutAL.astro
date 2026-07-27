@@ -1,0 +1,67 @@
+---
+/**
+ * foodcraft / AboutAL — "our story" split grid: copy left, a pair of staggered
+ * arched window frames right (the design's portrait + shaping-hands photos).
+ * Both frames keep their terracotta gradient as the designed fallback.
+ *
+ * The data model documents a single `about.image`; to preserve the design's
+ * two-frame composition, the second frame reads the extra fields
+ * `about.image2` / `about.imageCaption` / `about.imageCaption2`. All are gated,
+ * so with only one image (or none) the layout still holds. about.quote /
+ * about.signature render only when provided (the design ships neither).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const image2 = about.image2 || (Array.isArray(about.images) && about.images[1]) || '';
+const imageCaption = about.imageCaption || '';
+const imageCaption2 = about.imageCaption2 || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+---
+<section class="about-sect">
+  <div class="wrap grid2">
+    <div class="about-copy reveal">
+      {tag && <p class="eyebrow" data-field="about.tag">{tag}</p>}
+      {headline && <h2 class="about-h" data-field="about.headline" set:html={headline}></h2>}
+      {paragraphs.map((p: string, i: number) => (
+        <p class="about-p" data-field={`about.paragraphs.${i}`} set:html={p}></p>
+      ))}
+      {quote && <blockquote class="about-quote" data-field="about.quote">“{quote}”</blockquote>}
+      {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
+    </div>
+    <div class="about-frames reveal">
+      <figure class="arch about-frame">
+        {image && <div class="photo" data-image-field="about.image" style={`background-image:url('${image}');`}></div>}
+        {imageCaption && <figcaption data-field="about.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+      <figure class="arch about-frame about-frame-2">
+        {image2 && <div class="photo" data-image-field="about.image2" style={`background-image:url('${image2}');`}></div>}
+        {imageCaption2 && <figcaption data-field="about.imageCaption2">{imageCaption2}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<style>
+  .about-h { font-size: clamp(32px, 5vw, 52px); margin: 14px 0 20px; color: var(--cocoa); }
+  .about-p { margin-bottom: 16px; color: var(--muted-ink); }
+  .about-p:first-of-type { color: var(--cocoa); }
+  .about-quote {
+    font-family: var(--display); font-size: clamp(20px, 2.4vw, 28px);
+    line-height: 1.15; color: var(--terra-deep);
+    margin: 24px 0 0; padding-left: 18px; border-left: 3px solid var(--terra);
+  }
+  .about-sign { margin-top: 18px; font-style: italic; color: var(--muted-ink); }
+  .about-frames { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .about-frame { min-height: 300px; }
+  .about-frame-2 { margin-top: 34px; }
+  @media (max-width: 520px) {
+    .about-frames { grid-template-columns: 1fr 1fr; }
+    .about-frame { min-height: 220px; }
+    .about-frame-2 { margin-top: 20px; }
+  }
+</style>

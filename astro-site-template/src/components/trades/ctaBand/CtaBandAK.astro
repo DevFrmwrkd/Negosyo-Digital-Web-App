@@ -1,0 +1,53 @@
+---
+/**
+ * trades / CtaBandAK — full-width caution-amber closing band with deep-sheet
+ * type ("Unit not cooling? Breaker acting up?"). Because the band is amber, the
+ * CTAs use deep-sheet fills (scoped here) instead of the global amber .btn so
+ * they stay visible on amber.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || '#location';
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band">
+    <div class="wrap cta-inner reveal">
+      <div class="cta-copy">
+        {tag && <p class="cta-tag" data-field="ctaBand.tag">{tag}</p>}
+        {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      </div>
+      {hasButtons && (
+        <div class="cta-actions">
+          {cta1Text && <a class="cta-btn" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="cta-btn ghost" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--amber); color: var(--sheet-deep); padding: 56px 0; }
+  .cta-inner { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+  .cta-tag { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; font-weight: 700; color: var(--sheet-deep); opacity: .72; margin-bottom: 8px; }
+  .cta-h { font-size: clamp(28px, 4.5vw, 46px); color: var(--sheet-deep); }
+  .cta-sub { color: var(--sheet-deep); opacity: .82; margin-top: 10px; max-width: 46ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+  .cta-btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 52px;
+    padding: 14px 28px; background: var(--sheet-deep); color: var(--white);
+    font-family: var(--body); font-weight: 700; letter-spacing: .04em; font-size: 15px;
+    border: 2px solid var(--sheet-deep); transition: background .2s, color .2s;
+  }
+  .cta-btn:hover { background: transparent; color: var(--sheet-deep); }
+  .cta-btn.ghost { background: transparent; color: var(--sheet-deep); border-color: var(--sheet-deep); }
+  .cta-btn.ghost:hover { background: var(--sheet-deep); color: var(--white); }
+</style>

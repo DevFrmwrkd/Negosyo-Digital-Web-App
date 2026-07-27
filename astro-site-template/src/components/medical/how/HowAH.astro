@@ -1,0 +1,47 @@
+---
+/**
+ * medical / HowAH — "your first visit" numbered list. Big seafoam Cormorant
+ * numerals (01–04) beside hairline-topped step rows (bold title + muted body).
+ * Reads content.how.steps (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how-sect">
+    <div class="wrap">
+      {tag && <p class="eyebrow" data-field="how.tag">{tag}</p>}
+      {headline && <h2 class="how-h" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-list">
+        {steps.map((step, i) => (
+          <li class="how-step reveal">
+            <span class="how-num">{String(i + 1).padStart(2, '0')}</span>
+            <p class="how-copy">
+              <strong data-field={`how.steps.${i}.title`}>{step.title}</strong>
+              {(step.body ?? step.desc ?? step.description) && (
+                <span class="how-body" data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+              )}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-h { font-size: clamp(34px, 5vw, 54px); margin: 16px 0 30px; color: var(--ink); }
+  .how-list { list-style: none; display: grid; gap: 0; counter-reset: s; }
+  .how-step {
+    display: grid; grid-template-columns: 64px 1fr; gap: 18px;
+    padding: 22px 0; border-top: 1px solid var(--rule); align-items: baseline;
+  }
+  .how-step:last-child { border-bottom: 1px solid var(--rule); }
+  .how-num { font-family: var(--display); font-size: 40px; color: var(--seafoam); line-height: 1; }
+  .how-copy { color: var(--muted); }
+  .how-copy strong { color: var(--ink); }
+</style>

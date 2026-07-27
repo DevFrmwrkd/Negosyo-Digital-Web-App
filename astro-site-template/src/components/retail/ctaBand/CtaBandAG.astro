@@ -1,0 +1,53 @@
+---
+/**
+ * retail / CtaBandAG — full-width red-ink band, newsprint-cream type, "send the
+ * list" closer. Because the band is red, the CTAs use cream fills (scoped here)
+ * instead of the global red .btn so they stay visible on red.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || '#location';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band">
+    <div class="wrap cta-inner reveal">
+      <div class="cta-copy">
+        {tag && <p class="cta-tag" data-field="ctaBand.tag">{tag}</p>}
+        {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      </div>
+      {hasButtons && (
+        <div class="cta-actions">
+          {cta1Text && <a class="cta-btn" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="cta-btn ghost" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--red); color: var(--news); padding: 54px 0; }
+  .cta-inner { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+  .cta-tag { font-family: var(--label); font-size: 12px; letter-spacing: .28em; text-transform: uppercase; font-weight: 600; color: var(--news); opacity: .8; margin-bottom: 8px; }
+  .cta-h { font-size: clamp(28px, 4.5vw, 46px); color: var(--news); }
+  .cta-sub { color: var(--news); opacity: .85; margin-top: 10px; max-width: 46ch; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+  .cta-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    min-height: 52px; padding: 14px 28px; background: var(--news); color: var(--red);
+    font-family: var(--label); font-weight: 600; text-transform: uppercase;
+    letter-spacing: .08em; font-size: 16px; border: 2px solid var(--news);
+    transition: background .2s, color .2s;
+  }
+  .cta-btn:hover { background: transparent; color: var(--news); }
+  .cta-btn.ghost { background: transparent; color: var(--news); border-color: var(--news); }
+  .cta-btn.ghost:hover { background: var(--news); color: var(--red); }
+</style>

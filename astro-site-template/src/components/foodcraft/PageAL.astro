@@ -1,0 +1,232 @@
+---
+/**
+ * foodcraft / PageAL — "Pastel Deco Panaderia" (art-deco bakery at dawn).
+ *
+ * A soft cream + terracotta + pistachio bakery palette with arched window
+ * frames, scalloped dividers, offset "printed" card shadows, and the design's
+ * signature detail — steam that actually rises off the hero loaf. Marcellus
+ * (deco display serif) over Karla.
+ *
+ * Design isolation: the pastel palette + base primitives (.arch / .scallop /
+ * .card / deco .btn / details) are scoped to `html[data-page="AL"]` in the
+ * global block below so they never leak to sibling variants and vice-versa.
+ * Because this design's vocabulary (light ground, arched frames, deco serif)
+ * is so far from any shared spine, the base CSS is inlined here — mirroring
+ * how restaurant/PageAE inlines its own base.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned pastel palette wins by default.
+ */
+import HeaderAL from './header/HeaderAL.astro';
+import HeroAL from './hero/HeroAL.astro';
+import TrustAL from './trust/TrustAL.astro';
+import AboutAL from './about/AboutAL.astro';
+import ServicesAL from './services/ServicesAL.astro';
+import WhyAL from './why/WhyAL.astro';
+import HowAL from './how/HowAL.astro';
+import TestimonialsAL from './testimonials/TestimonialsAL.astro';
+import GalleryAL from './gallery/GalleryAL.astro';
+import FaqAL from './faq/FaqAL.astro';
+import AreaAL from './area/AreaAL.astro';
+import CredentialsAL from './credentials/CredentialsAL.astro';
+import LocationAL from './location/LocationAL.astro';
+import CtaBandAL from './ctaBand/CtaBandAL.astro';
+import FooterAL from './footer/FooterAL.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AL">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- Palette tokens + shared base primitives, scoped to html[data-page="AL"]
+       so they never leak to sister variants. -->
+  <style is:global>
+    html[data-page="AL"] {
+      --cream: #faf3e7; --shell: #f2e4cf; --shell-deep: #e9d8bd;
+      --terra: #c26a4a; --terra-deep: #9e4e33;
+      --pist: #8fa882; --pist-deep: #5e7a54;
+      --cocoa: #4a352a; --muted-ink: #6d584a;
+      --cream-rgb: 250,243,231; --cocoa-rgb: 74,53,42; --terra-rgb: 194,106,74;
+      --display: "Marcellus", Georgia, serif;
+      --body: "Karla", system-ui, sans-serif;
+      --maxw: 1040px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --paper: #faf3e7; --ink: #4a352a; --accent: #c26a4a;
+      --paper-rgb: 250,243,231; --ink-rgb: 74,53,42; --accent-rgb: 194,106,74;
+      --serif: "Marcellus", Georgia, serif; --sans: "Karla", system-ui, sans-serif;
+      --on-accent: #faf3e7; --on-ink: #faf3e7; --on-paper: #4a352a;
+    }
+    html[data-page="AL"] * { margin: 0; padding: 0; box-sizing: border-box; }
+    html[data-page="AL"] { scroll-behavior: smooth; }
+    html[data-page="AL"] body {
+      background: var(--cream); color: var(--cocoa);
+      font-family: var(--body); font-size: 16px; line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    html[data-page="AL"] a { color: var(--terra-deep); text-decoration: none; }
+    html[data-page="AL"] a:hover { color: var(--cocoa); }
+    html[data-page="AL"] img { max-width: 100%; display: block; }
+    html[data-page="AL"] h1,
+    html[data-page="AL"] h2,
+    html[data-page="AL"] h3 {
+      font-family: var(--display); font-weight: 400; line-height: 1.05;
+    }
+    html[data-page="AL"] section { padding: 74px 0; position: relative; }
+
+    html[data-page="AL"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+    html[data-page="AL"] .eyebrow {
+      font-size: 12px; letter-spacing: .32em; text-transform: uppercase;
+      color: var(--terra-deep); font-weight: 700; font-family: var(--body);
+    }
+
+    /* Deco pill buttons — solid terra fill, cocoa on hover (design signature). */
+    html[data-page="AL"] .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 52px; padding: 14px 32px; background: var(--terra);
+      color: var(--cream); text-decoration: none; font-weight: 700;
+      font-size: 15px; border-radius: 999px; border: 2px solid var(--terra);
+      font-family: var(--body); cursor: pointer;
+      transition: background .25s, color .25s, transform .15s, border-color .25s;
+    }
+    html[data-page="AL"] .btn:hover { background: var(--cocoa); color: var(--cream); border-color: var(--cocoa); transform: translateY(-2px); }
+    html[data-page="AL"] .btn.line { background: transparent; color: var(--terra-deep); border-color: var(--terra); }
+    html[data-page="AL"] .btn.line:hover { background: var(--terra); color: var(--cream); border-color: var(--terra); }
+
+    /* Scalloped divider — deco lace edge between the shell + cream grounds. */
+    html[data-page="AL"] .scallop {
+      height: 22px;
+      background: radial-gradient(circle at 50% 0, var(--shell) 11px, transparent 12px);
+      background-size: 26px 22px; background-position: center top;
+    }
+
+    /* Arched window frame — the art-directed photo slot. Keeps its terracotta
+       gradient as the designed fallback; a photo layers over it via
+       data-image-field .photo. */
+    html[data-page="AL"] .arch {
+      position: relative; overflow: hidden;
+      border-radius: 200px 200px 12px 12px; border: 2px solid var(--cocoa);
+      min-height: 260px; display: flex; align-items: flex-end;
+      background:
+        linear-gradient(170deg, rgba(194,106,74,.5), rgba(74,53,42,.75)),
+        repeating-linear-gradient(45deg, var(--shell-deep) 0 8px, var(--shell) 8px 16px);
+    }
+    html[data-page="AL"] .arch .photo {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+    }
+    html[data-page="AL"] .arch figcaption {
+      position: relative; z-index: 2; width: 100%; padding: 10px 14px;
+      text-align: center; font-size: 12px; letter-spacing: .2em;
+      text-transform: uppercase; background: rgba(250,243,231,.94);
+      color: var(--terra-deep); border-top: 2px solid var(--cocoa); font-weight: 700;
+    }
+
+    /* Printed-card look — offset shell shadow (design signature). */
+    html[data-page="AL"] .card {
+      background: #fff; border: 2px solid var(--cocoa); border-radius: 14px;
+      padding: 24px; box-shadow: 0 4px 0 var(--shell);
+    }
+
+    /* FAQ accordion — deco asterisk that quarter-turns on open. */
+    html[data-page="AL"] details {
+      background: #fff; border: 2px solid var(--cocoa); border-radius: 14px;
+      margin-bottom: 12px; overflow: hidden;
+    }
+    html[data-page="AL"] summary {
+      cursor: pointer; list-style: none; padding: 16px 20px; font-weight: 700;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 14px; min-height: 44px;
+    }
+    html[data-page="AL"] summary::-webkit-details-marker { display: none; }
+    html[data-page="AL"] summary::after { content: "✳"; color: var(--terra); transition: transform .3s; }
+    html[data-page="AL"] details[open] summary::after { transform: rotate(90deg); }
+    html[data-page="AL"] details .faq-a { padding: 0 20px 18px; color: var(--muted-ink); }
+
+    html[data-page="AL"] .grid2 { display: grid; gap: 40px; }
+
+    /* Scroll-reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AL"] .reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s ease, transform .8s ease; }
+    html[data-page="AL"] .reveal.in { opacity: 1; transform: none; }
+
+    @media (min-width: 800px) {
+      html[data-page="AL"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="AL"] .reveal { opacity: 1; transform: none; transition: none; }
+      html[data-page="AL"] * { animation: none !important; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <HeaderAL layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroAL content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAL content={content} />}
+    {visibility.aboutSection !== false && <AboutAL content={content} />}
+    {visibility.servicesSection !== false && <ServicesAL content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAL content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAL content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAL content={content} />}
+    {visibility.gallerySection !== false && <GalleryAL content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAL content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAL content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAL content={content} />}
+    {visibility.locationBlock !== false && <LocationAL content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAL content={content} layout={layout} />}
+  <FooterAL layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Foodcraft-AL Leaflet boot — accepts (lat, lng, label) from LocationAL.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAL calls this with whatever it resolves).
+      window.__foodcraftALInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50% 50% 50% 0;background:#c26a4a;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(74,53,42,.5);border:2px solid #4a352a;"></div>', iconSize: [18, 18], iconAnchor: [9, 18] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

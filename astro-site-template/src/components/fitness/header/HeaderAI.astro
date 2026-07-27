@@ -1,0 +1,75 @@
+---
+/**
+ * fitness / HeaderAI — transparent paper nav overlaying the poster hero, gaining
+ * a solid paper ground + ink rule once scrolled (toggled by PageAI's inline
+ * scroll handler via header.nav.scrolled). Archivo Black brand with the
+ * design's blood ★ flourish; the phone number sits opposite (the source's
+ * "Bakal★BC / (032) 255-8890" row).
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+const phone = layout.contact?.phone || (content as any).contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+---
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" data-field="footer.brand"><span class="star" aria-hidden="true">★</span>{brand}</a>
+    {navLinks.length > 0 && (
+      <nav class="nav-links" aria-label="Main">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+      </nav>
+    )}
+    <div class="nav-cta">
+      {phone && (
+        <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone" data-href-field="contact.phone.href">{phone}</a>
+      )}
+      <a href="#location" class="find">Find us ↓</a>
+    </div>
+  </div>
+</header>
+<style>
+  header.nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    transition: background .3s ease, border-color .3s ease;
+    border-bottom: 3px solid transparent;
+  }
+  header.nav.scrolled {
+    background: var(--paper);
+    border-bottom: 3px solid var(--ink);
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; padding-block: 16px;
+  }
+  .brand {
+    font-family: var(--display); font-size: 20px; letter-spacing: -.01em;
+    color: var(--ink); text-transform: uppercase; display: inline-flex; align-items: center;
+  }
+  .brand:hover { color: var(--ink); }
+  .brand .star { color: var(--blood); margin-right: 4px; }
+  .nav-links { display: flex; gap: 26px; align-items: center; }
+  .nav-links a {
+    font-family: var(--body); text-transform: uppercase; letter-spacing: .14em;
+    font-size: 12px; font-weight: 600; color: var(--ink); opacity: .82; transition: opacity .2s, color .2s;
+  }
+  .nav-links a:hover { opacity: 1; color: var(--blood); }
+  .nav-cta { display: flex; align-items: center; gap: 18px; }
+  .nav-phone {
+    font-family: var(--body); font-weight: 600; letter-spacing: .06em; font-size: 14px;
+    color: var(--ink);
+  }
+  .nav-phone:hover { color: var(--blood); }
+  .find {
+    font-family: var(--body); font-weight: 600; font-size: 13px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink);
+  }
+  .find:hover { color: var(--blood); }
+  @media (max-width: 860px) { .nav-links { display: none; } }
+  @media (max-width: 520px) { .nav-phone { display: none; } }
+</style>

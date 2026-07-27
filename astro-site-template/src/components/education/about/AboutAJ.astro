@@ -1,0 +1,54 @@
+---
+/**
+ * education / AboutAJ — split "our story, in the margin" grid: copy left, an
+ * ink-bordered plate photo + a notebook callout card right.
+ *
+ * about.imageCaption is an optional extra field (the design's "Teacher Ces and
+ * whiteboard № 1" plate caption); it stays hidden when unset. The design's
+ * callout card maps to about.quote (its bold principle line) + about.signature
+ * (its supporting sentence) — both render only when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+const imgAria = 'About us — photo';
+---
+<section class="about-sect">
+  <div class="wrap grid2">
+    <div class="about-copy reveal">
+      {tag && <span class="note" data-field="about.tag">{tag}</span>}
+      {headline && <h2 class="about-h" data-field="about.headline" set:html={headline}></h2>}
+      {paragraphs.map((p: string, i: number) => (
+        <p class="about-p" data-field={`about.paragraphs.${i}`} set:html={p}></p>
+      ))}
+    </div>
+    <div class="about-media reveal">
+      <figure class="plate about-plate">
+        {image && <div class="photo" data-image-field="about.image" style={`background-image:url('${image}');`} role="img" aria-label={imgAria}></div>}
+        {imageCaption && <figcaption data-field="about.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+      {(quote || signature) && (
+        <div class="about-card card">
+          {quote && <p class="about-card-t" data-field="about.quote">{quote}</p>}
+          {signature && <p class="about-card-b" data-field="about.signature">{signature}</p>}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+<style>
+  .about-h { font-size: clamp(32px, 5vw, 52px); margin: 14px 0 20px; color: var(--ink); }
+  .about-p { margin-bottom: 16px; color: var(--ink-soft); }
+  .about-p:first-of-type { color: var(--ink); }
+  .about-media { display: grid; gap: 16px; }
+  .about-plate { min-height: 250px; }
+  .about-card-t { font-family: var(--serif); font-size: 20px; color: var(--ink); margin-bottom: 6px; }
+  .about-card-b { color: var(--ink-soft); font-size: 15px; }
+</style>

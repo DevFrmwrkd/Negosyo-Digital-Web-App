@@ -1,0 +1,50 @@
+---
+/**
+ * retail / TestimonialsAG — "Letters to the editor". Red-ruled italic
+ * blockquotes with Oswald attribution, laid out as a broadsheet letters column.
+ * Reads content.testimonials.items (canonical `who` + `role`, legacy `author` /
+ * `name` / `context`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const test = content.testimonials || {};
+const tag = test.tag || '';
+const headline = test.headline || '';
+type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
+const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+---
+{items.length > 0 && (
+  <section class="test-sect" id="reviews">
+    <div class="wrap">
+      {tag && <p class="rubric" data-field="testimonials.tag">{tag}</p>}
+      {headline && <h2 class="test-h" data-field="testimonials.headline" set:html={headline}></h2>}
+      <div class="test-grid">
+        {items.map((item, i) => {
+          const who = item.who ?? item.author ?? item.name;
+          const role = item.role ?? item.context;
+          return (
+            <blockquote class="test-card reveal">
+              <p class="test-quote" data-field={`testimonials.items.${i}.quote`}>“{item.quote}”</p>
+              {(who || role) && (
+                <footer class="test-by">
+                  {who && <span data-field={`testimonials.items.${i}.who`}>{who}</span>}
+                  {role && <span data-field={`testimonials.items.${i}.role`}> · {role}</span>}
+                </footer>
+              )}
+            </blockquote>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .test-h { font-size: clamp(32px, 5vw, 54px); margin: 14px 0 26px; color: var(--ink); }
+  .test-grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .test-card { border-left: 4px solid var(--red); padding-left: 22px; }
+  .test-quote { font-style: italic; font-size: 17px; margin-bottom: 10px; color: var(--ink); }
+  .test-by {
+    font-family: var(--label); font-size: 13px; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--faded);
+  }
+</style>

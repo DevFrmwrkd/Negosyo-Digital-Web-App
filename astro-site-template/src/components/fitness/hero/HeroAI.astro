@@ -1,0 +1,65 @@
+---
+/**
+ * fitness / HeroAI — wheat-paste poster hero on the raw paper ground. A giant
+ * Archivo Black headline (blood-red on even lines, the design's "TRAIN / UGLY."
+ * two-tone), a condensed sub, the jab-skew CTAs, and a full-bleed halftone plate
+ * pinned to the base carrying its figcaption tag.
+ *
+ * The photo (hero.image) layers over the art-directed halftone texture, which
+ * stays as the designed fallback when no photo is set. hero.kicker renders as a
+ * rubber stamp above the headline only when provided (the source ships none).
+ * The top nav lives in HeaderAI, so the hero copy clears the fixed bar via
+ * padding.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#location';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#schedule');
+const tagText = hero.tag || '';
+---
+<header class="hero-ai" id="top-hero">
+  <div class="wrap hero-inner">
+    {kicker && <span class="stamp hero-kick reveal" data-field="hero.kicker">{kicker}</span>}
+    {headlineLines.length > 0 && (
+      <h1 class="hero-h">
+        {headlineLines.map((line: string, i: number) => (
+          <span class="hl-line" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+        ))}
+      </h1>
+    )}
+    {sub && <p class="hero-sub" data-field="hero.sub">{sub}</p>}
+    {(cta1Text || cta2Text) && (
+      <div class="hero-cta">
+        {cta1Text && <a class="btn" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+        {cta2Text && <a class="btn blk" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+      </div>
+    )}
+  </div>
+  <figure class="halftone hero-plate">
+    {heroImage && <div class="photo" data-image-field="hero.image" style={`background-image:url('${heroImage}');`}></div>}
+    {tagText && <figcaption data-field="hero.tag">{tagText}</figcaption>}
+  </figure>
+</header>
+<style>
+  .hero-ai { border-bottom: 6px solid var(--ink); position: relative; overflow: hidden; }
+  .hero-inner { padding: 128px 20px 0; }
+  .hero-kick { margin-bottom: 22px; }
+  .hero-h { font-size: clamp(64px, 16vw, 210px); color: var(--ink); margin: 0; }
+  .hero-h .hl-line { display: block; }
+  .hero-h .hl-line:nth-child(even) { color: var(--blood); }
+  .hero-sub {
+    font-size: clamp(17px, 2.2vw, 21px); max-width: 52ch; font-weight: 500;
+    margin: 26px 0 28px;
+  }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 16px; padding-bottom: 56px; }
+  .hero-plate { min-height: 320px; border-left: 0; border-right: 0; border-bottom: 0; }
+</style>

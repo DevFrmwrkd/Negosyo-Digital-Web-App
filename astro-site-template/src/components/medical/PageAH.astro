@@ -1,0 +1,217 @@
+---
+/**
+ * medical / PageAH — "Clinical Editorial" (Swiss-magazine clinic page).
+ *
+ * A porcelain-and-seafoam duotone with hairline rules, an asymmetric editorial
+ * grid, and a quiet Cormorant Garamond serif display over Figtree. Credibility
+ * through restraint — the YMYL clinic answer to stock-photo smiles.
+ *
+ * Design isolation: the porcelain/seafoam palette + base primitives are scoped
+ * to `html[data-page="AH"]` in the global block below so sister family variants
+ * never inherit this variant's tokens or the bespoke `.plate` / `.eyebrow` /
+ * `.rule` primitives (and vice-versa). Because this design's vocabulary (serif
+ * display, light ground, hairline rules) is self-contained, the base CSS is
+ * inlined here rather than imported from a shared spine.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned porcelain/seafoam palette wins by default.
+ */
+import HeaderAH from './header/HeaderAH.astro';
+import HeroAH from './hero/HeroAH.astro';
+import TrustAH from './trust/TrustAH.astro';
+import AboutAH from './about/AboutAH.astro';
+import ServicesAH from './services/ServicesAH.astro';
+import WhyAH from './why/WhyAH.astro';
+import HowAH from './how/HowAH.astro';
+import TestimonialsAH from './testimonials/TestimonialsAH.astro';
+import GalleryAH from './gallery/GalleryAH.astro';
+import FaqAH from './faq/FaqAH.astro';
+import AreaAH from './area/AreaAH.astro';
+import CredentialsAH from './credentials/CredentialsAH.astro';
+import LocationAH from './location/LocationAH.astro';
+import CtaBandAH from './ctaBand/CtaBandAH.astro';
+import FooterAH from './footer/FooterAH.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AH">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- Palette tokens + shared base primitives, scoped to html[data-page="AH"]
+       so they never leak to sister family variants. -->
+  <style is:global>
+    html[data-page="AH"] {
+      --porcelain: #f7f5f0; --card: #ffffff; --ink: #1f2a28; --muted: #5c6b67;
+      --seafoam: #7fb5a4; --seafoam-deep: #33695a; --rule: #d8d3c8;
+      --porcelain-rgb: 247,245,240; --ink-rgb: 31,42,40; --seafoam-deep-rgb: 51,105,90;
+      --display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+      --body: "Figtree", system-ui, sans-serif;
+      --pad: clamp(20px, 5vw, 60px); --maxw: 1060px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --paper: #f7f5f0; --ink: #1f2a28; --accent: #33695a;
+      --paper-rgb: 247,245,240; --ink-rgb: 31,42,40; --accent-rgb: 51,105,90;
+      --serif: "Cormorant Garamond", Georgia, serif; --sans: "Figtree", system-ui, sans-serif;
+      --on-accent: #ffffff; --on-ink: #f7f5f0; --on-paper: #1f2a28;
+    }
+    html[data-page="AH"] * { margin: 0; padding: 0; box-sizing: border-box; }
+    html[data-page="AH"] { scroll-behavior: smooth; }
+    html[data-page="AH"] body {
+      background: var(--porcelain); color: var(--ink);
+      font-family: var(--body); font-size: 16px; line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    html[data-page="AH"] a { color: var(--seafoam-deep); text-decoration: none; }
+    html[data-page="AH"] a:hover { color: var(--ink); }
+    html[data-page="AH"] img { max-width: 100%; display: block; }
+    html[data-page="AH"] h1,
+    html[data-page="AH"] h2,
+    html[data-page="AH"] h3 {
+      font-family: var(--display); font-weight: 600;
+      line-height: 1.05; letter-spacing: -.01em;
+    }
+    html[data-page="AH"] section { padding: 76px 0; position: relative; }
+
+    html[data-page="AH"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+    /* Editorial eyebrow — the design's kicker. */
+    html[data-page="AH"] .eyebrow {
+      font-size: 11px; letter-spacing: .3em; text-transform: uppercase;
+      color: var(--seafoam-deep); font-weight: 600; font-family: var(--body);
+    }
+
+    /* Hairline rule — the recurring editorial divider. */
+    html[data-page="AH"] .rule { border: 0; border-top: 1px solid var(--rule); }
+
+    /* Buttons — solid seafoam-deep fill, ink on hover (design signature). */
+    html[data-page="AH"] .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 52px; padding: 14px 32px; background: var(--seafoam-deep);
+      color: #fff; text-decoration: none; font-weight: 600; font-size: 15px;
+      letter-spacing: .04em; border-radius: 2px; border: 1px solid var(--seafoam-deep);
+      font-family: var(--body); cursor: pointer; transition: background .25s, color .25s;
+    }
+    html[data-page="AH"] .btn:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+    html[data-page="AH"] .btn.line { background: transparent; color: var(--seafoam-deep); }
+    html[data-page="AH"] .btn.line:hover { background: var(--seafoam-deep); color: #fff; border-color: var(--seafoam-deep); }
+
+    /* Art-directed "plate" — the seafoam gradient that stays as the designed
+       fallback background of every data-image-field photo slot. */
+    html[data-page="AH"] .plate {
+      position: relative; overflow: hidden;
+      background: linear-gradient(155deg, #d8e7e0 10%, #9dc4b5 60%, #6fa693 100%);
+      min-height: 240px; display: flex; align-items: flex-end;
+    }
+    html[data-page="AH"] .plate .photo {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+    }
+    html[data-page="AH"] .plate figcaption {
+      position: relative; width: 100%; padding: 10px 14px; font-size: 11px;
+      letter-spacing: .22em; text-transform: uppercase; color: var(--seafoam-deep);
+      background: rgba(var(--porcelain-rgb), .92);
+    }
+
+    html[data-page="AH"] .grid2 { display: grid; gap: 44px; }
+
+    /* FAQ accordion — signature rotating plus marker. */
+    html[data-page="AH"] details { border-top: 1px solid var(--rule); }
+    html[data-page="AH"] details:last-of-type { border-bottom: 1px solid var(--rule); }
+    html[data-page="AH"] summary {
+      cursor: pointer; list-style: none; display: flex; justify-content: space-between;
+      align-items: center; gap: 18px; padding: 20px 0; font-weight: 600; min-height: 44px;
+    }
+    html[data-page="AH"] summary::-webkit-details-marker { display: none; }
+    html[data-page="AH"] summary::after {
+      content: "+"; font-family: var(--display); font-size: 26px; color: var(--seafoam-deep);
+      transition: transform .35s cubic-bezier(.4,0,.2,1); flex: 0 0 auto;
+    }
+    html[data-page="AH"] details[open] summary::after { transform: rotate(135deg); }
+    html[data-page="AH"] details .faq-a { padding: 0 0 22px; color: var(--muted); max-width: 62ch; }
+
+    /* Scroll-reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AH"] .reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s ease, transform .8s ease; }
+    html[data-page="AH"] .reveal.in { opacity: 1; transform: none; }
+
+    @media (min-width: 800px) {
+      html[data-page="AH"] .grid2 { grid-template-columns: 5fr 4fr; align-items: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="AH"] .reveal { opacity: 1; transform: none; transition: none; }
+      html[data-page="AH"] * { animation: none !important; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <HeaderAH layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroAH content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAH content={content} />}
+    {visibility.aboutSection !== false && <AboutAH content={content} />}
+    {visibility.servicesSection !== false && <ServicesAH content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAH content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAH content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAH content={content} />}
+    {visibility.gallerySection !== false && <GalleryAH content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAH content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAH content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAH content={content} />}
+    {visibility.locationBlock !== false && <LocationAH content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAH content={content} layout={layout} />}
+  <FooterAH layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Medical-AH Leaflet boot — accepts (lat, lng, label) from LocationAH.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAH calls this with whatever it resolves).
+      // Light CARTO basemap + seafoam-deep pin to match the porcelain palette.
+      window.__medicalAHInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50% 50% 50% 0;background:#33695a;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(31,42,40,.4);border:2px solid #f7f5f0;"></div>', iconSize: [18, 18], iconAnchor: [9, 18] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

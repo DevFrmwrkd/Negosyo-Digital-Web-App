@@ -1,0 +1,241 @@
+---
+/**
+ * retail / PageAG — "Broadsheet Catalog" (art-directed hardware-store broadsheet).
+ *
+ * A newsprint-cream ground with red-ink stamps, double column rules, a masthead
+ * hero, and service cards that tilt like rubber stamps on hover. Playfair Display
+ * (masthead), Source Serif 4 (body), Oswald (rubrics / labels).
+ *
+ * Design isolation: the newsprint palette + base primitives (.rubric, .dbl,
+ * .btn, .plate, .stampcard, .colrule, details) are scoped to
+ * `html[data-page="AG"]` in the global block below so sibling retail variants
+ * (future letters) never inherit this variant's tokens or its bespoke
+ * broadsheet vocabulary (and vice-versa). Because this design's language
+ * (Playfair masthead, halftone newsprint, red rubber stamps) is self-contained,
+ * the base CSS is inlined here rather than importing a shared spine.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned newsprint palette wins by default.
+ */
+import HeaderAG from './header/HeaderAG.astro';
+import HeroAG from './hero/HeroAG.astro';
+import TrustAG from './trust/TrustAG.astro';
+import AboutAG from './about/AboutAG.astro';
+import ServicesAG from './services/ServicesAG.astro';
+import WhyAG from './why/WhyAG.astro';
+import HowAG from './how/HowAG.astro';
+import TestimonialsAG from './testimonials/TestimonialsAG.astro';
+import GalleryAG from './gallery/GalleryAG.astro';
+import FaqAG from './faq/FaqAG.astro';
+import AreaAG from './area/AreaAG.astro';
+import CredentialsAG from './credentials/CredentialsAG.astro';
+import LocationAG from './location/LocationAG.astro';
+import CtaBandAG from './ctaBand/CtaBandAG.astro';
+import FooterAG from './footer/FooterAG.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AG">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Oswald:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- Palette tokens + shared base primitives, scoped to html[data-page="AG"]
+       so they never leak to sibling retail variants. -->
+  <style is:global>
+    html[data-page="AG"] {
+      --news: #f4efe3; --ink: #20201c; --faded: #57544a; --rule: #b8b09c;
+      --red: #a3271e; --red-bright: #c33227;
+      --news-rgb: 244,239,227; --ink-rgb: 32,32,28; --red-rgb: 163,39,30;
+      --display: "Playfair Display", Georgia, serif;
+      --body: "Source Serif 4", Georgia, serif;
+      --label: "Oswald", system-ui, sans-serif;
+      --pad: clamp(20px, 5vw, 60px); --maxw: 1080px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --paper: #f4efe3; --paper-2: #ffffff; --card: #ffffff;
+      --accent: #a3271e; --ink-soft: #57544a; --line: #b8b09c;
+      --paper-rgb: 244,239,227; --accent-rgb: 163,39,30;
+      --serif: "Playfair Display", Georgia, serif;
+      --sans: "Source Serif 4", Georgia, serif;
+      --disp: "Playfair Display", Georgia, serif;
+      --on-accent: #f4efe3; --on-ink: #f4efe3; --on-paper: #20201c;
+    }
+    html[data-page="AG"] * { margin: 0; padding: 0; box-sizing: border-box; }
+    html[data-page="AG"] { scroll-behavior: smooth; }
+    html[data-page="AG"] body {
+      background: var(--news); color: var(--ink);
+      font-family: var(--body); font-size: 16px; line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      background-image: radial-gradient(rgba(32,32,28,.045) 1px, transparent 1px);
+      background-size: 4px 4px;
+    }
+    html[data-page="AG"] a { color: var(--red); text-decoration: none; }
+    html[data-page="AG"] a:hover { color: var(--ink); }
+    html[data-page="AG"] img { max-width: 100%; display: block; }
+    html[data-page="AG"] h1,
+    html[data-page="AG"] h2 {
+      font-family: var(--display); font-weight: 900;
+      line-height: .98; letter-spacing: -.015em;
+    }
+    html[data-page="AG"] h3 {
+      font-family: var(--label); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    html[data-page="AG"] section { padding: 64px 0; position: relative; }
+
+    html[data-page="AG"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+
+    /* Oswald rubric — the red section eyebrow that reads like a broadsheet dept head. */
+    html[data-page="AG"] .rubric {
+      font-family: var(--label); font-size: 12px; letter-spacing: .3em;
+      text-transform: uppercase; color: var(--red); font-weight: 600;
+    }
+    /* Double newsprint rule — the masthead's signature divider. */
+    html[data-page="AG"] .dbl { border-top: 4px double var(--ink); }
+
+    /* Buttons — solid red-ink fill, inks-over on hover; ".line" = outline. */
+    html[data-page="AG"] .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 52px; padding: 14px 30px; background: var(--red); color: var(--news);
+      font-family: var(--label); font-weight: 600; font-size: 16px;
+      text-transform: uppercase; letter-spacing: .08em; text-decoration: none;
+      cursor: pointer; transition: background .2s, color .2s;
+    }
+    html[data-page="AG"] .btn:hover { background: var(--ink); color: var(--news); }
+    html[data-page="AG"] .btn.line { background: transparent; color: var(--ink); border: 2px solid var(--ink); }
+    html[data-page="AG"] .btn.line:hover { background: var(--ink); color: var(--news); }
+
+    /* Art-directed "plate" — the sepia newsprint-halftone photo slot; the
+       red/ink gradient + dot texture stay as the designed fallback background
+       of every data-image-field photo. */
+    html[data-page="AG"] .plate {
+      position: relative; overflow: hidden; border: 1px solid var(--ink);
+      min-height: 230px; display: flex; align-items: flex-end; filter: sepia(.15);
+      background:
+        linear-gradient(160deg, rgba(163,39,30,.35), rgba(32,32,28,.82)),
+        radial-gradient(rgba(32,32,28,.5) 1px, transparent 1.6px);
+      background-size: auto, 5px 5px;
+    }
+    html[data-page="AG"] .plate .photo {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+    }
+    html[data-page="AG"] .plate figcaption {
+      position: relative; z-index: 1; width: 100%; padding: 8px 12px;
+      font-family: var(--label); font-size: 11px; letter-spacing: .2em;
+      text-transform: uppercase; background: var(--news); color: var(--ink);
+      border-top: 1px solid var(--ink);
+    }
+
+    /* Signature: rubber-stamp tilt on hover. */
+    html[data-page="AG"] .stampcard {
+      background: #fff; border: 2px solid var(--ink); padding: 22px;
+      transition: transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s;
+    }
+    html[data-page="AG"] .stampcard:hover {
+      transform: rotate(-1.4deg) scale(1.015); box-shadow: 5px 6px 0 rgba(163,39,30,.35);
+    }
+
+    /* Accordion — the ❧ fleuron that rotates 90° on open (design signature). */
+    html[data-page="AG"] details { border-bottom: 1px solid var(--rule); }
+    html[data-page="AG"] summary {
+      cursor: pointer; list-style: none; padding: 17px 0; font-weight: 600;
+      display: flex; justify-content: space-between; align-items: center; gap: 14px; min-height: 44px;
+    }
+    html[data-page="AG"] summary::-webkit-details-marker { display: none; }
+    html[data-page="AG"] summary::after { content: "\2767"; color: var(--red); transition: transform .25s; }
+    html[data-page="AG"] details[open] summary::after { transform: rotate(90deg); }
+    html[data-page="AG"] details p,
+    html[data-page="AG"] details .faq-a { padding: 0 0 18px; color: var(--faded); }
+
+    /* Two-column broadsheet grid + hairline column rule. */
+    html[data-page="AG"] .grid2 { display: grid; gap: 36px; }
+    html[data-page="AG"] .colrule { border-left: 1px solid var(--rule); padding-left: 28px; }
+
+    /* Scroll-reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AG"] .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s ease; }
+    html[data-page="AG"] .reveal.in { opacity: 1; transform: none; }
+
+    @media (min-width: 820px) {
+      html[data-page="AG"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    @media (max-width: 819px) {
+      html[data-page="AG"] .colrule { border-left: 0; padding-left: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="AG"] .reveal { opacity: 1; transform: none; transition: none; }
+      html[data-page="AG"] * { animation: none !important; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <HeaderAG layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroAG content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAG content={content} />}
+    {visibility.aboutSection !== false && <AboutAG content={content} />}
+    {visibility.servicesSection !== false && <ServicesAG content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAG content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAG content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAG content={content} />}
+    {visibility.gallerySection !== false && <GalleryAG content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAG content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAG content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAG content={content} />}
+    {visibility.locationBlock !== false && <LocationAG content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAG content={content} layout={layout} />}
+  <FooterAG layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // retail-AG Leaflet boot — accepts (lat, lng, label) from LocationAG.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords. Light newsprint-toned basemap to match the palette.
+      window.__retailAGInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50% 50% 50% 0;background:#a3271e;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(32,32,28,.5);border:2px solid #20201c;"></div>', iconSize: [18, 18], iconAnchor: [9, 18] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

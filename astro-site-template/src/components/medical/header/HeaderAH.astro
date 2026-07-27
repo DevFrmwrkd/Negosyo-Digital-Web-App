@@ -1,0 +1,54 @@
+---
+/**
+ * medical / HeaderAH — in-flow porcelain nav bar sitting above the hero, closed
+ * by a hairline rule (the design's editorial nav). Cormorant brand left, a
+ * seafoam "Book" line-button right. Reuses the hero's primary CTA
+ * (content.hero.cta1) for the Book action so it stays editable and in sync.
+ *
+ * Kept in-flow (not fixed) to match the design; navLinks render only when the
+ * layout supplies them.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+const hero = (content as any).hero || {};
+const bookText = hero.cta1?.text || 'Book';
+const bookHref = hero.cta1?.href || '#location';
+---
+<header class="med-nav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" data-field="footer.brand" set:html={brand}></a>
+    {navLinks.length > 0 && (
+      <nav class="nav-links" aria-label="Main">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+      </nav>
+    )}
+    <a class="btn line nav-book" href={bookHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{bookText}</a>
+  </div>
+</header>
+<style>
+  .med-nav { background: var(--porcelain); padding-top: 26px; }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; padding-bottom: 22px; border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font-family: var(--display); font-size: 24px; font-weight: 600;
+    color: var(--ink); letter-spacing: -.01em;
+  }
+  .brand:hover { color: var(--ink); }
+  .brand :global(em) { font-style: normal; color: var(--seafoam-deep); }
+  .nav-links { display: flex; gap: 26px; align-items: center; }
+  .nav-links a {
+    font-family: var(--body); text-transform: uppercase; letter-spacing: .18em;
+    font-size: 11.5px; color: var(--muted); transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--seafoam-deep); }
+  .nav-book { min-height: 44px; padding: 10px 22px; font-size: 14px; }
+  @media (max-width: 720px) { .nav-links { display: none; } }
+</style>

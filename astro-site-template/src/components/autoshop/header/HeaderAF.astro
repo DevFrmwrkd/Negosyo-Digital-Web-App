@@ -1,0 +1,65 @@
+---
+/**
+ * autoshop / HeaderAF — job-sheet brand bar. A hazard chevron strip over a
+ * sticky paper bar carrying the stencil brand (with the design's red ■ mark),
+ * optional nav links, and the shop phone. Gains a hard ink underline once
+ * scrolled (toggled by PageAF's inline handler via header.site.scrolled).
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+const phone = layout.contact?.phone || (content as any).contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+---
+<header class="site">
+  <div class="chev"></div>
+  <div class="wrap bar">
+    <a href="#top" class="brand" data-field="footer.brand"><span class="mark" aria-hidden="true"></span>{brand}</a>
+    {navLinks.length > 0 && (
+      <nav class="nav-links" aria-label="Main">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+      </nav>
+    )}
+    {phone && (
+      <a href={`tel:${phoneDigits}`} class="phone" data-field="contact.phone" data-href-field="contact.phone.href">☎ {phone}</a>
+    )}
+  </div>
+</header>
+<style>
+  header.site {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--paper);
+    border-bottom: 2px solid transparent;
+    transition: box-shadow .25s ease, border-color .25s ease;
+  }
+  header.site.scrolled {
+    border-bottom-color: var(--ink);
+    box-shadow: 0 4px 0 rgba(var(--ink-rgb), .08);
+  }
+  .bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; padding-block: 16px;
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--display); font-weight: 800; font-size: 22px;
+    text-transform: uppercase; letter-spacing: .01em; color: var(--ink);
+  }
+  .brand:hover { color: var(--ink); }
+  .brand .mark { width: 11px; height: 11px; background: var(--red); flex: none; }
+  .nav-links { display: flex; gap: 22px; align-items: center; }
+  .nav-links a {
+    font-family: var(--body); text-transform: uppercase; letter-spacing: .14em;
+    font-size: 11.5px; font-weight: 500; color: var(--ink); opacity: .78;
+    transition: opacity .2s, color .2s;
+  }
+  .nav-links a:hover { opacity: 1; color: var(--red); }
+  .phone { font-family: var(--body); font-weight: 700; font-size: 14px; color: var(--ink); white-space: nowrap; }
+  .phone:hover { color: var(--red); }
+  @media (max-width: 860px) { .nav-links { display: none; } }
+</style>

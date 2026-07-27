@@ -1,0 +1,57 @@
+---
+/**
+ * trades / HeaderAK — thin blueprint top strip sitting inline above the hero
+ * (the design's "LINYA/SERVICES · 0917…" bar). Brand in Space Grotesk with an
+ * amber slash-accent when the brand contains "/", a tel link on the right.
+ *
+ * Not a fixed overlay — the source design keeps this strip in normal flow at
+ * the sheet's top edge. navLinks render only when layout supplies them (the
+ * source ships none). Class "nav" is kept so PageAK's inert scroll handler has
+ * a target; no scrolled styling is applied.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+const phone = layout.contact?.phone || (content as any).contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+---
+<header class="nav" style="border-bottom:1px solid var(--line)">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand" data-field="footer.brand">{brand}</a>
+    {navLinks.length > 0 && (
+      <nav class="nav-links" aria-label="Main">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+      </nav>
+    )}
+    {phone && (
+      <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone" data-href-field="contact.phone.href">{phone}</a>
+    )}
+  </div>
+</header>
+<style>
+  header.nav { position: relative; z-index: 20; }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; padding-top: 24px; padding-bottom: 4px;
+  }
+  .brand {
+    font-family: var(--display); font-weight: 700; font-size: 20px;
+    color: var(--white); letter-spacing: -.01em;
+  }
+  .brand:hover { color: var(--white); }
+  .nav-links { display: flex; gap: 22px; align-items: center; }
+  .nav-links a {
+    font-family: var(--body); text-transform: uppercase; letter-spacing: .16em;
+    font-size: 11.5px; color: var(--chalk); transition: color .2s;
+  }
+  .nav-links a:hover { color: var(--amber); }
+  .nav-phone {
+    font-family: var(--display); font-weight: 700; font-size: 14px; color: var(--white);
+  }
+  .nav-phone:hover { color: var(--amber); }
+</style>

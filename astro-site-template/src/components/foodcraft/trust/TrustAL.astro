@@ -1,0 +1,40 @@
+---
+/**
+ * foodcraft / TrustAL — a thin credibility strip under the hero (the design's
+ * "Two generations of panaderos · rating · today's hours" row). Renders
+ * content.trust.cells as deco-serif statement + muted label pairs.
+ *
+ * The design's volatile Google rating / today's-hours slots have no field in
+ * the data model, so — like the reference TrustAE — they are simply expressed
+ * as ordinary trust cells (num + label) the admin can fill or leave off.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust-sect">
+    <div class="wrap trust-bar">
+      {cells.map((cell, i) => (
+        <div class="trust-cell reveal">
+          {cell.num && <div class="num" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="lbl" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust-sect { padding: 28px 0; }
+  .trust-bar {
+    display: flex; flex-wrap: wrap; gap: 20px 40px;
+    justify-content: space-between; align-items: center;
+  }
+  .trust-cell .num {
+    font-family: var(--display); font-size: 19px; color: var(--cocoa); line-height: 1.2;
+  }
+  .trust-cell .lbl {
+    font-family: var(--body); font-size: 14px; color: var(--muted-ink); margin-top: 4px;
+  }
+</style>

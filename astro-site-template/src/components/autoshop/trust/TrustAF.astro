@@ -1,0 +1,40 @@
+---
+/**
+ * autoshop / TrustAF — thin ink credibility strip under the hero. Renders
+ * content.trust.cells across a row (the design's "15+ years · rating · today's
+ * hours · TESDA-certified" bar). The first cell reads as the hazard headline
+ * stat; the rest are mono job-sheet notes. Volatile Google rating / today's-
+ * hours slots have no dedicated field in the data model, so they are expressed
+ * as ordinary trust cells (num + label).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num?: string; label?: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust-sect">
+    <div class="wrap trust-bar">
+      {cells.map((cell, i) => (
+        <div class="trust-cell reveal">
+          {cell.num && <span class="num" data-field={`trust.cells.${i}.num`} set:html={cell.num}></span>}
+          {cell.label && <span class="lbl" data-field={`trust.cells.${i}.label`}>{cell.label}</span>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust-sect { padding: 30px 0; background: var(--ink); color: var(--paper); }
+  .trust-bar {
+    display: flex; flex-wrap: wrap; gap: 18px 30px;
+    justify-content: space-between; align-items: center; font-size: 13px;
+  }
+  .trust-cell { display: inline-flex; flex-direction: column; gap: 2px; }
+  .trust-cell .num {
+    font-family: var(--display); font-weight: 800; font-size: 20px;
+    text-transform: uppercase; color: var(--haz); line-height: 1.05;
+  }
+  .trust-cell .lbl { font-family: var(--body); color: var(--paper); opacity: .82; letter-spacing: .02em; }
+  .trust-cell:only-child { flex-direction: row; align-items: baseline; gap: 10px; }
+</style>

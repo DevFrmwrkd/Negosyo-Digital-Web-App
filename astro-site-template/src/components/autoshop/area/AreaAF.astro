@@ -1,0 +1,52 @@
+---
+/**
+ * autoshop / AreaAF — hazard "mobile service area" band, ink-ruled top+bottom.
+ * The design ships a bare "Mobile service area:" label followed by the served
+ * towns as a dot-separated list. Reads content.area.places (legacy `items`);
+ * area.tag drives the stencil label. Optional headline / sub render above the
+ * strip when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area-sect">
+    <div class="wrap">
+      {(headline || sub) && (
+        <div class="area-head reveal">
+          {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+          {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+        </div>
+      )}
+      <div class="area-bar reveal">
+        {tag && <strong class="area-label" data-field="area.tag">{tag}</strong>}
+        <span class="area-places">
+          {places.map((place, i) => (
+            <>{i > 0 && <span class="sep"> · </span>}<span data-field={`area.places.${i}`}>{place}</span></>
+          ))}
+        </span>
+      </div>
+      {body && <p class="area-body" data-field="area.body">{body}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .area-sect {
+    padding: 34px 0; background: var(--haz); color: var(--ink);
+    border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink);
+  }
+  .area-head { margin-bottom: 16px; }
+  .area-h { font-size: clamp(26px, 4vw, 40px); color: var(--ink); }
+  .area-sub { color: var(--ink); opacity: .8; margin-top: 8px; max-width: 56ch; }
+  .area-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+  .area-label { font-family: var(--display); font-weight: 800; text-transform: uppercase; font-size: 18px; margin-right: 10px; }
+  .area-places { font-size: 14px; }
+  .area-places .sep { opacity: .55; }
+  .area-body { margin-top: 14px; max-width: 62ch; font-size: 14px; }
+</style>

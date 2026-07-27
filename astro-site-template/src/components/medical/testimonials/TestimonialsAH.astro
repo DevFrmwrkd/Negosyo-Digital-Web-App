@@ -1,0 +1,69 @@
+---
+/**
+ * medical / TestimonialsAH — patient words on the seafoam-deep band. Mirrors the
+ * design's editorial split: the first quote reads large in Cormorant on the
+ * left, the remaining quotes stack small on the right. Reads
+ * content.testimonials.items (canonical `who` + `role`, legacy
+ * `author` / `name` / `context`). The optional headline renders when provided;
+ * the design ships an eyebrow only.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const test = content.testimonials || {};
+const tag = test.tag || '';
+const headline = test.headline || '';
+type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
+const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+const feature = items[0];
+const rest = items.slice(1);
+const nameOf = (it: Item) => it.who ?? it.author ?? it.name;
+const roleOf = (it: Item) => it.role ?? it.context;
+---
+{items.length > 0 && (
+  <section class="test-sect" id="reviews">
+    <div class="wrap">
+      {tag && <p class="eyebrow test-eyebrow" data-field="testimonials.tag">{tag}</p>}
+      {headline && <h2 class="test-h" data-field="testimonials.headline" set:html={headline}></h2>}
+      <div class="test-grid grid2">
+        <blockquote class="test-feature reveal">
+          <p data-field="testimonials.items.0.quote">“{feature.quote}”</p>
+          {(nameOf(feature) || roleOf(feature)) && (
+            <footer>
+              {nameOf(feature) && <span data-field="testimonials.items.0.who">{nameOf(feature)}</span>}
+              {roleOf(feature) && <span data-field="testimonials.items.0.role"> · {roleOf(feature)}</span>}
+            </footer>
+          )}
+        </blockquote>
+        {rest.length > 0 && (
+          <div class="test-stack reveal">
+            {rest.map((item, i) => (
+              <blockquote class="test-small">
+                <p data-field={`testimonials.items.${i + 1}.quote`}>“{item.quote}”</p>
+                {(nameOf(item) || roleOf(item)) && (
+                  <footer>
+                    {nameOf(item) && <span data-field={`testimonials.items.${i + 1}.who`}>{nameOf(item)}</span>}
+                    {roleOf(item) && <span data-field={`testimonials.items.${i + 1}.role`}> · {roleOf(item)}</span>}
+                  </footer>
+                )}
+              </blockquote>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .test-sect { background: var(--seafoam-deep); color: #f2efe8; }
+  .test-eyebrow { color: #bcd9ce; }
+  .test-h { font-size: clamp(30px, 4vw, 48px); color: #f2efe8; margin: 14px 0 6px; }
+  .test-grid { margin-top: 26px; }
+  .test-feature p {
+    font-family: var(--display); font-size: clamp(24px, 3vw, 32px);
+    line-height: 1.3; margin-bottom: 16px; color: #f2efe8;
+  }
+  .test-feature footer { font-size: 14px; color: #bcd9ce; }
+  .test-stack { display: grid; gap: 28px; }
+  .test-small p { margin-bottom: 10px; color: #f2efe8; }
+  .test-small footer { font-size: 14px; color: #bcd9ce; }
+</style>

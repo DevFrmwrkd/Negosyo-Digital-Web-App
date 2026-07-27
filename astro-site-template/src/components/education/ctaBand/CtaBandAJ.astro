@@ -1,0 +1,51 @@
+---
+/**
+ * education / CtaBandAJ — centered ink closing band, paper type, with a
+ * highlighter-yellow primary CTA (the design's "Book the free diagnostic"
+ * button on the ink ground). Because the band is dark ink, the CTAs are scoped
+ * here (yellow fill / paper-outline) instead of the global ink .btn.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || '#location';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band">
+    <div class="wrap cta-inner reveal">
+      {tag && <p class="cta-tag" data-field="ctaBand.tag">{tag}</p>}
+      {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+      {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      {hasButtons && (
+        <div class="cta-actions">
+          {cta1Text && <a class="cta-btn" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="cta-btn ghost" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--ink); color: var(--paper); padding: 76px 0; text-align: center; }
+  .cta-inner { max-width: 660px; margin: 0 auto; }
+  .cta-tag { font-family: var(--script); font-size: 22px; color: var(--hl); margin-bottom: 8px; }
+  .cta-h { font-size: clamp(30px, 5vw, 50px); color: var(--paper); margin-bottom: 14px; }
+  .cta-sub { color: rgba(251,248,241,.72); margin-bottom: 28px; }
+  .cta-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  .cta-btn {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 52px;
+    padding: 14px 30px; background: var(--hl); color: var(--ink); border-radius: 6px;
+    font-family: var(--sans); font-weight: 700; font-size: 15px; border: 2px solid var(--hl);
+    transition: background .2s, color .2s, transform .15s, border-color .2s;
+  }
+  .cta-btn:hover { background: var(--paper); border-color: var(--paper); color: var(--ink); transform: translateY(-2px); }
+  .cta-btn.ghost { background: transparent; color: var(--paper); border-color: rgba(251,248,241,.55); }
+  .cta-btn.ghost:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+</style>

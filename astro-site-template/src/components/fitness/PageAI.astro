@@ -1,0 +1,231 @@
+---
+/**
+ * fitness / PageAI — "Brutalist Fight Poster" (wheat-paste boxing bill).
+ *
+ * Raw paper ground with a printed halftone-dot texture, blood-red + ink duotone,
+ * gigantic Archivo Black condensed display over Oswald. The signature is the
+ * jab-skew CTA (`.btn:hover` skews like a thrown punch) and the wheat-paste
+ * `.halftone` plates that stand in for photography.
+ *
+ * Design isolation: the paper/ink/blood palette + base primitives (.btn / .stamp
+ * / .halftone / details) are scoped to `html[data-page="AI"]` in the global
+ * block below so sister fitness variants never inherit this variant's tokens or
+ * its bespoke poster primitives (and vice-versa). Because this design's
+ * vocabulary (Archivo Black woodtype display, hard drop-shadows, halftone-dot
+ * ground) is bespoke, its base CSS is inlined here rather than imported from a
+ * shared spine.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned poster palette wins by default.
+ */
+import HeaderAI from './header/HeaderAI.astro';
+import HeroAI from './hero/HeroAI.astro';
+import TrustAI from './trust/TrustAI.astro';
+import AboutAI from './about/AboutAI.astro';
+import ServicesAI from './services/ServicesAI.astro';
+import WhyAI from './why/WhyAI.astro';
+import HowAI from './how/HowAI.astro';
+import TestimonialsAI from './testimonials/TestimonialsAI.astro';
+import GalleryAI from './gallery/GalleryAI.astro';
+import FaqAI from './faq/FaqAI.astro';
+import AreaAI from './area/AreaAI.astro';
+import CredentialsAI from './credentials/CredentialsAI.astro';
+import LocationAI from './location/LocationAI.astro';
+import CtaBandAI from './ctaBand/CtaBandAI.astro';
+import FooterAI from './footer/FooterAI.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AI">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- Palette tokens + shared base primitives, scoped to html[data-page="AI"]
+       so they never leak to sister fitness variants. --paper doubles as the
+       page ground and the generic --paper alias; --ink doubles as the text
+       color and the generic --ink alias, so the theme-override machinery can
+       recolor them on an EXPLICIT admin pick while --blood/--tape stay bespoke. -->
+  <style is:global>
+    html[data-page="AI"] {
+      --paper: #e8e2d5; --ink: #141210; --blood: #c8102e; --tape: #b3a98f;
+      --paper-2: #f1ecdf; --ink-soft: #4a4238;
+      --paper-rgb: 232,226,213; --ink-rgb: 20,18,16; --blood-rgb: 200,16,46;
+      --display: "Archivo Black", Impact, sans-serif;
+      --body: "Oswald", system-ui, sans-serif;
+      --pad: clamp(20px, 5vw, 60px); --maxw: 1100px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --accent: #c8102e; --accent-rgb: 200,16,46;
+      --serif: "Archivo Black", Impact, sans-serif; --sans: "Oswald", system-ui, sans-serif;
+      --on-accent: #e8e2d5; --on-ink: #e8e2d5; --on-paper: #141210;
+    }
+    html[data-page="AI"] * { margin: 0; padding: 0; box-sizing: border-box; }
+    html[data-page="AI"] { scroll-behavior: smooth; }
+    html[data-page="AI"] body {
+      background: var(--paper); color: var(--ink);
+      font-family: var(--body); font-size: 16px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      background-image: radial-gradient(rgba(20,18,16,.06) 1px, transparent 1.5px);
+      background-size: 5px 5px;
+    }
+    html[data-page="AI"] a { color: var(--blood); text-decoration: none; }
+    html[data-page="AI"] a:hover { color: var(--ink); }
+    html[data-page="AI"] img { max-width: 100%; display: block; }
+    html[data-page="AI"] h1,
+    html[data-page="AI"] h2,
+    html[data-page="AI"] h3 {
+      font-family: var(--display); font-weight: 400;
+      text-transform: uppercase; line-height: .9; letter-spacing: -.02em;
+    }
+    html[data-page="AI"] section { padding: 70px 0; position: relative; }
+
+    html[data-page="AI"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 20px; }
+
+    /* Wheat-paste rubber stamp — the rotated bordered label used as each
+       section's kicker/tag hook. */
+    html[data-page="AI"] .stamp {
+      display: inline-block; border: 3px solid var(--ink); padding: 6px 14px;
+      font-weight: 600; text-transform: uppercase; letter-spacing: .2em;
+      font-size: 12px; transform: rotate(-2deg); font-family: var(--body);
+      color: var(--ink); background: transparent;
+    }
+
+    /* Signature: jab-skew CTA — red bill with a hard ink drop-shadow that
+       "throws a punch" (skew + shift) on hover. .blk is the ink-fill variant
+       used on blood-red bands where a red button would vanish. */
+    html[data-page="AI"] .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 56px; padding: 16px 34px; background: var(--blood);
+      color: var(--paper); font-family: var(--display); font-size: 17px;
+      text-transform: uppercase; text-decoration: none; letter-spacing: .02em;
+      border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); cursor: pointer;
+      transition: transform .12s cubic-bezier(.3,1.6,.5,1), box-shadow .12s;
+    }
+    html[data-page="AI"] .btn:hover { transform: skewX(-8deg) translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); color: var(--paper); }
+    html[data-page="AI"] .btn.blk { background: var(--ink); color: var(--paper); }
+
+    /* Wheat-paste halftone plate — the art-directed gradient that stays as the
+       designed fallback of every data-image-field photo slot. */
+    html[data-page="AI"] .halftone {
+      position: relative; overflow: hidden; border: 3px solid var(--ink);
+      min-height: 240px; display: flex; align-items: flex-end;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(200,16,46,.5), transparent 65%),
+        radial-gradient(rgba(20,18,16,.55) 1.2px, transparent 1.8px),
+        linear-gradient(160deg, #4a4238, #141210);
+      background-size: auto, 6px 6px, auto;
+    }
+    html[data-page="AI"] .halftone .photo {
+      position: absolute; inset: 0; background-size: cover; background-position: center;
+    }
+    html[data-page="AI"] .halftone figcaption {
+      position: relative; width: 100%; background: var(--ink); color: var(--paper);
+      padding: 8px 12px; font-size: 11px; letter-spacing: .24em; text-transform: uppercase;
+    }
+
+    html[data-page="AI"] details { border: 3px solid var(--ink); margin-bottom: 12px; background: var(--paper); }
+    html[data-page="AI"] summary {
+      cursor: pointer; list-style: none; padding: 16px 18px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .04em; display: flex;
+      justify-content: space-between; align-items: center; gap: 14px;
+      min-height: 44px; font-size: 15px;
+    }
+    html[data-page="AI"] summary::-webkit-details-marker { display: none; }
+    html[data-page="AI"] summary::after { content: "\25CF"; color: var(--blood); font-size: 13px; }
+    html[data-page="AI"] details[open] summary::after { content: "\25CB"; }
+    html[data-page="AI"] details .faq-a { padding: 0 18px 18px; font-size: 15px; }
+
+    html[data-page="AI"] .grid2 { display: grid; gap: 36px; }
+
+    /* Scroll-reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AI"] .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s ease; }
+    html[data-page="AI"] .reveal.in { opacity: 1; transform: none; }
+
+    @media (min-width: 800px) {
+      html[data-page="AI"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="AI"] .reveal { opacity: 1; transform: none; transition: none; }
+      html[data-page="AI"] * { animation: none !important; }
+      html[data-page="AI"] .btn:hover { transform: none; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <HeaderAI layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroAI content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAI content={content} />}
+    {visibility.aboutSection !== false && <AboutAI content={content} />}
+    {visibility.servicesSection !== false && <ServicesAI content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAI content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAI content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAI content={content} />}
+    {visibility.gallerySection !== false && <GalleryAI content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAI content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAI content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAI content={content} />}
+    {visibility.locationBlock !== false && <LocationAI content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAI content={content} layout={layout} />}
+  <FooterAI layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      var hdr = document.querySelector('header.nav');
+      if (hdr) {
+        var onScroll = function () { if (window.scrollY > 40) hdr.classList.add('scrolled'); else hdr.classList.remove('scrolled'); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      }
+      // Fitness-AI Leaflet boot — accepts (lat, lng, label) from LocationAI.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAI calls this with whatever it resolves).
+      window.__fitnessAIInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;background:#c8102e;transform:rotate(-45deg);box-shadow:4px 4px 0 #141210;border:3px solid #141210;"></div>', iconSize: [18, 18], iconAnchor: [9, 18] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>
