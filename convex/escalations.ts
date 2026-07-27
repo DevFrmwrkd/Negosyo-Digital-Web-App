@@ -231,7 +231,11 @@ export const claimForProcessing = internalMutation({
 
 /** Notify the original asker (a signed-in field agent) that their question was answered. */
 export const notifyAsker = internalMutation({
-    args: { askerUserId: v.string(), question: v.string(), answer: v.string() },
+    // articleSlug lets the mobile app deep-link the notification straight to the
+    // KB article the answer was captured as (handleNotificationPress routes on
+    // data.articleSlug). Optional so older callers / a missing article degrade
+    // to a non-linking notification rather than failing.
+    args: { askerUserId: v.string(), question: v.string(), answer: v.string(), articleSlug: v.optional(v.string()) },
     handler: async (ctx, args): Promise<boolean> => {
         const creator = await ctx.db
             .query('creators')
@@ -243,7 +247,7 @@ export const notifyAsker = internalMutation({
             type: 'system',
             title: 'Your question was answered',
             body: `${args.question}\n\n${args.answer.slice(0, 300)}`,
-            data: { kbEscalation: true },
+            data: { kbEscalation: true, articleSlug: args.articleSlug },
         });
         return true;
     },
@@ -360,6 +364,9 @@ export const pollPending = internalAction({
                         askerUserId: esc.askerUserId,
                         question: esc.question,
                         answer,
+                        // Same slug already resolved above for the Discord link —
+                        // lets the mobile notification open the captured article.
+                        articleSlug: savedArticle?.slug,
                     });
                 }
 
