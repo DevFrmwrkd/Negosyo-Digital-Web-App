@@ -23,10 +23,17 @@ export const count = query({
 export const getByClerkId = query({
     args: { clerkId: v.string() },
     handler: async (ctx, args) => {
-        return await ctx.db
+        const creator = await ctx.db
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
             .unique();
+        // Treat a soft-deleted account as non-existent, so re-signing-in creates a
+        // fresh profile instead of resurrecting the old row. Returning the deleted
+        // row let a re-signed-in user land on the old (still certifiedAt, often
+        // nameless for Apple) record — skipping onboarding/the exam. Mirrors the
+        // mobile codegen copy, which already does this.
+        if (creator?.isDeleted) return null;
+        return creator;
     },
 });
 
@@ -182,9 +189,14 @@ export const getAllWithStats = query({
 export const create = mutation({
     args: {
         clerkId: v.string(),
-        firstName: v.string(),
+        // Optional: Sign in with Apple withholds the name on repeat authorizations
+        // (and for "Hide My Email"), so the app must be able to create a nameless
+        // creator. Was v.string(), which silently rejected those creates on the
+        // mobile home-screen safety net (the call is swallowed in a try/catch).
+        // The schema already allows nameless (firstName/lastName are v.optional).
+        firstName: v.optional(v.string()),
         middleName: v.optional(v.string()),
-        lastName: v.string(),
+        lastName: v.optional(v.string()),
         email: v.optional(v.string()),
         phone: v.optional(v.string()),
         referralCode: v.string(),
@@ -198,8 +210,20 @@ export const create = mutation({
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.clerkId))
             .unique();
 
-        if (existing) {
+        // A LIVE account already exists — reuse it.
+        if (existing && !existing.isDeleted) {
             return existing._id;
+        }
+
+        // A soft-deleted account exists for this clerkId (same Clerk user signed in
+        // again). Free the clerkId so the fresh row below owns it; the old row is
+        // left for its 30-day retention. Without this, `return existing._id` above
+        // resurrected the deleted (certified, often nameless) row and dropped the
+        // user past onboarding. Mirrors the mobile codegen copy.
+        if (existing?.isDeleted) {
+            await ctx.db.patch(existing._id, {
+                clerkId: `deleted_${existing._id}_${Date.now()}`,
+            });
         }
 
         const creatorId = await ctx.db.insert('creators', {
