@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<!-- DESIGN-CARD
+{
+  "id": "v2:fitness",
+  "name": "Brutalist Fight Poster",
+  "manifesto": "Wheat-paste boxing bill: gigantic vertical condensed type, red/black/raw-paper halftone, a CTA that skews like a thrown jab.",
+  "description": "Raw, loud, poster-driven gym page. Type IS the imagery; photos are halftone plates pasted on. Pick when the brand is sweat, grit, and community — not chrome machines.",
+  "mood": ["raw", "loud", "gritty", "communal"],
+  "bestFor": ["boxing gyms", "crossfit boxes", "muay thai", "powerlifting"],
+  "avoidFor": ["clinics", "tutoring", "fine dining"],
+  "variationIdeas": [
+    "Neon night session: black + acid green, glow accents",
+    "Old-school iron: sepia + oxblood, woodtype ornaments",
+    "Women's strength club: bone + tangerine + plum, softer halftone",
+    "Street calisthenics: concrete grey + spray-paint blue"
+  ]
+}
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boxing Gym in Cebu City — Bakal Boxing Club | Free Trial Session</title>
+<meta name="description" content="Bakal Boxing Club is a boxing and strength gym on Mango Avenue, Cebu City. Coached group classes, beginner-friendly fundamentals, and a free first session. Walk in or message us.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ExerciseGym",
+  "name": "Bakal Boxing Club",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "3F Sanchez Building, General Maxilom Avenue",
+    "addressLocality": "Cebu City",
+    "addressRegion": "Cebu",
+    "postalCode": "6000",
+    "addressCountry": "PH"
+  },
+  "telephone": "+63-32-255-8890",
+  "url": "https://bakalboxing.example.ph",
+  "priceRange": "₱₱"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"I've never boxed. Can I really start here?","acceptedAnswer":{"@type":"Answer","text":"Yes — most members started with zero experience. Your first session is a free coached fundamentals class: stance, guard, and the first four punches, at your pace."}},
+    {"@type":"Question","name":"Do I need my own gloves and wraps?","acceptedAnswer":{"@type":"Answer","text":"No. Loaner gloves are free for your trial, and wraps are available at the front desk. Most members buy their own gear after a few weeks."}},
+    {"@type":"Question","name":"Will I have to spar?","acceptedAnswer":{"@type":"Answer","text":"No — sparring is strictly opt-in, coach-supervised, and only offered after you pass a fundamentals assessment. Many members train for years without ever sparring."}},
+    {"@type":"Question","name":"How do I claim the free trial?","acceptedAnswer":{"@type":"Answer","text":"Message us on Messenger with your preferred day, or just walk in 15 minutes before any class. Bring water, a towel, and clothes you can move in."}},
+    {"@type":"Question","name":"Is boxing good for weight loss?","acceptedAnswer":{"@type":"Answer","text":"Yes — a coached boxing class burns significant calories while building coordination and strength. Consistency matters most, which is why classes run morning to night."}},
+    {"@type":"Question","name":"Are there classes for women and teens?","acceptedAnswer":{"@type":"Answer","text":"Yes. All group classes are mixed and beginner-friendly, and we run a dedicated women's fundamentals class and a supervised teens program on weekends."}}
+  ]
+}
+</script>
+<style>
+  :root{
+    --paper:#e8e2d5; --ink:#141210; --blood:#c8102e; --tape:#b3a98f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:'Oswald',sans-serif;font-size:16px;line-height:1.6;
+    background-image:radial-gradient(rgba(20,18,16,.06) 1px,transparent 1.5px);background-size:5px 5px}
+  a{color:var(--blood)} a:hover{color:var(--ink)}
+  h1,h2,h3{font-family:'Archivo Black',sans-serif;text-transform:uppercase;line-height:.9;letter-spacing:-.02em}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  .stamp{display:inline-block;border:3px solid var(--ink);padding:6px 14px;font-weight:600;text-transform:uppercase;letter-spacing:.2em;font-size:12px;transform:rotate(-2deg)}
+  /* signature: jab-skew CTA */
+  .btn{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:16px 34px;background:var(--blood);color:var(--paper);font-family:'Archivo Black';font-size:17px;text-transform:uppercase;text-decoration:none;letter-spacing:.02em;border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);transition:transform .12s cubic-bezier(.3,1.6,.5,1),box-shadow .12s}
+  .btn:hover{transform:skewX(-8deg) translate(3px,3px);box-shadow:2px 2px 0 var(--ink);color:var(--paper)}
+  .btn.blk{background:var(--ink);color:var(--paper)}
+  section{padding:70px 0}
+  .halftone{position:relative;overflow:hidden;border:3px solid var(--ink);min-height:240px;display:flex;align-items:flex-end;background:
+    radial-gradient(circle at 30% 30%,rgba(200,16,46,.5),transparent 65%),
+    radial-gradient(rgba(20,18,16,.55) 1.2px,transparent 1.8px),
+    linear-gradient(160deg,#4a4238,#141210);
+    background-size:auto,6px 6px,auto}
+  .halftone figcaption{width:100%;background:var(--ink);color:var(--paper);padding:8px 12px;font-size:11px;letter-spacing:.24em;text-transform:uppercase}
+  details{border:3px solid var(--ink);margin-bottom:12px;background:var(--paper)}
+  summary{cursor:pointer;list-style:none;padding:16px 18px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;gap:14px;min-height:44px;font-size:15px}
+  summary::after{content:"●";color:var(--blood);font-size:13px}
+  details[open] summary::after{content:"○"}
+  details p{padding:0 18px 18px;font-size:15px}
+  .grid2{display:grid;gap:36px}
+  @media(min-width:800px){.grid2{grid-template-columns:1fr 1fr;align-items:start}}
+</style>
+</head>
+<body>
+
+<!-- BLOCK: HERO [required] -->
+<header data-component="HERO" data-variant="v2" style="border-bottom:6px solid var(--ink);position:relative;overflow:hidden">
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:22px">
+    <span style="font-family:'Archivo Black';font-size:20px;text-transform:uppercase">Bakal<span style="color:var(--blood)">★</span>BC</span>
+    <a href="tel:+63322558890" style="text-decoration:none;font-weight:600;letter-spacing:.08em;font-size:14px">(032) 255-8890</a>
+  </div>
+  <div class="wrap" style="display:grid;grid-template-columns:1fr;gap:0;padding:30px 20px 0">
+    <h1 style="font-size:clamp(64px,16vw,210px);color:var(--ink)">TRAIN<br><span style="color:var(--blood)">UGLY.</span></h1>
+    <div style="display:grid;gap:28px;padding:26px 0 56px;max-width:900px">
+      <p style="font-size:clamp(17px,2.2vw,21px);max-width:52ch;font-weight:500">Coached boxing on Mango Avenue, Cebu City. No mirrors, no machines with TV screens — bags, bells, and coaches who learn your name on day one. <strong>First session free.</strong></p>
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <a class="btn" href="https://m.me/bakalboxing">Claim free trial</a>
+        <a class="btn blk" href="#schedule">See the classes</a>
+      </div>
+    </div>
+  </div>
+  <figure class="halftone" style="min-height:320px;border-left:0;border-right:0;border-bottom:0">
+    <!-- IMG: hero — wide gritty shot of the gym floor mid-class: heavy bags swinging, chalk dust in backlight, ring in the far corner; high-contrast halftone treatment -->
+    <span role="img" aria-label="Bakal Boxing Club floor mid-class, heavy bags and the ring in backlight" style="position:absolute;inset:0"></span>
+    <figcaption>6 PM class · 3F Sanchez Building</figcaption>
+  </figure>
+</header>
+<!-- /BLOCK: HERO -->
+
+<!-- BLOCK: TRUST [recommended] -->
+<section data-component="TRUST" data-variant="v2" style="padding:26px 0;background:var(--ink);color:var(--paper)">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:22px;justify-content:space-between;align-items:center;font-size:13px;letter-spacing:.08em;text-transform:uppercase">
+    <span style="font-family:'Archivo Black';font-size:17px">Est. on Mango Ave. — 9 years of rounds</span>
+    <!-- GBP SLOT: rating + review count from Google Business Profile — never hardcode -->
+    <span data-gbp="rating">★ Google rating loads here</span>
+    <!-- GBP SLOT: today's hours from Google Business Profile -->
+    <span data-gbp="hours">Today's hours load here</span>
+    <span>ABAP-experienced coaches</span>
+  </div>
+</section>
+<!-- /BLOCK: TRUST -->
+
+<!-- BLOCK: ABOUT [recommended] -->
+<section data-component="ABOUT" data-variant="v2">
+  <div class="wrap grid2">
+    <div>
+      <span class="stamp">The club</span>
+      <h2 style="font-size:clamp(36px,6vw,64px);margin:20px 0 20px">Built by fighters,<br>run for beginners</h2>
+      <p style="margin-bottom:16px;font-weight:500">Bakal Boxing Club is a boxing and strength gym on General Maxilom (Mango) Avenue, Cebu City, running coached group classes from 6 AM to 9 PM. It's for absolute beginners, fitness boxers, and amateurs who want real corner-style coaching without competition pressure.</p>
+      <p style="margin-bottom:16px">The club was founded by two retired amateur boxers who kept meeting office workers who "always wanted to try boxing" but were scared of fight gyms. So they built one where the fundamentals class is the main event, not a warm-up act for the fighters.</p>
+      <p>Nine years later the walls hold more first-timer hand wraps than trophies — and the coaches still count that as the better collection.</p>
+    </div>
+    <figure class="halftone" style="min-height:440px;transform:rotate(1.2deg)">
+      <!-- IMG: coach mitt-work with a first-timer, both grinning mid-combination; sweat and motion blur, halftone red/black -->
+      <span role="img" aria-label="Coach doing mitt work with a beginner at Bakal Boxing Club" style="position:absolute;inset:0"></span>
+      <figcaption>Mitts with Coach · fundamentals class</figcaption>
+    </figure>
+  </div>
+</section>
+<!-- /BLOCK: ABOUT -->
+
+<!-- BLOCK: SERVICES [required] -->
+<section data-component="SERVICES" data-variant="v2" id="schedule" style="background:var(--blood);color:var(--paper);border-top:6px solid var(--ink);border-bottom:6px solid var(--ink)">
+  <div class="wrap">
+    <span class="stamp" style="border-color:var(--paper);color:var(--paper)">On the floor</span>
+    <h2 style="font-size:clamp(36px,6vw,64px);margin:20px 0 30px">Programs</h2>
+    <div style="display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(270px,1fr))">
+      <div style="background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:22px"><h3 style="font-size:20px;margin-bottom:8px">Boxing fundamentals</h3><p style="font-size:14px">Stance, guard, footwork, and the first four punches. The class every member starts with — and keeps taking.</p></div>
+      <div style="background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:22px"><h3 style="font-size:20px;margin-bottom:8px">Bagwork &amp; conditioning</h3><p style="font-size:14px">Rounds on the heavy bag with strength circuits between bells. The sweat class.</p></div>
+      <div style="background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:22px"><h3 style="font-size:20px;margin-bottom:8px">Mitts with a coach</h3><p style="font-size:14px">One-on-one pad rounds inside class time — combinations built for your level, corrected live.</p></div>
+      <div style="background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:22px"><h3 style="font-size:20px;margin-bottom:8px">Women's fundamentals</h3><p style="font-size:14px">Same curriculum, dedicated class, women-led coaching. Fills up fastest of anything we run.</p></div>
+      <div style="background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:22px"><h3 style="font-size:20px;margin-bottom:8px">Teens program</h3><p style="font-size:14px">Weekend supervised sessions for 13–17s: discipline, defense, zero head contact.</p></div>
+      <div style="background:var(--paper);color:var(--ink);border:3px solid var(--ink);padding:22px"><h3 style="font-size:20px;margin-bottom:8px">Amateur track</h3><p style="font-size:14px">Sparring, fight prep, and corner work for members who choose to compete. Strictly opt-in.</p></div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: SERVICES -->
+
+<!-- BLOCK: WHY-US [recommended] -->
+<section data-component="WHY-US" data-variant="v2">
+  <div class="wrap grid2">
+    <h2 style="font-size:clamp(36px,6vw,64px)">Why Bakal<br>hits different</h2>
+    <ul style="list-style:none;display:grid;gap:16px;font-size:16px">
+      <li style="border:3px solid var(--ink);padding:18px;background:var(--paper)"><strong>Coaches on the floor, always.</strong> Every class is coached — nobody is left guessing at a bag.</li>
+      <li style="border:3px solid var(--ink);padding:18px;background:var(--paper)"><strong>Sparring is opt-in.</strong> You will never be pushed into a ring. Ever.</li>
+      <li style="border:3px solid var(--ink);padding:18px;background:var(--paper)"><strong>Classes 6 AM to 9 PM.</strong> Before work, after work, or lunch break — the bell rings all day.</li>
+      <li style="border:3px solid var(--ink);padding:18px;background:var(--paper)"><strong>Real amateur pedigree.</strong> Head coaches came up through ABAP-sanctioned competition.</li>
+    </ul>
+  </div>
+</section>
+<!-- /BLOCK: WHY-US -->
+
+<!-- BLOCK: HOW-IT-WORKS [recommended] -->
+<section data-component="HOW-IT-WORKS" data-variant="v2" style="padding-top:0">
+  <div class="wrap">
+    <span class="stamp">Round 1</span>
+    <h2 style="font-size:clamp(36px,6vw,64px);margin:20px 0 28px">Your first session</h2>
+    <ol style="list-style:none;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <li style="border:3px solid var(--ink);padding:20px;background:var(--paper)"><span style="font-family:'Archivo Black';font-size:44px;color:var(--blood)">1</span><p style="font-size:14px;font-weight:500"><strong>Message or walk in.</strong> Book on Messenger or arrive 15 minutes before any class. Trial is free.</p></li>
+      <li style="border:3px solid var(--ink);padding:20px;background:var(--paper)"><span style="font-family:'Archivo Black';font-size:44px;color:var(--blood)">2</span><p style="font-size:14px;font-weight:500"><strong>Gear up.</strong> Loaner gloves are on us. Bring water, a towel, and clothes you can move in.</p></li>
+      <li style="border:3px solid var(--ink);padding:20px;background:var(--paper)"><span style="font-family:'Archivo Black';font-size:44px;color:var(--blood)">3</span><p style="font-size:14px;font-weight:500"><strong>Take fundamentals.</strong> One coached hour: stance, guard, jab, cross. You'll land combinations on day one.</p></li>
+      <li style="border:3px solid var(--ink);padding:20px;background:var(--paper)"><span style="font-family:'Archivo Black';font-size:44px;color:var(--blood)">4</span><p style="font-size:14px;font-weight:500"><strong>Decide after.</strong> If it's for you, pick a plan at the desk. No lock-in contracts, no hard sell.</p></li>
+    </ol>
+  </div>
+</section>
+<!-- /BLOCK: HOW-IT-WORKS -->
+
+<!-- BLOCK: TESTIMONIALS [recommended] -->
+<section data-component="TESTIMONIALS" data-variant="v2" style="background:var(--ink);color:var(--paper)">
+  <div class="wrap">
+    <span class="stamp" style="border-color:var(--blood);color:var(--paper)">From the corner</span>
+    <div style="display:grid;gap:26px;margin-top:26px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <blockquote style="border-left:6px solid var(--blood);padding-left:20px"><p style="font-size:17px;margin-bottom:12px">"Signed up for the free trial at 34 years old, heaviest I'd ever been. Fourteen months later I train four days a week and my resting heart rate dropped twenty points."</p><footer style="color:var(--tape);font-size:13px;text-transform:uppercase;letter-spacing:.1em">Migs O. · IT Park</footer></blockquote>
+      <blockquote style="border-left:6px solid var(--blood);padding-left:20px"><p style="font-size:17px;margin-bottom:12px">"As a woman walking into a boxing gym alone, I was nervous. Coach Ana had me wrapped and throwing jabs in ten minutes. Nobody stares here; everybody's too busy working."</p><footer style="color:var(--tape);font-size:13px;text-transform:uppercase;letter-spacing:.1em">Rhea L. · Lahug</footer></blockquote>
+      <blockquote style="border-left:6px solid var(--blood);padding-left:20px"><p style="font-size:17px;margin-bottom:12px">"My son's grades and posture both fixed themselves after a semester in the teens program. I don't ask questions, I just pay the fee."</p><footer style="color:var(--tape);font-size:13px;text-transform:uppercase;letter-spacing:.1em">Ferdinand Y. · Mabolo</footer></blockquote>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: TESTIMONIALS -->
+
+<!-- BLOCK: GALLERY [recommended] -->
+<section data-component="GALLERY" data-variant="v2">
+  <div class="wrap">
+    <span class="stamp">The floor</span>
+    <h2 style="font-size:clamp(36px,6vw,64px);margin:20px 0 28px">Paste-up wall</h2>
+    <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      <figure class="halftone" style="min-height:260px;transform:rotate(-1deg)"><!-- IMG: hands being wrapped in red wraps, close-up --><span role="img" aria-label="Close-up of hands being wrapped before class" style="position:absolute;inset:0"></span><figcaption>Wrap up</figcaption></figure>
+      <figure class="halftone" style="min-height:260px;transform:rotate(.8deg)"><!-- IMG: heavy bag row mid-class, everyone mid-punch --><span role="img" aria-label="Members working the heavy bag row mid-class" style="position:absolute;inset:0"></span><figcaption>Bag row, round 3</figcaption></figure>
+      <figure class="halftone" style="min-height:260px;transform:rotate(-.6deg)"><!-- IMG: the ring corner, stool and spit bucket, dramatic light --><span role="img" aria-label="The ring corner with stool under dramatic light" style="position:absolute;inset:0"></span><figcaption>The corner</figcaption></figure>
+      <figure class="halftone" style="min-height:260px;transform:rotate(1.4deg)"><!-- IMG: post-class group photo, sweaty and happy, fists up --><span role="img" aria-label="Post-class group photo with fists raised" style="position:absolute;inset:0"></span><figcaption>7 PM class, survived</figcaption></figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: GALLERY -->
+
+<!-- BLOCK: FAQ [recommended] -->
+<section data-component="FAQ" data-variant="v2" style="padding-top:0">
+  <div class="wrap" style="max-width:760px">
+    <span class="stamp">Q &amp; A</span>
+    <h2 style="font-size:clamp(36px,6vw,64px);margin:20px 0 24px">Before the bell</h2>
+    <details><summary>I've never boxed. Can I really start here?</summary><p>Yes — most members started with zero experience. Your first session is a free coached fundamentals class: stance, guard, and the first four punches, at your pace.</p></details>
+    <details><summary>Do I need my own gloves and wraps?</summary><p>No. Loaner gloves are free for your trial, and wraps are available at the front desk. Most members buy their own gear after a few weeks.</p></details>
+    <details><summary>Will I have to spar?</summary><p>No — sparring is strictly opt-in, coach-supervised, and only offered after you pass a fundamentals assessment. Many members train for years without ever sparring.</p></details>
+    <details><summary>How do I claim the free trial?</summary><p>Message us on Messenger with your preferred day, or walk in 15 minutes before any class. Bring water, a towel, and clothes you can move in.</p></details>
+    <details><summary>Is boxing good for weight loss?</summary><p>Yes — a coached boxing class burns significant calories while building coordination and strength. Consistency matters most, which is why classes run morning to night.</p></details>
+    <details><summary>Are there classes for women and teens?</summary><p>Yes. All group classes are mixed and beginner-friendly, and we run a dedicated women's fundamentals class and a supervised teens program on weekends.</p></details>
+  </div>
+</section>
+<!-- /BLOCK: FAQ -->
+
+<!-- BLOCK: SERVICE-AREA [optional] -->
+<section data-component="SERVICE-AREA" data-variant="v2" style="padding:30px 0;border-top:3px solid var(--ink)">
+  <div class="wrap" style="font-size:14px;text-transform:uppercase;letter-spacing:.06em">
+    <strong style="margin-right:10px;color:var(--blood)">Members roll in from:</strong>
+    Mango Ave · Lahug · IT Park · Mabolo · Capitol Site · Fuente · Banilad · Talamban
+  </div>
+</section>
+<!-- /BLOCK: SERVICE-AREA -->
+
+<!-- BLOCK: CREDENTIALS [optional] -->
+<section data-component="CREDENTIALS" data-variant="v2" style="padding:30px 0;border-top:3px solid var(--ink)">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:24px;font-size:13px;text-transform:uppercase;letter-spacing:.06em">
+    <span>★ DTI-registered</span>
+    <span>★ Cebu City business permit</span>
+    <span>★ Coaches with ABAP amateur competition background</span>
+    <span>★ First-aid &amp; CPR certified staff</span>
+  </div>
+</section>
+<!-- /BLOCK: CREDENTIALS -->
+
+<!-- BLOCK: LOCATION [required] -->
+<section data-component="LOCATION" data-variant="v2" id="location" style="border-top:6px solid var(--ink)">
+  <div class="wrap grid2">
+    <div>
+      <span class="stamp">Find the bell</span>
+      <h2 style="font-size:clamp(36px,6vw,64px);margin:20px 0 18px">Bakal Boxing Club</h2>
+      <address style="font-style:normal;display:grid;gap:8px">
+        <span>3F Sanchez Building, General Maxilom Avenue, Cebu City, Cebu 6000</span>
+        <a href="tel:+63322558890" style="font-size:24px;font-family:'Archivo Black';text-decoration:none;color:var(--ink)">(032) 255-8890</a>
+      </address>
+      <!-- GBP SLOT: full weekly hours — bind from Google Business Profile -->
+      <div data-gbp="hours-week" style="margin:18px 0;padding:14px;border:3px dashed var(--ink);font-size:14px">Weekly class hours load here from Google Business Profile</div>
+      <a class="btn blk" href="https://maps.google.com/?q=Bakal+Boxing+Club+Cebu">Directions</a>
+    </div>
+    <figure class="halftone" style="min-height:340px">
+      <!-- IMG: map placeholder — pin on General Maxilom Ave; embed live map in production -->
+      <span role="img" aria-label="Map showing Bakal Boxing Club on General Maxilom Avenue, Cebu City" style="position:absolute;inset:0"></span>
+      <figcaption>3F · look for the red staircase</figcaption>
+    </figure>
+  </div>
+</section>
+<!-- /BLOCK: LOCATION -->
+
+<!-- BLOCK: CTA-BAND [recommended] -->
+<section data-component="CTA-BAND" data-variant="v2" style="background:var(--blood);border-top:6px solid var(--ink);padding:60px 0">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
+    <h2 style="color:var(--paper);font-size:clamp(32px,6vw,64px)">First round's free.</h2>
+    <a class="btn blk" href="https://m.me/bakalboxing">Book my trial</a>
+  </div>
+</section>
+<!-- /BLOCK: CTA-BAND -->
+
+<!-- BLOCK: CLICK-TO-MESSAGE [recommended] -->
+<div data-component="CLICK-TO-MESSAGE" data-variant="v2" style="position:fixed;right:16px;bottom:16px;z-index:50">
+  <a href="https://m.me/bakalboxing" aria-label="Message us to book a free trial" style="display:flex;align-items:center;gap:8px;background:var(--ink);color:var(--paper);text-decoration:none;font-family:'Archivo Black';font-size:13px;text-transform:uppercase;padding:14px 18px;border:3px solid var(--blood);box-shadow:4px 4px 0 var(--blood);min-height:48px">Free trial →</a>
+</div>
+<!-- /BLOCK: CLICK-TO-MESSAGE -->
+
+<!-- BLOCK: FOOTER [required] -->
+<footer data-component="FOOTER" data-variant="v2" style="background:var(--ink);color:var(--tape);padding:44px 0">
+  <div class="wrap" style="display:grid;gap:12px;font-size:13px;letter-spacing:.06em">
+    <span style="font-family:'Archivo Black';font-size:20px;text-transform:uppercase;color:var(--paper)">Bakal<span style="color:var(--blood)">★</span>Boxing Club</span>
+    <span>3F Sanchez Building, General Maxilom Avenue, Cebu City, Cebu 6000 · <a href="tel:+63322558890" style="color:var(--paper)">(032) 255-8890</a></span>
+    <span>Coached boxing · Strength &amp; conditioning · Free first session</span>
+  </div>
+</footer>
+<!-- /BLOCK: FOOTER -->
+
+</body>
+</html>

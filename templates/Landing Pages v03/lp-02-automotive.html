@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<!-- DESIGN-CARD
+{
+  "id": "v2:automotive",
+  "name": "Job-Sheet Industrial",
+  "manifesto": "Workshop stencil on graph paper: hazard-yellow-and-black chevrons, mono job-sheet labels, a diagonal split hero like a torn work order.",
+  "description": "Utility-first industrial page for repair shops. Reads like the shop's own paperwork made beautiful — stencil type, safety stripes, engineering grid. Pick when trust equals competence and tools.",
+  "mood": ["industrial", "precise", "no-nonsense", "utilitarian"],
+  "bestFor": ["auto repair", "tire shops", "machine shops", "vulcanizing"],
+  "avoidFor": ["spas", "bakeries", "children's services"],
+  "variationIdeas": [
+    "Racing pit-lane: white/red livery, checkered accents, italic display",
+    "Vintage gasolina: cream + oxblood, 60s petrol-station badges",
+    "EV service bay: cool graphite + volt green, thin technical lines",
+    "Heavy diesel: rust orange + steel grey, extra-bold slab type"
+  ]
+}
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto Repair &amp; Detailing in Biñan, Laguna — Kalye Motorworks</title>
+<meta name="description" content="Kalye Motorworks is a full-service auto repair and detailing shop along the National Highway, Biñan, Laguna. Engine diagnostics, brakes, aircon, tires. Call for a free quote.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AutoRepair",
+  "name": "Kalye Motorworks",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Km 38 National Highway, Barangay San Vicente",
+    "addressLocality": "Biñan",
+    "addressRegion": "Laguna",
+    "postalCode": "4024",
+    "addressCountry": "PH"
+  },
+  "telephone": "+63-49-511-2277",
+  "url": "https://kalyemotorworks.example.ph",
+  "priceRange": "₱₱"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"Do you give free estimates?","acceptedAnswer":{"@type":"Answer","text":"Yes — diagnosis and written estimates are free. We inspect the vehicle, list the work and parts, and you approve before a single bolt turns."}},
+    {"@type":"Question","name":"Can I wait while my car is serviced?","acceptedAnswer":{"@type":"Answer","text":"Yes, there is an air-conditioned waiting area with Wi-Fi. Most preventive maintenance jobs finish within two to three hours."}},
+    {"@type":"Question","name":"Do you use original or replacement parts?","acceptedAnswer":{"@type":"Answer","text":"Your choice — we quote both OEM and quality replacement options and explain the trade-offs. We never install a part you didn't approve."}},
+    {"@type":"Question","name":"Do you service vehicles still under casa warranty?","acceptedAnswer":{"@type":"Answer","text":"Yes. Under Philippine law, preventive maintenance outside the casa does not void your warranty, and we keep full service records you can present."}},
+    {"@type":"Question","name":"Do you offer home or roadside service?","acceptedAnswer":{"@type":"Answer","text":"Yes, for battery replacement, jump starts, and minor electrical issues within Biñan, Santa Rosa, and San Pedro. Call and we dispatch a mobile mechanic."}},
+    {"@type":"Question","name":"How do I get a quote without visiting?","acceptedAnswer":{"@type":"Answer","text":"Send photos or a video of the issue plus your car's year and model over Messenger or Viber, and we reply with a ballpark quote the same day."}}
+  ]
+}
+</script>
+<style>
+  :root{
+    --ink:#15181b; --steel:#2a2f34; --paper:#eef0ee; --line:#c9cec7;
+    --haz:#f5c518; --haz-dark:#caa000; --red:#d0342c;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{background:var(--paper);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:15px;line-height:1.65;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:32px 32px}
+  a{color:var(--ink)} a:hover{color:var(--red)}
+  h1,h2,h3{font-family:'Saira Condensed',sans-serif;font-weight:800;text-transform:uppercase;line-height:.92;letter-spacing:-.01em}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  .tag{display:inline-block;background:var(--ink);color:var(--haz);font-size:11px;letter-spacing:.24em;text-transform:uppercase;padding:5px 12px;font-weight:700}
+  .chev{height:14px;background:repeating-linear-gradient(-45deg,var(--haz) 0 14px,var(--ink) 14px 28px)}
+  /* signature: chevron sweep on CTA */
+  .btn{position:relative;overflow:hidden;display:inline-flex;align-items:center;min-height:52px;padding:14px 30px;background:var(--ink);color:var(--haz);font-family:'Saira Condensed';font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.06em;text-decoration:none;border:3px solid var(--ink)}
+  .btn::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(-45deg,var(--haz) 0 14px,transparent 14px 28px);transform:translateX(-101%);transition:transform .35s cubic-bezier(.2,.8,.2,1);opacity:.35}
+  .btn:hover::before{transform:translateX(0)}
+  .btn.alt{background:var(--paper);color:var(--ink)}
+  section{padding:68px 0}
+  .sheet{background:#fff;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+  .plate{position:relative;background:
+    linear-gradient(135deg,rgba(21,24,27,.85),rgba(42,47,52,.6)),
+    repeating-linear-gradient(0deg,#31363b 0 4px,#2a2f34 4px 9px);
+    border:2px solid var(--ink);min-height:220px;display:flex;align-items:flex-end}
+  .plate figcaption{width:100%;background:var(--haz);color:var(--ink);font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;padding:8px 12px;border-top:2px solid var(--ink)}
+  details{background:#fff;border:2px solid var(--ink);margin-bottom:10px}
+  summary{cursor:pointer;padding:16px 18px;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:14px;min-height:44px;align-items:center;font-size:14px}
+  summary::after{content:"▸";color:var(--red);transition:transform .2s}
+  details[open] summary::after{transform:rotate(90deg)}
+  details p{padding:0 18px 16px;font-size:14px;color:#3d4348}
+  .grid2{display:grid;gap:36px}
+  @media(min-width:780px){.grid2{grid-template-columns:1fr 1fr;align-items:start}}
+</style>
+</head>
+<body>
+
+<!-- BLOCK: HERO [required] -->
+<header data-component="HERO" data-variant="v2" style="position:relative;overflow:hidden">
+  <div class="chev"></div>
+  <div class="wrap" style="padding:26px 20px 0;display:flex;justify-content:space-between;align-items:center">
+    <span style="font-family:'Saira Condensed';font-weight:800;font-size:22px;text-transform:uppercase">Kalye<span style="color:var(--red)">■</span>Motorworks</span>
+    <a href="tel:+63495112277" style="text-decoration:none;font-weight:700;font-size:14px">☎ (049) 511-2277</a>
+  </div>
+  <div class="wrap" style="display:grid;gap:0;padding-top:40px;padding-bottom:64px">
+    <div style="max-width:640px">
+      <span class="tag">Job sheet № 0001 · Biñan, Laguna</span>
+      <h1 style="font-size:clamp(48px,10vw,118px);margin:18px 0 8px">Fixed right.<br>Explained<br><span style="color:transparent;-webkit-text-stroke:2px var(--ink)">in plain words.</span></h1>
+      <p style="max-width:52ch;margin:18px 0 28px;color:#3d4348">Engine, brakes, aircon, tires, detailing — one bay, honest paperwork. We show you the worn part before we replace it, every time.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:14px">
+        <a class="btn" href="tel:+63495112277">Call the shop</a>
+        <a class="btn alt" href="https://m.me/kalyemotorworks">Get a free quote</a>
+      </div>
+    </div>
+    <figure class="plate" style="min-height:300px;margin-top:44px;transform:rotate(-1deg)">
+      <!-- IMG: hero — mechanic under a lifted sedan, work light glare, tools laid out on a chevron-taped bench; gritty documentary style -->
+      <span role="img" aria-label="Mechanic working under a lifted sedan at Kalye Motorworks service bay" style="position:absolute;inset:0"></span>
+      <figcaption>Bay 1 · Km 38 National Highway</figcaption>
+    </figure>
+  </div>
+  <div class="chev"></div>
+</header>
+<!-- /BLOCK: HERO -->
+
+<!-- BLOCK: TRUST [recommended] -->
+<section data-component="TRUST" data-variant="v2" style="padding:30px 0;background:var(--ink);color:var(--paper)">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:center;font-size:13px">
+    <span style="font-family:'Saira Condensed';font-weight:800;font-size:20px;text-transform:uppercase;color:var(--haz)">15+ years on the National Highway</span>
+    <!-- GBP SLOT: rating + review count from Google Business Profile — do not hardcode -->
+    <span data-gbp="rating">★ Google rating loads here</span>
+    <!-- GBP SLOT: today's hours from Google Business Profile -->
+    <span data-gbp="hours">Today's hours load here</span>
+    <span>TESDA-certified mechanics</span>
+  </div>
+</section>
+<!-- /BLOCK: TRUST -->
+
+<!-- BLOCK: ABOUT [recommended] -->
+<section data-component="ABOUT" data-variant="v2">
+  <div class="wrap grid2">
+    <div class="sheet" style="padding:30px">
+      <span class="tag">Shop history</span>
+      <h2 style="font-size:clamp(32px,4.5vw,52px);margin:14px 0 18px">From one lift to five bays</h2>
+      <p style="margin-bottom:14px">Kalye Motorworks is an independent auto repair and detailing shop in Barangay San Vicente, Biñan, Laguna, serving commuters, family cars, and small fleets along the National Highway. It's built for owners who want casa-quality work with a written estimate and no surprises.</p>
+      <p style="margin-bottom:14px;color:#3d4348">The shop started as a single hydraulic lift and a borrowed compressor. What grew it wasn't marketing — it was the habit of photographing every worn part and texting it to the owner before touching a wrench. Fifteen years later that habit is a five-bay operation with the same policy.</p>
+      <p style="color:#3d4348">Every mechanic on the floor is TESDA-certified, and the head diagnostician has been reading engine codes since OBD-II was new money.</p>
+    </div>
+    <figure class="plate" style="min-height:420px">
+      <!-- IMG: wide shot of the five service bays at golden hour, cars on lifts, hazard-striped columns -->
+      <span role="img" aria-label="The five service bays of Kalye Motorworks at golden hour" style="position:absolute;inset:0"></span>
+      <figcaption>Five bays · aircon waiting area behind glass</figcaption>
+    </figure>
+  </div>
+</section>
+<!-- /BLOCK: ABOUT -->
+
+<!-- BLOCK: SERVICES [required] -->
+<section data-component="SERVICES" data-variant="v2" style="background:var(--ink);color:var(--paper)">
+  <div class="wrap">
+    <span class="tag" style="background:var(--haz);color:var(--ink)">Work orders we take</span>
+    <h2 style="font-size:clamp(32px,4.5vw,52px);margin:14px 0 30px;color:var(--haz)">Services</h2>
+    <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <div style="border:2px solid var(--haz);padding:22px"><h3 style="font-size:20px;color:var(--haz);margin-bottom:8px">01 / Engine diagnostics</h3><p style="font-size:14px;color:#c9cec7">Scanner-first troubleshooting for check-engine lights, misfires, and hard starts — with a printout you keep.</p></div>
+      <div style="border:2px solid var(--haz);padding:22px"><h3 style="font-size:20px;color:var(--haz);margin-bottom:8px">02 / Preventive maintenance</h3><p style="font-size:14px;color:#c9cec7">PMS packages by mileage: oil, filters, fluids, belts — logged so your warranty stays intact.</p></div>
+      <div style="border:2px solid var(--haz);padding:22px"><h3 style="font-size:20px;color:var(--haz);margin-bottom:8px">03 / Brakes &amp; suspension</h3><p style="font-size:14px;color:#c9cec7">Pads, rotors, bushings, shocks. Old parts returned to you in the box, as proof.</p></div>
+      <div style="border:2px solid var(--haz);padding:22px"><h3 style="font-size:20px;color:var(--haz);margin-bottom:8px">04 / Car aircon service</h3><p style="font-size:14px;color:#c9cec7">Leak testing, compressor repair, full recharge — built for Laguna traffic in April.</p></div>
+      <div style="border:2px solid var(--haz);padding:22px"><h3 style="font-size:20px;color:var(--haz);margin-bottom:8px">05 / Tires &amp; alignment</h3><p style="font-size:14px;color:#c9cec7">Mounting, balancing, computerized alignment, and honest advice on when a tire still has life.</p></div>
+      <div style="border:2px solid var(--haz);padding:22px"><h3 style="font-size:20px;color:var(--haz);margin-bottom:8px">06 / Detailing &amp; paint care</h3><p style="font-size:14px;color:#c9cec7">Interior deep clean, machine polish, and ceramic-coat prep in a dust-controlled corner bay.</p></div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: SERVICES -->
+
+<!-- BLOCK: WHY-US [recommended] -->
+<section data-component="WHY-US" data-variant="v2">
+  <div class="wrap grid2">
+    <h2 style="font-size:clamp(32px,4.5vw,52px)">Why owners<br>skip the casa</h2>
+    <div style="display:grid;gap:2px;background:var(--ink);border:2px solid var(--ink)">
+      <div style="background:var(--paper);padding:20px"><strong>Photo-before-repair policy.</strong> You see the worn part on your phone before we replace it.</div>
+      <div style="background:var(--paper);padding:20px"><strong>Written estimates, honored.</strong> The number we quote is the number you pay unless you approve changes.</div>
+      <div style="background:var(--paper);padding:20px"><strong>TESDA-certified floor.</strong> Every mechanic certified; diagnostics led by a 20-year master tech.</div>
+      <div style="background:var(--paper);padding:20px"><strong>Records that travel.</strong> Full digital service history you can show any casa or buyer.</div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: WHY-US -->
+
+<!-- BLOCK: HOW-IT-WORKS [recommended] -->
+<section data-component="HOW-IT-WORKS" data-variant="v2" style="padding-top:0">
+  <div class="wrap">
+    <span class="tag">Procedure</span>
+    <h2 style="font-size:clamp(32px,4.5vw,52px);margin:14px 0 28px">How a job moves</h2>
+    <ol style="list-style:none;display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
+      <li class="sheet" style="padding:22px"><span style="font-family:'Saira Condensed';font-weight:800;font-size:44px;color:var(--red)">1</span><p style="font-size:14px"><strong>Call or message.</strong> Describe the issue — photos and videos help. Free ballpark quote same day.</p></li>
+      <li class="sheet" style="padding:22px"><span style="font-family:'Saira Condensed';font-weight:800;font-size:44px;color:var(--red)">2</span><p style="font-size:14px"><strong>Inspection &amp; estimate.</strong> We diagnose, photograph findings, and hand you a written estimate.</p></li>
+      <li class="sheet" style="padding:22px"><span style="font-family:'Saira Condensed';font-weight:800;font-size:44px;color:var(--red)">3</span><p style="font-size:14px"><strong>You approve, we work.</strong> No approved line item, no work. Progress updates by text.</p></li>
+      <li class="sheet" style="padding:22px"><span style="font-family:'Saira Condensed';font-weight:800;font-size:44px;color:var(--red)">4</span><p style="font-size:14px"><strong>Release &amp; records.</strong> Test drive together, old parts returned, service history emailed.</p></li>
+    </ol>
+  </div>
+</section>
+<!-- /BLOCK: HOW-IT-WORKS -->
+
+<!-- BLOCK: TESTIMONIALS [recommended] -->
+<section data-component="TESTIMONIALS" data-variant="v2" style="background:repeating-linear-gradient(-45deg,#e6e8e4 0 20px,var(--paper) 20px 40px);border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)">
+  <div class="wrap">
+    <span class="tag">Customer log</span>
+    <h2 style="font-size:clamp(32px,4.5vw,52px);margin:14px 0 28px">Signed off</h2>
+    <div style="display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <blockquote class="sheet" style="padding:24px"><p style="margin-bottom:12px;font-size:14px">"My Vios had an intermittent stalling issue two casas couldn't find. Kalye traced it to a corroded ground wire in one afternoon and charged me for one hour of labor."</p><footer style="font-weight:700;font-size:13px;color:var(--red)">Ramon C. · Santa Rosa</footer></blockquote>
+      <blockquote class="sheet" style="padding:24px"><p style="margin-bottom:12px;font-size:14px">"They sent photos of my brake pads next to new ones and said the fronts could wait another 10,000 km. Who does that? Customer for life."</p><footer style="font-weight:700;font-size:13px;color:var(--red)">Abigail T. · San Pedro</footer></blockquote>
+      <blockquote class="sheet" style="padding:24px"><p style="margin-bottom:12px;font-size:14px">"Our delivery fleet of 6 vans is on their PMS program. Downtime dropped because they schedule us around our route days."</p><footer style="font-weight:700;font-size:13px;color:var(--red)">J. Villanueva · fleet owner, Biñan</footer></blockquote>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: TESTIMONIALS -->
+
+<!-- BLOCK: GALLERY [recommended] -->
+<section data-component="GALLERY" data-variant="v2">
+  <div class="wrap">
+    <span class="tag">Shop floor</span>
+    <h2 style="font-size:clamp(32px,4.5vw,52px);margin:14px 0 28px">Inside the bays</h2>
+    <div style="display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <figure class="plate" style="min-height:240px"><!-- IMG: diagnostic scanner plugged into OBD port, screen glowing --><span role="img" aria-label="Diagnostic scanner reading engine codes" style="position:absolute;inset:0"></span><figcaption>Diagnostics, not guesswork</figcaption></figure>
+      <figure class="plate" style="min-height:240px"><!-- IMG: computerized wheel alignment rig with sedan mounted --><span role="img" aria-label="Sedan on the computerized alignment rig" style="position:absolute;inset:0"></span><figcaption>Alignment rig, Bay 4</figcaption></figure>
+      <figure class="plate" style="min-height:240px"><!-- IMG: detailing bay, machine polisher on dark paint, dramatic reflections --><span role="img" aria-label="Machine polishing a car in the detailing bay" style="position:absolute;inset:0"></span><figcaption>Detailing corner</figcaption></figure>
+      <figure class="plate" style="min-height:240px"><!-- IMG: waiting area with glass wall looking into the bays --><span role="img" aria-label="Air-conditioned waiting area overlooking the service bays" style="position:absolute;inset:0"></span><figcaption>Watch your car from the lounge</figcaption></figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: GALLERY -->
+
+<!-- BLOCK: FAQ [recommended] -->
+<section data-component="FAQ" data-variant="v2" style="padding-top:0">
+  <div class="wrap" style="max-width:760px">
+    <span class="tag">FAQ</span>
+    <h2 style="font-size:clamp(32px,4.5vw,52px);margin:14px 0 22px">Straight answers</h2>
+    <details><summary>Do you give free estimates?</summary><p>Yes — diagnosis and written estimates are free. We inspect, list the work and parts, and you approve before a single bolt turns.</p></details>
+    <details><summary>Can I wait while my car is serviced?</summary><p>Yes, there's an air-conditioned waiting area with Wi-Fi. Most PMS jobs finish within two to three hours.</p></details>
+    <details><summary>Do you use original or replacement parts?</summary><p>Your choice — we quote both OEM and quality replacement options and explain the trade-offs. We never install a part you didn't approve.</p></details>
+    <details><summary>Do you service vehicles still under casa warranty?</summary><p>Yes. Preventive maintenance outside the casa doesn't void your warranty, and we keep full records you can present.</p></details>
+    <details><summary>Do you offer home or roadside service?</summary><p>Yes, for batteries, jump starts, and minor electrical issues within Biñan, Santa Rosa, and San Pedro. Call and we dispatch a mobile mechanic.</p></details>
+    <details><summary>How do I get a quote without visiting?</summary><p>Send photos or a video of the issue plus your car's year and model over Messenger or Viber — ballpark quote the same day.</p></details>
+  </div>
+</section>
+<!-- /BLOCK: FAQ -->
+
+<!-- BLOCK: SERVICE-AREA [optional] -->
+<section data-component="SERVICE-AREA" data-variant="v2" style="padding:34px 0;background:var(--haz);border-top:3px solid var(--ink);border-bottom:3px solid var(--ink)">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline">
+    <strong style="font-family:'Saira Condensed';text-transform:uppercase;font-size:18px;margin-right:10px">Mobile service area:</strong>
+    <span style="font-size:14px">Biñan · Santa Rosa · San Pedro · Cabuyao · Carmona · Southwoods area</span>
+  </div>
+</section>
+<!-- /BLOCK: SERVICE-AREA -->
+
+<!-- BLOCK: CREDENTIALS [optional] -->
+<section data-component="CREDENTIALS" data-variant="v2" style="padding:36px 0">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:26px;font-size:13px;color:#3d4348">
+    <span>▣ DTI-registered</span>
+    <span>▣ Biñan City business permit</span>
+    <span>▣ TESDA NC II / NC III certified mechanics</span>
+    <span>▣ Insurance-accredited repair shop</span>
+  </div>
+</section>
+<!-- /BLOCK: CREDENTIALS -->
+
+<!-- BLOCK: LOCATION [required] -->
+<section data-component="LOCATION" data-variant="v2" id="location" style="padding-top:0">
+  <div class="wrap grid2">
+    <figure class="plate" style="min-height:340px">
+      <!-- IMG: map placeholder — pin at Km 38 National Highway, Biñan; embed live map in production -->
+      <span role="img" aria-label="Map showing Kalye Motorworks at Km 38 National Highway, Biñan" style="position:absolute;inset:0"></span>
+      <figcaption>Km 38 · beside the yellow water tower</figcaption>
+    </figure>
+    <div class="sheet" style="padding:30px">
+      <span class="tag">Location</span>
+      <h2 style="font-size:clamp(32px,4.5vw,52px);margin:14px 0 16px">Kalye Motorworks</h2>
+      <address style="font-style:normal;display:grid;gap:8px;font-size:14px;color:#3d4348">
+        <span>Km 38 National Highway, Barangay San Vicente, Biñan, Laguna 4024</span>
+        <a href="tel:+63495112277" style="font-size:22px;font-weight:700;color:var(--ink)">(049) 511-2277</a>
+      </address>
+      <!-- GBP SLOT: full weekly hours — bind from Google Business Profile -->
+      <div data-gbp="hours-week" style="margin:18px 0;padding:14px;border:2px dashed var(--line);font-size:13px;color:#3d4348">Weekly hours load here from Google Business Profile</div>
+      <a class="btn" href="https://maps.google.com/?q=Kalye+Motorworks+Binan+Laguna">Directions</a>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: LOCATION -->
+
+<!-- BLOCK: CTA-BAND [recommended] -->
+<section data-component="CTA-BAND" data-variant="v2" style="background:var(--ink);padding:56px 0">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
+    <h2 style="color:var(--haz);font-size:clamp(28px,4.5vw,46px)">Weird noise? Warning light?<br>Get it looked at today.</h2>
+    <div style="display:flex;gap:14px;flex-wrap:wrap">
+      <a class="btn" style="background:var(--haz);color:var(--ink);border-color:var(--haz)" href="tel:+63495112277">Call now</a>
+      <a class="btn" style="border-color:var(--haz);color:var(--haz)" href="viber://chat?number=%2B639175112277">Viber quote</a>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: CTA-BAND -->
+
+<!-- BLOCK: CLICK-TO-MESSAGE [recommended] -->
+<div data-component="CLICK-TO-MESSAGE" data-variant="v2" style="position:fixed;right:16px;bottom:16px;z-index:50">
+  <a href="https://m.me/kalyemotorworks" aria-label="Message us for a free quote" style="display:flex;align-items:center;gap:8px;background:var(--haz);color:var(--ink);text-decoration:none;font-weight:700;padding:14px 18px;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);min-height:48px;font-size:14px">✉ FREE QUOTE</a>
+</div>
+<!-- /BLOCK: CLICK-TO-MESSAGE -->
+
+<!-- BLOCK: FOOTER [required] -->
+<footer data-component="FOOTER" data-variant="v2" style="border-top:3px solid var(--ink);padding:44px 0;background:var(--paper)">
+  <div class="wrap" style="display:grid;gap:12px;font-size:13px;color:#3d4348">
+    <span style="font-family:'Saira Condensed';font-weight:800;font-size:20px;text-transform:uppercase;color:var(--ink)">Kalye<span style="color:var(--red)">■</span>Motorworks</span>
+    <span>Km 38 National Highway, Barangay San Vicente, Biñan, Laguna 4024 · <a href="tel:+63495112277">(049) 511-2277</a></span>
+    <span>Auto repair · Detailing · Tires · Diagnostics</span>
+  </div>
+  <div class="chev" style="margin-top:36px"></div>
+</footer>
+<!-- /BLOCK: FOOTER -->
+
+</body>
+</html>
