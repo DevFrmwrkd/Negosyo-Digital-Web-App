@@ -48,6 +48,7 @@ const SALONSPA_SOURCE_DIR = path.join(ROOT, 'templates', 'SalonSpa');
 const AUTOSHOP_SOURCE_DIR = path.join(ROOT, 'templates', 'Autoshop');
 const RESTAURANT_SOURCE_DIR = path.join(ROOT, 'templates', 'Restaurant');
 const SHIRTSTORE_SOURCE_DIR = path.join(ROOT, 'templates', 'Shirt Store');
+const V03_SOURCE_DIR = path.join(ROOT, 'templates', 'Landing Pages v03');
 const OUT_DIR = path.join(ROOT, 'public', 'template-previews');
 
 const TEMPLATES = [
@@ -81,6 +82,15 @@ const TEMPLATES = [
     { letter: 'ab', dir: SHIRTSTORE_SOURCE_DIR, file: '03 Artisan.html',           label: 'Artisan'           },
     { letter: 'ac', dir: SHIRTSTORE_SOURCE_DIR, file: '04 Modern.html',            label: 'Modern'            },
     { letter: 'ad', dir: SHIRTSTORE_SOURCE_DIR, file: '05 Kinetic.html',           label: 'Kinetic'           },
+    // v03 batch — one art-directed design per business category
+    { letter: 'ae', dir: V03_SOURCE_DIR, file: 'lp-01-restaurant.html', label: 'Smoke & Banana Leaf' },
+    { letter: 'af', dir: V03_SOURCE_DIR, file: 'lp-02-automotive.html', label: 'Kalye Motorworks'    },
+    { letter: 'ag', dir: V03_SOURCE_DIR, file: 'lp-07-retail.html',     label: 'Broadsheet Catalog'  },
+    { letter: 'ah', dir: V03_SOURCE_DIR, file: 'lp-03-medical.html',    label: 'Medical'             },
+    { letter: 'ai', dir: V03_SOURCE_DIR, file: 'lp-04-fitness.html',    label: 'Fitness'             },
+    { letter: 'aj', dir: V03_SOURCE_DIR, file: 'lp-05-education.html',  label: 'Education'           },
+    { letter: 'ak', dir: V03_SOURCE_DIR, file: 'lp-06-trades.html',     label: 'Trades'              },
+    { letter: 'al', dir: V03_SOURCE_DIR, file: 'lp-08-foodcraft.html',  label: 'Foodcraft'           },
 ];
 
 function sanitize(html, label) {
