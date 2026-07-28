@@ -147,7 +147,7 @@ const __fontHref = buildFontHref(__themePairing);
 
     /* Art-directed "plate" — brushed-steel gradient that stays as the designed
        fallback background of every data-image-field photo slot. */
-    html[data-page="AF"] .plate {
+    html[data-page="AF"] :where(.plate) {
       position: relative; overflow: hidden;
       background:
         linear-gradient(135deg, rgba(21,24,27,.85), rgba(42,47,52,.6)),

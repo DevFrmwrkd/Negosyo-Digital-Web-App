@@ -138,7 +138,7 @@ const __fontHref = buildFontHref(__themePairing);
 
     /* Art-directed cyanotype "plate" — the diagonal-hatch cyan texture that
        stays as the designed fallback background of every data-image-field slot. */
-    html[data-page="AK"] .plate {
+    html[data-page="AK"] :where(.plate) {
       position: relative; overflow: hidden; border: 2px solid var(--chalk);
       min-height: 230px; display: flex; align-items: flex-end;
       background:

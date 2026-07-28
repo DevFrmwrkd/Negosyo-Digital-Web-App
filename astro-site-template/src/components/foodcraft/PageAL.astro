@@ -126,7 +126,7 @@ const __fontHref = buildFontHref(__themePairing);
     /* Arched window frame — the art-directed photo slot. Keeps its terracotta
        gradient as the designed fallback; a photo layers over it via
        data-image-field .photo. */
-    html[data-page="AL"] .arch {
+    html[data-page="AL"] :where(.arch) {
       position: relative; overflow: hidden;
       border-radius: 200px 200px 12px 12px; border: 2px solid var(--cocoa);
       min-height: 260px; display: flex; align-items: flex-end;

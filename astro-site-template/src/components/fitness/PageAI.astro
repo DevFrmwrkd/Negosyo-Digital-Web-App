@@ -128,7 +128,7 @@ const __fontHref = buildFontHref(__themePairing);
 
     /* Wheat-paste halftone plate — the art-directed gradient that stays as the
        designed fallback of every data-image-field photo slot. */
-    html[data-page="AI"] .halftone {
+    html[data-page="AI"] :where(.halftone) {
       position: relative; overflow: hidden; border: 3px solid var(--ink);
       min-height: 240px; display: flex; align-items: flex-end;
       background:
