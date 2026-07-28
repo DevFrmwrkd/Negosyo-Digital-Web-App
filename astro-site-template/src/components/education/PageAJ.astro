@@ -135,7 +135,7 @@ const __fontHref = buildFontHref(__themePairing);
 
     /* Art-directed "plate" — the ink-bordered gradient slot that stays as the
        designed fallback background of every data-image-field photo slot. */
-    html[data-page="AJ"] .plate {
+    html[data-page="AJ"] :where(.plate) {
       position: relative; overflow: hidden; border: 2px solid var(--ink); border-radius: 8px;
       min-height: 230px; display: flex; align-items: flex-end; background:
         linear-gradient(150deg, rgba(32,48,77,.78), rgba(84,98,126,.45)),

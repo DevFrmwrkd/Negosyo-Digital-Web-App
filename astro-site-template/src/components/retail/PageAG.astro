@@ -130,7 +130,7 @@ const __fontHref = buildFontHref(__themePairing);
     /* Art-directed "plate" — the sepia newsprint-halftone photo slot; the
        red/ink gradient + dot texture stay as the designed fallback background
        of every data-image-field photo. */
-    html[data-page="AG"] .plate {
+    html[data-page="AG"] :where(.plate) {
       position: relative; overflow: hidden; border: 1px solid var(--ink);
       min-height: 230px; display: flex; align-items: flex-end; filter: sepia(.15);
       background:

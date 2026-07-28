@@ -116,8 +116,12 @@ const __fontHref = buildFontHref(__themePairing);
     html[data-page="AE"] .btn.ghost:hover { border-color: var(--ember); color: var(--ember); }
 
     /* Art-directed "plate" — the gradient charcoal/ember texture that stays as
-       the designed fallback background of every data-image-field photo slot. */
-    html[data-page="AE"] .plate {
+       the designed fallback background of every data-image-field photo slot.
+       `:where(.plate)` keeps this scoped to the AE page but drops the class out of
+       the specificity sum, so per-section size modifiers (.about-plate / .gal-tile /
+       .loc-plate, Astro-scoped) win their designed min-height instead of being
+       pinned to this 220px floor. */
+    html[data-page="AE"] :where(.plate) {
       position: relative; overflow: hidden; background:
         linear-gradient(160deg, rgba(232,99,44,.55), rgba(25,20,18,.9) 70%),
         repeating-linear-gradient(45deg, #2b221d 0 6px, #241d19 6px 12px);
