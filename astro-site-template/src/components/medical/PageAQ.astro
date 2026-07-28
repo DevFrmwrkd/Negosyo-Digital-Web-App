@@ -1,0 +1,228 @@
+---
+/**
+ * medical / PageAQ — "Clear Water" (calm clinical editorial).
+ *
+ * Ported from Local Business Landing Pages v4 / lp-05-medical.html. A
+ * contemporary Scandinavian-healthcare look: teal + mint on a near-white
+ * paper ground, Georgia system serif accents over a system sans body, soft
+ * rounded "plate" photo frames painted with mint "scene" gradients, and the
+ * design's signature — an offset floating clinic card over a persistent
+ * credibility rail (trust made visible, YMYL-first).
+ *
+ * Design isolation: lp-05's palette tokens + base primitives are scoped to
+ * `html[data-page="AQ"]` in the global block below so sister medical variants
+ * (e.g. AH) never inherit AQ's tokens or its bespoke `.plate` / `.scene-*` /
+ * `.credrail` primitives (and vice-versa).
+ *
+ * CRITICAL specificity note: the size-bearing `.plate` primitive is written as
+ * `html[data-page="AQ"] :where(.plate)` so per-section height modifiers
+ * (.hero-card, .about-fig, the .g-grid rows, .loc-map …) at (0,2,0) win over the
+ * base instead of being squashed to a base floor. Do not remove the :where().
+ *
+ * Signature: the credibility rail (lp-05's persistent trust strip) is folded
+ * into HeroAQ — the AM parallel to folding the dish ticker into the hero — and
+ * sourced from content.credentials.items so it teases the full CredentialsAQ
+ * band. It stays fully editable and auto-hides when there are no credentials.
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned "Clear Water" palette wins by default.
+ */
+import HeaderAQ from './header/HeaderAQ.astro';
+import HeroAQ from './hero/HeroAQ.astro';
+import TrustAQ from './trust/TrustAQ.astro';
+import AboutAQ from './about/AboutAQ.astro';
+import ServicesAQ from './services/ServicesAQ.astro';
+import WhyAQ from './why/WhyAQ.astro';
+import HowAQ from './how/HowAQ.astro';
+import TestimonialsAQ from './testimonials/TestimonialsAQ.astro';
+import GalleryAQ from './gallery/GalleryAQ.astro';
+import FaqAQ from './faq/FaqAQ.astro';
+import AreaAQ from './area/AreaAQ.astro';
+import CredentialsAQ from './credentials/CredentialsAQ.astro';
+import LocationAQ from './location/LocationAQ.astro';
+import CtaBandAQ from './ctaBand/CtaBandAQ.astro';
+import FooterAQ from './footer/FooterAQ.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AQ">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <meta name="theme-color" content="#0f6e64" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- lp-05 "Clear Water" palette tokens + shared base primitives, scoped to
+       html[data-page="AQ"] so they never leak to sister medical variants. -->
+  <style is:global>
+    html[data-page="AQ"] {
+      /* lp-05 native palette */
+      --ink: #123039; --ink2: #38555e; --teal: #0f6e64; --teal-d: #0a5349;
+      --mint: #e2f1ec; --mint-2: #eef7f4; --sand: #f4eee2; --paper: #fbfdfc;
+      --line: #d7e6e0; --muted: #5f767c; --gold: #c69a52;
+      --sans: system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+      --serif: Georgia,"Iowan Old Style","Times New Roman",serif;
+      --maxw: 1220px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens.
+         (--paper / --ink / --sans / --serif already ARE the design's names.) */
+      --accent: #0f6e64;
+      --paper-rgb: 251,253,252; --ink-rgb: 18,48,57; --accent-rgb: 15,110,100;
+      --on-accent: #ffffff; --on-ink: #eafaf5; --on-paper: #123039;
+    }
+    html[data-page="AQ"] * { box-sizing: border-box; }
+    html[data-page="AQ"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="AQ"] { scroll-behavior: auto; } }
+    html[data-page="AQ"] body {
+      margin: 0; background: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 18px; line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    html[data-page="AQ"] h1, html[data-page="AQ"] h2,
+    html[data-page="AQ"] h3, html[data-page="AQ"] h4 {
+      margin: 0; font-weight: 400; line-height: 1.04; letter-spacing: -.02em;
+    }
+    html[data-page="AQ"] h1, html[data-page="AQ"] h2 { letter-spacing: -.03em; }
+    html[data-page="AQ"] p { margin: 0 0 1em; }
+    html[data-page="AQ"] a { color: var(--teal-d); text-decoration: none; }
+    html[data-page="AQ"] a:hover { color: var(--teal); }
+    html[data-page="AQ"] img { max-width: 100%; display: block; }
+    html[data-page="AQ"] ::selection { background: var(--teal); color: #fff; }
+
+    html[data-page="AQ"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 30px; }
+    html[data-page="AQ"] .eyebrow {
+      font-family: var(--sans); font-size: 13px; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--teal); font-weight: 600;
+    }
+
+    /* Rounded pill buttons — filled teal / mint ghost (design signature). */
+    html[data-page="AQ"] .btn {
+      font-family: var(--sans); font-weight: 600; font-size: 15px; letter-spacing: .01em;
+      display: inline-flex; align-items: center; gap: .6em; padding: 16px 30px; cursor: pointer;
+      border: 1.5px solid var(--teal); border-radius: 100px;
+      transition: transform .3s, background .3s, color .3s, box-shadow .3s;
+    }
+    html[data-page="AQ"] .btn--fill { background: var(--teal); color: #fff; }
+    html[data-page="AQ"] .btn--fill:hover { background: var(--teal-d); border-color: var(--teal-d); color: #fff; transform: translateY(-2px); box-shadow: 0 14px 30px -12px rgba(15,110,100,.6); }
+    html[data-page="AQ"] .btn--ghost { background: transparent; color: var(--teal-d); }
+    html[data-page="AQ"] .btn--ghost:hover { background: var(--mint); color: var(--teal-d); transform: translateY(-2px); }
+    html[data-page="AQ"] .btn .arw { transition: transform .3s; }
+    html[data-page="AQ"] .btn:hover .arw { transform: translateX(4px); }
+
+    /* Scroll reveal (driven by the inline IntersectionObserver below). */
+    html[data-page="AQ"] .reveal { opacity: 0; transform: translateY(20px); transition: opacity 1s cubic-bezier(.2,.8,.2,1), transform 1s cubic-bezier(.2,.8,.2,1); }
+    html[data-page="AQ"] .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="AQ"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+    /* Designed photo frame — :where() so per-section height modifiers win. */
+    html[data-page="AQ"] :where(.plate) { position: relative; overflow: hidden; background: var(--mint); isolation: isolate; border-radius: 22px; }
+    html[data-page="AQ"] :where(.plate) .ph { position: absolute; inset: 0; background-size: cover; background-position: center; }
+    html[data-page="AQ"] :where(.plate) .cap {
+      position: absolute; left: 0; bottom: 0; z-index: 3; width: 100%; padding: 14px 18px;
+      font-size: 12px; letter-spacing: .04em; color: #fff; background: linear-gradient(0deg,rgba(10,52,48,.72),transparent);
+    }
+    html[data-page="AQ"] :where(.plate) .chip {
+      position: absolute; top: 14px; left: 14px; z-index: 3; font-size: 11px; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--teal-d); background: rgba(255,255,255,.9);
+      padding: 5px 11px; border-radius: 100px; font-weight: 600;
+    }
+
+    /* Soft "scene" fields — the designed fallback painted behind each photo. */
+    html[data-page="AQ"] .scene-smile { background: radial-gradient(70% 80% at 52% 40%,rgba(255,255,255,.9),transparent 60%),radial-gradient(60% 60% at 40% 66%,rgba(198,154,82,.25),transparent 60%),linear-gradient(160deg,#cfe9e1,#a9d3c8); }
+    html[data-page="AQ"] .scene-chair { background: radial-gradient(70% 70% at 60% 36%,rgba(255,255,255,.85),transparent 60%),linear-gradient(160deg,#d8ede7,#bcdcd3); }
+    html[data-page="AQ"] .scene-room { background: linear-gradient(180deg,rgba(255,255,255,.8),transparent 45%),repeating-linear-gradient(90deg,rgba(15,110,100,.05) 0 1px,transparent 1px 52px),linear-gradient(160deg,#d3e9e3,#b4d6cc); }
+    html[data-page="AQ"] .scene-tools { background: radial-gradient(60% 60% at 46% 46%,rgba(255,255,255,.9),transparent 60%),radial-gradient(40% 40% at 72% 60%,rgba(15,110,100,.16),transparent 60%),linear-gradient(160deg,#dcefe9,#c1ded5); }
+    html[data-page="AQ"] .scene-reception { background: linear-gradient(180deg,rgba(244,238,226,.7),transparent 40%),radial-gradient(60% 50% at 50% 70%,rgba(255,255,255,.85),transparent 62%),linear-gradient(160deg,#d6ebe4,#bad9cf); }
+    html[data-page="AQ"] .scene-kid { background: radial-gradient(60% 70% at 44% 42%,rgba(255,255,255,.9),transparent 60%),radial-gradient(50% 50% at 70% 66%,rgba(198,154,82,.28),transparent 60%),linear-gradient(160deg,#d8ede6,#b7d7cd); }
+    html[data-page="AQ"] .scene-exterior { background: linear-gradient(180deg,rgba(255,255,255,.7),transparent 42%),radial-gradient(60% 60% at 50% 72%,rgba(15,110,100,.16),transparent 62%),linear-gradient(160deg,#d4e9e3,#b2d5cb); }
+
+    /* section scaffolding shared across blocks */
+    html[data-page="AQ"] section { position: relative; }
+    html[data-page="AQ"] .sec { padding: 104px 0; }
+    html[data-page="AQ"] .sec-head { max-width: 720px; margin-bottom: 56px; }
+    html[data-page="AQ"] .sec-head .eyebrow { display: block; margin-bottom: 16px; }
+    html[data-page="AQ"] .sec-head h2 { font-size: clamp(32px,4.6vw,58px); color: var(--ink); }
+    html[data-page="AQ"] .sec-head h2 .soft { color: var(--teal); }
+    html[data-page="AQ"] .sec-head p { color: var(--muted); font-size: 19px; margin-top: 16px; }
+    html[data-page="AQ"] .stars { color: var(--gold); letter-spacing: 2px; font-size: 22px; }
+
+    /* CTA-band button context overrides (paper buttons on the teal band). */
+    html[data-page="AQ"] .cta-band .btn--fill { background: #fff; color: var(--teal-d); border-color: #fff; }
+    html[data-page="AQ"] .cta-band .btn--fill:hover { background: var(--sand); color: var(--teal-d); }
+    html[data-page="AQ"] .cta-band .btn--ghost { border-color: rgba(255,255,255,.6); color: #fff; }
+    html[data-page="AQ"] .cta-band .btn--ghost:hover { background: rgba(255,255,255,.12); color: #fff; }
+
+    /* skip link */
+    html[data-page="AQ"] .skip { position: absolute; left: -999px; top: 0; background: var(--teal); color: #fff; padding: 12px 18px; z-index: 100; border-radius: 0 0 8px 0; }
+    html[data-page="AQ"] .skip:focus { left: 0; top: 0; }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <HeaderAQ layout={layout} content={content} />
+  <main id="main">
+    {visibility.heroSection !== false && <HeroAQ content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAQ content={content} />}
+    {visibility.aboutSection !== false && <AboutAQ content={content} />}
+    {visibility.servicesSection !== false && <ServicesAQ content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAQ content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAQ content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAQ content={content} />}
+    {visibility.gallerySection !== false && <GalleryAQ content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAQ content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAQ content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAQ content={content} />}
+    {visibility.locationBlock !== false && <LocationAQ content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAQ content={content} layout={layout} />}
+  <FooterAQ layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Medical-AQ Leaflet boot — accepts (lat, lng, label) from LocationAQ.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAQ calls this with whatever it resolves).
+      // Light CARTO basemap + teal pin to match the "Clear Water" palette.
+      window.__medicalAQInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:18px;height:18px;border-radius:50%;background:#0f6e64;box-shadow:0 0 0 3px #fff;border:0;"></div>', iconSize: [18, 18], iconAnchor: [9, 9] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

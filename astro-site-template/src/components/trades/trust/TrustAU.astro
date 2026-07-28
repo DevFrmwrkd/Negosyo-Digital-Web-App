@@ -1,0 +1,35 @@
+---
+/**
+ * trades / TrustAU — the panel-band credibility strip under the hero: a row of
+ * yellow stat/statement cells, each ruled with a hairline divider (lp-09's
+ * "Licensed · rated · 10+ cities · insured" band). num renders via set:html so
+ * a cell whose num is "★★★★★" (the volatile Google rating slot, which has no
+ * dedicated field in the data model) still styles correctly.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust">
+    <div class="wrap">
+      {cells.map((cell, i) => (
+        <div class="c reveal">
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust { background: var(--panel); }
+  .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); }
+  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); } }
+  .trust .c { padding: 40px 24px; border-right: 1px solid var(--line); }
+  .trust .c:last-child { border-right: none; }
+  .trust .c .n { font-weight: 800; font-size: clamp(30px,4vw,46px); color: var(--yellow); text-transform: uppercase; }
+  .trust .c .t { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+  .trust .c .n :global(.stars) { color: var(--yellow); letter-spacing: 2px; font-size: 22px; }
+</style>

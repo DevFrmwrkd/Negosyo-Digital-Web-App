@@ -1,0 +1,50 @@
+---
+/**
+ * medical / AreaAQ — lp-05 "Clear Water" service-area strip (the design's
+ * SERVICE-AREA block, lifted out of the FAQ column into its own section per the
+ * shared content model). A teal eyebrow over pill-shaped locality tags that
+ * invert to teal on hover. Reads content.area.places (legacy `items`); optional
+ * headline / sub / body render above the tags when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area">
+    <div class="wrap">
+      {(headline || sub) && (
+        <div class="area-head reveal">
+          {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+          {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+        </div>
+      )}
+      <div class="areas reveal">
+        {tag && <span class="eyebrow" data-field="area.tag">{tag}</span>}
+        <div class="area-tags">
+          {places.map((place, i) => (
+            <span data-field={`area.places.${i}`}>{place}</span>
+          ))}
+        </div>
+      </div>
+      {body && <p class="area-body" data-field="area.body">{body}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .area { background: var(--paper); padding: 56px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .area-head { margin-bottom: 18px; }
+  .area-h { font-size: clamp(28px,4vw,46px); color: var(--ink); }
+  .area-sub { color: var(--muted); margin-top: 10px; max-width: 52ch; }
+  .areas { margin-top: 6px; }
+  .areas .eyebrow { display: block; margin-bottom: 4px; }
+  .area-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .area-tags span { font-size: 14px; border: 1px solid var(--line); background: #fff; padding: 8px 15px; border-radius: 100px; color: var(--ink2); transition: .3s; }
+  .area-tags span:hover { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .area-body { color: var(--muted); margin-top: 16px; max-width: 60ch; }
+</style>

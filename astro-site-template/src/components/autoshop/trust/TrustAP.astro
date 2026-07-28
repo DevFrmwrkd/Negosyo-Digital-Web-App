@@ -1,0 +1,37 @@
+---
+/**
+ * autoshop / TrustAP — panel-dark credibility strip under the hero: a row of
+ * amber stencil stat/statement cells split by hairline rules (lp-04's
+ * "Cert. · rating · 2 bays · warranty" band).
+ *
+ * The volatile Google rating slot has no dedicated field in the data model, so
+ * it is expressed as an ordinary trust cell — num renders via set:html so a
+ * cell whose num is "<span class='stars'>★★★★★</span>" still styles correctly.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust">
+    <div class="wrap">
+      {cells.map((cell, i) => (
+        <div class="c reveal">
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust { background: var(--panel); }
+  .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); }
+  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); } }
+  .trust .c { padding: 44px 26px; border-right: 1px solid var(--line); }
+  .trust .c:last-child { border-right: none; }
+  .trust .c .n { font-family: var(--big); font-size: clamp(38px,5vw,58px); color: var(--amber); line-height: .9; }
+  .trust .c .t { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--concrete); margin-top: 10px; }
+  .trust .c :global(.stars) { color: var(--amber-2); letter-spacing: 2px; font-size: 22px; }
+</style>

@@ -1,0 +1,73 @@
+---
+/**
+ * retail / HeaderAO — lp-03's two-part masthead: a thin ink "crate-mark" strip
+ * (brand line + tagline) above a sticky ink nav bar with a yellow underline
+ * rule, Courier uppercase links and an outlined phone/CTA. The sticky bar hides
+ * on scroll-down / reappears on scroll-up (toggled by PageAO's inline handler
+ * via header.nav.hide).
+ *
+ * The masthead strip's tagline mirrors layout.tagline (edited at layout level,
+ * like the <title>); it stays out of the way when unset. Editable atoms follow
+ * the AM header model: brand = footer.brand, links = navbar_links[], CTA reuses
+ * the hero's primary CTA so it stays in sync.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const sub = layout.tagline || '';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+// Reuse the hero's primary CTA as the nav action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#location';
+---
+<div class="masthead">
+  <div class="mh-top">
+    <span data-field="footer.brand">{brand}</span>
+    {sub && <span class="r"><span>{sub}</span></span>}
+  </div>
+</div>
+<header class="nav">
+  <div class="nav-in">
+    <a href="#main" class="brand" aria-label={`${brand} home`}>
+      <span class="bn" data-field="footer.brand">{brand}</span>
+      {sub && <span class="bs">{sub}</span>}
+    </a>
+    {(navLinks.length > 0 || ctaText) && (
+      <nav class="nav-links" aria-label="Primary">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+        {ctaText && <a href={ctaHref} class="navphone" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+      </nav>
+    )}
+  </div>
+</header>
+<style>
+  .masthead { background: var(--ink); color: var(--paper); border-bottom: 3px solid var(--yellow); }
+  .mh-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 30px; font-family: var(--mono); font-size: 12px; letter-spacing: .08em;
+    color: var(--paper2); border-bottom: 1px solid rgba(243,239,228,.18); flex-wrap: wrap; gap: 8px;
+    text-transform: uppercase;
+  }
+  .mh-top .r { display: flex; gap: 22px; flex-wrap: wrap; }
+  header.nav {
+    position: sticky; top: 0; z-index: 50; background: var(--ink); color: var(--paper);
+    border-bottom: 3px solid var(--yellow); transition: transform .35s;
+  }
+  header.nav.hide { transform: translateY(-100%); }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; padding: 16px 30px; }
+  .brand { display: flex; align-items: baseline; gap: 12px; color: var(--paper); }
+  .brand:hover { color: var(--paper); }
+  .brand .bn { font-weight: 800; font-size: 26px; letter-spacing: -.02em; text-transform: uppercase; }
+  .brand .bs { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--yellow); text-transform: uppercase; }
+  .nav-links { display: flex; gap: 26px; align-items: center; }
+  .nav-links a { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--paper2); }
+  .nav-links a:hover { color: var(--yellow); }
+  .nav-links .navphone { border: 2px solid var(--paper); padding: 8px 16px; color: var(--paper); font-weight: 800; font-family: var(--sans); }
+  .nav-links .navphone:hover { background: var(--yellow); border-color: var(--yellow); color: var(--ink); }
+  @media (max-width: 900px) { .nav-links a:not(.navphone) { display: none; } }
+</style>

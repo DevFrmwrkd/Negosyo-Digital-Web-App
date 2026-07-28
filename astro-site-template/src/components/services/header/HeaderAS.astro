@@ -1,0 +1,47 @@
+---
+/**
+ * services / HeaderAS — sticky bone-card nav with a blue square "mark" beside
+ * the Courier brand, dot-matrix uppercase links, and an outlined "book" CTA.
+ * Hides on scroll-down / reappears on scroll-up (toggled by PageAS's inline
+ * scroll handler via header.nav.hide). Mirrors the lp-07 receipt header.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const mark = String(brand).trim().charAt(0).toUpperCase() || 'L';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+// Reuse the hero's primary CTA as the nav "book" action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#book';
+---
+<header class="nav">
+  <div class="nav-in">
+    <a href="#main" class="brand" aria-label={`${brand} home`}><span class="mk" aria-hidden="true">{mark}</span><span class="bn" data-field="footer.brand">{brand}</span></a>
+    {(navLinks.length > 0 || ctaText) && (
+      <nav class="nav-links" aria-label="Primary">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+        {ctaText && <a href={ctaHref} class="navc" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+      </nav>
+    )}
+  </div>
+</header>
+<style>
+  header.nav { position: sticky; top: 0; z-index: 60; background: var(--card); border-bottom: 2px dashed var(--line); transition: transform .3s; }
+  header.nav.hide { transform: translateY(-100%); }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; max-width: var(--maxw); margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); }
+  .brand:hover { color: var(--ink); }
+  .brand .mk { width: 30px; height: 30px; background: var(--blue); color: var(--card); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; border-radius: 6px; flex-shrink: 0; }
+  .brand .bn { font-family: var(--mono); font-weight: 700; font-size: 22px; letter-spacing: -.01em; }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { font-family: var(--mono); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink2); }
+  .nav-links a:hover { color: var(--blue-d); }
+  .nav-links .navc { border: 2px solid var(--ink); padding: 8px 16px; color: var(--ink); }
+  .nav-links .navc:hover { background: var(--blue); border-color: var(--blue); color: var(--card); }
+  @media (max-width: 880px) { .nav-links a:not(.navc) { display: none; } }
+</style>

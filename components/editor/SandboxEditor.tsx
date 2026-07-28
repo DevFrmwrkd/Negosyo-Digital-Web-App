@@ -66,7 +66,7 @@ const BARBERSHOP_TEMPLATES = [
     { letter: 'J', code: 'barbershop:J', label: 'Stacked',   tagline: 'Stone + dark red · bold serif',      preview: '/template-previews/j.html' },
 ] as const;
 
-// ── SALONSPA · 5 letter variants K–O ─────────────────────────────────
+// ── SALONSPA · 5 letter variants K–O + AN ────────────────────────────
 // Codes map to `customizations.heroStyle = "salonspa:<letter>"` which the
 // Astro router resolves to PageK…PageO. Each variant has a hand-tuned
 // serif/sans pairing + accent palette. Shared section components from
@@ -78,9 +78,10 @@ const SALONSPA_TEMPLATES = [
     { letter: 'M', code: 'salonspa:M', label: 'Clinic',   tagline: 'Mist + teal · clinical aesthetic',      preview: '/template-previews/m.html' },
     { letter: 'N', code: 'salonspa:N', label: 'Vogue',    tagline: 'Mauve pink · editorial beauty',         preview: '/template-previews/n.html' },
     { letter: 'O', code: 'salonspa:O', label: 'Bloom',    tagline: 'Mauve + cream · romantic',              preview: '/template-previews/o.html' },
+    { letter: 'AN', code: 'salonspa:AN', label: 'Héla · Poblacion Atelier', tagline: 'Atelier nights · salon & spa', preview: '/template-previews/an.html' },
 ] as const;
 
-// ── AUTOSHOP · 5 letter variants P–T + AF ────────────────────────────
+// ── AUTOSHOP · 5 letter variants P–T + AF + AP ───────────────────────
 // Codes map to `customizations.heroStyle = "autoshop:<letter>"` → PageP…PageT.
 const AUTOSHOP_TEMPLATES = [
     { letter: 'P', code: 'autoshop:P', label: 'Foundry',      tagline: 'Concrete + hazard orange · industrial', preview: '/template-previews/p.html' },
@@ -89,9 +90,10 @@ const AUTOSHOP_TEMPLATES = [
     { letter: 'S', code: 'autoshop:S', label: 'Redline',      tagline: 'Bold red · performance shop',            preview: '/template-previews/s.html' },
     { letter: 'T', code: 'autoshop:T', label: 'Maple Street', tagline: 'Warm neighbourhood · trusted garage',    preview: '/template-previews/t.html' },
     { letter: 'AF', code: 'autoshop:AF', label: 'Job-Sheet Industrial', tagline: 'Hazard yellow · repair shops',  preview: '/template-previews/af.html' },
+    { letter: 'AP', code: 'autoshop:AP', label: 'Vulca Garage & Detailing', tagline: 'Volcanic grit · garage & detailing', preview: '/template-previews/ap.html' },
 ] as const;
 
-// ── RESTAURANT · 5 letter variants U–Y + AE ──────────────────────────
+// ── RESTAURANT · 5 letter variants U–Y + AE + AM ─────────────────────
 // Codes map to `customizations.heroStyle = "restaurant:<letter>"` → PageU…PageY.
 const RESTAURANT_TEMPLATES = [
     { letter: 'U', code: 'restaurant:U', label: 'Harvest',  tagline: 'Rustic + olive · farm-to-table',      preview: '/template-previews/u.html' },
@@ -100,6 +102,7 @@ const RESTAURANT_TEMPLATES = [
     { letter: 'X', code: 'restaurant:X', label: 'Ember',    tagline: 'Cinematic · fine dining',             preview: '/template-previews/x.html' },
     { letter: 'Y', code: 'restaurant:Y', label: 'Garden',   tagline: 'Playful · cafe / brunch',             preview: '/template-previews/y.html' },
     { letter: 'AE', code: 'restaurant:AE', label: 'Smoke & Banana Leaf', tagline: 'Charcoal + ember · grills & BBQ', preview: '/template-previews/ae.html' },
+    { letter: 'AM', code: 'restaurant:AM', label: 'Kalan · Mercado Nocturne', tagline: 'Ember + night market · restaurants', preview: '/template-previews/am.html' },
 ] as const;
 
 // ── SHIRTSTORE · 5 letter variants Z, AA–AD ──────────────────────────
@@ -112,34 +115,39 @@ const SHIRTSTORE_TEMPLATES = [
     { letter: 'AD', code: 'shirtstore:AD', label: 'Kinetic',     tagline: 'Energetic · statement tees',        preview: '/template-previews/ad.html' },
 ] as const;
 
-// ── RETAIL · single variant AG ───────────────────────────────────────
+// ── RETAIL · variants AG + AO ─────────────────────────────────────────
 // Codes map to `customizations.heroStyle = "retail:<letter>"`.
 const RETAIL_TEMPLATES = [
     { letter: 'AG', code: 'retail:AG', label: 'Broadsheet Catalog', tagline: 'Newsprint + red ink · hardware', preview: '/template-previews/ag.html' },
+    { letter: 'AO', code: 'retail:AO', label: 'Domingo · Catálogo', tagline: 'Sunday catalog · retail & shops', preview: '/template-previews/ao.html' },
 ] as const;
 
-// ── MEDICAL · single variant AH ──────────────────────────────────────
+// ── MEDICAL · variants AH + AQ ───────────────────────────────────────
 // Codes map to `customizations.heroStyle = "medical:<letter>"`.
 const MEDICAL_TEMPLATES = [
     { letter: 'AH', code: 'medical:AH', label: 'Clinical Editorial', tagline: 'Porcelain + seafoam · dental / derma', preview: '/template-previews/ah.html' },
+    { letter: 'AQ', code: 'medical:AQ', label: 'Batis Dental Studio', tagline: 'Fresh spring · dental & clinics', preview: '/template-previews/aq.html' },
 ] as const;
 
-// ── FITNESS · single variant AI ──────────────────────────────────────
+// ── FITNESS · variants AI + AR ───────────────────────────────────────
 // Codes map to `customizations.heroStyle = "fitness:<letter>"`.
 const FITNESS_TEMPLATES = [
     { letter: 'AI', code: 'fitness:AI', label: 'Brutalist Fight Poster', tagline: 'Red/black halftone · boxing gyms', preview: '/template-previews/ai.html' },
+    { letter: 'AR', code: 'fitness:AR', label: 'Kalasag Strength Co.', tagline: 'Shield-strong · gyms & strength', preview: '/template-previews/ar.html' },
 ] as const;
 
-// ── EDUCATION · single variant AJ ────────────────────────────────────
+// ── EDUCATION · variants AJ + AT ─────────────────────────────────────
 // Codes map to `customizations.heroStyle = "education:<letter>"`.
 const EDUCATION_TEMPLATES = [
     { letter: 'AJ', code: 'education:AJ', label: 'Notebook Modern', tagline: 'Ruled paper · tutoring centers', preview: '/template-previews/aj.html' },
+    { letter: 'AT', code: 'education:AT', label: 'Talíno Learning Studio', tagline: 'Bright + smart · tutoring & learning', preview: '/template-previews/at.html' },
 ] as const;
 
-// ── TRADES · single variant AK ───────────────────────────────────────
+// ── TRADES · variants AK + AU ────────────────────────────────────────
 // Codes map to `customizations.heroStyle = "trades:<letter>"`.
 const TRADES_TEMPLATES = [
     { letter: 'AK', code: 'trades:AK', label: 'Blueprint Cyanotype', tagline: 'Cyan blueprint · aircon / electrical', preview: '/template-previews/ak.html' },
+    { letter: 'AU', code: 'trades:AU', label: 'Volt & Line Electrical', tagline: 'Live wire · electrical & trades', preview: '/template-previews/au.html' },
 ] as const;
 
 // ── FOODCRAFT · single variant AL ────────────────────────────────────
@@ -148,8 +156,14 @@ const FOODCRAFT_TEMPLATES = [
     { letter: 'AL', code: 'foodcraft:AL', label: 'Pastel Deco Panaderia', tagline: 'Cream + terracotta · bakeries', preview: '/template-previews/al.html' },
 ] as const;
 
-type TemplateFamily = 'generic' | 'barbershop' | 'salonspa' | 'autoshop' | 'restaurant' | 'shirtstore' | 'retail' | 'medical' | 'fitness' | 'education' | 'trades' | 'foodcraft';
-const ALL_TEMPLATES = [...GENERIC_TEMPLATES, ...BARBERSHOP_TEMPLATES, ...SALONSPA_TEMPLATES, ...AUTOSHOP_TEMPLATES, ...RESTAURANT_TEMPLATES, ...SHIRTSTORE_TEMPLATES, ...RETAIL_TEMPLATES, ...MEDICAL_TEMPLATES, ...FITNESS_TEMPLATES, ...EDUCATION_TEMPLATES, ...TRADES_TEMPLATES, ...FOODCRAFT_TEMPLATES] as readonly { letter: string; code: string; label: string; tagline: string; preview: string }[];
+// ── SERVICES · single variant AS ─────────────────────────────────────
+// Codes map to `customizations.heroStyle = "services:<letter>"`.
+const SERVICES_TEMPLATES = [
+    { letter: 'AS', code: 'services:AS', label: 'Labaná Laundry & Press', tagline: 'Crisp + clean · laundry & services', preview: '/template-previews/as.html' },
+] as const;
+
+type TemplateFamily = 'generic' | 'barbershop' | 'salonspa' | 'autoshop' | 'restaurant' | 'shirtstore' | 'retail' | 'medical' | 'fitness' | 'education' | 'trades' | 'foodcraft' | 'services';
+const ALL_TEMPLATES = [...GENERIC_TEMPLATES, ...BARBERSHOP_TEMPLATES, ...SALONSPA_TEMPLATES, ...AUTOSHOP_TEMPLATES, ...RESTAURANT_TEMPLATES, ...SHIRTSTORE_TEMPLATES, ...RETAIL_TEMPLATES, ...MEDICAL_TEMPLATES, ...FITNESS_TEMPLATES, ...EDUCATION_TEMPLATES, ...TRADES_TEMPLATES, ...FOODCRAFT_TEMPLATES, ...SERVICES_TEMPLATES] as readonly { letter: string; code: string; label: string; tagline: string; preview: string }[];
 
 // ── BUCKETS · pick-one categories ────────────────────────────────────
 // `business_type` carries forward, but the variant-prefix routing was
@@ -477,40 +491,43 @@ export default function SandboxEditor(props: SandboxEditorProps) {
     // belongs to that family; collapsed otherwise (still expandable).
     const __initStyle = String((customizations as any)?.heroStyle ?? "");
     const [templateAccordionOpen, setTemplateAccordionOpen] = useState<boolean>(
-        () => /^generic:[A-E]$/.test(__initStyle) || !/^(generic|barbershop|salonspa|autoshop|restaurant|shirtstore|retail|medical|fitness|education|trades|foodcraft):/.test(__initStyle),
+        () => /^generic:[A-E]$/.test(__initStyle) || !/^(generic|barbershop|salonspa|autoshop|restaurant|shirtstore|retail|medical|fitness|education|trades|foodcraft|services):/.test(__initStyle),
     );
     const [barbershopAccordionOpen, setBarbershopAccordionOpen] = useState<boolean>(
         () => /^barbershop:[F-J]$/.test(__initStyle),
     );
     const [salonspaAccordionOpen, setSalonspaAccordionOpen] = useState<boolean>(
-        () => /^salonspa:[K-O]$/.test(__initStyle),
+        () => /^salonspa:([K-O]|AN)$/.test(__initStyle),
     );
     const [autoshopAccordionOpen, setAutoshopAccordionOpen] = useState<boolean>(
-        () => /^autoshop:([P-T]|AF)$/.test(__initStyle),
+        () => /^autoshop:([P-T]|AF|AP)$/.test(__initStyle),
     );
     const [restaurantAccordionOpen, setRestaurantAccordionOpen] = useState<boolean>(
-        () => /^restaurant:([U-Y]|AE)$/.test(__initStyle),
+        () => /^restaurant:([U-Y]|AE|AM)$/.test(__initStyle),
     );
     const [shirtstoreAccordionOpen, setShirtstoreAccordionOpen] = useState<boolean>(
         () => /^shirtstore:(Z|A[A-D])$/.test(__initStyle),
     );
     const [retailAccordionOpen, setRetailAccordionOpen] = useState<boolean>(
-        () => /^retail:AG$/.test(__initStyle),
+        () => /^retail:(AG|AO)$/.test(__initStyle),
     );
     const [medicalAccordionOpen, setMedicalAccordionOpen] = useState<boolean>(
-        () => /^medical:AH$/.test(__initStyle),
+        () => /^medical:(AH|AQ)$/.test(__initStyle),
     );
     const [fitnessAccordionOpen, setFitnessAccordionOpen] = useState<boolean>(
-        () => /^fitness:AI$/.test(__initStyle),
+        () => /^fitness:(AI|AR)$/.test(__initStyle),
     );
     const [educationAccordionOpen, setEducationAccordionOpen] = useState<boolean>(
-        () => /^education:AJ$/.test(__initStyle),
+        () => /^education:(AJ|AT)$/.test(__initStyle),
     );
     const [tradesAccordionOpen, setTradesAccordionOpen] = useState<boolean>(
-        () => /^trades:AK$/.test(__initStyle),
+        () => /^trades:(AK|AU)$/.test(__initStyle),
     );
     const [foodcraftAccordionOpen, setFoodcraftAccordionOpen] = useState<boolean>(
         () => /^foodcraft:AL$/.test(__initStyle),
+    );
+    const [servicesAccordionOpen, setServicesAccordionOpen] = useState<boolean>(
+        () => /^services:AS$/.test(__initStyle),
     );
 
     // Click-to-focus: iframe sends ed:click → either focus a text input
@@ -957,7 +974,8 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                 || FITNESS_TEMPLATES.some((t) => t.code === code)
                                 || EDUCATION_TEMPLATES.some((t) => t.code === code)
                                 || TRADES_TEMPLATES.some((t) => t.code === code)
-                                || FOODCRAFT_TEMPLATES.some((t) => t.code === code);
+                                || FOODCRAFT_TEMPLATES.some((t) => t.code === code)
+                                || SERVICES_TEMPLATES.some((t) => t.code === code);
                             setPendingCustomizations((prev: any) => {
                                 const base = prev ?? customizations ?? {};
                                 return {
@@ -1009,7 +1027,9 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                                                     ? 'trades'
                                                                     : FOODCRAFT_TEMPLATES.some((t) => t.code === activeTpl.code)
                                                                         ? 'foodcraft'
-                                                                        : 'generic')
+                                                                        : SERVICES_TEMPLATES.some((t) => t.code === activeTpl.code)
+                                                                            ? 'services'
+                                                                            : 'generic')
                             : null;
                         return (
                             <div className="space-y-3">
@@ -3047,6 +3067,173 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                         </div>
                                     </details>
                                 </div>
+                                {/* -- Services family ------------------------- */}
+                                <div className={s.section}>
+                                    <details
+                                        open={servicesAccordionOpen}
+                                        onToggle={(e) => setServicesAccordionOpen((e.target as HTMLDetailsElement).open)}
+                                        style={{
+                                            borderRadius: 10,
+                                            overflow: "hidden",
+                                            background: "var(--sx-panel-2)",
+                                            border: "1px solid var(--sx-rule)",
+                                        }}
+                                    >
+                                        <summary
+                                            style={{
+                                                listStyle: "none",
+                                                cursor: "pointer",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "space-between",
+                                                padding: "12px 14px",
+                                                color: "var(--sx-ink)",
+                                                gap: 12,
+                                            }}
+                                        >
+                                            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                                                <div
+                                                    style={{
+                                                        fontFamily: "var(--sx-mono)",
+                                                        fontSize: 10,
+                                                        fontWeight: 700,
+                                                        letterSpacing: "0.16em",
+                                                        textTransform: "uppercase",
+                                                        color: "var(--sx-accent)",
+                                                    }}
+                                                >
+                                                    Services
+                                                </div>
+                                                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--sx-ink)" }}>
+                                                    {activeFamily === 'services' && activeTpl ? activeTpl.label : "Services family · 1 design"}
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        fontSize: 11,
+                                                        color: "var(--sx-ink-soft)",
+                                                        whiteSpace: "nowrap",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                    }}
+                                                >
+                                                    {activeFamily === 'services' && activeTpl ? activeTpl.tagline : "Click to browse services designs"}
+                                                </div>
+                                            </div>
+                                            <ChevronDown
+                                                style={{
+                                                    width: 14,
+                                                    height: 14,
+                                                    color: "var(--sx-ink-soft)",
+                                                    transition: "transform .18s",
+                                                    transform: servicesAccordionOpen ? "rotate(180deg)" : "none",
+                                                    flexShrink: 0,
+                                                }}
+                                            />
+                                        </summary>
+                                        <div
+                                            style={{
+                                                padding: "8px 12px 14px",
+                                                borderTop: "1px solid var(--sx-rule)",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                gap: 12,
+                                            }}
+                                        >
+                                            {SERVICES_TEMPLATES.map((tpl) => {
+                                                const isActive = currentHeroStyle === tpl.code;
+                                                return (
+                                                    <button
+                                                        key={tpl.code}
+                                                        type="button"
+                                                        onClick={() => onPickTemplate(tpl.code)}
+                                                        style={{
+                                                            display: "block",
+                                                            width: "100%",
+                                                            textAlign: "left",
+                                                            padding: 0,
+                                                            background: isActive ? "rgba(16, 185, 129, 0.08)" : "var(--sx-panel)",
+                                                            border: isActive ? "1.5px solid var(--sx-accent)" : "1px solid var(--sx-rule)",
+                                                            borderRadius: 10,
+                                                            overflow: "hidden",
+                                                            cursor: "pointer",
+                                                            transition: "border-color .15s, transform .15s",
+                                                            fontFamily: "var(--sx-sans)",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                width: "100%",
+                                                                aspectRatio: "16 / 10",
+                                                                background: "#fff",
+                                                                borderBottom: "1px solid var(--sx-rule)",
+                                                                position: "relative",
+                                                                overflow: "hidden",
+                                                            }}
+                                                        >
+                                                            <iframe
+                                                                src={tpl.preview}
+                                                                title={`${tpl.label} preview`}
+                                                                loading="lazy"
+                                                                sandbox=""
+                                                                style={{
+                                                                    position: "absolute",
+                                                                    top: 0,
+                                                                    left: 0,
+                                                                    width: "300%",
+                                                                    height: "300%",
+                                                                    border: 0,
+                                                                    transform: "scale(0.333)",
+                                                                    transformOrigin: "top left",
+                                                                    pointerEvents: "none",
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ padding: "10px 14px 12px" }}>
+                                                            <div
+                                                                style={{
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    gap: 8,
+                                                                    justifyContent: "space-between",
+                                                                }}
+                                                            >
+                                                                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--sx-ink)" }}>
+                                                                    {tpl.label}
+                                                                </div>
+                                                                {isActive && (
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize: 9,
+                                                                            fontWeight: 700,
+                                                                            textTransform: "uppercase",
+                                                                            letterSpacing: "0.1em",
+                                                                            color: "var(--sx-accent)",
+                                                                            background: "rgba(16, 185, 129, 0.18)",
+                                                                            borderRadius: 999,
+                                                                            padding: "2px 7px",
+                                                                            fontFamily: "var(--sx-mono)",
+                                                                        }}
+                                                                    >
+                                                                        Active
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div
+                                                                style={{
+                                                                    fontSize: 11,
+                                                                    color: "var(--sx-ink-soft)",
+                                                                    marginTop: 4,
+                                                                }}
+                                                            >
+                                                                {tpl.tagline}
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </details>
+                                </div>
 
                                 <div
                                     style={{
@@ -3081,7 +3268,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                     })()}
 
                     {/* ── CONTENT ──────────────────────────────── */}
-                    {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:[K-O]|autoshop:([P-T]|AF)|restaurant:([U-Y]|AE)|shirtstore:(Z|A[A-D])|retail:AG|medical:AH|fitness:AI|education:AJ|trades:AK|foodcraft:AL)$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
+                    {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS)$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
                         // Derive the same "tier-3" fallback the build pipeline
                         // uses so inputs always show what the iframe shows. The
                         // editor's getValue() chain becomes:

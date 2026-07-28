@@ -1,0 +1,36 @@
+---
+/**
+ * restaurant / TrustAM — dark ink credibility strip under the hero: a row of
+ * ember serif stat/statement cells, each ruled with a bone hairline (lp-01's
+ * "3 generations · rating · 7am · 100% lutong-bahay" band).
+ *
+ * Volatile Google rating slots have no field in the data model, so they are
+ * expressed as ordinary trust cells (num renders via set:html so a cell whose
+ * num is "★★★★★" still styles correctly).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust">
+    <div class="wrap">
+      {cells.map((cell, i) => (
+        <div class="cell reveal">
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust { background: var(--ink); color: var(--bone); }
+  .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; padding: 44px 28px; }
+  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); gap: 32px 20px; } }
+  .cell { border-left: 1px solid rgba(242,232,215,.18); padding-left: 20px; }
+  .cell .n { font-family: var(--serif); font-size: clamp(30px,4vw,44px); color: var(--ember); line-height: 1; }
+  .cell .t { font-family: var(--label); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone); margin-top: 8px; opacity: .85; }
+  .cell :global(.stars) { color: var(--gold); letter-spacing: 2px; font-size: 20px; }
+</style>

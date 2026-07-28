@@ -1,0 +1,53 @@
+---
+/**
+ * education / ServicesAT — "what we teach" on the paper-2 band. A grid of
+ * tabbed .svc cards (a filing-tab chip, serif title, muted description) with a
+ * cycling coral / highlighter / navy top-rule and a lift on hover. services.sub
+ * renders as the sec-head note under the headline.
+ *
+ * services.items[i].tag is the design's filing-tab chip (falls back to a
+ * computed "PROG 0X" so the card always reads as designed); price/duration are
+ * accepted as legacy aliases (mirrors the AM content model).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="sec services" id="services">
+    <div class="wrap">
+      <div class="sec-head">
+        {tag && <span class="eyebrow" data-field="services.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>}
+        {sub && <p class="reveal d1" data-field="services.sub">{sub}</p>}
+      </div>
+      <div class="svc-grid">
+        {items.map((item, i) => (
+          <article class="svc reveal">
+            <span class="tab" data-field={`services.items.${i}.tag`}>{item.tag ?? item.duration ?? item.price ?? `PROG ${String(i + 1).padStart(2, '0')}`}</span>
+            <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .services { background: var(--paper2); }
+  .svc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+  @media (max-width: 900px) { .svc-grid { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 560px) { .svc-grid { grid-template-columns: 1fr; } }
+  .svc { background: var(--card); border: 1px solid var(--line); border-radius: 6px; border-top: 6px solid var(--coral); padding: 28px 26px; position: relative; transition: transform .3s, box-shadow .3s; }
+  .svc:nth-child(3n+2) { border-top-color: var(--hi); }
+  .svc:nth-child(3n) { border-top-color: var(--navy); }
+  .svc:hover { transform: translateY(-6px); box-shadow: 0 22px 44px -26px rgba(31,42,68,.5); }
+  .svc .tab { position: absolute; top: -16px; left: 24px; background: var(--card); border: 1px solid var(--line); border-bottom: none; border-radius: 6px 6px 0 0; padding: 3px 12px; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted); }
+  .svc h3 { font-size: 22px; margin: 6px 0 8px; color: var(--ink); }
+  .svc p { color: var(--muted); font-size: 15px; margin: 0; font-family: var(--sans); }
+</style>

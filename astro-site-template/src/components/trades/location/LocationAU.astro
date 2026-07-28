@@ -1,0 +1,175 @@
+---
+/**
+ * trades / LocationAU — "service area & dispatch" (no storefront): NAP-style
+ * dispatch rows left, the live Leaflet map (in the signature coverage plate)
+ * right. Mirrors the reference map strategy:
+ *
+ *   1. Build-time lat/lng  → render Leaflet directly via
+ *      window.__tradesAUInitMap(lat, lng, label).
+ *   2. Else any address    → client-side Nominatim (OSM) lookup, then Leaflet.
+ *   3. Else                 → lp-09's designed coverage grid + pulsing pings.
+ *
+ * The designed .covmap lives inside #map and shows until Leaflet mounts (the
+ * boot clears #map before drawing tiles), so the slot always looks designed.
+ * The Hours row is the GBP-bound slot (content.location.hours). location.mapCaption,
+ * location.storefrontNote and location.serviceArea are optional extras.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const loc = content.location || {};
+const tag = loc.tag || '';
+const headline = loc.headline || '';
+const sub = loc.sub || '';
+const brand = (content as any).footer?.brand || layout.businessName || '';
+const address = loc.address || layout.contact?.address || '';
+const addressLines = address ? address.split('\n') : [];
+const phone = loc.phone || layout.contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+const storefrontNote = loc.storefrontNote || '';
+const areaPlaces: string[] = Array.isArray((content.area || {}).places) ? content.area.places : [];
+const serviceArea = loc.serviceArea || (areaPlaces.length > 0 ? areaPlaces.join(' · ') : '');
+const hours: Array<{ day: string; time: string }> = Array.isArray(loc.hours)
+  ? loc.hours
+  : (Array.isArray((content as any).footer?.hours) ? (content as any).footer.hours : []);
+const hoursNote = loc.hoursNote || '';
+const mapCaption = loc.mapCaption || '';
+const lat = loc.lat != null
+  ? Number(loc.lat)
+  : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
+const lng = loc.lng != null
+  ? Number(loc.lng)
+  : (layout.contact?.lng != null ? Number(layout.contact.lng) : null);
+const label = layout.businessName || 'Our dispatch area';
+const mapAria = `Coverage map of the ${label} service area`;
+const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
+const hasAddress = !!address;
+
+// Decorative coverage pings — labelled from the service-area list when present,
+// else a designed default set so the map always reads as intended.
+const defaultPings = ['Quezon City', 'Manila', 'Makati', 'Pasig', 'Marikina', 'Caloocan'];
+const pingLabels = (areaPlaces.length > 0 ? areaPlaces : defaultPings).slice(0, 6);
+const pingPos = [
+  { l: '52%', t: '30%', c: '' },
+  { l: '36%', t: '56%', c: 'c p2' },
+  { l: '60%', t: '62%', c: 'p3' },
+  { l: '74%', t: '48%', c: 'c p4' },
+  { l: '72%', t: '26%', c: 'p5' },
+  { l: '32%', t: '34%', c: 'c p6' },
+];
+---
+<section class="sec" id="location">
+  <div class="wrap">
+    <div class="sec-head">
+      {tag && <span class="snum" data-field="location.tag">{tag}</span>}
+      {headline && <h2 class="reveal" data-field="location.headline" set:html={headline}></h2>}
+    </div>
+    {sub && <p class="loc-sub reveal" data-field="location.sub">{sub}</p>}
+    <div class="loc-grid reveal">
+      <div class="loc-info">
+        {brand && (
+          <div class="row"><div class="k">Business</div><div class="v" data-field="footer.brand">{brand}</div></div>
+        )}
+        {storefrontNote && (
+          <div class="row"><div class="k">Storefront</div><div class="v reg" data-field="location.storefrontNote">{storefrontNote}</div></div>
+        )}
+        {address && (
+          <div class="row">
+            <div class="k">Dispatch base</div>
+            <div class="v" style="font-size:16px;" data-field="location.address">
+              {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+            </div>
+          </div>
+        )}
+        {serviceArea && (
+          <div class="row"><div class="k">Service area</div><div class="v reg" data-field="location.serviceArea">{serviceArea}</div></div>
+        )}
+        {phone && (
+          <div class="row"><div class="k">Phone</div><div class="v" style="text-transform:none;"><a href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a></div></div>
+        )}
+        {(hours.length > 0 || hoursNote) && (
+          <div class="row">
+            <div class="k">Hours</div>
+            {hours.length > 0 ? (
+              <div class="v reg loc-hours">
+                {hours.map((r: any, i: number) => (
+                  <div class="hrow"><span data-field={`location.hours.${i}.day`}>{r.day}</span><span data-field={`location.hours.${i}.time`}>{r.time}</span></div>
+                ))}
+              </div>
+            ) : (
+              <div class="v reg" data-field="location.hoursNote">{hoursNote}</div>
+            )}
+          </div>
+        )}
+      </div>
+      <div class="loc-map">
+        <div id="map" role="img" aria-label={mapAria}>
+          <div class="covmap" aria-hidden="true">
+            <span class="lbl">Dispatch grid</span>
+            <div class="region"></div>
+            {pingLabels.map((pl, i) => (
+              <div class={`ping ${pingPos[i].c}`.trim()} style={`left:${pingPos[i].l};top:${pingPos[i].t};`}><div class="d"></div><div class="t">{pl}</div></div>
+            ))}
+            <span class="scale">◲ not to scale</span>
+          </div>
+        </div>
+        {mapCaption && <div class="map-cap" data-field="location.mapCaption">{mapCaption}</div>}
+      </div>
+    </div>
+  </div>
+</section>
+{/* Render path A: build-time coords ready. */}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, label }}>
+    (function init() {
+      if (window.__tradesAUInitMap) window.__tradesAUInitMap(lat, lng, label);
+      else setTimeout(init, 80);
+    })();
+  </script>
+)}
+{/* Render path B: no coords but address present — client-side Nominatim. */}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, label }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(lat, lng) {
+        if (window.__tradesAUInitMap) {
+          window.__tradesAUInitMap(lat, lng, label);
+        } else if (attempt++ < 25) {
+          setTimeout(function () { tryInit(lat, lng); }, 80);
+        }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var lat = parseFloat(results[0].lat);
+            var lng = parseFloat(results[0].lon);
+            if (isNaN(lat) || isNaN(lng)) return;
+            tryInit(lat, lng);
+          })
+          .catch(function () { /* keep the designed coverage-grid fallback */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  .loc-sub { color: var(--muted); margin: -24px 0 30px; max-width: 46ch; text-transform: none; }
+  .loc-grid { display: grid; grid-template-columns: 1fr 1.1fr; border: 1px solid var(--line); }
+  @media (max-width: 900px) { .loc-grid { grid-template-columns: 1fr; } }
+  .loc-info { padding: 44px 34px; border-right: 1px solid var(--line); }
+  @media (max-width: 900px) { .loc-info { border-right: none; border-bottom: 1px solid var(--line); } }
+  .loc-info .row { padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .loc-info .row:last-child { border-bottom: none; }
+  .loc-info .k { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  .loc-info .v { font-weight: 800; font-size: 19px; text-transform: uppercase; letter-spacing: -.01em; }
+  .loc-info .v.reg { font-weight: 400; font-family: var(--mono); font-size: 14px; text-transform: none; color: var(--cyan); }
+  .loc-hours { display: grid; gap: 4px; }
+  .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; }
+  .loc-map { position: relative; min-height: 420px; background: var(--navy-d); overflow: hidden; }
+  #map { position: absolute; inset: 0; z-index: 0; }
+  .loc-map .covmap { position: absolute; inset: 24px; aspect-ratio: auto; }
+  .map-cap { position: absolute; left: 0; bottom: 0; z-index: 3; width: 100%; padding: 12px 14px; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--ink); background: linear-gradient(0deg,rgba(7,21,40,.9),transparent); text-transform: uppercase; }
+</style>

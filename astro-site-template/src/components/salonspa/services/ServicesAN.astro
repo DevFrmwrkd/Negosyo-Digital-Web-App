@@ -1,0 +1,61 @@
+---
+/**
+ * salonspa / ServicesAN — the editorial service list on the bone band. Each row
+ * is a numbered .svc-item (nude index, Didot title, muted description, a
+ * hover-revealed "go" affordance) that indents and warms on hover. services.sub
+ * renders as the closing consultation note.
+ *
+ * The "go" slot shows services.items[i].tag / duration / price when present
+ * (editable); otherwise it falls back to a decorative "Book →" affordance so
+ * the hover reveal always reads as designed.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="sec services" id="services">
+    <div class="wrap">
+      <div class="sec-head">
+        {tag && <span class="eyebrow" data-field="services.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>}
+      </div>
+      <div class="svc">
+        {items.map((item, i) => {
+          const chip = item.tag ?? item.duration ?? item.price;
+          return (
+            <article class="svc-item reveal">
+              <div class="idx">{String(i + 1).padStart(2, '0')}</div>
+              <div>
+                <h3 data-field={`services.items.${i}.title`} set:html={item.title}></h3>
+                {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+              </div>
+              {chip
+                ? <div class="go" data-field={`services.items.${i}.tag`}>{chip}</div>
+                : <div class="go" aria-hidden="true">Book →</div>}
+            </article>
+          );
+        })}
+      </div>
+      {sub && <p class="svc-note" data-field="services.sub">{sub}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .services { background: var(--bone); }
+  .svc { border-top: 1px solid var(--line); }
+  .svc-item { display: grid; grid-template-columns: auto 1fr auto; gap: 34px; align-items: center; padding: 34px 4px; border-bottom: 1px solid var(--line); position: relative; transition: padding .45s, color .45s; }
+  .svc-item .idx { font-family: var(--label); font-size: 12px; letter-spacing: .14em; color: var(--nude-deep); }
+  .svc-item h3 { font-size: clamp(28px,3.6vw,46px); transition: transform .45s, color .45s; }
+  .svc-item p { grid-column: 2; color: var(--muted); font-size: 16px; margin: .5em 0 0; max-width: 60ch; }
+  .svc-item .go { font-family: var(--label); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink); opacity: 0; transform: translateX(-8px); transition: .45s; }
+  .svc-item:hover { padding-left: 20px; }
+  .svc-item:hover h3 { transform: translateX(6px); color: var(--nude-deep); }
+  .svc-item:hover .go { opacity: 1; transform: none; }
+  .svc-note { margin-top: 20px; color: var(--muted); font-size: 15px; }
+</style>

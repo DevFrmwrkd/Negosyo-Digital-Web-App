@@ -1,0 +1,45 @@
+---
+/**
+ * retail / WhyAO — lp-03's "Why buy here" reasons on the dark ink band under the
+ * oversized §04 index head (its snum + rule flip to yellow/light for the dark
+ * ground). A hairline-gridded 2×2 set of .why-cell tiles, each led by a big
+ * Arial-Black yellow numeral (decorative), an uppercase title and a dimmed body
+ * line. Reads content.why.items (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+const headline = why.headline || 'Why buy here';
+const items: Array<{ title: string; body?: string; desc?: string; description?: string }> =
+  Array.isArray(why.items) ? why.items : [];
+---
+{items.length > 0 && (
+  <section class="sec why">
+    <div class="wrap">
+      <div class="sec-head" style="border-color:rgba(243,239,228,.3);">
+        <div class="snum" aria-hidden="true" style="color:var(--yellow);">04</div>
+        <h2 class="reveal" style="color:var(--paper);" data-field="why.headline" set:html={headline}></h2>
+      </div>
+      <div class="why-grid">
+        {items.map((item, i) => (
+          <div class="why-cell reveal">
+            <div class="k" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+            <h3 data-field={`why.items.${i}.title`}>{item.title}</h3>
+            {(item.body ?? item.desc ?? item.description) && (
+              <p data-field={`why.items.${i}.body`}>{item.body ?? item.desc ?? item.description}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .why { background: var(--ink); color: var(--paper); }
+  .why-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 2px; background: rgba(243,239,228,.16); border: 1px solid rgba(243,239,228,.16); }
+  @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; } }
+  .why-cell { background: var(--ink); padding: 38px 32px; }
+  .why-cell .k { font-family: var(--num); font-size: 34px; color: var(--yellow); }
+  .why-cell h3 { font-size: 22px; text-transform: uppercase; margin: 12px 0 8px; color: var(--paper); }
+  .why-cell p { color: var(--paper2); opacity: .85; font-size: 15px; }
+</style>

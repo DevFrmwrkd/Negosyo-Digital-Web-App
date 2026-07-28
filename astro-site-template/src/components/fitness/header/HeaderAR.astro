@@ -1,0 +1,49 @@
+---
+/**
+ * fitness / HeaderAR — sticky near-black nav bar with a lime hazard underline,
+ * a hexagon "shield" mark beside the Arial-Black brand, mono uppercase links
+ * and an outlined lime "free trial" CTA. Hides on scroll-down / reappears on
+ * scroll-up (toggled by PageAR's inline scroll handler via header.nav.hide).
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+// Reuse the hero's primary CTA as the nav "free trial" action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#trial';
+---
+<header class="nav">
+  <div class="nav-in">
+    <a href="#main" class="brand" data-field="footer.brand" aria-label={`${brand} home`}><span class="sh" aria-hidden="true"></span><span class="bn">{brand}</span></a>
+    {(navLinks.length > 0 || ctaText) && (
+      <nav class="nav-links" aria-label="Primary">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+        {ctaText && <a href={ctaHref} class="navt" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+      </nav>
+    )}
+  </div>
+</header>
+<style>
+  header.nav {
+    position: sticky; top: 0; z-index: 60; background: rgba(12,13,10,.94);
+    backdrop-filter: blur(6px); border-bottom: 3px solid var(--lime); transition: transform .3s;
+  }
+  header.nav.hide { transform: translateY(-100%); }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; padding: 15px 28px; max-width: var(--maxw); margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 12px; color: var(--chalk); }
+  .brand:hover { color: var(--chalk); }
+  .brand .sh { width: 24px; height: 28px; background: var(--lime); clip-path: polygon(50% 0,100% 22%,100% 66%,50% 100%,0 66%,0 22%); flex-shrink: 0; }
+  .brand .bn { font-family: var(--disp); font-size: 24px; letter-spacing: -.01em; text-transform: uppercase; }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { font-family: var(--mono); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--ash); }
+  .nav-links a:hover { color: var(--chalk); }
+  .nav-links .navt { border: 2px solid var(--lime); color: var(--lime); padding: 9px 16px; font-family: var(--disp); letter-spacing: .02em; }
+  .nav-links .navt:hover { background: var(--lime); color: #000; }
+  @media (max-width: 900px) { .nav-links a:not(.navt) { display: none; } }
+</style>

@@ -1,0 +1,52 @@
+---
+/**
+ * retail / AboutAO — lp-03's "Our store" split under the oversized §01 index
+ * head: Swiss-grid copy column left (first paragraph set large), an art-directed
+ * .plate figure right keeping its .scene-aisle duotone as the designed fallback
+ * until about.image is set.
+ *
+ * about.imageCaption, about.quote and about.signature are optional extras that
+ * stay hidden when unset (mirrors the AM/AG content model).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const headline = about.headline || 'Our store';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+---
+<section class="sec about" id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="snum" aria-hidden="true">01</div>
+      <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>
+    </div>
+    <div class="about-grid">
+      <div class="about-copy reveal">
+        {paragraphs.map((p: string, i: number) => (
+          <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
+        ))}
+        {quote && <blockquote class="about-quote" data-field="about.quote">“{quote}”</blockquote>}
+        {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
+      </div>
+      <figure class="about-fig plate grid-bg reveal">
+        <div class="ph scene-aisle" role="img" data-image-field="about.image" style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''}></div>
+        {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<style>
+  .about { background: var(--paper); }
+  .about-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: start; }
+  @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 34px; } }
+  .about-copy p:first-of-type { font-size: 22px; font-weight: 600; line-height: 1.4; }
+  .about-copy p { color: var(--ink2); }
+  .about-copy p:first-of-type { color: var(--ink); }
+  .about-quote { font-weight: 800; font-size: clamp(20px,2.4vw,26px); line-height: 1.2; color: var(--red-d); margin: 24px 0 0; padding-left: 18px; border-left: 3px solid var(--red); text-transform: uppercase; }
+  .about-sign { margin-top: 16px; font-style: italic; color: var(--steel); }
+  .about-fig { aspect-ratio: 5/4; border: 2px solid var(--ink); }
+</style>

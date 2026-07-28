@@ -1,0 +1,104 @@
+---
+/**
+ * trades / HeroAU — the dispatch hero: a two-column grid with the copy left and
+ * the signature service-area coverage map (.covmap, pulsing dispatch pings)
+ * right. A live "accepting calls" status pill, a giant tap-to-call dispatch
+ * callbox, and the two primary CTAs. The last headline line can carry a
+ * `<span class="cy">` accent from the data (rendered via set:html).
+ *
+ * The coverage map is decorative chrome (role="img", aria-hidden pings) so it
+ * carries no editable field — the editable service-area list lives in AreaAU.
+ * The callbox number is the canonical phone (content.location.phone /
+ * layout.contact.phone); its label is an optional hero field.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const loc = content.location || {};
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const callLabel = hero.callLabel || 'Tap to call the dispatch line';
+const phone = loc.phone || layout.contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#location';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || '#coverage';
+
+// Decorative coverage pings — labelled from the service-area list when present,
+// else a designed default set so the map always reads as intended.
+const areaPlaces: string[] = Array.isArray((content.area || {}).places) ? content.area.places : [];
+const defaultPings = ['Quezon City', 'Manila', 'Makati', 'Pasig', 'Marikina', 'Caloocan'];
+const pingLabels = (areaPlaces.length > 0 ? areaPlaces : defaultPings).slice(0, 6);
+const pingPos = [
+  { l: '52%', t: '30%', c: '' },
+  { l: '38%', t: '54%', c: 'c p2' },
+  { l: '60%', t: '60%', c: 'p3' },
+  { l: '72%', t: '46%', c: 'c p4' },
+  { l: '70%', t: '26%', c: 'p5' },
+  { l: '34%', t: '34%', c: 'c p6' },
+];
+---
+<section class="hero" aria-label="Hero">
+  <div class="wrap">
+    <div class="hero-l">
+      {kicker && <span class="statusline"><span class="live" aria-hidden="true"></span> <span data-field="hero.kicker">{kicker}</span></span>}
+      {headlineLines.length > 0 && (
+        <h1>
+          {headlineLines.map((line: string, i: number) => (
+            <span data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+      {phone && (
+        <a href={`tel:${phoneDigits}`} class="callbox" aria-label={`Call ${phone}`}>
+          <span class="cl" data-field="hero.callLabel">{callLabel}</span>
+          <span class="cn" data-field="location.phone">{phone}</span>
+        </a>
+      )}
+      {(cta1Text || cta2Text) && (
+        <div class="cta-row">
+          {cta1Text && <a href={cta1Href} class="btn btn--cyan" rel="noopener" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a href={cta2Href} class="btn btn--ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+    <div class="hero-r">
+      <div class="covmap" role="img" aria-label="Service-area coverage map with dispatch markers">
+        <span class="lbl">Coverage</span>
+        <div class="region" aria-hidden="true"></div>
+        {pingLabels.map((label, i) => (
+          <div class={`ping ${pingPos[i].c}`.trim()} style={`left:${pingPos[i].l};top:${pingPos[i].t};`} aria-hidden="true"><div class="d"></div><div class="t">{label}</div></div>
+        ))}
+        <span class="scale" aria-hidden="true">◲ dispatch grid</span>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+  .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; padding: 64px 30px 60px; }
+  @media (max-width: 940px) { .hero .wrap { grid-template-columns: 1fr; gap: 40px; } }
+  .hero-l { opacity: 0; animation: hf-au .8s ease .1s forwards; }
+  @keyframes hf-au { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .hero-l, .hero-r { opacity: 1 !important; animation: none !important; } }
+  .statusline { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); border: 1px solid var(--line); padding: 7px 12px; border-radius: 100px; margin-bottom: 22px; }
+  .statusline .live { width: 9px; height: 9px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 0 0 rgba(255,210,30,.6); animation: blip-au 1.8s ease-out infinite; }
+  @keyframes blip-au { 0% { box-shadow: 0 0 0 0 rgba(255,210,30,.6); } 100% { box-shadow: 0 0 0 12px rgba(255,210,30,0); } }
+  @media (prefers-reduced-motion: reduce) { .statusline .live { animation: none; } }
+  .hero h1 { font-size: clamp(46px,7vw,104px); }
+  .hero h1 > span { display: block; }
+  .hero h1 :global(.cy) { color: var(--cyan); }
+  .hero h1 :global(.yl) { color: var(--yellow); }
+  .hero .lede { max-width: 46ch; color: var(--muted); font-size: 19px; margin: 22px 0 26px; }
+  .callbox { display: inline-flex; flex-direction: column; gap: 2px; border: 2px solid var(--yellow); padding: 14px 22px; margin-bottom: 20px; background: rgba(255,210,30,.06); }
+  .callbox .cl { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--yellow); }
+  .callbox .cn { font-weight: 800; font-size: clamp(28px,4vw,44px); color: var(--ink); letter-spacing: .01em; }
+  .callbox:hover .cn { color: var(--yellow); }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero-r { position: relative; opacity: 0; animation: hf-au .9s ease .3s forwards; }
+</style>

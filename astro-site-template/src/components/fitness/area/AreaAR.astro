@@ -1,0 +1,52 @@
+---
+/**
+ * fitness / AreaAR — the "members train from" strip (lp-06's SERVICE-AREA
+ * block, lifted out of the FAQ column into its own section per the AM model).
+ * A mono lime eyebrow over bordered area tags that light up lime on hover.
+ * Reads content.area.places (legacy `items`); optional headline / sub / body
+ * render above the tags when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area">
+    <div class="wrap">
+      {(headline || sub) && (
+        <div class="area-head reveal">
+          {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+          {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+        </div>
+      )}
+      <div class="areas reveal">
+        {tag && <div class="tag" style="margin:0 0 4px;" data-field="area.tag">{tag}</div>}
+        <div class="area-tags">
+          {places.map((place, i) => (
+            <span data-field={`area.places.${i}`}>{place}</span>
+          ))}
+        </div>
+      </div>
+      {body && <p class="area-body" data-field="area.body">{body}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .area { background: var(--panel); padding: 48px 0; border-bottom: 3px solid var(--line); }
+  .area-head { margin-bottom: 20px; }
+  .area-h { font-size: clamp(28px,4vw,46px); color: var(--chalk); }
+  .area-sub { color: var(--ash); margin-top: 10px; max-width: 52ch; }
+  .areas { margin-top: 6px; }
+  .area-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .area-tags span {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+    border: 2px solid var(--line); padding: 7px 12px; color: var(--ash); transition: .2s;
+  }
+  .area-tags span:hover { border-color: var(--lime); color: var(--lime); }
+  .area-body { color: var(--ash); margin-top: 16px; max-width: 60ch; }
+</style>

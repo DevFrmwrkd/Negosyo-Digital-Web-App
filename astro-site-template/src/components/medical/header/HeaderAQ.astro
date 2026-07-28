@@ -1,0 +1,52 @@
+---
+/**
+ * medical / HeaderAQ — sticky near-white nav bar (lp-05 "Clear Water" NAV): a
+ * rounded teal monogram beside the serif-weight brand, quiet ink links, and a
+ * filled teal "book a visit" pill that reuses the hero's primary CTA so it stays
+ * in sync. Stays put on scroll (the design's nav does not hide).
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const monogram = (brand || 'B').trim().charAt(0).toUpperCase();
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+// Reuse the hero's primary CTA as the nav "book" action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#book';
+---
+<header class="nav">
+  <div class="nav-in">
+    <a href="#main" class="brand" aria-label={`${brand} home`} data-field="footer.brand"><span class="mk" aria-hidden="true">{monogram}</span><span class="bn">{brand}</span></a>
+    {(navLinks.length > 0 || ctaText) && (
+      <nav class="nav-links" aria-label="Primary">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+        {ctaText && <a href={ctaHref} class="navbook" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+      </nav>
+    )}
+  </div>
+</header>
+<style>
+  header.nav {
+    position: sticky; top: 0; z-index: 60; background: rgba(251,253,252,.86);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); transition: padding .3s;
+  }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; padding: 16px 30px; max-width: var(--maxw); margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); flex: none; }
+  .brand:hover { color: var(--ink); }
+  .brand .mk {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--teal); display: flex;
+    align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 16px; flex: none;
+  }
+  .brand .bn { font-size: 22px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a { font-size: 15px; color: var(--ink2); font-weight: 500; }
+  .nav-links a:hover { color: var(--teal); }
+  .nav-links .navbook { background: var(--teal); color: #fff; padding: 10px 20px; border-radius: 100px; font-weight: 600; font-size: 14px; }
+  .nav-links .navbook:hover { background: var(--teal-d); color: #fff; }
+  @media (max-width: 880px) { .nav-links a:not(.navbook) { display: none; } }
+</style>

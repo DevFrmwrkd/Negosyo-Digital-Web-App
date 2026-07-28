@@ -1,0 +1,37 @@
+---
+/**
+ * services / TrustAS — the blue credibility strip under the hero: a row of
+ * dot-matrix stat/statement cells split by dashed bone rules (lp-07's
+ * "Next-day · rating · Free · Tagged" band).
+ *
+ * The Google rating cell has no field of its own in the data model, so it is
+ * expressed as an ordinary trust cell — num renders via set:html so a cell
+ * whose num is "★★★★★" still styles correctly (map GBP rating/reviews here).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust">
+    <div class="wrap">
+      {cells.map((cell, i) => (
+        <div class="c reveal" data-delay={i > 0 ? String(Math.min(i, 3)) : undefined}>
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust { background: var(--blue); color: var(--card); }
+  .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); }
+  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); } }
+  .trust .c { padding: 40px 22px; border-right: 2px dashed rgba(250,245,232,.3); }
+  .trust .c:last-child { border-right: none; }
+  .trust .c .n { font-family: var(--mono); font-weight: 700; font-size: clamp(28px,3.6vw,40px); }
+  .trust .c .t { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .9; margin-top: 10px; }
+  .trust .c :global(.stars) { color: #ffd54a; letter-spacing: 2px; font-size: 22px; }
+</style>

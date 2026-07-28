@@ -1,0 +1,252 @@
+---
+/**
+ * services / PageAS — "Wash Ticket" (utilitarian laundromat drop-off receipt).
+ *
+ * Ported from Local Business Landing Pages v4 / lp-07-services.html. A
+ * neighbourhood laundry look: dot-matrix Courier mono on warm cream paper,
+ * perforated seams and rubber-stamp accents, a Prussian-blue + red duotone,
+ * and a signature hero that "prints" in as a perforated service ticket. Every
+ * image slot is a bordered .plate frame with a gradient "scene" field standing
+ * in as the designed photo fallback.
+ *
+ * Design isolation: lp-07's palette tokens + base primitives are scoped to
+ * `html[data-page="AS"]` in the global block below so sister generic variants
+ * never inherit AS's tokens or its bespoke `.plate` / `.perf` / `.scene-*`
+ * primitives (and vice-versa).
+ *
+ * CRITICAL specificity note: the size-bearing `.plate` primitive is written as
+ * `html[data-page="AS"] :where(.plate)` so per-section height modifiers
+ * (.about-fig, .hero-side .plate, the gallery grid rows) at (0,2,0) win over the
+ * base instead of being squashed to a base floor. Do not remove the :where().
+ *
+ * lockVariant: true — only an EXPLICIT admin color/font pick recolors; the
+ * hand-tuned "Wash Ticket" palette wins by default.
+ */
+import HeaderAS from './header/HeaderAS.astro';
+import HeroAS from './hero/HeroAS.astro';
+import TrustAS from './trust/TrustAS.astro';
+import AboutAS from './about/AboutAS.astro';
+import ServicesAS from './services/ServicesAS.astro';
+import WhyAS from './why/WhyAS.astro';
+import HowAS from './how/HowAS.astro';
+import TestimonialsAS from './testimonials/TestimonialsAS.astro';
+import GalleryAS from './gallery/GalleryAS.astro';
+import FaqAS from './faq/FaqAS.astro';
+import AreaAS from './area/AreaAS.astro';
+import CredentialsAS from './credentials/CredentialsAS.astro';
+import LocationAS from './location/LocationAS.astro';
+import CtaBandAS from './ctaBand/CtaBandAS.astro';
+import FooterAS from './footer/FooterAS.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="AS">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <meta name="theme-color" content="#1e1c17" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- lp-07 "Wash Ticket" palette tokens + shared base primitives, scoped to
+       html[data-page="AS"] so they never leak to sister generic variants. -->
+  <style is:global>
+    html[data-page="AS"] {
+      /* lp-07 native palette */
+      --paper: #f1e9d5; --paper2: #e9dfc6; --card: #faf5e8;
+      --ink: #211f18; --ink2: #413d30;
+      --blue: #245ea0; --blue-d: #1a4676; --red: #c33a2b;
+      --line: #d6cbaf; --muted: #6d6552;
+      --mono: "Courier New",ui-monospace,"Cascadia Mono",Consolas,monospace;
+      --sans: system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+      --maxw: 1180px;
+      /* Generic aliases so the theme-override machinery + any inherited rule
+         stay legible even though components read the design's own tokens. */
+      --accent: #245ea0;
+      --paper-rgb: 241,233,213; --ink-rgb: 33,31,24; --accent-rgb: 36,94,160;
+      --serif: "Courier New",ui-monospace,"Cascadia Mono",Consolas,monospace;
+      --on-accent: #faf5e8; --on-ink: #f1e9d5; --on-paper: #211f18;
+    }
+    html[data-page="AS"] * { box-sizing: border-box; }
+    html[data-page="AS"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="AS"] { scroll-behavior: auto; } }
+    html[data-page="AS"] body {
+      margin: 0; background: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 17px; line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      background-image: radial-gradient(rgba(33,31,24,.03) 1px,transparent 1px);
+      background-size: 5px 5px;
+    }
+    html[data-page="AS"] h1, html[data-page="AS"] h2,
+    html[data-page="AS"] h3, html[data-page="AS"] h4 {
+      margin: 0; font-family: var(--mono); font-weight: 700; line-height: 1.02; letter-spacing: -.01em;
+    }
+    html[data-page="AS"] p { margin: 0 0 1em; }
+    html[data-page="AS"] a { color: var(--blue-d); text-decoration: none; }
+    html[data-page="AS"] a:hover { color: var(--blue); }
+    html[data-page="AS"] img { max-width: 100%; display: block; }
+    html[data-page="AS"] ::selection { background: var(--blue); color: var(--card); }
+
+    html[data-page="AS"] .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+    html[data-page="AS"] .mono { font-family: var(--mono); }
+    html[data-page="AS"] .lbl {
+      font-family: var(--mono); font-size: 12px; letter-spacing: .16em;
+      text-transform: uppercase; color: var(--blue-d);
+    }
+
+    /* Letterpress / stamped buttons — solid blue fill + hollow ink ghost. */
+    html[data-page="AS"] .btn {
+      font-family: var(--mono); font-weight: 700; font-size: 14px; letter-spacing: .06em;
+      text-transform: uppercase; display: inline-flex; align-items: center; gap: .5em;
+      padding: 15px 26px; cursor: pointer; border: 2px solid var(--ink);
+      transition: transform .2s, background .2s, color .2s, box-shadow .2s;
+    }
+    html[data-page="AS"] .btn--fill { background: var(--blue); border-color: var(--blue); color: var(--card); }
+    html[data-page="AS"] .btn--fill:hover { background: var(--blue-d); border-color: var(--blue-d); transform: translateY(-2px); box-shadow: 0 8px 0 -2px var(--ink); color: var(--card); }
+    html[data-page="AS"] .btn--ghost { background: transparent; color: var(--ink); }
+    html[data-page="AS"] .btn--ghost:hover { background: var(--ink); color: var(--card); transform: translateY(-2px); }
+
+    /* scroll reveal (class-based; PageAS boot toggles .in) */
+    html[data-page="AS"] .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+    html[data-page="AS"] .reveal.in { opacity: 1; transform: none; }
+    html[data-page="AS"] .reveal[data-delay="1"] { transition-delay: .08s; }
+    html[data-page="AS"] .reveal[data-delay="2"] { transition-delay: .16s; }
+    html[data-page="AS"] .reveal[data-delay="3"] { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="AS"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+    /* perforated seam — the signature divider that runs through the page */
+    html[data-page="AS"] .perf { height: 0; border-top: 2px dashed var(--line); position: relative; margin: 0; }
+    html[data-page="AS"] .perf::before, html[data-page="AS"] .perf::after {
+      content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%;
+      background: var(--paper); border: 2px solid var(--line);
+    }
+    html[data-page="AS"] .perf::before { left: -10px; }
+    html[data-page="AS"] .perf::after { right: -10px; }
+
+    /* Designed photo frame — :where() so per-section height modifiers win. */
+    html[data-page="AS"] :where(.plate) { position: relative; overflow: hidden; background: var(--paper2); isolation: isolate; border: 2px solid var(--ink); }
+    html[data-page="AS"] :where(.plate) .ph { position: absolute; inset: 0; background-size: cover; background-position: center; }
+    html[data-page="AS"] :where(.plate) .cap {
+      position: absolute; left: 0; bottom: 0; z-index: 3; width: 100%; padding: 10px 12px;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--card);
+      background: linear-gradient(0deg,rgba(30,28,22,.82),transparent); text-transform: uppercase;
+    }
+    html[data-page="AS"] :where(.plate) .tk {
+      position: absolute; top: 8px; left: 8px; z-index: 3; font-family: var(--mono); font-size: 11px;
+      color: var(--card); background: var(--blue); padding: 3px 8px; letter-spacing: .06em;
+    }
+
+    /* Duotone "scene" fields — the designed fallback painted behind each photo. */
+    html[data-page="AS"] .scene-fold { background:
+      repeating-linear-gradient(0deg,rgba(36,94,160,.1) 0 10px,transparent 10px 22px),
+      radial-gradient(60% 60% at 50% 40%,rgba(250,245,232,.9),transparent 60%),
+      linear-gradient(160deg,#d7e2f0,#bcc9dd); }
+    html[data-page="AS"] .scene-press { background:
+      radial-gradient(60% 60% at 46% 44%,rgba(195,58,43,.28),transparent 60%),
+      radial-gradient(50% 40% at 70% 66%,rgba(36,94,160,.22),transparent 60%),
+      linear-gradient(160deg,#e3dcc7,#cfc4a8); }
+    html[data-page="AS"] .scene-drum { background:
+      radial-gradient(46% 46% at 50% 50%,rgba(250,245,232,.95),transparent 58%),
+      conic-gradient(from 0deg at 50% 50%,rgba(36,94,160,.22),transparent 25%,rgba(36,94,160,.16),transparent 55%),
+      linear-gradient(160deg,#d3ddec,#b9c6da); }
+    html[data-page="AS"] .scene-shelf { background:
+      repeating-linear-gradient(0deg,rgba(30,28,22,.08) 0 1px,transparent 1px 30px),
+      radial-gradient(60% 50% at 50% 40%,rgba(250,245,232,.85),transparent 60%),
+      linear-gradient(160deg,#e6dfca,#cfc4a8); }
+    html[data-page="AS"] .scene-rider { background:
+      radial-gradient(60% 60% at 58% 44%,rgba(36,94,160,.3),transparent 60%),
+      linear-gradient(160deg,#dfe6f0,#c3cfe0); }
+    html[data-page="AS"] .scene-shop { background:
+      linear-gradient(180deg,rgba(36,94,160,.2),transparent 40%),
+      radial-gradient(60% 50% at 50% 70%,rgba(250,245,232,.9),transparent 60%),
+      linear-gradient(160deg,#e4ddc8,#ccc1a5); }
+
+    /* section scaffolding shared across blocks */
+    html[data-page="AS"] section { position: relative; }
+    html[data-page="AS"] .sec { padding: 88px 0; }
+    html[data-page="AS"] .sec-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 44px; flex-wrap: wrap; }
+    html[data-page="AS"] .sec-head .snum { font-family: var(--mono); font-size: 13px; letter-spacing: .14em; color: var(--blue-d); }
+    html[data-page="AS"] .sec-head h2 { font-size: clamp(30px,4.4vw,52px); color: var(--ink); }
+
+    /* skip link */
+    html[data-page="AS"] .skip { position: absolute; left: -999px; top: 0; background: var(--blue); color: var(--card); padding: 12px 18px; z-index: 100; }
+    html[data-page="AS"] .skip:focus { left: 8px; top: 8px; }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <HeaderAS layout={layout} content={content} />
+  <main id="main">
+    {visibility.heroSection !== false && <HeroAS content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustAS content={content} />}
+    {visibility.aboutSection !== false && <AboutAS content={content} />}
+    {visibility.servicesSection !== false && <ServicesAS content={content} />}
+    {visibility.whyUsBlock !== false && <WhyAS content={content} />}
+    {visibility.howItWorksBlock !== false && <HowAS content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsAS content={content} />}
+    {visibility.gallerySection !== false && <GalleryAS content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqAS content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaAS content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsAS content={content} />}
+    {visibility.locationBlock !== false && <LocationAS content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandAS content={content} layout={layout} />}
+  <FooterAS layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Hide-on-scroll-down header (lp-07 "Wash Ticket" behaviour).
+      var hdr = document.querySelector('header.nav');
+      if (hdr) {
+        var last = 0;
+        window.addEventListener('scroll', function () {
+          var y = window.pageYOffset;
+          if (y > last && y > 360) { hdr.classList.add('hide'); } else { hdr.classList.remove('hide'); }
+          last = y;
+        }, { passive: true });
+      }
+      // Services-AS Leaflet boot — accepts (lat, lng, label) from LocationAS.
+      // Works for both build-time-geocoded coords AND client-side Nominatim
+      // fallback coords (LocationAS calls this with whatever it resolves).
+      window.__servicesASInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:#245ea0;box-shadow:0 0 0 3px #faf5e8;border:0;"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

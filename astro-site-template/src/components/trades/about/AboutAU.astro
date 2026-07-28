@@ -1,0 +1,47 @@
+---
+/**
+ * trades / AboutAU — "who we are" split: mono/sans copy left (the lead paragraph
+ * sits larger), an art-directed blueprint .plate figure right. The figure keeps
+ * its .scene-van duotone as the designed fallback until about.image is set (the
+ * photo then layers over it). about.imageTag (the yellow chip) and
+ * about.imageCaption (the plate footer note) are optional extras that stay
+ * hidden when unset.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageTag = about.imageTag || '';
+const imageCaption = about.imageCaption || '';
+---
+<section class="sec" id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      {tag && <span class="snum" data-field="about.tag">{tag}</span>}
+      {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
+    </div>
+    <div class="about-grid">
+      <div class="about-copy reveal">
+        {paragraphs.map((p: string, i: number) => (
+          <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
+        ))}
+      </div>
+      <figure class="about-fig plate reveal">
+        <div class="ph scene-van" data-image-field="about.image" style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''}></div>
+        <div class="grid" aria-hidden="true"></div>
+        {imageTag && <span class="tag" data-field="about.imageTag">{imageTag}</span>}
+        {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<style>
+  .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 52px; align-items: center; }
+  @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 34px; } }
+  .about-copy p:first-of-type { font-size: 22px; color: var(--ink); line-height: 1.45; }
+  .about-copy p { color: var(--muted); }
+  .about-fig { aspect-ratio: 5/4; }
+</style>

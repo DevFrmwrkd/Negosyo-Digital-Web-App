@@ -1,0 +1,163 @@
+---
+/**
+ * restaurant / LocationAM — "come by the kalan": NAP rows left, Leaflet map in
+ * an art-directed .plate right. Mirrors the AE / reference map strategy:
+ *
+ *   1. Build-time lat/lng  → render Leaflet directly via
+ *      window.__restaurantAMInitMap(lat, lng, label).
+ *   2. Else any address    → client-side Nominatim (OSM) lookup, then Leaflet.
+ *   3. Else                 → lp-01's designed map-face + pinging pin fallback.
+ *
+ * The designed map-face/pin lives inside #map and shows until Leaflet mounts
+ * (the boot clears #map before drawing tiles), so the slot always looks
+ * designed. location.mapCaption is an optional plate caption.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const loc = content.location || {};
+const tag = loc.tag || '';
+const headline = loc.headline || '';
+const sub = loc.sub || '';
+const brand = (content as any).footer?.brand || layout.businessName || '';
+const address = loc.address || layout.contact?.address || '';
+const addressLines = address ? address.split('\n') : [];
+const phone = loc.phone || layout.contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+const hours: Array<{ day: string; time: string }> = Array.isArray(loc.hours)
+  ? loc.hours
+  : (Array.isArray((content as any).footer?.hours) ? (content as any).footer.hours : []);
+const dirText = loc.directions?.text || '';
+const dirHref = loc.directions?.href || (address
+  ? `https://maps.google.com/?q=${encodeURIComponent(address.replace(/\n/g, ' '))}`
+  : '#');
+const mapCaption = loc.mapCaption || '';
+const lat = loc.lat != null
+  ? Number(loc.lat)
+  : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
+const lng = loc.lng != null
+  ? Number(loc.lng)
+  : (layout.contact?.lng != null ? Number(layout.contact.lng) : null);
+const label = layout.businessName || 'Our location';
+const mapAria = `Map showing ${label}`;
+const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
+const hasAddress = !!address;
+---
+<section class="loc sec-pad" id="location">
+  <div class="wrap">
+    <div class="sec-head">
+      {tag && <span class="idx" data-field="location.tag">{tag}</span>}
+      {headline && <h2 class="reveal" data-field="location.headline" set:html={headline}></h2>}
+    </div>
+    {sub && <p class="loc-sub reveal" data-field="location.sub">{sub}</p>}
+    <div class="loc-grid reveal">
+      <div class="loc-info">
+        {brand && (
+          <div class="row"><div class="k">The house</div><div class="v" data-field="footer.brand">{brand}</div></div>
+        )}
+        {address && (
+          <div class="row">
+            <div class="k">Address</div>
+            <div class="v" data-field="location.address">
+              {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+            </div>
+          </div>
+        )}
+        {phone && (
+          <div class="row"><div class="k">Phone</div><div class="v"><a href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a></div></div>
+        )}
+        {hours.length > 0 && (
+          <div class="row">
+            <div class="k">Hours</div>
+            <div class="v loc-hours">
+              {hours.map((r: any, i: number) => (
+                <div class="hrow"><span data-field={`location.hours.${i}.day`}>{r.day}</span><span data-field={`location.hours.${i}.time`}>{r.time}</span></div>
+              ))}
+            </div>
+          </div>
+        )}
+        {dirText && (
+          <div class="row loc-cta"><a class="btn btn--fill" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText} <span class="arw" aria-hidden="true">→</span></a></div>
+        )}
+      </div>
+      <figure class="plate loc-plate">
+        <div id="map" role="img" aria-label={mapAria}>
+          <div class="map-face" aria-hidden="true">
+            <div class="road" style="top:44%;left:0;right:0;height:8px;"></div>
+            <div class="road" style="top:0;bottom:0;left:38%;width:6px;"></div>
+            <div class="road" style="top:70%;left:0;right:0;height:4px;opacity:.6;"></div>
+          </div>
+          <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="lbl">{label}</div>}</div>
+        </div>
+        {mapCaption && <figcaption class="cap" data-field="location.mapCaption">{mapCaption}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+{/* Render path A: build-time coords ready. */}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, label }}>
+    (function init() {
+      if (window.__restaurantAMInitMap) window.__restaurantAMInitMap(lat, lng, label);
+      else setTimeout(init, 80);
+    })();
+  </script>
+)}
+{/* Render path B: no coords but address present — client-side Nominatim. */}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, label }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(lat, lng) {
+        if (window.__restaurantAMInitMap) {
+          window.__restaurantAMInitMap(lat, lng, label);
+        } else if (attempt++ < 25) {
+          setTimeout(function () { tryInit(lat, lng); }, 80);
+        }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var lat = parseFloat(results[0].lat);
+            var lng = parseFloat(results[0].lon);
+            if (isNaN(lat) || isNaN(lng)) return;
+            tryInit(lat, lng);
+          })
+          .catch(function () { /* keep the designed map-face fallback */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  .loc { background: var(--paper); }
+  .loc-sub { color: var(--smoke); margin: -32px 0 32px; max-width: 46ch; font-size: 16px; }
+  .loc-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 0; border: 1px solid var(--line); }
+  @media (max-width: 900px) { .loc-grid { grid-template-columns: 1fr; } }
+  .loc-info { padding: 52px 44px; }
+  .loc-info .row { padding: 20px 0; border-bottom: 1px solid var(--line); }
+  .loc-info .row:last-child { border-bottom: none; }
+  .loc-info .k { font-family: var(--label); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--smoke); margin-bottom: 6px; }
+  .loc-info .v { font-family: var(--serif); font-size: 21px; color: var(--ink); }
+  .loc-hours { display: grid; gap: 4px; }
+  .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; font-size: 17px; }
+  .loc-cta { border-bottom: none !important; }
+  .loc-plate { min-height: 420px; background: var(--ink); }
+  #map { position: absolute; inset: 0; z-index: 0; }
+  .loc-plate figcaption { z-index: 3; }
+  .map-face { position: absolute; inset: 0;
+    background:
+      linear-gradient(0deg,rgba(24,15,10,.4),transparent),
+      repeating-linear-gradient(0deg,rgba(242,232,215,.08) 0 1px,transparent 1px 40px),
+      repeating-linear-gradient(90deg,rgba(242,232,215,.08) 0 1px,transparent 1px 40px),
+      linear-gradient(135deg,#2b1d13,#180f0a); }
+  .map-face .road { position: absolute; background: rgba(217,102,58,.5); }
+  .map-pin { position: absolute; top: 46%; left: 50%; transform: translate(-50%,-100%); z-index: 2; text-align: center; }
+  .map-pin .dot { width: 18px; height: 18px; background: var(--clay); border: 3px solid var(--bone); border-radius: 50%; margin: 0 auto; position: relative; }
+  .map-pin .dot::after { content: ""; position: absolute; inset: -10px; border: 2px solid rgba(180,71,43,.7); border-radius: 50%; animation: ping 2.4s ease-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .map-pin .dot::after { animation: none; } }
+  @keyframes ping { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.6); opacity: 0; } }
+  .map-pin .lbl { margin-top: 10px; font-family: var(--label); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone); background: rgba(24,15,10,.7); padding: 5px 10px; border-radius: 2px; }
+</style>

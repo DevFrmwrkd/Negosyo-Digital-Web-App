@@ -1,0 +1,58 @@
+---
+/**
+ * salonspa / FaqAN — "good to know" accordion on the bone band, laid across two
+ * columns. Didot summaries with a nude "+" that rotates to "×" on open; muted
+ * answer copy. The first item opens by default (lp-02's designed state). Reads
+ * content.faq.items (q / a). The service-area strip is lifted out into AreaAN
+ * (mirrors the AM / AE content model).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const faq = content.faq || {};
+const tag = faq.tag || '';
+const headline = faq.headline || '';
+type Item = { q: string; a: string };
+const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq) ? faq : []);
+const mid = Math.ceil(items.length / 2);
+const col1 = items.slice(0, mid);
+const col2 = items.slice(mid);
+---
+{items.length > 0 && (
+  <section class="sec faq" id="faq">
+    <div class="wrap">
+      <div class="sec-head">
+        {tag && <span class="eyebrow" data-field="faq.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="faq.headline" set:html={headline}></h2>}
+      </div>
+      <div class="faq-grid">
+        <div>
+          {col1.map((item, i) => (
+            <details class="reveal" open={i === 0}>
+              <summary><span data-field={`faq.items.${i}.q`}>{item.q}</span> <span class="pm" aria-hidden="true">+</span></summary>
+              <div class="a" data-field={`faq.items.${i}.a`} set:html={item.a}></div>
+            </details>
+          ))}
+        </div>
+        <div>
+          {col2.map((item, j) => (
+            <details class="reveal">
+              <summary><span data-field={`faq.items.${mid + j}.q`}>{item.q}</span> <span class="pm" aria-hidden="true">+</span></summary>
+              <div class="a" data-field={`faq.items.${mid + j}.a`} set:html={item.a}></div>
+            </details>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .faq { background: var(--bone); }
+  .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; }
+  @media (max-width: 900px) { .faq-grid { grid-template-columns: 1fr; gap: 16px; } }
+  details { border-bottom: 1px solid var(--line); }
+  summary { list-style: none; cursor: pointer; padding: 22px 0; font-family: var(--disp); font-size: 23px; color: var(--ink); display: flex; justify-content: space-between; gap: 20px; align-items: baseline; }
+  summary::-webkit-details-marker { display: none; }
+  summary .pm { font-family: var(--label); font-size: 22px; color: var(--nude-deep); transition: transform .35s; }
+  details[open] summary .pm { transform: rotate(45deg); }
+  details .a { padding: 0 0 22px; color: var(--muted); font-size: 16px; max-width: 58ch; }
+</style>

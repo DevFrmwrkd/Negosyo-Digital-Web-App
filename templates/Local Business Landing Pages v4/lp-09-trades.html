@@ -1,0 +1,618 @@
+<!doctype html>
+<!--
+  ============================================================================
+  STYLE MANIFESTO — "Dispatch"
+  Technical blueprint. Era: electrical schematic / drafting sheet.
+  Reference: blueprint grids, wiring diagrams, dispatch boards, safety tape.
+  Signature twist: a service-area coverage grid with pulsing dispatch pings
+  and a giant tap-to-call number — a service business with no storefront.
+  ============================================================================
+-->
+<html lang="en-PH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Volt &amp; Line Electrical — Licensed Electrician Serving Metro Manila</title>
+<meta name="description" content="Volt &amp; Line Electrical is a licensed electrician serving Metro Manila — home rewiring, panel upgrades, lighting, fault-finding and safety inspections. We come to you. Call or request a quote.">
+<meta name="theme-color" content="#0a1f3c">
+<meta property="og:title" content="Volt &amp; Line Electrical — Metro Manila">
+<meta property="og:description" content="Licensed electricians who come to you across Metro Manila. Call or request a quote.">
+
+<!-- LocalBusiness JSON-LD (HomeAndConstructionBusiness). No storefront: areaServed used.
+     Name/phone identical in Location block, footer and schema. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HomeAndConstructionBusiness",
+  "name": "Volt & Line Electrical Services",
+  "description": "Licensed electrician serving Metro Manila, providing residential and small-commercial wiring, panel and breaker upgrades, lighting, fault-finding and electrical safety inspections. Service-area business with no walk-in showroom.",
+  "telephone": "+63 917 555 0231",
+  "url": "https://voltandline.example.ph",
+  "image": "https://voltandline.example.ph/van.jpg",
+  "address": {
+    "@type": "PostalAddress",
+    "addressLocality": "Quezon City",
+    "addressRegion": "Metro Manila",
+    "addressCountry": "PH"
+  },
+  "areaServed": [
+    { "@type": "City", "name": "Quezon City" },
+    { "@type": "City", "name": "Manila" },
+    { "@type": "City", "name": "Makati" },
+    { "@type": "City", "name": "Pasig" },
+    { "@type": "City", "name": "Mandaluyong" },
+    { "@type": "City", "name": "San Juan" },
+    { "@type": "City", "name": "Marikina" },
+    { "@type": "City", "name": "Caloocan" },
+    { "@type": "City", "name": "Parañaque" },
+    { "@type": "City", "name": "Taguig" }
+  ]
+
+}
+</script>
+
+<!-- FAQPage JSON-LD — mirrors the visible FAQ. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "Do you have a shop I can visit?", "acceptedAnswer": { "@type": "Answer", "text": "No — Volt & Line is a mobile service, so there's no showroom to visit. We come to your home or site anywhere in our Metro Manila service area. Just call or message and we'll arrange a visit." } },
+    { "@type": "Question", "name": "Are your electricians licensed?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Work is carried out or supervised by licensed electrical practitioners and wired to the Philippine Electrical Code. We're happy to confirm credentials before any job." } },
+    { "@type": "Question", "name": "How do I get a quote?", "acceptedAnswer": { "@type": "Answer", "text": "Call or message with your location and what you need — a description or a photo helps. For small jobs we can estimate on the spot; for larger work we assess on-site and quote before starting." } },
+    { "@type": "Question", "name": "Do you handle emergencies?", "acceptedAnswer": { "@type": "Answer", "text": "We prioritise urgent electrical faults — tripping breakers, burning smells, dead circuits and safety hazards. Call us and we'll get to you as soon as we can within the service area." } },
+    { "@type": "Question", "name": "Which areas do you cover?", "acceptedAnswer": { "@type": "Answer", "text": "We serve Quezon City and much of Metro Manila, including Manila, Makati, Pasig, Mandaluyong, San Juan, Marikina, Caloocan, Parañaque and Taguig. Not sure if you're in range? Call and ask." } },
+    { "@type": "Question", "name": "Do you pull permits and issue certificates?", "acceptedAnswer": { "@type": "Answer", "text": "For work that requires it, we handle the electrical permit process and provide documentation on completion, so your wiring is compliant and properly certified." } }
+  ]
+}
+</script>
+
+<script>document.documentElement.classList.add('js');</script>
+<style>
+  :root{
+    --navy:#0b2143; --navy-2:#0f2a54; --navy-d:#071528; --panel:#0e2650; --steel:#20406f;
+    --cyan:#63c8ff; --cyan-d:#3a95d8; --blue:#2f6fd0; --yellow:#ffd21e; --paper:#e9f1fb; --muted:#8fa9cc;
+    --line:#1e3a63;
+    --sans:"Helvetica Neue",Helvetica,Arial,"Liberation Sans",sans-serif;
+    --mono:"Courier New",ui-monospace,Consolas,monospace;
+    --maxw:1280px;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+  body{margin:0;background:var(--navy);color:var(--paper);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;
+    background-image:repeating-linear-gradient(0deg,rgba(99,200,255,.05) 0 1px,transparent 1px 40px),repeating-linear-gradient(90deg,rgba(99,200,255,.05) 0 1px,transparent 1px 40px);}
+  h1,h2,h3,h4{margin:0;font-weight:800;line-height:1;letter-spacing:-.01em;text-transform:uppercase;}
+  p{margin:0 0 1em;} a{color:var(--cyan);text-decoration:none;} a:hover{color:var(--yellow);}
+  img{max-width:100%;display:block;} ::selection{background:var(--cyan);color:var(--navy-d);}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 30px;}
+  .mono{font-family:var(--mono);}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);}
+  .btn{font-family:var(--sans);font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase;display:inline-flex;align-items:center;gap:.5em;
+    padding:16px 28px;cursor:pointer;border:2px solid var(--cyan);transition:transform .2s,background .2s,color .2s,box-shadow .2s;}
+  .btn--fill{background:var(--yellow);border-color:var(--yellow);color:var(--navy-d);}
+  .btn--fill:hover{transform:translateY(-2px);box-shadow:0 10px 24px -10px rgba(255,210,30,.6);}
+  .btn--cyan{background:var(--cyan);border-color:var(--cyan);color:var(--navy-d);}
+  .btn--cyan:hover{transform:translateY(-2px);box-shadow:0 10px 24px -10px rgba(99,200,255,.6);color:var(--navy-d);}
+  .btn--ghost{background:transparent;color:var(--paper);border-color:var(--steel);}
+  .btn--ghost:hover{border-color:var(--cyan);color:var(--cyan);transform:translateY(-2px);}
+
+  .reveal-ready [data-reveal]{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1);}
+  .reveal-ready [data-reveal].in{opacity:1;transform:none;}
+  .reveal-ready [data-reveal][data-delay="1"]{transition-delay:.08s;} .reveal-ready [data-reveal][data-delay="2"]{transition-delay:.16s;} .reveal-ready [data-reveal][data-delay="3"]{transition-delay:.24s;}
+  @media (prefers-reduced-motion: reduce){ .reveal-ready [data-reveal]{opacity:1!important;transform:none!important;transition:none!important;} }
+
+  /* blueprint plates */
+  .plate{position:relative;overflow:hidden;background:var(--navy-d);isolation:isolate;border:1px solid var(--line);}
+  .plate .ph{position:absolute;inset:0;}
+  .plate .grid{position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,rgba(99,200,255,.12) 0 1px,transparent 1px 22px),repeating-linear-gradient(90deg,rgba(99,200,255,.12) 0 1px,transparent 1px 22px);}
+  .plate .cap{position:absolute;left:0;bottom:0;z-index:3;width:100%;padding:12px 14px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--paper);background:linear-gradient(0deg,rgba(7,21,40,.9),transparent);text-transform:uppercase;}
+  .plate .tag{position:absolute;top:10px;left:10px;z-index:3;font-family:var(--mono);font-size:11px;color:var(--navy-d);background:var(--yellow);padding:3px 8px;letter-spacing:.06em;}
+  .scene-wire{background:radial-gradient(60% 70% at 42% 40%,rgba(99,200,255,.3),transparent 60%),linear-gradient(160deg,#123059,#071528);}
+  .scene-panel{background:repeating-linear-gradient(90deg,rgba(99,200,255,.12) 0 3px,transparent 3px 20px),radial-gradient(50% 50% at 60% 46%,rgba(255,210,30,.22),transparent 60%),linear-gradient(160deg,#102a52,#071528);}
+  .scene-light{background:radial-gradient(40% 40% at 50% 40%,rgba(255,210,30,.4),transparent 60%),linear-gradient(160deg,#122f58,#071528);}
+  .scene-van{background:radial-gradient(60% 60% at 58% 46%,rgba(99,200,255,.28),transparent 60%),linear-gradient(160deg,#12305a,#071528);}
+  .scene-meter{background:radial-gradient(46% 46% at 50% 50%,rgba(99,200,255,.26),transparent 58%),conic-gradient(from 0deg at 50% 50%,rgba(255,210,30,.2),transparent 30%,rgba(99,200,255,.2),transparent 60%),linear-gradient(160deg,#0f2a52,#071528);}
+  .scene-inspect{background:radial-gradient(60% 60% at 44% 44%,rgba(99,200,255,.28),transparent 60%),radial-gradient(40% 40% at 74% 66%,rgba(255,210,30,.2),transparent 60%),linear-gradient(160deg,#112d55,#071528);}
+
+  /* nav */
+  header.nav{position:sticky;top:0;z-index:60;background:rgba(11,33,67,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);transition:transform .3s;}
+  header.nav.hide{transform:translateY(-100%);}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;padding:14px 30px;}
+  .brand{display:flex;align-items:center;gap:11px;color:var(--paper);flex:none;}
+  .brand .bolt{width:26px;height:26px;background:var(--yellow);clip-path:polygon(42% 0,88% 0,54% 38%,100% 38%,26% 100%,44% 54%,4% 54%);flex:none;}
+  .brand .bn{font-weight:800;font-size:22px;letter-spacing:-.01em;white-space:nowrap;}
+  .brand .bn .amp{color:var(--cyan);}
+  .nav-links{display:flex;gap:24px;align-items:center;}
+  .nav-links a{font-family:var(--mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+  .nav-links a:hover{color:var(--cyan);}
+  .nav-links .navcall{border:2px solid var(--yellow);color:var(--yellow);padding:8px 16px;font-family:var(--sans);font-weight:800;letter-spacing:.04em;}
+  .nav-links .navcall:hover{background:var(--yellow);color:var(--navy-d);}
+  @media(max-width:920px){.nav-links a:not(.navcall){display:none;}}
+
+  /* HERO */
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);}
+  .hero .wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;padding:64px 30px 60px;}
+  @media(max-width:940px){.hero .wrap{grid-template-columns:1fr;gap:40px;}}
+  .hero-l{opacity:0;animation:hf .8s ease .1s forwards;}
+  @keyframes hf{to{opacity:1;}}
+  @media (prefers-reduced-motion: reduce){ .hero-l,.hero-r{opacity:1!important;animation:none!important;} }
+  .hero .statusline{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);border:1px solid var(--line);padding:7px 12px;border-radius:100px;margin-bottom:22px;}
+  .hero .statusline .live{width:9px;height:9px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 0 rgba(255,210,30,.6);animation:blip 1.8s ease-out infinite;}
+  @keyframes blip{0%{box-shadow:0 0 0 0 rgba(255,210,30,.6);}100%{box-shadow:0 0 0 12px rgba(255,210,30,0);}}
+  @media (prefers-reduced-motion: reduce){ .hero .statusline .live{animation:none;} }
+  .hero h1{font-size:clamp(46px,7vw,104px);}
+  .hero h1 .cy{color:var(--cyan);} .hero h1 .yl{color:var(--yellow);}
+  .hero .lede{max-width:46ch;color:var(--muted);font-size:19px;margin:22px 0 26px;}
+  .hero .callbox{display:inline-flex;flex-direction:column;gap:2px;border:2px solid var(--yellow);padding:14px 22px;margin-bottom:20px;background:rgba(255,210,30,.06);}
+  .hero .callbox .cl{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--yellow);}
+  .hero .callbox .cn{font-weight:800;font-size:clamp(28px,4vw,44px);color:var(--paper);letter-spacing:.01em;}
+  .hero .callbox:hover .cn{color:var(--yellow);}
+  .hero .cta-row{display:flex;gap:14px;flex-wrap:wrap;}
+  .hero-r{position:relative;opacity:0;animation:hf .9s ease .3s forwards;}
+
+  /* coverage map (signature) */
+  .covmap{position:relative;aspect-ratio:1/1;border:1px solid var(--line);background:
+    repeating-linear-gradient(0deg,rgba(99,200,255,.1) 0 1px,transparent 1px 30px),
+    repeating-linear-gradient(90deg,rgba(99,200,255,.1) 0 1px,transparent 1px 30px),
+    radial-gradient(70% 70% at 50% 46%,rgba(47,111,208,.25),transparent 70%),var(--navy-d);}
+  .covmap .region{position:absolute;left:16%;top:14%;right:16%;bottom:14%;border:1.5px dashed var(--cyan);border-radius:44% 56% 52% 48%/50% 44% 56% 50%;background:rgba(99,200,255,.06);}
+  .covmap .lbl{position:absolute;top:12px;left:14px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);}
+  .covmap .scale{position:absolute;bottom:12px;right:14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);}
+  .ping{position:absolute;transform:translate(-50%,-50%);text-align:center;}
+  .ping .d{width:11px;height:11px;border-radius:50%;background:var(--yellow);margin:0 auto;position:relative;}
+  .ping .d::after{content:"";position:absolute;inset:-6px;border:1.5px solid rgba(255,210,30,.7);border-radius:50%;animation:ping 2.6s ease-out infinite;}
+  .ping.c .d{background:var(--cyan);} .ping.c .d::after{border-color:rgba(99,200,255,.7);}
+  @media (prefers-reduced-motion: reduce){ .ping .d::after{animation:none;} }
+  @keyframes ping{0%{transform:scale(.5);opacity:.9;}100%{transform:scale(3);opacity:0;}}
+  .ping .t{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--paper);margin-top:5px;white-space:nowrap;}
+  .ping.p2 .d::after{animation-delay:.5s;} .ping.p3 .d::after{animation-delay:1s;} .ping.p4 .d::after{animation-delay:1.5s;} .ping.p5 .d::after{animation-delay:.8s;} .ping.p6 .d::after{animation-delay:1.3s;}
+
+  section{position:relative;}
+  .sec{padding:96px 0;border-bottom:1px solid var(--line);}
+  .sec-head{display:flex;align-items:flex-end;gap:18px;margin-bottom:48px;flex-wrap:wrap;}
+  .sec-head .snum{font-family:var(--mono);font-size:13px;letter-spacing:.16em;color:var(--cyan);}
+  .sec-head h2{font-size:clamp(32px,5vw,64px);}
+  .sec-head h2 .cy{color:var(--cyan);}
+
+  /* trust */
+  .trust{background:var(--panel);}
+  .trust .wrap{display:grid;grid-template-columns:repeat(4,1fr);}
+  @media(max-width:760px){.trust .wrap{grid-template-columns:repeat(2,1fr);}}
+  .trust .c{padding:40px 24px;border-right:1px solid var(--line);}
+  .trust .c:last-child{border-right:none;}
+  .trust .c .n{font-weight:800;font-size:clamp(30px,4vw,46px);color:var(--yellow);}
+  .trust .c .t{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:10px;}
+  .stars{color:var(--yellow);letter-spacing:2px;font-size:22px;}
+
+  /* about */
+  .about-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:52px;align-items:center;}
+  @media(max-width:900px){.about-grid{grid-template-columns:1fr;gap:34px;}}
+  .about-copy p:first-of-type{font-size:22px;color:var(--paper);line-height:1.45;}
+  .about-copy p{color:var(--muted);}
+  .about-fig{aspect-ratio:5/4;}
+
+  /* services */
+  .svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
+  @media(max-width:900px){.svc-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.svc-grid{grid-template-columns:1fr;}}
+  .svc{background:var(--navy);padding:32px 28px;position:relative;overflow:hidden;transition:background .25s;}
+  .svc:hover{background:var(--navy-2);}
+  .svc .code{font-family:var(--mono);font-size:12px;color:var(--cyan);letter-spacing:.06em;}
+  .svc .ic{width:44px;height:44px;border:1.5px solid var(--cyan);color:var(--cyan);display:flex;align-items:center;justify-content:center;margin:14px 0;}
+  .svc .ic svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .svc h3{font-size:21px;margin-bottom:8px;}
+  .svc p{color:var(--muted);font-size:15px;margin:0;text-transform:none;}
+
+  /* why */
+  .why{background:var(--panel);}
+  .why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
+  @media(max-width:760px){.why-grid{grid-template-columns:1fr;}}
+  .why-cell{background:var(--panel);padding:36px 32px;}
+  .why-cell .k{font-family:var(--mono);color:var(--yellow);font-size:13px;letter-spacing:.1em;}
+  .why-cell h3{font-size:22px;margin:12px 0 8px;}
+  .why-cell p{color:var(--muted);font-size:15px;text-transform:none;}
+
+  /* how */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  @media(max-width:820px){.steps{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:480px){.steps{grid-template-columns:1fr;}}
+  .step{padding:26px 22px;border:1px solid var(--line);border-top:4px solid var(--yellow);}
+  .step .sn{font-weight:800;font-size:42px;color:var(--cyan);}
+  .step h3{font-size:19px;margin:8px 0 6px;}
+  .step p{font-size:14px;color:var(--muted);text-transform:none;}
+
+  /* testimonials */
+  .quotes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  @media(max-width:900px){.quotes-grid{grid-template-columns:1fr;}}
+  .quote{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--cyan);padding:28px 26px;}
+  .quote .stars{color:var(--yellow);font-size:15px;}
+  .quote p{font-size:18px;line-height:1.5;color:var(--paper);margin:12px 0;text-transform:none;}
+  .quote .who{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+
+  /* gallery */
+  .g-grid{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:180px;gap:12px;}
+  @media(max-width:820px){.g-grid{grid-template-columns:repeat(2,1fr);}}
+  .g-grid .plate .ph{transition:transform .5s;} .g-grid .plate:hover .ph{transform:scale(1.06);}
+  .v1{grid-column:span 2;grid-row:span 2;} .v4{grid-column:span 2;} .v6{grid-column:span 2;}
+
+  /* faq + areas */
+  .faq{background:var(--panel);}
+  .faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:44px;}
+  @media(max-width:900px){.faq-grid{grid-template-columns:1fr;gap:4px;}}
+  details{border-bottom:1px solid var(--line);}
+  summary{list-style:none;cursor:pointer;padding:20px 0;font-weight:800;font-size:18px;text-transform:uppercase;display:flex;justify-content:space-between;gap:16px;color:var(--paper);}
+  summary::-webkit-details-marker{display:none;}
+  summary .pm{color:var(--cyan);font-size:22px;transition:transform .3s;font-weight:400;}
+  details[open] summary .pm{transform:rotate(45deg);}
+  details .a{padding:0 0 20px;color:var(--muted);max-width:60ch;font-size:16px;text-transform:none;}
+  .areas{margin-top:6px;}
+  .area-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+  .area-tags span{font-family:var(--mono);font-size:12px;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);padding:7px 12px;color:var(--muted);transition:.2s;}
+  .area-tags span:hover{border-color:var(--cyan);color:var(--cyan);}
+
+  /* credentials */
+  .cred-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);}
+  @media(max-width:760px){.cred-row{grid-template-columns:repeat(2,1fr);}}
+  .cred{background:var(--navy);padding:30px 24px;}
+  .cred .bdg{width:40px;height:40px;border:1.5px solid var(--yellow);color:var(--yellow);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+  .cred .bdg svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .cred h4{font-size:15px;margin-bottom:6px;}
+  .cred p{font-size:14px;color:var(--muted);margin:0;text-transform:none;}
+
+  /* location = dispatch (no storefront) */
+  .loc-grid{display:grid;grid-template-columns:1fr 1.1fr;border:1px solid var(--line);}
+  @media(max-width:900px){.loc-grid{grid-template-columns:1fr;}}
+  .loc-info{padding:44px 34px;border-right:1px solid var(--line);}
+  @media(max-width:900px){.loc-info{border-right:none;border-bottom:1px solid var(--line);}}
+  .loc-info .row{padding:18px 0;border-bottom:1px solid var(--line);}
+  .loc-info .row:last-child{border-bottom:none;}
+  .loc-info .k{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px;}
+  .loc-info .v{font-weight:800;font-size:19px;text-transform:uppercase;letter-spacing:-.01em;}
+  .loc-info .v.reg{font-weight:400;font-family:var(--mono);font-size:14px;text-transform:none;color:var(--cyan);}
+  .loc-map{position:relative;min-height:420px;background:var(--navy-d);overflow:hidden;}
+  .loc-map .covmap{position:absolute;inset:24px;aspect-ratio:auto;}
+
+  /* cta */
+  .cta-band{background:var(--yellow);color:var(--navy-d);text-align:center;}
+  .cta-band h2{font-size:clamp(36px,6vw,88px);color:var(--navy-d);margin-bottom:14px;}
+  .cta-band .kicker{color:#6b5300;}
+  .cta-band .callnum{font-weight:800;font-size:clamp(30px,5vw,56px);color:var(--navy-d);letter-spacing:.01em;display:inline-block;margin:6px 0 22px;}
+  .cta-band .callnum:hover{color:#071528;}
+  .cta-band .btn--fill{background:var(--navy-d);border-color:var(--navy-d);color:var(--yellow);}
+  .cta-band .btn--fill:hover{background:#071528;}
+  .cta-band .btn--ghost{border-color:var(--navy-d);color:var(--navy-d);}
+  .cta-band .btn--ghost:hover{border-color:var(--navy-d);background:rgba(7,21,40,.08);color:var(--navy-d);}
+
+  footer{background:var(--navy-d);color:var(--paper);padding:66px 0 28px;}
+  .foot-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px;padding-bottom:38px;border-bottom:1px solid var(--line);}
+  @media(max-width:760px){.foot-grid{grid-template-columns:1fr;gap:26px;}}
+  footer .brand{margin-bottom:12px;}
+  footer .fh{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan);margin-bottom:12px;}
+  footer p{font-size:15px;color:var(--muted);margin:0 0 7px;} footer a{color:var(--muted);} footer a:hover{color:var(--cyan);}
+  .foot-btm{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-top:22px;font-family:var(--mono);font-size:12px;color:var(--steel);}
+
+  .msgr{position:fixed;right:18px;bottom:18px;z-index:70;display:inline-flex;align-items:center;gap:9px;background:var(--yellow);color:var(--navy-d);
+    padding:13px 20px;font-family:var(--sans);font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;
+    box-shadow:0 12px 30px -10px rgba(255,210,30,.5);transition:transform .2s;}
+  .msgr:hover{transform:translateY(-3px);color:var(--navy-d);}
+  .msgr svg{width:18px;height:18px;fill:currentColor;}
+  .skip{position:absolute;left:-999px;top:0;background:var(--yellow);color:var(--navy-d);padding:12px 18px;z-index:100;}
+  .skip:focus{left:8px;top:8px;}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- BLOCK: NAV [recommended] -->
+<header class="nav" data-component="NAV" data-variant="v2">
+  <div class="nav-in">
+    <a href="#main" class="brand" aria-label="Volt and Line home"><span class="bolt" aria-hidden="true"></span><span class="bn">VOLT <span class="amp">&amp;</span> LINE</span></a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="#services">Services</a>
+      <a href="#coverage">Coverage</a>
+      <a href="#about">About</a>
+      <a href="#faq">FAQ</a>
+      <a href="tel:+639175550231" class="navcall">Call · 0917 555 0231</a>
+    </nav>
+  </div>
+</header>
+<!-- /BLOCK: NAV -->
+
+<main id="main">
+
+<!-- BLOCK: HERO [required] -->
+<section class="hero" data-component="HERO" data-variant="v2" aria-label="Volt &amp; Line Electrical, serving Metro Manila">
+  <div class="wrap">
+    <div class="hero-l">
+      <span class="statusline"><span class="live" aria-hidden="true"></span> Accepting calls · Metro Manila</span>
+      <h1>Licensed sparks. <span class="cy">We come<br>to you.</span></h1>
+      <p class="lede">Home rewiring, panel upgrades, dodgy circuits and safety checks — done properly, to code, by licensed electricians across Metro Manila. No showroom, no runaround. Just call.</p>
+      <a href="tel:+639175550231" class="callbox" aria-label="Call Volt and Line at +63 917 555 0231">
+        <span class="cl">Tap to call the dispatch line</span>
+        <span class="cn">0917 555 0231</span>
+      </a>
+      <div class="cta-row">
+        <!-- BLOCK: CLICK-TO-MESSAGE [required] -->
+        <a href="https://m.me/VoltAndLine" class="btn btn--cyan" data-component="CLICK-TO-MESSAGE" data-variant="v2" rel="noopener">Request a quote</a>
+        <!-- /BLOCK: CLICK-TO-MESSAGE -->
+        <a href="#coverage" class="btn btn--ghost">Am I in range?</a>
+      </div>
+    </div>
+    <div class="hero-r">
+      <div class="covmap" role="img" aria-label="Coverage map of Metro Manila showing serviced cities with dispatch markers">
+        <span class="lbl">Coverage · Metro Manila</span>
+        <div class="region" aria-hidden="true"></div>
+        <div class="ping" style="left:52%;top:30%;"><div class="d"></div><div class="t">Quezon City</div></div>
+        <div class="ping c p2" style="left:38%;top:54%;"><div class="d"></div><div class="t">Manila</div></div>
+        <div class="ping p3" style="left:60%;top:60%;"><div class="d"></div><div class="t">Makati</div></div>
+        <div class="ping c p4" style="left:72%;top:46%;"><div class="d"></div><div class="t">Pasig</div></div>
+        <div class="ping p5" style="left:70%;top:26%;"><div class="d"></div><div class="t">Marikina</div></div>
+        <div class="ping c p6" style="left:34%;top:34%;"><div class="d"></div><div class="t">Caloocan</div></div>
+        <span class="scale" aria-hidden="true">◲ dispatch grid</span>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: HERO -->
+
+<!-- BLOCK: TRUST [recommended] -->
+<section class="trust" data-component="TRUST" data-variant="v2">
+  <div class="wrap">
+    <div class="c" data-reveal><div class="n">Licensed</div><div class="t">Wired to the PH Electrical Code</div></div>
+    <div class="c" data-reveal data-delay="1">
+      <!-- GBP-BOUND: rating + review count from Google Business Profile. Do not hardcode. -->
+      <div class="n" data-gbp="rating"><span class="stars" aria-hidden="true">★★★★★</span></div>
+      <div class="t">Rated by clients on Google</div>
+    </div>
+    <div class="c" data-reveal data-delay="2"><div class="n">10+</div><div class="t">Metro Manila cities covered</div></div>
+    <div class="c" data-reveal data-delay="3"><div class="n">Insured</div><div class="t">Workmanship &amp; liability cover</div></div>
+  </div>
+</section>
+<!-- /BLOCK: TRUST -->
+
+<!-- BLOCK: ABOUT [recommended] -->
+<section class="sec" id="about" data-component="ABOUT" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">01 · WHO WE ARE</span><h2 data-reveal>About <span class="cy">Volt &amp; Line</span></h2></div>
+    <div class="about-grid">
+      <div class="about-copy" data-reveal>
+        <p>Volt &amp; Line is a licensed electrical service for Metro Manila homes and small businesses — a mobile crew that comes to you, not a showroom you have to find.</p>
+        <p>We do the electrical work most outfits either won't touch or won't explain: rewiring old houses, upgrading tired panels, chasing down the fault behind a tripping breaker, and making sure it's all safe and to code before we leave. Everything we do is wired to the Philippine Electrical Code and documented where it needs to be.</p>
+        <p>No storefront means less overhead and more honesty — you get a licensed electrician at your door, a clear quote, and work that passes inspection. Simple as that.</p>
+      </div>
+      <figure class="about-fig plate" data-reveal data-delay="1">
+        <div class="ph scene-van" role="img" aria-label="The Volt &amp; Line service van parked at a job, tools ready"></div>
+        <div class="grid" aria-hidden="true"></div>
+        <span class="tag">MOBILE CREW</span>
+        <figcaption class="cap">No showroom — we come to you</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: ABOUT -->
+
+<!-- BLOCK: SERVICES [required] -->
+<section class="sec" id="services" data-component="SERVICES" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">02 · WHAT WE DO</span><h2 data-reveal>Electrical <span class="cy">services</span></h2></div>
+    <div class="svc-grid">
+      <article class="svc" data-reveal><div class="code">SVC/01</div><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h10l-2 4h6M4 16h8"/></svg></div><h3>Wiring &amp; rewiring</h3><p>New circuits and full rewires for older homes — safe, tidy and to the Philippine Electrical Code.</p></article>
+      <article class="svc" data-reveal data-delay="1"><div class="code">SVC/02</div><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg></div><h3>Panel &amp; breaker upgrades</h3><p>Upgrading old fuse boxes and panels to modern breakers sized for how you actually use power today.</p></article>
+      <article class="svc" data-reveal data-delay="2"><div class="code">SVC/03</div><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-4 10c1 1 1 2 1 3h6c0-1 0-2 1-3a6 6 0 00-4-10z"/></svg></div><h3>Lighting installation</h3><p>Downlights, fixtures, outdoor and accent lighting installed cleanly and switched sensibly.</p></article>
+      <article class="svc" data-reveal><div class="code">SVC/04</div><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v6m0 0l-3 3m3-3l3 3M5 21h14"/><circle cx="12" cy="16" r="2"/></svg></div><h3>Fault-finding</h3><p>Tracking down tripping breakers, dead sockets and mystery faults — diagnosed properly, then fixed.</p></article>
+      <article class="svc" data-reveal data-delay="1"><div class="code">SVC/05</div><div class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg></div><h3>Outlets &amp; aircon circuits</h3><p>Extra outlets, dedicated aircon lines and correctly rated circuits for heavy appliances.</p></article>
+      <article class="svc" data-reveal data-delay="2"><div class="code">SVC/06</div><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div><h3>Safety inspections</h3><p>Full electrical safety checks and surge protection, with documentation for sale, rental or peace of mind.</p></article>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: SERVICES -->
+
+<!-- BLOCK: WHY [recommended] -->
+<section class="sec why" data-component="WHY" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">03 · WHY US</span><h2 data-reveal>Why <span class="cy">Volt &amp; Line</span></h2></div>
+    <div class="why-grid">
+      <div class="why-cell" data-reveal><div class="k">// 01</div><h3>Licensed &amp; to code</h3><p>Work is done or supervised by licensed practitioners and wired to the Philippine Electrical Code — not bodged to save an hour.</p></div>
+      <div class="why-cell" data-reveal data-delay="1"><div class="k">// 02</div><h3>We come to you</h3><p>A mobile crew across Metro Manila. You don't chase a shop; a licensed electrician turns up at your door.</p></div>
+      <div class="why-cell" data-reveal><div class="k">// 03</div><h3>Clear quotes</h3><p>You know the price before we start. Small jobs estimated on the spot; bigger work quoted after an on-site look.</p></div>
+      <div class="why-cell" data-reveal data-delay="1"><div class="k">// 04</div><h3>Safe &amp; insured</h3><p>Workmanship and liability cover, tidy job sites, and documentation on completion for work that needs it.</p></div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: WHY -->
+
+<!-- BLOCK: HOW [recommended] -->
+<section class="sec" data-component="HOW" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">04 · PROCESS</span><h2 data-reveal>From call to <span class="cy">clear</span></h2></div>
+    <div class="steps">
+      <div class="step" data-reveal><div class="sn">1</div><h3>Call or message</h3><p>Tell us your location and the problem — a photo or two helps us prepare.</p></div>
+      <div class="step" data-reveal data-delay="1"><div class="sn">2</div><h3>Quote</h3><p>Small jobs estimated on the spot; larger work assessed on-site and quoted first.</p></div>
+      <div class="step" data-reveal data-delay="2"><div class="sn">3</div><h3>We dispatch</h3><p>A licensed electrician comes to you at a booked time, van stocked and ready.</p></div>
+      <div class="step" data-reveal data-delay="3"><div class="sn">4</div><h3>Done &amp; safe</h3><p>Work completed to code, tested, tidied, and documented where required.</p></div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: HOW -->
+
+<!-- BLOCK: TESTIMONIALS [recommended] -->
+<section class="sec" data-component="TESTIMONIALS" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">05 · REVIEWS</span><h2 data-reveal>Client <span class="cy">logs</span></h2></div>
+    <div class="quotes-grid">
+      <figure class="quote" data-reveal><div class="stars" aria-hidden="true">★★★★★</div><p>"Our breaker kept tripping for weeks. They found a bad junction the last guy missed, fixed it in an afternoon, and explained everything. No more trips since."</p><figcaption class="who">— Andrea M., Quezon City</figcaption></figure>
+      <figure class="quote" data-reveal data-delay="1"><div class="stars" aria-hidden="true">★★★★★</div><p>"Rewired our old family house room by room without turning it upside down. Clean work, fair quote, and they pulled the permit for us."</p><figcaption class="who">— Ferdinand R., Manila</figcaption></figure>
+      <figure class="quote" data-reveal data-delay="2"><div class="stars" aria-hidden="true">★★★★★</div><p>"Added dedicated aircon lines and a new panel. Turned up on time, tidy, and actually licensed — I checked. Exactly what you want from an electrician."</p><figcaption class="who">— Grace L., Pasig</figcaption></figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: TESTIMONIALS -->
+
+<!-- BLOCK: GALLERY [recommended] -->
+<section class="sec" id="gallery" data-component="GALLERY" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">06 · ON THE JOB</span><h2 data-reveal>Work <span class="cy">log</span></h2></div>
+    <div class="g-grid">
+      <figure class="plate v1" data-reveal><div class="ph scene-panel" role="img" aria-label="A newly installed, neatly labelled electrical panel"></div><div class="grid" aria-hidden="true"></div><span class="tag">01</span><figcaption class="cap">Panel upgrade, labelled</figcaption></figure>
+      <figure class="plate" data-reveal data-delay="1"><div class="ph scene-wire" role="img" aria-label="Neatly run and terminated wiring"></div><div class="grid" aria-hidden="true"></div><span class="tag">02</span><figcaption class="cap">Tidy terminations</figcaption></figure>
+      <figure class="plate" data-reveal data-delay="2"><div class="ph scene-light" role="img" aria-label="Downlights freshly installed in a ceiling"></div><div class="grid" aria-hidden="true"></div><span class="tag">03</span><figcaption class="cap">Lighting install</figcaption></figure>
+      <figure class="plate v4" data-reveal><div class="ph scene-meter" role="img" aria-label="Testing a circuit with a multimeter"></div><div class="grid" aria-hidden="true"></div><span class="tag">04</span><figcaption class="cap">Tested &amp; verified</figcaption></figure>
+      <figure class="plate" data-reveal data-delay="1"><div class="ph scene-inspect" role="img" aria-label="An electrician inspecting an outlet"></div><div class="grid" aria-hidden="true"></div><span class="tag">05</span><figcaption class="cap">Safety inspection</figcaption></figure>
+      <figure class="plate v6" data-reveal data-delay="2"><div class="ph scene-van" role="img" aria-label="The stocked service van at a job site"></div><div class="grid" aria-hidden="true"></div><span class="tag">06</span><figcaption class="cap">Dispatched &amp; on-site</figcaption></figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: GALLERY -->
+
+<!-- BLOCK: FAQ [recommended] -->
+<section class="sec faq" id="faq" data-component="FAQ" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">07 · FAQ</span><h2 data-reveal>Questions</h2></div>
+    <div class="faq-grid">
+      <div>
+        <details data-reveal open><summary>Do you have a shop I can visit? <span class="pm" aria-hidden="true">+</span></summary><div class="a">No — Volt &amp; Line is a mobile service, so there's no showroom to visit. We come to your home or site anywhere in our Metro Manila service area. Just call or message and we'll arrange a visit.</div></details>
+        <details data-reveal><summary>Are your electricians licensed? <span class="pm" aria-hidden="true">+</span></summary><div class="a">Yes. Work is carried out or supervised by licensed electrical practitioners and wired to the Philippine Electrical Code. We're happy to confirm credentials before any job.</div></details>
+        <details data-reveal><summary>How do I get a quote? <span class="pm" aria-hidden="true">+</span></summary><div class="a">Call or message with your location and what you need — a description or a photo helps. For small jobs we can estimate on the spot; for larger work we assess on-site and quote before starting.</div></details>
+      </div>
+      <div>
+        <details data-reveal><summary>Do you handle emergencies? <span class="pm" aria-hidden="true">+</span></summary><div class="a">We prioritise urgent electrical faults — tripping breakers, burning smells, dead circuits and safety hazards. Call us and we'll get to you as soon as we can within the service area.</div></details>
+        <details data-reveal><summary>Which areas do you cover? <span class="pm" aria-hidden="true">+</span></summary><div class="a">We serve Quezon City and much of Metro Manila, including Manila, Makati, Pasig, Mandaluyong, San Juan, Marikina, Caloocan, Parañaque and Taguig. Not sure if you're in range? Call and ask.</div></details>
+        <details data-reveal><summary>Do you pull permits and issue certificates? <span class="pm" aria-hidden="true">+</span></summary><div class="a">For work that requires it, we handle the electrical permit process and provide documentation on completion, so your wiring is compliant and properly certified.</div></details>
+        <!-- BLOCK: SERVICE-AREA [required for #9] -->
+        <div class="areas" id="coverage" data-component="SERVICE-AREA" data-variant="v2" data-reveal>
+          <div class="kicker" style="margin:24px 0 4px;">We cover</div>
+          <div class="area-tags"><span>Quezon City</span><span>Manila</span><span>Makati</span><span>Pasig</span><span>Mandaluyong</span><span>San Juan</span><span>Marikina</span><span>Caloocan</span><span>Parañaque</span><span>Taguig</span></div>
+        </div>
+        <!-- /BLOCK: SERVICE-AREA -->
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: FAQ -->
+
+<!-- BLOCK: CREDENTIALS [recommended] -->
+<section class="sec" data-component="CREDENTIALS" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">08 · CREDENTIALS</span><h2 data-reveal>Licensed &amp; <span class="cy">accountable</span></h2></div>
+    <div class="cred-row">
+      <div class="cred" data-reveal><div class="bdg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg></div><h4>Licensed electricians</h4><p>Work by or under licensed electrical practitioners.</p></div>
+      <div class="cred" data-reveal data-delay="1"><div class="bdg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div><h4>Code compliant</h4><p>Wired to the Philippine Electrical Code, every job.</p></div>
+      <div class="cred" data-reveal data-delay="2"><div class="bdg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16v12H4z"/><path d="M8 7V5h8v2"/></svg></div><h4>DTI registered</h4><p>Registered trade name and local business permits.</p></div>
+      <div class="cred" data-reveal data-delay="3"><div class="bdg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div><h4>Insured work</h4><p>Workmanship &amp; public-liability cover on every visit.</p></div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: CREDENTIALS -->
+
+<!-- BLOCK: LOCATION (dispatch — no storefront) [required] -->
+<section class="sec" id="location" data-component="LOCATION" data-variant="v2">
+  <div class="wrap">
+    <div class="sec-head"><span class="snum">09 · DISPATCH</span><h2 data-reveal>Service area &amp; <span class="cy">dispatch</span></h2></div>
+    <div class="loc-grid" data-reveal>
+      <div class="loc-info">
+        <div class="row"><div class="k">Business</div><div class="v">Volt &amp; Line Electrical Services</div></div>
+        <div class="row"><div class="k">Storefront</div><div class="v reg">No walk-in showroom — mobile service</div></div>
+        <div class="row"><div class="k">Dispatch base</div><div class="v" style="font-size:16px;">Quezon City, Metro Manila</div></div>
+        <div class="row"><div class="k">Service area</div><div class="v reg">Quezon City · Manila · Makati · Pasig · Mandaluyong · San Juan · Marikina · Caloocan · Parañaque · Taguig</div></div>
+        <div class="row"><div class="k">Phone</div><div class="v" style="text-transform:none;"><a href="tel:+639175550231">+63 917 555 0231</a></div></div>
+        <div class="row">
+          <div class="k">Hours</div>
+          <!-- GBP-BOUND: opening hours served live from Google Business Profile. Do not hardcode. -->
+          <div class="v reg" data-gbp="hours">Call line hours are kept current on our Google listing →</div>
+        </div>
+      </div>
+      <div class="loc-map">
+        <div class="covmap" role="img" aria-label="Dispatch coverage map of the Metro Manila service area">
+          <span class="lbl">Dispatch grid</span>
+          <div class="region" aria-hidden="true"></div>
+          <div class="ping" style="left:52%;top:30%;"><div class="d"></div><div class="t">Quezon City</div></div>
+          <div class="ping c p2" style="left:36%;top:56%;"><div class="d"></div><div class="t">Manila</div></div>
+          <div class="ping p3" style="left:60%;top:62%;"><div class="d"></div><div class="t">Makati</div></div>
+          <div class="ping c p4" style="left:74%;top:48%;"><div class="d"></div><div class="t">Pasig</div></div>
+          <div class="ping p5" style="left:72%;top:26%;"><div class="d"></div><div class="t">Marikina</div></div>
+          <div class="ping c p6" style="left:32%;top:34%;"><div class="d"></div><div class="t">Caloocan</div></div>
+          <span class="scale" aria-hidden="true">◲ not to scale</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: LOCATION -->
+
+<!-- BLOCK: CTA-BAND [recommended] -->
+<section class="sec cta-band" data-component="CTA-BAND" data-variant="v2">
+  <div class="wrap">
+    <div class="kicker" data-reveal>Sparks flying? Lights out? Just dodgy?</div>
+    <h2 data-reveal data-delay="1">Call the sparks</h2>
+    <a href="tel:+639175550231" class="callnum" data-reveal data-delay="1" aria-label="Call +63 917 555 0231">0917 555 0231</a>
+    <div class="cta-row" style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;" data-reveal data-delay="2">
+      <a href="tel:+639175550231" class="btn btn--fill">Tap to call</a>
+      <!-- BLOCK: CLICK-TO-MESSAGE [required] -->
+      <a href="https://m.me/VoltAndLine" class="btn btn--ghost" data-component="CLICK-TO-MESSAGE" data-variant="v2" rel="noopener">Request a quote</a>
+      <!-- /BLOCK: CLICK-TO-MESSAGE -->
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: CTA-BAND -->
+
+</main>
+
+<!-- BLOCK: FOOTER [required] -->
+<footer data-component="FOOTER" data-variant="v2">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="brand"><span class="bolt" aria-hidden="true" style="display:inline-block;width:26px;height:26px;margin-right:10px;background:var(--yellow);clip-path:polygon(42% 0,88% 0,54% 38%,100% 38%,26% 100%,44% 54%,4% 54%);"></span><span class="bn">VOLT <span class="amp">&amp;</span> LINE</span></div>
+        <p>Electrical Services — licensed electricians serving Metro Manila. No showroom; we come to you.</p>
+      </div>
+      <div>
+        <div class="fh">Contact</div>
+        <p>Volt &amp; Line Electrical Services</p>
+        <p>Dispatch base · Quezon City, Metro Manila</p>
+        <p>Mobile service — no walk-in showroom</p>
+        <p><a href="tel:+639175550231">+63 917 555 0231</a></p>
+      </div>
+      <div>
+        <div class="fh">Get in touch</div>
+        <p><a href="https://m.me/VoltAndLine" rel="noopener">Messenger →</a></p>
+        <p><a href="#services">Services</a></p>
+        <p><a href="#coverage">Coverage area</a></p>
+      </div>
+    </div>
+    <div class="foot-btm">
+      <span>VOLT &amp; LINE ELECTRICAL SERVICES · METRO MANILA</span>
+      <span>HOURS &amp; RATINGS LIVE ON GOOGLE BUSINESS PROFILE</span>
+    </div>
+  </div>
+</footer>
+<!-- /BLOCK: FOOTER -->
+
+<!-- BLOCK: CLICK-TO-MESSAGE (floating) [required] -->
+<a class="msgr" href="https://m.me/VoltAndLine" rel="noopener" aria-label="Message Volt &amp; Line" data-component="CLICK-TO-MESSAGE" data-variant="v2">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.3 2 2 6.2 2 11.6c0 3 1.4 5.6 3.7 7.3v3.6l3.4-1.9c.9.3 1.9.4 2.9.4 5.7 0 10-4.2 10-9.5S17.7 2 12 2zm1 12.3l-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>
+  Quote
+</a>
+<!-- /BLOCK: CLICK-TO-MESSAGE -->
+
+<script>
+(function(){
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var items = document.querySelectorAll('[data-reveal]');
+  if(reduce || !('IntersectionObserver' in window)){ items.forEach(function(el){ el.classList.add('in'); }); }
+  else {
+    document.documentElement.classList.add('reveal-ready');
+    var io = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } }); }, {threshold:.14, rootMargin:'0px 0px -8% 0px'});
+    items.forEach(function(el){ io.observe(el); });
+    var _vh=function(){return window.innerHeight||document.documentElement.clientHeight;};
+    var _rev=function(){for(var i=0;i<items.length;i++){var el=items[i];if(el.classList.contains('in'))continue;var r=el.getBoundingClientRect();if(r.top<_vh()*0.94&&r.bottom>0){el.classList.add('in');}}};
+    _rev();
+    window.addEventListener('scroll',_rev,{capture:true,passive:true});
+    window.addEventListener('resize',_rev,{passive:true});
+  }
+  var header=document.querySelector('header.nav'), last=0;
+  window.addEventListener('scroll', function(){ var y=window.pageYOffset; if(y>last && y>360){header.classList.add('hide');}else{header.classList.remove('hide');} last=y; }, {passive:true});
+})();
+</script>
+</body>
+</html>

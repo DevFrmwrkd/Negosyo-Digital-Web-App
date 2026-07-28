@@ -1,0 +1,57 @@
+---
+/**
+ * retail / FaqAO — lp-03's "Questions" accordion on the paper-2 band under the
+ * oversized §08 index head, laid across two columns. Uppercase bold summaries
+ * with a Courier red "+" that rotates to "×" on open; ink-2 answer copy. The
+ * first item opens by default (lp-03's designed state). Reads content.faq.items
+ * (q / a). (lp-03's service-area strip is lifted into its own AreaAO section.)
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const faq = content.faq || {};
+const headline = faq.headline || 'Questions';
+type Item = { q: string; a: string };
+const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq) ? faq : []);
+const mid = Math.ceil(items.length / 2);
+const col1 = items.slice(0, mid);
+const col2 = items.slice(mid);
+---
+{items.length > 0 && (
+  <section class="sec faq" id="faq">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="snum" aria-hidden="true">08</div>
+        <h2 class="reveal" data-field="faq.headline" set:html={headline}></h2>
+      </div>
+      <div class="faq-grid">
+        <div>
+          {col1.map((item, i) => (
+            <details class="reveal" open={i === 0}>
+              <summary><span data-field={`faq.items.${i}.q`}>{item.q}</span> <span class="pm" aria-hidden="true">+</span></summary>
+              <div class="a" data-field={`faq.items.${i}.a`} set:html={item.a}></div>
+            </details>
+          ))}
+        </div>
+        <div>
+          {col2.map((item, j) => (
+            <details class="reveal">
+              <summary><span data-field={`faq.items.${mid + j}.q`}>{item.q}</span> <span class="pm" aria-hidden="true">+</span></summary>
+              <div class="a" data-field={`faq.items.${mid + j}.a`} set:html={item.a}></div>
+            </details>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .faq { background: var(--paper2); }
+  .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  @media (max-width: 900px) { .faq-grid { grid-template-columns: 1fr; gap: 8px; } }
+  details { border-bottom: 2px solid var(--ink); }
+  summary { list-style: none; cursor: pointer; padding: 20px 0; font-weight: 800; font-size: 19px; text-transform: uppercase; display: flex; justify-content: space-between; gap: 16px; }
+  summary::-webkit-details-marker { display: none; }
+  summary .pm { font-family: var(--mono); color: var(--red); font-size: 22px; transition: transform .3s; }
+  details[open] summary .pm { transform: rotate(45deg); }
+  details .a { padding: 0 0 20px; color: var(--ink2); max-width: 60ch; font-size: 16px; }
+</style>

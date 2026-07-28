@@ -1,0 +1,80 @@
+---
+/**
+ * salonspa / HeroAN — the signature hard 50/50 split-screen. Editorial type
+ * panel left (bone), a portrait "plate" right (ink) whose panel wipes open on
+ * load (curtain) with the photo on slow parallax. A .scene-portrait duotone
+ * field stands in until hero.image is set; the photo then layers over it.
+ *
+ * The vertical seam word reuses hero.tag and the plate caption reuses
+ * hero.badgeNote (both optional, hidden when unset) so every visible atom stays
+ * editable while matching the AE / AM hero content model.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#book';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || '#services';
+const seamword = hero.tag || '';
+const cap = hero.badgeNote || '';
+---
+<section class="hero" aria-label="Hero">
+  <div class="hero-type">
+    {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+    {headlineLines.length > 0 && (
+      <h1>
+        {headlineLines.map((line: string, i: number) => (
+          <span class="ln"><span data-field={`hero.headlineLines.${i}`} set:html={line}></span></span>
+        ))}
+      </h1>
+    )}
+    {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+    {(cta1Text || cta2Text) && (
+      <div class="cta-row">
+        {cta1Text && <a href={cta1Href} class="btn btn--fill" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+        {cta2Text && <a href={cta2Href} class="btn btn--ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+      </div>
+    )}
+  </div>
+  <div class="hero-visual grain">
+    <div class="ph scene-portrait" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');background-size:cover;background-position:center;` : ''}></div>
+    {seamword && <span class="seamword" data-field="hero.tag">{seamword}</span>}
+    {cap && <div class="cap" data-field="hero.badgeNote">{cap}</div>}
+  </div>
+</section>
+<style>
+  .hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 100vh; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; min-height: auto; } }
+  .hero-type { background: var(--bone); display: flex; flex-direction: column; justify-content: center; padding: 120px 6vw 60px; position: relative; }
+  .hero-type::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; width: 1px; background: var(--line); }
+  @media (max-width: 860px) { .hero-type::after { display: none; } }
+  .hero .eyebrow { opacity: 0; animation: hf .9s ease .5s forwards; }
+  .hero h1 { font-size: clamp(58px,7.4vw,120px); line-height: .92; letter-spacing: -.01em; margin: .14em 0 .3em; }
+  .hero h1 .ln { display: block; overflow: hidden; }
+  .hero h1 .ln > span { display: block; transform: translateY(100%); animation: rise 1s cubic-bezier(.16,1,.3,1) forwards; }
+  .hero h1 .ln:nth-child(2) > span { animation-delay: .12s; }
+  .hero h1 .ln:nth-child(3) > span { animation-delay: .24s; }
+  @keyframes rise { to { transform: none; } }
+  @keyframes hf { to { opacity: 1; } }
+  .hero .lede { max-width: 40ch; color: var(--muted); font-size: 19px; margin-bottom: 32px; opacity: 0; animation: hf 1s ease .7s forwards; }
+  .hero .cta-row { display: flex; gap: 14px; flex-wrap: wrap; opacity: 0; animation: hf 1s ease .85s forwards; }
+  @media (prefers-reduced-motion: reduce) {
+    .hero .eyebrow, .hero .lede, .hero .cta-row { opacity: 1; animation: none; }
+    .hero h1 .ln > span { transform: none; animation: none; }
+  }
+  .hero-visual { position: relative; overflow: hidden; background: var(--ink); clip-path: inset(0 0 0 0); animation: curtain 1.2s cubic-bezier(.76,0,.24,1) forwards; }
+  @keyframes curtain { 0% { clip-path: inset(0 0 0 100%); } 100% { clip-path: inset(0 0 0 0); } }
+  .hero-visual .ph { position: absolute; inset: -8%; transform: scale(1.12); animation: hgrow 1.6s cubic-bezier(.16,1,.3,1) .3s both; will-change: transform; }
+  @keyframes hgrow { to { transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .hero-visual { animation: none; clip-path: none; } .hero-visual .ph { animation: none; inset: 0; transform: none; } }
+  .hero-visual .seamword { position: absolute; top: 50%; right: 26px; transform: translateY(-50%); z-index: 4; writing-mode: vertical-rl; font-family: var(--label); font-size: 11px; letter-spacing: .5em; text-transform: uppercase; color: rgba(239,233,223,.7); white-space: nowrap; }
+  .hero-visual .cap { position: absolute; left: 0; bottom: 0; z-index: 3; width: 100%; padding: 14px 18px; font-family: var(--label); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--bone); background: linear-gradient(0deg,rgba(20,18,16,.8),transparent); }
+  @media (max-width: 860px) { .hero-visual { min-height: 60vh; } }
+</style>

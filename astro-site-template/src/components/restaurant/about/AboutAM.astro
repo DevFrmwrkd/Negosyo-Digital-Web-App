@@ -1,0 +1,50 @@
+---
+/**
+ * restaurant / AboutAM — "our story" split: warm serif copy left (the first
+ * paragraph carries the clay drop-cap), art-directed .plate figure right. The
+ * figure keeps its .scene-hands duotone as the designed fallback until
+ * about.image is set.
+ *
+ * about.imageCaption, about.quote and about.signature are optional extras that
+ * stay hidden when unset (mirrors the AE content model).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+---
+<section class="about sec-pad" id="about">
+  <div class="wrap about-grid">
+    <div class="about-copy reveal">
+      {tag && <div class="eyebrow" style="margin-bottom:18px;" data-field="about.tag">{tag}</div>}
+      {headline && <h2 class="about-h" data-field="about.headline" set:html={headline}></h2>}
+      {paragraphs.map((p: string, i: number) => (
+        <p class={i === 0 ? 'dropcap' : ''} data-field={`about.paragraphs.${i}`} set:html={p}></p>
+      ))}
+      {quote && <blockquote class="about-quote" data-field="about.quote">“{quote}”</blockquote>}
+      {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
+    </div>
+    <figure class="about-fig plate grain reveal" data-delay="2">
+      <div class="ph scene-hands" data-image-field="about.image" style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''}></div>
+      {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
+    </figure>
+  </div>
+</section>
+<style>
+  .about { background: var(--paper); }
+  .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 64px; align-items: center; }
+  @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 40px; } }
+  .about-copy p:first-of-type { font-size: 24px; line-height: 1.5; font-family: var(--serif); color: var(--ink); }
+  .about-copy .dropcap::first-letter { font-family: var(--serif); font-size: 78px; float: left; line-height: .72; padding: 8px 12px 0 0; color: var(--clay); }
+  .about-h { font-size: clamp(30px,4vw,52px); color: var(--ink); margin: 4px 0 20px; }
+  .about-quote { font-family: var(--serif); font-size: clamp(20px,2.4vw,28px); line-height: 1.2; color: var(--clay-deep); margin: 24px 0 0; padding-left: 18px; border-left: 3px solid var(--clay); }
+  .about-sign { margin-top: 18px; font-style: italic; color: var(--smoke); }
+  .about-fig { aspect-ratio: 4/5; border: 1px solid var(--line); }
+  .about-fig .cap { background: linear-gradient(0deg,rgba(24,19,15,.9),transparent); }
+</style>

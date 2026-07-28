@@ -1,0 +1,136 @@
+---
+/**
+ * medical / HeroAQ — lp-05 "Clear Water" hero: a two-column split with quiet
+ * serif-tuned copy left (eyebrow, a rising headline, calm lede, book/see-care
+ * CTAs) and the design's signature right — an offset floating clinic "card"
+ * (an art-directed .plate that keeps its scene-smile gradient as the designed
+ * fallback until hero.image is set) with a soft-blob backdrop and a floating
+ * assurance chip.
+ *
+ * Folded-in signature: lp-05's persistent CREDIBILITY-RAIL rides the base of the
+ * hero (the AM parallel to the dish ticker). It is sourced from
+ * content.credentials.items so it teases the full CredentialsAQ band, stays
+ * editable via credentials.items.* hooks, and auto-hides when there are none.
+ * hero.badgeNote is the optional floating-chip claim (auto-hidden when unset).
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#book';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || '#services';
+const tag = hero.tag || '';
+const imageCaption = hero.imageCaption || '';
+const badgeNote = hero.badgeNote || '';
+
+// Credibility rail — teaser of the credentials band, kept editable + auto-hiding.
+const cred = content.credentials || {};
+const credItems: Array<{ title?: string; desc?: string }> = Array.isArray(cred.items) ? cred.items.slice(0, 4) : [];
+const railIcons = [
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-4.5-7-10a7 7 0 0114 0c0 5.5-7 10-7 10z"/><circle cx="12" cy="11" r="2.4"/></svg>',
+];
+---
+<section class="hero" aria-label="Hero">
+  <div class="wrap">
+    <div class="hero-l">
+      {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+      {headlineLines.length > 0 && (
+        <h1>
+          {headlineLines.map((line: string, i: number) => (
+            <span class="ln"><span class="w" data-field={`hero.headlineLines.${i}`} set:html={line}></span></span>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+      {(cta1Text || cta2Text) && (
+        <div class="cta-row">
+          {cta1Text && <a href={cta1Href} class="btn btn--fill" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text} <span class="arw" aria-hidden="true">→</span></a>}
+          {cta2Text && <a href={cta2Href} class="btn btn--ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+    <div class="hero-r">
+      <div class="hero-blob" aria-hidden="true"></div>
+      <div class="hero-blob two" aria-hidden="true"></div>
+      <figure class="hero-card plate" aria-label="Clinic">
+        <div class="ph scene-smile" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');background-size:cover;background-position:center;` : ''}></div>
+        {tag && <span class="chip" data-field="hero.tag">{tag}</span>}
+        {imageCaption && <figcaption class="cap" data-field="hero.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+      {badgeNote && (
+        <div class="floatchip">
+          <span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          <span><span class="t">Care from</span><br><span class="v" data-field="hero.badgeNote">{badgeNote}</span></span>
+        </div>
+      )}
+    </div>
+  </div>
+  {credItems.length > 0 && (
+    <div class="credrail" aria-label="Clinic assurances">
+      <div class="wrap">
+        {credItems.map((c, i) => (
+          <div class="c">
+            <span class="ic" aria-hidden="true" set:html={railIcons[i % railIcons.length]}></span>
+            <span>
+              <span class="v" data-field={`credentials.items.${i}.title`}>{c.title}</span>
+              {c.desc && <><br /><span class="t" data-field={`credentials.items.${i}.desc`}>{c.desc}</span></>}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</section>
+<style>
+  .hero { background: linear-gradient(180deg,var(--mint-2),var(--paper)); overflow: hidden; }
+  .hero .wrap { display: grid; grid-template-columns: 1.02fr .98fr; gap: 56px; align-items: center; padding-top: 70px; padding-bottom: 40px; }
+  @media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; gap: 20px; padding-top: 50px; } }
+  .hero-l .eyebrow { display: block; }
+  .hero h1 { font-size: clamp(44px,6.2vw,82px); margin: .2em 0 .34em; color: var(--ink); }
+  .hero h1 :global(.soft) { color: var(--teal); }
+  .hero h1 .ln { display: block; overflow: hidden; }
+  .hero h1 .ln > .w { display: inline-block; transform: translateY(105%); animation: aq-rise .8s cubic-bezier(.2,.8,.2,1) forwards; }
+  .hero h1 .ln:nth-child(2) > .w { animation-delay: .1s; }
+  .hero h1 .ln:nth-child(3) > .w { animation-delay: .2s; }
+  @keyframes aq-rise { to { transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { .hero h1 .ln > .w { transform: none; animation: none; } }
+  .hero .lede { max-width: 44ch; color: var(--muted); font-size: 19px; margin-bottom: 30px; opacity: 0; animation: aq-fade 1s ease .55s forwards; }
+  .hero .cta-row { display: flex; gap: 14px; flex-wrap: wrap; opacity: 0; animation: aq-fade 1s ease .7s forwards; }
+  @keyframes aq-fade { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .hero .lede, .hero .cta-row { opacity: 1; animation: none; } }
+
+  .hero-r { position: relative; padding: 20px 20px 40px; }
+  .hero-card { position: relative; aspect-ratio: 4/5; border-radius: 26px; box-shadow: 0 40px 80px -40px rgba(10,52,48,.5); animation: aq-float 7s ease-in-out infinite; }
+  @keyframes aq-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+  @media (prefers-reduced-motion: reduce) { .hero-card { animation: none; } }
+  .hero-blob { position: absolute; width: 64%; height: 64%; right: -4%; top: -6%; border-radius: 50% 50% 48% 52%/52% 48% 52% 48%; background: var(--sand); z-index: -1; }
+  .hero-blob.two { left: -6%; bottom: 2%; top: auto; right: auto; background: var(--mint); width: 40%; height: 40%; }
+  .floatchip { position: absolute; left: -18px; bottom: 52px; z-index: 4; background: #fff; border-radius: 16px; padding: 14px 18px; box-shadow: 0 20px 40px -20px rgba(10,52,48,.4); display: flex; align-items: center; gap: 12px; animation: aq-float 7s ease-in-out .8s infinite; }
+  @media (prefers-reduced-motion: reduce) { .floatchip { animation: none; } }
+  @media (max-width: 920px) { .floatchip { left: 6px; } }
+  .floatchip .ic { width: 38px; height: 38px; border-radius: 50%; background: var(--mint); display: flex; align-items: center; justify-content: center; color: var(--teal); flex: none; }
+  .floatchip .ic svg { width: 20px; height: 20px; }
+  .floatchip .t { font-size: 12px; color: var(--muted); }
+  .floatchip .v { font-size: 15px; font-weight: 600; color: var(--ink); }
+
+  /* signature credibility rail, pinned under the hero grid */
+  .credrail { background: #fff; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .credrail .wrap { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; padding: 0 30px; }
+  @media (max-width: 760px) { .credrail .wrap { grid-template-columns: repeat(2,1fr); } }
+  .credrail .c { display: flex; align-items: center; gap: 14px; padding: 26px 24px; border-right: 1px solid var(--line); }
+  .credrail .c:last-child { border-right: none; }
+  .credrail .ic { width: 42px; height: 42px; border-radius: 12px; background: var(--mint); flex: none; display: flex; align-items: center; justify-content: center; color: var(--teal); }
+  .credrail .ic svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .credrail .t { font-size: 13px; color: var(--muted); line-height: 1.3; }
+  .credrail .v { font-size: 15px; font-weight: 600; color: var(--ink); }
+</style>

@@ -1,0 +1,49 @@
+---
+/**
+ * autoshop / HeaderAP — sticky near-black nav bar with a hazard-chevron badge
+ * beside the stencil brand, condensed uppercase links, and a chevron-clipped
+ * "get a quote" CTA. Hides on scroll-down / reappears on scroll-up (toggled by
+ * PageAP's inline scroll handler via header.nav.hide).
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+// Reuse the hero's primary CTA as the nav "quote" action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#quote';
+---
+<header class="nav">
+  <div class="nav-in">
+    <a href="#main" class="brand" data-field="footer.brand"><span class="chev" aria-hidden="true"></span><span class="bn">{brand}</span></a>
+    {(navLinks.length > 0 || ctaText) && (
+      <nav class="nav-links" aria-label="Primary">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+        {ctaText && <a href={ctaHref} class="navq" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+      </nav>
+    )}
+  </div>
+</header>
+<style>
+  header.nav {
+    position: sticky; top: 0; z-index: 60; background: rgba(13,14,16,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); transition: transform .35s;
+  }
+  header.nav.hide { transform: translateY(-100%); }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; padding: 16px 30px; }
+  .brand { display: flex; align-items: center; gap: 12px; color: var(--off); }
+  .brand:hover { color: var(--off); }
+  .brand .chev { width: 26px; height: 20px; flex-shrink: 0; background: repeating-linear-gradient(-45deg,var(--amber) 0 5px,#0b0b0b 5px 10px); clip-path: polygon(0 0,70% 0,100% 100%,30% 100%); }
+  .brand .bn { font-family: var(--big); font-size: 28px; letter-spacing: .03em; text-transform: uppercase; }
+  .nav-links { display: flex; gap: 26px; align-items: center; }
+  .nav-links a { font-family: var(--cond); font-weight: bold; font-size: 15px; letter-spacing: .1em; text-transform: uppercase; color: var(--concrete); }
+  .nav-links a:hover { color: var(--off); }
+  .nav-links .navq { border: 1px solid var(--amber); padding: 9px 18px; color: var(--amber); clip-path: polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%); }
+  .nav-links .navq:hover { background: var(--amber); color: #000; }
+  @media (max-width: 900px) { .nav-links a:not(.navq) { display: none; } }
+</style>
