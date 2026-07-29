@@ -133,11 +133,14 @@ const ticketLines = linesFromServices.length > 0
     .ticket h1 { font-size: clamp(30px, 8.5vw, 46px); overflow-wrap: anywhere; }
     .ticket .lede { font-size: 16px; }
     .ticket .tfoot { padding: 14px 20px 18px; }
+    /* Single-column since 920px, so cap the portrait plate to a landscape ratio
+       across the whole <=760 band — at 4/5 a full-width tablet plate printed a
+       ~900px-tall image that dwarfed the ticket in the 521–760 range. */
+    .hero-side .plate { aspect-ratio: 4/3; }
   }
   @media (max-width: 520px) {
     .ticket h1 { font-size: clamp(26px, 9vw, 38px); }
     .ticket .cta-row { gap: 10px; }
     .ticket .cta-row .btn { flex: 1 1 100%; justify-content: center; }
-    .hero-side .plate { aspect-ratio: 4/3; }
   }
 </style>

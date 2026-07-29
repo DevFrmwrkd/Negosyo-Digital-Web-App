@@ -56,8 +56,13 @@ const imageCaption = hero.imageCaption || (brand ? `${brand}${kicker ? ' · ' + 
     .hero-s .lede { font-size: 16px; margin-bottom: 24px; }
     .hero-fig { aspect-ratio: 16/10; margin-top: 30px; }
   }
+  @media (max-width: 520px) {
+    /* Full-width stacked CTAs across the whole phone range (not just <=400),
+       so large phones (412-430px) never show a ragged content-width pair when
+       labels are long enough to wrap. */
+    .btnrow .btn { flex: 1 1 100%; justify-content: center; }
+  }
   @media (max-width: 400px) {
     .hero-s h1 { font-size: clamp(30px,9vw,44px); }
-    .btnrow .btn { flex: 1 1 100%; justify-content: center; }
   }
 </style>

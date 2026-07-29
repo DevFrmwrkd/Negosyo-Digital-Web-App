@@ -82,6 +82,12 @@ const ctaHref = hero.cta1?.href || '#location';
   .nav-burger { display: none; }
 
   @media (max-width: 760px) {
+    /* Long brand names (the bar keeps only brand + burger on mobile) must not
+       push past a 360px screen: let the brand shrink and the nowrap name
+       ellipsize instead of forcing horizontal page scroll. */
+    .brand { flex: 0 1 auto; min-width: 0; }
+    .brand .bn { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
     /* Bar keeps brand (left) + burger (right); nav goes to a full-width drawer. */
     .nav-burger {
       display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;

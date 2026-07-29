@@ -90,5 +90,10 @@ const tagText = hero.tag || '';
     .hero-h { font-size: clamp(30px, 9vw, 46px); }
     .hero-plate-lg { min-height: 220px; }
     .hero-plate-sm { min-height: 170px; }
+    /* Stack the two primary CTAs full-width so they don't wrap raggedly into
+       unequal left-aligned rows; gives a clean, large tap column on narrow
+       phones (mirrors CtaBandAH's own mobile CTA treatment). */
+    .hero-cta { flex-direction: column; align-items: stretch; }
+    .hero-cta .btn { width: 100%; }
   }
 </style>

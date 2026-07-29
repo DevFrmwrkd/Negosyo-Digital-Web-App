@@ -93,7 +93,7 @@ const ctaHref = (content as any).navCtaHref || '#visit';
   .nav-menu { display: contents; }
   /* Hamburger trigger — hidden on desktop, revealed as the <=760px control. */
   .nav-burger { display: none; }
-  @media (max-width: 980px) { .nav-links { display: none; } }
+  @media (max-width: 760px) { .nav-links { display: none; } }
 
   @media (max-width: 760px) {
     /* 44px tap target with three ink bars that morph to an X when open. */
@@ -130,7 +130,7 @@ const ctaHref = (content as any).navCtaHref || '#visit';
     header.nav.open .nav-menu {
       max-height: calc(100vh - 62px); overflow-y: auto; opacity: 1; visibility: visible;
     }
-    /* Re-enable the links inside the drawer (the 980px rule hid them). */
+    /* Re-enable the links inside the drawer (the 760px rule above hid them). */
     .nav-links { display: flex; flex-direction: column; gap: 0; }
     .nav-links :global(a) {
       display: flex; align-items: center; min-height: 52px;

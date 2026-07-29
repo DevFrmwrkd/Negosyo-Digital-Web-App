@@ -28,7 +28,12 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
 <style>
   .trust { background: var(--navy); color: #eaf0f8; }
   .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); padding: 0 30px; }
-  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 760px) {
+    .trust .wrap { grid-template-columns: repeat(2,1fr); }
+    /* 2-col mobile grid: clear the stray divider on the right-hand column so the
+       strip isn't asymmetric (a faint line hugging the right inner edge). */
+    .trust .c:nth-child(2n) { border-right: none; }
+  }
   .trust .c { padding: 40px 24px; border-right: 1px solid rgba(234,240,248,.16); }
   .trust .c:last-child { border-right: none; }
   .trust .c .n { font-family: var(--serif); font-size: clamp(30px,3.6vw,44px); color: var(--hi); line-height: 1; }

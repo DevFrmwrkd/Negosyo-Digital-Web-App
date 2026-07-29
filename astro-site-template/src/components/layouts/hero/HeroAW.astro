@@ -62,5 +62,11 @@ const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layou
     .head { font-size: clamp(30px,8.4vw,50px); }
     .lead { column-count: 1; font-size: 16px; }
   }
+  /* Phone: stack the CTA row full-width (mirrors CtaBandAW) so the primary
+     button spans the column instead of wrapping to a left-aligned partial width. */
+  @media (max-width: 520px) {
+    .btnrow { flex-direction: column; align-items: stretch; }
+    .btnrow .btn { text-align: center; }
+  }
   .head { overflow-wrap: anywhere; }
 </style>

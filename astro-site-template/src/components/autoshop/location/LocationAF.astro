@@ -150,4 +150,11 @@ const hasAddress = !!address;
     .grid2 { grid-template-columns: 1fr; }
     .loc-info { padding: 22px; }
   }
+  @media (max-width: 520px) {
+    /* Match the design's family-wide mobile CTA pattern (hero + cta-band both go
+       full-width here): make the NAP-card Directions button full-width + centred
+       too, so the lone left-aligned button under the full-width card doesn't read
+       as unfinished on a phone. */
+    .loc-info .btn { width: 100%; justify-content: center; }
+  }
 </style>
