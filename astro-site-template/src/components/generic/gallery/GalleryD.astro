@@ -41,5 +41,9 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
   .gb { grid-column: span 3; height: 340px; }
   .gc { grid-column: span 3; height: 240px; }
   .gd { grid-column: span 5; height: 240px; }
-  @media (max-width: 760px) { .gal { grid-template-columns: 1fr; } .ga, .gb, .gc, .gd { grid-column: span 1; height: 220px; } }
+  @media (max-width: 760px) {
+    .gal { grid-template-columns: 1fr; gap: 14px; margin-top: 34px; }
+    .ga, .gb, .gc, .gd { grid-column: span 1; height: 220px; }
+    .gtile .cap { transform: none; opacity: 1; }
+  }
 </style>

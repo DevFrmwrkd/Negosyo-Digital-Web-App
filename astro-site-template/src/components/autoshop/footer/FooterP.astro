@@ -79,4 +79,11 @@ const locality = f.locality || layout.contact?.city || '';
     .foot-grid { grid-template-columns: 1fr 1fr; }
     .foot-grid > div:first-child { grid-column: 1 / -1; }
   }
+  @media (max-width: 760px) {
+    .foot-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+  @media (max-width: 520px) {
+    footer.site { padding-block: 48px; }
+    .foot-bot { margin-top: 36px; }
+  }
 </style>

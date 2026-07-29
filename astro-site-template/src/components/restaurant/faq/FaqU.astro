@@ -44,4 +44,12 @@ const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq)
   details.faq summary .pm { color: var(--accent); font-size: 26px; line-height: 1; transition: transform .3s; }
   details.faq[open] summary .pm { transform: rotate(45deg); }
   details.faq .ans { padding: 0 0 28px; color: var(--stone, var(--muted)); max-width: 66ch; }
+  @media (max-width: 760px) {
+    .faq-sect { padding-block: clamp(56px, 9vw, 92px); }
+    .faq-head { margin-bottom: 40px; }
+  }
+  @media (max-width: 520px) {
+    .faq-head h2 { font-size: clamp(28px, 8vw, 46px); }
+    details.faq summary { font-size: clamp(18px, 5.4vw, 24px); padding: 22px 0; gap: 16px; }
+  }
 </style>

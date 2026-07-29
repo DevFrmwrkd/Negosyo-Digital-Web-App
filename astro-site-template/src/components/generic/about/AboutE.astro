@@ -39,4 +39,14 @@ const aboutImage = about.image || (content.photos && content.photos[0]) || '';
     .about { grid-template-columns: 1fr; gap: 44px; }
     .about-art .img { height: 340px; }
   }
+  @media (max-width: 760px) {
+    .about { gap: 36px; }
+    .about-art .img { height: 300px; }
+    .about-txt p { font-size: 16px; }
+  }
+  @media (max-width: 520px) {
+    .about-art .img { height: 240px; }
+    .about-bubble { right: 10px; bottom: 10px; padding: 14px 18px; }
+    .about-bubble .n { font-size: 24px; }
+  }
 </style>

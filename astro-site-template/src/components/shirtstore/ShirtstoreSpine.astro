@@ -103,4 +103,25 @@
     .reveal { opacity: 1; transform: none; transition: none; }
     * { animation: none !important; }
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Shared mobile-first tuning — Z–AD family.                           */
+  /* Desktop rules above are untouched. Each variant's section grids live */
+  /* in their own scoped components and already collapse to one column;   */
+  /* these rules cover the SHARED spine primitives (type scale, section   */
+  /* heads, buttons) so every variant tightens up at once. body already   */
+  /* carries overflow-x:hidden, so no rail can push the page sideways.    */
+  /* ------------------------------------------------------------------ */
+  @media (max-width: 760px) {
+    .pad-y { padding-block: clamp(44px, 10vw, 84px); }
+    .h-sect { font-size: clamp(30px, 8vw, 52px); }
+    /* Section heads stack: title over lead, left-aligned. */
+    .sect-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .sect-head .lead { margin-top: 4px; max-width: none; }
+  }
+  @media (max-width: 520px) {
+    .h-sect { font-size: clamp(27px, 8.5vw, 40px); }
+    /* Full-width, centred primary + secondary CTAs on the smallest screens. */
+    .btn { width: 100%; justify-content: center; }
+  }
 </style>

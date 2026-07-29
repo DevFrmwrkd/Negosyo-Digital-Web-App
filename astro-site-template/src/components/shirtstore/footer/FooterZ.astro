@@ -91,5 +91,9 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
     font-size: 12px; letter-spacing: .06em; color: rgba(var(--paper-rgb), .46);
   }
   @media (max-width: 860px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 520px) { .foot-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) {
+    footer { padding-top: clamp(40px, 12vw, 70px); }
+    .foot-grid { grid-template-columns: 1fr; gap: 28px; }
+    .foot-bottom { flex-direction: column; gap: 6px; margin-top: 36px; }
+  }
 </style>

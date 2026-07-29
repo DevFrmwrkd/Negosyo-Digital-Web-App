@@ -45,5 +45,11 @@ const iconPaths = [
   .b-feat { grid-column: span 6; background: linear-gradient(120deg, var(--panel) 60%, rgba(var(--accent-rgb), .08)); }
   .b-feat h3 { font-size: 30px; }
   @media (max-width: 880px) { .bento { grid-template-columns: 1fr 1fr; } .b-lg, .b-md, .b-sm, .b-feat { grid-column: span 2; } }
-  @media (max-width: 560px) { .bento { grid-template-columns: 1fr; } .b-lg, .b-md, .b-sm, .b-feat { grid-column: span 1; } }
+  @media (max-width: 760px) {
+    .bento { grid-template-columns: 1fr; gap: 14px; margin-top: 34px; }
+    .b-lg, .b-md, .b-sm, .b-feat { grid-column: span 1; }
+    .bcell { padding: 24px; }
+    .bcell h3 { font-size: 22px; }
+    .b-feat h3 { font-size: 24px; }
+  }
 </style>

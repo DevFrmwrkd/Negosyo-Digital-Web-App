@@ -172,6 +172,27 @@ const __fontHref = buildFontHref(__themePairing);
       font-style: normal;
       color: var(--gold-deep);
     }
+
+    /* ------------------------------------------------------------------ */
+    /* Mobile-first tuning — shared scaffolding only. Per-section grids    */
+    /* stack inside each *A component; these globals cover the wrap gutter, */
+    /* section rhythm, display-heading fit and CTA sizing so desktop rules  */
+    /* above stay untouched.                                                */
+    /* ------------------------------------------------------------------ */
+    @media (max-width: 760px) {
+      .wrap { padding: 0 20px; }
+      .sec { padding: 64px 0; }
+      .sec h2 { font-size: clamp(30px, 6.4vw, 52px); }
+      .btn { padding: 13px 22px; }
+    }
+    @media (max-width: 520px) {
+      .wrap { padding: 0 18px; }
+      .sec { padding: 52px 0; }
+      .sec h2 { font-size: clamp(27px, 7.6vw, 40px); }
+      /* Primary CTAs go full-width and centred on phones. */
+      .btn-primary { width: 100%; justify-content: center; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; }
       .reveal { opacity: 1 !important; transform: none !important; }

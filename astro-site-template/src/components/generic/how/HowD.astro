@@ -29,5 +29,10 @@ const steps = Array.isArray(how.steps) && how.steps.length > 0 ? how.steps : [];
   .cstep .sn { font-family: var(--mono); font-size: 15px; color: var(--lime); border: 1px solid var(--lime); border-radius: 8px; padding: 8px 12px; white-space: nowrap; }
   .cstep h3 { font-size: 24px; }
   .cstep p { margin-top: 6px; color: var(--muted); font-size: 16px; }
-  @media (max-width: 620px) { .cstep { grid-template-columns: 1fr; gap: 14px; } }
+  @media (max-width: 760px) {
+    .steps { margin-top: 34px; }
+    .cstep { grid-template-columns: 1fr; gap: 14px; padding: 24px; align-items: start; }
+    .cstep .sn { justify-self: start; }
+    .cstep h3 { font-size: 21px; }
+  }
 </style>

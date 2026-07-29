@@ -82,6 +82,23 @@ const __fontHref = buildFontHref(__themePairing);
       .reveal { opacity: 1 !important; transform: none !important; }
       html { scroll-behavior: auto; }
     }
+
+    /* ---- Mobile-first scaffolding (Cedar & Stone). Desktop rules above stay
+       untouched; these only take effect at phone / small-tablet widths and
+       centralise the shared wrap / section-padding / display-heading tuning. -- */
+    @media (max-width: 760px) {
+      .wrap { padding: 0 20px; }
+      .sec { padding: 66px 0; }
+      .sec h2 { font-size: clamp(30px, 8vw, 56px); }
+      .sec-tag { margin-bottom: 16px; }
+      .btn { padding: 15px 22px; }
+    }
+    @media (max-width: 520px) {
+      .wrap { padding: 0 16px; }
+      .sec { padding: 52px 0; }
+      .sec h2 { font-size: clamp(26px, 8.6vw, 42px); }
+      .btn { width: 100%; justify-content: center; }
+    }
   </style>
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}
   <style is:global set:html={__overrideCss}></style>

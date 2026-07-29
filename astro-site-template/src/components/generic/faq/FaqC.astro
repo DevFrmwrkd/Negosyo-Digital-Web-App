@@ -31,4 +31,11 @@ const items = Array.isArray(faq.items) && faq.items.length ? faq.items : [];
   summary .pm { font-family: var(--disp); font-size: 28px; color: var(--amber); -webkit-text-stroke: 1px var(--ink); transition: transform .3s; }
   details[open] summary .pm { transform: rotate(45deg); }
   details .ans { padding: 0 26px 24px; color: var(--ink-soft); max-width: 74ch; }
+  @media (max-width: 760px) {
+    .faq { margin-top: 32px; }
+    summary { font-size: 20px; padding: 20px; gap: 14px; }
+    summary .pm { font-size: 24px; }
+    details .ans { padding: 0 20px 20px; }
+  }
+  @media (max-width: 520px) { summary { font-size: 18px; } }
 </style>

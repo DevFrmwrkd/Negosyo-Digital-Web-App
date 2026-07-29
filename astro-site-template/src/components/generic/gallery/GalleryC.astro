@@ -40,7 +40,12 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
   .gw3 { grid-column: span 3; height: 360px; }
   .gw2 { grid-column: span 2; height: 260px; }
   @media (max-width: 760px) {
-    .gal { grid-template-columns: 1fr 1fr; }
-    .gw3, .gw2 { grid-column: span 1; height: 200px; }
+    .gal { grid-template-columns: 1fr; gap: 14px; margin-top: 34px; }
+    .gw3, .gw2 { grid-column: span 1; height: 240px; }
+    /* Touch devices can't hover — reveal captions by default. */
+    .gtile .cap { transform: none; opacity: 1; }
+  }
+  @media (max-width: 520px) {
+    .gw3, .gw2 { height: 200px; }
   }
 </style>

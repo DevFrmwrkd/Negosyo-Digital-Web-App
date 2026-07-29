@@ -153,4 +153,18 @@ const marqueeDoubled = [...marqueeWords, ...marqueeWords];
     .hero-media { order: -1; min-height: 48svh; }
     .hero-copy { padding-top: 124px; }
   }
+  @media (max-width: 760px) {
+    .hero h1 { font-size: clamp(44px, 11vw, 72px); }
+    .hero-copy { padding: 108px var(--pad) 56px; }
+    .hero-media { min-height: 40svh; }
+    .hero-sub { margin: 22px 0 28px; }
+    .hero-marquee .track :global(span) { font-size: 12.5px; padding: 14px 0; }
+  }
+  @media (max-width: 520px) {
+    .hero h1 { font-size: clamp(34px, 11.5vw, 54px); }
+    .hero-copy { padding: 96px var(--pad) 44px; }
+    .hero-locality { margin-bottom: 18px; }
+    .hero-tag { left: 14px; bottom: 16px; padding: 12px 14px; }
+    .hero-tag .big { font-size: 26px; }
+  }
 </style>

@@ -53,4 +53,11 @@ const stampT = about.stampTag || '';
     .about-media { order: -1; }
     .about-media .img { height: 48vh; }
   }
+  @media (max-width: 520px) {
+    .about-media .img { height: 42vh; }
+    /* Pull the corner stamp inward so it can't push past the viewport. */
+    .about-media .stamp { width: 96px; height: 96px; right: -8px; bottom: -14px; }
+    .about-media .stamp .y { font-size: 26px; }
+    .pull { font-size: clamp(20px, 5.4vw, 26px); padding-left: 18px; margin: 22px 0; }
+  }
 </style>

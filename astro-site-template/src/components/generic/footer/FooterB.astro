@@ -76,4 +76,12 @@ const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
   .foot-hours div { display: flex; justify-content: space-between; font-size: 14px; color: rgba(var(--paper-rgb), .82); padding: 6px 0; border-bottom: 1px solid rgba(var(--paper-rgb), .12); }
   .foot-note { margin-top: 50px; padding-top: 22px; border-top: 1px solid rgba(var(--paper-rgb), .14); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-size: 12px; color: rgba(var(--paper-rgb), .5); }
   @media (max-width: 820px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 760px) {
+    footer { padding: 64px 0 32px; }
+    .foot-grid { grid-template-columns: 1fr; gap: 32px; }
+  }
+  @media (max-width: 520px) {
+    footer .brand { font-size: 32px; }
+    .foot-note { flex-direction: column; gap: 8px; }
+  }
 </style>

@@ -32,5 +32,10 @@ const hasContent = words.length > 0 || !!text;
   .marquee-track :global(span) { padding-inline: 34px; display: flex; align-items: center; gap: 34px; }
   .marquee-track :global(.dot) { color: var(--accent); font-style: normal; padding-inline: 0; display: inline; gap: 0; }
   @keyframes rscrollx { to { transform: translateX(-50%); } }
+  @media (max-width: 760px) {
+    .marquee { padding: clamp(20px, 5vw, 36px) 0; }
+    .marquee-track { font-size: clamp(30px, 9vw, 60px); }
+    .marquee-track :global(span) { padding-inline: 22px; gap: 22px; }
+  }
   @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 </style>

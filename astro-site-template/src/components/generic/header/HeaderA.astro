@@ -28,33 +28,63 @@ const ctaHref = content.navCtaHref || '#visit';
 <header class="nav">
   <div class="wrap nav-in">
     <a href="#top" class="brand" data-field="nav.brand"><span class="dot"></span>{brand}</a>
-    <div class="nav-links">
-      {navLinks.map((link: any, i: number) => (
+    <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-a-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-collapse" id="nav-a-menu">
+      <div class="nav-links">
+        {navLinks.map((link: any, i: number) => (
+          <a
+            href={link.href}
+            data-field={`nav.links.${i}.label`}
+            data-href-field={`nav.links.${i}.href`}
+          >{link.label}</a>
+        ))}
+      </div>
+      <div class="nav-right">
+        {phone && (
+          <a
+            href={`tel:${phoneDigits}`}
+            class="nav-phone"
+            data-field="nav.phone"
+            data-href-field="nav.phone.href"
+          >{phone}</a>
+        )}
         <a
-          href={link.href}
-          data-field={`nav.links.${i}.label`}
-          data-href-field={`nav.links.${i}.href`}
-        >{link.label}</a>
-      ))}
-    </div>
-    <div class="nav-right">
-      {phone && (
-        <a
-          href={`tel:${phoneDigits}`}
-          class="nav-phone"
-          data-field="nav.phone"
-          data-href-field="nav.phone.href"
-        >{phone}</a>
-      )}
-      <a
-        href={ctaHref}
-        class="btn btn-primary"
-        data-field="nav.cta.text"
-        data-href-field="nav.cta.href"
-      >{ctaText}</a>
+          href={ctaHref}
+          class="btn btn-primary"
+          data-field="nav.cta.text"
+          data-href-field="nav.cta.href"
+        >{ctaText}</a>
+      </div>
     </div>
   </div>
 </header>
+
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var menu = hdr.querySelector('.nav-collapse');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!hdr.classList.contains('open'));
+    });
+    // Close the drawer after tapping any link or the CTA inside it.
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Close on Escape for keyboard users.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
 
 <style>
   header.nav {
@@ -87,6 +117,11 @@ const ctaHref = content.navCtaHref || '#visit';
     background: var(--gold);
     border-radius: 50%;
   }
+  /* Wrapper is transparent on desktop (display:contents) so brand,
+     nav-links and nav-right stay direct flex children of .nav-in — the
+     desktop layout is byte-for-byte what it was before. On mobile it
+     becomes the full-width dropdown drawer. */
+  .nav-collapse { display: contents; }
   .nav-links {
     display: flex;
     gap: 26px;
@@ -121,7 +156,91 @@ const ctaHref = content.navCtaHref || '#visit';
     font-family: var(--mono);
     font-size: 13px;
   }
-  @media (max-width: 920px) {
-    .nav-links, .nav-phone { display: none; }
+
+  /* Hamburger trigger — hidden on desktop, revealed as the mobile control. */
+  .nav-burger { display: none; }
+
+  @media (max-width: 760px) {
+    /* 44px tap target with three gold-ink bars that morph to an X. */
+    .nav-burger {
+      display: inline-flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 44px;
+      height: 44px;
+      padding: 10px;
+      margin-right: -8px;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+    }
+    .nav-burger span {
+      display: block;
+      width: 24px;
+      height: 2px;
+      background: var(--ink);
+      border-radius: 2px;
+      transition: transform .3s ease, opacity .3s ease;
+    }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Full-width drawer beneath the bar, in the design's own paper + line
+       + gold tokens so it reads as part of the Ironwood identity. */
+    .nav-collapse {
+      display: block;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      background: var(--paper-2);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 24px 40px -22px rgba(var(--ink-rgb), .45);
+      padding: 6px 0 14px;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    header.nav.open .nav-collapse {
+      max-height: calc(100vh - 76px);
+      overflow-y: auto;
+      opacity: 1;
+      visibility: visible;
+    }
+    .nav-links {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0;
+      font-size: 13px;
+    }
+    .nav-links a {
+      display: flex;
+      align-items: center;
+      min-height: 48px;
+      padding: 6px 22px;
+      color: var(--ink-soft);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-links a::after { display: none; }
+    .nav-right {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 14px 22px 2px;
+    }
+    .nav-phone {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      font-size: 15px;
+    }
+    .nav-right .btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>

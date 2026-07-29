@@ -132,5 +132,17 @@ const marqueeDoubled = [...marqueeWords, ...marqueeWords];
     .heroK-grid { grid-template-columns: 1fr; }
     .heroK-card { max-width: 80%; margin: 0 auto; }
   }
+  @media (max-width: 760px) {
+    .heroK-title { font-size: clamp(44px, 12vw, 84px); gap: 0 .2em; }
+    .heroK-inner { padding-top: 116px; padding-bottom: 96px; }
+    .heroK-card { max-width: 72%; }
+    .heroK-sub { margin: 22px 0 28px; }
+  }
+  @media (max-width: 520px) {
+    .heroK-title { font-size: clamp(38px, 12.5vw, 60px); }
+    .heroK-inner { padding-top: 104px; padding-bottom: 84px; }
+    .heroK-card { max-width: 88%; }
+    .heroK-ghost { font-size: 52vw; }
+  }
   @media (prefers-reduced-motion: reduce) { .heroK * { animation: none !important; opacity: 1 !important; transform: none !important; filter: none !important; } }
 </style>

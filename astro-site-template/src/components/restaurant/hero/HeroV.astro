@@ -134,4 +134,15 @@ const stripCells = stats.length ? stats : fallbackStats;
     .hero-strip > div:nth-child(odd) { border-left: 0; }
     .hero-img { margin-top: 44px; }
   }
+  @media (max-width: 760px) {
+    .hero-v { padding-block: clamp(100px, 17vw, 132px) clamp(36px, 7vw, 70px); }
+    .hero-sub { margin: 28px auto 34px; }
+    .hero-strip { margin-top: 48px; }
+  }
+  @media (max-width: 520px) {
+    .hero-v h1 { font-size: clamp(40px, 13vw, 60px); line-height: 1.06; }
+    .hero-strip b { font-size: 26px; }
+    .hero-strip > div { padding: 18px 16px; }
+    .hero-img { margin-top: 34px; }
+  }
 </style>

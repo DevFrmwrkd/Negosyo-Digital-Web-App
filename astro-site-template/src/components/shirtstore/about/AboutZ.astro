@@ -41,4 +41,15 @@ const quote = about.quote || '';
     .about-grid { grid-template-columns: 1fr; }
     .about-fig .bg-img { height: 60vh; }
   }
+  @media (max-width: 760px) {
+    .about { padding: clamp(48px, 11vw, 96px) 0; }
+    .about h2 { font-size: clamp(30px, 7.4vw, 50px); }
+    .about-fig .bg-img { height: 52vh; }
+  }
+  @media (max-width: 520px) {
+    .about h2 { font-size: clamp(27px, 8vw, 40px); }
+    .about-p { font-size: 16px; margin-top: 16px; }
+    .about-fig .bg-img { height: 44vh; }
+    .about .sig { font-size: 21px; margin-top: 20px; }
+  }
 </style>

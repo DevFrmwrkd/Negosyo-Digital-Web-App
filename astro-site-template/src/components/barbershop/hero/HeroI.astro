@@ -106,5 +106,15 @@ const metaParts: string[] = Array.isArray(hero.meta) && hero.meta.length
   @keyframes mRule { to { width: min(440px, 72%); } }
   @keyframes mGlow { to { opacity: 1; } }
   @keyframes mReveal { to { clip-path: inset(0 0 0 0); } }
+  @media (max-width: 760px) {
+    .heroM { padding-top: 116px; }
+    .heroM-title { font-size: clamp(52px, 15vw, 120px); }
+  }
+  @media (max-width: 520px) {
+    .heroM { padding-top: 104px; }
+    .heroM-title { font-size: clamp(36px, 12vw, 56px); }
+    .heroM-eyebrow { font-size: clamp(18px, 5vw, 24px); }
+    .heroM-sub { margin-top: 0; }
+  }
   @media (prefers-reduced-motion: reduce) { .heroM * { animation: none !important; opacity: 1 !important; transform: none !important; clip-path: none !important; } }
 </style>

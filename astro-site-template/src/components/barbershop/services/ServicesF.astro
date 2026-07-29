@@ -43,5 +43,6 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
   .svc .tag { display: inline-block; margin-top: 14px; font-family: var(--cond); text-transform: uppercase; letter-spacing: .18em; font-size: 11px; color: var(--brass); border: 1px solid var(--line); padding: 6px 12px; }
   .svc:hover .tag { color: var(--brass-bright); border-color: var(--line-light); }
   @media (max-width: 900px) { .svc-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 560px) { .svc-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .svc-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) { .svc { padding: 30px 24px; } }
 </style>

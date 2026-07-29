@@ -53,8 +53,14 @@ const mapAria = `Map showing ${label} at ${address.replace(/\n/g, ', ')}`;
   .napcard .v { font-family: var(--disp); font-size: 24px; margin-top: 4px; margin-bottom: 18px; }
   .napcard .v.s { font-size: 20px; }
   .napcard .btn { margin-top: 8px; }
-  @media (max-width: 680px) {
-    .napcard { position: relative; left: 0; bottom: 0; margin-top: 18px; max-width: none; }
+  @media (max-width: 760px) {
+    .loc-wrap { margin-top: 34px; }
     #map { height: 340px; }
+    .napcard { position: relative; left: 0; bottom: 0; margin-top: 16px; max-width: none; padding: 26px; }
+  }
+  @media (max-width: 520px) {
+    #map { height: 280px; }
+    .napcard { padding: 22px; }
+    .napcard .btn { width: 100%; justify-content: center; }
   }
 </style>

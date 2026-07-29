@@ -87,4 +87,17 @@ const badge = hero.tag || '';
     .hero-left { border-right: none; border-bottom: 2px solid var(--ink); }
     .hero-right { min-height: 320px; order: -1; }
   }
+  @media (max-width: 760px) {
+    .hero h1 { font-size: clamp(40px, 9.5vw, 74px); }
+    .hero-sub { margin-top: 20px; font-size: 17px; }
+    .hero-actions { margin-top: 26px; }
+    .hero-right { min-height: 260px; }
+  }
+  @media (max-width: 520px) {
+    .hero h1 { font-size: clamp(30px, 9vw, 46px); }
+    .hero-tag { margin-bottom: 18px; }
+    .hero-badge { padding: 12px 16px; }
+    .hero-badge b { font-size: 22px; }
+    .hero-right { min-height: 220px; }
+  }
 </style>

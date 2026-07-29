@@ -26,4 +26,15 @@ const cells = (content.trust?.cells && content.trust.cells.length > 0) ? content
     .kv:nth-child(3) { border-left: none; }
     .kv:nth-child(n+3) { border-top: 1px solid var(--line); }
   }
+  @media (max-width: 760px) {
+    .trust { padding: 48px 0; }
+    .kv { padding: 26px 22px; }
+    .kv .v { font-size: 38px; }
+  }
+  @media (max-width: 520px) {
+    .trust-grid { grid-template-columns: 1fr; }
+    .kv { border-left: none; border-top: 1px solid var(--line); }
+    .kv:first-child { border-top: none; }
+    .kv .v { font-size: 40px; }
+  }
 </style>

@@ -196,7 +196,28 @@ const meta2 = hero.meta2 || 'Your address line 1 · open daily';
     color: var(--gold);
     letter-spacing: 2px;
   }
-  @media (max-width: 680px) {
-    .hero-in { padding: 104px 16px 56px; }
+  @media (max-width: 760px) {
+    .hero-in { padding: 116px 18px 60px; }
+    .htitle {
+      font-size: clamp(34px, 9vw, 70px);
+      letter-spacing: -.025em;
+      margin-top: 18px;
+    }
+    /* Allow long headline lines to wrap on phones instead of overflowing. */
+    .htitle .ln > span { white-space: normal; }
+    .hero-sub { font-size: 17px; margin-top: 20px; }
+  }
+  @media (max-width: 520px) {
+    .hero-in { padding: 104px 16px 52px; }
+    .htitle { font-size: clamp(30px, 9.6vw, 46px); }
+    .hero-cta {
+      width: 100%;
+      gap: 10px;
+    }
+    /* Both hero CTAs go full-width and stack for comfortable thumb targets. */
+    .hero-cta :global(.btn) {
+      width: 100%;
+      justify-content: center;
+    }
   }
 </style>

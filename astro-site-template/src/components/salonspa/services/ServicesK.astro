@@ -47,6 +47,10 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
   @media (max-width: 880px) {
     .service-card { border-right: none; }
   }
+  @media (max-width: 760px) {
+    .services-grid { grid-template-columns: 1fr; }
+    .service-card { padding: 26px 0; }
+  }
   .service-head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 12px; }
   .service-title {
     font-family: var(--serif); font-weight: 500;

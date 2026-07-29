@@ -38,4 +38,9 @@ const items: Array<{ quote: string; av: string; who: string }> = Array.isArray(t
   .bubble .who span:last-child { font-size: 12px; color: var(--ink-soft); }
   .tsrc { text-align: center; margin-top: 40px; font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
   @media (max-width: 860px) { .testi-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .testi-grid { gap: 18px; margin-top: 32px; }
+    .bubble { padding: 24px; }
+    .tsrc { margin-top: 28px; }
+  }
 </style>

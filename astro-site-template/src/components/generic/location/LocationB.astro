@@ -63,4 +63,11 @@ const mapAria = `Map showing ${label} at ${address.replace(/\n/g, ', ')}`;
   .napcard a.btn { margin-top: auto; border-color: var(--peach); background: var(--peach); color: var(--ink); }
   .napcard a.btn:hover { background: transparent; color: var(--paper-2); border-color: var(--paper-2); }
   @media (max-width: 820px) { .loc-grid { grid-template-columns: 1fr; } #map { min-height: 320px; } }
+  @media (max-width: 520px) {
+    .loc-grid { gap: 26px; }
+    #map { min-height: 260px; border-radius: 20px; }
+    .napcard { padding: 26px 22px; border-radius: 20px; gap: 18px; }
+    .napcard .v { font-size: 24px; }
+    .napcard .v.s { font-size: 19px; }
+  }
 </style>

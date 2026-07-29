@@ -35,4 +35,10 @@ const items = Array.isArray(t.items) && t.items.length > 0 ? t.items : [];
   .rcard .who { margin-top: 18px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
   .tsrc { margin-top: 30px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(var(--paper-rgb), .6); }
   @media (max-width: 820px) { .tcards { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .tcards { gap: 16px; margin-top: 34px; }
+    .rcard { padding: 24px; box-shadow: 6px 6px 0 rgba(0, 0, 0, .4); }
+    .rcard p { font-size: 16px; }
+    .tsrc { margin-top: 24px; }
+  }
 </style>

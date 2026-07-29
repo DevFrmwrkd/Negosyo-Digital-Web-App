@@ -98,6 +98,20 @@ const rating = hero.rating || '';
     .heroS-media { aspect-ratio: 4 / 3; }
     .heroS-rate { padding-left: 18px; }
   }
+  @media (max-width: 760px) {
+    .heroS-head { font-size: clamp(48px, 15vw, 112px); margin-top: 22px; }
+    /* Stack the CTA bar so buttons + rating each get a full-width row. */
+    .heroS-bar { flex-direction: column; align-items: stretch; margin-top: 28px; }
+    .heroS-acts { padding: 20px 0 4px; }
+    .heroS-rate {
+      padding: 14px 0 20px; border-left: none;
+      border-top: 1px solid var(--line); flex-direction: row; align-items: center; gap: 12px;
+    }
+  }
+  @media (max-width: 520px) {
+    .heroS-head { font-size: clamp(40px, 15vw, 74px); }
+    .heroS-media { aspect-ratio: 3 / 2; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .anim .ln > span { animation: none; }
   }

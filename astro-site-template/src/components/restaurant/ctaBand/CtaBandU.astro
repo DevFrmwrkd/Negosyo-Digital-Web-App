@@ -37,4 +37,13 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-actions { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
   .cta-primary { background: #fff; color: var(--accent-deep); border-color: #fff; }
   .cta-primary:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  @media (max-width: 760px) {
+    .cta-band { padding-block: clamp(56px, 10vw, 96px); }
+    .cta-band h2 { font-size: clamp(34px, 9vw, 62px); }
+  }
+  @media (max-width: 520px) {
+    .cta-band h2 { font-size: clamp(30px, 9.5vw, 44px); }
+    .cta-band p { margin: 16px auto 28px; }
+    .cta-actions { gap: 12px; }
+  }
 </style>

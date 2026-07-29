@@ -90,4 +90,16 @@ const tag = hero.tag || '';
     .hero h1 { font-size: clamp(54px, 15vw, 90px); }
     .hero-band .bg-img { height: 62vh; }
   }
+  @media (max-width: 760px) {
+    .hero { padding-top: clamp(24px, 6vw, 40px); }
+    .hero-row { padding: 8px 0 22px; gap: 18px; align-items: start; }
+    .hero h1 { font-size: clamp(46px, 14vw, 76px); }
+    .hero-aside p { font-size: 16px; margin-bottom: 18px; }
+    .hero-band .bg-img { height: 52vh; }
+  }
+  @media (max-width: 520px) {
+    .hero h1 { font-size: clamp(38px, 13vw, 58px); }
+    .hero-band .bg-img { height: 44vh; }
+    .hero-aside .cta { gap: 10px; }
+  }
 </style>

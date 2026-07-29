@@ -137,4 +137,13 @@ const hasAddress = !!address;
     .visit-info { border-right: 0; border-bottom: 1px solid rgba(var(--paper-rgb), .16); }
     #map, .map-fallback { min-height: 340px; }
   }
+  @media (max-width: 760px) {
+    .visit { padding-block: clamp(52px, 8vw, 88px); }
+    .visit-info { padding: clamp(28px, 6vw, 44px); }
+  }
+  @media (max-width: 520px) {
+    .visit-info h2 { font-size: clamp(28px, 8vw, 44px); }
+    .visit-contact { gap: 14px 22px; margin-bottom: 24px; }
+    #map, .map-fallback { min-height: 280px; }
+  }
 </style>

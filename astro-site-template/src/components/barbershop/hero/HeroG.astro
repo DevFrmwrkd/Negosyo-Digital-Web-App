@@ -79,6 +79,15 @@ const ratingLabel = hero.rating?.label || '';
   @keyframes cFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
   @keyframes cZoom { from { transform: scale(1.05); } to { transform: scale(1.2); } }
   @keyframes cScroll { 0% { transform: translateX(-101%); } 50% { transform: translateX(0); } 100% { transform: translateX(101%); } }
-  @media (max-width: 560px) { .heroC-meta { flex-direction: column; align-items: flex-start; } }
+  @media (max-width: 760px) {
+    .heroC-title { font-size: clamp(46px, 12vw, 92px); }
+    .heroC-inner { padding-top: 116px; }
+  }
+  @media (max-width: 560px) { .heroC-meta { flex-direction: column; align-items: flex-start; gap: 14px; } }
+  @media (max-width: 520px) {
+    .heroC-title { font-size: clamp(38px, 12.5vw, 60px); }
+    .heroC-inner { padding-top: 104px; }
+    .heroC-sub { margin: 22px 0 28px; }
+  }
   @media (prefers-reduced-motion: reduce) { .heroC * { animation: none !important; opacity: 1 !important; transform: none !important; } }
 </style>

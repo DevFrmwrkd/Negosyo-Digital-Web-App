@@ -56,8 +56,14 @@ const spans = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6'];
   .p5 { grid-column: span 4; grid-row: span 2; }
   .p6 { grid-column: span 4; grid-row: span 2; }
   @media (max-width: 760px) {
+    .gal-sect { padding-block: clamp(56px, 9vw, 92px); }
+    .gal-head { margin-bottom: 40px; }
     .gal { grid-template-columns: repeat(2, 1fr); grid-auto-rows: 130px; }
     .gal > * { grid-column: span 1 !important; grid-row: span 2 !important; }
     .gal .p1 { grid-column: span 2 !important; }
+  }
+  @media (max-width: 520px) {
+    .gal-head h2 { font-size: clamp(30px, 8vw, 46px); }
+    .gal { grid-auto-rows: 116px; gap: 10px; }
   }
 </style>
