@@ -28,7 +28,7 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
 <style>
   .trust { background: var(--ink); color: var(--bone); }
   .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; padding: 44px 28px; }
-  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); gap: 32px 20px; } }
+  @media (max-width: 760px) { .trust .wrap { grid-template-columns: 1fr; gap: 28px; } }
   .cell { border-left: 1px solid rgba(242,232,215,.18); padding-left: 20px; }
   .cell .n { font-family: var(--serif); font-size: clamp(30px,4vw,44px); color: var(--ember); line-height: 1; }
   .cell .t { font-family: var(--label); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone); margin-top: 8px; opacity: .85; }

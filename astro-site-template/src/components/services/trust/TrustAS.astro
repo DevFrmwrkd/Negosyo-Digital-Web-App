@@ -28,10 +28,10 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
 <style>
   .trust { background: var(--blue); color: var(--card); }
   .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); }
-  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); } .trust .c { padding: 30px 18px; } .trust .c:nth-child(2n) { border-right: none; } }
   .trust .c { padding: 40px 22px; border-right: 2px dashed rgba(250,245,232,.3); }
   .trust .c:last-child { border-right: none; }
   .trust .c .n { font-family: var(--mono); font-weight: 700; font-size: clamp(28px,3.6vw,40px); }
   .trust .c .t { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .9; margin-top: 10px; }
   .trust .c :global(.stars) { color: #ffd54a; letter-spacing: 2px; font-size: 22px; }
+  @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); } .trust .c { padding: 30px 18px; } .trust .c:nth-child(2n) { border-right: none; } }
 </style>

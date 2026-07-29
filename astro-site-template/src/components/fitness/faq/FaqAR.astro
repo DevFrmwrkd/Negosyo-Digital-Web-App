@@ -47,11 +47,13 @@ const col2 = items.slice(mid);
 <style>
   .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; }
   @media (max-width: 900px) { .faq-grid { grid-template-columns: 1fr; gap: 4px; } }
-  @media (max-width: 760px) { .faq-grid { grid-template-columns: 1fr; } summary { font-size: 18px; padding: 18px 0; } }
   details { border-bottom: 3px solid var(--line); }
   summary { list-style: none; cursor: pointer; padding: 22px 0; font-family: var(--disp); font-size: 22px; text-transform: uppercase; display: flex; justify-content: space-between; gap: 16px; color: var(--chalk); }
   summary::-webkit-details-marker { display: none; }
   summary .pm { color: var(--lime); font-size: 26px; transition: transform .3s; font-family: var(--sans); }
   details[open] summary .pm { transform: rotate(45deg); }
   details .a { padding: 0 0 22px; color: var(--ash); max-width: 60ch; font-size: 16px; }
+  /* Media LAST so the mobile summary font/padding reduction wins on source
+     order over the equal-specificity base `summary` rule above. */
+  @media (max-width: 760px) { .faq-grid { grid-template-columns: 1fr; } summary { font-size: 18px; padding: 18px 0; } }
 </style>

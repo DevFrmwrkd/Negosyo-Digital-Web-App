@@ -47,7 +47,7 @@ const hasButtons = !!(cta1Text || cta2Text);
   /* Mobile: tighten the band and let the jab-skew CTAs go full-width + tappable. */
   @media (max-width: 760px) {
     .cta-band { padding: 40px 0; }
-    .cta-h { font-size: clamp(30px, 8.5vw, 52px); }
+    .cta-h { font-size: clamp(30px, 8.5vw, 52px); overflow-wrap: break-word; }
     .cta-actions { width: 100%; }
     .cta-actions .btn { flex: 1 1 100%; }
   }

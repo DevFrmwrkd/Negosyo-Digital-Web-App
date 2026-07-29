@@ -44,9 +44,11 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
 <style>
   .quotes-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; border-top: 3px solid var(--line); border-left: 3px solid var(--line); }
   @media (max-width: 900px) { .quotes-grid { grid-template-columns: 1fr; } }
-  @media (max-width: 760px) { .quotes-grid { grid-template-columns: 1fr; } .quote { padding: 26px 22px; } .quote p { font-size: 17px; } }
   .quote { padding: 32px 28px; border-right: 3px solid var(--line); border-bottom: 3px solid var(--line); }
   .quote .stars { color: var(--lime); font-size: 15px; letter-spacing: 1px; }
   .quote p { font-size: 19px; line-height: 1.45; color: var(--chalk); margin: 12px 0; }
   .quote .who { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ash); }
+  /* Media LAST so the mobile padding/font reductions win on source order over
+     the equal-specificity base .quote / .quote p rules above. */
+  @media (max-width: 760px) { .quotes-grid { grid-template-columns: 1fr; } .quote { padding: 26px 22px; } .quote p { font-size: 17px; } }
 </style>

@@ -49,6 +49,6 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   /* Mobile: one column (the 280px minmax overflows sub-300px viewports otherwise). */
   @media (max-width: 760px) {
     .test-grid { grid-template-columns: 1fr; gap: 22px; }
-    .test-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 20px; }
+    .test-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 20px; overflow-wrap: break-word; }
   }
 </style>

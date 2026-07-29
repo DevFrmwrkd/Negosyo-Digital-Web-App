@@ -53,6 +53,6 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
   /* Mobile: one column (the 270px minmax would otherwise overflow narrow phones). */
   @media (max-width: 760px) {
     .svc-grid { grid-template-columns: 1fr; }
-    .svc-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 22px; }
+    .svc-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 22px; overflow-wrap: break-word; }
   }
 </style>

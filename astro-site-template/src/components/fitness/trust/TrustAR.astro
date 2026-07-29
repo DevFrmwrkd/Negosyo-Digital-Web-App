@@ -28,10 +28,19 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
 <style>
   .ledger { background: var(--panel); border-bottom: 3px solid var(--lime); }
   .ledger .wrap { display: grid; grid-template-columns: repeat(4,1fr); padding: 0 28px; }
-  @media (max-width: 760px) { .ledger .wrap { grid-template-columns: repeat(2,1fr); } }
   .ledger .c { padding: 40px 24px; border-right: 1px solid var(--line); position: relative; }
   .ledger .c:last-child { border-right: none; }
   .ledger .c .n { font-family: var(--disp); font-size: clamp(46px,6vw,76px); color: var(--lime); line-height: .86; }
   .ledger .c .t { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ash); margin-top: 10px; }
   .ledger .c :global(.stars) { color: var(--lime); letter-spacing: 2px; font-size: 26px; }
+  @media (max-width: 900px) { .ledger .wrap { grid-template-columns: repeat(2,1fr); } }
+  /* Phone: one column so oversized Arial-Black tally numbers (admin/GBP-bound,
+     can be wide e.g. "1,200+") never overflow a narrow 2-col cell at 360px.
+     Media queries sit AFTER the base .c rules so these overrides win on order;
+     swap the vertical column rules for horizontal separators between cells. */
+  @media (max-width: 760px) {
+    .ledger .wrap { grid-template-columns: 1fr; }
+    .ledger .c { padding: 30px 24px; border-right: none; border-bottom: 1px solid var(--line); }
+    .ledger .c:last-child { border-bottom: none; }
+  }
 </style>

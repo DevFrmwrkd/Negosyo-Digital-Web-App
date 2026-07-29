@@ -46,6 +46,6 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
   /* Mobile: single column so the 240px minmax can't overflow narrow phones. */
   @media (max-width: 760px) {
     .how-list { grid-template-columns: 1fr; }
-    .how-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 22px; }
+    .how-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 22px; overflow-wrap: break-word; }
   }
 </style>
