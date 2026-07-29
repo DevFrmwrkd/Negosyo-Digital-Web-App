@@ -166,6 +166,18 @@ const __fontHref = buildFontHref(__themePairing);
     @media (min-width: 800px) {
       html[data-page="AI"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
     }
+
+    /* Mobile-first pass: collapse every split to one column, tighten the tall
+       section rhythm, and pull the display kickers/headings down a notch so the
+       poster stays punchy on a phone without clipping. Desktop is untouched. */
+    @media (max-width: 760px) {
+      html[data-page="AI"] .grid2 { grid-template-columns: 1fr; gap: 26px; }
+      html[data-page="AI"] section { padding: 46px 0; }
+      html[data-page="AI"] .wrap { padding: 0 18px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AI"] section { padding: 40px 0; }
+    }
     @media (prefers-reduced-motion: reduce) {
       html[data-page="AI"] .reveal { opacity: 1; transform: none; transition: none; }
       html[data-page="AI"] * { animation: none !important; }

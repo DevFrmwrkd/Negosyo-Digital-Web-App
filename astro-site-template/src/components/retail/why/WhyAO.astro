@@ -39,6 +39,7 @@ const items: Array<{ title: string; body?: string; desc?: string; description?: 
   .why-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 2px; background: rgba(243,239,228,.16); border: 1px solid rgba(243,239,228,.16); }
   @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; } }
   .why-cell { background: var(--ink); padding: 38px 32px; }
+  @media (max-width: 760px) { .why-cell { padding: 30px 22px; } }
   .why-cell .k { font-family: var(--num); font-size: 34px; color: var(--yellow); }
   .why-cell h3 { font-size: 22px; text-transform: uppercase; margin: 12px 0 8px; color: var(--paper); }
   .why-cell p { color: var(--paper2); opacity: .85; font-size: 15px; }

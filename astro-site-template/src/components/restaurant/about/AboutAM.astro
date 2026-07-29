@@ -47,4 +47,10 @@ const signature = about.signature || '';
   .about-sign { margin-top: 18px; font-style: italic; color: var(--smoke); }
   .about-fig { aspect-ratio: 4/5; border: 1px solid var(--line); }
   .about-fig .cap { background: linear-gradient(0deg,rgba(24,19,15,.9),transparent); }
+  @media (max-width: 760px) {
+    .about-grid { grid-template-columns: 1fr; gap: 32px; }
+    .about-copy p:first-of-type { font-size: 20px; }
+    .about-copy .dropcap::first-letter { font-size: 60px; }
+    .about-fig { aspect-ratio: 4/3; }
+  }
 </style>

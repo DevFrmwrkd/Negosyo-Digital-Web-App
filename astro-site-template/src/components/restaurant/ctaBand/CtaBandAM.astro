@@ -41,4 +41,9 @@ const hasButtons = !!(cta1Text || cta2Text || cta3Text);
   .cta-h { font-size: clamp(38px,6vw,80px); color: var(--paper); margin: .18em 0 22px; }
   .cta-sub { color: var(--paper); opacity: .88; max-width: 52ch; margin: 0 auto 22px; }
   .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  @media (max-width: 760px) { .cta-h { font-size: clamp(30px,8vw,54px); } }
+  @media (max-width: 520px) {
+    .cta-row { flex-direction: column; align-items: stretch; }
+    .cta-row .btn { justify-content: center; }
+  }
 </style>

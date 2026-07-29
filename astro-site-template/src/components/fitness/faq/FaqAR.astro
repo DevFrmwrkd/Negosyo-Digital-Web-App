@@ -47,6 +47,7 @@ const col2 = items.slice(mid);
 <style>
   .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; }
   @media (max-width: 900px) { .faq-grid { grid-template-columns: 1fr; gap: 4px; } }
+  @media (max-width: 760px) { .faq-grid { grid-template-columns: 1fr; } summary { font-size: 18px; padding: 18px 0; } }
   details { border-bottom: 3px solid var(--line); }
   summary { list-style: none; cursor: pointer; padding: 22px 0; font-family: var(--disp); font-size: 22px; text-transform: uppercase; display: flex; justify-content: space-between; gap: 16px; color: var(--chalk); }
   summary::-webkit-details-marker { display: none; }

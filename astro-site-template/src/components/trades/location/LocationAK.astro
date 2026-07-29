@@ -153,4 +153,19 @@ const hasAddress = !!address;
     text-transform: uppercase; font-size: 12px; padding: 24px; text-align: center;
   }
   @media (max-width: 799px) { .loc-plate { min-height: 300px; } }
+
+  /* ---- Mobile (<=760): stack the contact block over the map ---- */
+  @media (max-width: 760px) {
+    .loc-sect .grid2 { grid-template-columns: 1fr; gap: 24px; }
+    .loc-info { padding-left: 20px; }
+    .loc-h { font-size: clamp(27px, 6.6vw, 44px); }
+    .loc-phone { font-size: 22px; }
+    .loc-plate { min-height: 240px; }
+  }
+  @media (max-width: 520px) {
+    .loc-info { padding-left: 16px; }
+    .loc-h { font-size: clamp(24px, 7.4vw, 36px); }
+    .loc-info .btn { width: 100%; }
+    .loc-hours .hrow { max-width: none; }
+  }
 </style>

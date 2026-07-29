@@ -40,4 +40,8 @@ const items: Array<{ title: string; body?: string; desc?: string; description?: 
   .why-item { background: var(--paper); padding: 20px; }
   .why-item strong { color: var(--ink); }
   .why-body { color: var(--ink-soft); }
+  @media (max-width: 760px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .why-head .tag { margin-bottom: 12px; }
+  }
 </style>

@@ -6,6 +6,12 @@
  *
  * Links come from layout.navLinks and are split around the centred brand; the
  * "book" CTA reuses the hero's primary CTA so it stays in sync.
+ *
+ * Mobile (<=760px): a real hamburger (.nav-burger) toggles an `.open` class on
+ * the header; the link groups (wrapped in .nav-menu, which is display:contents
+ * on desktop so the centred grid is unchanged) drop into a full-width drawer
+ * below the bar, stacked vertically with >=44px tap targets in the design's own
+ * paper/ink tokens. Desktop markup + layout are pixel-identical to before.
  */
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
@@ -22,19 +28,43 @@ const ctaText = hero.cta1?.text || '';
 const ctaHref = hero.cta1?.href || '#book';
 ---
 <header class="nav">
-  <nav class="nav-l" aria-label="Primary">
-    {leftLinks.map((link) => (
-      <a class="lk" href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
-    ))}
-  </nav>
   <a href="#main" class="brand" data-field="footer.brand">{brand}</a>
-  <div class="nav-r">
-    {rightLinks.map((link) => (
-      <a class="lk" href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
-    ))}
-    {ctaText && <a class="nav-book" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+  <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-menu" id="nav-menu">
+    <nav class="nav-l" aria-label="Primary">
+      {leftLinks.map((link) => (
+        <a class="lk" href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
+      ))}
+    </nav>
+    <div class="nav-r">
+      {rightLinks.map((link) => (
+        <a class="lk" href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
+      ))}
+      {ctaText && <a class="nav-book" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+    </div>
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var header = document.querySelector('header.nav');
+    if (!header) return;
+    var burger = header.querySelector('.nav-burger');
+    if (!burger) return;
+    burger.addEventListener('click', function () {
+      var open = header.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    // Tapping any drawer link closes the menu.
+    header.querySelectorAll('.nav-menu a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        header.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+      });
+    });
+  })();
+</script>
 <style>
   header.nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 60;
@@ -42,6 +72,12 @@ const ctaHref = hero.cta1?.href || '#book';
     padding: 22px 34px; transition: background .4s, padding .4s, box-shadow .4s;
   }
   header.nav.solid { background: rgba(246,241,232,.9); backdrop-filter: blur(10px); padding: 14px 34px; box-shadow: 0 1px 0 var(--line); }
+  /* .nav-menu is transparent on desktop so nav-l / brand / nav-r land straight
+     into the header's centred grid via explicit column placement. */
+  .nav-menu { display: contents; }
+  .nav-l { grid-column: 1; grid-row: 1; }
+  .brand { grid-column: 2; grid-row: 1; }
+  .nav-r { grid-column: 3; grid-row: 1; }
   .brand { font-family: var(--disp); font-size: 26px; letter-spacing: .14em; text-align: center; color: var(--ink); }
   .brand:hover { color: var(--ink); }
   .nav-l, .nav-r { display: flex; gap: 26px; align-items: center; }
@@ -52,5 +88,56 @@ const ctaHref = hero.cta1?.href || '#book';
   header.nav a.lk:hover { color: var(--ink); }
   .nav-book { font-family: var(--label); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; border: 1px solid var(--ink); padding: 9px 18px; color: var(--ink); }
   .nav-book:hover { background: var(--ink); color: var(--paper); }
-  @media (max-width: 900px) { .nav-l { display: none; } header.nav { grid-template-columns: 1fr auto; } }
+
+  /* Hamburger — hidden on desktop, animates to an X when the drawer is open. */
+  .nav-burger {
+    display: none; grid-column: 3; grid-row: 1; justify-self: end;
+    width: 44px; height: 44px; padding: 10px; margin: -10px -10px -10px 0;
+    background: transparent; border: 0; cursor: pointer;
+    flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+  }
+  .nav-burger span { display: block; width: 24px; height: 2px; background: var(--ink); transition: transform .3s, opacity .3s; }
+  header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Tablet band: preserve the original design (left links hidden, brand + right). */
+  @media (max-width: 900px) and (min-width: 761px) {
+    header.nav { grid-template-columns: 1fr auto; }
+    .nav-l { display: none; }
+    .brand { grid-column: 1; }
+    .nav-r { grid-column: 2; }
+  }
+
+  /* Phone: brand + burger in the bar; the link groups become a paper drawer. */
+  @media (max-width: 760px) {
+    header.nav {
+      grid-template-columns: 1fr auto; padding: 12px 20px;
+      background: rgba(246,241,232,.94); backdrop-filter: blur(10px); box-shadow: 0 1px 0 var(--line);
+    }
+    header.nav.solid { padding: 12px 20px; }
+    header.nav.open { background: var(--paper); }
+    .brand { grid-column: 1; grid-row: 1; justify-self: start; text-align: left; font-size: 22px; }
+    .nav-burger { display: flex; grid-column: 2; }
+
+    .nav-menu {
+      display: none; position: absolute; top: 100%; left: 0; right: 0;
+      flex-direction: column; align-items: stretch;
+      background: var(--paper); border-top: 1px solid var(--line);
+      box-shadow: 0 22px 40px -22px rgba(20,18,16,.55);
+      padding: 6px 20px 22px;
+    }
+    header.nav.open .nav-menu { display: flex; }
+    .nav-l, .nav-r { display: flex; flex-direction: column; align-items: stretch; gap: 0; width: 100%; }
+    header.nav a.lk {
+      display: flex; align-items: center; width: 100%; min-height: 48px;
+      padding: 12px 2px; font-size: 14px; letter-spacing: .12em;
+      color: var(--ink); border-bottom: 1px solid var(--line);
+    }
+    header.nav a.lk::after { display: none; }
+    .nav-book {
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-top: 16px; min-height: 48px; padding: 14px 18px; font-size: 13px;
+    }
+  }
 </style>

@@ -39,6 +39,7 @@ const roman = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
   .why { background: var(--ink); color: var(--bone); }
   .why-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: rgba(242,232,215,.14); border: 1px solid rgba(242,232,215,.14); }
   @media (max-width: 820px) { .why-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; } .why-cell { padding: 30px 24px; } }
   .why-cell { background: var(--ink); padding: 40px 34px; transition: background .4s; }
   .why-cell:hover { background: var(--ink-soft); }
   .why-cell .k { font-family: var(--serif); font-size: 44px; color: var(--ember); line-height: 1; }

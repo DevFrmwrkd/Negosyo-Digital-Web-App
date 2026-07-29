@@ -138,7 +138,12 @@ const hasAddress = !!address;
   .loc-hours { display: grid; gap: 4px; }
   .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; font-weight: 800; }
   .gbp-note { font-size: 17px; font-weight: 800; }
+  @media (max-width: 760px) {
+    .loc-grid { grid-template-columns: 1fr; }
+    .loc-info { padding: 30px 22px; border-right: none; border-bottom: 2px solid var(--ink); }
+  }
   .loc-map { position: relative; min-height: 400px; background: var(--ink); overflow: hidden; }
+  @media (max-width: 760px) { .loc-map { min-height: 300px; } }
   #map { position: absolute; inset: 0; z-index: 0; }
   .map-face { position: absolute; inset: 0; background: repeating-linear-gradient(0deg,rgba(243,239,228,.08) 0 1px,transparent 1px 38px),repeating-linear-gradient(90deg,rgba(243,239,228,.08) 0 1px,transparent 1px 38px),linear-gradient(140deg,#26241d,#131109); }
   .map-face .road { position: absolute; background: rgba(234,179,8,.5); }

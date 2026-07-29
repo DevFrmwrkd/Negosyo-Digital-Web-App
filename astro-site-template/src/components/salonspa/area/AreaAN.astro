@@ -46,4 +46,5 @@ const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArr
   .area-tags span { font-family: var(--label); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; border: 1px solid var(--line); padding: 8px 15px; color: var(--ink2); transition: .3s; }
   .area-tags span:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .area-body { color: var(--muted); margin-top: 16px; max-width: 60ch; }
+  @media (max-width: 760px) { .area { padding: 44px 0; } }
 </style>

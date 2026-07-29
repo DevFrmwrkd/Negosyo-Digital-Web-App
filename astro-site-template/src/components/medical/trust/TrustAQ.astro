@@ -24,6 +24,7 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
 )}
 <style>
   .trust { background: var(--mint-2); padding: 72px 0; }
+  @media (max-width: 760px) { .trust { padding: 52px 0; } }
   .trust .wrap { display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; }
   @media (max-width: 760px) { .trust .wrap { grid-template-columns: repeat(2,1fr); gap: 32px 24px; } }
   .c { text-align: left; }

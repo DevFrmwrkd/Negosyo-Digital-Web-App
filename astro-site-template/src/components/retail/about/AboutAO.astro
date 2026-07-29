@@ -49,4 +49,8 @@ const signature = about.signature || '';
   .about-quote { font-weight: 800; font-size: clamp(20px,2.4vw,26px); line-height: 1.2; color: var(--red-d); margin: 24px 0 0; padding-left: 18px; border-left: 3px solid var(--red); text-transform: uppercase; }
   .about-sign { margin-top: 16px; font-style: italic; color: var(--steel); }
   .about-fig { aspect-ratio: 5/4; border: 2px solid var(--ink); }
+  @media (max-width: 760px) {
+    .about-grid { grid-template-columns: 1fr; gap: 28px; }
+    .about-copy p:first-of-type { font-size: 19px; }
+  }
 </style>

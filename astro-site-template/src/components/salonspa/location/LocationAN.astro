@@ -144,7 +144,12 @@ const hasAddress = !!address;
   .loc-cta { border-bottom: none !important; }
   .loc-cta .btn { font-size: 12px; }
   .loc-map { position: relative; min-height: 440px; background: var(--ink); overflow: hidden; order: 2; }
-  @media (max-width: 900px) { .loc-map { order: 1; } .loc-info { order: 2; } }
+  @media (max-width: 900px) { .loc-grid { grid-template-columns: 1fr; } .loc-map { order: 1; } .loc-info { order: 2; } }
+  @media (max-width: 760px) {
+    .loc-info { padding: 36px 22px; }
+    .loc-info .v { font-size: 20px; }
+    .loc-map { min-height: 300px; }
+  }
   #map { position: absolute; inset: 0; z-index: 0; }
   .map-face { position: absolute; inset: 0; background:
     repeating-linear-gradient(0deg,rgba(239,233,223,.06) 0 1px,transparent 1px 44px),

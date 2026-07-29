@@ -133,8 +133,10 @@ const hasAddress = !!address;
   .loc-sub { color: var(--muted); margin: -32px 0 32px; max-width: 46ch; font-size: 16px; }
   .loc-grid { display: grid; grid-template-columns: 1fr 1.1fr; border: 2px solid var(--ink); background: var(--card); }
   @media (max-width: 900px) { .loc-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .loc-grid { grid-template-columns: 1fr; } .loc-sub { margin: -20px 0 24px; } }
   .loc-info { padding: 42px 34px; border-right: 2px dashed var(--line); }
   @media (max-width: 900px) { .loc-info { border-right: none; border-bottom: 2px dashed var(--line); } }
+  @media (max-width: 760px) { .loc-info { padding: 30px 22px; } }
   .loc-info .row { padding: 16px 0; border-bottom: 1px dotted var(--line); }
   .loc-info .row:last-child { border-bottom: none; }
   .loc-info .k { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
@@ -143,6 +145,7 @@ const hasAddress = !!address;
   .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; font-weight: 400; font-size: 15px; }
   .loc-cta { border-bottom: none !important; }
   .loc-map { position: relative; min-height: 380px; background: var(--paper2); overflow: hidden; }
+  @media (max-width: 760px) { .loc-map { min-height: 300px; } }
   #map { position: absolute; inset: 0; z-index: 0; }
   .map-face { position: absolute; inset: 0;
     background:

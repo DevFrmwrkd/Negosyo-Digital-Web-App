@@ -61,4 +61,12 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
     border: 1px solid var(--line); padding: 5px 10px; border-radius: 100px; white-space: nowrap; position: relative; background: var(--paper);
   }
   .menu-note { margin-top: 20px; color: var(--smoke); font-size: 15px; font-family: var(--label); letter-spacing: .04em; }
+  @media (max-width: 760px) {
+    /* Drop the fixed chip column; let the tag wrap under the title so a
+       long dish name + chip never forces horizontal overflow. */
+    .m-item { grid-template-columns: 38px 1fr; gap: 4px 16px; padding: 22px 4px; }
+    .m-item:hover { padding-left: 4px; }
+    .m-item h3 { font-size: clamp(21px,5.6vw,30px); }
+    .m-item .tag { grid-column: 2; justify-self: start; margin-top: 10px; }
+  }
 </style>

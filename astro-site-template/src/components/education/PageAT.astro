@@ -178,6 +178,24 @@ const __fontHref = buildFontHref(__themePairing);
     /* skip link */
     html[data-page="AT"] .skip { position: absolute; left: -999px; top: 0; background: var(--navy); color: var(--card); padding: 12px 18px; z-index: 100; border-radius: 0 0 8px 0; }
     html[data-page="AT"] .skip:focus { left: 0; top: 0; }
+
+    /* ------- Mobile-first refinements (added; every desktop rule above is
+       untouched — these only engage <=760px / <=520px). ------- */
+    @media (max-width: 760px) {
+      html[data-page="AT"] .wrap { padding: 0 20px; }
+      html[data-page="AT"] .sec { padding: 56px 0; }
+      html[data-page="AT"] .sec-head { margin-bottom: 32px; }
+      html[data-page="AT"] .sec-head h2 { font-size: clamp(26px,6.6vw,40px); }
+      html[data-page="AT"] .sec-head p { font-size: 16px; }
+      html[data-page="AT"] .btn { padding: 14px 22px; font-size: 14px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AT"] .sec { padding: 44px 0; }
+      html[data-page="AT"] .sec-head h2 { font-size: clamp(24px,7.6vw,34px); }
+      /* Let the signature highlighter/underline phrases wrap on tiny screens
+         instead of forcing a >viewport nowrap line. */
+      html[data-page="AT"] .hl { white-space: normal; }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

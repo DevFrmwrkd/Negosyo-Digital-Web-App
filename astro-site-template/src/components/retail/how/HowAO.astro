@@ -37,11 +37,11 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
   .how { background: var(--paper2); }
   .steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; border: 2px solid var(--ink); }
   @media (max-width: 820px) { .steps { grid-template-columns: repeat(2,1fr); } }
-  @media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
   .step { padding: 30px 24px; border-right: 2px solid var(--ink); background: var(--paper); }
   .step:last-child { border-right: none; }
   @media (max-width: 820px) { .step:nth-child(2n) { border-right: none; } .step:nth-child(-n+2) { border-bottom: 2px solid var(--ink); } }
-  @media (max-width: 480px) { .step { border-right: none; border-bottom: 2px solid var(--ink); } .step:last-child { border-bottom: none; } }
+  @media (max-width: 760px) { .step { border-right: none; border-bottom: 2px solid var(--ink); } .step:last-child { border-bottom: none; } }
   .step .sn { font-family: var(--num); font-size: 44px; color: var(--red); }
   .step h3 { font-size: 18px; text-transform: uppercase; margin: 10px 0 6px; }
   .step p { font-size: 14px; color: var(--ink2); }

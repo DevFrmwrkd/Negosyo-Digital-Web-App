@@ -97,4 +97,11 @@ const counterHeadline = services.counterHeadline || 'At the counter';
   .cserv .k { font-family: var(--mono); font-size: 12px; color: var(--red); letter-spacing: .1em; }
   .cserv h3 { font-size: 22px; text-transform: uppercase; margin: 12px 0 8px; }
   .cserv p { color: var(--ink2); font-size: 15px; margin: 0; }
+  @media (max-width: 760px) {
+    .counter-grid { grid-template-columns: 1fr; }
+    .counter-block { margin-top: 52px; }
+    .counter-head { margin-bottom: 28px; }
+    .dept { min-width: 300px; flex-basis: 300px; }
+    .dept .no { font-size: 54px; }
+  }
 </style>

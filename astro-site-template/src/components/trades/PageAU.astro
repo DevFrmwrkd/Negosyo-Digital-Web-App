@@ -187,6 +187,24 @@ const __fontHref = buildFontHref(__themePairing);
     /* skip link */
     html[data-page="AU"] .skip { position: absolute; left: -999px; top: 0; background: var(--yellow); color: var(--navy-d); padding: 12px 18px; z-index: 100; }
     html[data-page="AU"] .skip:focus { left: 8px; top: 8px; }
+
+    /* ---- Mobile rhythm (<=760px): tighter gutters + section padding, smaller
+       section headings so uppercase display type never clips a 360px screen.
+       Desktop rules above are untouched; per-section stacking lives in each
+       component's own <style>. ---- */
+    @media (max-width: 760px) {
+      html[data-page="AU"] .wrap { padding: 0 20px; }
+      html[data-page="AU"] .sec { padding: 60px 0; }
+      html[data-page="AU"] .sec-head { margin-bottom: 32px; gap: 10px; }
+      html[data-page="AU"] .sec-head h2 { font-size: clamp(26px,7vw,44px); line-height: 1.03; }
+      html[data-page="AU"] .btn { padding: 14px 22px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AU"] body { font-size: 16px; }
+      html[data-page="AU"] .wrap { padding: 0 16px; }
+      html[data-page="AU"] .sec { padding: 46px 0; }
+      html[data-page="AU"] .sec-head h2 { font-size: clamp(23px,8vw,38px); }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}
@@ -229,6 +247,9 @@ const __fontHref = buildFontHref(__themePairing);
       if (hdr) {
         var last = 0;
         window.addEventListener('scroll', function () {
+          // Never hide the bar while the mobile drawer is open (the drawer is
+          // anchored to the header, so hiding it would take the menu with it).
+          if (hdr.classList.contains('open')) { last = window.pageYOffset; return; }
           var y = window.pageYOffset;
           if (y > last && y > 360) { hdr.classList.add('hide'); } else { hdr.classList.remove('hide'); }
           last = y;

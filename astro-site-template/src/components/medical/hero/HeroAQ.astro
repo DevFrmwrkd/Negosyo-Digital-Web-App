@@ -96,7 +96,9 @@ const railIcons = [
   .hero .wrap { display: grid; grid-template-columns: 1.02fr .98fr; gap: 56px; align-items: center; padding-top: 70px; padding-bottom: 40px; }
   @media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; gap: 20px; padding-top: 50px; } }
   .hero-l .eyebrow { display: block; }
-  .hero h1 { font-size: clamp(44px,6.2vw,82px); margin: .2em 0 .34em; color: var(--ink); }
+  .hero h1 { font-size: clamp(44px,6.2vw,82px); margin: .2em 0 .34em; color: var(--ink); overflow-wrap: break-word; }
+  @media (max-width: 760px) { .hero h1 { font-size: clamp(32px,6.6vw,52px); } }
+  @media (max-width: 520px) { .hero h1 { font-size: clamp(28px,8.4vw,40px); } }
   .hero h1 :global(.soft) { color: var(--teal); }
   .hero h1 .ln { display: block; overflow: hidden; }
   .hero h1 .ln > .w { display: inline-block; transform: translateY(105%); animation: aq-rise .8s cubic-bezier(.2,.8,.2,1) forwards; }
@@ -110,6 +112,7 @@ const railIcons = [
   @media (prefers-reduced-motion: reduce) { .hero .lede, .hero .cta-row { opacity: 1; animation: none; } }
 
   .hero-r { position: relative; padding: 20px 20px 40px; }
+  @media (max-width: 520px) { .hero-r { padding: 8px 4px 30px; } .hero .lede { margin-bottom: 24px; } }
   .hero-card { position: relative; aspect-ratio: 4/5; border-radius: 26px; box-shadow: 0 40px 80px -40px rgba(10,52,48,.5); animation: aq-float 7s ease-in-out infinite; }
   @keyframes aq-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
   @media (prefers-reduced-motion: reduce) { .hero-card { animation: none; } }

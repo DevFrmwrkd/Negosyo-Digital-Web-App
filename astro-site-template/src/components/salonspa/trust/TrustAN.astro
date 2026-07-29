@@ -34,4 +34,8 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
   .trust .c .n { font-family: var(--disp); font-size: clamp(34px,4vw,52px); color: var(--nude); line-height: 1; }
   .trust .c .t { font-family: var(--label); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; opacity: .8; margin-top: 12px; }
   .trust :global(.stars) { color: var(--brass); letter-spacing: 3px; font-size: 22px; }
+  @media (max-width: 760px) {
+    .trust .c { padding: 36px 20px; }
+    .trust .c:nth-child(2n) { border-right: none; }
+  }
 </style>

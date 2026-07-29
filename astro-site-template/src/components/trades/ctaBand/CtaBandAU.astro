@@ -39,8 +39,11 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-band { background: var(--yellow); color: var(--navy-d); text-align: center; }
   .cta-band .wrap { display: block; }
   .cta-band h2 { font-size: clamp(36px,6vw,88px); color: var(--navy-d); margin-bottom: 14px; }
+  @media (max-width: 760px) { .cta-band h2 { font-size: clamp(28px,8vw,50px); line-height: 1.04; overflow-wrap: break-word; } }
+  @media (max-width: 520px) { .cta-band h2 { font-size: clamp(24px,9vw,40px); } }
   .cta-band .kicker { color: #6b5300; }
   .cta-band .callnum { font-weight: 800; font-size: clamp(30px,5vw,56px); color: var(--navy-d); letter-spacing: .01em; display: inline-block; margin: 6px 0 22px; }
+  @media (max-width: 520px) { .cta-band .callnum { font-size: clamp(24px,7vw,40px); } }
   .cta-band .callnum:hover { color: #071528; }
   .cta-band .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
   .cta-band .btn--fill { background: var(--navy-d); border-color: var(--navy-d); color: var(--yellow); }

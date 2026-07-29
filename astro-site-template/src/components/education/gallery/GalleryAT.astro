@@ -54,4 +54,12 @@ const spanFor = (i: number) => (i % 6 === 0 ? 'n1' : i % 6 === 3 ? 'n4' : i % 6 
   .n6 { grid-column: span 2; }
   .g-grid .plate .ph { transition: transform .6s; }
   .g-grid .taped:hover .ph { transform: scale(1.06); }
+  /* Mobile: stack the mosaic to one column. Drop the 2×2 / wide spans and let
+     each taped photo size itself from a relative plate (the desktop grid uses a
+     fixed row height + absolute plate, which has no height in a single column). */
+  @media (max-width: 760px) {
+    .g-grid { grid-template-columns: 1fr; grid-auto-rows: auto; gap: 18px; }
+    .g-grid .taped { grid-column: auto; grid-row: auto; }
+    .g-grid .taped .plate { position: relative; inset: auto; width: 100%; aspect-ratio: 4/3; }
+  }
 </style>

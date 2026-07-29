@@ -84,6 +84,7 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Quote';
 )}
 <style>
   footer { background: var(--navy-d); color: var(--ink); padding: 66px 0 28px; }
+  @media (max-width: 760px) { footer { padding: 44px 0 24px; } }
   .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding-bottom: 38px; border-bottom: 1px solid var(--line); }
   @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr; gap: 26px; } }
   footer .brand { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: var(--ink); }

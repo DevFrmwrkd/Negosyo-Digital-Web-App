@@ -77,4 +77,16 @@ const tagText = hero.tag || '';
   }
 
   @media (max-width: 799px) { .hero-arch { min-height: 340px; } }
+  @media (max-width: 760px) {
+    .hero-inner { padding: 30px 22px 50px; }
+    .hero-h { font-size: clamp(34px, 8vw, 58px); margin: 14px 0 18px; }
+    .hero-sub { margin-bottom: 24px; }
+  }
+  @media (max-width: 520px) {
+    .hero-inner { padding: 24px 18px 44px; }
+    .hero-h { font-size: clamp(28px, 8.5vw, 40px); line-height: 1.08; }
+    .hero-arch { min-height: 280px; }
+    .hero-cta { gap: 10px; }
+    .hero-cta .btn { flex: 1 1 auto; }
+  }
 </style>

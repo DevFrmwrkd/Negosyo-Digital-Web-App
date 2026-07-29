@@ -119,4 +119,9 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Trial';
   }
   .msgr:hover { transform: translate(-2px,-2px); color: #000; }
   .msgr svg { width: 18px; height: 18px; fill: currentColor; }
+  @media (max-width: 760px) {
+    footer { padding: 48px 0 24px; }
+    .foot-hours .hrow { max-width: 100%; }
+    .msgr { right: 14px; bottom: 14px; padding: 11px 16px; font-size: 14px; box-shadow: 4px 4px 0 #000; }
+  }
 </style>

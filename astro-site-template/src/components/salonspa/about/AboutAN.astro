@@ -41,4 +41,8 @@ const imageCaption = about.imageCaption || '';
   .about-h { font-size: clamp(30px,4vw,52px); color: var(--ink); margin: 0 0 20px; }
   .about-copy p:first-of-type { font-family: var(--disp); font-size: 28px; line-height: 1.34; color: var(--ink); margin-bottom: .7em; }
   .about-copy p { color: var(--ink2); }
+  @media (max-width: 760px) {
+    .about-grid { grid-template-columns: 1fr; gap: 32px; }
+    .about-copy p:first-of-type { font-size: 22px; line-height: 1.4; }
+  }
 </style>

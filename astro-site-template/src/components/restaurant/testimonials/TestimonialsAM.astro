@@ -50,4 +50,8 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   .quote .mk { font-family: var(--serif); font-size: 60px; line-height: .5; color: var(--gold); }
   .quote p { font-family: var(--serif); font-size: 21px; line-height: 1.45; color: var(--paper); }
   .quote .who { font-family: var(--label); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+  @media (max-width: 760px) {
+    .quotes-grid { grid-template-columns: 1fr; gap: 22px; }
+    .quote p { font-size: 19px; }
+  }
 </style>

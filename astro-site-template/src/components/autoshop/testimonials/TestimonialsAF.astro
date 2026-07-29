@@ -49,4 +49,8 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   .test-card { padding: 24px; }
   .test-card p { font-size: 14px; margin-bottom: 12px; color: var(--ink); }
   .test-card footer { font-weight: 700; font-size: 13px; color: var(--red); }
+  @media (max-width: 760px) {
+    /* Single column — also avoids the 280px min track overflowing a narrow phone. */
+    .test-grid { grid-template-columns: 1fr; }
+  }
 </style>

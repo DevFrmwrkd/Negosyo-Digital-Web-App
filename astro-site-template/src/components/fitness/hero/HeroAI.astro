@@ -62,4 +62,20 @@ const tagText = hero.tag || '';
   }
   .hero-cta { display: flex; flex-wrap: wrap; gap: 16px; padding-bottom: 56px; }
   .hero-plate { min-height: 320px; border-left: 0; border-right: 0; border-bottom: 0; }
+
+  /* Mobile: shrink the woodtype headline so long uppercase words never clip a
+     360px screen, lift the top clearance to the (shorter) fixed bar, and tighten
+     spacing. Desktop rules above are untouched. */
+  @media (max-width: 760px) {
+    .hero-inner { padding: 100px 20px 0; }
+    .hero-h { font-size: clamp(40px, 12.5vw, 96px); overflow-wrap: break-word; }
+    .hero-sub { font-size: clamp(16px, 4.4vw, 19px); margin: 20px 0 24px; }
+    .hero-cta { gap: 12px; padding-bottom: 40px; }
+    .hero-cta .btn { width: 100%; }
+    .hero-plate { min-height: 240px; }
+  }
+  @media (max-width: 520px) {
+    .hero-h { font-size: clamp(34px, 13vw, 76px); }
+    .hero-kick { margin-bottom: 16px; }
+  }
 </style>

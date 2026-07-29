@@ -39,7 +39,9 @@ const hasButtons = !!(cta1Text || cta2Text || cta3Text);
 <style>
   .cta-band { background: var(--teal); color: #fff; text-align: center; }
   .cta-band .eyebrow { display: block; }
-  .cta-h { font-size: clamp(36px,5.4vw,70px); color: #fff; margin-bottom: 18px; margin-top: 14px; }
+  .cta-h { font-size: clamp(36px,5.4vw,70px); color: #fff; margin-bottom: 18px; margin-top: 14px; overflow-wrap: break-word; }
+  @media (max-width: 760px) { .cta-h { font-size: clamp(30px,6.6vw,52px); } .cta-sub { font-size: 17px; } }
+  @media (max-width: 520px) { .cta-h { font-size: clamp(27px,7.6vw,38px); } }
   .cta-sub { color: #cdeee6; max-width: 52ch; margin: 0 auto 28px; font-size: 19px; }
   .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 </style>

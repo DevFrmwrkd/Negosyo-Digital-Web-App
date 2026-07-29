@@ -20,15 +20,39 @@ const ctaHref = hero.cta1?.href || '#quote';
   <div class="nav-in">
     <a href="#main" class="brand" data-field="footer.brand"><span class="chev" aria-hidden="true"></span><span class="bn">{brand}</span></a>
     {(navLinks.length > 0 || ctaText) && (
-      <nav class="nav-links" aria-label="Primary">
-        {navLinks.map((link, i) => (
-          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
-        ))}
-        {ctaText && <a href={ctaHref} class="navq" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
-      </nav>
+      <>
+        <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="ap-nav">
+          <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+        <nav id="ap-nav" class="nav-links" aria-label="Primary">
+          {navLinks.map((link, i) => (
+            <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+          ))}
+          {ctaText && <a href={ctaHref} class="navq" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        </nav>
+      </>
     )}
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var btn = hdr.querySelector('.nav-burger');
+    if (!btn) return;
+    function close() { hdr.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+    btn.addEventListener('click', function () {
+      var open = hdr.classList.toggle('open');
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    // Tapping a drawer link navigates then closes the drawer.
+    hdr.querySelectorAll('.nav-links a').forEach(function (a) { a.addEventListener('click', close); });
+    // Close if the viewport grows back to the desktop bar.
+    window.addEventListener('resize', function () { if (window.innerWidth > 760) close(); });
+    // Close on Escape for keyboard users.
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+  })();
+</script>
 <style>
   header.nav {
     position: sticky; top: 0; z-index: 60; background: rgba(13,14,16,.92);
@@ -45,5 +69,51 @@ const ctaHref = hero.cta1?.href || '#quote';
   .nav-links a:hover { color: var(--off); }
   .nav-links .navq { border: 1px solid var(--amber); padding: 9px 18px; color: var(--amber); clip-path: polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%); }
   .nav-links .navq:hover { background: var(--amber); color: #000; }
-  @media (max-width: 900px) { .nav-links a:not(.navq) { display: none; } }
+
+  /* Hamburger — desktop-hidden, revealed only on the mobile bar (<=760). */
+  .nav-burger { display: none; }
+
+  /* Tablet band (761–900): the link row won't fit; keep the design's original
+     behaviour of hiding links and showing just the quote CTA in the bar. */
+  @media (max-width: 900px) and (min-width: 761px) { .nav-links a:not(.navq) { display: none; } }
+
+  /* Mobile (<=760): real hamburger drawer built from the design's own tokens. */
+  @media (max-width: 760px) {
+    .nav-in { position: relative; padding: 14px 20px; }
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 46px; height: 46px; padding: 12px; margin-right: -6px; flex-shrink: 0;
+      background: transparent; border: 1px solid var(--steel); cursor: pointer;
+      clip-path: polygon(8px 0,100% 0,calc(100% - 8px) 100%,0 100%);
+    }
+    .nav-burger span { display: block; width: 100%; height: 2px; background: var(--off); transition: transform .3s, opacity .3s; }
+    header.nav.open .nav-burger { border-color: var(--amber); }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* The link list drops to a full-width drawer under the bar. */
+    .nav-links {
+      position: absolute; top: 100%; left: 0; right: 0;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: rgba(13,14,16,.98); backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      padding: 4px 0 12px; max-height: 0; overflow: hidden;
+      opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .25s;
+    }
+    header.nav.open .nav-links { max-height: 82vh; overflow-y: auto; opacity: 1; visibility: visible; }
+    .nav-links a {
+      display: flex; align-items: center; min-height: 50px;
+      padding: 12px 20px; font-size: 16px; color: var(--off);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-links a:hover { color: var(--amber); background: var(--panel2); }
+    .nav-links .navq {
+      margin: 14px 20px 2px; min-height: 52px; justify-content: center;
+      border: 1px solid var(--amber); border-bottom: 1px solid var(--amber);
+      color: var(--amber); background: transparent;
+    }
+    .nav-links .navq:hover { background: var(--amber); color: #000; }
+  }
 </style>

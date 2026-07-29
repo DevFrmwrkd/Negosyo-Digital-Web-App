@@ -331,6 +331,20 @@ export function buildOverrideCss(scheme: string, pairing: string): string {
         lines.push(`  --panel-2: ${palette.card} !important;`);
         lines.push(`  --muted: ${palette.inkSoft} !important;`);
         lines.push(`  --stone: ${palette.line} !important;`);
+        // v4 hero designs — map each design's bespoke ACCENT tokens to the scheme so
+        // a curated colour pick recolours the accent. The designs' own GROUND tokens
+        // (--char / --bone / --card / --navy / --black…) are left untouched so the
+        // art-direction survives. (--brass is already handled above for Barbershop;
+        // dark designs AP/AR/AU that key off --panel are excluded for now.)
+        lines.push(`  --clay: ${palette.primary} !important;`);      // AM restaurant
+        lines.push(`  --clay-deep: ${palette.primaryDeep} !important;`);
+        lines.push(`  --ember: ${palette.accent} !important;`);
+        lines.push(`  --nude: ${palette.primary} !important;`);      // AN salonspa
+        lines.push(`  --nude-deep: ${palette.primaryDeep} !important;`);
+        lines.push(`  --red: ${palette.primary} !important;`);       // AO retail
+        lines.push(`  --red-d: ${palette.primaryDeep} !important;`);
+        lines.push(`  --teal-d: ${palette.primaryDeep} !important;`); // AQ medical (--teal already mapped)
+        lines.push(`  --coral: ${palette.accent} !important;`);      // AT education
     }
     // Contrast tokens — pick legible text colors based on luminance of the
     // scheme's primary, ink, and paper so dark/light schemes never end up

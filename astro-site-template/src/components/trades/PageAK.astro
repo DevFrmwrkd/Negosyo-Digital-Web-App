@@ -181,6 +181,25 @@ const __fontHref = buildFontHref(__themePairing);
       html[data-page="AK"] .reveal { opacity: 1; transform: none; transition: none; }
       html[data-page="AK"] * { animation: none !important; }
     }
+
+    /* ---- Mobile-first responsive layer (<=760 / <=520). Desktop untouched. ----
+       These live in the global block (matching the base rules' specificity) so
+       they actually win over html[data-page] base primitives; per-section files
+       add their own scoped stacking/type rules on top. */
+    html[data-page="AK"] h1,
+    html[data-page="AK"] h2,
+    html[data-page="AK"] h3 { overflow-wrap: break-word; }
+    @media (max-width: 760px) {
+      html[data-page="AK"] section { padding: 46px 0; }
+      /* Collapse every two-up .grid2 split to a single column below the desktop
+         breakpoint (hero / about / area / why / location). */
+      html[data-page="AK"] .grid2 { grid-template-columns: 1fr; gap: 28px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AK"] section { padding: 38px 0; }
+      html[data-page="AK"] .wrap { padding: 0 16px; }
+      html[data-page="AK"] .btn { padding: 13px 22px; min-height: 50px; }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

@@ -158,6 +158,21 @@ const __fontHref = buildFontHref(__themePairing);
     @media (min-width: 800px) {
       html[data-page="AH"] .grid2 { grid-template-columns: 5fr 4fr; align-items: start; }
     }
+
+    /* --- Mobile spine (<=760px): tighten section rhythm + grid gaps so the
+       stacked single-column layout breathes without changing the desktop
+       editorial spacing. grid2 already collapses to one column below 800px. --- */
+    @media (max-width: 760px) {
+      html[data-page="AH"] section { padding: 48px 0; }
+      html[data-page="AH"] .grid2 { gap: 30px; }
+      html[data-page="AH"] .btn { padding: 13px 26px; min-height: 50px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AH"] section { padding: 40px 0; }
+      html[data-page="AH"] .wrap { padding: 0 18px; }
+      html[data-page="AH"] .grid2 { gap: 24px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html[data-page="AH"] .reveal { opacity: 1; transform: none; transition: none; }
       html[data-page="AH"] * { animation: none !important; }

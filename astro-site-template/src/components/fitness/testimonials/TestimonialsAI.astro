@@ -46,4 +46,9 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   .test-card { border-left: 6px solid var(--blood); padding-left: 20px; }
   .test-card p { font-size: 17px; margin-bottom: 12px; color: var(--paper); }
   .test-card footer { color: var(--tape); font-size: 13px; text-transform: uppercase; letter-spacing: .1em; }
+  /* Mobile: one column (the 280px minmax overflows sub-300px viewports otherwise). */
+  @media (max-width: 760px) {
+    .test-grid { grid-template-columns: 1fr; gap: 22px; }
+    .test-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 20px; }
+  }
 </style>

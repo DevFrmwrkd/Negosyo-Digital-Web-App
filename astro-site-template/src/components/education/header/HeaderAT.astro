@@ -21,15 +21,44 @@ const ctaHref = hero.cta1?.href || '#enrol';
   <div class="nav-in">
     <a href="#main" class="brand" data-field="footer.brand"><span class="mk" aria-hidden="true">{monogram}</span><span class="bn">{brand}</span></a>
     {(navLinks.length > 0 || ctaText) && (
-      <nav class="nav-links" aria-label="Primary">
-        {navLinks.map((link, i) => (
-          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
-        ))}
-        {ctaText && <a href={ctaHref} class="nave" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
-      </nav>
+      <>
+        <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-menu-AT">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="nav-links" id="nav-menu-AT" aria-label="Primary">
+          {navLinks.map((link, i) => (
+            <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+          ))}
+          {ctaText && <a href={ctaHref} class="nave" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        </nav>
+      </>
     )}
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var header = document.querySelector('header.nav');
+    if (!header) return;
+    var burger = header.querySelector('.nav-burger');
+    var menu = header.querySelector('.nav-links');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      header.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!header.classList.contains('open'));
+    });
+    // Tapping any link closes the drawer.
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Esc closes and returns focus to the toggle.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && header.classList.contains('open')) { setOpen(false); burger.focus(); }
+    });
+  })();
+</script>
 <style>
   header.nav {
     position: sticky; top: 0; z-index: 60; background: rgba(251,247,236,.9);
@@ -46,5 +75,40 @@ const ctaHref = hero.cta1?.href || '#enrol';
   .nav-links a:hover { color: var(--coral); }
   .nav-links .nave { background: var(--navy); color: var(--card); padding: 9px 18px; border-radius: 8px; font-weight: 600; font-size: 14px; }
   .nav-links .nave:hover { background: var(--navy-d); color: var(--card); }
-  @media (max-width: 880px) { .nav-links a:not(.nave) { display: none; } }
+
+  /* Hamburger — hidden on desktop, revealed <=760px. Composition-book navy
+     outline so it reads as part of the "Ruled" palette. */
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 11px; margin: -4px 0;
+    background: transparent; border: 2px solid var(--navy); border-radius: 9px;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .nav-burger span { display: block; width: 100%; height: 2px; background: var(--navy); border-radius: 2px; transition: transform .3s ease, opacity .2s ease; }
+
+  @media (max-width: 760px) {
+    .nav-in { padding: 12px 20px; }
+    .nav-burger { display: flex; }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Link list collapses into a full-width drawer under the bar, painted in
+       the design's own bone-paper + navy-ink tokens so it matches the header. */
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--paper); border-bottom: 2px solid var(--navy);
+      box-shadow: 0 24px 40px -22px rgba(31,42,68,.55);
+      padding: 6px 0 12px;
+      max-height: calc(100vh - 64px); overflow-y: auto;
+      display: none;
+    }
+    header.nav.open .nav-links { display: flex; }
+    /* Keep the open drawer visible even if the scroll-hide handler fires. */
+    header.nav.open { transform: none; }
+    .nav-links a { font-size: 17px; min-height: 48px; display: flex; align-items: center; padding: 6px 22px; color: var(--ink); }
+    .nav-links a:hover { color: var(--coral); }
+    .nav-links .nave { margin: 10px 22px 4px; justify-content: center; min-height: 48px; font-size: 15px; color: var(--card); }
+  }
 </style>

@@ -206,6 +206,26 @@ const __fontHref = buildFontHref(__themePairing);
     /* skip link */
     html[data-page="AM"] .skip { position: absolute; left: -999px; top: 0; background: var(--ink); color: var(--paper); padding: 12px 18px; z-index: 100; }
     html[data-page="AM"] .skip:focus { left: 8px; top: 8px; }
+
+    /* ------------------------------------------------------------------ */
+    /* Mobile-first tuning — shared scaffolding only (grids + section     */
+    /* internals live in each *AM component). Desktop rules above are     */
+    /* untouched; these only take effect at phone / small-tablet widths.  */
+    /* ------------------------------------------------------------------ */
+    @media (max-width: 760px) {
+      html[data-page="AM"] .wrap { padding: 0 20px; }
+      html[data-page="AM"] .sec-pad { padding: 64px 0; }
+      html[data-page="AM"] .sec-head { margin-bottom: 34px; gap: 10px 16px; }
+      html[data-page="AM"] .sec-head h2 { font-size: clamp(28px,7vw,46px); }
+      html[data-page="AM"] .ticker-track span { font-size: 16px; padding: 0 18px; gap: 18px; }
+      html[data-page="AM"] .ticker-track { padding: 12px 0; }
+      html[data-page="AM"] .btn { padding: 13px 20px; font-size: 13px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AM"] .wrap { padding: 0 16px; }
+      html[data-page="AM"] .sec-pad { padding: 52px 0; }
+      html[data-page="AM"] .sec-head h2 { font-size: clamp(26px,7.5vw,40px); }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

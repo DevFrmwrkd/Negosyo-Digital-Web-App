@@ -42,4 +42,8 @@ const items: Array<{ title: string; body?: string; desc?: string; description?: 
   .why-check { color: var(--red-pen); font-weight: 700; font-size: 20px; line-height: 1.3; }
   .why-copy strong { color: var(--ink); }
   .why-body { color: var(--ink-soft); }
+  /* Stack the headline over the reason list on mobile. */
+  @media (max-width: 760px) {
+    .why-sect .grid2 { grid-template-columns: 1fr; }
+  }
 </style>

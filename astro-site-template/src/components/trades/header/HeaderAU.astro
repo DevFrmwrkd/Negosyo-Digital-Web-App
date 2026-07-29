@@ -23,15 +23,44 @@ const ctaHref = hero.cta1?.href || '#location';
   <div class="nav-in wrap">
     <a href="#main" class="brand" aria-label={`${brand} home`} data-field="footer.brand"><span class="bolt" aria-hidden="true"></span><span class="bn">{brand}</span></a>
     {(navLinks.length > 0 || ctaText) && (
-      <nav class="nav-links" aria-label="Primary">
-        {navLinks.map((link, i) => (
-          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
-        ))}
-        {ctaText && <a href={ctaHref} class="navcall" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
-      </nav>
+      <>
+        <nav class="nav-links" id="nav-links-au" aria-label="Primary">
+          {navLinks.map((link, i) => (
+            <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+          ))}
+          {ctaText && <a href={ctaHref} class="navcall" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        </nav>
+        <button class="nav-burger" type="button" aria-label="Menu" aria-controls="nav-links-au" aria-expanded="false">
+          <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+      </>
     )}
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var links = hdr.querySelector('.nav-links');
+    if (!burger) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!hdr.classList.contains('open'));
+    });
+    if (links) {
+      links.addEventListener('click', function (e) {
+        if (e.target.closest('a')) setOpen(false);
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && hdr.classList.contains('open')) setOpen(false);
+    });
+  })();
+</script>
 <style>
   header.nav {
     position: sticky; top: 0; z-index: 60; background: rgba(11,33,67,.92);
@@ -43,10 +72,45 @@ const ctaHref = hero.cta1?.href || '#location';
   .brand:hover { color: var(--ink); }
   .brand .bolt { width: 26px; height: 26px; background: var(--yellow); clip-path: polygon(42% 0,88% 0,54% 38%,100% 38%,26% 100%,44% 54%,4% 54%); flex: none; }
   .brand .bn { font-weight: 800; font-size: 22px; letter-spacing: -.01em; white-space: nowrap; text-transform: uppercase; }
-  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
   .nav-links a { font-family: var(--mono); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .nav-links a:hover { color: var(--cyan); }
   .nav-links .navcall { border: 2px solid var(--yellow); color: var(--yellow); padding: 8px 16px; font-family: var(--sans); font-weight: 800; letter-spacing: .04em; }
   .nav-links .navcall:hover { background: var(--yellow); color: var(--navy-d); }
-  @media (max-width: 920px) { .nav-links a:not(.navcall) { display: none; } }
+
+  /* Hamburger: hidden on desktop; the whole drawer machinery only engages <=760px. */
+  .nav-burger { display: none; }
+
+  @media (max-width: 760px) {
+    /* Bar keeps brand (left) + burger (right); nav goes to a full-width drawer. */
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 46px; height: 46px; padding: 12px; margin: -8px 0 -8px auto;
+      background: transparent; border: 1px solid var(--line); cursor: pointer; flex: none;
+      transition: border-color .2s;
+    }
+    .nav-burger span { display: block; width: 100%; height: 2px; background: var(--cyan); transition: transform .3s ease, opacity .2s ease; }
+    header.nav.open .nav-burger { border-color: var(--cyan); }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Drawer: absolute, full header width, below the bar, styled in the design's
+       own navy + cyan/yellow tokens. Collapsed by default, animates open. */
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch; justify-content: flex-start;
+      gap: 0; flex-wrap: nowrap;
+      background: var(--navy); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      padding: 4px 0;
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .25s ease;
+    }
+    header.nav.open .nav-links { max-height: 78vh; overflow-y: auto; opacity: 1; visibility: visible; }
+    .nav-links a { display: flex; align-items: center; min-height: 48px; padding: 12px 20px; font-size: 14px; color: var(--ink); border-bottom: 1px solid rgba(30,58,99,.5); }
+    .nav-links a:last-child { border-bottom: none; }
+    .nav-links a:hover { color: var(--cyan); }
+    .nav-links .navcall { border: 0; border-top: 1px solid var(--line); color: var(--yellow); letter-spacing: .04em; margin-top: 4px; padding: 16px 20px; min-height: 52px; }
+    .nav-links .navcall:hover { background: var(--yellow); color: var(--navy-d); }
+  }
 </style>

@@ -57,4 +57,8 @@ const col2 = items.slice(mid);
   details summary .pm { font-family: var(--label); font-size: 24px; color: var(--clay); transition: transform .3s; line-height: 1; }
   details[open] summary .pm { transform: rotate(45deg); }
   details .a { padding: 0 0 18px; color: var(--smoke); font-size: 17px; max-width: 60ch; }
+  @media (max-width: 760px) {
+    .faq-grid { grid-template-columns: 1fr; gap: 4px; }
+    details summary { font-size: 19px; }
+  }
 </style>

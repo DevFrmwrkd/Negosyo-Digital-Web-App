@@ -94,6 +94,10 @@ const ticketLines = linesFromServices.length > 0
   .hero { padding: 60px 0 70px; }
   .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 46px; align-items: center; }
   @media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; gap: 34px; } }
+  @media (max-width: 760px) {
+    .hero { padding: 40px 0 48px; }
+    .hero .wrap { grid-template-columns: 1fr; gap: 26px; }
+  }
   .ticket {
     background: var(--card); border: 2px solid var(--ink); position: relative; padding: 0;
     box-shadow: 8px 8px 0 rgba(33,31,24,.12); clip-path: inset(0 0 0 0);
@@ -122,5 +126,18 @@ const ticketLines = linesFromServices.length > 0
     font-family: var(--mono); font-weight: 700; color: var(--red); border: 3px double var(--red); padding: 6px 14px;
     text-transform: uppercase; letter-spacing: .1em; display: inline-block; transform: rotate(-8deg); opacity: .85;
     border-radius: 4px; font-size: 15px; position: absolute; right: 8px; top: 22px; z-index: 5; background: var(--card);
+  }
+  @media (max-width: 760px) {
+    .ticket .thead { padding: 12px 18px; }
+    .ticket .tbody { padding: 24px 20px 6px; }
+    .ticket h1 { font-size: clamp(30px, 8.5vw, 46px); overflow-wrap: anywhere; }
+    .ticket .lede { font-size: 16px; }
+    .ticket .tfoot { padding: 14px 20px 18px; }
+  }
+  @media (max-width: 520px) {
+    .ticket h1 { font-size: clamp(26px, 9vw, 38px); }
+    .ticket .cta-row { gap: 10px; }
+    .ticket .cta-row .btn { flex: 1 1 100%; justify-content: center; }
+    .hero-side .plate { aspect-ratio: 4/3; }
   }
 </style>

@@ -75,4 +75,19 @@ const note = hero.badgeNote || '';
   .hero-side .taped { transform: rotate(2.2deg); }
   .hero-side .hero-plate { aspect-ratio: 4/5; }
   .hero-note { position: absolute; left: -6px; bottom: -6px; background: var(--hi); color: var(--ink); font-family: var(--mono); font-size: 13px; padding: 10px 14px; transform: rotate(-3deg); box-shadow: 0 8px 20px -10px rgba(31,42,68,.5); border: 1px solid rgba(221,160,80,.5); }
+  /* Mobile: single column + a display headline that scales down to a 360px
+     screen without clipping. */
+  @media (max-width: 760px) {
+    .hero { padding: 36px 0 16px; }
+    .hero .wrap { grid-template-columns: 1fr; gap: 30px; }
+    .hero h1 { font-size: clamp(32px,7vw,54px); }
+    .hero .lede { font-size: 17px; }
+    .hero-side { padding: 18px 6px; }
+  }
+  @media (max-width: 520px) {
+    .hero h1 { font-size: clamp(27px,8.4vw,38px); }
+    .hero-paper { padding: 26px 20px 26px 38px; }
+    .hero .cta-row { gap: 10px; }
+    .hero-side .hero-plate { aspect-ratio: 4/4.4; }
+  }
 </style>

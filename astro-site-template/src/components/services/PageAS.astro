@@ -187,6 +187,23 @@ const __fontHref = buildFontHref(__themePairing);
     /* skip link */
     html[data-page="AS"] .skip { position: absolute; left: -999px; top: 0; background: var(--blue); color: var(--card); padding: 12px 18px; z-index: 100; }
     html[data-page="AS"] .skip:focus { left: 8px; top: 8px; }
+
+    /* ---- Mobile ergonomics: tighter gutters, shorter section rhythm, and
+       display headings scaled so they never clip a ~360px phone. Desktop
+       (>760px) is untouched. ---- */
+    @media (max-width: 760px) {
+      html[data-page="AS"] .wrap { padding: 0 22px; }
+      html[data-page="AS"] .sec { padding: 56px 0; }
+      html[data-page="AS"] .sec-head { margin-bottom: 30px; gap: 10px; }
+      html[data-page="AS"] .sec-head h2 { font-size: clamp(25px, 6.4vw, 38px); overflow-wrap: anywhere; }
+      html[data-page="AS"] .btn { padding: 14px 22px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AS"] body { font-size: 16px; }
+      html[data-page="AS"] .wrap { padding: 0 18px; }
+      html[data-page="AS"] .sec { padding: 44px 0; }
+      html[data-page="AS"] .sec-head h2 { font-size: clamp(23px, 7vw, 32px); }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

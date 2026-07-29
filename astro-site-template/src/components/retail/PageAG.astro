@@ -187,6 +187,22 @@ const __fontHref = buildFontHref(__themePairing);
       html[data-page="AG"] .reveal { opacity: 1; transform: none; transition: none; }
       html[data-page="AG"] * { animation: none !important; }
     }
+
+    /* ---- Mobile-first refinements (retail:AG) ------------------------------
+       Desktop rules above are untouched; these only engage on small screens. */
+    html[data-page="AG"] body { overflow-x: hidden; }
+    html[data-page="AG"] h1,
+    html[data-page="AG"] h2 { overflow-wrap: break-word; }
+    @media (max-width: 760px) {
+      html[data-page="AG"] section { padding: 44px 0; }
+      html[data-page="AG"] .grid2 { grid-template-columns: 1fr; gap: 28px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AG"] section { padding: 34px 0; }
+      html[data-page="AG"] .wrap { padding: 0 16px; }
+      html[data-page="AG"] .plate { min-height: 200px; }
+      html[data-page="AG"] .btn { width: 100%; }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

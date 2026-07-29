@@ -185,6 +185,21 @@ const __fontHref = buildFontHref(__themePairing);
       html[data-page="AJ"] .hl { background-size: 100% 46%; animation: none; }
       html[data-page="AJ"] * { animation: none !important; }
     }
+
+    /* ---- Mobile (<=760px): tighter rhythm, stacked splits, safe display type.
+       Desktop (>=800px .grid2 two-column rule above) is untouched. ---- */
+    @media (max-width: 760px) {
+      html[data-page="AJ"] section { padding: 48px 0; }
+      html[data-page="AJ"] .wrap { padding: 0 18px; }
+      html[data-page="AJ"] .grid2 { grid-template-columns: 1fr; gap: 30px; }
+      /* Never let a long word in a display heading push past a 360px screen. */
+      html[data-page="AJ"] h1,
+      html[data-page="AJ"] h2,
+      html[data-page="AJ"] h3 { overflow-wrap: break-word; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AJ"] section { padding: 40px 0; }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

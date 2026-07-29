@@ -160,4 +160,11 @@ const hasAddress = !!address;
   @media (prefers-reduced-motion: reduce) { .map-pin .dot::after { animation: none; } }
   @keyframes ping { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.6); opacity: 0; } }
   .map-pin .lbl { margin-top: 10px; font-family: var(--label); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--bone); background: rgba(24,15,10,.7); padding: 5px 10px; border-radius: 2px; }
+  @media (max-width: 760px) {
+    .loc-grid { grid-template-columns: 1fr; }
+    .loc-info { padding: 30px 22px; }
+    .loc-info .v { font-size: 19px; }
+    .loc-hours .hrow { max-width: none; }
+    .loc-plate { min-height: 300px; }
+  }
 </style>

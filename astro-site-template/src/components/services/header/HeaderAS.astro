@@ -21,18 +21,46 @@ const ctaHref = hero.cta1?.href || '#book';
   <div class="nav-in">
     <a href="#main" class="brand" aria-label={`${brand} home`}><span class="mk" aria-hidden="true">{mark}</span><span class="bn" data-field="footer.brand">{brand}</span></a>
     {(navLinks.length > 0 || ctaText) && (
-      <nav class="nav-links" aria-label="Primary">
-        {navLinks.map((link, i) => (
-          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
-        ))}
-        {ctaText && <a href={ctaHref} class="navc" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
-      </nav>
+      <Fragment>
+        <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-primary-AS">
+          <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+        <nav class="nav-links" id="nav-primary-AS" aria-label="Primary">
+          {navLinks.map((link, i) => (
+            <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+          ))}
+          {ctaText && <a href={ctaHref} class="navc" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        </nav>
+      </Fragment>
     )}
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var btn = hdr.querySelector('.nav-burger');
+    if (!btn) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () {
+      setOpen(!hdr.classList.contains('open'));
+    });
+    // Tapping any link (or the CTA) closes the drawer.
+    hdr.querySelectorAll('.nav-links a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
 <style>
   header.nav { position: sticky; top: 0; z-index: 60; background: var(--card); border-bottom: 2px dashed var(--line); transition: transform .3s; }
   header.nav.hide { transform: translateY(-100%); }
+  header.nav.open { transform: none; }
   .nav-in { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; max-width: var(--maxw); margin: 0 auto; }
   .brand { display: flex; align-items: center; gap: 11px; color: var(--ink); }
   .brand:hover { color: var(--ink); }
@@ -43,5 +71,46 @@ const ctaHref = hero.cta1?.href || '#book';
   .nav-links a:hover { color: var(--blue-d); }
   .nav-links .navc { border: 2px solid var(--ink); padding: 8px 16px; color: var(--ink); }
   .nav-links .navc:hover { background: var(--blue); border-color: var(--blue); color: var(--card); }
+
+  /* Hamburger — desktop-hidden, revealed <=760px as the design's ink-bordered
+     ghost square whose Courier-ink bars fold into an × when the drawer opens. */
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 46px; height: 44px; padding: 11px 10px; box-sizing: border-box; margin-left: 12px; flex-shrink: 0;
+    background: transparent; border: 2px solid var(--ink); border-radius: 6px; cursor: pointer;
+  }
+  .nav-burger span { display: block; width: 100%; height: 2px; background: var(--ink); transition: transform .25s ease, opacity .2s ease; }
+  header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (prefers-reduced-motion: reduce) { .nav-burger span { transition: none; } }
+
+  /* Tablet: the inline text links overflow the bar, so hide them; brand + CTA stay. */
   @media (max-width: 880px) { .nav-links a:not(.navc) { display: none; } }
+
+  /* Phone: brand + burger stay in the bar; the link list (incl. CTA) drops to a
+     full-width drawer below the header, painted in the design's bone-card tokens. */
+  @media (max-width: 760px) {
+    .nav-in { padding: 13px 20px; }
+    .brand .bn { font-size: 20px; }
+    .nav-burger { display: flex; }
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--card); border-top: 2px dashed var(--line); border-bottom: 2px solid var(--ink);
+      box-shadow: 0 12px 24px rgba(33, 31, 24, .14); padding: 6px 0 12px; max-height: 78vh; overflow-y: auto;
+    }
+    header.nav.open .nav-links { display: flex; }
+    .nav-links a:not(.navc) {
+      display: flex; align-items: center; min-height: 44px;
+      padding: 12px 20px; font-size: 15px; color: var(--ink2); border-bottom: 1px dotted var(--line);
+    }
+    .nav-links a:not(.navc):hover { background: var(--paper2); color: var(--blue-d); }
+    .nav-links .navc {
+      display: flex; align-items: center; justify-content: center;
+      margin: 12px 20px 2px; min-height: 48px; padding: 12px 16px;
+      background: var(--blue); border-color: var(--blue); color: var(--card);
+    }
+    .nav-links .navc:hover { background: var(--blue-d); border-color: var(--blue-d); color: var(--card); }
+  }
 </style>

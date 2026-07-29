@@ -48,6 +48,7 @@ const col2 = items.slice(mid);
   .faq { background: var(--paper2); }
   .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
   @media (max-width: 900px) { .faq-grid { grid-template-columns: 1fr; gap: 8px; } }
+  @media (max-width: 760px) { .faq-grid { grid-template-columns: 1fr; } summary { font-size: 17px; } }
   details { border-bottom: 2px solid var(--ink); }
   summary { list-style: none; cursor: pointer; padding: 20px 0; font-weight: 800; font-size: 19px; text-transform: uppercase; display: flex; justify-content: space-between; gap: 16px; }
   summary::-webkit-details-marker { display: none; }

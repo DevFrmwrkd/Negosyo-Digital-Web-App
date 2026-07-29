@@ -42,7 +42,7 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
   .services { background: var(--paper2); }
   .svc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
   @media (max-width: 900px) { .svc-grid { grid-template-columns: repeat(2,1fr); } }
-  @media (max-width: 560px) { .svc-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .svc-grid { grid-template-columns: 1fr; } }
   .svc { background: var(--card); border: 1px solid var(--line); border-radius: 6px; border-top: 6px solid var(--coral); padding: 28px 26px; position: relative; transition: transform .3s, box-shadow .3s; }
   .svc:nth-child(3n+2) { border-top-color: var(--hi); }
   .svc:nth-child(3n) { border-top-color: var(--navy); }

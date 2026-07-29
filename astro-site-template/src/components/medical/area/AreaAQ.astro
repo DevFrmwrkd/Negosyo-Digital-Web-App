@@ -38,6 +38,7 @@ const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArr
 )}
 <style>
   .area { background: var(--paper); padding: 56px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  @media (max-width: 760px) { .area { padding: 42px 0; } }
   .area-head { margin-bottom: 18px; }
   .area-h { font-size: clamp(28px,4vw,46px); color: var(--ink); }
   .area-sub { color: var(--muted); margin-top: 10px; max-width: 52ch; }

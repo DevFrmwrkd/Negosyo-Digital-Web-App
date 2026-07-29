@@ -45,4 +45,11 @@ const spanFor = (i: number) => (i % 6 === 0 ? 'v1' : i % 6 === 3 ? 'v4' : i % 6 
   .v1 { grid-column: span 2; grid-row: span 2; }
   .v4 { grid-column: span 2; }
   .v6 { grid-column: span 2; }
+  /* Single column on phones: drop the mosaic spans so no tile requests a second
+     track (which would overflow the viewport). */
+  @media (max-width: 760px) {
+    .g-grid { grid-template-columns: 1fr; grid-auto-rows: 220px; gap: 10px; }
+    .g-grid .v1, .g-grid .v4, .g-grid .v6 { grid-column: auto; grid-row: auto; }
+    .g-grid .v1 { grid-row: span 2; }
+  }
 </style>

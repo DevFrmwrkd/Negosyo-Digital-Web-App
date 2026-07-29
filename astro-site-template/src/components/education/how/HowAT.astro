@@ -37,7 +37,7 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
   .how { background: var(--card); }
   .steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; }
   @media (max-width: 820px) { .steps { grid-template-columns: repeat(2,1fr); } }
-  @media (max-width: 480px) { .steps { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .steps { grid-template-columns: 1fr; } }
   .step { position: relative; padding-top: 20px; }
   .step .sn { width: 44px; height: 44px; border-radius: 50%; background: var(--hi); color: var(--ink); display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-weight: 700; font-size: 19px; margin-bottom: 16px; }
   .step h3 { font-size: 20px; color: var(--ink); margin-bottom: 8px; }

@@ -34,4 +34,10 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
   .trust .c .n { font-family: var(--big); font-size: clamp(38px,5vw,58px); color: var(--amber); line-height: .9; }
   .trust .c .t { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--concrete); margin-top: 10px; }
   .trust .c :global(.stars) { color: var(--amber-2); letter-spacing: 2px; font-size: 22px; }
+  /* Mobile: 2-up grid — tighten padding and fix the seam borders per row. */
+  @media (max-width: 760px) {
+    .trust .c { padding: 30px 18px; }
+    .trust .c:nth-child(2n) { border-right: none; }
+    .trust .c:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  }
 </style>

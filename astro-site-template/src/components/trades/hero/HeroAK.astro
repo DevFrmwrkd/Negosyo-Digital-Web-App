@@ -67,4 +67,20 @@ const imageCaption = hero.imageCaption || '';
     color: var(--chalk); border: 1px dashed var(--chalk); padding: 8px 13px;
   }
   .hero-plate { min-height: 380px; }
+
+  /* ---- Mobile (<=760): stack the split, scale the display headline down ---- */
+  @media (max-width: 760px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 28px; }
+    .hero-copy { padding-left: 20px; }
+    .hero-h { font-size: clamp(30px, 8vw, 54px); margin: 14px 0; line-height: 1.04; }
+    .hero-sub { margin-bottom: 22px; }
+    .hero-plate { min-height: 240px; }
+  }
+  @media (max-width: 520px) {
+    .hero-h { font-size: clamp(26px, 8.6vw, 40px); }
+    .hero-copy { padding-left: 16px; }
+    .hero-cta { flex-direction: column; align-items: stretch; gap: 10px; }
+    .hero-cta .btn { width: 100%; }
+    .hero-plate { min-height: 200px; }
+  }
 </style>

@@ -172,6 +172,23 @@ const __fontHref = buildFontHref(__themePairing);
     /* skip link */
     html[data-page="AQ"] .skip { position: absolute; left: -999px; top: 0; background: var(--teal); color: #fff; padding: 12px 18px; z-index: 100; border-radius: 0 0 8px 0; }
     html[data-page="AQ"] .skip:focus { left: 0; top: 0; }
+
+    /* ---- Mobile-first refinements (shared primitives). Desktop untouched;
+       these only trim section padding + fit shared display type on phones. ---- */
+    @media (max-width: 760px) {
+      html[data-page="AQ"] .sec { padding: 66px 0; }
+      html[data-page="AQ"] .wrap { padding: 0 20px; }
+      html[data-page="AQ"] .sec-head { margin-bottom: 38px; }
+      html[data-page="AQ"] .sec-head h2 { font-size: clamp(27px,6.4vw,42px); }
+      html[data-page="AQ"] .sec-head p { font-size: 17px; }
+      html[data-page="AQ"] .btn { padding: 15px 26px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AQ"] .sec { padding: 52px 0; }
+      html[data-page="AQ"] .wrap { padding: 0 16px; }
+      html[data-page="AQ"] .sec-head { margin-bottom: 30px; }
+      html[data-page="AQ"] body { font-size: 17px; }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

@@ -46,4 +46,11 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-fill:hover { color: var(--ink); }
   .cta-line { background: transparent; color: var(--haz); border-color: var(--haz); }
   .cta-line:hover { color: var(--haz); }
+  @media (max-width: 760px) {
+    .cta-band { padding: 40px 0; }
+  }
+  @media (max-width: 520px) {
+    .cta-actions { width: 100%; }
+    .cta-actions .btn { flex: 1 1 100%; justify-content: center; }
+  }
 </style>

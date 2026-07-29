@@ -31,4 +31,7 @@ const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq)
 <style>
   .faq-wrap { max-width: 760px; }
   .faq-h { font-size: clamp(32px, 5vw, 54px); margin: 14px 0 22px; color: var(--ink); }
+  @media (max-width: 760px) {
+    .faq-h { font-size: clamp(28px, 6.4vw, 44px); }
+  }
 </style>

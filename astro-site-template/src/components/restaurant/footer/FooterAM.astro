@@ -121,4 +121,9 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Message us';
   }
   .msgr:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 18px 40px -10px rgba(138,51,32,.85); color: var(--paper); opacity: 1; }
   .msgr svg { width: 20px; height: 20px; fill: currentColor; }
+  @media (max-width: 760px) {
+    footer { padding: 56px 0 92px; }  /* extra bottom clears the floating pill */
+    .foot-btm { flex-direction: column; gap: 6px; }
+    .msgr { right: 14px; bottom: 14px; padding: 12px 16px; font-size: 13px; }
+  }
 </style>

@@ -19,7 +19,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   <div class="wrap nav-inner">
     <a href="#top" class="brand" data-field="footer.brand"><span class="star" aria-hidden="true">★</span>{brand}</a>
     {navLinks.length > 0 && (
-      <nav class="nav-links" aria-label="Main">
+      <nav class="nav-links" id="nav-links-ai" aria-label="Main">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
@@ -31,8 +31,34 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
       )}
       <a href="#location" class="find">Find us ↓</a>
     </div>
+    {navLinks.length > 0 && (
+      <button class="nav-burger" aria-label="Menu" aria-expanded="false" aria-controls="nav-links-ai">
+        <span></span><span></span><span></span>
+      </button>
+    )}
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var links = hdr.querySelector('.nav-links');
+    if (!burger) return;
+    burger.addEventListener('click', function () {
+      var open = hdr.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    if (links) {
+      links.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () {
+          hdr.classList.remove('open');
+          burger.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+  })();
+</script>
 <style>
   header.nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 50;
@@ -70,6 +96,49 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
     text-transform: uppercase; color: var(--ink);
   }
   .find:hover { color: var(--blood); }
-  @media (max-width: 860px) { .nav-links { display: none; } }
+
+  /* Hamburger — hidden on desktop, a boxed ink toggle on phones. */
+  .nav-burger {
+    display: none; width: 46px; height: 46px; padding: 0; flex-shrink: 0;
+    flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+    background: var(--paper); border: 3px solid var(--ink); cursor: pointer;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+  .nav-burger span {
+    display: block; width: 22px; height: 3px; background: var(--ink);
+    transition: transform .2s ease, opacity .2s ease;
+  }
+  header.nav.open .nav-burger span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+  header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+  /* Tighten the inline nav just before the burger takes over so the 761–860px
+     band can't push the bar into horizontal overflow. */
+  @media (max-width: 860px) {
+    .nav-inner { gap: 14px; }
+    .nav-links { gap: 16px; }
+    .find { display: none; }
+  }
+
+  @media (max-width: 760px) {
+    .nav-burger { display: flex; }
+    .find { display: none; }
+    /* Keep the bar solid whenever the drawer is open so brand + burger stay legible. */
+    header.nav.open { background: var(--paper); border-bottom: 3px solid var(--ink); }
+    /* The link list becomes a full-width wheat-paste drawer below the bar. */
+    .nav-links {
+      display: none; position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--paper); border-bottom: 3px solid var(--ink);
+      box-shadow: 0 8px 0 rgba(20,18,16,.18); padding: 6px 20px 14px;
+    }
+    header.nav.open .nav-links { display: flex; }
+    .nav-links a {
+      display: flex; align-items: center; width: 100%; min-height: 48px;
+      padding: 12px 4px; font-size: 15px; letter-spacing: .12em; opacity: 1;
+      border-top: 2px solid rgba(20,18,16,.14);
+    }
+    .nav-links a:first-child { border-top: 0; }
+  }
   @media (max-width: 520px) { .nav-phone { display: none; } }
 </style>

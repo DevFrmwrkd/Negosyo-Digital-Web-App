@@ -36,12 +36,17 @@ const ctaHref = hero.cta1?.href || '#location';
       {sub && <span class="bs">{sub}</span>}
     </a>
     {(navLinks.length > 0 || ctaText) && (
-      <nav class="nav-links" aria-label="Primary">
+      <nav class="nav-links" id="nav-links-ao" aria-label="Primary">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
         {ctaText && <a href={ctaHref} class="navphone" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
       </nav>
+    )}
+    {(navLinks.length > 0 || ctaText) && (
+      <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-links-ao">
+        <span></span><span></span><span></span>
+      </button>
     )}
   </div>
 </header>
@@ -69,5 +74,73 @@ const ctaHref = hero.cta1?.href || '#location';
   .nav-links a:hover { color: var(--yellow); }
   .nav-links .navphone { border: 2px solid var(--paper); padding: 8px 16px; color: var(--paper); font-weight: 800; font-family: var(--sans); }
   .nav-links .navphone:hover { background: var(--yellow); border-color: var(--yellow); color: var(--ink); }
-  @media (max-width: 900px) { .nav-links a:not(.navphone) { display: none; } }
+
+  /* Hamburger — hidden on desktop, revealed <=760px. Three ink-strip bars in the
+     design's paper tone that morph into an X when the drawer is open. */
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 46px; height: 46px; padding: 11px; margin-left: 12px;
+    background: transparent; border: 2px solid var(--paper); cursor: pointer;
+  }
+  .nav-burger span { display: block; height: 2px; width: 100%; background: var(--paper); transition: transform .3s, opacity .3s; }
+  header.nav.open .nav-burger { border-color: var(--yellow); }
+  header.nav.open .nav-burger span { background: var(--yellow); }
+  header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Mobile masthead + nav bar: tighter gutters, hamburger visible, and the link
+     list becomes a full-width ink drawer dropping below the sticky bar. */
+  @media (max-width: 760px) {
+    .mh-top { padding: 9px 18px; font-size: 11px; }
+    .nav-in { padding: 12px 18px; }
+    .brand .bn { font-size: 21px; }
+    .nav-burger { display: flex; }
+
+    /* Keep the drawer open even if the hide-on-scroll handler fires. */
+    header.nav.open.hide { transform: none; }
+
+    .nav-links {
+      display: none; position: absolute; left: 0; right: 0; top: 100%; z-index: 60;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--ink); border-top: 1px solid rgba(243,239,228,.18);
+      border-bottom: 3px solid var(--yellow); padding: 4px 0 12px;
+      box-shadow: 0 14px 26px rgba(20,18,14,.45);
+    }
+    header.nav.open .nav-links { display: flex; }
+    .nav-links a {
+      display: flex; align-items: center; min-height: 48px;
+      padding: 12px 18px; font-size: 13px; color: var(--paper2);
+      border-bottom: 1px solid rgba(243,239,228,.12);
+    }
+    .nav-links a:hover { color: var(--yellow); }
+    .nav-links .navphone {
+      margin: 12px 18px 4px; min-height: 50px; justify-content: center;
+      border: 2px solid var(--yellow); background: var(--yellow); color: var(--ink); font-size: 14px;
+    }
+  }
 </style>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var links = hdr.querySelector('.nav-links');
+    if (!burger || !links) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!hdr.classList.contains('open'));
+    });
+    // Tapping a drawer link closes the menu.
+    links.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Close on Escape for keyboard users.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && hdr.classList.contains('open')) setOpen(false);
+    });
+  })();
+</script>

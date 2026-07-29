@@ -167,6 +167,18 @@ const __fontHref = buildFontHref(__themePairing);
       html[data-page="AE"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
       html[data-page="AE"] .cards { grid-template-columns: repeat(3, 1fr); }
     }
+    /* --- Mobile: single-column stacking + tighter rhythm (<=760px) --- */
+    @media (max-width: 760px) {
+      html[data-page="AE"] section { padding: 48px 0; }
+      html[data-page="AE"] .grid2 { grid-template-columns: 1fr; gap: 28px; }
+      html[data-page="AE"] .cards { grid-template-columns: 1fr; }
+      html[data-page="AE"] .card { padding: 22px 20px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AE"] section { padding: 40px 0; }
+      html[data-page="AE"] .wrap { padding: 0 16px; }
+      html[data-page="AE"] .btn { width: 100%; justify-content: center; }
+    }
     @media (prefers-reduced-motion: reduce) {
       html[data-page="AE"] .reveal { opacity: 1; transform: none; transition: none; }
       html[data-page="AE"] * { animation: none !important; }

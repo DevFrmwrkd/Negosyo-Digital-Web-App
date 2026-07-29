@@ -50,4 +50,16 @@ const signature = about.signature || '';
   .about-sign { margin-top: 16px; color: var(--chalk); }
   .about-plate { min-height: 400px; }
   @media (max-width: 799px) { .about-plate { min-height: 300px; } }
+
+  /* ---- Mobile (<=760): single column, tighter draw-line inset + heading ---- */
+  @media (max-width: 760px) {
+    .about-sect .grid2 { grid-template-columns: 1fr; gap: 24px; }
+    .about-copy { padding-left: 20px; }
+    .about-h { font-size: clamp(27px, 6.6vw, 44px); }
+    .about-plate { min-height: 230px; }
+  }
+  @media (max-width: 520px) {
+    .about-copy { padding-left: 16px; }
+    .about-h { font-size: clamp(24px, 7.4vw, 36px); }
+  }
 </style>

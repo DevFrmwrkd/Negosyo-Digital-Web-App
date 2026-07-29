@@ -37,4 +37,7 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
   .trust-cell:first-child .t-num { color: var(--red); font-weight: 600; }
   .t-num { color: var(--ink); font-weight: 600; }
   .t-lbl { color: var(--faded); font-weight: 500; }
+  @media (max-width: 520px) {
+    .trust-bar { justify-content: flex-start; gap: 10px 20px; font-size: 12px; }
+  }
 </style>

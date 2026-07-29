@@ -37,7 +37,7 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
 <style>
   .prog-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; border-top: 3px solid var(--line); border-left: 3px solid var(--line); }
   @media (max-width: 900px) { .prog-grid { grid-template-columns: repeat(2,1fr); } }
-  @media (max-width: 560px) { .prog-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .prog-grid { grid-template-columns: 1fr; } }
   .prog { padding: 34px 28px 30px; border-right: 3px solid var(--line); border-bottom: 3px solid var(--line); position: relative; overflow: hidden; transition: background .25s; }
   .prog:hover { background: var(--ink2); }
   .prog .no { font-family: var(--disp); font-size: 46px; color: transparent; -webkit-text-stroke: 1.5px var(--steel); line-height: .9; transition: .25s; }

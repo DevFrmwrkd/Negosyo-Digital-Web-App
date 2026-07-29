@@ -159,8 +159,10 @@ const pingPos = [
   .loc-sub { color: var(--muted); margin: -24px 0 30px; max-width: 46ch; text-transform: none; }
   .loc-grid { display: grid; grid-template-columns: 1fr 1.1fr; border: 1px solid var(--line); }
   @media (max-width: 900px) { .loc-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .loc-grid { grid-template-columns: 1fr; } }
   .loc-info { padding: 44px 34px; border-right: 1px solid var(--line); }
   @media (max-width: 900px) { .loc-info { border-right: none; border-bottom: 1px solid var(--line); } }
+  @media (max-width: 760px) { .loc-info { padding: 30px 22px; } }
   .loc-info .row { padding: 18px 0; border-bottom: 1px solid var(--line); }
   .loc-info .row:last-child { border-bottom: none; }
   .loc-info .k { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
@@ -169,6 +171,7 @@ const pingPos = [
   .loc-hours { display: grid; gap: 4px; }
   .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; }
   .loc-map { position: relative; min-height: 420px; background: var(--navy-d); overflow: hidden; }
+  @media (max-width: 760px) { .loc-map { min-height: 320px; } .loc-map .covmap { inset: 16px; } }
   #map { position: absolute; inset: 0; z-index: 0; }
   .loc-map .covmap { position: absolute; inset: 24px; aspect-ratio: auto; }
   .map-cap { position: absolute; left: 0; bottom: 0; z-index: 3; width: 100%; padding: 12px 14px; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--ink); background: linear-gradient(0deg,rgba(7,21,40,.9),transparent); text-transform: uppercase; }

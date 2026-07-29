@@ -48,4 +48,12 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-btn:hover { background: var(--paper); border-color: var(--paper); color: var(--ink); transform: translateY(-2px); }
   .cta-btn.ghost { background: transparent; color: var(--paper); border-color: rgba(251,248,241,.55); }
   .cta-btn.ghost:hover { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+  /* Tighter closing band + full-width stacked CTAs on a phone. */
+  @media (max-width: 760px) {
+    .cta-band { padding: 48px 0; }
+  }
+  @media (max-width: 520px) {
+    .cta-actions { flex-direction: column; }
+    .cta-btn { width: 100%; }
+  }
 </style>

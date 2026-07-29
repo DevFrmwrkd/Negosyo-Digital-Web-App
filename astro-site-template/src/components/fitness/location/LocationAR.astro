@@ -155,4 +155,11 @@ const hasAddress = !!address;
   @media (prefers-reduced-motion: reduce) { .map-pin .dot::after { animation: none; } }
   @keyframes ping-ar { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.6); opacity: 0; } }
   .map-pin .lbl { margin-top: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: #000; background: var(--lime); padding: 5px 9px; text-transform: uppercase; }
+  @media (max-width: 760px) {
+    .loc-grid { grid-template-columns: 1fr; }
+    .loc-info { padding: 28px 22px; }
+    .loc-info .v { font-size: 19px; overflow-wrap: anywhere; }
+    .loc-hours .hrow { max-width: 100%; }
+    .loc-map { min-height: 300px; }
+  }
 </style>

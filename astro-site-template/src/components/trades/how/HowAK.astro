@@ -40,4 +40,14 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
   .how-num { font-family: var(--display); font-weight: 700; font-size: 38px; color: var(--amber); display: block; line-height: 1; }
   .how-copy { font-size: 14px; color: var(--chalk); margin-top: 6px; }
   .how-copy strong { color: var(--white); }
+
+  /* ---- Mobile (<=760): single-column procedure list ---- */
+  @media (max-width: 760px) {
+    .how-list { grid-template-columns: 1fr; }
+    .how-h { font-size: clamp(27px, 6.6vw, 44px); margin: 14px 0 22px; }
+  }
+  @media (max-width: 520px) {
+    .how-h { font-size: clamp(24px, 7.4vw, 36px); }
+    .how-num { font-size: 34px; }
+  }
 </style>

@@ -113,8 +113,7 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Send your list';
   .foot-col a:hover { color: var(--ink); }
   .foot-hours .hrow { display: flex; justify-content: space-between; max-width: 260px; padding: 2px 0; font-size: 14px; color: var(--faded); gap: 16px; }
   .foot-bottom { border-top: 1px solid var(--rule); margin-top: 36px; padding: 22px 0 0; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--faded); }
-  @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 480px) { .foot-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr; gap: 28px; } }
 
   .c2m { position: fixed; right: 16px; bottom: 16px; z-index: 60; }
   .c2m a {
@@ -124,4 +123,11 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Send your list';
     padding: 14px 18px; box-shadow: 0 6px 18px rgba(32,32,28,.35); min-height: 48px;
   }
   .c2m a:hover { background: var(--red); color: var(--news); }
+  @media (max-width: 520px) {
+    .foot { padding: 32px 0; }
+    .foot-grid { gap: 26px; }
+    .foot-bottom { margin-top: 26px; }
+    .c2m { right: 12px; bottom: 12px; }
+    .c2m a { padding: 12px 14px; font-size: 12px; }
+  }
 </style>

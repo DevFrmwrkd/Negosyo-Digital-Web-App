@@ -44,4 +44,13 @@ const items: Array<{ title: string; body?: string; desc?: string; description?: 
   .why-title { color: var(--amber); display: block; }
   .why-title::before { content: "§" counter(spec) " "; color: var(--amber); font-weight: 700; }
   .why-body { display: block; color: var(--chalk); font-size: 14px; margin-top: 4px; }
+
+  /* ---- Mobile (<=760): stack heading over the spec list ---- */
+  @media (max-width: 760px) {
+    .why-sect .grid2 { grid-template-columns: 1fr; gap: 22px; }
+    .why-h { font-size: clamp(27px, 6.6vw, 44px); }
+  }
+  @media (max-width: 520px) {
+    .why-h { font-size: clamp(24px, 7.4vw, 36px); }
+  }
 </style>

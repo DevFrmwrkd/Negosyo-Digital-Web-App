@@ -41,7 +41,10 @@ const imageCaption = about.imageCaption || '';
 <style>
   .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 52px; align-items: center; }
   @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 34px; } }
+  @media (max-width: 760px) { .about-grid { grid-template-columns: 1fr; gap: 26px; } }
   .about-copy p:first-of-type { font-size: 22px; color: var(--ink); line-height: 1.45; }
+  @media (max-width: 760px) { .about-copy p:first-of-type { font-size: 19px; } }
   .about-copy p { color: var(--muted); }
   .about-fig { aspect-ratio: 5/4; }
+  @media (max-width: 760px) { .about-fig { aspect-ratio: 4/3; } }
 </style>

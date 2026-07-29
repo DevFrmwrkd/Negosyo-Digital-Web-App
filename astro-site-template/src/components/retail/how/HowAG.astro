@@ -41,4 +41,8 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
   .how-copy { font-size: 15px; margin-top: 4px; }
   .how-title { color: var(--ink); }
   .how-body { color: var(--faded); }
+  @media (max-width: 760px) {
+    .how-h { font-size: clamp(28px, 6.4vw, 44px); }
+    .how-list { grid-template-columns: 1fr; }
+  }
 </style>

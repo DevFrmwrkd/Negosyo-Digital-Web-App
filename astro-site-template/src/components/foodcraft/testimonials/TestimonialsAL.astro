@@ -45,4 +45,8 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   .test-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   .test-card p { margin-bottom: 12px; font-size: 15px; color: var(--cocoa); }
   .test-card footer { font-weight: 700; font-size: 13px; color: var(--terra-deep); }
+  @media (max-width: 760px) {
+    .test-grid { grid-template-columns: 1fr; }
+    .test-h { margin-bottom: 22px; }
+  }
 </style>

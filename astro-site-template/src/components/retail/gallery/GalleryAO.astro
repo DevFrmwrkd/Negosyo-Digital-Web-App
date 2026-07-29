@@ -46,4 +46,10 @@ const spanFor = (i: number) => (i % 6 === 0 ? 'r1' : i % 6 === 1 ? 'r2' : i % 6 
   .g-grid .r1 { grid-column: span 2; grid-row: span 2; }
   .g-grid .r2 { grid-column: span 2; }
   .g-grid .r5 { grid-column: span 2; }
+  /* Mobile: single-column stack — reset the mosaic spans so no tile forces an
+     implicit extra column (which would overflow the viewport). */
+  @media (max-width: 760px) {
+    .g-grid { grid-template-columns: 1fr; grid-auto-rows: 200px; gap: 8px; }
+    .g-grid .r1, .g-grid .r2, .g-grid .r5 { grid-column: auto; grid-row: auto; }
+  }
 </style>

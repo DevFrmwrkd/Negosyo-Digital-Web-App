@@ -58,4 +58,13 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
   .svc-item:hover h3 { transform: translateX(6px); color: var(--nude-deep); }
   .svc-item:hover .go { opacity: 1; transform: none; }
   .svc-note { margin-top: 20px; color: var(--muted); font-size: 15px; }
+  /* Phone: index + title on a row, description + chip stacked beneath. Touch has
+     no hover, so the "go" chip is always shown. */
+  @media (max-width: 760px) {
+    .svc-item { grid-template-columns: auto 1fr; gap: 6px 18px; padding: 26px 2px; }
+    .svc-item h3 { font-size: clamp(24px,7vw,34px); }
+    .svc-item .go { grid-column: 1 / -1; opacity: 1; transform: none; margin-top: 6px; }
+    .svc-item:hover { padding-left: 2px; }
+    .svc-item:hover h3 { transform: none; }
+  }
 </style>

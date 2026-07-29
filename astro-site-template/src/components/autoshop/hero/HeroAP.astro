@@ -104,9 +104,22 @@ const specService = (svcItems[0] && svcItems[0].title) || 'Repair + Detail';
   .hero .lede { max-width: 46ch; color: var(--concrete); font-size: 19px; margin-bottom: 28px; opacity: 0; animation: hf 1s ease .55s forwards; }
   .hero .cta-row { display: flex; gap: 14px; flex-wrap: wrap; opacity: 0; animation: hf 1s ease .7s forwards; }
   @media (prefers-reduced-motion: reduce) { .hero-l .kicker, .hero .lede, .hero .cta-row { opacity: 1; animation: none; } .hero h1 .ln > span { transform: none; animation: none; } }
+  /* Mobile: drop the hero-l gutter so copy uses the full column, and scale the
+     stencil headline down so it never clips a 360px screen. */
+  @media (max-width: 760px) {
+    .hero-l { padding: 44px 0 36px; }
+    .hero h1 { font-size: clamp(42px,12vw,74px); line-height: .96; margin: .1em 0 .18em; }
+    .hero .lede { font-size: 17px; margin-bottom: 24px; }
+  }
+  @media (max-width: 520px) {
+    .hero-l { padding: 34px 0 28px; }
+    .hero h1 { font-size: clamp(34px,11.5vw,54px); }
+    .hero .cta-row .btn { flex: 1 1 auto; justify-content: center; }
+  }
   .hero-r { position: relative; overflow: hidden; }
   .hero-r .plate { position: absolute; inset: 0; clip-path: polygon(14% 0,100% 0,100% 100%,0 100%); }
   @media (max-width: 920px) { .hero-r { min-height: 56vh; } .hero-r .plate { clip-path: none; } }
+  @media (max-width: 520px) { .hero-r { min-height: 46vh; } }
   .hero-r .ph { animation: slowpan 20s ease-in-out infinite alternate; }
   @keyframes slowpan { 0% { transform: scale(1.08); } 100% { transform: scale(1.16) translateX(-2%); } }
   @media (prefers-reduced-motion: reduce) { .hero-r .ph { animation: none; } }

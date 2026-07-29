@@ -178,6 +178,21 @@ const __fontHref = buildFontHref(__themePairing);
     /* skip link */
     html[data-page="AP"] .skip { position: absolute; left: -999px; top: 0; background: var(--amber); color: #000; padding: 12px 18px; z-index: 100; }
     html[data-page="AP"] .skip:focus { left: 8px; top: 8px; }
+
+    /* Mobile-first pass (design-wide): tighter gutters + padding, headline fit,
+       and a horizontal-overflow guard. Desktop rules above are untouched. */
+    @media (max-width: 760px) {
+      html[data-page="AP"] body { overflow-x: clip; }
+      html[data-page="AP"] .wrap { padding: 0 20px; }
+      html[data-page="AP"] .sec { padding: 64px 0; }
+      html[data-page="AP"] .sec-head { margin-bottom: 34px; gap: 12px; }
+      html[data-page="AP"] .sec-head h2 { font-size: clamp(28px,7.4vw,50px); }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AP"] .wrap { padding: 0 16px; }
+      html[data-page="AP"] .sec { padding: 52px 0; }
+      html[data-page="AP"] .sec-head h2 { font-size: clamp(26px,8vw,40px); }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}
@@ -220,6 +235,8 @@ const __fontHref = buildFontHref(__themePairing);
       if (hdr) {
         var last = 0;
         window.addEventListener('scroll', function () {
+          // Never hide the bar while the mobile drawer is open.
+          if (hdr.classList.contains('open')) { last = window.pageYOffset; return; }
           var y = window.pageYOffset;
           if (y > last && y > 360) { hdr.classList.add('hide'); } else { hdr.classList.remove('hide'); }
           last = y;

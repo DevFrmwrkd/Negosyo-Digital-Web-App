@@ -45,4 +45,14 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
   .svc-price { font-family: var(--body); font-weight: 700; font-size: 14px; color: var(--white); flex-shrink: 0; }
   .svc-desc { font-size: 14px; color: var(--chalk); }
   .svc-dur { font-family: var(--body); text-transform: uppercase; letter-spacing: .14em; font-size: 11px; color: var(--chalk); margin-top: 10px; opacity: .8; }
+
+  /* ---- Mobile (<=760): single-column spec grid + smaller heading ---- */
+  @media (max-width: 760px) {
+    .svc-grid { grid-template-columns: 1fr; }
+    .svc-h { font-size: clamp(27px, 6.6vw, 44px); margin: 14px 0 22px; }
+    .svc-sub { margin: -10px 0 22px; }
+  }
+  @media (max-width: 520px) {
+    .svc-h { font-size: clamp(24px, 7.4vw, 36px); }
+  }
 </style>

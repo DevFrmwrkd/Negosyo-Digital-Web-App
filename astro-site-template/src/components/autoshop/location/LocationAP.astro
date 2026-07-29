@@ -147,7 +147,13 @@ const hasAddress = !!address;
   .loc-hours { display: grid; gap: 4px; text-transform: none; }
   .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; font-size: 16px; font-family: var(--sans); font-weight: normal; letter-spacing: 0; }
   .loc-cta { border-bottom: none !important; }
+  @media (max-width: 760px) {
+    .loc-sub { margin: -18px 0 24px; }
+    .loc-info { padding: 30px 22px; }
+    .loc-info .v { font-size: 19px; }
+  }
   .loc-map { position: relative; min-height: 400px; background: #000; overflow: hidden; }
+  @media (max-width: 760px) { .loc-map { min-height: 300px; } }
   #map { position: absolute; inset: 0; z-index: 0; }
   .map-face { position: absolute; inset: 0; background: repeating-linear-gradient(0deg,rgba(154,160,168,.08) 0 1px,transparent 1px 38px),repeating-linear-gradient(90deg,rgba(154,160,168,.08) 0 1px,transparent 1px 38px),linear-gradient(150deg,#191d22,#0a0b0d); }
   .map-face .road { position: absolute; background: rgba(255,106,0,.5); }

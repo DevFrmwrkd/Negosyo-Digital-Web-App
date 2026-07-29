@@ -45,6 +45,7 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   .quotes { background: var(--paper); }
   .quotes-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
   @media (max-width: 900px) { .quotes-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { .quotes-grid { grid-template-columns: 1fr; } }
   .quote { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 28px 26px; position: relative; }
   .quote .stars { color: var(--hi); letter-spacing: 2px; font-size: 15px; }
   .quote p { font-family: var(--serif); font-size: 19px; line-height: 1.45; color: var(--ink); margin: 12px 0; }

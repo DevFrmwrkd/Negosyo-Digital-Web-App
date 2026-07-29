@@ -48,4 +48,10 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
     font-family: var(--body); text-transform: uppercase; letter-spacing: .14em;
     font-size: 11px; color: var(--seafoam-deep); margin-top: 10px;
   }
+  @media (max-width: 760px) {
+    .svc-h { margin: 12px 0 24px; }
+    .svc-grid { grid-template-columns: 1fr; }
+    .svc-card { padding: 22px 0; }
+    .svc-head h3 { font-size: 23px; }
+  }
 </style>

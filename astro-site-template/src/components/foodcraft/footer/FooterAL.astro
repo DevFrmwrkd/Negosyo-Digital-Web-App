@@ -113,15 +113,22 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Order via Messenger';
   .foot-col a:hover { color: var(--cocoa); }
   .foot-hours .hrow { display: flex; justify-content: space-between; max-width: 260px; padding: 2px 0; font-size: 14px; color: var(--muted-ink); gap: 16px; }
   .foot-bottom { border-top: 2px solid var(--shell); margin-top: 36px; padding: 22px 0 0; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted-ink); }
-  @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 480px) { .foot-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .foot { padding: 36px 0; }
+    .foot-grid { grid-template-columns: 1fr; gap: 28px; }
+    .foot-bottom { margin-top: 28px; }
+  }
 
-  .c2m { position: fixed; right: 16px; bottom: 16px; z-index: 60; }
+  .c2m { position: fixed; right: 16px; bottom: 16px; z-index: 60; max-width: calc(100% - 32px); }
   .c2m a {
     display: flex; align-items: center; gap: 8px; background: var(--cocoa);
     color: var(--cream); font-family: var(--body); font-weight: 700;
     padding: 14px 20px; border-radius: 999px; box-shadow: 0 6px 18px rgba(74,53,42,.35);
     min-height: 48px; font-size: 14px;
+  }
+  @media (max-width: 520px) {
+    .c2m { right: 12px; bottom: 12px; }
+    .c2m a { padding: 13px 16px; font-size: 13px; }
   }
   .c2m a:hover { background: var(--terra-deep); color: var(--cream); }
 </style>

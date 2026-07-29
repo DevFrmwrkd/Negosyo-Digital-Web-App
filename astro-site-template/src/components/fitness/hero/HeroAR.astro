@@ -99,4 +99,21 @@ const marqItems = marqFromServices.length > 0
   @keyframes march-ar { from { transform: translateX(0); } to { transform: translateX(-50%); } }
   .marq-track span { font-family: var(--disp); font-size: 22px; letter-spacing: .02em; text-transform: uppercase; padding: 0 22px; display: inline-flex; align-items: center; gap: 22px; }
   .marq-track span::after { content: "\2726"; font-size: 13px; }
+
+  /* Phone: shrink the viewport-filling slam so it never clips a 360px screen,
+     tighten spacing and slim the running class marquee. */
+  @media (max-width: 760px) {
+    .hero { min-height: 74vh; }
+    .hero-in { padding: 40px 0 30px; }
+    .hero h1 { font-size: clamp(40px, 13vw, 78px); line-height: .9; }
+    .hero .sub { gap: 16px; margin-top: 12px; }
+    .hero .sub p { font-size: 16px; }
+    .hero .cta-row { gap: 12px; margin-top: 22px; }
+    .marq-track { padding: 10px 0; }
+    .marq-track span { font-size: 17px; padding: 0 16px; gap: 16px; }
+  }
+  @media (max-width: 520px) {
+    .hero { min-height: 66vh; }
+    .hero h1 { font-size: clamp(34px, 12vw, 58px); }
+  }
 </style>

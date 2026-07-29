@@ -170,6 +170,23 @@ const __fontHref = buildFontHref(__themePairing);
     /* skip link */
     html[data-page="AO"] .skip { position: absolute; left: -999px; top: 0; background: var(--red); color: #fff; padding: 12px 18px; z-index: 100; }
     html[data-page="AO"] .skip:focus { left: 8px; top: 8px; }
+
+    /* ── Mobile scaffolding (shared frame). Tightens gutters + section rhythm and
+       scales the oversized index-number section heads so nothing clips a phone. */
+    @media (max-width: 760px) {
+      html[data-page="AO"] body { font-size: 16px; }
+      html[data-page="AO"] .wrap { padding: 0 20px; }
+      html[data-page="AO"] .sec { padding: 60px 0; }
+      html[data-page="AO"] .sec-head { gap: 14px; margin-bottom: 30px; padding-bottom: 14px; align-items: center; }
+      html[data-page="AO"] .sec-head .snum { font-size: clamp(30px,9vw,52px); }
+      html[data-page="AO"] .sec-head h2 { font-size: clamp(23px,6.4vw,40px); }
+      html[data-page="AO"] .btn { padding: 14px 20px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AO"] .wrap { padding: 0 16px; }
+      html[data-page="AO"] .sec { padding: 46px 0; }
+      html[data-page="AO"] .sec-head { margin-bottom: 24px; }
+    }
   </style>
 
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

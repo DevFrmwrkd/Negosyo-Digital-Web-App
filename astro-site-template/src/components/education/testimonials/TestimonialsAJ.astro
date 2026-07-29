@@ -44,4 +44,8 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   .test-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   .test-card p { font-size: 15px; margin-bottom: 12px; color: var(--ink); }
   .test-card footer { font-weight: 700; font-size: 13px; color: var(--red-pen); }
+  /* Single-column quote cards on a phone. */
+  @media (max-width: 760px) {
+    .test-grid { grid-template-columns: 1fr; }
+  }
 </style>

@@ -70,4 +70,18 @@ const imageCaption = hero.imageCaption || '';
   @media (max-width: 899px) {
     .hero-plate { transform: none; min-height: 260px; }
   }
+  @media (max-width: 760px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 26px; padding-top: 30px; padding-bottom: 40px; }
+    .hero-h { font-size: clamp(40px, 12vw, 88px); }
+    .hero-sub { margin: 14px 0 22px; }
+  }
+  @media (max-width: 520px) {
+    /* Keep the big uppercase stencil (incl. the ink-outline last line) from
+       clipping a 360px screen: lower both the clamp min and the vw term. */
+    .hero-h { font-size: clamp(30px, 11.5vw, 54px); }
+    .hero-h .hl-line:last-child:not(:first-child) { -webkit-text-stroke-width: 1.5px; }
+    .hero-plate { min-height: 210px; }
+    .hero-cta { gap: 10px; }
+    .hero-cta .btn { width: 100%; justify-content: center; }
+  }
 </style>

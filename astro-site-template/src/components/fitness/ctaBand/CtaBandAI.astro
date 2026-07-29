@@ -44,4 +44,11 @@ const hasButtons = !!(cta1Text || cta2Text);
   /* Ghost on the red band: paper outline, fills to paper on hover. */
   .cta-ghost { background: transparent; color: var(--paper); border-color: var(--paper); box-shadow: 6px 6px 0 rgba(20,18,16,.55); }
   .cta-ghost:hover { color: var(--blood); background: var(--paper); }
+  /* Mobile: tighten the band and let the jab-skew CTAs go full-width + tappable. */
+  @media (max-width: 760px) {
+    .cta-band { padding: 40px 0; }
+    .cta-h { font-size: clamp(30px, 8.5vw, 52px); }
+    .cta-actions { width: 100%; }
+    .cta-actions .btn { flex: 1 1 100%; }
+  }
 </style>
