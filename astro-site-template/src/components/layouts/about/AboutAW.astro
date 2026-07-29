@@ -1,0 +1,47 @@
+---
+/**
+ * layouts / AboutAW — broadsheet "our story": a two-column newspaper text block
+ * whose lead paragraph carries a serif drop-cap and an em accent. Mirrors
+ * lp-19's "ABOUT / broadsheet" block.
+ *
+ * Reads content.about (tag / headline / paragraphs[]); the first paragraph is
+ * enlarged with the clay drop-cap. quote + signature are optional extras.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const quote = about.quote || '';
+const signature = about.signature || '';
+---
+{(headline || paragraphs.length > 0) && (
+  <section class="about" id="about" aria-label="About">
+    {tag && <div class="sec-lbl" data-field="about.tag">{tag}</div>}
+    {headline && <h2 class="sec-h" data-field="about.headline" set:html={headline}></h2>}
+    <div class="about2 reveal">
+      {paragraphs.map((p: string, i: number) => (
+        <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
+      ))}
+      {quote && <blockquote class="about-quote" data-field="about.quote">“{quote}”</blockquote>}
+      {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .about2 { column-count: 2; column-gap: 44px; font-size: 16px; color: var(--ink-soft); }
+  .about2 p:first-child { font-family: var(--serif); font-size: 24px; line-height: 1.4; color: var(--ink); }
+  .about2 p:first-child :global(em) { font-style: italic; color: var(--accent); }
+  .about2 p:first-child::first-letter { font-family: var(--serif); font-size: 3.2em; float: left; line-height: .8; padding: 4px 8px 0 0; color: var(--accent); }
+  .about-quote {
+    font-family: var(--serif); font-style: italic; font-size: 21px; line-height: 1.35; color: var(--accent-deep);
+    margin: 8px 0 0; padding-left: 16px; border-left: 2px solid var(--accent); break-inside: avoid;
+  }
+  .about-sign { margin-top: 14px; font-style: italic; color: var(--muted); }
+  @media (max-width: 760px) {
+    .about2 { column-count: 1; }
+    .about2 p:first-child { font-size: 21px; }
+    .about2 p:first-child::first-letter { font-size: 2.8em; }
+  }
+</style>

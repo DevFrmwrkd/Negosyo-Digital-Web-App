@@ -1,0 +1,46 @@
+---
+/**
+ * layouts / GalleryBA — the "a look inside" mosaic (lp-22 GALLERY block).
+ * Art-directed .plate frames where a cycling .sc* duotone scene stands in as
+ * the designed fallback until a photo is set via data-image-field. The first
+ * tile spans 2x2 for the lp-22 mosaic. Auto-hides when there are no items.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+const scenes = ['sc1', 'sc2', 'sc3', 'sc4', 'sc5', 'sc6'];
+---
+{items.length > 0 && (
+  <section class="p-sec" id="gallery" data-component="GALLERY" data-variant="panel">
+    <span class="idx" aria-hidden="true">05</span>
+    {tag && <span class="eyebrow p-eb" data-field="gallery.tag">{tag}</span>}
+    {headline && <h2 class="p-h" data-field="gallery.headline" set:html={headline}></h2>}
+    {sub && <p class="gal-sub" data-field="gallery.sub">{sub}</p>}
+    <div class="gal-p reveal">
+      {items.map((item, i) => (
+        <figure class="plate">
+          <div class={`ph ${scenes[i % scenes.length]}`} role="img" data-image-field={`gallery.items.${i}.image`} style={item.image ? `background-image:url('${item.image}');background-size:cover;background-position:center;` : ''}></div>
+          {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+        </figure>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .gal-sub { max-width: 52ch; color: var(--muted); margin: -18px 0 26px; font-size: 15px; }
+  .gal-p { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .gal-p .plate { aspect-ratio: 1/1; }
+  .gal-p .plate:first-child { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
+  @media (max-width: 900px) { .gal-p { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 760px) {
+    /* One full-width tile per row; drop the mosaic span so nothing overflows. */
+    .gal-p { grid-template-columns: 1fr; gap: 12px; }
+    .gal-p .plate { aspect-ratio: 16/10; }
+    .gal-p .plate:first-child { grid-column: auto; grid-row: auto; aspect-ratio: 16/10; }
+  }
+</style>

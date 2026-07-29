@@ -1,0 +1,44 @@
+---
+/**
+ * layouts / HowBA — the "from first visit to done" steps (lp-22 HOW block). A
+ * two-column set of .st tiles, each led by an absolutely-placed brass serif
+ * numeral (decorative), a serif title and a muted body line. Reads
+ * content.how.steps (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="p-sec" data-component="HOW" data-variant="panel">
+    <span class="idx" aria-hidden="true">04</span>
+    {tag && <span class="eyebrow p-eb" data-field="how.tag">{tag}</span>}
+    {headline && <h2 class="p-h" data-field="how.headline" set:html={headline}></h2>}
+    <div class="how-p">
+      {steps.map((step, i) => (
+        <div class="st reveal" data-delay={String((i % 2) + 1)}>
+          <div class="k" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+          <h3 data-field={`how.steps.${i}.title`}>{step.title}</h3>
+          {(step.body ?? step.desc ?? step.description) && (
+            <p data-field={`how.steps.${i}.body`}>{step.body ?? step.desc ?? step.description}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .how-p { display: grid; grid-template-columns: repeat(2,1fr); gap: 30px 40px; }
+  .how-p .st { padding-left: 52px; position: relative; }
+  .how-p .k { position: absolute; left: 0; top: -6px; font-family: var(--serif); font-style: italic; font-size: 32px; color: var(--accent); line-height: 1; }
+  .how-p h3 { font-size: 19px; margin-bottom: 8px; color: var(--ink); }
+  .how-p p { font-size: 14px; color: var(--muted); margin: 0; }
+  @media (max-width: 760px) {
+    .how-p { grid-template-columns: 1fr; gap: 26px; }
+    .how-p .st { padding-left: 46px; }
+  }
+</style>

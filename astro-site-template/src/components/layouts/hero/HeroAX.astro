@@ -1,0 +1,119 @@
+---
+/**
+ * layouts / HeroAX — brutalist split hero: a left copy cell (mono meta strip,
+ * oversized uppercase display headline, lede, joined button row) beside a
+ * right .plate figure, followed by a full-width marquee ticker. Mirrors lp-21's
+ * "HERO / brutalist" + "TICKER" blocks.
+ *
+ * The .plate keeps its .sc1 duotone as the designed fallback until hero.image is
+ * set (the photo then layers over it). The ticker mirrors the day's items off
+ * the services list, else a default so it always reads as designed — it is
+ * aria-hidden decorative chrome, so it carries no editable field.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (Array.isArray(hero.photos) && hero.photos[0]) || (Array.isArray(content.photos) && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const tag = hero.tag || '';
+const badgeNote = hero.badgeNote || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#reserve';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const brand = (content as any).footer?.brand || layout.businessName || '';
+
+// Ticker labels — the day's items (services titles), else a default so the
+// marquee always reads as designed.
+const services = content.services || {};
+const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+const tickerFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
+const tickerItems = tickerFromServices.length > 0
+  ? tickerFromServices
+  : ['Made in-house', 'Small batches', 'Walk-in welcome', 'Open daily', 'Fair prices', 'Locally sourced'];
+---
+<section class="hero" aria-label="Hero">
+  <div class="hero-grid">
+    <div class="hero-l">
+      {(kicker || tag || badgeNote) && (
+        <div class="hero-meta">
+          {kicker && <span data-field="hero.kicker">{kicker}</span>}
+          {tag && <span data-field="hero.tag">{tag}</span>}
+          {badgeNote && <span data-field="hero.badgeNote">{badgeNote}</span>}
+        </div>
+      )}
+      {headlineLines.length > 0 && (
+        <h1>
+          {headlineLines.map((line: string, i: number) => (
+            <span class="hl" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+      {(cta1Text || cta2Text) && (
+        <div class="btnrow">
+          {cta1Text && <a class="btn f" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn g" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+    <figure class="hero-r plate">
+      <div class="ph sc1" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+      {brand && <figcaption data-field="footer.brand">{brand}</figcaption>}
+    </figure>
+  </div>
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-in">
+      {tickerItems.map((t) => (<span>{t} /</span>))}
+      {tickerItems.map((t) => (<span>{t} /</span>))}
+    </div>
+  </div>
+</section>
+<style>
+  .hero { border-bottom: 2px solid var(--line); }
+  .hero-grid { display: grid; grid-template-columns: 1.5fr 1fr; }
+  .hero-l { padding: 56px 24px 44px; border-right: 2px solid var(--line); }
+  .hero-meta {
+    display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 10px;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 24px;
+  }
+  .hero h1 { font-size: clamp(40px,6.6vw,84px); text-transform: uppercase; letter-spacing: -.02em; margin-bottom: 24px; }
+  .hero h1 .hl { display: block; }
+  .hero h1 :global(em) { font-style: normal; color: var(--accent); }
+  .hero .lede { font-size: 17px; color: var(--ink-soft); max-width: 48ch; margin-bottom: 28px; }
+  .hero-r { position: relative; min-height: 340px; border: none; margin: 0; }
+
+  /* Marquee ticker pinned under the split hero. */
+  .ticker { border-top: 2px solid var(--line); background: var(--accent); color: var(--on-accent); overflow: hidden; }
+  .ticker-in {
+    display: flex; gap: 40px; padding: 12px 0; white-space: nowrap; width: max-content;
+    animation: tk-ax 26s linear infinite;
+    font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase;
+  }
+  .ticker-in span { flex: 0 0 auto; padding-left: 40px; }
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-in { animation: none; flex-wrap: wrap; white-space: normal; width: auto; justify-content: center; }
+  }
+  @keyframes tk-ax { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-l { border-right: none; border-bottom: 2px solid var(--line); }
+  }
+  @media (max-width: 760px) {
+    .hero-l { padding: 40px 18px 34px; }
+    /* Refit the display so it never clips at 360px. */
+    .hero h1 { font-size: clamp(34px,10.5vw,58px); }
+    .hero .lede { font-size: 16px; }
+    .hero-r { min-height: 230px; }
+  }
+  @media (max-width: 380px) {
+    .hero h1 { font-size: clamp(29px,11.5vw,44px); }
+    .btnrow { display: flex; }
+    .btnrow .btn { flex: 1 1 auto; text-align: center; }
+  }
+</style>

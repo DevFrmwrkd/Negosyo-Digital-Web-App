@@ -1,0 +1,113 @@
+---
+/**
+ * layouts / HeaderAX — brutalist sticky nav bar: a bone brand block on the left,
+ * full-height stretched Space Mono links divided by hairlines, and a bone "nb"
+ * CTA block on the right. Mirrors lp-21's "NAV / brutalist" block.
+ *
+ * Mobile-first: <=760px the stretched links collapse behind a hamburger into a
+ * themed full-width dropdown (the design's own paper + rule tokens), toggled by
+ * the inline script (adds .open to header.nav).
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+// Reuse the hero's primary CTA as the nav action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#reserve';
+---
+<header class="nav">
+  <div class="nav-in">
+    <a class="brand" href="#main" data-field="footer.brand">{brand}</a>
+    {(navLinks.length > 0 || ctaText) && (
+      <>
+        <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-ax-menu">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="nav-links" id="nav-ax-menu" aria-label="Primary">
+          {navLinks.map((link, i) => (
+            <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+          ))}
+          {ctaText && <a class="nb" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        </nav>
+      </>
+    )}
+  </div>
+</header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var menu = hdr.querySelector('.nav-links');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () { setOpen(!hdr.classList.contains('open')); });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  header.nav { border-bottom: 2px solid var(--line); position: sticky; top: 0; z-index: 60; background: var(--paper); }
+  .nav-in { display: flex; justify-content: space-between; align-items: stretch; }
+  .brand {
+    font-family: var(--mono); font-weight: 700; font-size: 16px; padding: 18px 24px;
+    border-right: 2px solid var(--accent); text-transform: uppercase; letter-spacing: .02em;
+    color: var(--on-accent); background: var(--accent); display: flex; align-items: center;
+    max-width: 62vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .brand:hover { color: var(--on-accent); }
+  .nav-links { display: flex; }
+  .nav-links a {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--ink-soft); padding: 0 20px; display: flex; align-items: center; border-left: 1px solid var(--hair);
+  }
+  .nav-links a:hover { background: var(--accent-light); color: var(--on-accent); }
+  .nav-links .nb { background: var(--accent); color: var(--on-accent); border-left: 2px solid var(--accent); }
+  .nav-links .nb:hover { background: var(--accent-light); color: var(--on-accent); }
+
+  /* Hamburger — hidden on desktop, the mobile trigger below. */
+  .nav-burger { display: none; }
+
+  @media (max-width: 760px) {
+    .nav-in { align-items: center; }
+    .brand { padding: 15px 18px; font-size: 15px; }
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 46px; height: 46px; padding: 12px 11px; margin-right: 12px;
+      background: transparent; border: 0; cursor: pointer; flex-shrink: 0;
+    }
+    .nav-burger span { display: block; width: 24px; height: 2px; background: var(--ink); transition: transform .3s ease, opacity .3s ease; }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Links become a full-width drawer beneath the bar, in the design's own
+       paper + rule tokens so it matches the brutalist look. */
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--paper); border-bottom: 2px solid var(--line);
+      box-shadow: 0 24px 40px -22px rgba(var(--ink-rgb),.4);
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    header.nav.open .nav-links { max-height: calc(100vh - 60px); overflow-y: auto; opacity: 1; visibility: visible; }
+    .nav-links a {
+      border-left: none; border-bottom: 1px solid var(--hair);
+      min-height: 48px; padding: 0 18px; font-size: 13px; letter-spacing: .1em;
+    }
+    .nav-links .nb {
+      border-left: none; border-bottom: none; min-height: 50px; justify-content: center;
+      margin: 8px 0 0;
+    }
+  }
+</style>

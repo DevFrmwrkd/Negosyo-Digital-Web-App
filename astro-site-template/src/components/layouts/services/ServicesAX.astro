@@ -1,0 +1,49 @@
+---
+/**
+ * layouts / ServicesAX — brutalist "what we do": a sec-bar over a two-column
+ * bordered grid of numbered cells (mono [0N] index, uppercase title, dim body).
+ * Mirrors lp-21's "SERVICES / brutalist" block.
+ *
+ * Reads content.services.items (title / desc). Auto-hides when empty.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const headline = services.headline || 'What we do';
+const idx = services.idx || '[ The menu ]';
+type Item = { title: string; desc?: string; price?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="grid-sec" id="services" aria-label="Services">
+    <div class="sec-bar">
+      <h2 data-field="services.headline" set:html={headline}></h2>
+      <span class="idx" data-field="services.idx">{idx}</span>
+    </div>
+    <div class="svc-grid">
+      {items.map((item, i) => (
+        <div class="cell reveal">
+          <span class="n" aria-hidden="true">[{String(i + 1).padStart(2, '0')}]</span>
+          <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+          {(item.desc ?? item.tag ?? item.price) && (
+            <p data-field={`services.items.${i}.desc`}>{item.desc ?? item.tag ?? item.price}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .svc-grid { display: grid; grid-template-columns: repeat(2,1fr); }
+  .svc-grid .cell { padding: 30px 24px; border-bottom: 2px solid var(--line); border-right: 2px solid var(--line); }
+  .svc-grid .cell:nth-child(2n) { border-right: none; }
+  .svc-grid .cell:last-child { border-bottom: none; }
+  .svc-grid .n { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .svc-grid h3 { font-size: 22px; text-transform: uppercase; margin: 8px 0; letter-spacing: -.01em; }
+  .svc-grid p { font-size: 13px; color: var(--muted); margin: 0; }
+  @media (max-width: 760px) {
+    .svc-grid { grid-template-columns: 1fr; }
+    .svc-grid .cell { border-right: none; }
+    .svc-grid .cell:last-child { border-bottom: none; }
+  }
+</style>

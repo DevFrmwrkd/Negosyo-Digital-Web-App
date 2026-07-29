@@ -1,0 +1,39 @@
+---
+/**
+ * layouts / HowAW — broadsheet "how it works": a two-column numbered list where
+ * each step is prefixed by an oversized italic serif counter, a bold lead-in
+ * (the step title) and a muted body line. Mirrors lp-19's "HOW / broadsheet".
+ *
+ * Reads content.how.steps (title + canonical body, legacy desc / description).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how" aria-label="How it works">
+    {tag && <div class="sec-lbl" data-field="how.tag">{tag}</div>}
+    {headline && <h2 class="sec-h" data-field="how.headline" set:html={headline}></h2>}
+    <ol class="proc">
+      {steps.map((step, i) => (
+        <li class="reveal" data-delay={i > 0 ? String(Math.min(i, 3)) : undefined}>
+          <b data-field={`how.steps.${i}.title`}>{step.title}</b>
+          {(step.body ?? step.desc ?? step.description) && (
+            <span data-field={`how.steps.${i}.body`}> {step.body ?? step.desc ?? step.description}</span>
+          )}
+        </li>
+      ))}
+    </ol>
+  </section>
+)}
+<style>
+  .proc { margin: 0; padding: 0; list-style: none; counter-reset: pc; display: grid; grid-template-columns: repeat(2,1fr); gap: 26px 44px; }
+  .proc li { counter-increment: pc; padding-left: 52px; position: relative; font-size: 15px; color: var(--ink-soft); }
+  .proc li::before { content: counter(pc); position: absolute; left: 0; top: -4px; font-family: var(--serif); font-style: italic; font-size: 30px; color: var(--accent); }
+  .proc b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 760px) { .proc { grid-template-columns: 1fr; gap: 22px; } }
+</style>

@@ -1,0 +1,64 @@
+---
+/**
+ * layouts / ServicesAZ — the "what's cooking" kiosk split: a centred copy column
+ * holding a numbered list (each row = an italic bone serial, an EB Garamond
+ * title, muted description and an optional outlined category chip) beside a
+ * sticky art-directed image column whose .sc2 duotone "scene" stands in until
+ * services.image is set. Reads content.services.items (title / desc / tag).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const image = services.image || (Array.isArray(services.images) && services.images[0]) || '';
+const imageCaption = services.imageCaption || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="split services" id="services">
+    <div class="panecopy svc-copy">
+      {tag && <span class="eyebrow" style="display:block;margin-bottom:14px;" data-field="services.tag">{tag}</span>}
+      {headline && <h2 class="svc-h" data-field="services.headline" set:html={headline}></h2>}
+      <div class="svc-list">
+        {items.map((item, i) => (
+          <div class="it reveal">
+            <span class="n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <div class="body">
+              <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+              {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+              {(item.tag ?? item.duration ?? item.price) && (
+                <span class="chip" data-field={`services.items.${i}.tag`}>{item.tag ?? item.duration ?? item.price}</span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div class="stick svc-stick">
+      <div class="ph sc2" role="img" aria-label="Services" data-image-field="services.image" style={image ? `background-image:url('${image}');` : ''}></div>
+      {imageCaption && <span class="cap" data-field="services.imageCaption">{imageCaption}</span>}
+    </div>
+  </section>
+)}
+<style>
+  .svc-h { font-size: clamp(30px,4vw,54px); color: var(--ink); margin-bottom: 26px; }
+  .svc-list { border-bottom: 1px solid var(--line); }
+  .it {
+    display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: baseline;
+    padding: 24px 0; border-top: 1px solid var(--line);
+  }
+  .it .n { font-family: var(--serif); font-style: italic; font-size: 20px; color: var(--accent); }
+  .it h3 { font-size: 22px; color: var(--ink); }
+  .it p { font-size: 14px; color: var(--muted); margin: .4em 0 0; }
+  .it .chip {
+    display: inline-block; margin-top: 12px; font-family: var(--sans); font-size: 9px;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--accent);
+    border: 1px solid var(--line); padding: 5px 12px;
+  }
+  @media (max-width: 380px) {
+    .it { gap: 14px; }
+    .it h3 { font-size: 20px; }
+  }
+</style>

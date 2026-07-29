@@ -1,0 +1,59 @@
+---
+/**
+ * layouts / TestimonialsAX — brutalist "what locals say": a sec-bar over a
+ * three-cell bordered row of quote cards, each the quote in body type over a
+ * bone mono attribution line. Mirrors lp-21's "TESTIMONIALS / brutalist" block.
+ *
+ * Reads content.testimonials.items (canonical `who` + `role`, legacy
+ * `author` / `name` / `context`). Auto-hides when empty.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const test = content.testimonials || {};
+const headline = test.headline || 'What locals say';
+const idx = test.idx || '[ REVIEWS ]';
+type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
+const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+---
+{items.length > 0 && (
+  <section class="grid-sec" id="reviews" aria-label="Testimonials">
+    <div class="sec-bar">
+      <h2 data-field="testimonials.headline" set:html={headline}></h2>
+      <span class="idx" data-field="testimonials.idx">{idx}</span>
+    </div>
+    <div class="q-cells">
+      {items.map((item, i) => {
+        const who = item.who ?? item.author ?? item.name;
+        const role = item.role ?? item.context;
+        return (
+          <div class="cell reveal" data-delay={i}>
+            <p data-field={`testimonials.items.${i}.quote`}>{item.quote}</p>
+            {(who || role) && (
+              <div class="who">
+                {who && <span data-field={`testimonials.items.${i}.who`}>— {who}</span>}
+                {role && <span data-field={`testimonials.items.${i}.role`}> · {role}</span>}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </section>
+)}
+<style>
+  .q-cells { display: grid; grid-template-columns: repeat(3,1fr); }
+  .q-cells .cell { padding: 34px 24px; border-right: 2px solid var(--line); }
+  .q-cells .cell:last-child { border-right: none; }
+  .q-cells p { font-size: 16px; color: var(--ink); }
+  .q-cells .who { font-family: var(--mono); font-size: 11px; color: var(--accent); text-transform: uppercase; }
+  @media (max-width: 980px) {
+    .q-cells { grid-template-columns: repeat(2,1fr); }
+    .q-cells .cell { border-bottom: 2px solid var(--line); }
+    .q-cells .cell:nth-child(2n) { border-right: none; }
+  }
+  @media (max-width: 760px) {
+    .q-cells { grid-template-columns: 1fr; }
+    .q-cells .cell { border-right: none; }
+    .q-cells .cell:last-child { border-bottom: none; }
+  }
+</style>

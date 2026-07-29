@@ -1,0 +1,258 @@
+---
+/**
+ * layouts / PageBA — "Panel Sidebar" (business-agnostic editorial LAYOUT).
+ *
+ * Ported from Local Business Landing Pages v4 / lp-22-food.html (archetype
+ * "panel-sidebar"). A fixed 340px sticky sidebar carries the brand, a ruled
+ * vertical nav and the contact meta; a scrolling "stream" of ruled p-sec
+ * blocks (each with a serif section number + brass eyebrow) fills the rest.
+ *
+ * THEMEABLE by design (unlike the bespoke hero ports): the source's baked
+ * brass/ink palette is lifted into the STANDARD token vocabulary the theme
+ * engine already overrides (--paper / --paper-2 / --card / --ink / --ink-soft
+ * / --muted / --line / --accent / --accent-light / --accent-deep + rgb + on-*
+ * aliases), scoped to html[data-page="BA"]. The source colours are the
+ * DEFAULTS, so it looks like lp-22 out of the box but fully recolours when
+ * buildOverrideCss injects an admin scheme. No component carries a baked hex —
+ * every colour flows through a var(--token).
+ *
+ * CRITICAL specificity note: the size-bearing .plate primitive is written
+ * html[data-page="BA"] :where(.plate) so per-section height modifiers
+ * (.hero-fig, .gal-p .plate, .loc-map …) at (0,2,0) win over the base instead
+ * of being squashed to a base floor. Do not remove the :where().
+ *
+ * The .shell grid is GLOBAL (it wraps the imported sidebar + stream), so its
+ * <=960px collapse-to-one-column override lives in THIS same global block to
+ * beat any later rule. lockVariant: true — only an EXPLICIT admin colour/font
+ * pick recolours; the panel-sidebar defaults win otherwise.
+ */
+import HeaderBA from './header/HeaderBA.astro';
+import HeroBA from './hero/HeroBA.astro';
+import TrustBA from './trust/TrustBA.astro';
+import AboutBA from './about/AboutBA.astro';
+import ServicesBA from './services/ServicesBA.astro';
+import WhyBA from './why/WhyBA.astro';
+import HowBA from './how/HowBA.astro';
+import TestimonialsBA from './testimonials/TestimonialsBA.astro';
+import GalleryBA from './gallery/GalleryBA.astro';
+import FaqBA from './faq/FaqBA.astro';
+import AreaBA from './area/AreaBA.astro';
+import CredentialsBA from './credentials/CredentialsBA.astro';
+import LocationBA from './location/LocationBA.astro';
+import CtaBandBA from './ctaBand/CtaBandBA.astro';
+import FooterBA from './footer/FooterBA.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="BA">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <meta name="theme-color" content="#101014" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- lp-22 "panel-sidebar / brass" palette lifted into the theme engine's
+       standard token vocabulary + shared base primitives, scoped to
+       html[data-page="BA"] so they never leak to sister designs. Defaults are
+       the source's original colours; buildOverrideCss recolours them. -->
+  <style is:global>
+    html[data-page="BA"] {
+      /* lp-22 native palette expressed in the theme engine's standard tokens */
+      --paper: #101014;       /* page ground */
+      --paper-2: #16161c;     /* sidebar / raised cell surfaces */
+      --card: #16161c;        /* card surfaces */
+      --ink: #ede9df;         /* primary text (bone) */
+      --ink-soft: #b5b1a6;    /* body / nav text */
+      --muted: #84808f;       /* small / tag / meta text */
+      --line: #2a2a33;        /* hairlines / borders */
+      --accent: #c19a48;      /* brass */
+      --accent-light: #d9b869;/* bright brass (hover / stars) */
+      --accent-deep: #9a7a34; /* deep brass */
+      --serif: "Playfair Display", Georgia, "Times New Roman", serif;
+      --sans: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+      /* Generic aliases so the theme-override machinery + inherited rules stay
+         legible even though components read the design's own tokens. */
+      --paper-rgb: 16,16,20; --ink-rgb: 237,233,223; --accent-rgb: 193,154,72;
+      --on-accent: #101014; --on-ink: #101014; --on-paper: #ede9df;
+    }
+    html[data-page="BA"] * { box-sizing: border-box; }
+    html[data-page="BA"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BA"] { scroll-behavior: auto; } }
+    html[data-page="BA"] body {
+      margin: 0; background: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 16px; line-height: 1.72;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+    }
+    html[data-page="BA"] h1, html[data-page="BA"] h2,
+    html[data-page="BA"] h3, html[data-page="BA"] h4 {
+      margin: 0; font-family: var(--serif); font-weight: 400; line-height: 1.05;
+    }
+    html[data-page="BA"] p { margin: 0 0 1em; }
+    html[data-page="BA"] a { color: var(--accent); text-decoration: none; }
+    html[data-page="BA"] a:hover { color: var(--ink); }
+    html[data-page="BA"] img { max-width: 100%; display: block; }
+    html[data-page="BA"] ::selection { background: var(--accent); color: var(--on-accent); }
+
+    /* skip link */
+    html[data-page="BA"] .skip { position: absolute; left: -999px; top: 0; }
+    html[data-page="BA"] .skip:focus { left: 8px; top: 8px; background: var(--accent); color: var(--on-accent); padding: 10px; z-index: 100; }
+
+    /* eyebrow / section-number scaffolding shared across p-sec blocks */
+    html[data-page="BA"] .eyebrow {
+      font-family: var(--sans); font-size: 10px; letter-spacing: .36em;
+      text-transform: uppercase; color: var(--accent); font-weight: 600;
+    }
+    html[data-page="BA"] .p-eb { display: block; margin-bottom: 14px; }
+
+    /* Letterpress-brass buttons (design signature). */
+    html[data-page="BA"] .btn {
+      display: inline-flex; align-items: center; gap: .5em; font-family: var(--sans);
+      font-size: 12px; letter-spacing: .2em; text-transform: uppercase;
+      padding: 15px 28px; border: 1px solid var(--accent);
+      transition: background .4s, color .4s, border-color .4s, transform .4s;
+    }
+    html[data-page="BA"] .btn.f { background: var(--accent); color: var(--on-accent); }
+    html[data-page="BA"] .btn.f:hover { background: var(--accent-light); border-color: var(--accent-light); color: var(--on-accent); transform: translateY(-2px); }
+    html[data-page="BA"] .btn.g { color: var(--ink); border-color: var(--line); }
+    html[data-page="BA"] .btn.g:hover { border-color: var(--accent); color: var(--accent); }
+    html[data-page="BA"] .btnrow { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* Scroll reveal (mirrors the AM convention: .reveal -> .in via IO). */
+    html[data-page="BA"] .reveal { opacity: 0; transform: translateY(22px); transition: opacity .9s cubic-bezier(.16,1,.3,1), transform .9s cubic-bezier(.16,1,.3,1); }
+    html[data-page="BA"] .reveal.in { opacity: 1; transform: none; }
+    html[data-page="BA"] .reveal[data-delay="1"] { transition-delay: .08s; }
+    html[data-page="BA"] .reveal[data-delay="2"] { transition-delay: .16s; }
+    html[data-page="BA"] .reveal[data-delay="3"] { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BA"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+    /* Designed photo frame — :where() so per-section height modifiers win. */
+    html[data-page="BA"] :where(.plate) { position: relative; overflow: hidden; background: var(--paper); border-radius: 3px; isolation: isolate; }
+    html[data-page="BA"] :where(.plate) .ph { position: absolute; inset: 0; background-size: cover; background-position: center; transition: transform 1.3s cubic-bezier(.16,1,.3,1); }
+    html[data-page="BA"] :where(.plate):hover .ph { transform: scale(1.05); }
+    html[data-page="BA"] :where(.plate) figcaption {
+      position: absolute; left: 0; bottom: 0; width: 100%; z-index: 3; padding: 12px 15px;
+      font-family: var(--sans); font-size: 9px; letter-spacing: .28em; text-transform: uppercase;
+      color: var(--ink); background: linear-gradient(0deg, rgba(var(--paper-rgb),.9), transparent);
+    }
+
+    /* Duotone "scene" fields — the designed fallback painted behind each photo.
+       Brass glows read from --accent-rgb, grounds from --paper/-2 so they
+       recolour with the scheme. */
+    html[data-page="BA"] .sc1 { background: radial-gradient(70% 60% at 42% 36%, rgba(var(--accent-rgb),.55), transparent 60%), radial-gradient(60% 60% at 76% 78%, rgba(var(--accent-rgb),.28), transparent 62%), linear-gradient(155deg, var(--paper-2), var(--paper)); }
+    html[data-page="BA"] .sc2 { background: radial-gradient(55% 65% at 60% 40%, rgba(var(--accent-rgb),.5), transparent 60%), repeating-linear-gradient(30deg, rgba(var(--ink-rgb),.05) 0 4px, transparent 4px 20px), linear-gradient(155deg, var(--paper-2), var(--paper)); }
+    html[data-page="BA"] .sc3 { background: radial-gradient(60% 50% at 50% 60%, rgba(var(--accent-rgb),.36), transparent 62%), repeating-linear-gradient(0deg, rgba(var(--ink-rgb),.05) 0 1px, transparent 1px 44px), linear-gradient(155deg, var(--paper-2), var(--paper)); }
+    html[data-page="BA"] .sc4 { background: conic-gradient(from 210deg at 42% 44%, rgba(var(--accent-rgb),.52), transparent 42%), linear-gradient(155deg, var(--paper-2), var(--paper)); }
+    html[data-page="BA"] .sc5 { background: radial-gradient(38% 48% at 50% 36%, rgba(var(--ink-rgb),.16), transparent 60%), radial-gradient(55% 45% at 50% 74%, rgba(var(--accent-rgb),.46), transparent 64%), linear-gradient(155deg, var(--paper-2), var(--paper)); }
+    html[data-page="BA"] .sc6 { background: radial-gradient(66% 66% at 44% 42%, rgba(var(--accent-rgb),.48), transparent 62%), linear-gradient(155deg, var(--paper-2), var(--paper)); }
+
+    /* ---- Panel shell scaffolding (GLOBAL: wraps the sidebar + stream) ---- */
+    html[data-page="BA"] .shell { display: grid; grid-template-columns: 340px 1fr; }
+    html[data-page="BA"] .stream { min-width: 0; }
+    html[data-page="BA"] .p-sec { padding: 96px 60px; border-bottom: 1px solid var(--line); position: relative; }
+    html[data-page="BA"] .p-sec .idx {
+      position: absolute; top: 96px; right: 60px; font-family: var(--serif); font-style: italic;
+      font-size: 15px; color: var(--accent);
+    }
+    html[data-page="BA"] .p-h { font-size: clamp(30px,4.2vw,54px); margin-bottom: 30px; }
+    html[data-page="BA"] .p-h em { font-style: italic; color: var(--accent); }
+
+    /* ------------------------------------------------------------------ */
+    /* Mobile-first tuning for the GLOBAL scaffolding. The .shell grid     */
+    /* override lives in THIS same global block so it always wins; section */
+    /* grids are overridden inside their own *BA components.               */
+    /* ------------------------------------------------------------------ */
+    @media (max-width: 960px) {
+      html[data-page="BA"] .shell { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      html[data-page="BA"] .p-sec { padding: 68px 24px; }
+      html[data-page="BA"] .p-sec .idx { top: 68px; right: 24px; }
+      html[data-page="BA"] .p-h { font-size: clamp(28px,7.5vw,44px); margin-bottom: 24px; }
+      html[data-page="BA"] .btn { padding: 14px 22px; }
+    }
+    @media (max-width: 400px) {
+      html[data-page="BA"] .p-sec { padding: 56px 18px; }
+      html[data-page="BA"] .p-h { font-size: clamp(25px,8vw,36px); }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="shell">
+    <HeaderBA layout={layout} content={content} />
+    <div class="stream">
+      <main id="main">
+        {visibility.heroSection !== false && <HeroBA content={content} layout={layout} />}
+        {visibility.trustBlock !== false && <TrustBA content={content} />}
+        {visibility.aboutSection !== false && <AboutBA content={content} />}
+        {visibility.servicesSection !== false && <ServicesBA content={content} />}
+        {visibility.whyUsBlock !== false && <WhyBA content={content} />}
+        {visibility.howItWorksBlock !== false && <HowBA content={content} />}
+        {visibility.testimonialsBlock !== false && <TestimonialsBA content={content} />}
+        {visibility.gallerySection !== false && <GalleryBA content={content} layout={layout} />}
+        {visibility.faqBlock !== false && <FaqBA content={content} />}
+        {visibility.serviceAreaBlock !== false && <AreaBA content={content} />}
+        {visibility.credentialsBlock !== false && <CredentialsBA content={content} />}
+        {visibility.locationBlock !== false && <LocationBA content={content} layout={layout} />}
+        {visibility.ctaBandBlock !== false && <CtaBandBA content={content} layout={layout} />}
+      </main>
+      <FooterBA layout={layout} content={content} />
+    </div>
+  </div>
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var items = document.querySelectorAll('.reveal');
+      if (reduce || !('IntersectionObserver' in window) || document.hidden) {
+        items.forEach(function (el) { el.classList.add('in'); });
+      } else {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+        items.forEach(function (el) { io.observe(el); });
+      }
+
+      // layouts-BA Leaflet boot — accepts (lat, lng, label) from LocationBA.
+      // Marker colours are read from the live --accent / --paper tokens so the
+      // pin recolours with the active scheme too.
+      window.__layoutsBAInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        var cs = getComputedStyle(document.documentElement);
+        var accent = (cs.getPropertyValue('--accent') || '#c19a48').trim();
+        var paper = (cs.getPropertyValue('--paper') || '#101014').trim();
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:' + accent + ';box-shadow:0 0 0 3px ' + paper + ';"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

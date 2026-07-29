@@ -1,0 +1,65 @@
+---
+/**
+ * layouts / ServicesAY — the editorial numbered ledger (lp-20's .svc-ed): a
+ * hairline-ruled list where each row is an italic plum index, a serif title with
+ * a muted description, and an outlined category chip. Rows shift right on hover.
+ * services.sub renders as the closing note.
+ *
+ * services.items[i].tag is the design's category chip (legacy `duration` /
+ * `price` fall in behind it); it stays in the DOM on mobile (wrapping under the
+ * title) so its editable field is always present. Mirrors the AM content model.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="services" id="services">
+    <div class="wrap">
+      {tag && <span class="eyebrow s-eb reveal" data-field="services.tag">{tag}</span>}
+      {headline && <h2 class="s-h reveal" data-field="services.headline" set:html={headline}></h2>}
+      <div class="svc-ed">
+        {items.map((item, i) => (
+          <article class="it reveal">
+            <span class="n">{String(i + 1).padStart(2, '0')}</span>
+            <div class="it-copy">
+              <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+              {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+            </div>
+            {(item.tag ?? item.duration ?? item.price) && (
+              <span class="tag" data-field={`services.items.${i}.tag`}>{item.tag ?? item.duration ?? item.price}</span>
+            )}
+          </article>
+        ))}
+      </div>
+      {sub && <p class="svc-note" data-field="services.sub">{sub}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .services { background: var(--paper); }
+  .svc-ed { border-top: 1px solid var(--line); }
+  .it {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 34px; align-items: baseline;
+    padding: 40px 0; border-bottom: 1px solid var(--line); transition: padding-left .5s;
+  }
+  .it:hover { padding-left: 20px; }
+  .it .n { font-family: var(--serif); font-style: italic; font-size: clamp(28px,4vw,52px); color: var(--accent); line-height: 1; }
+  .it h3 { font-size: clamp(24px,3vw,38px); color: var(--ink); }
+  .it p { color: var(--muted); font-size: 14px; margin: .5em 0 0; max-width: 52ch; }
+  .it .tag { font-family: var(--sans); font-size: 10px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); padding: 6px 12px; white-space: nowrap; }
+  .svc-note { margin-top: 22px; color: var(--muted); font-size: 14px; letter-spacing: .04em; }
+  @media (max-width: 680px) {
+    /* Drop the fixed chip column; let the tag wrap under the title so a long
+       name + chip never forces horizontal overflow. */
+    .it { grid-template-columns: auto 1fr; gap: 6px 18px; }
+    .it:hover { padding-left: 0; }
+    .it h3 { font-size: clamp(22px,6vw,32px); }
+    .it .tag { grid-column: 2; justify-self: start; margin-top: 12px; }
+  }
+</style>

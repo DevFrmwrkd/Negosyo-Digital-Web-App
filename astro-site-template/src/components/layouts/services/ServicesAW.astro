@@ -1,0 +1,63 @@
+---
+/**
+ * layouts / ServicesAW — broadsheet "classified" list: numbered rows (italic
+ * serif index · serif title · muted description) ruled with dotted hairlines,
+ * reading like a newspaper classifieds column. Mirrors lp-19's "SERVICES /
+ * broadsheet" block.
+ *
+ * Reads content.services (tag / headline / items[].title / desc / tag). An
+ * optional per-item chip renders from item.tag (legacy duration / price).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="services" id="services" aria-label="Services">
+    {tag && <div class="sec-lbl" data-field="services.tag">{tag}</div>}
+    {headline && <h2 class="sec-h" data-field="services.headline" set:html={headline}></h2>}
+    <ul class="classified">
+      {items.map((item, i) => (
+        <li class="reveal">
+          <span class="cl-n">{String(i + 1).padStart(2, '0')}</span>
+          <span class="cl-h" data-field={`services.items.${i}.title`}>{item.title}</span>
+          {(item.desc || item.tag || item.duration || item.price) && (
+            <span class="cl-p">
+              {item.desc && <span data-field={`services.items.${i}.desc`}>{item.desc}</span>}
+              {(item.tag ?? item.duration ?? item.price) && (
+                <span class="chip" data-field={`services.items.${i}.tag`}>{item.tag ?? item.duration ?? item.price}</span>
+              )}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+    {sub && <p class="svc-note" data-field="services.sub">{sub}</p>}
+  </section>
+)}
+<style>
+  .classified { list-style: none; margin: 0; padding: 0; }
+  .classified li {
+    display: grid; grid-template-columns: 52px 1fr; gap: 20px; padding: 22px 0;
+    border-bottom: 1px dotted var(--line); align-items: baseline;
+  }
+  .classified li:first-child { border-top: 1px solid var(--line); }
+  .cl-n { font-family: var(--serif); font-style: italic; font-size: 22px; color: var(--accent); }
+  .cl-h { font-family: var(--serif); font-size: 24px; color: var(--ink); }
+  .cl-p { grid-column: 2; font-size: 14px; color: var(--muted); max-width: 60ch; margin-top: 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 14px; }
+  .cl-p .chip {
+    font-family: var(--label); font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink-soft); border: 1px solid var(--line); padding: 4px 10px; white-space: nowrap;
+  }
+  .svc-note { margin-top: 20px; color: var(--muted); font-size: 14px; font-family: var(--label); letter-spacing: .04em; }
+  @media (max-width: 620px) {
+    .classified li { grid-template-columns: 36px 1fr; gap: 12px; }
+    .cl-n { font-size: 19px; }
+    .cl-h { font-size: 21px; }
+  }
+</style>

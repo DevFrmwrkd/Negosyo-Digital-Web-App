@@ -1,0 +1,62 @@
+---
+/**
+ * layouts / ServicesBA — the numbered offering list (lp-22 SERVICES block).
+ * Each row is a ruled .it (brass serif index, serif title, muted description,
+ * an optional category chip) that nudges right on hover. services.sub renders
+ * as the closing note.
+ *
+ * services.items[i].tag is the optional chip; price / duration fall in behind
+ * it (mirrors the AM content model).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="p-sec" id="services" data-component="SERVICES" data-variant="panel">
+    <span class="idx" aria-hidden="true">02</span>
+    {tag && <span class="eyebrow p-eb" data-field="services.tag">{tag}</span>}
+    {headline && <h2 class="p-h" data-field="services.headline" set:html={headline}></h2>}
+    <div class="svc-p">
+      {items.map((item, i) => (
+        <div class="it reveal">
+          <span class="n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <div>
+            <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+          </div>
+          {(item.tag ?? item.duration ?? item.price) && (
+            <span class="tag" data-field={`services.items.${i}.tag`}>{item.tag ?? item.duration ?? item.price}</span>
+          )}
+        </div>
+      ))}
+    </div>
+    {sub && <p class="svc-note" data-field="services.sub">{sub}</p>}
+  </section>
+)}
+<style>
+  .svc-p { border-top: 1px solid var(--line); }
+  .svc-p .it {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: baseline;
+    padding: 28px 0; border-bottom: 1px solid var(--line); transition: padding-left .5s;
+  }
+  .svc-p .it:hover { padding-left: 14px; }
+  .svc-p .n { font-family: var(--serif); font-style: italic; font-size: 22px; color: var(--accent); }
+  .svc-p h3 { font-size: 23px; color: var(--ink); }
+  .svc-p p { font-size: 14px; color: var(--muted); margin: .4em 0 0; max-width: 54ch; }
+  .svc-p .tag { font-family: var(--sans); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .svc-note { margin-top: 20px; color: var(--muted); font-size: 15px; font-family: var(--sans); letter-spacing: .04em; }
+  @media (max-width: 760px) {
+    /* Drop the fixed chip column; the tag wraps under the title so a long
+       name + chip never forces horizontal overflow. */
+    .svc-p .it { grid-template-columns: 34px 1fr; gap: 4px 16px; padding: 22px 0; }
+    .svc-p .it:hover { padding-left: 0; }
+    .svc-p h3 { font-size: 20px; }
+    .svc-p .tag { grid-column: 2; justify-self: start; margin-top: 8px; }
+  }
+</style>

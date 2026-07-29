@@ -1,0 +1,49 @@
+---
+/**
+ * layouts / FaqAY — "often asked" editorial accordion (lp-20's .faq-ed): a
+ * centred single column of hairline-ruled details rows. Serif summaries with a
+ * plum "+" that rotates to "×" on open; muted answer copy. The first item opens
+ * by default (lp-20's designed state). Reads content.faq.items (q / a).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const faq = content.faq || {};
+const tag = faq.tag || '';
+const headline = faq.headline || '';
+type Item = { q: string; a: string };
+const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq) ? faq : []);
+---
+{items.length > 0 && (
+  <section class="faq" id="faq">
+    <div class="wrap">
+      <div class="faq-head">
+        {tag && <span class="eyebrow s-eb reveal" data-field="faq.tag">{tag}</span>}
+        {headline && <h2 class="s-h reveal" data-field="faq.headline" set:html={headline}></h2>}
+      </div>
+      <div class="faq-ed">
+        {items.map((item, i) => (
+          <details class="reveal" open={i === 0}>
+            <summary><span data-field={`faq.items.${i}.q`}>{item.q}</span> <span class="pm" aria-hidden="true">+</span></summary>
+            <div class="a" data-field={`faq.items.${i}.a`} set:html={item.a}></div>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .faq { background: var(--paper); }
+  .faq-head { text-align: center; }
+  .faq-head .s-eb { display: block; }
+  .faq-ed { max-width: 820px; margin: 0 auto; }
+  details { border-bottom: 1px solid var(--line); }
+  summary {
+    list-style: none; cursor: pointer; padding: 26px 0; font-family: var(--serif); font-size: 22px; color: var(--ink);
+    display: flex; justify-content: space-between; gap: 20px; align-items: center;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary .pm { font-family: var(--sans); color: var(--accent); transition: transform .4s; line-height: 1; }
+  details[open] summary .pm { transform: rotate(45deg); }
+  details .a { padding: 0 0 26px; color: var(--ink-soft); font-size: 15px; max-width: 64ch; }
+  @media (max-width: 760px) { summary { font-size: 19px; padding: 22px 0; } }
+</style>

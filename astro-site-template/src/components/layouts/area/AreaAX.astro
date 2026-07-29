@@ -1,0 +1,47 @@
+---
+/**
+ * layouts / AreaAX — brutalist "where we serve": lp-21's SERVICE-AREA strip
+ * lifted out of the FAQ block into its own section (per the AM / AW model). A
+ * mono label over hairline-bordered area tags that invert to the bone accent on
+ * hover. Reads content.area.places (legacy `items`); optional headline / sub
+ * render above when provided. Auto-hides when there are no places.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || 'Where we serve';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="grid-sec area-sec" aria-label="Service area">
+    {(headline || sub) && (
+      <div class="sec-bar area-head reveal">
+        {headline && <h2 data-field="area.headline" set:html={headline}></h2>}
+        {sub && <span class="idx" data-field="area.sub">{sub}</span>}
+      </div>
+    )}
+    <div class="area-wrap reveal">
+      <div class="lbl area-lbl" data-field="area.tag">{tag}</div>
+      <div class="areas">
+        {places.map((place, i) => (
+          <span data-field={`area.places.${i}`}>{place}</span>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .area-wrap { padding: 26px 24px; }
+  .area-lbl { margin-bottom: 14px; }
+  .areas { display: flex; flex-wrap: wrap; gap: 0; }
+  .areas span {
+    font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 12px 16px; border: 1px solid var(--hair); margin: -1px 0 0 -1px; color: var(--ink-soft); transition: .2s;
+  }
+  .areas span:hover { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  @media (max-width: 760px) {
+    .area-wrap { padding: 22px 18px; }
+  }
+</style>

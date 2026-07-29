@@ -1,0 +1,48 @@
+---
+/**
+ * layouts / WhyAX — brutalist "what sets us apart": a sec-bar over a three-cell
+ * bordered row, each led by a big mono numeral, an uppercase title and a dim
+ * body line. Mirrors lp-21's "WHY / brutalist" block.
+ *
+ * Reads content.why.items (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+const headline = why.headline || 'What sets us apart';
+const idx = why.idx || '[ WHY ]';
+const items: Array<{ title: string; body?: string; desc?: string; description?: string }> =
+  Array.isArray(why.items) ? why.items : [];
+---
+{items.length > 0 && (
+  <section class="grid-sec" aria-label="Why us">
+    <div class="sec-bar">
+      <h2 data-field="why.headline" set:html={headline}></h2>
+      <span class="idx" data-field="why.idx">{idx}</span>
+    </div>
+    <div class="why-cells">
+      {items.map((item, i) => (
+        <div class="cell reveal" data-delay={i}>
+          <div class="k" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+          <h3 data-field={`why.items.${i}.title`}>{item.title}</h3>
+          {(item.body ?? item.desc ?? item.description) && (
+            <p data-field={`why.items.${i}.body`}>{item.body ?? item.desc ?? item.description}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .why-cells { display: grid; grid-template-columns: repeat(3,1fr); }
+  .why-cells .cell { padding: 36px 24px; border-right: 2px solid var(--line); }
+  .why-cells .cell:last-child { border-right: none; }
+  .why-cells .k { font-family: var(--mono); font-size: 34px; color: var(--accent); line-height: 1; }
+  .why-cells h3 { text-transform: uppercase; font-size: 17px; margin: 10px 0 8px; }
+  .why-cells p { font-size: 13px; color: var(--muted); margin: 0; }
+  @media (max-width: 760px) {
+    .why-cells { grid-template-columns: 1fr; }
+    .why-cells .cell { border-right: none; border-bottom: 2px solid var(--line); }
+    .why-cells .cell:last-child { border-bottom: none; }
+  }
+</style>

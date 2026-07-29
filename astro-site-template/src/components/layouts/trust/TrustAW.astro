@@ -1,0 +1,40 @@
+---
+/**
+ * layouts / TrustAW — broadsheet "byline" credibility strip: a four-cell row
+ * (serif number/statement over an uppercase label), ruled with vertical
+ * hairlines. Mirrors lp-19's "TRUST / broadsheet" block.
+ *
+ * Reads content.trust.cells (num / label). num renders via set:html so a rating
+ * cell whose num is "★★★★★" still styles correctly. Auto-hides when unset.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust" aria-label="Highlights">
+    <div class="byline">
+      {cells.map((cell, i) => (
+        <div class="c reveal">
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .byline { display: grid; grid-template-columns: repeat(4,1fr); }
+  .byline .c { padding: 8px 20px; border-right: 1px solid var(--line); text-align: center; }
+  .byline .c:last-child { border-right: none; }
+  .byline .n { font-family: var(--serif); font-size: 24px; color: var(--accent); line-height: 1.1; }
+  .byline .n :global(.stars) { color: var(--accent-light); letter-spacing: 2px; }
+  .byline .t { font-family: var(--label); font-size: 9px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+  @media (max-width: 760px) {
+    /* Stack the byline to a single column so 4 stat cells never cramp on a phone. */
+    .byline { grid-template-columns: 1fr; }
+    .byline .c { border-right: none; border-bottom: 1px solid var(--line); padding: 14px 12px; text-align: left; }
+    .byline .c:last-child { border-bottom: none; }
+  }
+</style>

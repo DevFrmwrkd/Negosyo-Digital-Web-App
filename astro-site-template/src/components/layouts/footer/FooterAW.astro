@@ -1,0 +1,82 @@
+---
+/**
+ * layouts / FooterAW — broadsheet colophon: a single uppercase muted row of
+ * three groups (brand + address · contact links + phone · notes), ruled off the
+ * page. Plus lp-19's floating "message" pill. Mirrors lp-19's "FOOTER /
+ * broadsheet" block. Every group auto-hides when its data is absent.
+ *
+ * The floating pill reuses the hero's primary CTA (content.hero.cta1) so it
+ * stays editable and in sync; it renders only when that CTA has a link.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const f = (content as any).footer || {};
+const brand = f.brand || layout.businessName || 'Your Business';
+const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
+  ? f.visit.lines
+  : ([layout.contact?.address, layout.contact?.phone].filter(Boolean) as string[]);
+const social: Array<{ platform: string; url: string }> = Array.isArray(f.social) && f.social.length
+  ? f.social
+  : (Array.isArray(layout.socialLinks) ? layout.socialLinks : []);
+const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
+const phone = layout.contact?.phone || '';
+const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
+
+// Floating message pill — reuse the hero's primary CTA (falls back to CTA-band).
+const hero = (content as any).hero || {};
+const cband = (content as any).ctaBand || {};
+const msgHref = hero.cta1?.href || cband.cta1?.href || '';
+const msgText = hero.cta1?.text || cband.cta1?.text || 'Message us';
+---
+<footer aria-label="Footer">
+  <div class="foot-g">
+    <span class="fg">
+      <span class="fbrand" data-field="footer.brand">{brand}</span>
+      {visitLines.length > 0 && <span class="fsep" data-field="footer.visit.lines.0"> · {visitLines[0]}</span>}
+    </span>
+    {(social.length > 0 || phone) && (
+      <span class="fg">
+        {social.map((s, i) => (
+          <>
+            {i > 0 && <span aria-hidden="true"> · </span>}
+            <a href={s.url} target="_blank" rel="noopener noreferrer"
+               data-field={`footer.social.${i}.platform`} data-href-field={`footer.social.${i}.url`}>{s.platform}</a>
+          </>
+        ))}
+        {phone && <>{social.length > 0 && <span aria-hidden="true"> · </span>}<a href={`tel:${phoneDigits}`} data-field="footer.visit.lines.1">{phone}</a></>}
+      </span>
+    )}
+    {notes.length > 0 && (
+      <span class="fg">
+        {notes.map((n, i) => (<span data-field={`footer.notes.${i}`}>{i > 0 ? ' · ' : ''}{n}</span>))}
+      </span>
+    )}
+  </div>
+</footer>
+{msgHref && (
+  <a class="msgr" href={msgHref} rel="noopener" aria-label="Message us" data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.3 2 2 6.2 2 11.6c0 3 1.4 5.6 3.7 7.3v3.6l3.4-1.9c.9.3 1.9.4 2.9.4 5.7 0 10-4.2 10-9.5S17.7 2 12 2zm1 12.3l-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>
+    {msgText}
+  </a>
+)}
+<style>
+  footer { padding: 34px 0 60px; border-bottom: none; }
+  .foot-g { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; font-family: var(--label); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .foot-g .fg { display: inline-flex; flex-wrap: wrap; align-items: baseline; }
+  .foot-g a { color: var(--ink-soft); }
+  .foot-g a:hover { color: var(--accent); }
+
+  .msgr {
+    position: fixed; right: 20px; bottom: 20px; z-index: 70; display: inline-flex; align-items: center; gap: 9px;
+    background: var(--accent); color: var(--on-accent); padding: 13px 20px;
+    font-family: var(--label); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; font-weight: 600;
+    box-shadow: 0 16px 40px -14px rgba(var(--accent-rgb),.5); transition: transform .35s;
+  }
+  .msgr:hover { transform: translateY(-3px); color: var(--on-accent); }
+  .msgr svg { width: 15px; height: 15px; fill: currentColor; }
+  @media (max-width: 760px) {
+    footer { padding: 30px 0 88px; }  /* extra bottom clears the floating pill */
+    .foot-g { flex-direction: column; gap: 8px; }
+    .msgr { right: 14px; bottom: 14px; padding: 12px 16px; }
+  }
+</style>

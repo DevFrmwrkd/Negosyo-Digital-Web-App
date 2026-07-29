@@ -1,0 +1,47 @@
+---
+/**
+ * layouts / WhyBA — the "what sets us apart" reasons (lp-22 WHY block). A ruled
+ * stack of rows, each led by a brass serif index numeral (decorative), a serif
+ * title and a muted body line. Reads content.why.items (canonical `body`,
+ * legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+const tag = why.tag || '';
+const headline = why.headline || '';
+const items: Array<{ title: string; body?: string; desc?: string; description?: string }> =
+  Array.isArray(why.items) ? why.items : [];
+---
+{items.length > 0 && (
+  <section class="p-sec" id="why" data-component="WHY" data-variant="panel">
+    <span class="idx" aria-hidden="true">03</span>
+    {tag && <span class="eyebrow p-eb" data-field="why.tag">{tag}</span>}
+    {headline && <h2 class="p-h" data-field="why.headline" set:html={headline}></h2>}
+    <div class="why-p">
+      {items.map((item, i) => (
+        <div class="c reveal">
+          <div class="k" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+          <div>
+            <h3 data-field={`why.items.${i}.title`}>{item.title}</h3>
+            {(item.body ?? item.desc ?? item.description) && (
+              <p data-field={`why.items.${i}.body`}>{item.body ?? item.desc ?? item.description}</p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .why-p { display: grid; grid-template-columns: 1fr; }
+  .why-p .c { display: grid; grid-template-columns: 64px 1fr; gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+  .why-p .c:first-child { border-top: 1px solid var(--line); }
+  .why-p .k { font-family: var(--serif); font-style: italic; font-size: 34px; color: var(--accent); line-height: 1; }
+  .why-p h3 { font-size: 22px; margin-bottom: 8px; color: var(--ink); }
+  .why-p p { font-size: 14px; color: var(--muted); margin: 0; }
+  @media (max-width: 760px) {
+    .why-p .c { grid-template-columns: 44px 1fr; gap: 16px; padding: 24px 0; }
+    .why-p .k { font-size: 28px; }
+  }
+</style>

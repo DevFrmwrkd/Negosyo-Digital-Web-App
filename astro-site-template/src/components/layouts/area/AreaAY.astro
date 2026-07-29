@@ -1,0 +1,45 @@
+---
+/**
+ * layouts / AreaAY — the "where we serve" strip (lp-20's SERVICE-AREA block,
+ * lifted out of the FAQ column into its own section per the AM model). A centred
+ * plum eyebrow over hairline pill tags that invert on hover. Reads
+ * content.area.places (legacy `items`); optional headline / sub / body render
+ * above the tags when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area">
+    <div class="wrap area-in reveal">
+      {tag && <span class="eyebrow" data-field="area.tag">{tag}</span>}
+      {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+      {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+      <div class="areas">
+        {places.map((place, i) => (
+          <span data-field={`area.places.${i}`}>{place}</span>
+        ))}
+      </div>
+      {body && <p class="area-body" data-field="area.body">{body}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .area { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .area-in { text-align: center; }
+  .area-h { font-size: clamp(28px,4vw,46px); color: var(--ink); margin: 12px 0 0; }
+  .area-sub { color: var(--muted); margin: 12px auto 0; max-width: 52ch; }
+  .areas { max-width: 820px; margin: 30px auto 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .areas span {
+    font-family: var(--sans); font-size: 10px; letter-spacing: .22em; text-transform: uppercase;
+    border: 1px solid var(--line); padding: 9px 16px; color: var(--ink-soft); background: var(--paper); transition: .3s;
+  }
+  .areas span:hover { border-color: var(--accent); color: var(--accent); }
+  .area-body { color: var(--muted); margin: 20px auto 0; max-width: 60ch; }
+</style>

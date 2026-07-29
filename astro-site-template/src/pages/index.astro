@@ -106,13 +106,34 @@ import PageAR from '../components/fitness/PageAR.astro';
 import PageAS from '../components/services/PageAS.astro';
 import PageAT from '../components/education/PageAT.astro';
 import PageAU from '../components/trades/PageAU.astro';
+import PageAV from '../components/layouts/PageAV.astro';
+import PageAW from '../components/layouts/PageAW.astro';
+import PageAX from '../components/layouts/PageAX.astro';
+import PageAY from '../components/layouts/PageAY.astro';
+import PageAZ from '../components/layouts/PageAZ.astro';
+import PageBA from '../components/layouts/PageBA.astro';
 import siteData from '../data/site-data.json';
 
-const layout = (siteData as any).layout ?? {};
-const customizations = (siteData as any).customizations ?? {};
-const content = (siteData as any).content ?? {};
+// Live-editor support: template / colour / font / hidden-sections can be driven
+// by URL params (?hero=restaurant:U&scheme=blue&font=modern&off=faq,gallery) so the
+// /editor.html preview iframe can re-render without writing site-data.json.
+const __sd = siteData as any;
+const __q = Astro.url.searchParams;
+const __pScheme = __q.get('scheme');
+const __pFont = __q.get('font');
+const __pOff = (__q.get('off') || '').split(',').map((s) => s.trim()).filter(Boolean);
+const customizations = __sd.customizations ?? {};
+const content = __sd.content ?? {};
+const layout = {
+  ...(__sd.layout ?? {}),
+  ...(__pScheme ? { colorScheme: __pScheme, colorSchemeId: __pScheme } : {}),
+  ...(__pFont ? { fontPairing: __pFont, fontPairingId: __pFont } : {}),
+};
+const visibility: Record<string, any> = { ...(__sd.visibility ?? {}) };
+for (const k of __pOff) { visibility[k] = false; }
 
-const heroStyle: string = customizations.heroStyle ?? '';
+const heroStyle: string = (__q.get('hero') || customizations.heroStyle) ?? '';
+const data = { ...__sd, layout, visibility, customizations: { ...customizations, heroStyle } };
 const genericMatch = /^generic:([A-E])$/.exec(heroStyle);
 const genericLetter = genericMatch ? genericMatch[1] : null;
 const barbershopMatch = /^barbershop:([F-J])$/.exec(heroStyle);
@@ -139,59 +160,67 @@ const foodcraftMatch = /^foodcraft:(AL)$/.exec(heroStyle);
 const foodcraftLetter = foodcraftMatch ? foodcraftMatch[1] : null;
 const servicesMatch = /^services:(AS)$/.exec(heroStyle);
 const servicesLetter = servicesMatch ? servicesMatch[1] : null;
+const layoutsMatch = /^layouts:(A[V-Z]|BA)$/.exec(heroStyle);
+const layoutsLetter = layoutsMatch ? layoutsMatch[1] : null;
 const anyLetter = genericLetter || barbershopLetter || salonspaLetter
   || autoshopLetter || restaurantLetter || shirtstoreLetter
   || retailLetter || medicalLetter || fitnessLetter || educationLetter || tradesLetter || foodcraftLetter
-  || servicesLetter;
+  || servicesLetter || layoutsLetter;
 ---
 
-{genericLetter === 'A' && <PageA siteData={siteData} />}
-{genericLetter === 'B' && <PageB siteData={siteData} />}
-{genericLetter === 'C' && <PageC siteData={siteData} />}
-{genericLetter === 'D' && <PageD siteData={siteData} />}
-{genericLetter === 'E' && <PageE siteData={siteData} />}
-{barbershopLetter === 'F' && <PageF siteData={siteData} />}
-{barbershopLetter === 'G' && <PageG siteData={siteData} />}
-{barbershopLetter === 'H' && <PageH siteData={siteData} />}
-{barbershopLetter === 'I' && <PageI siteData={siteData} />}
-{barbershopLetter === 'J' && <PageJ siteData={siteData} />}
-{salonspaLetter === 'K' && <PageK siteData={siteData} />}
-{salonspaLetter === 'L' && <PageL siteData={siteData} />}
-{salonspaLetter === 'M' && <PageM siteData={siteData} />}
-{salonspaLetter === 'N' && <PageN siteData={siteData} />}
-{salonspaLetter === 'O' && <PageO siteData={siteData} />}
-{autoshopLetter === 'P' && <PageP siteData={siteData} />}
-{autoshopLetter === 'Q' && <PageQ siteData={siteData} />}
-{autoshopLetter === 'R' && <PageR siteData={siteData} />}
-{autoshopLetter === 'S' && <PageS siteData={siteData} />}
-{autoshopLetter === 'T' && <PageT siteData={siteData} />}
-{autoshopLetter === 'AF' && <PageAF siteData={siteData} />}
-{restaurantLetter === 'U' && <PageU siteData={siteData} />}
-{restaurantLetter === 'V' && <PageV siteData={siteData} />}
-{restaurantLetter === 'W' && <PageW siteData={siteData} />}
-{restaurantLetter === 'X' && <PageX siteData={siteData} />}
-{restaurantLetter === 'Y' && <PageY siteData={siteData} />}
-{restaurantLetter === 'AE' && <PageAE siteData={siteData} />}
-{restaurantLetter === 'AM' && <PageAM siteData={siteData} />}
-{shirtstoreLetter === 'Z' && <PageZ siteData={siteData} />}
-{shirtstoreLetter === 'AA' && <PageAA siteData={siteData} />}
-{shirtstoreLetter === 'AB' && <PageAB siteData={siteData} />}
-{shirtstoreLetter === 'AC' && <PageAC siteData={siteData} />}
-{shirtstoreLetter === 'AD' && <PageAD siteData={siteData} />}
-{retailLetter === 'AG' && <PageAG siteData={siteData} />}
-{medicalLetter === 'AH' && <PageAH siteData={siteData} />}
-{fitnessLetter === 'AI' && <PageAI siteData={siteData} />}
-{educationLetter === 'AJ' && <PageAJ siteData={siteData} />}
-{tradesLetter === 'AK' && <PageAK siteData={siteData} />}
-{foodcraftLetter === 'AL' && <PageAL siteData={siteData} />}
-{salonspaLetter === 'AN' && <PageAN siteData={siteData} />}
-{retailLetter === 'AO' && <PageAO siteData={siteData} />}
-{autoshopLetter === 'AP' && <PageAP siteData={siteData} />}
-{medicalLetter === 'AQ' && <PageAQ siteData={siteData} />}
-{fitnessLetter === 'AR' && <PageAR siteData={siteData} />}
-{servicesLetter === 'AS' && <PageAS siteData={siteData} />}
-{educationLetter === 'AT' && <PageAT siteData={siteData} />}
-{tradesLetter === 'AU' && <PageAU siteData={siteData} />}
+{genericLetter === 'A' && <PageA siteData={data} />}
+{genericLetter === 'B' && <PageB siteData={data} />}
+{genericLetter === 'C' && <PageC siteData={data} />}
+{genericLetter === 'D' && <PageD siteData={data} />}
+{genericLetter === 'E' && <PageE siteData={data} />}
+{barbershopLetter === 'F' && <PageF siteData={data} />}
+{barbershopLetter === 'G' && <PageG siteData={data} />}
+{barbershopLetter === 'H' && <PageH siteData={data} />}
+{barbershopLetter === 'I' && <PageI siteData={data} />}
+{barbershopLetter === 'J' && <PageJ siteData={data} />}
+{salonspaLetter === 'K' && <PageK siteData={data} />}
+{salonspaLetter === 'L' && <PageL siteData={data} />}
+{salonspaLetter === 'M' && <PageM siteData={data} />}
+{salonspaLetter === 'N' && <PageN siteData={data} />}
+{salonspaLetter === 'O' && <PageO siteData={data} />}
+{autoshopLetter === 'P' && <PageP siteData={data} />}
+{autoshopLetter === 'Q' && <PageQ siteData={data} />}
+{autoshopLetter === 'R' && <PageR siteData={data} />}
+{autoshopLetter === 'S' && <PageS siteData={data} />}
+{autoshopLetter === 'T' && <PageT siteData={data} />}
+{autoshopLetter === 'AF' && <PageAF siteData={data} />}
+{restaurantLetter === 'U' && <PageU siteData={data} />}
+{restaurantLetter === 'V' && <PageV siteData={data} />}
+{restaurantLetter === 'W' && <PageW siteData={data} />}
+{restaurantLetter === 'X' && <PageX siteData={data} />}
+{restaurantLetter === 'Y' && <PageY siteData={data} />}
+{restaurantLetter === 'AE' && <PageAE siteData={data} />}
+{restaurantLetter === 'AM' && <PageAM siteData={data} />}
+{shirtstoreLetter === 'Z' && <PageZ siteData={data} />}
+{shirtstoreLetter === 'AA' && <PageAA siteData={data} />}
+{shirtstoreLetter === 'AB' && <PageAB siteData={data} />}
+{shirtstoreLetter === 'AC' && <PageAC siteData={data} />}
+{shirtstoreLetter === 'AD' && <PageAD siteData={data} />}
+{retailLetter === 'AG' && <PageAG siteData={data} />}
+{medicalLetter === 'AH' && <PageAH siteData={data} />}
+{fitnessLetter === 'AI' && <PageAI siteData={data} />}
+{educationLetter === 'AJ' && <PageAJ siteData={data} />}
+{tradesLetter === 'AK' && <PageAK siteData={data} />}
+{foodcraftLetter === 'AL' && <PageAL siteData={data} />}
+{salonspaLetter === 'AN' && <PageAN siteData={data} />}
+{retailLetter === 'AO' && <PageAO siteData={data} />}
+{autoshopLetter === 'AP' && <PageAP siteData={data} />}
+{medicalLetter === 'AQ' && <PageAQ siteData={data} />}
+{fitnessLetter === 'AR' && <PageAR siteData={data} />}
+{servicesLetter === 'AS' && <PageAS siteData={data} />}
+{layoutsLetter === 'AV' && <PageAV siteData={data} />}
+{layoutsLetter === 'AW' && <PageAW siteData={data} />}
+{layoutsLetter === 'AX' && <PageAX siteData={data} />}
+{layoutsLetter === 'AY' && <PageAY siteData={data} />}
+{layoutsLetter === 'AZ' && <PageAZ siteData={data} />}
+{layoutsLetter === 'BA' && <PageBA siteData={data} />}
+{educationLetter === 'AT' && <PageAT siteData={data} />}
+{tradesLetter === 'AU' && <PageAU siteData={data} />}
 {!anyLetter && (
   <BaseLayout
     businessName={layout.businessName ?? ''}

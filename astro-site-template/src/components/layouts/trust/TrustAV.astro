@@ -1,0 +1,34 @@
+---
+/**
+ * layouts / TrustAV — a row of four bento credibility "stat" tiles under the
+ * hero: a Spectral cobalt statement over an uppercase label. Volatile Google
+ * rating slots have no field in the data model, so they render as ordinary
+ * trust cells (num renders via set:html so a cell whose num is "★★★★★" styles).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust">
+    <div class="wrap">
+      <div class="grid">
+        {cells.map((cell, i) => (
+          <div class="tile stat reveal">
+            {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+            {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .stat { grid-column: span 3; text-align: center; display: flex; flex-direction: column; justify-content: center; }
+  .stat .n { font-family: var(--serif); font-size: 30px; color: var(--accent); line-height: 1.1; }
+  .stat .n :global(.stars) { color: var(--accent-light); letter-spacing: 2px; }
+  .stat .t { font-family: var(--sans); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+  @media (max-width: 640px) { .stat { grid-column: span 6; } }
+  @media (max-width: 760px) { .stat { grid-column: span 12; } }
+</style>

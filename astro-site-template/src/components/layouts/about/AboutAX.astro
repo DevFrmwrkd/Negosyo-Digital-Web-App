@@ -1,0 +1,52 @@
+---
+/**
+ * layouts / AboutAX — brutalist "who we are": a sec-bar, then a two-cell split.
+ * The left cell carries the oversized pull-quote statement (the source's
+ * PULLQUOTE folds in here as the first paragraph), the right cell the running
+ * body copy. Mirrors lp-21's "ABOUT / brutalist" block.
+ *
+ * Reads content.about (tag / headline / paragraphs[]). paragraphs[0] becomes
+ * the statement; the rest stack as body.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || 'Who we are';
+const idx = about.idx || '[ The story ]';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const lead = paragraphs[0] || '';
+const rest = paragraphs.slice(1);
+---
+<section class="grid-sec" id="about" aria-label="About">
+  <div class="sec-bar">
+    <h2 data-field="about.headline" set:html={headline}></h2>
+    <span class="idx" data-field="about.idx">{idx}</span>
+  </div>
+  <div class="about-cells">
+    <div class="cell reveal">
+      {tag && <div class="lbl" style="margin-bottom:14px;" data-field="about.tag">{tag}</div>}
+      {lead && <p class="stmt" data-field="about.paragraphs.0" set:html={lead}></p>}
+    </div>
+    <div class="cell reveal" data-delay="1">
+      {rest.map((p: string, i: number) => (
+        <p data-field={`about.paragraphs.${i + 1}`} set:html={p}></p>
+      ))}
+    </div>
+  </div>
+</section>
+<style>
+  .about-cells { display: grid; grid-template-columns: 1fr 1fr; }
+  .about-cells .cell { padding: 40px 24px; }
+  .about-cells .cell:first-child { border-right: 2px solid var(--line); }
+  .about-cells .stmt { font-size: 22px; color: var(--ink); line-height: 1.35; margin: 0; }
+  .about-cells .stmt :global(em) { font-style: normal; color: var(--accent); }
+  .about-cells p { color: var(--ink-soft); }
+  .about-cells .cell:last-child p:last-child { margin-bottom: 0; }
+  @media (max-width: 760px) {
+    .about-cells { grid-template-columns: 1fr; }
+    .about-cells .cell { padding: 30px 18px; }
+    .about-cells .cell:first-child { border-right: none; border-bottom: 2px solid var(--line); }
+    .about-cells .stmt { font-size: 20px; }
+  }
+</style>
