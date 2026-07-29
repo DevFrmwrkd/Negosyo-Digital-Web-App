@@ -35,8 +35,13 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-band h2 :global(em) { font-style: italic; }
   .cta-band p { max-width: 46ch; margin: 20px auto 34px; font-size: 18px; color: rgba(255,255,255,.9); }
   .cta-actions { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
-  .cta-primary { background: #fff; color: var(--accent-deep); border-color: #fff; }
+  .cta-primary { background: #fff; color: var(--accent-deep, var(--ink)); border-color: #fff; }
   .cta-primary:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  /* Secondary ghost rests on the --accent band; route its resting label through
+     the accent contrast token so light-accent schemes (Ember/X: #E0913C) keep a
+     legible label. Guarded to :not(:hover) so the spine's paper-fill hover keeps
+     its own --on-paper label (white --on-accent would vanish on the light fill). */
+  .cta-band .btn--ghost.on-dark:not(:hover) { color: var(--on-accent, var(--on-ink)); }
   @media (max-width: 760px) {
     .cta-band { padding-block: clamp(56px, 10vw, 96px); }
     .cta-band h2 { font-size: clamp(34px, 9vw, 62px); }

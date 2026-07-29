@@ -37,8 +37,8 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-band h2 { font-size: clamp(40px, 7vw, 96px); color: var(--on-accent, var(--ink)); }
   .cta-band p { max-width: 50ch; margin: 20px auto 0; font-size: 18px; color: var(--on-accent, var(--ink)); opacity: .82; }
   .cta-actions { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 34px; }
-  .cta-band .btn--ghost { border-color: var(--ink); color: var(--ink); }
-  .cta-band .btn--ghost:hover { box-shadow: 6px 6px 0 var(--ink); background: var(--ink); color: var(--accent); }
+  .cta-band .btn--ghost { border-color: var(--on-accent, var(--ink)); color: var(--on-accent, var(--ink)); }
+  .cta-band .btn--ghost:hover { box-shadow: 6px 6px 0 var(--ink); background: var(--on-accent, var(--ink)); color: var(--accent); }
   @media (max-width: 760px) {
     .cta-band { padding-block: clamp(52px, 10vw, 90px); }
     .cta-band h2 { font-size: clamp(32px, 8.5vw, 64px); }

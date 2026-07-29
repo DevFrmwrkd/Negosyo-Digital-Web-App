@@ -45,7 +45,7 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-sub { color: rgba(255,255,255,.82); font-size: clamp(16px, 1.4vw, 19px); max-width: 52ch; margin: 20px auto 0; line-height: 1.6; }
   .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 34px; }
   .cta .btn-fill { background: var(--paper); color: var(--ink); border-color: var(--paper); }
-  .cta .btn-fill:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cta .btn-fill:hover { background: var(--accent); color: var(--on-accent, #fff); border-color: var(--accent); }
   .cta .btn-out { color: #fff; border-color: rgba(255,255,255,.6); }
   .cta .btn-out:hover { background: #fff; color: var(--ink); border-color: #fff; }
   @media (max-width: 760px) {
