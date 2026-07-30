@@ -16,6 +16,26 @@ const kbBlock = v.union(
     v.object({ t: v.literal('image'), caption: v.string() }),
 );
 
+// ==================== OUTREACH TRACKER ====================
+// Shared by the standalone outreach app (separate repo: tendso-outreach-tracker,
+// same Convex deployment). Kept as its own namespaced module — nothing here is
+// read or written by the web app.
+export const outreachStatus = v.union(
+    v.literal('new'),            // in the guild, nobody has touched them
+    v.literal('claimed'),        // "I'm reaching out to this one" — the double-message guard
+    v.literal('messaged'),       // DM/comment actually sent
+    v.literal('replied'),        // they answered
+    v.literal('not_interested'), // asked to be left alone / hard no
+    v.literal('converted'),      // signed up
+);
+
+export const outreachChannel = v.union(
+    v.literal('discord_dm'),
+    v.literal('discord_channel'),
+    v.literal('call'),
+    v.literal('other'),
+);
+
 export default defineSchema({
     // Creators table (users - both creators and admins)
     creators: defineTable({
@@ -1110,4 +1130,70 @@ export default defineSchema({
         .index('by_creator', ['creatorId'])
         .index('by_status', ['status'])
         .index('by_message', ['discordMessageId']),
+
+    // ==================== OUTREACH TRACKER — DISCORD MEMBERS ====================
+    // Mirror of the Discord guild member list, refreshed by convex/discordMembers.ts.
+    // Bryan and Joan search this, claim a member before they DM them, and log the
+    // outcome — so the same person never gets messaged twice.
+    discordMembers: defineTable({
+        discordId: v.string(),
+        username: v.string(), // @handle
+        displayName: v.string(), // guild nick > global_name > username
+        nickname: v.optional(v.string()),
+        searchText: v.string(), // lowercased "username displayName nickname" — feeds the search index
+        avatarUrl: v.optional(v.string()),
+        joinedAt: v.optional(v.number()),
+        roles: v.array(v.string()), // Discord role ids
+        // false once they leave the guild. Rows are never deleted — that would throw
+        // away the outreach history for someone who rejoins later.
+        active: v.boolean(),
+        lastSyncedAt: v.number(),
+        // Denormalized copy of the newest outreachLogs row for this member, so the
+        // search list renders in one read instead of N+1.
+        status: outreachStatus,
+        lastActorName: v.optional(v.string()),
+        lastActivityAt: v.optional(v.number()),
+        lastNote: v.optional(v.string()),
+        contactCount: v.number(),
+        // Set once this Discord account is linked to a Tendso creator. Unlocks the
+        // earnings/jobs member card — see the tracker README, "Linking Discord to Tendso".
+        creatorId: v.optional(v.id('creators')),
+    })
+        .index('by_discord_id', ['discordId'])
+        .index('by_creator', ['creatorId'])
+        .index('by_active_status', ['active', 'status'])
+        .index('by_active_activity', ['active', 'lastActivityAt'])
+        .index('by_active_synced', ['active', 'lastSyncedAt'])
+        .searchIndex('search_members', {
+            searchField: 'searchText',
+            filterFields: ['active', 'status'],
+        }),
+
+    // Append-only history of every outreach touch. The newest row per member is
+    // mirrored onto discordMembers above.
+    outreachLogs: defineTable({
+        memberId: v.id('discordMembers'),
+        discordId: v.string(),
+        memberName: v.string(), // denormalized so the activity feed is a single read
+        actorName: v.string(), // 'Bryan' | 'Joan' — validated against OUTREACH_TEAM
+        status: outreachStatus,
+        channel: v.optional(outreachChannel),
+        note: v.optional(v.string()),
+        createdAt: v.number(),
+    })
+        .index('by_member', ['memberId', 'createdAt'])
+        .index('by_created', ['createdAt'])
+        .index('by_actor', ['actorName', 'createdAt']),
+
+    // Singleton row (key: 'singleton') holding the member count + last sync result,
+    // so the tracker header never scans the whole member table.
+    outreachMeta: defineTable({
+        key: v.string(),
+        activeMembers: v.number(),
+        lastSyncAt: v.optional(v.number()),
+        lastSyncFetched: v.optional(v.number()),
+        lastSyncAdded: v.optional(v.number()),
+        lastSyncDeactivated: v.optional(v.number()),
+        lastSyncError: v.optional(v.string()),
+    }).index('by_key', ['key']),
 });
