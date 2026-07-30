@@ -79,21 +79,16 @@ type MemberRow = {
     roles: string[];
 };
 
-/** Discord's fallback avatar bucket for accounts with no custom avatar: (id >> 22) % 6. */
-function defaultAvatarIndex(userId: string): number {
-    try {
-        return Number(BigInt(userId) >> 22n) % 6;
-    } catch {
-        return 0;
-    }
-}
-
-function avatarUrlFor(user: NonNullable<DiscordGuildMember['user']>): string {
-    if (user.avatar) {
-        const ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
-        return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=64`;
-    }
-    return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarIndex(user.id)}.png`;
+/**
+ * CDN url for a member's own avatar, or undefined when they have none — the UI
+ * renders their initials in that case, which reads better in a list than Discord's
+ * grey placeholder silhouette (and avoids the snowflake bit-math that would need
+ * BigInt, which this repo's ES2017 target rejects).
+ */
+function avatarUrlFor(user: NonNullable<DiscordGuildMember['user']>): string | undefined {
+    if (!user.avatar) return undefined;
+    const ext = user.avatar.startsWith('a_') ? 'gif' : 'png';
+    return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.${ext}?size=64`;
 }
 
 /** Returns null for bots — they are never outreach targets, so they never enter the table. */
