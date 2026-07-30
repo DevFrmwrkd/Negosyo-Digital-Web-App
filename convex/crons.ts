@@ -63,4 +63,15 @@ crons.interval(
     {},
 );
 
+// Every 6 hours: refresh the Discord guild member list that the outreach tracker
+// searches (separate repo: tendso-outreach-tracker, same Convex deployment).
+// Upsert-only — never overwrites outreach state. No-op unless DISCORD_BOT_TOKEN
+// and DISCORD_GUILD_ID are set.
+crons.interval(
+    'sync-discord-members',
+    { hours: 6 },
+    internal.discordMembers.syncGuildMembers,
+    {},
+);
+
 export default crons;
