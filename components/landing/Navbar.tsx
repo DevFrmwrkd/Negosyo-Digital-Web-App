@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Logo, ArrowUpRightIcon } from "./landingPrimitives";
+import { Logo } from "./landingPrimitives";
 import { useT, type Lang } from "./i18n";
 
 const selectStyle: React.CSSProperties = {
@@ -22,14 +20,6 @@ const selectStyle: React.CSSProperties = {
 
 export default function Navbar() {
     const { lang, setLang, t } = useT();
-    // Direct APK download URL (admin uploads via /admin/app-release).
-    // Falls back to /signup if no APK is currently uploaded. The URL points
-    // straight at the R2 public URL — R2 derives the download filename from
-    // the storage key (which the upload code pins to releases/tendso.apk),
-    // so no proxy route or Content-Disposition rewrite is needed.
-    const apkUrl = useQuery(api.settings.get, { key: "apk_download_url" }) as string | null | undefined;
-    const downloadHref = apkUrl ?? "/signup";
-    const isApk = !!apkUrl;
     return (
         <div className="topbar">
             <div
@@ -49,7 +39,8 @@ export default function Navbar() {
                     </div>
                 </div>
 
-                {/* Right cluster — language switch hides on phones, Get-the-app always visible */}
+                {/* Right cluster — language switch. (The "Get the app" button
+                    moved to the dedicated download section below the hero.) */}
                 <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     <select
                         value={lang}
@@ -61,19 +52,6 @@ export default function Navbar() {
                         <option value="en">EN</option>
                         <option value="tl">Tagalog</option>
                     </select>
-                    <a
-                        href={downloadHref}
-                        {...(isApk
-                            ? { download: "tendso.apk" }
-                            : {})}
-                        className="store-btn whitespace-nowrap"
-                        style={{ textDecoration: "none", padding: "10px 14px" }}
-                    >
-                        <span>{t("nav.getApp")}</span>
-                        <span style={{ opacity: 0.6 }}>
-                            <ArrowUpRightIcon />
-                        </span>
-                    </a>
                 </div>
             </div>
         </div>

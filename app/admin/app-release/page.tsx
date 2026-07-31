@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAction, useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useAdminAuth } from "@/hooks/useAdmin"
@@ -23,6 +23,30 @@ export default function AppReleasePage() {
     const apkFileName = useQuery(api.settings.get, { key: "apk_file_name" }) as string | null
     const apkUploadedAt = useQuery(api.settings.get, { key: "apk_uploaded_at" }) as string | null
     const apkR2Key = useQuery(api.settings.get, { key: "apk_r2_key" }) as string | null
+
+    // Store-link settings (shown as App Store / Google Play buttons in the
+    // landing page "Get the app" section).
+    const savedAppStoreUrl = useQuery(api.settings.get, { key: "app_store_url" }) as string | null
+    const savedPlayStoreUrl = useQuery(api.settings.get, { key: "play_store_url" }) as string | null
+    const [appStoreUrl, setAppStoreUrl] = useState("")
+    const [playStoreUrl, setPlayStoreUrl] = useState("")
+    const [savingLinks, setSavingLinks] = useState(false)
+    const [linksSaved, setLinksSaved] = useState(false)
+    useEffect(() => { if (savedAppStoreUrl != null) setAppStoreUrl(savedAppStoreUrl) }, [savedAppStoreUrl])
+    useEffect(() => { if (savedPlayStoreUrl != null) setPlayStoreUrl(savedPlayStoreUrl) }, [savedPlayStoreUrl])
+
+    const handleSaveLinks = async () => {
+        setSavingLinks(true)
+        try {
+            const adminId = creator?._id ? String(creator._id) : undefined
+            await setSetting({ key: "app_store_url", value: appStoreUrl.trim() || null, description: "App Store listing URL", adminId })
+            await setSetting({ key: "play_store_url", value: playStoreUrl.trim() || null, description: "Google Play listing URL", adminId })
+            setLinksSaved(true)
+            setTimeout(() => setLinksSaved(false), 2500)
+        } finally {
+            setSavingLinks(false)
+        }
+    }
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -272,6 +296,42 @@ export default function AppReleasePage() {
                             {success}
                         </div>
                     )}
+                </div>
+
+                {/* Store Links — App Store + Google Play buttons on the landing page */}
+                <div className="bg-white rounded-2xl border border-amber-500 shadow-sm p-6 mt-6">
+                    <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-1">Store links</h2>
+                    <p className="text-xs text-gray-500 mb-4">
+                        Shown as App Store + Google Play buttons in the landing page &quot;Get the app&quot; section.
+                        Leave a field blank to hide that button (Android falls back to the uploaded APK).
+                    </p>
+                    <label className="block mb-3">
+                        <span className="text-xs font-medium text-gray-600">App Store URL (iOS)</span>
+                        <input
+                            type="url"
+                            value={appStoreUrl}
+                            onChange={(e) => setAppStoreUrl(e.target.value)}
+                            placeholder="https://apps.apple.com/app/..."
+                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        />
+                    </label>
+                    <label className="block mb-4">
+                        <span className="text-xs font-medium text-gray-600">Google Play URL (Android)</span>
+                        <input
+                            type="url"
+                            value={playStoreUrl}
+                            onChange={(e) => setPlayStoreUrl(e.target.value)}
+                            placeholder="https://play.google.com/store/apps/details?id=..."
+                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                        />
+                    </label>
+                    <button
+                        onClick={handleSaveLinks}
+                        disabled={savingLinks}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        {savingLinks ? "Saving..." : linksSaved ? "Saved" : "Save links"}
+                    </button>
                 </div>
             </div>
 
