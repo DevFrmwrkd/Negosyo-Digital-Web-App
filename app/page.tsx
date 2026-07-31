@@ -15,6 +15,7 @@ import ManifestoSection from "@/components/landing/ManifestoSection";
 import BusinessPricingSection from "@/components/landing/BusinessPricingSection";
 import EarningsSection from "@/components/landing/EarningsSection";
 import DirectorySection from "@/components/landing/DirectorySection";
+import AppDownloadSection from "@/components/landing/AppDownloadSection";
 import FaqSection from "@/components/landing/FaqSection";
 import CtaSection from "@/components/landing/CtaSection";
 
@@ -37,6 +38,9 @@ export default function Home() {
             <main>
                 {/* Hero with counters + two doors */}
                 <HeroSection />
+
+                {/* Get the app — placed high as a priority to drive downloads */}
+                <AppDownloadSection />
 
                 {/* Live map (Convex listPublished → falls back to 4 known sites) */}
                 <ShowcaseSection
