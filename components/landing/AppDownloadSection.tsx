@@ -1,5 +1,6 @@
 "use client";
 
+import { QRCodeSVG } from "qrcode.react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
@@ -128,6 +129,16 @@ export default function AppDownloadSection() {
                         <ComingSoonButton glyph={<AppleGlyph />} label="App Store" />
                     )}
                     <StoreButton href={playHref} glyph={<PlayGlyph />} small="Get it on" large="Google Play" />
+                </div>
+
+                {/* QR to the Android listing — desktop only (on mobile you just tap the button). */}
+                <div className="hidden sm:flex" style={{ flexDirection: "column", alignItems: "center", gap: 11, marginTop: 44 }}>
+                    <div style={{ background: "#fff", padding: 12, borderRadius: 16, lineHeight: 0, boxShadow: "0 12px 36px -16px rgba(0,0,0,.55)" }}>
+                        <QRCodeSVG value={playHref} size={116} bgColor="#ffffff" fgColor="#111111" level="M" />
+                    </div>
+                    <span style={{ fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: "oklch(70% 0.01 85)" }}>
+                        Scan to install on Android
+                    </span>
                 </div>
 
                 <div style={{ marginTop: 22, fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: "oklch(66% 0.01 85)" }}>
