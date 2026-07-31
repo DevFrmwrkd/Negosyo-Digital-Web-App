@@ -18,7 +18,6 @@ import {
     COLOR_SCHEMES,
     FONT_PAIRINGS,
     ALL_BLOCKS,
-    STATE_TO_BRIDGE,
     CURATED,
 } from "./editorConstants";
 
@@ -62,7 +61,19 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
 
     // ── State (mirrors v1's batched model) ───────────────────────────────
     const [draft, setDraft] = useState<any>(() => ({ ...(content ?? {}) }));
-    useEffect(() => { setDraft({ ...(content ?? {}) }); }, [content]);
+    // draftRef mirrors draft synchronously so an inline blur-commit fired right
+    // before Save is readable without waiting for a re-render.
+    const draftRef = useRef<any>(draft);
+    draftRef.current = draft;
+    // Adopt a new server `content` ONLY when the editor is clean (draft still
+    // equals what we last synced). Otherwise a reactive/query refresh would
+    // silently clobber in-progress edits.
+    const syncedContentRef = useRef<any>(content);
+    useEffect(() => {
+        const clean = JSON.stringify(draftRef.current) === JSON.stringify(syncedContentRef.current);
+        syncedContentRef.current = content;
+        if (clean) { const next = { ...(content ?? {}) }; draftRef.current = next; setDraft(next); }
+    }, [content]);
 
     const [pendingCustomizations, setPendingCustomizations] = useState<any>(customizations);
     useEffect(() => { setPendingCustomizations(customizations); }, [customizations]);
@@ -88,24 +99,101 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
     const dirty = contentDirty || customizationsDirty;
     const busy = generatingWebsite || saving;
 
-    // ── Live update: patch draft + push to iframe (no rebuild) ────────────
-    const liveUpdate = useCallback((statePath: string, value: any) => {
-        setDraft((prev: any) => {
-            const next = { ...(prev ?? {}) };
-            const parts = statePath.split(".");
-            let cur: any = next;
-            for (let i = 0; i < parts.length - 1; i++) {
-                cur[parts[i]] = { ...(cur[parts[i]] ?? {}) };
-                cur = cur[parts[i]];
-            }
-            cur[parts[parts.length - 1]] = value;
-            return next;
-        });
-        const bridgeField = STATE_TO_BRIDGE[statePath] ?? statePath;
-        try {
-            iframeRef.current?.contentWindow?.postMessage({ type: "ed:update", field: bridgeField, value }, "*");
-        } catch { /* sandboxed — ignore */ }
+    // ── setDeepDraft — write a dotted data-field path into the content draft ─
+    // The data-field path IS the wrapped content path transformToAstroData reads
+    // (content.hero.*, content.about.*, content.services.*, content.footer.*), so
+    // writing it verbatim persists through Save for both generic + branded
+    // families. Two safety rules from the persistence recipe:
+    //   • never overwrite an existing OBJECT leaf (would clobber a wrapper);
+    //   • when a dotted write upgrades a non-empty STRING parent to an object
+    //     (generic `about` string → object), preserve the old text as `lead`.
+    const setDeepDraft = useCallback((path: string, value: any) => {
+        const prev = draftRef.current;
+        const parts = path.split(".");
+        // Clobber guard: refuse to write a scalar over an existing object leaf.
+        let peek: any = prev;
+        for (const p of parts) { if (peek == null) break; peek = peek[p]; }
+        if (peek !== null && typeof peek === "object") return;
+        const root = prev ? { ...prev } : {};
+        let cur: any = root;
+        for (let i = 0; i < parts.length - 1; i++) {
+            const k = parts[i];
+            const numeric = /^\d+$/.test(parts[i + 1]);
+            if (Array.isArray(cur[k])) cur[k] = [...cur[k]];
+            else if (cur[k] && typeof cur[k] === "object") cur[k] = { ...cur[k] };
+            else if (typeof cur[k] === "string" && cur[k].trim()) cur[k] = numeric ? [] : { lead: cur[k] };
+            else cur[k] = numeric ? [] : {};
+            cur = cur[k];
+        }
+        cur[parts[parts.length - 1]] = value;
+        draftRef.current = root;
+        setDraft(root);
     }, []);
+
+    // ── Inline click-to-edit (conservative + non-corrupting) ──────────────
+    // Makes only SAFE [data-field] elements contenteditable in the same-origin
+    // preview, committing to the draft on blur. Deliberately narrow to avoid the
+    // data-loss traps an adversarial pass surfaced:
+    //   • skip array-item / derived-default blocks (editing one item would drop
+    //     its siblings on rebuild) — items/steps/paragraphs indices;
+    //   • skip layout-backed fields (nav.*, tel/mailto anchors), links, images;
+    //   • commit only the EDITED node's text (never decorative icon/monogram
+    //     siblings), and skip elements with text-bearing formatting children
+    //     (e.g. <em> highlights) whose markup textContent would strip;
+    //   • no-op when the text is UNCHANGED (a focus+blur never mutates anything).
+    // Array items, rich headlines, links and images stay editable in v1 for now.
+    const setupInlineEditing = useCallback(() => {
+        const doc = iframeRef.current?.contentDocument;
+        if (!doc) return;
+        const SKIP = (f: string) =>
+            f === "hero.headline" || // HeroA binds this on the whole <h1> but renders from headlineLines
+            /^(nav\.brand|nav\.status|nav\.links|navbar_links)(\.|$)/.test(f) ||
+            /\.(items|steps|paragraphs)\.\d+/.test(f); // array items → sibling-loss risk
+        const readVal = (node: Element) =>
+            ((node as HTMLElement).innerText ?? node.textContent ?? "")
+                .replace(/[ \t]+/g, " ")
+                .replace(/\n{3,}/g, "\n\n")
+                .trim();
+        const wire = (target: HTMLElement, ownerField: string) => {
+            const orig = readVal(target);
+            target.setAttribute("contenteditable", "true");
+            target.setAttribute("spellcheck", "false");
+            target.setAttribute("autocorrect", "off");
+            target.setAttribute("autocapitalize", "off");
+            target.addEventListener("keydown", (ev: any) => {
+                if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); target.blur(); }
+            });
+            target.addEventListener("blur", () => {
+                const val = readVal(target);
+                if (val === orig) return; // unchanged → true no-op
+                setDeepDraft(ownerField, val);
+            });
+        };
+        doc.querySelectorAll<HTMLElement>("[data-field]").forEach((el) => {
+            const field = el.getAttribute("data-field") || "";
+            if (!field || (el as any).__v2wired) return;
+            if (el.hasAttribute("data-href-field") || el.hasAttribute("data-image-field")) return;
+            if (el.tagName.toLowerCase() === "a" && /^(tel:|mailto:)/i.test(el.getAttribute("href") || "")) return;
+            if (SKIP(field)) return;
+            const childEls = Array.from(el.children);
+            const looseText = Array.from(el.childNodes).filter(
+                (n) => n.nodeType === 3 && !!n.nodeValue && !!n.nodeValue.trim(),
+            );
+            (el as any).__v2wired = true;
+            if (childEls.length === 0) {
+                // Pure text element — safe.
+                wire(el, field);
+            } else if (looseText.length === 1 && childEls.every((c) => !(c.textContent || "").trim())) {
+                // One text node beside purely decorative (empty/icon) children —
+                // wrap just that text node so glyphs stay out of the value.
+                const s = doc.createElement("span");
+                el.replaceChild(s, looseText[0]);
+                s.appendChild(looseText[0]);
+                wire(s, field);
+            }
+            // else: formatting children (e.g. <em>) or mixed text → skip (unsafe).
+        });
+    }, [setDeepDraft]);
 
     // ── Blocks ─────────────────────────────────────────────────────────
     const isBlockEnabled = (visKey: string): boolean => (draft?.visibility ?? {})[visKey] !== false;
@@ -145,7 +233,13 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
     };
 
     async function handleSave() {
-        if (busy || !dirty) return;
+        if (busy) return;
+        // Commit any in-progress inline edit (blur fires the commit synchronously
+        // and setDeepDraft updates draftRef) before we read the draft.
+        try { (iframeRef.current?.contentDocument?.activeElement as HTMLElement | null)?.blur?.(); } catch { /* ignore */ }
+        const currentDraft = draftRef.current;
+        const contentDirtyNow = JSON.stringify(currentDraft) !== JSON.stringify(content);
+        if (!contentDirtyNow && !customizationsDirty) return;
         setSaving(true);
         const toastId = toast.loading(
             customizationsDirty ? "Saving changes · regenerating site…" : "Saving content…",
@@ -153,7 +247,7 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
         );
         try {
             await onSaveContent(
-                { ...draft, business_type: selectedBucket },
+                { ...currentDraft, business_type: selectedBucket },
                 customizationsDirty ? pendingCustomizations : undefined,
             );
             toast.success("Changes saved", {
@@ -213,6 +307,7 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
                 <div className="border-b border-neutral-200 px-4 py-3">
                     <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-amber-600">Editor v2</div>
                     <h2 className="truncate text-sm font-bold text-neutral-900">{businessName}</h2>
+                    <p className="mt-1 text-[10px] leading-snug text-neutral-400">Click a heading or paragraph in the preview to edit it inline · Save rebuilds the site. Lists, links &amp; images edit in v1 for now.</p>
                 </div>
 
                 {/* Templates */}
@@ -343,10 +438,10 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
                     <button
                         type="button"
                         onClick={handleSave}
-                        disabled={busy || !dirty}
+                        disabled={busy}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                        {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+                        {saving ? "Saving…" : "Save changes"}
                     </button>
                     <button type="button" onClick={onRegenerate} disabled={busy} className={TB}>Regenerate</button>
                     <a
@@ -392,6 +487,7 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
                             title="Website preview (v2)"
                             className="h-full w-full border-0 bg-white"
                             sandbox="allow-same-origin allow-scripts allow-popups"
+                            onLoad={setupInlineEditing}
                         />
                     ) : (
                         <div className="flex h-full items-center justify-center text-sm text-neutral-400">No website generated yet.</div>
