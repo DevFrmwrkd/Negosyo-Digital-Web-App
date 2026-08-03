@@ -3,15 +3,18 @@ import { Fraunces, Plus_Jakarta_Sans, Playfair_Display, JetBrains_Mono, Instrume
 import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { ConvexClerkProvider } from "@/components/providers/ConvexClerkProvider";
-import CustomCursor from "@/components/landing/CustomCursor";
 import { JsonLd } from "@/components/JsonLd";
 import { organizationGraph, SITE_URL } from "@/lib/seo";
 import "./globals.css";
 
+// Display serif — loaded as a VARIABLE font (wght + optical-size axes) so the
+// landing can use a refined ~560 display weight and let optical sizing track
+// the font size (Fraunces gets its high-contrast display cut at large sizes).
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin", "latin-ext"],
-  weight: ["500", "600", "700", "800", "900"],
+  axes: ["opsz"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
@@ -94,7 +97,6 @@ export default function RootLayout({
         className={`${fraunces.variable} ${plusJakarta.variable} ${playfair.variable} ${jetbrainsMono.variable} ${instrumentSerif.variable} ${onest.variable} antialiased`}
       >
         <ConvexClerkProvider>
-          <CustomCursor />
           {children}
         </ConvexClerkProvider>
         <Toaster position="top-right" richColors />

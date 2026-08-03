@@ -238,7 +238,7 @@ export const SHOWCASE_SITES: ShowcaseSite[] = [
         category: "Auto · Tire Supply",
         lat: 14.676,
         lng: 121.0437,
-        city: "Quezon City",
+        city: "Makati",
         src: "/Pages/ben-joe.png",
         url: "https://benjoetiresupply.com/",
     },
@@ -249,8 +249,8 @@ export const SHOWCASE_SITES: ShowcaseSite[] = [
         category: "Beauty Studio",
         lat: 10.3157,
         lng: 123.8854,
-        city: "Cebu City",
-        src: "/Pages/aloja2.png",
+        city: "Marilao, Bulacan",
+        src: "/Pages/aloja.png",
         url: "https://aloja-carvajal-aesthetic-and-beauty-studio.frmwrkd-media.workers.dev/",
     },
     {
@@ -260,7 +260,7 @@ export const SHOWCASE_SITES: ShowcaseSite[] = [
         category: "Restaurant",
         lat: 14.5547,
         lng: 121.0244,
-        city: "Makati",
+        city: "Meycauayan, Bulacan",
         src: "/Pages/hapag.png",
         url: "https://hapag.pages.dev/",
     },
@@ -271,7 +271,7 @@ export const SHOWCASE_SITES: ShowcaseSite[] = [
         category: "Salon · Massage · Spa",
         lat: 14.5995,
         lng: 120.9842,
-        city: "Manila",
+        city: "Meycauayan, Bulacan",
         src: "/Pages/beauty-me.png",
         url: "https://beauty-me-salon-massage-spa.frmwrkd-media.workers.dev/",
     },
@@ -372,12 +372,34 @@ export const FAQ_CREATOR: FaqEntry[] = [
 
 export const FAQ_BUSINESS: FaqEntry[] = [
     { q: "Will I need to learn design?", a: "No. You won't choose a template, pick a font, or stare at a blank page. A creator visits, asks a few questions, takes photos, and your site forms from that." },
-    { q: "How long does it take?", a: "Live in 48 hours from the interview. The interview itself is around 30 minutes — at your shop, while you keep working." },
+    { q: "How long does it take?", a: "Live in 48–72 hours from the interview. The interview itself is around 30 minutes — at your shop, while you keep working." },
     { q: "Do I have to prepare anything?", a: "No. The creator brings the camera, the questions, and the patience. You answer between customers." },
     { q: "What if I don't like it?", a: "You don't pay until the site is live and you've approved it. If you reject the draft, the creator revises it once for free." },
     { q: "Can I update it later?", a: "Yes — message your creator through the app. Small edits are included for the first year. After that, a flat fee per change." },
     { q: "Who owns the website?", a: "You do. The domain, the photos, the copy — all yours. You can take it elsewhere any time, no penalty." },
-    { q: "How much does it cost?", a: "₱999 for a Tendso subdomain site, ₱1,499 if you want a custom domain (.com included for year 1). One-time fee — no monthly hosting bills." },
+    { q: "How much does it cost?", a: "₱999 for a standard site, ₱1,499 if you want a custom domain (.com included for year 1). One-time fee — no monthly hosting bills." },
+];
+
+// Tagalog FAQ — shown on the landing when the language is set to TL. Kept as
+// separate arrays (not a schema change) so other consumers of FAQ_CREATOR /
+// FAQ_BUSINESS stay untouched.
+export const FAQ_CREATOR_TL: FaqEntry[] = [
+    { q: "Paano ako babayaran?", a: "Diretso sa Wise account mo. Ang app ang bahala sa invoice, buwis, at resibo. Hindi ka na hihipo ng spreadsheet." },
+    { q: "Kailan ako babayaran?", a: "Sa loob ng 48 oras mula nang aprubahan ng may-ari ang site nila. Mas mabilis pa kapag weekend — hindi namin binibinbin ang pera mo." },
+    { q: "Kailangan ba ng karanasan?", a: "Hindi. Ang guided capture ang gagabay sa'yo sa bawat interview, bawat litrato, bawat hakbang. Kung marunong kang mag-TikTok, kaya mo 'to." },
+    { q: "Paano kung hindi ako magaling mag-English?", a: "Marunong ang app ng Tagalog, Cebuano, Hiligaynon, at Ilocano. Naka-translate na ang mga tanong sa interview. Nasa sariling wika lang ang may-ari." },
+    { q: "Kailangan ba ng smartphone?", a: "Oo — kahit anong phone mula sa nakaraang apat na taon ay pwede. iOS 15+ o Android 10+." },
+    { q: "Pwede ba akong part-time?", a: "Karamihan ng creators ay nagsimula nang ganoon. Ikaw ang pipili ng trabaho, ikaw ang magtatakda ng bilis. Walang minimum." },
+];
+
+export const FAQ_BUSINESS_TL: FaqEntry[] = [
+    { q: "Kailangan ko bang matuto ng design?", a: "Hindi. Wala kang pipiliing template, font, o titigan na blankong page. May creator na bibisita, magtatanong, kukuha ng litrato, at doon mabubuo ang site mo." },
+    { q: "Gaano katagal?", a: "Live sa loob ng 48–72 oras mula sa interview. Ang interview mismo ay mga 30 minuto — sa tindahan mo, habang nagtatrabaho ka." },
+    { q: "May ihahanda ba ako?", a: "Wala. Ang creator ang may dalang kamera, mga tanong, at pasensya. Sasagot ka lang sa pagitan ng mga customer." },
+    { q: "Paano kung hindi ko gusto?", a: "Hindi ka magbabayad hangga't hindi live at na-approve mo ang site. Kung tatanggihan mo ang draft, ire-revise ito ng creator nang isang beses, libre." },
+    { q: "Pwede ko bang i-update mamaya?", a: "Oo — mag-message sa creator mo sa app. Kasama na ang maliliit na edit sa unang taon. Pagkatapos noon, may flat na bayad kada pagbabago." },
+    { q: "Sino ang may-ari ng website?", a: "Ikaw. Ang domain, ang litrato, ang mga salita — sa'yo lahat. Pwede mong dalhin kahit saan anumang oras, walang penalty." },
+    { q: "Magkano ang gastos?", a: "₱999 para sa standard na site, ₱1,499 kung gusto mo ng custom domain (kasama ang .com sa unang taon). Isang bayad lang — walang buwanang hosting." },
 ];
 
 // ── Knowledge base seed ────────────────────────────────────────────────────

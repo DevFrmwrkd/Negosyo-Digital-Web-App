@@ -3,15 +3,18 @@
 import { QRCodeSVG } from "qrcode.react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { useT } from "./i18n";
 
 /**
- * AppDownloadSection — priority "Get the app" band (placed right after the
- * hero to drive downloads).
+ * AppDownloadSection — WP "dark punctuation" band for the Tendso app.
  *
- * - Google Play links to the Tendso Android listing; an admin can override the
- *   URL at /admin/app-release (setting `play_store_url`).
- * - App Store shows "Coming soon" until an iOS build ships (set `app_store_url`
- *   at /admin/app-release to turn it into a live download).
+ * The app is the CREATOR / field tool (get certified, capture businesses, track
+ * earnings). It does NOT build or publish websites, and owners don't need it —
+ * so the copy is framed for creators, not owners.
+ *
+ * - Google Play links to the Android listing; an admin can override the URL at
+ *   /admin/app-release (setting `play_store_url`).
+ * - App Store shows "Coming soon" until an iOS build ships (`app_store_url`).
  */
 
 const DEFAULT_PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.negosyodigital.app";
@@ -35,59 +38,41 @@ function PlayGlyph() {
     );
 }
 
-const btnBase: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 12,
-    minWidth: 220,
-    padding: "14px 26px",
-    borderRadius: 14,
-    textDecoration: "none",
-    transition: "transform .15s ease",
-};
-
 function StoreButton({ href, glyph, small, large }: { href: string; glyph: React.ReactNode; small: string; large: string }) {
     return (
         <a
             href={href}
             target="_blank"
             rel="noreferrer"
-            style={{ ...btnBase, background: "var(--neo-paper)", color: "var(--neo-ink)", border: "1px solid var(--neo-paper)" }}
+            className="inline-flex min-w-[220px] items-center gap-3 rounded-xl bg-khaki px-6 py-3.5 text-ink transition-transform hover:-translate-y-0.5"
         >
-            <span style={{ display: "inline-flex", flex: "0 0 auto" }}>{glyph}</span>
-            <span style={{ display: "flex", flexDirection: "column", textAlign: "left", lineHeight: 1.1 }}>
-                <span style={{ fontSize: 10.5, letterSpacing: ".05em", textTransform: "uppercase", opacity: 0.7 }}>{small}</span>
-                <span style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-.01em" }}>{large}</span>
+            <span className="flex flex-shrink-0">{glyph}</span>
+            <span className="flex flex-col text-left leading-tight">
+                <span className="text-[10.5px] uppercase tracking-wide opacity-70">{small}</span>
+                <span className="text-xl font-semibold tracking-[-0.01em]">{large}</span>
             </span>
         </a>
     );
 }
 
-/** Outlined, non-interactive badge for a store that isn't live yet. */
 function ComingSoonButton({ glyph, label }: { glyph: React.ReactNode; label: string }) {
     return (
         <span
             aria-disabled="true"
             title={`${label} — coming soon`}
-            style={{
-                ...btnBase,
-                background: "transparent",
-                color: "var(--neo-paper)",
-                border: "1px solid color-mix(in srgb, var(--neo-paper) 32%, transparent)",
-                opacity: 0.75,
-                cursor: "default",
-            }}
+            className="inline-flex min-w-[220px] cursor-default items-center gap-3 rounded-xl border border-khaki/25 px-6 py-3.5 text-khaki/70"
         >
-            <span style={{ display: "inline-flex", flex: "0 0 auto" }}>{glyph}</span>
-            <span style={{ display: "flex", flexDirection: "column", textAlign: "left", lineHeight: 1.1 }}>
-                <span style={{ fontSize: 10.5, letterSpacing: ".05em", textTransform: "uppercase", opacity: 0.7 }}>Coming soon</span>
-                <span style={{ fontSize: 20, fontWeight: 600, letterSpacing: "-.01em" }}>{label}</span>
+            <span className="flex flex-shrink-0">{glyph}</span>
+            <span className="flex flex-col text-left leading-tight">
+                <span className="text-[10.5px] uppercase tracking-wide opacity-70">Coming soon</span>
+                <span className="text-xl font-semibold tracking-[-0.01em]">{label}</span>
             </span>
         </span>
     );
 }
 
-export default function AppDownloadSection() {
+export default function AppDownloadSection({ id }: { id?: string } = {}) {
+    const { t } = useT();
     const appStoreUrl = useQuery(api.settings.get, { key: "app_store_url" }) as string | null | undefined;
     const playStoreUrl = useQuery(api.settings.get, { key: "play_store_url" }) as string | null | undefined;
 
@@ -95,55 +80,38 @@ export default function AppDownloadSection() {
     const appLive = !!(appStoreUrl && appStoreUrl.trim());
 
     return (
-        <section style={{ position: "relative", background: "var(--neo-ink)", color: "var(--neo-paper)", padding: "clamp(96px, 12vw, 150px) 0", overflow: "hidden" }}>
-            {/* Accent glow behind the headline. */}
-            <div
-                aria-hidden="true"
-                style={{
-                    position: "absolute",
-                    top: "-25%",
-                    left: "50%",
-                    width: "min(1000px, 120%)",
-                    height: 620,
-                    transform: "translateX(-50%)",
-                    background: "radial-gradient(closest-side, color-mix(in srgb, var(--neo-creator) 20%, transparent), transparent)",
-                    pointerEvents: "none",
-                }}
-            />
-            <div className="container-wide" style={{ position: "relative", textAlign: "center" }}>
-                <div className="eyebrow" style={{ marginBottom: 22, color: "var(--neo-creator)" }}>Get the app</div>
-                <h2 className="display" style={{ fontSize: "clamp(52px, 8.5vw, 132px)", color: "var(--neo-paper)", lineHeight: 0.95 }}>
-                    Take Tendso
-                    <br />
-                    <em style={{ fontStyle: "italic", color: "var(--neo-creator)" }}>with you.</em>
-                </h2>
-                <p className="lede" style={{ maxWidth: "48ch", margin: "28px auto 0", fontSize: 19, color: "oklch(82% 0.01 85)" }}>
-                    Get the Tendso app on your phone — available now on Android, with iOS on the way.
+        <section id={id} className="bg-ink text-khaki">
+            <div className="mx-auto max-w-4xl px-6 py-24 text-center sm:py-28">
+                <p className="font-sans text-[13px] font-semibold uppercase tracking-[0.14em]" style={{ color: "var(--rust-soft)" }}>
+                    {t("app.eyebrow")}
                 </p>
+                <h2
+                    className="mx-auto mt-5 max-w-2xl font-fraunces text-[clamp(2rem,5vw,3.5rem)] leading-[1.05] tracking-[-0.02em]"
+                    style={{ fontWeight: 560, fontOpticalSizing: "auto" }}
+                >
+                    {t("app.titleA")}{" "}
+                    <span className="italic" style={{ color: "var(--rust-soft)" }}>{t("app.titleB")}</span>
+                </h2>
+                <p className="mx-auto mt-5 max-w-lg text-[17px] leading-relaxed text-khaki/70">{t("app.lede")}</p>
 
-                {/* Store buttons */}
-                <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap", marginTop: 44 }}>
+                <div className="mt-9 flex flex-wrap justify-center gap-4">
                     {appLive ? (
-                        <StoreButton href={appStoreUrl as string} glyph={<AppleGlyph />} small="Download on the" large="App Store" />
+                        <StoreButton href={appStoreUrl as string} glyph={<AppleGlyph />} small={t("app.downloadOn")} large="App Store" />
                     ) : (
                         <ComingSoonButton glyph={<AppleGlyph />} label="App Store" />
                     )}
-                    <StoreButton href={playHref} glyph={<PlayGlyph />} small="Get it on" large="Google Play" />
+                    <StoreButton href={playHref} glyph={<PlayGlyph />} small={t("app.getOn")} large="Google Play" />
                 </div>
 
-                {/* QR to the Android listing — desktop only (on mobile you just tap the button). */}
-                <div className="hidden sm:flex" style={{ flexDirection: "column", alignItems: "center", gap: 11, marginTop: 44 }}>
-                    <div style={{ background: "#fff", padding: 12, borderRadius: 16, lineHeight: 0, boxShadow: "0 12px 36px -16px rgba(0,0,0,.55)" }}>
+                {/* QR to the Android listing — desktop only (tap the button on mobile) */}
+                <div className="mt-11 hidden flex-col items-center gap-3 sm:flex">
+                    <div className="rounded-2xl bg-white p-3 leading-none shadow-[0_12px_36px_-16px_rgba(0,0,0,.55)]">
                         <QRCodeSVG value={playHref} size={116} bgColor="#ffffff" fgColor="#111111" level="M" />
                     </div>
-                    <span style={{ fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: "oklch(70% 0.01 85)" }}>
-                        Scan to install on Android
-                    </span>
+                    <span className="text-[11.5px] uppercase tracking-[0.08em] text-khaki/60">{t("app.scan")}</span>
                 </div>
 
-                <div style={{ marginTop: 22, fontSize: 11.5, letterSpacing: ".08em", textTransform: "uppercase", color: "oklch(66% 0.01 85)" }}>
-                    Available now on Android · iOS coming soon
-                </div>
+                <div className="mt-6 text-[11.5px] uppercase tracking-[0.08em] text-khaki/55">{t("app.status")}</div>
             </div>
         </section>
     );

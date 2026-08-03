@@ -1,256 +1,107 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useTickUp, ArrowDownIcon, ArrowUpRightIcon } from "./landingPrimitives";
-import { fmt, COUNTERS_GROWTH, HARDCODED_LIVE_SITE_COUNT } from "./landingData";
 import { useT } from "./i18n";
+import { CAROUSEL_SITES } from "./landingData";
+import LiveSitePreview from "./LiveSitePreview";
 
-// Live clock that only renders post-mount to avoid SSR/CSR hydration mismatch.
-// The server has no way to know the client's "now" within the same minute, so
-// rendering the string on the server is guaranteed to differ from the client.
-function LiveClockTime() {
-    const [time, setTime] = useState<string | null>(null);
-    useEffect(() => {
-        const tick = () =>
-            setTime(
-                new Date().toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                }),
-            );
-        tick();
-        const id = setInterval(tick, 30_000);
-        return () => clearInterval(id);
-    }, []);
-    // Render a non-breaking space placeholder until mount so the surrounding
-    // layout doesn't reflow when the clock pops in.
-    return <>{time ?? "——:——"} PHT</>;
-}
-
-// Same defer-to-mount treatment for the magazine-style issue line. The page
-// can be cached at build time and served weeks later, so server-rendered
-// month/year may legitimately disagree with the client.
-function IssueDate() {
-    const [label, setLabel] = useState<string | null>(null);
-    useEffect(() => {
-        setLabel(
-            new Date().toLocaleString("en-US", {
-                month: "long",
-                year: "numeric",
-            }),
-        );
-    }, []);
-    return <>{label ?? " "}</>;
-}
-
-
-function CounterRow({ value, label, last }: { value: number; label: string; last?: boolean }) {
+function Check() {
     return (
-        <div
-            style={{
-                padding: "18px 24px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-                borderBottom: last ? "none" : "1px solid var(--neo-rule)",
-            }}
-        >
-            <span className="counter-num" style={{ fontSize: 40 }}>{fmt(value)}</span>
-            <span className="label">{label}</span>
-        </div>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: "var(--rust)" }}>
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
     );
 }
 
-function DoorButton({
-    kind,
-    href,
-    title,
-    sub,
-    note,
-}: {
-    kind: "business" | "creator";
-    href: string;
-    title: string;
-    sub: string;
-    note: string;
-}) {
-    return (
-        <Link
-            href={href}
-            className={`door door-${kind} p-5 sm:p-7`}
-            style={{
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: 0,
-                textDecoration: "none",
-                display: "inline-flex",
-            }}
-        >
-            <span className="meta" style={{ marginBottom: 12 }}>
-                {sub} <span className="arrow"><ArrowUpRightIcon /></span>
-            </span>
-            <span
-                className="text-[28px] sm:text-[34px] lg:text-[38px]"
-                style={{
-                    fontFamily: "var(--neo-serif)",
-                    lineHeight: 0.98,
-                    letterSpacing: "-.02em",
-                }}
-            >
-                {title}
-            </span>
-            <span style={{ fontSize: 13, opacity: 0.85, marginTop: 12, lineHeight: 1.5 }}>{note}</span>
-        </Link>
-    );
-}
+// The real client site shown in the hero preview (first curated site).
+const HERO_SITE = CAROUSEL_SITES[0];
+const HERO_HOST = (HERO_SITE?.url ?? "").replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 export default function HeroSection() {
-    // Live creator count comes from Convex; site count is hardcoded — derived
-    // from the SHOWCASE_SITES list in landingData.ts (single source of truth).
-    const liveCreators = useQuery(api.creators.count, {}) as number | undefined;
-
     const { t } = useT();
-    // Localized copy, shaped to match the field names the JSX below already uses.
-    const T = {
-        hero_main: [t("hero.h1a"), t("hero.h1b"), t("hero.h1c"), "."] as const,
-        hero_main_em: t("hero.em"),
-        hero_lede: t("hero.lede"),
-        door_business: t("hero.doorBusiness"),
-        door_business_sub: t("hero.doorBusinessSub"),
-        door_creator: t("hero.doorCreator"),
-        door_creator_sub: t("hero.doorCreatorSub"),
-        counter_creators: t("hero.counterCreators"),
-        counter_businesses: t("hero.counterBusinesses"),
-        counter_cities: t("hero.counterCities"),
-        counter_countries: t("hero.counterCountries"),
-    };
-
-    const creators = useTickUp(liveCreators ?? COUNTERS_GROWTH.creators);
-    const businesses = useTickUp(HARDCODED_LIVE_SITE_COUNT);
-    const cities = useTickUp(COUNTERS_GROWTH.cities);
-    const countries = useTickUp(COUNTERS_GROWTH.countries);
-    const hm = T.hero_main;
 
     return (
-        <section className="pt-12 pb-12 sm:pt-14 sm:pb-12">
-            <div className="container-wide">
-                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.55fr)_minmax(280px,1fr)] gap-10 lg:gap-14 lg:items-end mb-10 lg:mb-12">
-                    <div>
-                        <div
-                            className="eyebrow"
-                            style={{
-                                marginBottom: 24,
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 10,
-                                padding: "6px 14px",
-                                border: "1px solid var(--neo-rule)",
-                                borderRadius: "var(--neo-r-pill)",
-                                background: "var(--neo-paper-3)",
-                            }}
+        <section className="flex min-h-[calc(100svh-3.75rem)] items-center bg-khaki">
+            <div className="mx-auto w-full max-w-6xl px-6 py-16">
+                <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+                    {/* Left: the pitch */}
+                    <div className="text-center lg:text-left">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--rust)" }} />
+                            {t("hero.trustChip")}
+                        </span>
+
+                        <h1
+                            className="mx-auto mt-7 max-w-xl font-fraunces text-[clamp(2.25rem,5.2vw,3.75rem)] leading-[1.05] tracking-[-0.02em] text-ink lg:mx-0"
+                            style={{ fontWeight: 560, fontOpticalSizing: "auto" }}
                         >
-                            <span className="live-dot"></span>
-                            {t("hero.issue")} · <IssueDate />
-                        </div>
-                        <h1 className="display">
-                            {hm[0]}
-                            <br />
-                            {hm[1]}<em>{hm[2]}</em>{hm[3]}
+                            {t("hero.h1a")}{" "}
+                            <span className="whitespace-nowrap">
+                                {t("hero.h1b")}
+                                <span className="italic" style={{ color: "var(--rust)", fontWeight: 560 }}>
+                                    {t("hero.h1c")}
+                                </span>
+                            </span>
                         </h1>
-                        <div
-                            className="serif"
-                            style={{
-                                fontSize: "clamp(20px, 1.8vw, 28px)",
-                                fontStyle: "italic",
-                                color: "var(--neo-ink-2)",
-                                marginTop: 18,
-                                letterSpacing: "-.01em",
-                            }}
-                        >
-                            {T.hero_main_em}
-                        </div>
-                        <p className="lede" style={{ marginTop: 28, fontSize: 18, maxWidth: "58ch" }}>
-                            {T.hero_lede}
+
+                        <p className="mx-auto mt-6 max-w-md text-[17px] leading-relaxed text-ink-soft lg:mx-0">
+                            {t("hero.lede")}
                         </p>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 28 }}>
-                            {[
-                                t("hero.tag1"),
-                                t("hero.tag2"),
-                                t("hero.tag3"),
-                                t("hero.tag4"),
-                                t("hero.tag5"),
-                            ].map((p) => (
-                                <span
-                                    key={p}
-                                    className="tag"
-                                    style={{
-                                        padding: "6px 14px",
-                                        fontSize: 11,
-                                        background: "var(--neo-paper-3)",
-                                        color: "var(--neo-ink-2)",
-                                    }}
-                                >
-                                    {p}
+
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                            <Link
+                                href="/for-business"
+                                className="inline-flex items-center gap-2 rounded-xl bg-rust px-6 py-3.5 text-sm font-semibold text-ink shadow-[0_10px_30px_-10px_rgba(200,149,72,0.6)] transition-transform hover:-translate-y-0.5"
+                            >
+                                {t("hero.ctaBusiness")}
+                                <span aria-hidden="true">→</span>
+                            </Link>
+                            <a
+                                href="#proof"
+                                className="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-ink/35"
+                            >
+                                {t("hero.ctaProof")}
+                            </a>
+                        </div>
+
+                        <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-sm text-ink-soft lg:justify-start">
+                            {[t("hero.tag1"), t("hero.tag2"), t("hero.tag3")].map((tag) => (
+                                <span key={tag} className="inline-flex items-center gap-1.5">
+                                    <Check />
+                                    {tag}
                                 </span>
                             ))}
                         </div>
-                    </div>
-                    <div className="surface">
-                        <div
-                            style={{
-                                padding: "14px 18px",
-                                borderBottom: "1px solid var(--neo-rule)",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                            }}
-                        >
-                            <span className="label">
-                                <span className="live-dot" style={{ marginRight: 6 }}></span>
-                                Live · <LiveClockTime />
-                            </span>
-                            <span className="label" style={{ color: "var(--neo-live)" }}>↑ updating</span>
-                        </div>
-                        <CounterRow value={creators} label={T.counter_creators} />
-                        <CounterRow value={businesses} label={T.counter_businesses} />
-                        <CounterRow value={cities} label={T.counter_cities} />
-                        <CounterRow value={countries} label={T.counter_countries} last />
-                    </div>
-                </div>
 
-                <div className="pt-8" style={{ borderTop: "1px solid var(--neo-rule-strong)" }}>
-                    <div className="label" style={{ marginBottom: 16 }}>{t("hero.pickDoor")}</div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                        <DoorButton
-                            kind="business"
-                            href="/for-business"
-                            sub={T.door_business_sub}
-                            title={T.door_business}
-                            note={t("hero.doorBusinessNote")}
-                        />
-                        <DoorButton
-                            kind="creator"
-                            href="/for-creators"
-                            sub={T.door_creator_sub}
-                            title={T.door_creator}
-                            note={t("hero.doorCreatorNote")}
-                        />
+                        <p className="mt-9 text-sm text-ink-soft">
+                            {t("hero.creatorLead")}{" "}
+                            <Link
+                                href="/for-creators"
+                                className="font-semibold text-ink underline decoration-2 underline-offset-4 transition-colors hover:opacity-70"
+                                style={{ textDecorationColor: "var(--rust)" }}
+                            >
+                                {t("hero.creatorLink")}
+                            </Link>
+                        </p>
                     </div>
-                    <div
-                        style={{
-                            marginTop: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                            color: "var(--neo-ink-3)",
-                            fontSize: 13,
-                        }}
-                    >
-                        <ArrowDownIcon />
-                        <span>{t("hero.scroll")}</span>
+
+                    {/* Right: a framed live preview of a real client site */}
+                    <div className="mx-auto w-full max-w-md lg:max-w-none">
+                        <div className="overflow-hidden rounded-xl border border-ink/10 bg-white shadow-[0_34px_70px_-34px_rgba(27,28,36,0.5)]">
+                            {/* Browser chrome */}
+                            <div className="flex items-center gap-1.5 border-b border-ink/10 bg-khaki-deep px-3.5 py-2.5">
+                                <span className="h-2.5 w-2.5 rounded-full bg-ink/15" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-ink/15" />
+                                <span className="h-2.5 w-2.5 rounded-full bg-ink/15" />
+                                <span className="ml-2 truncate rounded-md bg-white px-2 py-0.5 font-mono text-[10px] text-ink-soft">
+                                    {HERO_HOST}
+                                </span>
+                            </div>
+                            {HERO_SITE?.url && <LiveSitePreview url={HERO_SITE.url} name={HERO_SITE.name} />}
+                        </div>
+                        <p className="mt-3 text-center font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft lg:text-left">
+                            {t("hero.previewCaption")}
+                        </p>
                     </div>
                 </div>
             </div>

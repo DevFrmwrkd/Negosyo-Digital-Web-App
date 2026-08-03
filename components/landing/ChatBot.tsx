@@ -6,6 +6,9 @@ import { api } from "@/convex/_generated/api";
 
 type Msg = { role: "bot" | "user"; text: string; sources?: { slug: string; title: string }[] };
 
+// Brand-token styling helpers (this widget lives outside .neo now).
+const RULE = "1px solid rgba(27,28,36,.1)";
+
 export default function ChatBot() {
     const [open, setOpen] = useState(false);
     const [messages, setMessages] = useState<Msg[]>([
@@ -26,8 +29,6 @@ export default function ChatBot() {
     const ask = async () => {
         const q = input.trim();
         if (!q || busy) return;
-        // Snapshot the conversation so far (excluding the two opening greetings)
-        // so the assistant can resolve follow-up questions. Keep it short.
         const history = messages
             .filter((m, i) => !(m.role === "bot" && i < 2))
             .map((m) => ({ role: m.role === "bot" ? ("assistant" as const) : ("user" as const), text: m.text }))
@@ -61,95 +62,56 @@ export default function ChatBot() {
     return (
         <>
             {open && (
-                <div className="chatbot-window" role="dialog" aria-label="Chat with us">
+                <div className="tnd-chatbot-window" role="dialog" aria-label="Chat with us">
                     <div
-                        style={{
-                            padding: "16px 20px",
-                            borderBottom: "1px solid var(--neo-rule)",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            background: "var(--neo-paper)",
-                        }}
+                        className="flex items-center justify-between px-5 py-4"
+                        style={{ borderBottom: RULE, background: "var(--khaki)" }}
                     >
                         <div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span className="live-dot"></span>
+                            <div className="flex items-center gap-2">
+                                <span className="tnd-live-dot" />
                                 <span
-                                    style={{
-                                        fontFamily: "var(--neo-serif)",
-                                        fontSize: 22,
-                                        fontStyle: "italic",
-                                        letterSpacing: "-.01em",
-                                    }}
+                                    className="italic"
+                                    style={{ fontFamily: "var(--font-fraunces)", fontWeight: 560, fontSize: 20, letterSpacing: "-.01em", color: "var(--ink)" }}
                                 >
                                     Ask Tendso
                                 </span>
                             </div>
-                            <div className="label" style={{ marginTop: 4 }}>Powered by our knowledge base</div>
+                            <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                                Powered by our knowledge base
+                            </div>
                         </div>
                         <button
                             onClick={() => setOpen(false)}
                             aria-label="Close chat"
-                            style={{
-                                width: 30,
-                                height: 30,
-                                borderRadius: "50%",
-                                border: "1px solid var(--neo-rule)",
-                                background: "var(--neo-paper-3)",
-                                color: "var(--neo-ink)",
-                                cursor: "pointer",
-                                fontSize: 14,
-                            }}
+                            className="flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-full text-sm text-ink"
+                            style={{ border: RULE, background: "#fff" }}
                         >
                             ×
                         </button>
                     </div>
 
-                    <div
-                        ref={scrollRef}
-                        style={{
-                            flex: 1,
-                            // minHeight:0 lets this flex child shrink so it
-                            // scrolls within the window instead of clipping.
-                            minHeight: 0,
-                            padding: 16,
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 10,
-                            overflowY: "auto",
-                        }}
-                    >
+                    <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4">
                         {messages.map((m, i) => (
                             <div
                                 key={i}
+                                className="max-w-[85%] px-3.5 py-2.5 text-sm leading-snug [overflow-wrap:anywhere]"
                                 style={{
                                     alignSelf: m.role === "user" ? "flex-end" : "flex-start",
-                                    background: m.role === "user" ? "var(--neo-ink)" : "var(--neo-paper-2)",
-                                    color: m.role === "user" ? "var(--neo-paper)" : "var(--neo-ink)",
-                                    padding: "10px 14px",
-                                    borderRadius:
-                                        m.role === "user"
-                                            ? "var(--neo-r-md) var(--neo-r-md) 4px var(--neo-r-md)"
-                                            : "var(--neo-r-md) var(--neo-r-md) var(--neo-r-md) 4px",
-                                    fontSize: 14,
-                                    lineHeight: 1.45,
-                                    maxWidth: "85%",
-                                    overflowWrap: "anywhere",
+                                    background: m.role === "user" ? "var(--ink)" : "var(--khaki-deep)",
+                                    color: m.role === "user" ? "var(--khaki)" : "var(--ink)",
+                                    borderRadius: m.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
                                 }}
                             >
                                 {m.text}
                                 {m.role === "bot" && m.sources && m.sources.length > 0 && (
-                                    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                                    <div className="mt-2 flex flex-col gap-1">
                                         {m.sources.map((s) => (
                                             <a
                                                 key={s.slug}
                                                 href={`/knowledge?ws=help&article=${encodeURIComponent(s.slug)}`}
-                                                style={{
-                                                    fontSize: 12,
-                                                    color: "var(--neo-creator-ink)",
-                                                    textDecoration: "underline",
-                                                }}
+                                                className="text-xs underline"
+                                                style={{ color: "var(--rust)" }}
                                             >
                                                 → {s.title}
                                             </a>
@@ -159,50 +121,26 @@ export default function ChatBot() {
                             </div>
                         ))}
                         {busy && (
-                            <div
-                                style={{
-                                    alignSelf: "flex-start",
-                                    color: "var(--neo-ink-3)",
-                                    fontSize: 13,
-                                    padding: "8px 12px",
-                                }}
-                            >
-                                <span className="live-dot" style={{ marginRight: 6 }}></span>typing…
+                            <div className="self-start px-3 py-2 text-[13px] text-ink-soft">
+                                <span className="tnd-live-dot" style={{ marginRight: 6 }} />typing…
                             </div>
                         )}
                     </div>
 
-                    <div
-                        style={{
-                            padding: "10px 16px",
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 6,
-                            borderTop: "1px solid var(--neo-rule)",
-                        }}
-                    >
+                    <div className="flex flex-wrap gap-1.5 px-4 py-2.5" style={{ borderTop: RULE }}>
                         {suggestions.map((s) => (
                             <button
                                 key={s}
                                 type="button"
                                 onClick={() => setInput(s)}
-                                className="tag"
-                                style={{ cursor: "pointer" }}
+                                className="cursor-pointer rounded-full border border-ink/15 bg-white px-3 py-1 text-xs text-ink-soft transition-colors hover:border-ink/30 hover:text-ink"
                             >
                                 {s}
                             </button>
                         ))}
                     </div>
 
-                    <div
-                        style={{
-                            padding: 12,
-                            display: "flex",
-                            gap: 8,
-                            borderTop: "1px solid var(--neo-rule)",
-                            background: "var(--neo-paper)",
-                        }}
-                    >
+                    <div className="flex gap-2 p-3" style={{ borderTop: RULE, background: "var(--khaki)" }}>
                         <input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
@@ -210,34 +148,16 @@ export default function ChatBot() {
                                 if (e.key === "Enter") ask();
                             }}
                             placeholder="Type a question…"
-                            style={{
-                                flex: 1,
-                                border: "1px solid var(--neo-rule)",
-                                background: "var(--neo-paper-3)",
-                                color: "var(--neo-ink)",
-                                padding: "10px 14px",
-                                borderRadius: "var(--neo-r-pill)",
-                                fontFamily: "var(--neo-sans)",
-                                fontSize: 14,
-                                outline: "none",
-                            }}
+                            className="flex-1 rounded-full px-3.5 py-2.5 text-sm text-ink outline-none"
+                            style={{ border: RULE, background: "#fff", fontFamily: "var(--font-plus-jakarta)" }}
                         />
                         <button
                             type="button"
                             onClick={ask}
                             disabled={!input.trim() || busy}
-                            style={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: "50%",
-                                border: 0,
-                                background: "var(--neo-ink)",
-                                color: "var(--neo-paper)",
-                                cursor: "pointer",
-                                fontSize: 16,
-                                opacity: !input.trim() || busy ? 0.4 : 1,
-                            }}
                             aria-label="Send"
+                            className="flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full text-base"
+                            style={{ background: "var(--ink)", color: "var(--khaki)", opacity: !input.trim() || busy ? 0.4 : 1 }}
                         >
                             ↑
                         </button>
@@ -247,7 +167,7 @@ export default function ChatBot() {
 
             <button
                 type="button"
-                className="chatbot-fab"
+                className="tnd-chatbot-fab"
                 onClick={() => setOpen((o) => !o)}
                 aria-label={open ? "Close chat" : "Open chat"}
             >
