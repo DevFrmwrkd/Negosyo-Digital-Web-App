@@ -144,7 +144,7 @@ const EN: Dict = {
     "price.stdF3": "Built from your photos and your words",
     "price.stdF4": "Mobile-first — customers find you on their phones",
     "price.stdF5": "Hosted with SSL, kept online",
-    "price.stdF6": "Free edits within 7 days of launch",
+    "price.stdF6": "Free edits for the first year",
     "price.domF1": "Everything in Standard",
     "price.domF2": "Your own custom domain (.com, .net, .shop…)",
     "price.domF3": "Year 1 of the domain included",
@@ -152,7 +152,7 @@ const EN: Dict = {
     "price.domF5": "A reminder before it renews",
     "price.domF6": "Same build, same review-before-you-pay",
     "price.footnote":
-        "No card on file. No fine print. No charges later. ◆ International pricing matches PH until local launch.",
+        "No card on file. No fine print. No charges later.",
 
     // CTA
     "cta.title": "Your work deserves a page.",
@@ -374,7 +374,7 @@ const TL: Dict = {
     "price.stdF3": "Ginawa mula sa litrato at salita mo",
     "price.stdF4": "Mobile-first — mahahanap ka ng customer sa phone nila",
     "price.stdF5": "Naka-host na may SSL, pinapanatiling online",
-    "price.stdF6": "Libreng edits sa loob ng 7 araw mula sa launch",
+    "price.stdF6": "Libreng edits sa loob ng unang taon",
     "price.domF1": "Lahat ng nasa Standard",
     "price.domF2": "Sarili mong custom domain (.com, .net, .shop…)",
     "price.domF3": "Kasama ang unang taon ng domain",
@@ -382,7 +382,7 @@ const TL: Dict = {
     "price.domF5": "May paalala bago mag-renew",
     "price.domF6": "Parehong build, parehong review bago magbayad",
     "price.footnote":
-        "Walang card na nakatago. Walang maliit na letra. Walang sorpresang singil. ◆ Pantay ang presyo sa ibang bansa sa PH hanggang sa lokal na launch.",
+        "Walang card na nakatago. Walang maliit na letra. Walang sorpresang singil.",
 
     // CTA
     "cta.title": "May karapatan ang trabaho mo sa sariling page.",
