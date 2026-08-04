@@ -308,7 +308,17 @@ export const listForMobileCRM = query({
         onlyMine: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
-        const identity = await requireIdentity(ctx);
+        // Read query consumed by the mobile CRM feed: it fires on mount, which can
+        // beat Clerk's token reaching the Convex client. Degrade to an empty feed
+        // during that window instead of throwing "Not authenticated" — the
+        // creator-not-found branch below already returns this same empty shape.
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) {
+            return {
+                leads: [],
+                stats: { total: 0, new: 0, contacted: 0, qualified: 0, converted: 0, lost: 0, mine: 0 },
+            };
+        }
 
         const currentCreator = await ctx.db
             .query('creators')
@@ -476,7 +486,10 @@ export const listForMobileCRM = query({
 export const listForMap = query({
     args: {},
     handler: async (ctx) => {
-        await requireIdentity(ctx);
+        // Mobile CRM map view — same mount-race tolerance as listForMobileCRM:
+        // return no pins until auth propagates rather than throwing.
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return [];
 
         const allLeads = await ctx.db.query('leads').order('desc').collect();
 
@@ -609,7 +622,10 @@ export const listForMap = query({
 export const getDetailForMobileCRM = query({
     args: { id: v.id('leads') },
     handler: async (ctx, args) => {
-        const identity = await requireIdentity(ctx);
+        // Mobile CRM detail — tolerate the auth-loading window (return null, same
+        // as the not-found branches below) instead of throwing.
+        const identity = await ctx.auth.getUserIdentity();
+        if (!identity) return null;
 
         const currentCreator = await ctx.db
             .query('creators')
