@@ -20,6 +20,7 @@ function FootCol({ title, children }: { title: string; children: React.ReactNode
 export default function Footer() {
     const { lang, setLang, t } = useT();
     const apkUrl = useQuery(api.settings.get, { key: "apk_download_url" }) as string | null | undefined;
+    const appStoreUrl = useQuery(api.settings.get, { key: "app_store_url" }) as string | null | undefined;
     const year = new Date().getFullYear();
 
     return (
@@ -40,7 +41,11 @@ export default function Footer() {
                         ) : (
                             <Link href="/for-creators">Android · Direct APK</Link>
                         )}
-                        <span className="text-khaki/40">iOS · {t("footer.comingSoon")}</span>
+                        {appStoreUrl && appStoreUrl.trim() ? (
+                            <a href={appStoreUrl} target="_blank" rel="noreferrer">iOS · App Store</a>
+                        ) : (
+                            <span className="text-khaki/40">iOS · {t("footer.comingSoon")}</span>
+                        )}
                         <Link href="/knowledge">{t("footer.kb")}</Link>
                         <Link href="/help-faq">{t("footer.help")}</Link>
                     </FootCol>

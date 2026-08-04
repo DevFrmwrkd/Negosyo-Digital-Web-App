@@ -12,9 +12,10 @@ import { useT } from "./i18n";
  * earnings). It does NOT build or publish websites, and owners don't need it —
  * so the copy is framed for creators, not owners.
  *
- * - Google Play links to the Android listing; an admin can override the URL at
- *   /admin/app-release (setting `play_store_url`).
- * - App Store shows "Coming soon" until an iOS build ships (`app_store_url`).
+ * - Store URLs come from Convex settings, managed at /admin/app-release
+ *   (`play_store_url` / `app_store_url`). Each button renders only when its URL
+ *   is set. Google Play keeps a code fallback so it never disappears; the App
+ *   Store button appears once `app_store_url` is set.
  */
 
 const DEFAULT_PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.negosyodigital.app";
@@ -55,29 +56,13 @@ function StoreButton({ href, glyph, small, large }: { href: string; glyph: React
     );
 }
 
-function ComingSoonButton({ glyph, label }: { glyph: React.ReactNode; label: string }) {
-    return (
-        <span
-            aria-disabled="true"
-            title={`${label} — coming soon`}
-            className="inline-flex min-w-[220px] cursor-default items-center gap-3 rounded-xl border border-khaki/25 px-6 py-3.5 text-khaki/70"
-        >
-            <span className="flex flex-shrink-0">{glyph}</span>
-            <span className="flex flex-col text-left leading-tight">
-                <span className="text-[10.5px] uppercase tracking-wide opacity-70">Coming soon</span>
-                <span className="text-xl font-semibold tracking-[-0.01em]">{label}</span>
-            </span>
-        </span>
-    );
-}
-
 export default function AppDownloadSection({ id }: { id?: string } = {}) {
     const { t } = useT();
     const appStoreUrl = useQuery(api.settings.get, { key: "app_store_url" }) as string | null | undefined;
     const playStoreUrl = useQuery(api.settings.get, { key: "play_store_url" }) as string | null | undefined;
 
     const playHref = (playStoreUrl && playStoreUrl.trim()) || DEFAULT_PLAY_STORE_URL;
-    const appLive = !!(appStoreUrl && appStoreUrl.trim());
+    const appHref = appStoreUrl?.trim() || null;
 
     return (
         <section id={id} className="bg-ink text-khaki">
@@ -95,10 +80,8 @@ export default function AppDownloadSection({ id }: { id?: string } = {}) {
                 <p className="mx-auto mt-5 max-w-lg text-[17px] leading-relaxed text-khaki/70">{t("app.lede")}</p>
 
                 <div className="mt-9 flex flex-wrap justify-center gap-4">
-                    {appLive ? (
-                        <StoreButton href={appStoreUrl as string} glyph={<AppleGlyph />} small={t("app.downloadOn")} large="App Store" />
-                    ) : (
-                        <ComingSoonButton glyph={<AppleGlyph />} label="App Store" />
+                    {appHref && (
+                        <StoreButton href={appHref} glyph={<AppleGlyph />} small={t("app.downloadOn")} large="App Store" />
                     )}
                     <StoreButton href={playHref} glyph={<PlayGlyph />} small={t("app.getOn")} large="Google Play" />
                 </div>

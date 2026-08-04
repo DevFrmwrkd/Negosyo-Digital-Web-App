@@ -191,7 +191,7 @@ const EN: Dict = {
     "app.downloadOn": "Download on the",
     "app.getOn": "Get it on",
     "app.scan": "Scan to install on Android",
-    "app.status": "Available now on Android · iOS coming soon",
+    "app.status": "Available now on iOS and Android",
 
     // Creator earnings teaser
     "earn.eyebrow": "For creators",
@@ -422,7 +422,7 @@ const TL: Dict = {
     "app.downloadOn": "I-download sa",
     "app.getOn": "Kunin sa",
     "app.scan": "I-scan para i-install sa Android",
-    "app.status": "Available na sa Android · malapit na ang iOS",
+    "app.status": "Available na sa iOS at Android",
 
     // Creator earnings teaser
     "earn.eyebrow": "Para sa creators",
