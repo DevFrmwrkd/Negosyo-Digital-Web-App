@@ -12,13 +12,10 @@ import { useT } from "./i18n";
  * earnings). It does NOT build or publish websites, and owners don't need it —
  * so the copy is framed for creators, not owners.
  *
- * - Store URLs come from Convex settings, managed at /admin/app-release
- *   (`play_store_url` / `app_store_url`). Each button renders only when its URL
- *   is set. Google Play keeps a code fallback so it never disappears; the App
- *   Store button appears once `app_store_url` is set.
+ * - Both store URLs come from Convex settings, managed at /admin/app-release
+ *   (`play_store_url` / `app_store_url`). Each button — and the QR — renders
+ *   only when its URL is set; nothing is hardcoded.
  */
-
-const DEFAULT_PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.negosyodigital.app";
 
 function AppleGlyph() {
     return (
@@ -61,7 +58,7 @@ export default function AppDownloadSection({ id }: { id?: string } = {}) {
     const appStoreUrl = useQuery(api.settings.get, { key: "app_store_url" }) as string | null | undefined;
     const playStoreUrl = useQuery(api.settings.get, { key: "play_store_url" }) as string | null | undefined;
 
-    const playHref = (playStoreUrl && playStoreUrl.trim()) || DEFAULT_PLAY_STORE_URL;
+    const playHref = playStoreUrl?.trim() || null;
     const appHref = appStoreUrl?.trim() || null;
 
     return (
@@ -83,16 +80,20 @@ export default function AppDownloadSection({ id }: { id?: string } = {}) {
                     {appHref && (
                         <StoreButton href={appHref} glyph={<AppleGlyph />} small={t("app.downloadOn")} large="App Store" />
                     )}
-                    <StoreButton href={playHref} glyph={<PlayGlyph />} small={t("app.getOn")} large="Google Play" />
+                    {playHref && (
+                        <StoreButton href={playHref} glyph={<PlayGlyph />} small={t("app.getOn")} large="Google Play" />
+                    )}
                 </div>
 
                 {/* QR to the Android listing — desktop only (tap the button on mobile) */}
-                <div className="mt-11 hidden flex-col items-center gap-3 sm:flex">
-                    <div className="rounded-2xl bg-white p-3 leading-none shadow-[0_12px_36px_-16px_rgba(0,0,0,.55)]">
-                        <QRCodeSVG value={playHref} size={116} bgColor="#ffffff" fgColor="#111111" level="M" />
+                {playHref && (
+                    <div className="mt-11 hidden flex-col items-center gap-3 sm:flex">
+                        <div className="rounded-2xl bg-white p-3 leading-none shadow-[0_12px_36px_-16px_rgba(0,0,0,.55)]">
+                            <QRCodeSVG value={playHref} size={116} bgColor="#ffffff" fgColor="#111111" level="M" />
+                        </div>
+                        <span className="text-[11.5px] uppercase tracking-[0.08em] text-khaki/60">{t("app.scan")}</span>
                     </div>
-                    <span className="text-[11.5px] uppercase tracking-[0.08em] text-khaki/60">{t("app.scan")}</span>
-                </div>
+                )}
 
                 <div className="mt-6 text-[11.5px] uppercase tracking-[0.08em] text-khaki/55">{t("app.status")}</div>
             </div>
