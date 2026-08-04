@@ -51,7 +51,7 @@ export default function HeroSection() {
                         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                             <Link
                                 href="/for-business"
-                                className="inline-flex items-center gap-2 rounded-xl bg-rust px-6 py-3.5 text-sm font-semibold text-ink shadow-[0_10px_30px_-10px_rgba(200,149,72,0.6)] transition-transform hover:-translate-y-0.5"
+                                className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_-12px_rgba(27,28,36,0.45)] transition-transform hover:-translate-y-0.5"
                             >
                                 {t("hero.ctaBusiness")}
                                 <span aria-hidden="true">→</span>

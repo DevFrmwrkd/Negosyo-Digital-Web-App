@@ -101,7 +101,7 @@ export default function BusinessPricingSection() {
                                 href="/for-business"
                                 className={`mt-8 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-all ${
                                     tier.featured
-                                        ? "bg-rust text-khaki hover:-translate-y-0.5"
+                                        ? "bg-ink text-white hover:-translate-y-0.5"
                                         : "border border-ink/20 text-ink hover:bg-khaki-deep"
                                 }`}
                             >

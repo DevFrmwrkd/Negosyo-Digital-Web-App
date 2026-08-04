@@ -74,7 +74,7 @@ export default function CtaSection({
                         {isBiz ? (
                             <Link
                                 href={primaryHref}
-                                className="inline-flex items-center gap-2 rounded-xl bg-rust px-7 py-3.5 text-sm font-semibold text-khaki transition-transform hover:-translate-y-0.5"
+                                className="inline-flex items-center gap-2 rounded-xl bg-rust px-7 py-3.5 text-sm font-semibold text-ink transition-transform hover:-translate-y-0.5"
                             >
                                 {primaryLabel}
                                 <span aria-hidden>→</span>
@@ -82,7 +82,7 @@ export default function CtaSection({
                         ) : (
                             <a
                                 href={primaryHref}
-                                className="inline-flex items-center gap-2 rounded-xl bg-rust px-7 py-3.5 text-sm font-semibold text-khaki transition-transform hover:-translate-y-0.5"
+                                className="inline-flex items-center gap-2 rounded-xl bg-rust px-7 py-3.5 text-sm font-semibold text-ink transition-transform hover:-translate-y-0.5"
                             >
                                 {primaryLabel}
                                 <span aria-hidden>→</span>

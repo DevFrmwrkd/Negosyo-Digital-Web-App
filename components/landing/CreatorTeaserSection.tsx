@@ -73,7 +73,7 @@ export default function CreatorTeaserSection({
                 <div className="mt-9 text-center">
                     <Link
                         href={ctaHref}
-                        className="inline-flex items-center gap-2 rounded-lg bg-rust px-6 py-3.5 text-sm font-semibold text-khaki transition-transform hover:-translate-y-0.5"
+                        className="inline-flex items-center gap-2 rounded-lg bg-ink px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
                     >
                         {t("earn.cta")}
                         <span aria-hidden>→</span>
