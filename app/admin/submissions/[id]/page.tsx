@@ -13,6 +13,7 @@ import VisualEditor from "@/components/editor/VisualEditor";
 import ContentEditor, { EditorCustomizations } from "@/components/ContentEditor";
 import SandboxEditor, { type SandboxEditorProps } from "@/components/editor/SandboxEditor";
 import SandboxEditorV2 from "@/components/editor/SandboxEditorV2";
+import SandboxEditorV3 from "@/components/editor/SandboxEditorV3";
 import TopActionBar from "./_components/TopActionBar";
 import DetailsSidebar from "./_components/DetailsSidebar";
 import DriveSection from "./_components/DriveSection";
@@ -202,16 +203,16 @@ export default function SubmissionDetailPage() {
     // Per-admin editor preference: "v1" = classic SandboxEditor, "v2" = the
     // redesigned SandboxEditorV2. It's an editing-surface choice (not submission
     // data), so it lives in localStorage only and defaults to v1.
-    const [editorVersion, setEditorVersion] = useState<"v1" | "v2">("v1");
+    const [editorVersion, setEditorVersion] = useState<"v1" | "v2" | "v3">("v1");
     useEffect(() => {
         try {
             const saved = window.localStorage.getItem("tendso.editorVersion");
-            if (saved === "v1" || saved === "v2") setEditorVersion(saved);
+            if (saved === "v1" || saved === "v2" || saved === "v3") setEditorVersion(saved);
         } catch {
             /* localStorage unavailable — keep the v1 default */
         }
     }, []);
-    const chooseEditorVersion = (v: "v1" | "v2") => {
+    const chooseEditorVersion = (v: "v1" | "v2" | "v3") => {
         setEditorVersion(v);
         try {
             window.localStorage.setItem("tendso.editorVersion", v);
@@ -834,7 +835,7 @@ export default function SubmissionDetailPage() {
                         role="group"
                         aria-label="Editor version"
                     >
-                        {(["v1", "v2"] as const).map((v) => (
+                        {(["v1", "v2", "v3"] as const).map((v) => (
                             <button
                                 key={v}
                                 type="button"
@@ -1127,7 +1128,9 @@ export default function SubmissionDetailPage() {
                                     },
                                     detailsOpen: sidebarOpen,
                                 };
-                                return editorVersion === "v2" ? (
+                                return editorVersion === "v3" ? (
+                                    <SandboxEditorV3 {...editorProps} />
+                                ) : editorVersion === "v2" ? (
                                     <SandboxEditorV2 {...editorProps} />
                                 ) : (
                                     <SandboxEditor {...editorProps} />
