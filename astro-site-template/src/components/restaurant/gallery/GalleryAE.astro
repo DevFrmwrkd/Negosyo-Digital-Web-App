@@ -38,4 +38,9 @@ const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isAr
   .gal-sub { max-width: 52ch; color: var(--bone-dim); margin: -18px 0 32px; }
   .gal-grid { display: grid; gap: 2px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
   .gal-tile { min-height: 260px; }
+  @media (max-width: 760px) {
+    .gal-grid { grid-template-columns: 1fr; }
+    .gal-tile { min-height: 220px; }
+    .gal-h { margin-bottom: 22px; }
+  }
 </style>

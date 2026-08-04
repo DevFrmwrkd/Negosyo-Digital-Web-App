@@ -118,5 +118,15 @@ const tag = hero.tag || '';
     .heroW-in { padding-top: 108px; }
     .heroW-headline { font-size: clamp(54px, 18vw, 120px); }
   }
+  @media (max-width: 760px) {
+    .heroW-in { padding-top: 100px; }
+    .heroW-headline { font-size: clamp(46px, 15vw, 92px); }
+    .heroW-sub { margin: 28px auto 34px; }
+  }
   @media (max-width: 620px) { .heroW-foot { display: none; } }
+  @media (max-width: 520px) {
+    .heroW { min-height: 74vh; }
+    .heroW-headline { font-size: clamp(38px, 13vw, 60px); line-height: .98; }
+    .heroW-sub { margin: 22px auto 30px; }
+  }
 </style>

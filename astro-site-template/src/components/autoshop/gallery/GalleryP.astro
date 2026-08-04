@@ -51,4 +51,12 @@ const spans = ['big', '', 'tall', '', '', ''];
     .gal { grid-template-columns: 1fr 1fr; grid-auto-rows: 160px; }
     .gcell.big, .gcell.tall { grid-column: auto; grid-row: auto; }
   }
+  @media (max-width: 760px) {
+    .gal { grid-template-columns: 1fr; grid-auto-rows: 230px; }
+    /* Captions are hover-only on desktop; keep them visible on touch. */
+    .gcell .cap { transform: none; opacity: 1; }
+  }
+  @media (max-width: 520px) {
+    .gal { grid-auto-rows: 200px; gap: 12px; }
+  }
 </style>

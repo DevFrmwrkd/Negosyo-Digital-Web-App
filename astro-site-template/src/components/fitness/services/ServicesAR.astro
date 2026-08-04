@@ -1,0 +1,48 @@
+---
+/**
+ * fitness / ServicesAR — "what you'll train": a hairline-gridded set of .prog
+ * cells, each led by an outlined Arial-Black index that fills lime on hover,
+ * a display title and an ash body line. services.sub renders as the closing
+ * mono "// class times shared when you message us" note.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="sec programs" id="programs">
+    <div class="wrap">
+      <div class="sec-head">
+        {tag && <span class="snum" data-field="services.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>}
+      </div>
+      <div class="prog-grid">
+        {items.map((item, i) => (
+          <article class="prog reveal" data-delay={i % 3}>
+            <div class="no">{String(i + 1).padStart(2, '0')}</div>
+            <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+          </article>
+        ))}
+      </div>
+      {sub && <p class="prog-note reveal" data-field="services.sub">{sub}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .prog-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; border-top: 3px solid var(--line); border-left: 3px solid var(--line); }
+  @media (max-width: 900px) { .prog-grid { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 760px) { .prog-grid { grid-template-columns: 1fr; } }
+  .prog { padding: 34px 28px 30px; border-right: 3px solid var(--line); border-bottom: 3px solid var(--line); position: relative; overflow: hidden; transition: background .25s; }
+  .prog:hover { background: var(--ink2); }
+  .prog .no { font-family: var(--disp); font-size: 46px; color: transparent; -webkit-text-stroke: 1.5px var(--steel); line-height: .9; transition: .25s; }
+  .prog:hover .no { -webkit-text-stroke: 1.5px var(--lime); color: var(--lime); }
+  .prog h3 { font-size: 26px; margin: 12px 0 10px; }
+  .prog p { color: var(--ash); font-size: 15px; margin: 0; }
+  .prog-note { margin-top: 20px; color: var(--ash); font-size: 15px; font-family: var(--mono); letter-spacing: .02em; }
+</style>

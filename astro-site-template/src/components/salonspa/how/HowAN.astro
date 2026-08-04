@@ -1,0 +1,47 @@
+---
+/**
+ * salonspa / HowAN — "how booking works" steps on the dark ink band. Each
+ * .how-step sits under a bone top-rule with a large Didot nude numeral
+ * (decorative), a bone title and a dimmed body line. Reads content.how.steps
+ * (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="sec how">
+    <div class="wrap">
+      <div class="sec-head">
+        {tag && <span class="eyebrow" style="color:var(--nude);" data-field="how.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="how.headline" set:html={headline}></h2>}
+      </div>
+      <div class="how-steps">
+        {steps.map((step, i) => (
+          <div class="how-step reveal">
+            <div class="n" aria-hidden="true">{i + 1}</div>
+            <h3 data-field={`how.steps.${i}.title`}>{step.title}</h3>
+            {(step.body ?? step.desc ?? step.description) && (
+              <p data-field={`how.steps.${i}.body`}>{step.body ?? step.desc ?? step.description}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .how { background: var(--ink); color: var(--bone); }
+  .how .sec-head h2 { color: var(--bone); }
+  .how-steps { display: grid; grid-template-columns: repeat(4,1fr); gap: 0; }
+  @media (max-width: 820px) { .how-steps { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 760px) { .how-steps { grid-template-columns: 1fr; } .how-step { padding: 30px 0; } }
+  .how-step { padding: 36px 26px 36px 0; border-top: 1px solid rgba(239,233,223,.25); position: relative; }
+  .how-step .n { font-family: var(--disp); font-size: 44px; color: var(--nude); line-height: 1; margin-bottom: 16px; }
+  .how-step h3 { font-size: 22px; color: var(--bone); margin-bottom: 8px; }
+  .how-step p { color: var(--bone); opacity: .72; font-size: 15px; }
+</style>

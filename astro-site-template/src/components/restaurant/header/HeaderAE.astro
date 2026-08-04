@@ -17,7 +17,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   <div class="wrap nav-inner">
     <a href="#top" class="brand" data-field="footer.brand">{brand}</a>
     {navLinks.length > 0 && (
-      <nav class="nav-links" aria-label="Main">
+      <nav class="nav-links" id="nav-links-ae" aria-label="Main">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
@@ -29,6 +29,11 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
       )}
       <a href="#location" class="find">Find us ↓</a>
     </div>
+    {navLinks.length > 0 && (
+      <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-links-ae">
+        <span></span><span></span><span></span>
+      </button>
+    )}
   </div>
 </header>
 <style>
@@ -68,6 +73,71 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
     text-transform: uppercase; color: var(--bone);
   }
   .find:hover { color: var(--ember); }
-  @media (max-width: 860px) { .nav-links { display: none; } }
+
+  /* Hamburger — hidden on desktop, becomes the mobile menu trigger <=760px.
+     Three bones morph into an X while the drawer is open. */
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 0; margin-left: 2px; flex-shrink: 0;
+    background: transparent; border: 0; cursor: pointer;
+  }
+  .nav-burger span {
+    display: block; width: 24px; height: 2px; margin: 0 auto;
+    background: var(--bone); transition: transform .25s ease, opacity .2s ease;
+  }
+  header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  @media (max-width: 760px) {
+    .nav-burger { display: inline-flex; }
+    .nav-inner { gap: 12px; padding-block: 14px; }
+    /* The link list drops below the bar as a full-width charcoal drawer. */
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch; gap: 0;
+      padding: 4px 20px 12px;
+      background: rgba(var(--char-rgb), .98);
+      border-bottom: 1px solid var(--ash);
+      box-shadow: 0 14px 26px rgba(0, 0, 0, .4);
+    }
+    header.nav.open .nav-links { display: flex; }
+    .nav-links a {
+      opacity: 1; font-size: 14px; letter-spacing: .16em;
+      display: flex; align-items: center; min-height: 48px; padding: 12px 2px;
+      border-bottom: 1px solid var(--ash);
+    }
+    .nav-links a:last-child { border-bottom: 0; }
+    /* Solid bar behind the open drawer even before the page is scrolled. */
+    header.nav.open {
+      background: rgba(var(--char-rgb), .97);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--ash);
+    }
+  }
   @media (max-width: 520px) { .nav-phone { display: none; } }
 </style>
+<script is:inline>
+  (function () {
+    var header = document.querySelector('header.nav');
+    if (!header) return;
+    var burger = header.querySelector('.nav-burger');
+    if (!burger) return;
+    var links = header.querySelector('.nav-links');
+    function setOpen(open) {
+      header.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!header.classList.contains('open'));
+    });
+    if (links) {
+      links.addEventListener('click', function (e) {
+        if (e.target && e.target.closest('a')) setOpen(false);
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>

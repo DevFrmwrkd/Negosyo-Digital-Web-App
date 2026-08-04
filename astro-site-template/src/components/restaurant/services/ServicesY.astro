@@ -97,8 +97,14 @@ const spanClasses = ['big', 's1', 's2', 's4', 's3', 's5'];
     .b.big, .b.s1, .b.s4, .b.img { grid-column: span 2; }
     .b.big { grid-row: auto; }
   }
+  @media (max-width: 760px) {
+    .secY-head { margin-bottom: 40px; }
+    .bento { gap: 14px; }
+  }
   @media (max-width: 520px) {
     .bento { grid-template-columns: 1fr; }
     .b.big, .b.s1, .b.s4, .b.img { grid-column: span 1; }
+    .b.big { grid-row: auto; }
+    .secY-head h2 { font-size: clamp(30px, 8vw, 48px); }
   }
 </style>

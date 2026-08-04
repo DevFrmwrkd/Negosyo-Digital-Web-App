@@ -1,0 +1,48 @@
+---
+/**
+ * fitness / AboutAR — "the gym" split: the first paragraph is set in oversized
+ * Arial-Black, the rest in ash body copy on the left; an art-directed .plate
+ * figure on the right keeps its .scene-floor duotone as the designed fallback
+ * until about.image is set. about.imageCaption is an optional plate caption.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+---
+<section class="sec about" id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      {tag && <span class="snum" data-field="about.tag">{tag}</span>}
+      {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
+    </div>
+    <div class="about-grid">
+      <div class="about-copy reveal">
+        {paragraphs.map((p: string, i: number) => (
+          <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
+        ))}
+      </div>
+      <figure class="about-fig plate reveal" data-delay="1">
+        <div class="ph scene-floor" data-image-field="about.image" style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''} role="img" aria-label={imageCaption || 'The training floor'}></div>
+        <span class="num">01</span>
+        {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<style>
+  .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 52px; align-items: center; }
+  @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 34px; } }
+  .about-copy p:first-of-type { font-family: var(--disp); font-size: clamp(24px,3vw,38px); line-height: 1.02; color: var(--chalk); text-transform: none; letter-spacing: -.01em; }
+  .about-copy p { color: var(--ash); }
+  .about-fig { aspect-ratio: 5/4; border: 3px solid var(--line); }
+  @media (max-width: 760px) {
+    .about-grid { grid-template-columns: 1fr; gap: 26px; }
+    .about-copy p:first-of-type { font-size: clamp(22px, 6vw, 32px); }
+    .about-fig { aspect-ratio: 4/3; }
+  }
+</style>

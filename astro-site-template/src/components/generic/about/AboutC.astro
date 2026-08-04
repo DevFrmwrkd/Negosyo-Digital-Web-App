@@ -45,4 +45,15 @@ const aboutImage = about.image || (content.photos && content.photos[0]) || '';
     .about-card .panel { inset: 14px -10px -14px 10px; }
     .about-card .img { height: 360px; }
   }
+  @media (max-width: 760px) {
+    .about { gap: 40px; }
+    .about-txt p { font-size: 16px; margin-top: 18px; }
+    .about-stats { gap: 28px; margin-top: 26px; }
+    .about-stats .s .n { font-size: 40px; }
+    .about-card .img { height: 300px; }
+  }
+  @media (max-width: 520px) {
+    .about-stats { flex-wrap: wrap; gap: 22px 30px; }
+    .about-card .img { height: 240px; }
+  }
 </style>

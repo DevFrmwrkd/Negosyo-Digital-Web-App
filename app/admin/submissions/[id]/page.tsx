@@ -11,7 +11,8 @@ import { PhotoLightbox } from "@/components/PhotoLightbox";
 import WebsitePreview from "@/components/WebsitePreview";
 import VisualEditor from "@/components/editor/VisualEditor";
 import ContentEditor, { EditorCustomizations } from "@/components/ContentEditor";
-import SandboxEditor from "@/components/editor/SandboxEditor";
+import SandboxEditor, { type SandboxEditorProps } from "@/components/editor/SandboxEditor";
+import SandboxEditorV2 from "@/components/editor/SandboxEditorV2";
 import TopActionBar from "./_components/TopActionBar";
 import DetailsSidebar from "./_components/DetailsSidebar";
 import DriveSection from "./_components/DriveSection";
@@ -198,6 +199,26 @@ export default function SubmissionDetailPage() {
     // Tab + state — default to the sandbox-style editor so the admin lands
     // directly on the click-to-edit experience that matches Landing Pages v01.
     const [activeTab, setActiveTab] = useState<TabKey>("editor");
+    // Per-admin editor preference: "v1" = classic SandboxEditor, "v2" = the
+    // redesigned SandboxEditorV2. It's an editing-surface choice (not submission
+    // data), so it lives in localStorage only and defaults to v1.
+    const [editorVersion, setEditorVersion] = useState<"v1" | "v2">("v1");
+    useEffect(() => {
+        try {
+            const saved = window.localStorage.getItem("tendso.editorVersion");
+            if (saved === "v1" || saved === "v2") setEditorVersion(saved);
+        } catch {
+            /* localStorage unavailable — keep the v1 default */
+        }
+    }, []);
+    const chooseEditorVersion = (v: "v1" | "v2") => {
+        setEditorVersion(v);
+        try {
+            window.localStorage.setItem("tendso.editorVersion", v);
+        } catch {
+            /* ignore persist failure */
+        }
+    };
     // Default the right details panel CLOSED so the page lands on the
     // 2-column sandbox layout (editor sidebar + iframe) that matches
     // Landing Pages v01 / sandbox.html. Admin can re-open with "Details".
@@ -807,6 +828,28 @@ export default function SubmissionDetailPage() {
                         </h1>
                         <p className="text-xs text-neutral-500 truncate">Submission details</p>
                     </div>
+                    {/* Editor version switch — v1 (classic) vs v2 (redesigned). */}
+                    <div
+                        className="ml-auto inline-flex items-center rounded-lg border border-neutral-200 bg-neutral-100 p-0.5"
+                        role="group"
+                        aria-label="Editor version"
+                    >
+                        {(["v1", "v2"] as const).map((v) => (
+                            <button
+                                key={v}
+                                type="button"
+                                onClick={() => chooseEditorVersion(v)}
+                                aria-pressed={editorVersion === v}
+                                className={`rounded-md px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors ${
+                                    editorVersion === v
+                                        ? "bg-white text-amber-700 shadow-sm"
+                                        : "text-neutral-500 hover:text-neutral-700"
+                                }`}
+                            >
+                                {v}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -1034,54 +1077,62 @@ export default function SubmissionDetailPage() {
                                 </div>
                             )}
 
-                            {activeTab === "editor" && (
-                                <SandboxEditor
-                                    submissionId={submissionId}
-                                    businessName={submission.business_name}
-                                    businessType={submission.business_type}
-                                    htmlContent={websiteHtmlContent || ""}
-                                    content={websiteContent ?? {
+                            {activeTab === "editor" && (() => {
+                                // Shared prop contract for both editors — v1
+                                // (classic) and v2 (redesigned) render identically
+                                // wired behind the version toggle.
+                                const editorProps: SandboxEditorProps = {
+                                    submissionId,
+                                    businessName: submission.business_name,
+                                    businessType: submission.business_type,
+                                    htmlContent: websiteHtmlContent || "",
+                                    content: websiteContent ?? {
                                         business_name: submission.business_name || "",
                                         tagline: "",
                                         about: "",
                                         services: [],
                                         contact: {},
-                                    }}
-                                    customizations={websiteCustomizations}
-                                    photos={[
+                                    },
+                                    customizations: websiteCustomizations,
+                                    photos: [
                                         ...(photoUrls || []),
                                         ...((heroImageUrls || []).filter((u): u is string => u !== null)),
-                                    ].filter((url, index, self) => self.indexOf(url) === index)}
-                                    enhancedImageUrls={Object.values(enhancedUrlMap).filter(
+                                    ].filter((url, index, self) => self.indexOf(url) === index),
+                                    enhancedImageUrls: Object.values(enhancedUrlMap).filter(
                                         (u): u is string => typeof u === "string" && u.length > 0,
-                                    )}
-                                    onSaveContent={handleSaveContent}
-                                    onUpdateDesign={handleUpdateDesign}
-                                    websitePublishedUrl={websitePublishedUrl ?? undefined}
-                                    websiteGenerated={websiteGenerated}
-                                    generatingWebsite={generatingWebsite}
-                                    publishingWebsite={publishingWebsite}
-                                    republishingWebsite={republishingWebsite}
-                                    unpublishingWebsite={unpublishingWebsite}
-                                    enhancing={enhancing}
-                                    sendingEmail={sendingEmail}
-                                    onSendToClient={handleSendWebsiteEmail}
-                                    onEnhanceImages={handleTriggerEnhancedImages}
-                                    onRegenerate={() => handleGenerateWebsite()}
-                                    onPublish={handlePublishWebsite}
-                                    onRepublish={handleRepublishWebsite}
-                                    onUnpublish={handleUnpublishWebsite}
-                                    onDelete={() => setShowDeleteModal(true)}
-                                    onApprove={() => handleStatusUpdate("approved")}
-                                    onReject={() => handleStatusUpdate("rejected")}
-                                    submissionStatus={submission.status}
-                                    onToggleDetails={() => {
+                                    ),
+                                    onSaveContent: handleSaveContent,
+                                    onUpdateDesign: handleUpdateDesign,
+                                    websitePublishedUrl: websitePublishedUrl ?? undefined,
+                                    websiteGenerated,
+                                    generatingWebsite,
+                                    publishingWebsite,
+                                    republishingWebsite,
+                                    unpublishingWebsite,
+                                    enhancing,
+                                    sendingEmail,
+                                    onSendToClient: handleSendWebsiteEmail,
+                                    onEnhanceImages: handleTriggerEnhancedImages,
+                                    onRegenerate: () => handleGenerateWebsite(),
+                                    onPublish: handlePublishWebsite,
+                                    onRepublish: handleRepublishWebsite,
+                                    onUnpublish: handleUnpublishWebsite,
+                                    onDelete: () => setShowDeleteModal(true),
+                                    onApprove: () => handleStatusUpdate("approved"),
+                                    onReject: () => handleStatusUpdate("rejected"),
+                                    submissionStatus: submission.status,
+                                    onToggleDetails: () => {
                                         setSidebarManuallyToggled(true);
                                         setSidebarOpen(!sidebarOpen);
-                                    }}
-                                    detailsOpen={sidebarOpen}
-                                />
-                            )}
+                                    },
+                                    detailsOpen: sidebarOpen,
+                                };
+                                return editorVersion === "v2" ? (
+                                    <SandboxEditorV2 {...editorProps} />
+                                ) : (
+                                    <SandboxEditor {...editorProps} />
+                                );
+                            })()}
                         </>
                     )}
                 </div>

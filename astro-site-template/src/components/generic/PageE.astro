@@ -87,6 +87,24 @@ const __fontHref = buildFontHref(__themePairing);
       .reveal, .pop-card { opacity: 1 !important; transform: none !important; }
       html { scroll-behavior: auto; }
     }
+
+    /* ------------------------------------------------------------------ */
+    /* Mobile-first tuning — shared scaffolding only. Section grids stack  */
+    /* inside each *E component (grids are component-scoped, not global).  */
+    /* Desktop rules above are untouched; these apply at phone widths.     */
+    /* ------------------------------------------------------------------ */
+    @media (max-width: 760px) {
+      .wrap { padding: 0 20px; }
+      .sec { padding: 64px 0; }
+      .sec h2 { font-size: clamp(28px, 6.6vw, 46px); }
+      .sec .lead { font-size: 16px; }
+      .btn { padding: 14px 22px; font-size: 14.5px; }
+    }
+    @media (max-width: 520px) {
+      .wrap { padding: 0 16px; }
+      .sec { padding: 52px 0; }
+      .sec h2 { font-size: clamp(25px, 7.6vw, 38px); }
+    }
   </style>
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}
   <style is:global set:html={__overrideCss}></style>

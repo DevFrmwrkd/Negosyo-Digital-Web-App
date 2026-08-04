@@ -1,0 +1,146 @@
+---
+/**
+ * services / HeroAS — the signature "service ticket". A perforated receipt that
+ * "prints" in on load: a Courier thead, an eyebrow, the display headline, a
+ * lede, a checklist of service lines, the CTA row, and a barcode tfoot. Beside
+ * it, an art-directed .plate figure (scene-fold duotone stands in until
+ * hero.image is set) carries a rubber "stamp" badge and a caption.
+ *
+ * The ticket's service lines mirror the day's service menu — sourced from
+ * content.services items when present, else a laundry default so it always
+ * reads as designed. They are aria-hidden decorative chrome (like the AM
+ * ticker), so they carry no editable field; edit them in the Services section.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#book';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta3Text = hero.cta3?.text || '';
+const cta3Href = hero.cta3?.href || '#location';
+const tag = hero.tag || '';
+const badgeNote = hero.badgeNote || '';
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+
+// Ticket service lines: the service menu (services titles + tag), else a
+// laundry default so the ticket always reads as designed. Decorative chrome.
+const services = content.services || {};
+const svcItems: Array<{ title?: string; tag?: string; duration?: string; price?: string }> =
+  Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+const linesFromServices = svcItems
+  .map((s) => (s && s.title ? { t: s.title, v: s.tag ?? s.duration ?? s.price ?? '' } : null))
+  .filter(Boolean)
+  .slice(0, 3) as Array<{ t: string; v: string }>;
+const ticketLines = linesFromServices.length > 0
+  ? linesFromServices
+  : [
+      { t: 'Wash · dry · fold', v: 'Standard' },
+      { t: 'Free pickup & delivery', v: 'Local area' },
+      { t: 'Pressing & dry clean', v: 'On request' },
+    ];
+---
+<section class="hero" aria-label="Hero">
+  <div class="wrap">
+    <div class="ticket">
+      <div class="thead"><span data-field="footer.brand">{brand}</span><span aria-hidden="true">Ticket No. 0001</span></div>
+      <div class="tbody">
+        {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+        {headlineLines.length > 0 && (
+          <h1>
+            {headlineLines.map((line: string, i: number) => (
+              <span class="ln" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+            ))}
+          </h1>
+        )}
+        {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+        <ul class="lines" aria-hidden="true">
+          {ticketLines.map((l) => (
+            <li><span><span class="ck">✓</span> {l.t}</span>{l.v && <span>{l.v}</span>}</li>
+          ))}
+        </ul>
+        {(cta1Text || cta2Text || cta3Text) && (
+          <div class="cta-row">
+            {cta1Text && <a href={cta1Href} class="btn btn--fill" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+            {cta2Text && <a href={cta2Href} class="btn btn--ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+            {cta3Text && <a href={cta3Href} class="btn btn--ghost" data-field="hero.cta3.text" data-href-field="hero.cta3.href">{cta3Text}</a>}
+          </div>
+        )}
+      </div>
+      <div class="tfoot">
+        <div class="barcode" aria-hidden="true"></div>
+        <div class="code" aria-hidden="true">{String(brand).toUpperCase()} · THANK YOU FOR YOUR ORDER</div>
+      </div>
+    </div>
+    <div class="hero-side">
+      <figure class="plate" aria-label="Service photo">
+        <div class="ph scene-fold" role="img" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');background-size:cover;background-position:center;` : ''}></div>
+        <span class="tk" aria-hidden="true">TAGGED</span>
+        {badgeNote && <figcaption class="cap" data-field="hero.badgeNote">{badgeNote}</figcaption>}
+      </figure>
+      {tag && <span class="stamp" data-field="hero.tag">{tag}</span>}
+    </div>
+  </div>
+</section>
+<div class="wrap"><div class="perf"></div></div>
+<style>
+  .hero { padding: 60px 0 70px; }
+  .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 46px; align-items: center; }
+  @media (max-width: 920px) { .hero .wrap { grid-template-columns: 1fr; gap: 34px; } }
+  @media (max-width: 760px) {
+    .hero { padding: 40px 0 48px; }
+    .hero .wrap { grid-template-columns: 1fr; gap: 26px; }
+  }
+  .ticket {
+    background: var(--card); border: 2px solid var(--ink); position: relative; padding: 0;
+    box-shadow: 8px 8px 0 rgba(33,31,24,.12); clip-path: inset(0 0 0 0);
+    animation: print 1.1s steps(14) .2s both;
+  }
+  @keyframes print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+  @media (prefers-reduced-motion: reduce) { .ticket { animation: none; } }
+  .ticket .thead { display: flex; justify-content: space-between; align-items: center; padding: 14px 22px; border-bottom: 2px dashed var(--line); font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .ticket .tbody { padding: 30px 26px 8px; }
+  .ticket .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--blue-d); }
+  .ticket h1 { font-size: clamp(34px,5vw,58px); margin: .24em 0 .3em; line-height: 1; color: var(--ink); }
+  .ticket h1 .ln { display: block; }
+  .ticket h1 :global(.u) { color: var(--blue); }
+  .ticket .lede { color: var(--ink2); font-size: 17px; font-family: var(--sans); max-width: 42ch; margin-bottom: 20px; }
+  .ticket .lines { list-style: none; margin: 0 0 22px; padding: 0; font-family: var(--mono); font-size: 14px; }
+  .ticket .lines li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px dotted var(--line); color: var(--ink2); }
+  .ticket .lines li .ck { color: var(--blue); }
+  .ticket .cta-row { display: flex; gap: 12px; flex-wrap: wrap; padding-bottom: 22px; }
+  .ticket .tfoot { border-top: 2px dashed var(--line); padding: 16px 26px 20px; }
+  .ticket .tfoot .code { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--muted); margin-top: 8px; text-align: center; }
+  .barcode { height: 38px; background:
+    repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 4px,var(--ink) 4px 5px,transparent 5px 9px,var(--ink) 9px 12px,transparent 12px 14px,var(--ink) 14px 15px,transparent 15px 20px); }
+  .hero-side { position: relative; }
+  .hero-side .plate { aspect-ratio: 4/5; }
+  .stamp {
+    font-family: var(--mono); font-weight: 700; color: var(--red); border: 3px double var(--red); padding: 6px 14px;
+    text-transform: uppercase; letter-spacing: .1em; display: inline-block; transform: rotate(-8deg); opacity: .85;
+    border-radius: 4px; font-size: 15px; position: absolute; right: 8px; top: 22px; z-index: 5; background: var(--card);
+  }
+  @media (max-width: 760px) {
+    .ticket .thead { padding: 12px 18px; }
+    .ticket .tbody { padding: 24px 20px 6px; }
+    .ticket h1 { font-size: clamp(30px, 8.5vw, 46px); overflow-wrap: anywhere; }
+    .ticket .lede { font-size: 16px; }
+    .ticket .tfoot { padding: 14px 20px 18px; }
+    /* Single-column since 920px, so cap the portrait plate to a landscape ratio
+       across the whole <=760 band — at 4/5 a full-width tablet plate printed a
+       ~900px-tall image that dwarfed the ticket in the 521–760 range. */
+    .hero-side .plate { aspect-ratio: 4/3; }
+  }
+  @media (max-width: 520px) {
+    .ticket h1 { font-size: clamp(26px, 9vw, 38px); }
+    .ticket .cta-row { gap: 10px; }
+    .ticket .cta-row .btn { flex: 1 1 100%; justify-content: center; }
+  }
+</style>

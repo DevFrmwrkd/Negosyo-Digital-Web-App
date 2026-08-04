@@ -1,0 +1,146 @@
+---
+/**
+ * layouts / HeaderBA — the panel-sidebar (lp-22 NAV block). A 340px sticky
+ * full-height rail: serif brand + tagline at the top, a ruled vertical nav
+ * (each link led by a growing brass tick), and the contact meta + primary CTA
+ * pinned to the bottom.
+ *
+ * Mobile-first: at <=760px the rail becomes a static top bar; a .nav-burger
+ * (three brass bars, 44px tap target) toggles the nav + meta into a themed
+ * full-width dropdown drawer via the inline script below.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+// Reuse the hero's primary CTA as the sidebar action so it stays in sync.
+const hero = (content as any).hero || {};
+// Sidebar subtitle — the hero's short category/tag slot (HeroBA doesn't consume
+// it), falling back to the layout tagline / business type.
+const tagline = hero.tag || layout.tagline || (content as any).business_type || '';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+const loc = (content as any).location || {};
+const address = loc.address || layout.contact?.address || '';
+const addressLines = address ? String(address).split('\n') : [];
+const phone = loc.phone || layout.contact?.phone || '';
+const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#book';
+---
+<aside class="side" data-component="NAV" data-variant="panel">
+  <div class="side-top">
+    <a href="#main" class="brand-wrap">
+      <span class="bn" data-field="footer.brand">{brand}</span>
+      {tagline && <span class="bs" data-field="hero.tag">{tagline}</span>}
+    </a>
+    {(navLinks.length > 0 || address || phone || ctaText) && (
+      <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-ba-menu">
+        <span></span><span></span><span></span>
+      </button>
+    )}
+  </div>
+  <div class="side-menu" id="nav-ba-menu">
+    {navLinks.length > 0 && (
+      <nav aria-label="Primary">
+        {navLinks.map((link, i) => (
+          <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+        ))}
+      </nav>
+    )}
+    <div class="meta">
+      {addressLines.length > 0 && (
+        <div class="meta-addr" data-field="location.address">
+          {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+        </div>
+      )}
+      {phone && <a class="meta-phone" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>}
+      {ctaText && (
+        <div class="cta">
+          <a class="btn f" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>
+        </div>
+      )}
+    </div>
+  </div>
+</aside>
+<script is:inline>
+  (function () {
+    var side = document.querySelector('.side[data-component="NAV"]');
+    if (!side) return;
+    var burger = side.querySelector('.nav-burger');
+    var menu = side.querySelector('.side-menu');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      side.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () { setOpen(!side.classList.contains('open')); });
+    // Close the drawer after tapping any nav link.
+    menu.querySelectorAll('nav a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Close on Escape for keyboard users.
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  .side {
+    position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column;
+    padding: 44px 36px; background: var(--paper-2); border-right: 1px solid var(--line);
+  }
+  .side-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .brand-wrap { display: block; color: var(--ink); }
+  .brand-wrap:hover { color: var(--ink); }
+  .bn { display: block; font-family: var(--serif); font-size: 30px; letter-spacing: .03em; color: var(--ink); line-height: 1.05; }
+  .bs { display: block; font-family: var(--sans); font-size: 10px; letter-spacing: .34em; text-transform: uppercase; color: var(--accent); margin-top: 8px; }
+
+  /* The nav + meta live in a flex column so meta pins to the rail's bottom. */
+  .side-menu { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  .side-menu nav { margin-top: 44px; display: flex; flex-direction: column; gap: 2px; }
+  .side-menu nav a {
+    font-family: var(--sans); font-size: 12px; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink-soft); padding: 9px 0; display: flex; align-items: center; gap: 12px;
+  }
+  .side-menu nav a::before { content: ""; width: 14px; height: 1px; background: var(--line); transition: width .3s, background .3s; }
+  .side-menu nav a:hover::before { width: 26px; background: var(--accent); }
+  .side-menu nav a:hover { color: var(--accent); }
+
+  .meta { margin-top: auto; padding-top: 24px; font-family: var(--sans); font-size: 12px; color: var(--muted); line-height: 1.7; }
+  .meta-addr { color: var(--muted); }
+  .meta-phone { display: inline-block; margin-top: 4px; color: var(--ink-soft); }
+  .meta-phone:hover { color: var(--accent); }
+  .cta { margin-top: 20px; }
+
+  /* Hamburger — hidden on desktop, revealed as the mobile trigger. */
+  .nav-burger { display: none; }
+
+  @media (max-width: 760px) {
+    .side {
+      position: static; height: auto; padding: 22px 24px;
+      border-right: none; border-bottom: 1px solid var(--line);
+    }
+    .bn { font-size: 24px; }
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; margin: -6px -10px 0 0;
+      background: transparent; border: 0; cursor: pointer;
+    }
+    .nav-burger span { display: block; width: 24px; height: 2px; background: var(--accent); border-radius: 2px; transition: transform .3s ease, opacity .3s ease; }
+    .side.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .side.open .nav-burger span:nth-child(2) { opacity: 0; }
+    .side.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* nav + meta collapse into a themed full-width dropdown drawer. */
+    .side-menu {
+      display: block; flex: none;
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    .side.open .side-menu { max-height: 150vh; overflow-y: auto; opacity: 1; visibility: visible; }
+    .side-menu nav { margin-top: 18px; gap: 0; }
+    .side-menu nav a { min-height: 48px; padding: 6px 0; font-size: 14px; border-bottom: 1px solid var(--line); }
+    .side-menu nav a::before { display: none; }
+    .meta { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+    .cta .btn { display: inline-flex; justify-content: center; }
+  }
+</style>

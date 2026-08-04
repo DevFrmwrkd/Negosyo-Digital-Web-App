@@ -160,6 +160,20 @@ const mini: Mini[] = Array.isArray(hero.mini) && hero.mini.length ? hero.mini : 
     .heroS-stack .ph-small, .heroS-stack .seal { display: none; }
     .heroS-stack .ph-big { width: 100%; }
   }
+  @media (max-width: 760px) {
+    .heroS-title { font-size: clamp(40px, 10vw, 72px); }
+    .heroS-grid { padding-top: 112px; padding-bottom: 48px; }
+    .heroS-sub { margin: 22px 0 28px; }
+    .heroS-mini { gap: 24px; }
+  }
+  @media (max-width: 520px) {
+    .heroS-title { font-size: clamp(32px, 10vw, 52px); }
+    .heroS-grid { padding-top: 100px; }
+    .heroS-bgword { font-size: 34vw; }
+    .heroS-stack { height: 44vh; }
+    .heroS-mini { gap: 16px 28px; flex-wrap: wrap; }
+    .heroS-mini .n { font-size: 26px; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .heroS-copy > *, .heroS-stack .card { animation: none !important; opacity: 1 !important; transform: none !important; }
     .heroS-stack .seal .ring { animation: none !important; }

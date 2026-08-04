@@ -1,0 +1,47 @@
+---
+/**
+ * layouts / HowAV — "from first visit to done" bento of step tiles, each led by
+ * a cobalt serif numeral badge (decorative), a Spectral title and a muted body
+ * line. Reads content.how.steps (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how">
+    <div class="wrap">
+      <div class="grid">
+        <div class="sec-tag reveal">
+          {tag && <span class="n" data-field="how.tag">{tag}</span>}
+          {headline && <h2 data-field="how.headline" set:html={headline}></h2>}
+        </div>
+        {steps.map((step, i) => (
+          <div class="tile how-tile reveal">
+            <span class="k" aria-hidden="true">{i + 1}</span>
+            <h3 data-field={`how.steps.${i}.title`}>{step.title}</h3>
+            {(step.body ?? step.desc ?? step.description) && (
+              <p data-field={`how.steps.${i}.body`}>{step.body ?? step.desc ?? step.description}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .how-tile { grid-column: span 3; }
+  .how-tile .k {
+    display: inline-flex; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent); color: var(--on-accent); font-family: var(--serif);
+    align-items: center; justify-content: center; font-size: 16px;
+  }
+  .how-tile h3 { font-size: 17px; margin: 12px 0 6px; color: var(--ink); }
+  .how-tile p { font-size: 13px; color: var(--muted); margin: 0; }
+  @media (max-width: 860px) { .how-tile { grid-column: span 6; } }
+  @media (max-width: 480px) { .how-tile { grid-column: span 12; } }
+</style>

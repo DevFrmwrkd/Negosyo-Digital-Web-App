@@ -11,17 +11,42 @@ const ctaHref = content.navCtaHref || '#visit';
 <header class="nav">
   <div class="wrap nav-in">
     <a href="#top" class="brand"><span class="mk"></span><span data-field="nav.brand">{brand}</span></a>
-    <div class="nav-links">
-      {navLinks.map((link: any, i: number) => (
-        <a href={link.href} data-field={`nav.links.${i}.label`} data-href-field={`nav.links.${i}.href`}>{link.label}</a>
-      ))}
-    </div>
-    <div class="nav-right">
-      {phone && <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="nav.phone" data-href-field="nav.phone.href">{phone}</a>}
-      <a href={ctaHref} class="nav-cta" data-field="nav.cta.text" data-href-field="nav.cta.href">{ctaText}</a>
+    <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-c-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-collapse" id="nav-c-menu">
+      <div class="nav-links">
+        {navLinks.map((link: any, i: number) => (
+          <a href={link.href} data-field={`nav.links.${i}.label`} data-href-field={`nav.links.${i}.href`}>{link.label}</a>
+        ))}
+      </div>
+      <div class="nav-right">
+        {phone && <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="nav.phone" data-href-field="nav.phone.href">{phone}</a>}
+        <a href={ctaHref} class="nav-cta" data-field="nav.cta.text" data-href-field="nav.cta.href">{ctaText}</a>
+      </div>
     </div>
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var menu = hdr.querySelector('.nav-collapse');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () { setOpen(!hdr.classList.contains('open')); });
+    // Close the drawer after tapping any link / the CTA inside it.
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Close on Escape for keyboard users.
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
 <style>
   header.nav { position: sticky; top: 0; z-index: 1000; background: var(--forest); border-bottom: 3px solid var(--amber); }
   .nav-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 76px; }
@@ -35,5 +60,44 @@ const ctaHref = content.navCtaHref || '#visit';
   .nav-right { display: flex; align-items: center; gap: 16px; }
   .nav-phone { font-size: 14px; font-weight: 700; color: var(--paper-2); }
   .nav-cta { font-family: var(--sans); font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; background: var(--amber); color: var(--ink); padding: 12px 18px; border: 2px solid var(--amber); }
+
+  /* Transparent wrapper on desktop: display:contents hoists .nav-links + .nav-right
+     back into the bar's flex row so the brand | links | actions layout is
+     byte-identical to before. It only becomes a real box on mobile (below). */
+  .nav-collapse { display: contents; }
+  /* Hamburger is the mobile-only trigger — hidden on desktop. */
+  .nav-burger { display: none; }
+
   @media (max-width: 980px) { .nav-links, .nav-phone { display: none; } }
+
+  @media (max-width: 760px) {
+    /* Trigger: 44px tap target with three amber-on-forest bars. */
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; margin: 0 -10px 0 0;
+      background: transparent; border: 0; cursor: pointer;
+    }
+    .nav-burger span { display: block; width: 24px; height: 2px; background: var(--paper-2); border-radius: 2px; transition: transform .3s ease, opacity .3s ease; }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Full-width dropdown in the design's own forest + amber palette. */
+    .nav-collapse {
+      display: block; position: absolute; left: 0; right: 0; top: 100%;
+      background: var(--forest); border-bottom: 3px solid var(--amber);
+      box-shadow: 0 22px 30px -20px rgba(0, 0, 0, .6);
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    header.nav.open .nav-collapse { max-height: calc(100vh - 76px); overflow-y: auto; opacity: 1; visibility: visible; }
+
+    /* Links + phone override the 980px display:none and stack as tap rows. */
+    .nav-links { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+    .nav-links a { display: flex; align-items: center; min-height: 48px; padding: 0 24px; font-size: 15px; color: var(--paper-2); border-top: 1px solid rgba(var(--paper-rgb), .14); }
+    .nav-links a::after { display: none !important; }
+    .nav-right { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+    .nav-phone { display: flex; align-items: center; min-height: 48px; padding: 0 24px; font-size: 16px; color: var(--paper-2); border-top: 1px solid rgba(var(--paper-rgb), .14); }
+    .nav-cta { display: flex; align-items: center; justify-content: center; text-align: center; min-height: 50px; margin: 16px 24px 20px; }
+  }
 </style>

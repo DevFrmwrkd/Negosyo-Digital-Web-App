@@ -1,0 +1,38 @@
+---
+/**
+ * layouts / TrustAY — editorial credibility "ribbon": a plum band of serif
+ * stat/statement cells split by paper hairlines (lp-20 has no explicit TRUST
+ * block, so this folds the credibility idea into a themed strip in the design's
+ * own vocabulary). Reads content.trust.cells (num + label) and auto-hides when
+ * none are set — mirrors the AM content model.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust">
+    <div class="wrap trust-in">
+      {cells.map((cell, i) => (
+        <div class="cell reveal" data-delay={String((i % 3) + 1)}>
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust { background: var(--accent); color: var(--on-accent); padding: 0; }
+  .trust-in { display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; padding: 44px 40px; }
+  .cell { border-left: 1px solid rgba(var(--paper-rgb),.28); padding-left: 20px; }
+  .cell:first-child { border-left: none; padding-left: 0; }
+  .cell .n { font-family: var(--serif); font-style: italic; font-size: clamp(30px,4vw,44px); color: var(--on-accent); line-height: 1; }
+  .cell .t { font-family: var(--sans); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--on-accent); margin-top: 10px; opacity: .82; }
+  @media (max-width: 760px) {
+    .trust-in { grid-template-columns: 1fr; gap: 26px; padding: 34px 22px; }
+    .cell { border-left: none; padding-left: 0; border-top: 1px solid rgba(var(--paper-rgb),.28); padding-top: 22px; }
+    .cell:first-child { border-top: none; padding-top: 0; }
+  }
+</style>

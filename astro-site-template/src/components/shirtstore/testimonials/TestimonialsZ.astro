@@ -64,4 +64,13 @@ const norm = items.map((it) => ({
     background: transparent; cursor: pointer; padding: 0; transition: background .3s;
   }
   .test-dots :global(button[aria-selected="true"]) { background: var(--paper); }
+  @media (max-width: 760px) {
+    .test { padding: clamp(56px, 13vw, 110px) 0; }
+    .test-quote { font-size: clamp(26px, 6.4vw, 46px); }
+  }
+  @media (max-width: 520px) {
+    .test-quote { font-size: clamp(23px, 7vw, 34px); margin-top: 22px; }
+    .test-by { margin-top: 22px; }
+    .test-dots { margin-top: 24px; }
+  }
 </style>

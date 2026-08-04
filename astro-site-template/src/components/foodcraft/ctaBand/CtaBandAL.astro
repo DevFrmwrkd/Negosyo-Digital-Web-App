@@ -48,4 +48,12 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-btn:hover { background: var(--cocoa); color: var(--cream); border-color: var(--cocoa); transform: translateY(-2px); }
   .cta-btn.line { background: transparent; color: var(--cream); border-color: var(--cream); }
   .cta-btn.line:hover { background: var(--cream); color: var(--terra-deep); border-color: var(--cream); }
+  @media (max-width: 760px) {
+    .cta-band { padding: 54px 0; }
+  }
+  @media (max-width: 520px) {
+    .cta-band { padding: 46px 0; }
+    .cta-actions { gap: 10px; }
+    .cta-btn { flex: 1 1 auto; padding: 13px 20px; }
+  }
 </style>

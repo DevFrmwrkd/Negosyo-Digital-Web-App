@@ -1,0 +1,53 @@
+---
+/**
+ * retail / AreaAO — lp-03's "we deliver around" strip (its SERVICE-AREA block,
+ * lifted out of the FAQ column into its own ruled band per the AM model). A red
+ * Courier kicker over stencilled barangay tags that invert to ink on hover.
+ * Reads content.area.places (legacy `items`); optional headline / sub / body
+ * render above the tags when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || 'We deliver around';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area">
+    <div class="wrap">
+      {(headline || sub) && (
+        <div class="area-head reveal">
+          {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+          {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+        </div>
+      )}
+      <div class="areas reveal">
+        <div class="kicker" data-field="area.tag">{tag}</div>
+        <div class="area-tags">
+          {places.map((place, i) => (
+            <span data-field={`area.places.${i}`}>{place}</span>
+          ))}
+        </div>
+      </div>
+      {body && <p class="area-body" data-field="area.body">{body}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .area { background: var(--paper2); padding: 48px 0; border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+  .area-head { margin-bottom: 20px; }
+  .area-h { font-size: clamp(28px,4vw,46px); text-transform: uppercase; color: var(--ink); }
+  .area-sub { color: var(--ink2); margin-top: 10px; max-width: 52ch; }
+  .areas { margin-top: 6px; }
+  .areas .kicker { margin: 0 0 4px; }
+  .area-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .area-tags span {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .04em; text-transform: uppercase;
+    border: 2px solid var(--ink); padding: 7px 12px; transition: .2s; color: var(--ink);
+  }
+  .area-tags span:hover { background: var(--ink); color: var(--paper); }
+  .area-body { color: var(--ink2); margin-top: 16px; max-width: 60ch; }
+</style>

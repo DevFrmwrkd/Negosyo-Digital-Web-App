@@ -1,0 +1,49 @@
+---
+/**
+ * layouts / AboutAV — "who we are" bento split: a 7-column copy tile (the lead
+ * paragraph set larger in Spectral) beside a 5-column art-directed .plate that
+ * keeps its .sc6 duotone "scene" fallback until about.image is set. The shared
+ * .sec-tag carries the section number + headline (italic cobalt accent).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+---
+{(headline || paragraphs.length > 0) && (
+  <section class="about" id="about">
+    <div class="wrap">
+      <div class="grid">
+        <div class="sec-tag reveal">
+          {tag && <span class="n" data-field="about.tag">{tag}</span>}
+          {headline && <h2 data-field="about.headline" set:html={headline}></h2>}
+        </div>
+        <div class="tile about-tile reveal">
+          {paragraphs.map((p: string, i: number) => (
+            <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
+          ))}
+        </div>
+        <figure class="plate about-img reveal">
+          <div class="ph sc6" role="img" aria-label="About" data-image-field="about.image" style={image ? `background-image:url('${image}');` : ''}></div>
+          {imageCaption && <figcaption data-field="about.imageCaption">{imageCaption}</figcaption>}
+        </figure>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .about-tile { grid-column: span 7; }
+  .about-tile p:first-of-type { font-family: var(--serif); font-size: 23px; line-height: 1.45; color: var(--ink); }
+  .about-tile p:first-of-type :global(em) { font-style: italic; color: var(--accent); }
+  .about-tile p { color: var(--ink-soft); }
+  .about-tile p:last-child { margin-bottom: 0; }
+  .about-img { grid-column: span 5; min-height: 320px; margin: 0; }
+  @media (max-width: 860px) {
+    .about-tile { grid-column: span 12; }
+    .about-img { grid-column: span 12; min-height: 240px; }
+  }
+</style>

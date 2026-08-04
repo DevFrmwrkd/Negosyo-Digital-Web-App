@@ -32,4 +32,5 @@ const steps = Array.isArray(how.steps) && how.steps.length > 0 ? how.steps : [];
   .hstep::after { content: ""; position: absolute; top: 42px; left: calc(50% + 60px); width: calc(100% - 120px); border-top: 3px dashed var(--line); }
   .hstep:last-child::after { display: none; }
   @media (max-width: 780px) { .how { grid-template-columns: 1fr; gap: 36px; } .hstep::after { display: none; } }
+  @media (max-width: 760px) { .how { gap: 30px; margin-top: 36px; } .hstep .circ { width: 70px; height: 70px; font-size: 30px; margin-bottom: 18px; } .hstep h3 { font-size: 22px; } }
 </style>

@@ -12,18 +12,50 @@ const ctaHref = (content as any).navCtaHref || '#visit';
 ---
 <header class="nav">
   <a href="#top" class="brand" data-field="footer.brand">{brand}<span class="dot">.</span></a>
-  <div class="nav-links">
-    {navLinks.map((link: any, i: number) => (
-      <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
-    ))}
-  </div>
-  <div class="nav-cta">
-    {phone && (
-      <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone" data-href-field="contact.phone.href">{phone}</a>
-    )}
-    <a href={ctaHref} class="btn btn--brass" data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>
+  {(navLinks.length > 0 || ctaText || phone) && (
+    <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-forge-menu">
+      <span></span><span></span><span></span>
+    </button>
+  )}
+  <div class="nav-panel" id="nav-forge-menu">
+    <div class="nav-links">
+      {navLinks.map((link: any, i: number) => (
+        <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+      ))}
+    </div>
+    <div class="nav-cta">
+      {phone && (
+        <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone" data-href-field="contact.phone.href">{phone}</a>
+      )}
+      <a href={ctaHref} class="btn btn--brass" data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>
+    </div>
   </div>
 </header>
+
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var panel = hdr.querySelector('.nav-panel');
+    if (!burger || !panel) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!hdr.classList.contains('open'));
+    });
+    // Close the drawer after tapping any link or the CTA.
+    panel.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Close on Escape for keyboard users.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
 
 <style>
   header.nav {
@@ -45,6 +77,9 @@ const ctaHref = (content as any).navCtaHref || '#visit';
     text-transform: uppercase; line-height: 1;
   }
   .brand .dot { color: var(--brass); }
+  /* On desktop the panel is transparent to layout so brand / links / cta
+     lay out exactly as the original three-item flex bar. */
+  .nav-panel { display: contents; }
   .nav-links { display: flex; gap: 30px; align-items: center; }
   .nav-links :global(a) {
     font-family: var(--cond); text-transform: uppercase; letter-spacing: .16em;
@@ -56,6 +91,57 @@ const ctaHref = (content as any).navCtaHref || '#visit';
     font-family: var(--cond); letter-spacing: .1em; font-size: 13px;
     color: var(--paper); display: flex; align-items: center; gap: 8px;
   }
-  @media (max-width: 1000px) { .nav-links { display: none; } }
-  @media (max-width: 560px) { .nav-phone { display: none; } }
+  /* Hamburger — hidden on desktop, revealed as the mobile trigger. */
+  .nav-burger { display: none; }
+
+  /* ------------------------------------------------------------------ */
+  /* Mobile nav (<=760px): the desktop inline nav collapses into a       */
+  /* full-width dropdown drawer styled in the Forge ink/paper/brass      */
+  /* tokens. A solid bar guarantees the brand + burger stay legible on   */
+  /* every variant — including PageJ's light-paper hero.                 */
+  /* ------------------------------------------------------------------ */
+  @media (max-width: 760px) {
+    header.nav {
+      background: rgba(var(--ink-rgb), .94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line-light);
+      padding-block: 12px;
+    }
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; margin-right: -8px;
+      background: transparent; border: 0; cursor: pointer; z-index: 2;
+    }
+    .nav-burger span {
+      display: block; width: 24px; height: 2px; background: var(--paper);
+      border-radius: 2px; transition: transform .3s ease, opacity .3s ease;
+    }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .nav-panel {
+      display: block; position: absolute; left: 0; right: 0; top: 100%;
+      background: var(--ink); border-bottom: 1px solid var(--line-light);
+      box-shadow: 0 24px 40px -22px rgba(0, 0, 0, .6);
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    header.nav.open .nav-panel {
+      max-height: calc(100vh - 60px); overflow-y: auto; opacity: 1; visibility: visible;
+    }
+    .nav-links { display: flex; flex-direction: column; gap: 0; align-items: stretch; padding: 6px 0 0; }
+    .nav-links :global(a) {
+      display: flex; align-items: center; min-height: 48px; padding: 4px var(--pad);
+      font-size: 15px; opacity: .92; border-bottom: 1px solid var(--line-light);
+    }
+    .nav-cta { flex-direction: column; align-items: stretch; gap: 0; padding: 0 var(--pad) 16px; }
+    .nav-phone {
+      display: flex; justify-content: flex-start; min-height: 48px;
+      padding: 4px 0; font-size: 15px; border-bottom: 1px solid var(--line-light);
+    }
+    .nav-cta :global(.btn) {
+      width: 100%; justify-content: center; min-height: 48px; margin-top: 14px;
+    }
+  }
 </style>

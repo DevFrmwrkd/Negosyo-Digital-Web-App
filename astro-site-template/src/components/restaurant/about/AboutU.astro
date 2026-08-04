@@ -64,4 +64,17 @@ const sign = about.quote || about.sign || '';
     .phil-grid { grid-template-columns: 1fr; }
     .phil-fig .bg-img { height: 64vw; }
   }
+  @media (max-width: 760px) {
+    .phil { padding-block: clamp(56px, 9vw, 92px); }
+    .phil-grid { gap: 40px; }
+    .phil-body .kicker { margin-bottom: 20px; }
+    .phil-body h2 { margin-bottom: 24px; }
+    .phil-body p.lead-p { font-size: 19px; }
+  }
+  @media (max-width: 520px) {
+    .phil { padding-block: clamp(46px, 11vw, 68px); }
+    .phil-fig .bg-img { height: 72vw; }
+    .phil-body h2 { font-size: clamp(28px, 8vw, 42px); }
+    .phil-sign { font-size: 20px; }
+  }
 </style>

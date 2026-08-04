@@ -39,4 +39,9 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-h { font-size: clamp(32px, 5vw, 52px); margin-bottom: 14px; color: var(--ink); }
   .cta-sub { color: var(--muted); margin-bottom: 28px; }
   .cta-actions { display: inline-flex; flex-wrap: wrap; gap: 14px; justify-content: center; }
+  @media (max-width: 760px) {
+    .cta-band { padding: 52px 0; }
+    .cta-actions { display: flex; width: 100%; }
+    .cta-actions .btn { flex: 1 1 auto; }
+  }
 </style>

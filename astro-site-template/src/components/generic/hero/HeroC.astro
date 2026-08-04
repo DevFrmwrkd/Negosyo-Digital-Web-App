@@ -54,4 +54,19 @@ const meta2 = hero.meta2 || 'Licensed & insured · serving Boulder County';
   .hero-cta :global(.btn-primary) { box-shadow: 6px 6px 0 rgba(0, 0, 0, .5); }
   .hero-meta { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-top: 28px; font-size: 13px; font-weight: 600; letter-spacing: .04em; }
   .hero-meta :global(.stars) { color: var(--amber); letter-spacing: 2px; }
+  @media (max-width: 760px) {
+    .hero { min-height: 78vh; }
+    .hero-in { padding: 0 20px 52px; }
+    h1 { font-size: clamp(44px, 12vw, 92px); margin-top: 18px; }
+    .hero-sub { font-size: 17px; margin-top: 18px; }
+    .hero-cta { margin-top: 24px; }
+    .hero-meta { margin-top: 22px; }
+  }
+  @media (max-width: 520px) {
+    .hero-in { padding: 0 16px 44px; }
+    h1 { font-size: clamp(33px, 12vw, 60px); }
+    .hero-sub { font-size: 16px; max-width: none; }
+    .hero-cta { flex-direction: column; align-items: stretch; }
+    .hero-cta :global(.btn) { width: 100%; justify-content: center; }
+  }
 </style>

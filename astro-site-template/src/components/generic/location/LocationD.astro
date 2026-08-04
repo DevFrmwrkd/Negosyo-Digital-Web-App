@@ -60,4 +60,12 @@ const mapAria = `Map showing ${label} at ${address.replace(/\n/g, ', ')}`;
   #map { width: 100%; min-height: 440px; border: 1px solid var(--line); border-radius: 14px; }
   :global(.leaflet-container) { font-family: var(--sans); background: #0C0F14; }
   @media (max-width: 820px) { .loc-grid { grid-template-columns: 1fr; } #map { min-height: 320px; } }
+  @media (max-width: 760px) { .loc-grid { margin-top: 32px; gap: 26px; } }
+  @media (max-width: 520px) {
+    .naprow { padding: 18px 20px; }
+    .naprow .v { font-size: 18px; }
+    .naprow .v.s { font-size: 16px; }
+    .nap .btn { width: 100%; justify-content: center; }
+    #map { min-height: 260px; }
+  }
 </style>

@@ -1,0 +1,56 @@
+---
+/**
+ * salonspa / TestimonialsAN — "what clients say" as big single-file editorial
+ * quotes on the paper band. Each .q is nude-ruled on the left, the quote set in
+ * italic Didot, closed by an uppercase attribution line. Reads
+ * content.testimonials.items (canonical `who` + `role`, legacy
+ * `author` / `name` / `context`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const test = content.testimonials || {};
+const tag = test.tag || '';
+const headline = test.headline || '';
+type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
+const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+---
+{items.length > 0 && (
+  <section class="sec quotes" id="reviews">
+    <div class="wrap">
+      <div class="sec-head">
+        {tag && <span class="eyebrow" data-field="testimonials.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="testimonials.headline" set:html={headline}></h2>}
+      </div>
+      <div class="quotes-grid">
+        {items.map((item, i) => {
+          const who = item.who ?? item.author ?? item.name;
+          const role = item.role ?? item.context;
+          return (
+            <figure class="q reveal">
+              <p data-field={`testimonials.items.${i}.quote`}>{item.quote}</p>
+              {(who || role) && (
+                <figcaption class="who">
+                  {who && <span data-field={`testimonials.items.${i}.who`}>— {who}</span>}
+                  {role && <span data-field={`testimonials.items.${i}.role`}>, {role}</span>}
+                </figcaption>
+              )}
+            </figure>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .quotes { background: var(--paper); }
+  .quotes-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 44px; }
+  @media (max-width: 900px) { .quotes-grid { grid-template-columns: 1fr; gap: 30px; } }
+  .q { border-left: 2px solid var(--nude); padding-left: 24px; }
+  .q p { font-family: var(--disp); font-size: 23px; line-height: 1.4; color: var(--ink); font-style: italic; }
+  .q .who { font-family: var(--label); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  @media (max-width: 760px) {
+    .quotes-grid { grid-template-columns: 1fr; gap: 26px; }
+    .q { padding-left: 20px; }
+    .q p { font-size: 21px; }
+  }
+</style>

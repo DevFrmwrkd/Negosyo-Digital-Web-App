@@ -1,0 +1,52 @@
+---
+/**
+ * layouts / AreaAV — the "we serve" strip (lp-23's SERVICE-AREA block, lifted
+ * out of the FAQ bento into its own section per the AM model). A cobalt eyebrow
+ * over pill-shaped area tags that invert to cobalt on hover, inside a wide
+ * surface tile. Reads content.area.places (legacy `items`); optional
+ * headline / sub / body render above the tags when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area">
+    <div class="wrap">
+      <div class="grid">
+        {(headline || sub) && (
+          <div class="sec-tag reveal">
+            {headline && <h2 data-field="area.headline" set:html={headline}></h2>}
+          </div>
+        )}
+        <div class="tile area-tile reveal">
+          {tag && <span class="eyebrow" data-field="area.tag">{tag}</span>}
+          {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+          <div class="areas">
+            {places.map((place, i) => (
+              <span data-field={`area.places.${i}`}>{place}</span>
+            ))}
+          </div>
+          {body && <p class="area-body" data-field="area.body">{body}</p>}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .area-tile { grid-column: span 12; }
+  .area-sub { color: var(--ink-soft); margin: 10px 0 0; max-width: 60ch; }
+  .areas { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+  .areas span {
+    font-family: var(--sans); font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    border: 1px solid var(--line); border-radius: 100px; padding: 8px 14px; color: var(--ink-soft);
+    background: var(--paper); transition: border-color .3s, color .3s;
+  }
+  .areas span:hover { border-color: var(--accent); color: var(--accent); }
+  .area-body { color: var(--muted); margin: 16px 0 0; max-width: 60ch; }
+</style>

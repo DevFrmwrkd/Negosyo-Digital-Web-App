@@ -1,0 +1,110 @@
+---
+/**
+ * layouts / HeroAY — the editorial two-column hero: a copy column (italic plum
+ * overline, eyebrow, Instrument Serif display headline with an italic plum
+ * accent, lede, editorial CTAs) beside an art-directed .plate figure. The plate
+ * keeps its designed .sc1 duotone "scene" as the fallback until hero.image is
+ * set (the photo then layers over it).
+ *
+ * The running dish-"tape" marquee (lp-20's signature identity element) is folded
+ * in below the hero as decorative aria-hidden chrome — labels come from the
+ * services titles, else an editorial default so it always reads as designed.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const overline = hero.tag || hero.overline || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines.filter((l: string) => l && l.trim())
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#reserve';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const imageCaption = hero.imageCaption || '';
+
+// Tape marquee labels: the day's offerings (services titles), else an editorial
+// default so the marquee always reads as designed. Decorative — no field.
+const services = content.services || {};
+const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+const tapeFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
+const tapeItems = tapeFromServices.length > 0
+  ? tapeFromServices
+  : ['Crafted daily', 'Made in-house', 'Small batches', 'Fresh & honest', 'Walk in welcome', 'Locally sourced'];
+---
+<section class="hero" aria-label="Hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        {overline && <div class="num" data-field="hero.tag">{overline}</div>}
+        {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+        {headlineLines.length > 0 && (
+          <h1>
+            {headlineLines.map((line: string, i: number) => (
+              <span class="ln" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+            ))}
+          </h1>
+        )}
+        {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+        {(cta1Text || cta2Text) && (
+          <div class="btnrow">
+            {cta1Text && <a href={cta1Href} class="btn f" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+            {cta2Text && <a href={cta2Href} class="btn g" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+          </div>
+        )}
+      </div>
+      <figure class="hero-fig plate">
+        <div class="ph sc1" role="img" aria-label="Hero" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+        {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<div class="tape" aria-hidden="true">
+  <div class="tape-in">
+    {tapeItems.map((t) => (<span>{t}</span>))}
+    {tapeItems.map((t) => (<span>{t}</span>))}
+  </div>
+</div>
+<style>
+  .hero { padding: 80px 0 90px; }
+  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; align-items: stretch; min-height: 74vh; }
+  .hero-copy { padding: 20px 60px 20px 0; display: flex; flex-direction: column; justify-content: center; }
+  .hero-copy .num { font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--accent); margin-bottom: 18px; }
+  .hero-copy .eyebrow { margin-bottom: 8px; }
+  .hero h1 { font-size: clamp(46px,7.4vw,106px); margin: .12em 0 .34em; letter-spacing: -.01em; color: var(--ink); }
+  .hero h1 .ln { display: block; }
+  .hero h1 :global(em) { font-style: italic; color: var(--accent); }
+  .hero .lede { font-size: 19px; color: var(--ink-soft); max-width: 46ch; margin-bottom: 32px; }
+  .hero-fig { position: relative; overflow: hidden; min-height: 520px; margin: 0; }
+
+  /* Running dish tape (design signature). */
+  .tape { background: var(--paper-2); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; }
+  .tape-in { display: flex; gap: 56px; padding: 20px 0; white-space: nowrap; width: max-content; animation: mqAY 32s linear infinite; }
+  .tape span { font-family: var(--serif); font-size: 20px; color: var(--ink); display: inline-flex; align-items: center; gap: 56px; }
+  .tape span::after { content: "\2726"; color: var(--accent); }
+  @keyframes mqAY { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .tape-in { animation: none; flex-wrap: wrap; white-space: normal; width: auto; justify-content: center; } }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; min-height: 0; gap: 0; }
+    .hero-copy { padding: 0 0 40px; }
+    .hero-fig { min-height: 56vh; }
+  }
+  @media (max-width: 760px) {
+    .hero { padding: 54px 0 64px; }
+    /* Refit the display line so it never clips at 360px. */
+    .hero h1 { font-size: clamp(40px,11vw,72px); }
+    .hero .lede { font-size: 17px; margin-bottom: 26px; }
+    .hero-fig { min-height: 48vh; }
+    .tape span { font-size: 17px; }
+  }
+  @media (max-width: 480px) {
+    .hero h1 { font-size: clamp(34px,10.5vw,54px); }
+    .btnrow { flex-direction: column; align-items: stretch; }
+    .btnrow .btn { justify-content: center; }
+  }
+</style>

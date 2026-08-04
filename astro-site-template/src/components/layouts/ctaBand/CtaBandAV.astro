@@ -1,0 +1,56 @@
+---
+/**
+ * layouts / CtaBandAV — full-width bento closer: a single 12-column tile with a
+ * soft paper gradient, a centred Spectral headline (italic cobalt accent), an
+ * optional sub and up to two pill CTAs. Anchors #reserve for the hero / nav CTA.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || '#location';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="ctaband" id="reserve">
+    <div class="wrap">
+      <div class="grid">
+        <div class="cta-tile reveal">
+          {tag && <span class="eyebrow" data-field="ctaBand.tag">{tag}</span>}
+          {headline && <h2 data-field="ctaBand.headline" set:html={headline}></h2>}
+          {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+          {hasButtons && (
+            <div class="btnrow" style="justify-content:center;">
+              {cta1Text && <a href={cta1Href} class="btn btn--fill" rel="noopener" data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+              {cta2Text && <a href={cta2Href} class="btn btn--ghost" rel="noopener" data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .cta-tile {
+    grid-column: span 12; text-align: center; padding: 70px 32px;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--card), var(--paper-2));
+  }
+  .cta-tile .eyebrow { display: inline-block; margin-bottom: 14px; }
+  .cta-tile h2 { font-size: clamp(34px,5vw,68px); color: var(--ink); margin-bottom: 24px; }
+  .cta-tile h2 :global(em) { font-style: italic; color: var(--accent); }
+  .cta-sub { color: var(--ink-soft); max-width: 52ch; margin: -12px auto 24px; }
+  @media (max-width: 760px) {
+    .cta-tile { padding: 48px 22px; }
+    .cta-tile h2 { font-size: clamp(28px,8vw,50px); }
+  }
+  @media (max-width: 520px) {
+    .btnrow { flex-direction: column; align-items: stretch; }
+    .btnrow .btn { justify-content: center; }
+  }
+</style>

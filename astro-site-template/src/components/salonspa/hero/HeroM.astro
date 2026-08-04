@@ -76,4 +76,14 @@ const ratingLabel = hero.rating?.label || '';
     .heroM-grid { grid-template-columns: 1fr; }
     .heroM-img { aspect-ratio: 4 / 3; order: -1; }
   }
+  @media (max-width: 760px) {
+    .heroM { padding-top: clamp(104px, 22vw, 140px); }
+    .heroM-grid { gap: 30px; }
+    .heroM-headline { font-size: clamp(32px, 8vw, 56px); }
+  }
+  @media (max-width: 520px) {
+    .heroM-headline { font-size: clamp(29px, 8.8vw, 44px); }
+    .heroM-cta { flex-direction: column; align-items: stretch; }
+    .heroM-cta .btn { width: 100%; justify-content: center; }
+  }
 </style>

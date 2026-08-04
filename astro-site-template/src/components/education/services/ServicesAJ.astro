@@ -46,4 +46,8 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
     font-family: var(--sans); text-transform: uppercase; letter-spacing: .1em;
     font-size: 11px; color: var(--ink-soft); margin-top: 10px; opacity: .85;
   }
+  /* Single-column program cards on a phone. */
+  @media (max-width: 760px) {
+    .svc-grid { grid-template-columns: 1fr; }
+  }
 </style>

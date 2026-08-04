@@ -1,0 +1,38 @@
+---
+/**
+ * layouts / TrustBA — the credibility stat-row (lp-22 TRUST block, lifted out
+ * of the hero into its own band per the AM model). A hairline-gridded row of
+ * cells, each a brass serif figure/statement over a muted uppercase label.
+ *
+ * Volatile Google rating slots carry no field in the data model, so a cell
+ * whose num is "★★★★★" renders via set:html and still styles correctly.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust-band" data-component="TRUST" data-variant="panel">
+    <div class="stat-row reveal">
+      {cells.map((cell, i) => (
+        <div class="c">
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust-band { padding: 44px 60px; border-bottom: 1px solid var(--line); }
+  .stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .stat-row .c { background: var(--card); padding: 24px 18px; text-align: center; }
+  .stat-row .n { font-family: var(--serif); font-size: 22px; color: var(--accent); line-height: 1.1; }
+  .stat-row .t { font-family: var(--sans); font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-top: 8px; }
+  .stat-row :global(.stars) { color: var(--accent-light); letter-spacing: 2px; }
+  @media (max-width: 760px) {
+    .trust-band { padding: 34px 24px; }
+    .stat-row { grid-template-columns: 1fr; }
+  }
+</style>

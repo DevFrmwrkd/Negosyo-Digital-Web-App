@@ -41,4 +41,12 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
     font-family: var(--sans); font-size: 11px; letter-spacing: .22em;
     text-transform: uppercase; color: var(--stone, var(--muted)); margin-top: 36px;
   }
+  @media (max-width: 760px) {
+    .quote { padding-block: clamp(56px, 9vw, 92px); }
+  }
+  @media (max-width: 520px) {
+    .quote blockquote { font-size: clamp(24px, 7vw, 34px); }
+    .quote .stars { margin-bottom: 20px; }
+    .quote .who { margin-top: 26px; }
+  }
 </style>

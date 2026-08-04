@@ -1,0 +1,72 @@
+---
+/**
+ * layouts / HeroAW — broadsheet lede: a two-column "lede-grid" (kicker + big
+ * serif headline + button row on the left, an art-directed .plate figure on the
+ * right) sitting over a two-column newspaper "lead" paragraph with a clay
+ * drop-cap. Mirrors lp-19's "HERO / broadsheet" block.
+ *
+ * The .plate keeps its .sc1 duotone as the designed fallback until hero.image is
+ * set (the photo then layers over it). The lead reads hero.sub (falls back to the
+ * first about paragraph) so it always carries editorial body copy.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (Array.isArray(hero.photos) && hero.photos[0]) || (Array.isArray(content.photos) && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headline = hero.headline
+  || (Array.isArray(hero.headlineLines) ? hero.headlineLines.filter(Boolean).join(' ') : '');
+const brand = (content as any).footer?.brand || layout.businessName || '';
+const imageCaption = hero.imageCaption || brand;
+const about = content.about || {};
+const lead = hero.sub || (Array.isArray(about.paragraphs) ? about.paragraphs[0] : '') || content.description || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#reserve';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+---
+<section class="hero" aria-label="Hero">
+  <div class="lede-grid">
+    <div class="lede-copy">
+      {kicker && <span class="kicker" data-field="hero.kicker">{kicker}</span>}
+      {headline && <h1 class="head" data-field="hero.headline" set:html={headline}></h1>}
+      {(cta1Text || cta2Text) && (
+        <div class="btnrow">
+          {cta1Text && <a class="btn f" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn g" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+    <figure class="hero-plate plate">
+      <div class="ph sc1" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+      {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
+    </figure>
+  </div>
+  {lead && <p class="lead" data-field="hero.sub" set:html={lead}></p>}
+</section>
+<style>
+  .lede-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 48px; align-items: end; }
+  .head { font-size: clamp(38px,6.2vw,80px); margin: .2em 0 .5em; }
+  .head :global(em) { font-style: italic; color: var(--accent); }
+  .btnrow { margin-top: 4px; }
+  .hero-plate { aspect-ratio: 4/5; margin: 0; }
+  .lead {
+    column-count: 2; column-gap: 40px; font-size: 17px; color: var(--ink-soft);
+    margin-top: 34px; padding-top: 26px; border-top: 1px solid var(--line);
+  }
+  .lead::first-letter { font-family: var(--serif); font-size: 3.4em; float: left; line-height: .8; padding: 6px 10px 0 0; color: var(--accent); }
+  @media (max-width: 760px) {
+    .lede-grid { grid-template-columns: 1fr; gap: 26px; }
+    .hero-plate { aspect-ratio: 16/10; order: 2; }
+    .lede-copy { order: 1; }
+    .head { font-size: clamp(30px,8.4vw,50px); }
+    .lead { column-count: 1; font-size: 16px; }
+  }
+  /* Phone: stack the CTA row full-width (mirrors CtaBandAW) so the primary
+     button spans the column instead of wrapping to a left-aligned partial width. */
+  @media (max-width: 520px) {
+    .btnrow { flex-direction: column; align-items: stretch; }
+    .btnrow .btn { text-align: center; }
+  }
+  .head { overflow-wrap: anywhere; }
+</style>

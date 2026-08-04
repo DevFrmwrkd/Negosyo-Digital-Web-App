@@ -33,4 +33,10 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
   .trust-cell { display: flex; flex-direction: column; gap: 2px; }
   .trust-cell .num { font-family: var(--serif); font-size: 18px; color: var(--paper); line-height: 1.2; }
   .trust-cell .lbl { font-family: var(--sans); font-size: 13px; color: rgba(251,248,241,.72); }
+  /* Center the credibility cells on a phone so the wrapped row stays tidy
+     instead of leaving space-between gaps. */
+  @media (max-width: 760px) {
+    .trust-bar { justify-content: center; text-align: center; gap: 14px 22px; }
+    .trust-cell { align-items: center; }
+  }
 </style>

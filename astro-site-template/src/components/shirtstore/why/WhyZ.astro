@@ -52,4 +52,14 @@ const items: Array<{ title: string; body?: string; desc?: string; description?: 
     .why-grid { grid-template-columns: 1fr; }
     .why-fig { order: -1; }
   }
+  @media (max-width: 760px) {
+    .why { padding: clamp(48px, 11vw, 96px) 0; }
+    .why h2 { font-size: clamp(28px, 7vw, 48px); }
+    .why-fig .bg-img { height: 48vh; }
+  }
+  @media (max-width: 520px) {
+    .why h2 { font-size: clamp(26px, 8vw, 40px); }
+    .why-fig .bg-img { height: 42vh; }
+    .why-item { padding: 18px 0; }
+  }
 </style>

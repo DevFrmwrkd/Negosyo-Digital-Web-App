@@ -1,0 +1,149 @@
+---
+/**
+ * layouts / HeaderAW — broadsheet masthead: a meta strip (locality · note ·
+ * issue), a big double-ruled serif business name, a type/locality sub-line, then
+ * a sticky centred nav row. Mirrors lp-19's "NAV / broadsheet" block.
+ *
+ * Mobile-first: <=760px the centred nav row becomes a bar carrying the brand +
+ * a hamburger; the links collapse into a themed full-width dropdown toggled by
+ * the inline script (adds .open to the .mn row).
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const hero = (content as any).hero || {};
+// Masthead meta strip — reuse the hero's editable locality / tag / note fields.
+const metaLeft = hero.locality || hero.kicker || '';
+const metaMid = hero.tag || '';
+const metaRight = hero.badgeNote || '';
+const sub = hero.kicker || layout.tagline || '';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#reserve';
+---
+<header class="mast" aria-label="Masthead">
+  {(metaLeft || metaMid || metaRight) && (
+    <div class="mast-top">
+      {metaLeft && <span data-field="hero.locality">{metaLeft}</span>}
+      {metaMid && <span data-field="hero.tag">{metaMid}</span>}
+      {metaRight && <span data-field="hero.badgeNote">{metaRight}</span>}
+    </div>
+  )}
+  <div class="mast-name" data-field="footer.brand">{brand}</div>
+  {sub && <div class="mast-sub" data-field="hero.kicker">{sub}</div>}
+</header>
+<nav class="mn" aria-label="Primary">
+    <a href="#main" class="mn-brand" data-field="footer.brand">{brand}</a>
+    {(navLinks.length > 0 || ctaText) && (
+      <>
+        <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-aw-menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="mn-links" id="nav-aw-menu">
+          {navLinks.map((link, i) => (
+            <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+          ))}
+          {ctaText && <a href={ctaHref} class="mn-cta" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        </div>
+      </>
+    )}
+  </nav>
+<script is:inline>
+  (function () {
+    var mn = document.querySelector('nav.mn');
+    if (!mn) return;
+    var burger = mn.querySelector('.nav-burger');
+    var menu = mn.querySelector('.mn-links');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      mn.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () { setOpen(!mn.classList.contains('open')); });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  .mast { padding: 14px 0 0; }
+  .mast-top {
+    display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    font-family: var(--label); font-size: 10px; letter-spacing: .28em; text-transform: uppercase;
+    color: var(--muted); padding-bottom: 12px;
+  }
+  .mast-name {
+    text-align: center; font-family: var(--serif); font-weight: 400;
+    font-size: clamp(38px,8.4vw,98px); line-height: .94; letter-spacing: .01em;
+    padding: 20px 0 8px; border-top: 3px double var(--ink);
+    overflow-wrap: anywhere; hyphens: auto;
+  }
+  .mast-sub {
+    text-align: center; font-family: var(--label); font-size: 11px; letter-spacing: .5em;
+    text-transform: uppercase; color: var(--accent); padding-bottom: 16px;
+  }
+
+  /* Sticky centred nav row. */
+  .mn {
+    position: sticky; top: 0; z-index: 40; display: flex; justify-content: center; align-items: center;
+    gap: 28px; flex-wrap: wrap; padding: 13px 0; background: var(--paper);
+    border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .mn-brand { display: none; }  /* desktop: masthead carries the name */
+  .mn-links { display: contents; }
+  .mn a {
+    font-family: var(--label); font-size: 11px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .mn a:hover { color: var(--accent); }
+  .mn-cta { color: var(--accent) !important; }
+  .mn-cta:hover { color: var(--ink) !important; }
+
+  /* Hamburger — hidden on desktop. */
+  .nav-burger { display: none; }
+
+  @media (max-width: 760px) {
+    .mast-top { font-size: 9px; letter-spacing: .2em; }
+    .mast-name { font-size: clamp(26px,7.6vw,52px); padding: 16px 0 6px; }
+    .mast-sub { letter-spacing: .34em; padding-bottom: 12px; }
+
+    /* Row becomes brand + burger; links drop into a full-width drawer. */
+    .mn { justify-content: space-between; gap: 12px; padding: 12px 0; position: sticky; }
+    .mn-brand {
+      display: block; font-family: var(--serif); font-size: 20px; letter-spacing: .01em;
+      color: var(--ink); text-transform: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: calc(100% - 60px);
+    }
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; margin-right: -6px;
+      background: transparent; border: 0; cursor: pointer; flex-shrink: 0;
+    }
+    .nav-burger span { display: block; width: 24px; height: 2px; background: var(--ink); transition: transform .3s ease, opacity .3s ease; }
+    .mn.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .mn.open .nav-burger span:nth-child(2) { opacity: 0; }
+    .mn.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .mn-links {
+      display: flex; position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--paper); border-bottom: 1px solid var(--line);
+      box-shadow: 0 24px 40px -22px rgba(var(--ink-rgb),.5);
+      padding: 4px 0 10px;
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    .mn.open .mn-links { max-height: calc(100vh - 60px); overflow-y: auto; opacity: 1; visibility: visible; }
+    .mn-links a {
+      display: flex; align-items: center; min-height: 48px; padding: 6px 20px; font-size: 14px;
+      letter-spacing: .16em; color: var(--ink-soft); border-bottom: 1px solid var(--line);
+    }
+    .mn-cta {
+      margin: 12px 20px 2px; min-height: 48px; justify-content: center;
+      background: var(--accent); color: var(--on-accent) !important; border: 1px solid var(--accent);
+    }
+    .mn-cta:hover { color: var(--on-accent) !important; }
+  }
+</style>

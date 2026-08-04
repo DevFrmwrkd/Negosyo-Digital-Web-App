@@ -56,4 +56,10 @@ const credIconPaths = [
   .creds { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
   .cred-pill { display: flex; align-items: center; gap: 10px; background: var(--teal-soft); border-radius: 40px; padding: 13px 22px; font-size: 13px; font-weight: 600; color: var(--teal-deep); }
   .cred-pill svg { width: 18px; height: 18px; stroke: var(--teal); fill: none; stroke-width: 1.8; }
+  @media (max-width: 520px) {
+    .split2 { gap: 36px; }
+    .area-chips, .creds { gap: 8px; }
+    .area-chips span { padding: 9px 16px; }
+    .cred-pill { padding: 11px 16px; }
+  }
 </style>

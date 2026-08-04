@@ -1,0 +1,49 @@
+---
+/**
+ * layouts / CtaBandAX — brutalist closing band: a centred oversized uppercase
+ * headline (its <em> reads the bone accent) over a joined button row. Mirrors
+ * lp-21's "CTA-BAND / brutalist" block. Anchors #reserve for the hero / nav CTA.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || '';
+const cta1Href = cta.cta1?.href || '#location';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const hasButtons = !!(cta1Text || cta2Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-b grid-sec" id="reserve" aria-label="Call to action">
+    {tag && <div class="lbl cta-lbl" data-field="ctaBand.tag">{tag}</div>}
+    {headline && <h2 data-field="ctaBand.headline" set:html={headline}></h2>}
+    {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+    {hasButtons && (
+      <div class="btnrow cta-row">
+        {cta1Text && <a class="btn f" href={cta1Href} rel="noopener" data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+        {cta2Text && <a class="btn g" href={cta2Href} rel="noopener" data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+      </div>
+    )}
+  </section>
+)}
+<style>
+  .cta-b { padding: 80px 24px; text-align: center; }
+  .cta-lbl { margin-bottom: 18px; }
+  .cta-b h2 { font-size: clamp(34px,6vw,72px); text-transform: uppercase; letter-spacing: -.02em; margin-bottom: 26px; }
+  .cta-b h2 :global(em) { font-style: normal; color: var(--accent); }
+  .cta-sub { color: var(--ink-soft); max-width: 52ch; margin: 0 auto 26px; }
+  .cta-row { justify-content: center; }
+  @media (max-width: 760px) {
+    .cta-b { padding: 56px 18px; }
+    .cta-b h2 { font-size: clamp(30px,9vw,52px); }
+  }
+  @media (max-width: 380px) {
+    .cta-b h2 { font-size: clamp(26px,10vw,40px); }
+    .cta-row { flex-direction: column; align-items: stretch; }
+    .cta-row .btn { text-align: center; }
+    .cta-row .btn + .btn { margin-left: 0; margin-top: -2px; }
+  }
+</style>

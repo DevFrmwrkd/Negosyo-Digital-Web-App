@@ -47,4 +47,8 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
     font-family: var(--label); font-size: 13px; text-transform: uppercase;
     letter-spacing: .1em; color: var(--faded);
   }
+  @media (max-width: 760px) {
+    .test-h { font-size: clamp(28px, 6.4vw, 44px); }
+    .test-grid { grid-template-columns: 1fr; gap: 20px; }
+  }
 </style>

@@ -1,0 +1,51 @@
+---
+/**
+ * layouts / GalleryAV — "inside" bento mosaic. Tiles are art-directed .plate
+ * frames (a cycling .sc* duotone "scene" stands in as the designed fallback; a
+ * photo layers over it via data-image-field when set), arranged in lp-23's
+ * bento where the first tile spans wide. The section auto-hides with no items.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+const scenes = ['sc1', 'sc2', 'sc3', 'sc4', 'sc5', 'sc6'];
+const spans = ['g1', 'g2', 'g3', 'g4', 'g5', 'g6'];
+---
+{items.length > 0 && (
+  <section class="gallery" id="gallery">
+    <div class="wrap">
+      <div class="grid">
+        <div class="sec-tag reveal">
+          {tag && <span class="n" data-field="gallery.tag">{tag}</span>}
+          {headline && <h2 data-field="gallery.headline" set:html={headline}></h2>}
+        </div>
+        {items.map((item, i) => (
+          <figure class={`plate gal-tile ${spans[i % spans.length]} reveal`}>
+            <div class={`ph ${scenes[i % scenes.length]}`} role="img" aria-label="Gallery" data-image-field={`gallery.items.${i}.image`} style={item.image ? `background-image:url('${item.image}');` : ''}></div>
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+            <span class="mark" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gal-tile { margin: 0; }
+  .g1 { grid-column: span 6; min-height: 300px; }
+  .g2 { grid-column: span 3; min-height: 300px; }
+  .g3 { grid-column: span 3; min-height: 300px; }
+  .g4 { grid-column: span 4; min-height: 220px; }
+  .g5 { grid-column: span 4; min-height: 220px; }
+  .g6 { grid-column: span 4; min-height: 220px; }
+  @media (max-width: 860px) {
+    .g1, .g2, .g3, .g4, .g5, .g6 { grid-column: span 6; min-height: 200px; }
+  }
+  @media (max-width: 520px) {
+    .g1, .g2, .g3, .g4, .g5, .g6 { grid-column: span 12; }
+  }
+</style>

@@ -1,0 +1,50 @@
+---
+/**
+ * services / AreaAS — the "we pick up around" strip (lp-07's SERVICE-AREA block,
+ * lifted out of the FAQ column into its own section per the AM model). A blue
+ * mono eyebrow over dashed-outline area tags that solidify to blue on hover.
+ * Reads content.area.places (legacy `items`); optional headline / sub / body
+ * render above the tags when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area">
+    <div class="wrap">
+      {(headline || sub) && (
+        <div class="area-head reveal">
+          {headline && <h2 class="area-h" data-field="area.headline" set:html={headline}></h2>}
+          {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+        </div>
+      )}
+      <div class="areas reveal">
+        {tag && <div class="lbl" style="margin:0 0 4px;" data-field="area.tag">{tag}</div>}
+        <div class="area-tags">
+          {places.map((place, i) => (
+            <span data-field={`area.places.${i}`}>{place}</span>
+          ))}
+        </div>
+      </div>
+      {body && <p class="area-body" data-field="area.body">{body}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .area { background: var(--card); padding: 48px 0; border-top: 2px dashed var(--line); border-bottom: 2px dashed var(--line); }
+  .area-head { margin-bottom: 16px; }
+  .area-h { font-size: clamp(28px,4vw,46px); color: var(--ink); }
+  .area-sub { color: var(--muted); margin-top: 10px; max-width: 52ch; }
+  .areas { margin-top: 6px; }
+  .area-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .area-tags span { font-family: var(--mono); font-size: 12px; letter-spacing: .04em; border: 2px dashed var(--line); padding: 7px 12px; color: var(--ink2); transition: .2s; }
+  .area-tags span:hover { border-style: solid; border-color: var(--blue); color: var(--blue-d); }
+  .area-body { color: var(--muted); margin-top: 16px; max-width: 60ch; }
+  @media (max-width: 760px) { .area { padding: 40px 0; } .area-h { font-size: clamp(24px,6vw,36px); } }
+</style>

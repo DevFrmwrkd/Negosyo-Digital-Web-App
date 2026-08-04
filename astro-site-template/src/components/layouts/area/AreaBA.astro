@@ -1,0 +1,46 @@
+---
+/**
+ * layouts / AreaBA — the "where we serve" strip (lp-22 SERVICE-AREA block,
+ * lifted out of the FAQ block into its own section per the AM model). A brass
+ * eyebrow over pill-shaped area tags that invert to brass on hover. Reads
+ * content.area.places (legacy `items`); optional headline / sub / body render
+ * above the tags when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="p-sec area-sec" data-component="SERVICE-AREA" data-variant="panel">
+    {(headline || sub) && (
+      <div class="area-head reveal">
+        {headline && <h2 class="p-h" data-field="area.headline" set:html={headline}></h2>}
+        {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+      </div>
+    )}
+    <div class="reveal">
+      {tag && <span class="eyebrow p-eb" data-field="area.tag">{tag}</span>}
+      <div class="areas">
+        {places.map((place, i) => (
+          <span data-field={`area.places.${i}`}>{place}</span>
+        ))}
+      </div>
+    </div>
+    {body && <p class="area-body" data-field="area.body">{body}</p>}
+  </section>
+)}
+<style>
+  .area-sub { color: var(--muted); margin: 6px 0 0; max-width: 52ch; }
+  .areas { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 9px; }
+  .areas span {
+    font-family: var(--sans); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+    border: 1px solid var(--line); padding: 8px 14px; color: var(--ink-soft); border-radius: 2px; transition: border-color .3s, color .3s;
+  }
+  .areas span:hover { border-color: var(--accent); color: var(--accent); }
+  .area-body { color: var(--muted); margin-top: 16px; max-width: 60ch; font-size: 14px; }
+</style>

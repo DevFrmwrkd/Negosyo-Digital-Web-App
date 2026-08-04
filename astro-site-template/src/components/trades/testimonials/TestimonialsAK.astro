@@ -44,4 +44,13 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
   .test-grid { display: grid; gap: 16px; margin-top: 8px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
   .test-card p { font-size: 14px; margin-bottom: 12px; color: var(--white); }
   .test-card footer { color: var(--amber); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+
+  /* ---- Mobile (<=760): single-column field reports ---- */
+  @media (max-width: 760px) {
+    .test-grid { grid-template-columns: 1fr; }
+    .test-h { font-size: clamp(27px, 6.6vw, 44px); }
+  }
+  @media (max-width: 520px) {
+    .test-h { font-size: clamp(24px, 7.4vw, 36px); }
+  }
 </style>

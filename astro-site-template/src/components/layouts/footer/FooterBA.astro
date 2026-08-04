@@ -1,0 +1,74 @@
+---
+/**
+ * layouts / FooterBA — the minimal panel footer strip (lp-22 FOOTER block): a
+ * brand line, contact / social links, and closing notes, all in muted
+ * uppercase. Plus lp-22's floating brass message pill (CLICK-TO-MESSAGE),
+ * which reuses the hero's primary CTA (content.hero.cta1) so it stays editable
+ * and in sync. Each part auto-hides when empty.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const f = (content as any).footer || {};
+const brand = f.brand || layout.businessName || 'Your Business';
+const blurb = f.blurb || f.brand_blurb || '';
+const social: Array<{ platform: string; url: string }> = Array.isArray(f.social) && f.social.length
+  ? f.social
+  : (Array.isArray(layout.socialLinks) ? layout.socialLinks : []);
+const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
+const phone = layout.contact?.phone || (content as any).location?.phone || '';
+const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
+
+// Floating message pill — reuse the hero's primary CTA (falls back to CTA-band).
+const hero = (content as any).hero || {};
+const cband = (content as any).ctaBand || {};
+const msgHref = hero.cta1?.href || cband.cta1?.href || '';
+const msgText = hero.cta1?.text || cband.cta1?.text || 'Message us';
+---
+<footer class="foot-p" data-component="FOOTER" data-variant="panel">
+  <span class="f-brand" data-field="footer.brand">{brand}</span>
+  {(social.length > 0 || phone) && (
+    <span class="f-links">
+      {social.map((s, i) => (
+        <a href={s.url} target="_blank" rel="noopener noreferrer"
+           data-field={`footer.social.${i}.platform`}
+           data-href-field={`footer.social.${i}.url`}>{s.platform}</a>
+      ))}
+      {phone && <a href={`tel:${phoneDigits}`}>{phone}</a>}
+    </span>
+  )}
+  {notes.length > 0
+    ? notes.map((n, i) => (<span data-field={`footer.notes.${i}`}>{n}</span>))
+    : (blurb && <span data-field="footer.blurb">{blurb}</span>)}
+</footer>
+{msgHref && (
+  <a class="msgr" href={msgHref} rel="noopener" aria-label="Message us" data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.3 2 2 6.2 2 11.6c0 3 1.4 5.6 3.7 7.3v3.6l3.4-1.9c.9.3 1.9.4 2.9.4 5.7 0 10-4.2 10-9.5S17.7 2 12 2zm1 12.3l-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>
+    {msgText}
+  </a>
+)}
+<style>
+  .foot-p {
+    padding: 40px 60px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    font-family: var(--sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  }
+  .foot-p .f-brand { color: var(--ink-soft); }
+  .foot-p a { color: var(--ink-soft); }
+  .foot-p a:hover { color: var(--accent); }
+  .f-links { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; }
+  .f-links a { position: relative; }
+  .f-links a + a::before { content: "·"; position: absolute; left: -9px; color: var(--muted); }
+
+  .msgr {
+    position: fixed; right: 22px; bottom: 22px; z-index: 70; display: inline-flex; align-items: center; gap: 10px;
+    background: var(--accent); color: var(--on-accent); padding: 14px 22px;
+    font-family: var(--sans); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; font-weight: 600;
+    box-shadow: 0 18px 44px -14px rgba(var(--accent-rgb),.5); transition: transform .4s;
+  }
+  .msgr:hover { transform: translateY(-3px); color: var(--on-accent); }
+  .msgr svg { width: 16px; height: 16px; fill: currentColor; }
+
+  @media (max-width: 760px) {
+    .foot-p { padding: 32px 24px 96px; }  /* extra bottom clears the floating pill */
+    .msgr { right: 14px; bottom: 14px; padding: 12px 16px; }
+  }
+</style>

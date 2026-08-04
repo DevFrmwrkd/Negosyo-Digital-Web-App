@@ -19,7 +19,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   <div class="wrap bar">
     <a href="#top" class="brand" data-field="footer.brand"><span class="mark" aria-hidden="true"></span>{brand}</a>
     {navLinks.length > 0 && (
-      <nav class="nav-links" aria-label="Main">
+      <nav class="nav-links" id="af-primary-nav" aria-label="Main">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
@@ -28,8 +28,35 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
     {phone && (
       <a href={`tel:${phoneDigits}`} class="phone" data-field="contact.phone" data-href-field="contact.phone.href">☎ {phone}</a>
     )}
+    {navLinks.length > 0 && (
+      <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="af-primary-nav">
+        <span></span><span></span><span></span>
+      </button>
+    )}
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.site');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var nav = hdr.querySelector('.nav-links');
+    if (!burger) return;
+    burger.addEventListener('click', function () {
+      var open = hdr.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    // Tap a link → close the drawer.
+    if (nav) {
+      nav.addEventListener('click', function (e) {
+        if (e.target.closest && e.target.closest('a')) {
+          hdr.classList.remove('open');
+          burger.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  })();
+</script>
 <style>
   header.site {
     position: sticky; top: 0; z-index: 50;
@@ -61,5 +88,45 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   .nav-links a:hover { opacity: 1; color: var(--red); }
   .phone { font-family: var(--body); font-weight: 700; font-size: 14px; color: var(--ink); white-space: nowrap; }
   .phone:hover { color: var(--red); }
-  @media (max-width: 860px) { .nav-links { display: none; } }
+
+  /* Hamburger — hidden on desktop, a hard-edged ink-bordered box that matches
+     the job-sheet aesthetic. Bars collapse into an X when the drawer is open. */
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 10px; flex: none;
+    background: var(--paper); border: 2px solid var(--ink); cursor: pointer;
+  }
+  .nav-burger span {
+    display: block; height: 2px; width: 100%; background: var(--ink);
+    transition: transform .25s ease, opacity .2s ease;
+  }
+  header.site.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.site.open .nav-burger span:nth-child(2) { opacity: 0; }
+  header.site.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Mobile: brand stays in the bar, phone + burger group to the right, and the
+     nav link list drops to a full-width drawer below the header, styled with the
+     design's own paper + ink tokens. Triggers at the design's existing header
+     breakpoint (860px) so there is never a "no-nav" gap and desktop is untouched. */
+  @media (max-width: 860px) {
+    .bar { gap: 12px; }
+    .brand { margin-right: auto; }
+    .nav-burger { display: flex; }
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; gap: 0; align-items: stretch;
+      background: var(--paper); border-top: 2px solid var(--ink);
+      border-bottom: 3px solid var(--ink);
+      box-shadow: 0 12px 0 rgba(var(--ink-rgb), .06);
+      padding: 2px 0; z-index: 55;
+    }
+    header.site.open .nav-links { display: flex; }
+    .nav-links a {
+      display: flex; align-items: center; min-height: 48px;
+      padding: 12px 20px; opacity: 1; font-size: 13px;
+      border-top: 1px solid var(--line);
+    }
+    .nav-links a:first-child { border-top: 0; }
+    .nav-links a:hover { opacity: 1; background: var(--ink); color: var(--haz); }
+  }
 </style>

@@ -39,7 +39,7 @@ const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArr
 <style>
   .area-sect { padding: 30px 0; border-top: 3px solid var(--ink); }
   .area-head { margin-bottom: 18px; }
-  .area-h { font-size: clamp(28px, 4vw, 46px); color: var(--ink); }
+  .area-h { font-size: clamp(28px, 4vw, 46px); color: var(--ink); overflow-wrap: break-word; }
   .area-sub { color: var(--ink-soft); margin-top: 10px; max-width: 52ch; }
   .area-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
   .area-lead { color: var(--blood); margin-right: 6px; }

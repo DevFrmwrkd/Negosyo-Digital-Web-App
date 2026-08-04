@@ -66,4 +66,15 @@ const items = rawItems.filter((it: Tile) => it && it.image);
     .gi-1 { grid-column: span 2; grid-row: span 3; }
     .gi-2, .gi-3, .gi-4, .gi-5, .gi-6 { grid-column: span 1; grid-row: span 2; }
   }
+  @media (max-width: 760px) {
+    .gal { padding: clamp(48px, 11vw, 96px) 0; }
+    .gal-head h2 { font-size: clamp(30px, 7.4vw, 50px); }
+  }
+  @media (max-width: 520px) {
+    .gal-head h2 { font-size: clamp(27px, 8vw, 40px); }
+    .gal-grid { grid-auto-rows: 116px; gap: 10px; }
+    /* No hover on touch — reveal captions by default. */
+    .gi .cap { opacity: 1; transform: none; }
+    .gi::after { opacity: .5; }
+  }
 </style>

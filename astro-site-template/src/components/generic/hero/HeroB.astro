@@ -86,4 +86,18 @@ const reelDoubled = [...showreel, ...showreel];
   .sh-tile .lab { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 14px 10px; background: linear-gradient(to top, rgba(28, 58, 55, .9), transparent); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--paper-2); }
   @keyframes reel { to { transform: translateX(-50%); } }
   @media (max-width: 680px) { .sh-tile { width: 188px; height: 116px; } .hero-in { padding-top: 100px; } }
+  @media (max-width: 760px) {
+    .hero { min-height: auto; }
+    .hero-in { padding: 104px 0 30px; }
+    /* Shrink the giant so long headlines never clip at 360px. */
+    .giant { font-size: clamp(46px, 13vw, 96px); line-height: .94; margin-top: 14px; }
+    .hero-foot { flex-direction: column; align-items: flex-start; gap: 22px; margin-top: 30px; }
+    .hero-sub { font-size: 17px; }
+  }
+  @media (max-width: 520px) {
+    .hero-in { padding: 92px 0 26px; }
+    .giant { font-size: clamp(38px, 13.5vw, 62px); }
+    .hero-cta { flex-direction: column; align-items: stretch; width: 100%; gap: 12px; }
+    .hero-cta :global(.btn) { width: 100%; justify-content: center; }
+  }
 </style>

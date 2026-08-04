@@ -46,4 +46,14 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
   }
   .how-row h3 { font-family: var(--serif); font-weight: 300; font-size: clamp(24px, 2.8vw, 34px); margin-bottom: 10px; }
   .how-row p { color: rgba(var(--paper-rgb), .78); margin: 0; max-width: 56ch; }
+  @media (max-width: 760px) {
+    .how { padding-block: clamp(56px, 9vw, 92px); }
+    .how-head { margin-bottom: 40px; }
+    .how-row { gap: 22px; padding: 30px 0; }
+  }
+  @media (max-width: 520px) {
+    .how-head h2 { font-size: clamp(28px, 8vw, 46px); }
+    .how-row { grid-template-columns: 1fr; gap: 6px; }
+    .how-row .hn { font-size: 40px; }
+  }
 </style>

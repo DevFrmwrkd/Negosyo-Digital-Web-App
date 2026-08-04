@@ -37,4 +37,9 @@ const aboutTag = about.tagCode || 'team@northpoint';
     .about { grid-template-columns: 1fr; gap: 40px; }
     .about-img .img { height: 340px; }
   }
+  @media (max-width: 520px) {
+    .about { gap: 30px; }
+    .about-img .img { height: 250px; }
+    .about-txt p { font-size: 16px; margin-top: 16px; }
+  }
 </style>

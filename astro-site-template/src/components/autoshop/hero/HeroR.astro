@@ -121,4 +121,15 @@ const badge = hero.tag || '';
     .hero-stage { aspect-ratio: 16 / 10; margin-top: 40px; }
     .fcard { display: none; }
   }
+  @media (max-width: 760px) {
+    .hero-r h1 { font-size: clamp(36px, 9.5vw, 60px); margin-top: 20px; }
+    .hero-sub { margin-top: 18px; }
+    .hero-actions { margin-top: 26px; }
+  }
+  @media (max-width: 520px) {
+    .hero-r h1 { font-size: clamp(30px, 9vw, 44px); }
+    .hero-sub { font-size: 17px; }
+    .hero-stage { aspect-ratio: 4 / 3; margin-top: 30px; }
+    .hero-stage .bg-img { border-radius: 16px; }
+  }
 </style>

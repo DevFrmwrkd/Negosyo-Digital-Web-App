@@ -143,4 +143,12 @@ const hasAddress = !!address;
     .loc { grid-template-columns: 1fr; }
     #map, .map-fallback { min-height: 340px; }
   }
+  @media (max-width: 760px) {
+    .loc-info { padding: clamp(40px, 9vw, 72px) var(--pad); }
+    .loc-info h2 { font-size: clamp(28px, 7vw, 48px); }
+  }
+  @media (max-width: 520px) {
+    .loc-info h2 { font-size: clamp(26px, 8vw, 40px); }
+    #map, .map-fallback { min-height: 300px; }
+  }
 </style>

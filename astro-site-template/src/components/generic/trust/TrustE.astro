@@ -24,4 +24,14 @@ const tones = ['c1', 'c2', 'c3', 'c4'];
   .tchip.c3 { background: var(--yellow-soft); color: #9a7400; }
   .tchip.c4 { background: #fff; color: var(--ink); box-shadow: 0 6px 18px rgba(var(--ink-rgb), .08); }
   .tchip .lbl { font-size: 14px; line-height: 1.25; }
+  @media (max-width: 760px) {
+    .trust { padding: 40px 0; }
+    .trust-row { gap: 12px; padding: 0 20px; }
+    .tchip { padding: 15px 22px; gap: 12px; }
+    .tchip .n { font-size: 28px; }
+  }
+  @media (max-width: 520px) {
+    .trust-row { flex-direction: column; padding: 0 16px; }
+    .tchip { width: 100%; justify-content: center; }
+  }
 </style>

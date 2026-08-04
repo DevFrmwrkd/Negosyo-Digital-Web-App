@@ -45,4 +45,8 @@ const items: Array<{ title: string; body?: string; desc?: string; description?: 
     color: #e8b6ae; font-weight: 600; display: block;
   }
   .why-body { color: #c9c3b2; font-size: 15px; margin-top: 4px; }
+  @media (max-width: 760px) {
+    .why-h { font-size: clamp(28px, 6.4vw, 44px); }
+    .why-list { gap: 16px; }
+  }
 </style>

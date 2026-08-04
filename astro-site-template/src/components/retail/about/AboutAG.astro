@@ -58,4 +58,12 @@ const signature = about.signature || '';
   .about-sign { margin-top: 14px; font-style: italic; color: var(--faded); }
   .about-plates { display: grid; gap: 16px; }
   .about-plate { min-height: 240px; }
+  @media (max-width: 760px) {
+    .about-h { font-size: clamp(28px, 6.4vw, 44px); }
+    .about-plate { min-height: 200px; }
+  }
+  @media (max-width: 520px) {
+    .about-h { font-size: clamp(24px, 7vw, 34px); }
+    .about-quote { font-size: 18px; }
+  }
 </style>

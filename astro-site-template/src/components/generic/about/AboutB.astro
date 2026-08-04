@@ -40,4 +40,13 @@ const aboutTag = about.tag2 || '';
     .about-grid { grid-template-columns: 1fr; gap: 40px; }
     .about-img .img { height: 400px; }
   }
+  @media (max-width: 520px) {
+    .about-grid { gap: 30px; }
+    .about-img .img { height: 340px; }
+    .about-img .arch2 { border-radius: 300px 300px 32px 32px; }
+    /* Pull the floating tag inward so it never touches the viewport edge. */
+    .about-img .tag { right: 6px; bottom: 16px; padding: 11px 18px; font-size: 13px; }
+    .about-txt p { font-size: 17px; }
+    .about-txt .sign { font-size: 23px; }
+  }
 </style>

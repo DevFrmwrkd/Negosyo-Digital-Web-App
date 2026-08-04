@@ -49,6 +49,7 @@ const AUTOSHOP_SOURCE_DIR = path.join(ROOT, 'templates', 'Autoshop');
 const RESTAURANT_SOURCE_DIR = path.join(ROOT, 'templates', 'Restaurant');
 const SHIRTSTORE_SOURCE_DIR = path.join(ROOT, 'templates', 'Shirt Store');
 const V03_SOURCE_DIR = path.join(ROOT, 'templates', 'Landing Pages v03');
+const V4_SOURCE_DIR = path.join(ROOT, 'templates', 'Local Business Landing Pages v4');
 const OUT_DIR = path.join(ROOT, 'public', 'template-previews');
 
 const TEMPLATES = [
@@ -91,6 +92,16 @@ const TEMPLATES = [
     { letter: 'aj', dir: V03_SOURCE_DIR, file: 'lp-05-education.html',  label: 'Education'           },
     { letter: 'ak', dir: V03_SOURCE_DIR, file: 'lp-06-trades.html',     label: 'Trades'              },
     { letter: 'al', dir: V03_SOURCE_DIR, file: 'lp-08-foodcraft.html',  label: 'Foodcraft'           },
+    // v4 batch — nine hero designs, one flagship per business bucket
+    { letter: 'am', dir: V4_SOURCE_DIR, file: 'lp-01-food.html',       label: 'Kalan · Mercado Nocturne'  },
+    { letter: 'an', dir: V4_SOURCE_DIR, file: 'lp-02-beauty.html',     label: 'Héla · Poblacion Atelier'  },
+    { letter: 'ao', dir: V4_SOURCE_DIR, file: 'lp-03-retail.html',     label: 'Domingo · Catálogo'        },
+    { letter: 'ap', dir: V4_SOURCE_DIR, file: 'lp-04-automotive.html', label: 'Vulca Garage & Detailing'  },
+    { letter: 'aq', dir: V4_SOURCE_DIR, file: 'lp-05-medical.html',    label: 'Batis Dental Studio'       },
+    { letter: 'ar', dir: V4_SOURCE_DIR, file: 'lp-06-fitness.html',    label: 'Kalasag Strength Co.'      },
+    { letter: 'as', dir: V4_SOURCE_DIR, file: 'lp-07-services.html',   label: 'Labaná Laundry & Press'    },
+    { letter: 'at', dir: V4_SOURCE_DIR, file: 'lp-08-education.html',  label: 'Talíno Learning Studio'    },
+    { letter: 'au', dir: V4_SOURCE_DIR, file: 'lp-09-trades.html',     label: 'Volt & Line Electrical'    },
 ];
 
 function sanitize(html, label) {

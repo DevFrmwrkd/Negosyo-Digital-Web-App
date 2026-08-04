@@ -3,6 +3,10 @@
  * foodcraft / HeaderAL — the design's top bar: deco-serif brand left, phone
  * (and any nav links) right, on the same warm shell ground the hero sits on so
  * the two read as one continuous block. Non-sticky, matching the mockup.
+ *
+ * Mobile (<=760px): the link list collapses behind a deco hamburger and drops
+ * down as a full-width shell-toned drawer under the bar (44px+ tap targets),
+ * while the brand + phone CTA stay in the bar. Desktop layout is unchanged.
  */
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
@@ -17,7 +21,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   <div class="wrap nav-inner">
     <a href="#top" class="brand" data-field="footer.brand" set:html={brand}></a>
     {navLinks.length > 0 && (
-      <nav class="nav-links" aria-label="Main">
+      <nav class="nav-links" id="al-nav" aria-label="Main">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
@@ -26,10 +30,15 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
     {phone && (
       <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone" data-href-field="contact.phone.href">{phone}</a>
     )}
+    {navLinks.length > 0 && (
+      <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="al-nav">
+        <span></span><span></span><span></span>
+      </button>
+    )}
   </div>
 </header>
 <style>
-  .site-nav { background: var(--shell); }
+  .site-nav { background: var(--shell); position: relative; }
   .nav-inner {
     display: flex; align-items: center; justify-content: space-between;
     gap: 24px; padding-top: 24px; padding-bottom: 4px;
@@ -51,5 +60,59 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
     color: var(--cocoa);
   }
   .nav-phone:hover { color: var(--terra-deep); }
-  @media (max-width: 720px) { .nav-links { display: none; } }
+
+  /* Deco hamburger — hidden on desktop, drives the mobile drawer. */
+  .nav-burger {
+    display: none;
+    flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+    width: 44px; height: 44px; flex-shrink: 0; padding: 10px;
+    background: transparent; border: none; cursor: pointer; border-radius: 8px;
+  }
+  .nav-burger span {
+    display: block; width: 100%; height: 2px; border-radius: 2px;
+    background: var(--cocoa); transition: transform .25s ease, opacity .2s ease;
+  }
+  .site-nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .site-nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  .site-nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  @media (max-width: 760px) {
+    .nav-inner { gap: 12px; padding-top: 18px; }
+    .brand { font-size: 20px; }
+    .nav-burger { display: inline-flex; }
+    /* Link list becomes a full-width dropdown drawer under the bar. */
+    .nav-links {
+      display: none;
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; gap: 0; z-index: 60;
+      background: var(--shell); border-top: 2px solid var(--cocoa);
+      box-shadow: 0 14px 26px rgba(74,53,42,.18);
+      padding: 6px 0;
+    }
+    .site-nav.open .nav-links { display: flex; }
+    .nav-links a {
+      display: flex; align-items: center; min-height: 48px;
+      padding: 6px 22px; font-size: 14px; letter-spacing: .1em;
+      border-bottom: 1px solid var(--shell-deep);
+    }
+    .nav-links a:last-child { border-bottom: none; }
+  }
 </style>
+<script is:inline>
+  (function () {
+    var header = document.querySelector('.site-nav');
+    if (!header) return;
+    var burger = header.querySelector('.nav-burger');
+    if (!burger) return;
+    burger.addEventListener('click', function () {
+      var open = header.classList.toggle('open');
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    header.querySelectorAll('.nav-links a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        header.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+      });
+    });
+  })();
+</script>

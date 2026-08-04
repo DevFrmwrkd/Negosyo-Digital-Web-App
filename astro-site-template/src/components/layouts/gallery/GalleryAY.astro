@@ -1,0 +1,60 @@
+---
+/**
+ * layouts / GalleryAY — "a look inside" editorial mosaic (lp-20's .gal-ed
+ * .mosaic): a 6-column ken-mosaic where the first two tiles span 3×2 and the
+ * sixth runs full-width. Tiles are art-directed .plate frames — a cycling
+ * .scene-* duotone stands in as the designed fallback until a photo is set. The
+ * section auto-hides only when there are no items at all.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+const scenes = ['sc1', 'sc2', 'sc3', 'sc4', 'sc5', 'sc6'];
+// lp-20 mosaic rhythm keyed off position in each run of six.
+const spanFor = (i: number) => {
+  const m = i % 6;
+  if (m === 0 || m === 1) return 'm-big';
+  if (m === 5) return 'm-wide';
+  return 'm-half';
+};
+---
+{items.length > 0 && (
+  <section class="gallery" id="gallery">
+    <div class="wrap">
+      {tag && <span class="eyebrow s-eb reveal" data-field="gallery.tag">{tag}</span>}
+      {headline && <h2 class="s-h reveal" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="gal-sub reveal" data-field="gallery.sub">{sub}</p>}
+      <div class="gal-ed mosaic reveal">
+        {items.map((item, i) => (
+          <figure class={`plate ${spanFor(i)}`}>
+            <div class={`ph ${scenes[i % scenes.length]}`} role="img" aria-label="Gallery photo" data-image-field={`gallery.items.${i}.image`} style={item.image ? `background-image:url('${item.image}');` : ''}></div>
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gallery { background: var(--paper); }
+  .gal-sub { max-width: 52ch; color: var(--muted); margin: -6px 0 32px; font-size: 16px; }
+  .gal-ed { display: grid; gap: 14px; }
+  .gal-ed.mosaic { grid-template-columns: repeat(6,1fr); grid-auto-rows: 130px; }
+  .gal-ed .m-big { grid-column: span 3; grid-row: span 2; }
+  .gal-ed .m-half { grid-column: span 2; }
+  .gal-ed .m-wide { grid-column: span 6; }
+  @media (max-width: 900px) {
+    /* Two equal tiles per row, drop the mosaic spans so nothing overflows. */
+    .gal-ed.mosaic { grid-template-columns: repeat(2,1fr); grid-auto-rows: 160px; }
+    .gal-ed .m-big, .gal-ed .m-half, .gal-ed .m-wide { grid-column: span 1; grid-row: span 1; }
+  }
+  @media (max-width: 760px) {
+    /* One full-width tile per row on phones — no horizontal overflow. */
+    .gal-ed.mosaic { grid-template-columns: 1fr; grid-auto-rows: 210px; }
+  }
+</style>

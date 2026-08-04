@@ -48,4 +48,8 @@ const signature = about.signature || '';
   .about-sign { margin-top: 18px; font-style: italic; color: var(--ink-soft); }
   .about-plate { min-height: 440px; transform: rotate(1.2deg); }
   @media (max-width: 799px) { .about-plate { min-height: 300px; transform: none; margin-top: 24px; } }
+  @media (max-width: 760px) {
+    .about-h { font-size: clamp(30px, 8.5vw, 52px); overflow-wrap: break-word; }
+    .about-plate { min-height: 260px; margin-top: 0; }
+  }
 </style>

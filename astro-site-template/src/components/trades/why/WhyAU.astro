@@ -1,0 +1,46 @@
+---
+/**
+ * trades / WhyAU — "why us" reasons on the panel band: a hairline-gridded set of
+ * .why-cell tiles, each led by a yellow mono "// 0N" marker (decorative), a sans
+ * title and a muted body line. Reads content.why.items (canonical `body`,
+ * legacy `desc`). tag + headline render above.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+const tag = why.tag || '';
+const headline = why.headline || '';
+const items: Array<{ title: string; body?: string; desc?: string; description?: string }> =
+  Array.isArray(why.items) ? why.items : [];
+---
+{items.length > 0 && (
+  <section class="sec why">
+    <div class="wrap">
+      <div class="sec-head">
+        {tag && <span class="snum" data-field="why.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>}
+      </div>
+      <div class="why-grid">
+        {items.map((item, i) => (
+          <div class="why-cell reveal">
+            <div class="k" aria-hidden="true">{`// ${String(i + 1).padStart(2, '0')}`}</div>
+            <h3 data-field={`why.items.${i}.title`}>{item.title}</h3>
+            {(item.body ?? item.desc ?? item.description) && (
+              <p data-field={`why.items.${i}.body`}>{item.body ?? item.desc ?? item.description}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .why { background: var(--panel); }
+  .why-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; } }
+  .why-cell { background: var(--panel); padding: 36px 32px; }
+  @media (max-width: 760px) { .why-cell { padding: 28px 22px; } }
+  .why-cell .k { font-family: var(--mono); color: var(--yellow); font-size: 13px; letter-spacing: .1em; }
+  .why-cell h3 { font-size: 22px; margin: 12px 0 8px; }
+  .why-cell p { color: var(--muted); font-size: 15px; text-transform: none; }
+</style>

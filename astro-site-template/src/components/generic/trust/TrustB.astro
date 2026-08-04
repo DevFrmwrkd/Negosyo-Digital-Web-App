@@ -27,5 +27,14 @@ const cells = (content.trust?.cells && content.trust.cells.length > 0)
   .trustline .n { font-family: var(--serif); font-size: 50px; color: var(--teal); line-height: 1; }
   .trustline .t { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
   .trustline .sep { width: 7px; height: 7px; border-radius: 50%; background: var(--peach); }
-  @media (max-width: 680px) { .trustline .sep { display: none; } }
+  @media (max-width: 760px) {
+    .trustline { padding: 40px 0; }
+    .trustline .row { gap: 16px 26px; }
+    .trustline .n { font-size: 42px; }
+    .trustline .sep { display: none; }
+  }
+  @media (max-width: 520px) {
+    .trustline .row { flex-direction: column; gap: 20px; }
+    .trustline .n { font-size: 40px; }
+  }
 </style>

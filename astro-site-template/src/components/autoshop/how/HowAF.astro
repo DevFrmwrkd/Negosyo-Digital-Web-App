@@ -41,4 +41,8 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
   .how-num { font-family: var(--display); font-weight: 800; font-size: 44px; color: var(--red); line-height: 1; }
   .how-copy { font-size: 14px; color: var(--ink-soft); margin-top: 4px; }
   .how-copy strong { color: var(--ink); }
+  @media (max-width: 760px) {
+    /* Single column — also avoids the 230px min track overflowing a narrow phone. */
+    .how-list { grid-template-columns: 1fr; }
+  }
 </style>

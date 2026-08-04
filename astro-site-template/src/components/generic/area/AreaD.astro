@@ -48,6 +48,7 @@ const credIconPaths = [
 <style>
   .split2 { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: start; }
   @media (max-width: 820px) { .split2 { grid-template-columns: 1fr; gap: 46px; } }
+  @media (max-width: 520px) { .split2 { gap: 38px; } .cred-chip { padding: 12px 15px; } }
   .area-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
   .area-tags span { font-family: var(--mono); font-size: 13px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; color: var(--muted); }
   .area-tags span::before { content: "› "; color: var(--lime); }

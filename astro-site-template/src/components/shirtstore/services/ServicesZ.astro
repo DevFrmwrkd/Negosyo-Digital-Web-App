@@ -1,5 +1,5 @@
 ---
-interface Props { content: any; }
+interface Props { content: any; layout?: any; }
 const { content } = Astro.props;
 const services = content.services || {};
 const tag = services.tag || '';
@@ -73,5 +73,18 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
     .prod { grid-template-columns: 1fr; gap: 22px; }
     .prod:nth-child(even of .prod) .prod-fig { order: 0; }
     .prod-fig .bg-img { height: 60vh; }
+  }
+  @media (max-width: 760px) {
+    .coll-head { padding: clamp(28px, 8vw, 56px) 0 clamp(24px, 5vw, 40px); }
+    .coll-head h2 { font-size: clamp(30px, 8vw, 54px); }
+    .prod-fig .bg-img { height: 52vh; }
+    .prod h3 { font-size: clamp(28px, 7vw, 46px); }
+  }
+  @media (max-width: 520px) {
+    .coll-head h2 { font-size: clamp(27px, 8.5vw, 42px); }
+    .prod { padding: 26px 0; gap: 18px; }
+    .prod-fig .bg-img { height: 44vh; }
+    .prod h3 { font-size: clamp(25px, 8vw, 36px); }
+    .prod p { font-size: 16px; margin-bottom: 20px; }
   }
 </style>

@@ -670,7 +670,12 @@ async function transformToAstroData(
             }
 
             return {
-                description: content.about,
+                // Coerce to a string: an inline About edit can upgrade
+                // content.about from a string to a {lead,headline,...} object;
+                // this field feeds <meta name="description"> so it must stay text.
+                description: typeof content.about === "string"
+                    ? content.about
+                    : ((content.about as any)?.lead ?? (content.about as any)?.description ?? ""),
                 photos,
                 contact: formattedContact,
                 marquee: mergeShallow<any>(c.marquee, derived.marquee),

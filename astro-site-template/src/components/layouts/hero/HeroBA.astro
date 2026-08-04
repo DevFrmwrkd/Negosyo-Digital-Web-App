@@ -1,0 +1,68 @@
+---
+/**
+ * layouts / HeroBA — the panel hero (lp-22 HERO block): a brass eyebrow, an
+ * oversized serif headline (each line may carry an <em> brass accent), a lede,
+ * the CTA row, and a wide 16/8 .plate figure. A designed .sc1 scene field
+ * stands in until hero.image is set (the photo then layers over it).
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#book';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const brand = (content as any).footer?.brand || layout.businessName || '';
+const imageCaption = hero.imageCaption || (brand ? `${brand}${kicker ? ' · ' + kicker : ''}` : '');
+---
+<section class="p-sec hero-s" data-component="HERO" data-variant="panel" aria-label="Hero">
+  {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+  {headlineLines.length > 0 && (
+    <h1>
+      {headlineLines.map((line: string, i: number) => (
+        <span data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+      ))}
+    </h1>
+  )}
+  {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+  {(cta1Text || cta2Text) && (
+    <div class="btnrow">
+      {cta1Text && <a class="btn f" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+      {cta2Text && <a class="btn g" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+    </div>
+  )}
+  <figure class="hero-fig plate reveal">
+    <div class="ph sc1" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');background-size:cover;background-position:center;` : ''}></div>
+    {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
+  </figure>
+</section>
+<style>
+  .hero-s { padding-top: 110px; }
+  .hero-s h1 { font-size: clamp(42px,6vw,84px); margin: .2em 0 .4em; }
+  .hero-s h1 span { display: block; }
+  .hero-s h1 :global(em) { font-style: italic; color: var(--accent); }
+  .hero-s .lede { font-size: 18px; color: var(--ink-soft); max-width: 52ch; margin-bottom: 30px; }
+  .hero-fig { margin: 44px 0 0; aspect-ratio: 16/8; }
+  @media (max-width: 760px) {
+    .hero-s { padding-top: 60px; }
+    /* Refit the display line so it never clips at 360px. */
+    .hero-s h1 { font-size: clamp(34px,10vw,58px); line-height: 1.02; margin: .15em 0 .35em; }
+    .hero-s .lede { font-size: 16px; margin-bottom: 24px; }
+    .hero-fig { aspect-ratio: 16/10; margin-top: 30px; }
+  }
+  @media (max-width: 520px) {
+    /* Full-width stacked CTAs across the whole phone range (not just <=400),
+       so large phones (412-430px) never show a ragged content-width pair when
+       labels are long enough to wrap. */
+    .btnrow .btn { flex: 1 1 100%; justify-content: center; }
+  }
+  @media (max-width: 400px) {
+    .hero-s h1 { font-size: clamp(30px,9vw,44px); }
+  }
+</style>

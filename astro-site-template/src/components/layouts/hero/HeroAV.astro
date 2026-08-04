@@ -1,0 +1,72 @@
+---
+/**
+ * layouts / HeroAV — the bento hero: an 8-column copy "tile" (eyebrow, Spectral
+ * display headline with an italic cobalt accent, lede, pill CTAs) beside a
+ * 4-column art-directed .plate. The plate keeps its designed .sc1 duotone
+ * "scene" as the fallback until hero.image is set (the photo then layers over).
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#reserve';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const imageCaption = hero.imageCaption || '';
+---
+<section class="hero" aria-label="Hero">
+  <div class="wrap">
+    <div class="grid">
+      <div class="tile hero-tile reveal">
+        {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+        {headlineLines.length > 0 && (
+          <h1>
+            {headlineLines.map((line: string, i: number) => (
+              <span class="ln" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+            ))}
+          </h1>
+        )}
+        {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+        {(cta1Text || cta2Text) && (
+          <div class="btnrow">
+            {cta1Text && <a href={cta1Href} class="btn btn--fill" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+            {cta2Text && <a href={cta2Href} class="btn btn--ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+          </div>
+        )}
+      </div>
+      <figure class="plate hero-img reveal">
+        <div class="ph sc1" role="img" aria-label="Hero" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+        {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<style>
+  .hero-tile { grid-column: span 8; display: flex; flex-direction: column; justify-content: center; min-height: 440px; }
+  .hero-tile h1 { font-size: clamp(40px,5.2vw,74px); margin: .18em 0 .3em; color: var(--ink); }
+  .hero-tile h1 .ln { display: inline; }
+  .hero-tile h1 :global(em) { font-style: italic; color: var(--accent); }
+  .hero-tile .lede { font-size: 18px; color: var(--ink-soft); max-width: 44ch; margin-bottom: 28px; }
+  .hero-img { grid-column: span 4; min-height: 440px; margin: 0; }
+
+  @media (max-width: 860px) {
+    .hero-tile { grid-column: span 12; min-height: 0; }
+    .hero-img { grid-column: span 12; min-height: 300px; }
+  }
+  @media (max-width: 760px) {
+    .hero-tile h1 { font-size: clamp(34px,10vw,58px); line-height: 1.02; }
+    .hero-tile .lede { font-size: 16px; margin-bottom: 22px; }
+    .hero-img { min-height: 260px; }
+  }
+  @media (max-width: 520px) {
+    .hero-tile h1 { font-size: clamp(30px,9vw,46px); }
+    .btnrow { flex-direction: column; align-items: stretch; }
+    .btnrow .btn { justify-content: center; }
+  }
+</style>

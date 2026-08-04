@@ -1,0 +1,48 @@
+---
+/**
+ * salonspa / AboutAN — "the studio" split: an art-directed .plate figure left
+ * (keeping its .scene-interior duotone as the designed fallback until
+ * about.image is set) and warm editorial copy right, the first paragraph in
+ * Didot. about.headline / imageCaption are optional and hidden when unset.
+ *
+ * The plate's corner mark reuses footer.brand so it stays the studio name and
+ * editable.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const brand = (content as any).footer?.brand || '';
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+---
+<section class="sec about" id="about">
+  <div class="wrap about-grid">
+    <figure class="about-fig plate grain reveal">
+      <div class="ph scene-interior" data-image-field="about.image" style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''}></div>
+      {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
+      {brand && <span class="mark" data-field="footer.brand">{brand}</span>}
+    </figure>
+    <div class="about-copy reveal">
+      {tag && <span class="eyebrow" style="display:block;margin-bottom:18px;" data-field="about.tag">{tag}</span>}
+      {headline && <h2 class="about-h" data-field="about.headline" set:html={headline}></h2>}
+      {paragraphs.map((p: string, i: number) => (
+        <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
+      ))}
+    </div>
+  </div>
+</section>
+<style>
+  .about-grid { display: grid; grid-template-columns: .95fr 1.05fr; gap: 70px; align-items: center; }
+  @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 40px; } }
+  .about-fig { aspect-ratio: 4/5; }
+  .about-h { font-size: clamp(30px,4vw,52px); color: var(--ink); margin: 0 0 20px; }
+  .about-copy p:first-of-type { font-family: var(--disp); font-size: 28px; line-height: 1.34; color: var(--ink); margin-bottom: .7em; }
+  .about-copy p { color: var(--ink2); }
+  @media (max-width: 760px) {
+    .about-grid { grid-template-columns: 1fr; gap: 32px; }
+    .about-copy p:first-of-type { font-size: 22px; line-height: 1.4; }
+  }
+</style>

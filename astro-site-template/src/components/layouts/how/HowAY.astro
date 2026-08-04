@@ -1,0 +1,44 @@
+---
+/**
+ * layouts / HowAY — "how it works" four-step editorial row (lp-20's .how4): each
+ * step sits under a plum top-rule with an italic plum numeral, a serif title and
+ * a muted body line. Reads content.how.steps (canonical `body`, legacy `desc`).
+ * Collapses 4 → 2 → 1 columns as the viewport narrows.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how">
+    <div class="wrap">
+      {tag && <span class="eyebrow s-eb reveal" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="s-h reveal" data-field="how.headline" set:html={headline}></h2>}
+      <div class="how4">
+        {steps.map((step, i) => (
+          <div class="st reveal" data-delay={String((i % 4) + 1)}>
+            <div class="k" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+            <h3 data-field={`how.steps.${i}.title`}>{step.title}</h3>
+            {(step.body ?? step.desc ?? step.description) && (
+              <p data-field={`how.steps.${i}.body`}>{step.body ?? step.desc ?? step.description}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .how { background: var(--paper-2); }
+  .how4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 34px; }
+  .how4 .st { border-top: 2px solid var(--accent); padding-top: 18px; }
+  .how4 .st .k { font-family: var(--serif); font-style: italic; font-size: 32px; color: var(--accent); line-height: 1; }
+  .how4 h3 { font-size: 19px; margin: 8px 0; color: var(--ink); }
+  .how4 p { color: var(--muted); font-size: 14px; }
+  @media (max-width: 900px) { .how4 { grid-template-columns: repeat(2,1fr); gap: 30px; } }
+  @media (max-width: 760px) { .how4 { grid-template-columns: 1fr; } }
+</style>

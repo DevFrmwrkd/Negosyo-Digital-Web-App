@@ -112,4 +112,13 @@ const badge = hero.tag || '';
     .heroY-stack { height: 340px; margin-top: 10px; }
     .heroY-headline { margin: 18px 0; }
   }
+  @media (max-width: 760px) {
+    .heroY { padding: clamp(28px, 6vw, 56px) 0 clamp(44px, 7vw, 72px); }
+    .heroY-sub { max-width: 100%; }
+  }
+  @media (max-width: 520px) {
+    .heroY-headline { font-size: clamp(40px, 13vw, 60px); margin: 14px 0; }
+    .heroY-stack { height: 300px; }
+    .heroY-badge { font-size: 13px; padding: 7px 14px; }
+  }
 </style>

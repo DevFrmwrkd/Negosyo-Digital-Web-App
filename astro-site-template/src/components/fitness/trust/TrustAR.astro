@@ -1,0 +1,46 @@
+---
+/**
+ * fitness / TrustAR — the "training ledger": a lime-ruled grid of tally cells
+ * under the hero, each an oversized Arial-Black lime number over a mono
+ * uppercase label (lp-06's "5 coaches · 30+ classes · rating · 6 days" band).
+ *
+ * GBP-BOUND: a cell whose num is a rating / review count is served live from
+ * the Google Business Profile — the star cell renders its num via set:html so
+ * a "★★★★★" string still styles as designed. Do not hardcode those values.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="ledger" aria-label="The training ledger">
+    <div class="wrap">
+      {cells.map((cell, i) => (
+        <div class="c reveal" data-delay={i % 4}>
+          {cell.num && <div class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></div>}
+          {cell.label && <div class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</div>}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .ledger { background: var(--panel); border-bottom: 3px solid var(--lime); }
+  .ledger .wrap { display: grid; grid-template-columns: repeat(4,1fr); padding: 0 28px; }
+  .ledger .c { padding: 40px 24px; border-right: 1px solid var(--line); position: relative; }
+  .ledger .c:last-child { border-right: none; }
+  .ledger .c .n { font-family: var(--disp); font-size: clamp(46px,6vw,76px); color: var(--lime); line-height: .86; }
+  .ledger .c .t { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ash); margin-top: 10px; }
+  .ledger .c :global(.stars) { color: var(--lime); letter-spacing: 2px; font-size: 26px; }
+  @media (max-width: 900px) { .ledger .wrap { grid-template-columns: repeat(2,1fr); } }
+  /* Phone: one column so oversized Arial-Black tally numbers (admin/GBP-bound,
+     can be wide e.g. "1,200+") never overflow a narrow 2-col cell at 360px.
+     Media queries sit AFTER the base .c rules so these overrides win on order;
+     swap the vertical column rules for horizontal separators between cells. */
+  @media (max-width: 760px) {
+    .ledger .wrap { grid-template-columns: 1fr; }
+    .ledger .c { padding: 30px 24px; border-right: none; border-bottom: 1px solid var(--line); }
+    .ledger .c:last-child { border-bottom: none; }
+  }
+</style>

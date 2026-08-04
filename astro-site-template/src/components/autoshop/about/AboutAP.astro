@@ -1,0 +1,55 @@
+---
+/**
+ * autoshop / AboutAP — "the shop" split: a numbered stencil section head over
+ * condensed serif copy left, an art-directed .plate figure right. The figure
+ * keeps its .scene-shop duotone as the designed fallback until about.image is
+ * set. The amber corner .tag is decorative frame chrome (like the gallery
+ * marks); the .cap caption is editable via about.imageCaption.
+ *
+ * about.quote and about.signature are optional extras that stay hidden when
+ * unset (mirrors the AM content model). about.tag drives the "// 01" snum.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+const imageCaption = about.imageCaption || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+---
+<section class="sec seamtop about" id="about">
+  <div class="wrap">
+    {(tag || headline) && (
+      <div class="sec-head">
+        {tag && <span class="snum" data-field="about.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
+      </div>
+    )}
+    <div class="about-grid">
+      <div class="about-copy reveal">
+        {paragraphs.map((p: string, i: number) => (
+          <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
+        ))}
+        {quote && <blockquote class="about-quote" data-field="about.quote">“{quote}”</blockquote>}
+        {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
+      </div>
+      <figure class="about-fig plate reveal">
+        <div class="ph scene-shop" data-image-field="about.image" style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''}></div>
+        <span class="tag" aria-hidden="true">The shop</span>
+        {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+    </div>
+  </div>
+</section>
+<style>
+  .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 56px; align-items: center; }
+  @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 36px; } }
+  .about-copy p:first-of-type { font-size: 22px; color: var(--off); line-height: 1.45; }
+  .about-copy p { color: var(--concrete); }
+  .about-quote { font-family: var(--cond); font-weight: bold; font-size: clamp(20px,2.4vw,26px); text-transform: uppercase; letter-spacing: .02em; color: var(--amber); margin: 8px 0 0; padding-left: 16px; border-left: 3px solid var(--amber); }
+  .about-sign { margin-top: 14px; font-style: italic; color: var(--concrete); }
+  .about-fig { aspect-ratio: 5/4; border: 1px solid var(--line); }
+</style>

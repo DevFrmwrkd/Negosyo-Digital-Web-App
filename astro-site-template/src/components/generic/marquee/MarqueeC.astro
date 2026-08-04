@@ -12,4 +12,6 @@ const doubled = `${text} ◆ ${text} ◆`;
   .marquee-track { display: flex; white-space: nowrap; font-family: var(--disp); font-size: 34px; text-transform: uppercase; padding: 14px 0; width: max-content; animation: scrollx 26s linear infinite; color: var(--ink); }
   .marquee-track :global(i) { margin: 0 1.6rem; color: var(--forest); font-style: normal; }
   @keyframes scrollx { to { transform: translateX(-50%); } }
+  @media (max-width: 760px) { .marquee-track { font-size: 24px; padding: 11px 0; } }
+  @media (max-width: 520px) { .marquee-track { font-size: 20px; } }
 </style>

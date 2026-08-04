@@ -1,0 +1,43 @@
+---
+/**
+ * layouts / WhyAW — broadsheet "what sets us apart": a three-column row of
+ * reasons divided by vertical hairlines, each a serif title over a muted line.
+ * Mirrors lp-19's "WHY / broadsheet" block.
+ *
+ * Reads content.why.items (title + canonical body, legacy desc / description).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+const tag = why.tag || '';
+const headline = why.headline || '';
+const items: Array<{ title: string; body?: string; desc?: string; description?: string }> =
+  Array.isArray(why.items) ? why.items : [];
+---
+{items.length > 0 && (
+  <section class="why" aria-label="Why us">
+    {tag && <div class="sec-lbl" data-field="why.tag">{tag}</div>}
+    {headline && <h2 class="sec-h" data-field="why.headline" set:html={headline}></h2>}
+    <div class="why-row">
+      {items.map((item, i) => (
+        <div class="wh reveal" data-delay={i > 0 ? String(i) : undefined}>
+          <h4 data-field={`why.items.${i}.title`}>{item.title}</h4>
+          {(item.body ?? item.desc ?? item.description) && (
+            <p data-field={`why.items.${i}.body`}>{item.body ?? item.desc ?? item.description}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .why-row { display: grid; grid-template-columns: repeat(3,1fr); }
+  .why-row .wh { padding: 0 28px; border-left: 1px solid var(--line); }
+  .why-row .wh:first-child { padding-left: 0; border-left: none; }
+  .wh h4 { font-family: var(--serif); font-size: 22px; margin-bottom: 10px; color: var(--ink); }
+  .wh p { font-size: 14px; color: var(--muted); }
+  @media (max-width: 760px) {
+    .why-row { grid-template-columns: 1fr; gap: 26px; }
+    .why-row .wh { border-left: none; padding: 0; }
+  }
+</style>

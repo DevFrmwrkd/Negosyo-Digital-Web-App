@@ -1,0 +1,160 @@
+---
+/**
+ * retail / HeroAO — lp-03's Swiss-grid masthead hero. A ruled two-column
+ * front page: oversized uppercase headline + lede + CTAs on the left, an
+ * art-directed .plate figure (designed .scene-store duotone until hero.image is
+ * set) with a stencilled crate tag/caption on the right, over an optional
+ * key/value meta grid.
+ *
+ * Signature twist: the INDEX-NAV "department index" band (lp-03's oversized
+ * index-number department nav) renders directly under the hero — decorative
+ * chrome mirroring the Services departments, so it carries no editable field and
+ * links to the #dept-N anchors ServicesAO renders. It derives its labels from
+ * content.services items when present, else a hardware default so it always
+ * reads as designed.
+ *
+ * hero.meta[] (the ruled stat grid), hero.tag (crate stamp) and
+ * hero.imageCaption (plate strap) are optional extras — hidden when unset.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : (layout.businessName ? [layout.businessName] : []));
+const sub = hero.sub || '';
+const tag = hero.tag || '';
+const imageCaption = hero.imageCaption || '';
+const meta: Array<{ label?: string; value?: string }> = Array.isArray(hero.meta) ? hero.meta : [];
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#location';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+
+// Department index labels: the Services titles (the day's catalog), else a
+// hardware default so the signature index band always reads as designed.
+const services = content.services || {};
+const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+const deptFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
+const hasServices = deptFromServices.length > 0;
+const indexLabels = hasServices
+  ? deptFromServices.slice(0, 6)
+  : ['Fasteners', 'Paint', 'Plumbing', 'Electrical', 'Tools', 'Home & garden'];
+---
+<section class="hero" aria-label="Hero">
+  <div class="wrap">
+    <div class="hero-l">
+      {kicker && <div class="kicker" data-field="hero.kicker">{kicker}</div>}
+      {headlineLines.length > 0 && (
+        <h1>
+          {headlineLines.map((line: string, i: number) => (
+            <><span class="ln" data-field={`hero.headlineLines.${i}`} set:html={line}></span>{i < headlineLines.length - 1 ? <br /> : ''}</>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="lede" data-field="hero.sub" set:html={sub}></p>}
+      {(cta1Text || cta2Text) && (
+        <div class="cta-row">
+          {cta1Text && <a href={cta1Href} class="btn btn--fill" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a href={cta2Href} class="btn btn--ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+    <div class="hero-r">
+      <figure class="hero-fig plate grid-bg" aria-label="Storefront">
+        <div class="ph scene-store" role="img" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');background-size:cover;background-position:center;` : ''}></div>
+        {tag && <span class="tag" data-field="hero.tag">{tag}</span>}
+        {imageCaption && <figcaption class="cap" data-field="hero.imageCaption">{imageCaption}</figcaption>}
+      </figure>
+      {meta.length > 0 && (
+        <div class="hero-meta">
+          {meta.map((m, i) => (
+            <div class="m">
+              {m.label && <div class="mk" data-field={`hero.meta.${i}.label`}>{m.label}</div>}
+              {m.value && <div class="mv" data-field={`hero.meta.${i}.value`}>{m.value}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+<nav class="indexband" aria-label="Departments index">
+  <div class="head">
+    <span class="t">The department index</span>
+    <span class="h">Tap a number ↓</span>
+  </div>
+  <div class="index-list">
+    {indexLabels.map((label, i) => (
+      <a class="index-item" href={hasServices ? `#dept-${i + 1}` : '#departments'}>
+        <div class="no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+        <div class="nm">{label}</div>
+        <span class="arw" aria-hidden="true">→</span>
+      </a>
+    ))}
+  </div>
+</nav>
+<style>
+  .hero { background: var(--paper); border-bottom: 2px solid var(--ink); }
+  .hero .wrap { display: grid; grid-template-columns: 1.35fr .9fr; gap: 0; }
+  @media (max-width: 900px) { .hero .wrap { grid-template-columns: 1fr; } }
+  .hero-l { padding: 64px 40px 54px 0; border-right: 2px solid var(--ink); }
+  @media (max-width: 900px) { .hero-l { border-right: none; padding-right: 0; } }
+  .hero-l .kicker { margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(48px,8vw,116px); text-transform: uppercase; }
+  .hero h1 .ln { color: inherit; }
+  .hero h1 :global(.yel) { color: var(--red); }
+  .hero .lede { max-width: 44ch; font-size: 20px; color: var(--ink2); margin: 24px 0 30px; }
+  .hero .cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero-r { padding: 0 0 0 40px; display: flex; flex-direction: column; }
+  @media (max-width: 900px) { .hero-r { padding: 34px 0 0; } }
+  .hero-fig { flex: 1; min-height: 340px; border: 2px solid var(--ink); }
+  .hero-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2px solid var(--ink); border-top: none; }
+  .hero-meta .m { padding: 16px 18px; border-right: 2px solid var(--ink); border-top: 2px solid var(--ink); }
+  .hero-meta .m:nth-child(-n+2) { border-top: none; }
+  .hero-meta .m:nth-child(2n) { border-right: none; }
+  .hero-meta .mk { font-family: var(--mono); font-size: 11px; letter-spacing: .08em; color: var(--steel); text-transform: uppercase; }
+  .hero-meta .mv { font-weight: 800; font-size: 20px; margin-top: 4px; }
+
+  /* Signature index band. */
+  .indexband { background: var(--ink); color: var(--paper); overflow: hidden; }
+  .indexband .head { display: flex; justify-content: space-between; align-items: baseline; padding: 24px 30px 8px; flex-wrap: wrap; gap: 10px; }
+  .indexband .head .t { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--yellow); }
+  .indexband .head .h { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; color: var(--paper2); }
+  .index-list { display: grid; grid-template-columns: repeat(6,1fr); }
+  @media (max-width: 900px) { .index-list { grid-template-columns: repeat(3,1fr); } }
+  @media (max-width: 520px) { .index-list { grid-template-columns: repeat(2,1fr); } }
+  .index-item { border-left: 1px solid rgba(243,239,228,.16); border-top: 1px solid rgba(243,239,228,.16); padding: 22px 18px 20px; position: relative; overflow: hidden; transition: background .3s; }
+  .index-item:hover { background: var(--red); color: var(--paper); }
+  .index-item .no { font-family: var(--num); font-size: clamp(46px,6vw,88px); line-height: .9; color: transparent; -webkit-text-stroke: 1.5px rgba(243,239,228,.5); transition: color .3s, -webkit-text-stroke .3s; }
+  .index-item:hover .no { color: var(--yellow); -webkit-text-stroke: 1.5px var(--yellow); }
+  .index-item .nm { font-weight: 800; font-size: 16px; text-transform: uppercase; margin-top: 10px; }
+  .index-item .arw { position: absolute; right: 14px; bottom: 14px; opacity: 0; transform: translateX(-6px); transition: .3s; color: var(--yellow); font-weight: 800; }
+  .index-item:hover .arw { opacity: 1; transform: none; }
+
+  /* ── Mobile: single column, headline scaled so long uppercase words never clip
+     a 360px screen, softer padding, and stacked full-width CTAs. */
+  @media (max-width: 760px) {
+    .hero .wrap { grid-template-columns: 1fr; }
+    .hero-l { padding: 40px 0 30px; border-right: none; }
+    .hero-l .kicker { margin-bottom: 14px; }
+    .hero h1 { font-size: clamp(38px,10vw,64px); line-height: 1.02; overflow-wrap: break-word; }
+    .hero .lede { font-size: 17px; margin: 18px 0 24px; }
+    .hero-r { padding: 26px 0 0; }
+    .hero-fig { min-height: 260px; }
+    .indexband .head { padding: 20px 20px 6px; }
+    .index-item { padding: 18px 16px 16px; }
+  }
+  @media (max-width: 520px) {
+    .hero h1 { font-size: clamp(32px,11vw,48px); }
+    .hero .cta-row { flex-direction: column; align-items: stretch; }
+    .hero .cta-row .btn { width: 100%; justify-content: center; }
+    .hero-fig { min-height: 220px; }
+    .hero-meta { grid-template-columns: 1fr; }
+    .hero-meta .m { border-right: none; }
+    .hero-meta .m:nth-child(2) { border-top: 2px solid var(--ink); }
+    .index-item .nm { font-size: 14px; }
+  }
+</style>

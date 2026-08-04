@@ -37,4 +37,14 @@ const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isAr
   .gal-sub { max-width: 56ch; color: var(--chalk); margin: -14px 0 26px; }
   .gal-grid { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
   .gal-tile { min-height: 240px; }
+
+  /* ---- Mobile (<=760): full-width single-column documented-work tiles ---- */
+  @media (max-width: 760px) {
+    .gal-grid { grid-template-columns: 1fr; }
+    .gal-h { font-size: clamp(27px, 6.6vw, 44px); margin: 14px 0 20px; }
+    .gal-sub { margin: -8px 0 20px; }
+  }
+  @media (max-width: 520px) {
+    .gal-h { font-size: clamp(24px, 7.4vw, 36px); }
+  }
 </style>

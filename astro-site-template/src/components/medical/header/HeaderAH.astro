@@ -22,15 +22,45 @@ const bookHref = hero.cta1?.href || '#location';
   <div class="wrap nav-inner">
     <a href="#top" class="brand" data-field="footer.brand" set:html={brand}></a>
     {navLinks.length > 0 && (
-      <nav class="nav-links" aria-label="Main">
+      <nav class="nav-links" id="med-nav-drawer" aria-label="Main">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
       </nav>
     )}
-    <a class="btn line nav-book" href={bookHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{bookText}</a>
+    <div class="nav-actions">
+      <a class="btn line nav-book" href={bookHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{bookText}</a>
+      {navLinks.length > 0 && (
+        <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="med-nav-drawer">
+          <span></span><span></span><span></span>
+        </button>
+      )}
+    </div>
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var header = document.querySelector('.med-nav');
+    if (!header) return;
+    var burger = header.querySelector('.nav-burger');
+    if (!burger) return;
+    function setOpen(open) {
+      header.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!header.classList.contains('open'));
+    });
+    // Tapping a drawer link closes the menu.
+    header.querySelectorAll('.nav-links a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Esc closes the drawer.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && header.classList.contains('open')) setOpen(false);
+    });
+  })();
+</script>
 <style>
   .med-nav { background: var(--porcelain); padding-top: 26px; }
   .nav-inner {
@@ -49,6 +79,49 @@ const bookHref = hero.cta1?.href || '#location';
     font-size: 11.5px; color: var(--muted); transition: color .2s;
   }
   .nav-links a:hover { color: var(--seafoam-deep); }
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
   .nav-book { min-height: 44px; padding: 10px 22px; font-size: 14px; }
-  @media (max-width: 720px) { .nav-links { display: none; } }
+
+  /* Hamburger — hidden on desktop, revealed with the drawer <=760px. */
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 0 10px; background: transparent;
+    border: 1px solid var(--rule); border-radius: 2px; cursor: pointer;
+  }
+  .nav-burger span {
+    display: block; height: 2px; width: 100%; background: var(--ink);
+    transition: transform .3s ease, opacity .2s ease;
+  }
+
+  @media (max-width: 760px) {
+    .med-nav { position: relative; z-index: 40; padding-top: 18px; }
+    .nav-inner { gap: 14px; padding-bottom: 16px; }
+    .brand { font-size: 20px; }
+    .nav-burger { display: flex; }
+
+    /* Nav list becomes a full-width porcelain drawer under the bar. */
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; gap: 0; align-items: stretch;
+      background: var(--porcelain); border-bottom: 1px solid var(--rule);
+      box-shadow: 0 16px 28px rgba(31, 42, 40, .14);
+      padding: 4px 22px 14px; z-index: 50;
+      opacity: 0; visibility: hidden; transform: translateY(-8px);
+      transition: opacity .25s ease, transform .25s ease, visibility .25s ease;
+    }
+    .med-nav.open .nav-links { opacity: 1; visibility: visible; transform: none; }
+    .nav-links a {
+      display: flex; align-items: center; min-height: 48px;
+      font-size: 12.5px; letter-spacing: .16em; border-top: 1px solid var(--rule);
+    }
+
+    /* Bars morph to an X when open. */
+    .med-nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .med-nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    .med-nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  }
+
+  /* On the smallest phones drop the bar CTA so brand + burger never crowd
+     (the drawer links + floating book pill still cover booking). */
+  @media (max-width: 400px) { .nav-book { display: none; } }
 </style>

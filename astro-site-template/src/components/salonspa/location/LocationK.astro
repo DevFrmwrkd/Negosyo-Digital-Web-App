@@ -186,4 +186,9 @@ const hasAddress = !!address;
     .loc-grid { grid-template-columns: 1fr; }
     #map { min-height: 320px; order: -1; }
   }
+  @media (max-width: 520px) {
+    .loc-info { padding: 28px 22px; }
+    .loc-actions { flex-direction: column; align-items: stretch; }
+    .loc-actions .btn { width: 100%; justify-content: center; }
+  }
 </style>

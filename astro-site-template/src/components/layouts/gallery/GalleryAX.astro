@@ -1,0 +1,52 @@
+---
+/**
+ * layouts / GalleryAX — brutalist "a look inside": a sec-bar over a three-column
+ * bordered grid of square .plate tiles. A cycling .sc-* duotone stands in as the
+ * designed fallback until a photo is set (the photo then layers over it), with a
+ * bone mono caption bar and a corner index. Mirrors lp-21's "GALLERY" block.
+ *
+ * Reads content.gallery.items (image / caption). Auto-hides when empty.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const headline = gallery.headline || 'A look inside';
+const idx = gallery.idx || '[ GALLERY ]';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+const scenes = ['sc1', 'sc2', 'sc3', 'sc4', 'sc5', 'sc6'];
+---
+{items.length > 0 && (
+  <section class="grid-sec" id="gallery" aria-label="Gallery">
+    <div class="sec-bar">
+      <h2 data-field="gallery.headline" set:html={headline}></h2>
+      <span class="idx" data-field="gallery.idx">{idx}</span>
+    </div>
+    <div class="gal-b reveal">
+      {items.map((item, i) => (
+        <figure class="plate">
+          <div class={`ph ${scenes[i % scenes.length]}`} data-image-field={`gallery.items.${i}.image`} style={item.image ? `background-image:url('${item.image}');` : ''}></div>
+          {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          <span class="mark">{String(i + 1).padStart(2, '0')}</span>
+        </figure>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .gal-b { display: grid; grid-template-columns: repeat(3,1fr); }
+  .gal-b .plate { border: none; border-right: 2px solid var(--line); border-bottom: 2px solid var(--line); aspect-ratio: 1/1; margin: 0; }
+  .gal-b .plate:nth-child(3n) { border-right: none; }
+  .gal-b .plate .ph { transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+  .gal-b .plate:hover .ph { transform: scale(1.05); }
+  @media (max-width: 900px) {
+    .gal-b { grid-template-columns: repeat(2,1fr); }
+    .gal-b .plate:nth-child(3n) { border-right: 2px solid var(--line); }
+    .gal-b .plate:nth-child(2n) { border-right: none; }
+  }
+  @media (max-width: 760px) {
+    .gal-b { grid-template-columns: 1fr; }
+    .gal-b .plate { border-right: none; aspect-ratio: 16/10; }
+    .gal-b .plate:nth-child(2n), .gal-b .plate:nth-child(3n) { border-right: none; }
+  }
+</style>

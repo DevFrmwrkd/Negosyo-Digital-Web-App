@@ -51,4 +51,9 @@ const imgAria = 'About us — photo';
   .about-plate { min-height: 250px; }
   .about-card-t { font-family: var(--serif); font-size: 20px; color: var(--ink); margin-bottom: 6px; }
   .about-card-b { color: var(--ink-soft); font-size: 15px; }
+  /* Stack copy over media on mobile. */
+  @media (max-width: 760px) {
+    .about-sect .grid2 { grid-template-columns: 1fr; }
+    .about-plate { min-height: 220px; }
+  }
 </style>

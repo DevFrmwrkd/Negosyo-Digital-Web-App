@@ -38,4 +38,10 @@ const iconPaths = [
   .why-cell h3 { font-size: 30px; font-weight: 400; }
   .why-cell p { margin-top: 12px; color: var(--ink-soft); font-size: 16px; }
   @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; gap: 40px; } }
+  @media (max-width: 520px) {
+    .why-grid { gap: 32px; margin-top: 40px; }
+    .why-cell .badge { width: 72px; height: 72px; margin-bottom: 16px; }
+    .why-cell svg { width: 30px; height: 30px; }
+    .why-cell h3 { font-size: 26px; }
+  }
 </style>

@@ -100,6 +100,23 @@ const __fontHref = buildFontHref(__themePairing);
       .reveal { opacity: 1 !important; transform: none !important; }
       html { scroll-behavior: auto; }
     }
+    /* ---------------------------------------------------------------- */
+    /* Mobile-first tuning — shared scaffolding only (wrap padding,      */
+    /* section rhythm, display-heading fit). Per-section grids stack     */
+    /* inside each *B component. Desktop rules above are untouched.      */
+    /* ---------------------------------------------------------------- */
+    @media (max-width: 760px) {
+      .wrap { padding: 0 20px; }
+      .sec { padding: 66px 0; }
+      .sec h2 { font-size: clamp(32px, 8vw, 58px); line-height: 1.06; }
+    }
+    @media (max-width: 520px) {
+      .wrap { padding: 0 18px; }
+      .sec { padding: 52px 0; }
+      .sec h2 { font-size: clamp(29px, 8.6vw, 44px); }
+      /* Full-width primary CTAs on phones. */
+      .btn { width: 100%; justify-content: center; }
+    }
   </style>
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}
   <style is:global set:html={__overrideCss}></style>

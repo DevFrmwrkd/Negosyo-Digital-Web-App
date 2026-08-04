@@ -58,4 +58,15 @@ const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layou
   .heroN-imgwrap { margin-top: clamp(60px, 8vw, 100px); }
   .heroN-img { aspect-ratio: 16 / 9; overflow: hidden; }
   .heroN-img .bg-img { width: 100%; height: 100%; background-size: cover; background-position: center; }
+  @media (max-width: 760px) {
+    .heroN { padding-top: clamp(104px, 24vw, 150px); }
+    .heroN-headline { font-size: clamp(38px, 11vw, 76px); }
+    .heroN-imgwrap { margin-top: clamp(40px, 10vw, 70px); }
+  }
+  @media (max-width: 520px) {
+    .heroN-headline { font-size: clamp(32px, 11vw, 52px); }
+    .heroN-img { aspect-ratio: 4 / 3; }
+    .heroN-cta { flex-direction: column; align-items: stretch; }
+    .heroN-cta .btn { width: 100%; justify-content: center; }
+  }
 </style>

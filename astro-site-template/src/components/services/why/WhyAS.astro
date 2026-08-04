@@ -1,0 +1,45 @@
+---
+/**
+ * services / WhyAS — "why us" reasons: a two-up grid of bordered .why-cell
+ * tiles, each led by a red stamped index pill (decorative), a Courier title and
+ * a muted body line. Reads content.why.items (canonical `body`, legacy `desc`).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+const headline = why.headline || '';
+const tag = why.tag || '';
+const items: Array<{ title: string; body?: string; desc?: string; description?: string }> =
+  Array.isArray(why.items) ? why.items : [];
+---
+{items.length > 0 && (
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="snum" aria-hidden="true">SEC 03</span>
+        {headline && <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>}
+        {tag && <span class="lbl" style="margin-left:auto;" data-field="why.tag">{tag}</span>}
+      </div>
+      <div class="why-grid">
+        {items.map((item, i) => (
+          <div class="why-cell reveal" data-delay={String(i % 2)}>
+            <span class="k" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <h3 data-field={`why.items.${i}.title`}>{item.title}</h3>
+            {(item.body ?? item.desc ?? item.description) && (
+              <p data-field={`why.items.${i}.body`}>{item.body ?? item.desc ?? item.description}</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<div class="wrap"><div class="perf"></div></div>
+<style>
+  .why-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 24px; }
+  @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; } }
+  .why-cell { background: var(--card); border: 2px solid var(--ink); padding: 30px 28px; position: relative; }
+  .why-cell .k { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--card); background: var(--red); display: inline-block; padding: 4px 10px; letter-spacing: .08em; }
+  .why-cell h3 { font-family: var(--mono); font-size: 22px; margin: 16px 0 8px; color: var(--ink); }
+  .why-cell p { color: var(--muted); font-size: 15px; margin: 0; font-family: var(--sans); }
+</style>

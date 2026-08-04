@@ -82,6 +82,15 @@ const tagText = hero.tag || '';
     .hero-copy { padding-top: 128px; padding-bottom: 56px; max-width: none; }
     .hero-media { height: 78vw; min-height: 380px; }
   }
+  @media (max-width: 760px) {
+    .hero-copy { padding-top: 112px; padding-bottom: 48px; }
+    .hero-sub { margin: 26px 0 34px; }
+  }
+  @media (max-width: 520px) {
+    .hero h1 { font-size: clamp(38px, 11vw, 56px); line-height: 1.05; }
+    .hero-media { height: 84vw; min-height: 300px; }
+    .hero-tag { font-size: 17px; padding: 12px 18px; bottom: 24px; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .hero .label, .hero-sub, .hero-cta, .hero-tag { opacity: 1; }
     .hero h1 .ln > span { transform: none; }

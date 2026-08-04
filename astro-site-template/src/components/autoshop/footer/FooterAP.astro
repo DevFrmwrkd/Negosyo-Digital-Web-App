@@ -1,0 +1,126 @@
+---
+/**
+ * autoshop / FooterAP — near-black footer (stencil brand with a hazard-chevron
+ * badge, amber-warm links) opened by a thin hazard rule, plus lp-04's floating
+ * Messenger pill. Every column auto-hides when empty, collapsing to the
+ * design's minimal three-line footer.
+ *
+ * The floating message pill reuses the hero's primary CTA (content.hero.cta1) —
+ * the same "message for a quote" action — so it stays editable and in sync; it
+ * renders only when that CTA (or the CTA-band's) has a link.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const f = (content as any).footer || {};
+const brand = f.brand || layout.businessName || 'Your Business';
+const blurb = f.blurb || f.brand_blurb || '';
+const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
+  ? f.visit.lines
+  : ([layout.contact?.address, layout.contact?.phone].filter(Boolean) as string[]);
+const explore: Array<{ text: string; href: string }> = Array.isArray(f.explore?.links) && f.explore.links.length
+  ? f.explore.links
+  : [];
+const hoursRows: Array<{ day: string; time: string }> = Array.isArray(f.hours) ? f.hours : [];
+const social: Array<{ platform: string; url: string }> = Array.isArray(f.social) && f.social.length
+  ? f.social
+  : (Array.isArray(layout.socialLinks) ? layout.socialLinks : []);
+const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
+const phone = layout.contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+
+// Floating message pill — reuse the hero's primary CTA (falls back to CTA-band).
+const hero = (content as any).hero || {};
+const cband = (content as any).ctaBand || {};
+const msgHref = hero.cta1?.href || cband.cta1?.href || '';
+const msgText = hero.cta1?.text || cband.cta1?.text || 'Message us';
+---
+<div class="hazard thin" aria-hidden="true"></div>
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="fcol">
+        <div class="brand" data-field="footer.brand"><span class="chev" aria-hidden="true"></span><span class="bn">{brand}</span></div>
+        {blurb && <p data-field="footer.blurb">{blurb}</p>}
+        {social.length > 0 && (
+          <div class="foot-social">
+            {social.map((s, i) => (
+              <a href={s.url} target="_blank" rel="noopener noreferrer"
+                 data-field={`footer.social.${i}.platform`}
+                 data-href-field={`footer.social.${i}.url`}>{s.platform}</a>
+            ))}
+          </div>
+        )}
+      </div>
+      {visitLines.length > 0 && (
+        <div class="fcol">
+          <div class="fh">Visit</div>
+          {visitLines.map((line, i) => (
+            line === phone && phone
+              ? <p><a href={`tel:${phoneDigits}`} data-field={`footer.visit.lines.${i}`}>{line}</a></p>
+              : <p data-field={`footer.visit.lines.${i}`}>{line}</p>
+          ))}
+        </div>
+      )}
+      {explore.length > 0 && (
+        <div class="fcol">
+          <div class="fh">Quick</div>
+          {explore.map((l, i) => (
+            <p><a href={l.href}
+               data-field={`footer.explore.links.${i}.text`}
+               data-href-field={`footer.explore.links.${i}.href`}>{l.text}</a></p>
+          ))}
+        </div>
+      )}
+      {hoursRows.length > 0 && (
+        <div class="fcol foot-hours">
+          <div class="fh">Hours</div>
+          {hoursRows.map((row, i) => (
+            <div class="hrow">
+              <span data-field={`footer.hours.${i}.day`}>{row.day}</span>
+              <span data-field={`footer.hours.${i}.time`}>{row.time}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+    {notes.length > 0 && (
+      <div class="foot-btm">
+        {notes.map((n, i) => (<span data-field={`footer.notes.${i}`}>{n}</span>))}
+      </div>
+    )}
+  </div>
+</footer>
+{msgHref && (
+  <a class="msgr" href={msgHref} rel="noopener" aria-label="Message us" data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.3 2 2 6.2 2 11.6c0 3 1.4 5.6 3.7 7.3v3.6l3.4-1.9c.9.3 1.9.4 2.9.4 5.7 0 10-4.2 10-9.5S17.7 2 12 2zm1 12.3l-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>
+    {msgText}
+  </a>
+)}
+<style>
+  footer { background: var(--black); color: var(--off); padding: 70px 0 30px; }
+  @media (max-width: 760px) { footer { padding: 48px 0 88px; } }
+  .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid var(--line); }
+  @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr; gap: 28px; } }
+  footer .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; color: var(--off); }
+  footer .brand .chev { display: inline-block; width: 26px; height: 20px; flex-shrink: 0; background: repeating-linear-gradient(-45deg,var(--amber) 0 5px,#0b0b0b 5px 10px); clip-path: polygon(0 0,70% 0,100% 100%,30% 100%); }
+  footer .brand .bn { font-family: var(--big); font-size: 28px; letter-spacing: .03em; text-transform: uppercase; }
+  footer .fh { font-family: var(--mono); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); margin-bottom: 12px; }
+  .fcol p { font-size: 15px; color: var(--concrete); margin: 0 0 7px; }
+  footer a { color: var(--concrete); }
+  footer a:hover { color: var(--amber); }
+  .foot-social { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .foot-social a { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; border: 1px solid var(--line); padding: 6px 12px; transition: color .2s, border-color .2s; }
+  .foot-social a:hover { color: var(--amber); border-color: var(--amber); }
+  .foot-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 260px; font-size: 14px; color: var(--concrete); padding: 2px 0; }
+  .foot-btm { display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap; padding-top: 22px; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; color: var(--steel); }
+
+  .msgr {
+    position: fixed; right: 18px; bottom: 18px; z-index: 70; display: inline-flex; align-items: center; gap: 9px;
+    background: var(--amber); color: #0b0b0b; padding: 13px 22px; font-family: var(--cond); font-weight: bold;
+    font-size: 15px; letter-spacing: .08em; text-transform: uppercase;
+    clip-path: polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);
+    box-shadow: 0 12px 30px -8px rgba(255,106,0,.5); transition: transform .25s;
+  }
+  .msgr:hover { transform: translateY(-3px); color: #0b0b0b; }
+  .msgr svg { width: 18px; height: 18px; fill: currentColor; }
+</style>

@@ -36,5 +36,9 @@ const iconPaths = [
   .why-cell svg { width: 28px; height: 28px; stroke: var(--ink); fill: none; stroke-width: 1.8; }
   .why-cell h3 { font-size: 26px; }
   .why-cell p { margin-top: 10px; color: var(--ink-soft); font-size: 16px; }
-  @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .why-grid { grid-template-columns: 1fr; gap: 16px; margin-top: 34px; }
+    .why-cell { padding: 26px; gap: 18px; }
+    .why-cell h3 { font-size: 23px; }
+  }
 </style>

@@ -1,0 +1,46 @@
+---
+/**
+ * layouts / AreaAW — broadsheet "service area" strip (lp-19's SERVICE-AREA block
+ * lifted into its own section): an accent eyebrow over hairline-outlined place
+ * pills that invert to accent on hover.
+ *
+ * Reads content.area.places (legacy items); optional headline / sub / body
+ * render above the pills when provided.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const body = area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area" aria-label="Service area">
+    {(headline || sub) && (
+      <div class="area-head reveal">
+        {headline && <h2 class="sec-h" style="margin-bottom:12px;" data-field="area.headline" set:html={headline}></h2>}
+        {sub && <p class="area-sub" data-field="area.sub">{sub}</p>}
+      </div>
+    )}
+    {tag && <div class="sec-lbl" data-field="area.tag">{tag}</div>}
+    <div class="areas reveal">
+      {places.map((place, i) => (
+        <span data-field={`area.places.${i}`}>{place}</span>
+      ))}
+    </div>
+    {body && <p class="area-body" data-field="area.body">{body}</p>}
+  </section>
+)}
+<style>
+  .area-head { margin-bottom: 18px; }
+  .area-sub { color: var(--muted); margin-top: 8px; max-width: 52ch; }
+  .areas { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 9px; }
+  .areas span {
+    font-family: var(--label); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+    border: 1px solid var(--line); padding: 8px 14px; color: var(--ink-soft); transition: .3s;
+  }
+  .areas span:hover { border-color: var(--accent); color: var(--accent); }
+  .area-body { color: var(--muted); margin-top: 16px; max-width: 60ch; }
+</style>

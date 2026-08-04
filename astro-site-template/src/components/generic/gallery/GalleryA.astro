@@ -107,11 +107,12 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
   .g-d { grid-column: span 4; height: 300px; }
   .g-e { grid-column: span 4; height: 300px; }
   @media (max-width: 760px) {
-    .gal-grid { grid-template-columns: 1fr 1fr; }
+    .gal-grid { grid-template-columns: 1fr; gap: 14px; margin-top: 32px; }
     .g-a, .g-b, .g-c, .g-d, .g-e {
-      grid-column: span 1;
-      height: 220px;
+      grid-column: auto;
+      height: 240px;
     }
-    .g-a { grid-column: span 2; }
+    /* Touch devices have no :hover — keep captions visible so they stay useful. */
+    .gtile .cap { opacity: 1; transform: none; }
   }
 </style>

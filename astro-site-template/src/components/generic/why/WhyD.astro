@@ -31,5 +31,8 @@ const items = Array.isArray(why.items) && why.items.length > 0 ? why.items : [];
   .why-cell .tick svg { width: 16px; height: 16px; stroke: var(--lime); fill: none; stroke-width: 2.4; }
   .why-cell h3 { font-size: 21px; }
   .why-cell p { margin-top: 8px; color: var(--muted); font-size: 15px; max-width: 42ch; }
-  @media (max-width: 760px) { .why-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .why-grid { grid-template-columns: 1fr; gap: 0 40px; margin-top: 32px; }
+    .why-cell { padding: 22px 0; }
+  }
 </style>

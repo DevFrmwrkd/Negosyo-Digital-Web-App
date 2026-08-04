@@ -33,4 +33,9 @@ const items = Array.isArray(faq.items) && faq.items.length ? faq.items : [];
   details[open] summary .pm { transform: rotate(45deg); }
   details .ans { padding: 0 28px 24px; color: var(--muted); max-width: 76ch; }
   details .ans::before { content: "$ "; font-family: var(--mono); color: var(--lime); }
+  @media (max-width: 760px) { .faq { margin-top: 32px; } }
+  @media (max-width: 520px) {
+    summary { padding: 20px; font-size: 18px; gap: 14px; }
+    details .ans { padding: 0 20px 20px; }
+  }
 </style>

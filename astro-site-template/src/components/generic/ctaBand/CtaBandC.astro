@@ -20,4 +20,14 @@ const ctaHref = band.cta?.href || band.primaryLink || '#visit';
   .cta-band h2 :global(em) { font-style: normal; color: var(--amber); }
   .cta-band .sub { margin-top: 18px; font-size: 13px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(var(--paper-rgb), .8); }
   .cta-band .btn { margin-top: 34px; }
+  @media (max-width: 760px) {
+    .cta-band { padding: 74px 0; }
+    .cta-band h2 { font-size: clamp(38px, 11vw, 84px); }
+    .cta-band .btn { margin-top: 28px; }
+  }
+  @media (max-width: 520px) {
+    .cta-band { padding: 56px 0; }
+    .cta-band h2 { font-size: clamp(30px, 11vw, 54px); }
+    .cta-band .btn { width: 100%; justify-content: center; }
+  }
 </style>

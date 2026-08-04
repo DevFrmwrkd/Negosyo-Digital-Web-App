@@ -146,4 +146,12 @@ const hasAddress = !!address;
     text-transform: uppercase; font-size: 12px; padding: 24px; text-align: center;
   }
   @media (max-width: 819px) { .loc-plate { min-height: 300px; } }
+  @media (max-width: 760px) {
+    .loc-h { font-size: clamp(28px, 6.4vw, 44px); }
+  }
+  @media (max-width: 520px) {
+    .loc-plate { min-height: 260px; }
+    .loc-phone { font-size: 20px; }
+    .loc-hours .hrow { max-width: none; }
+  }
 </style>

@@ -46,4 +46,11 @@ const items = Array.isArray(services.items) && services.items.length ? services.
     .zimg, .zrow:nth-child(even) .zimg { border-radius: 200px 200px 28px 28px; }
     .zimg .img { height: 300px; }
   }
+  @media (max-width: 520px) {
+    .zig { gap: 48px; margin-top: 44px; }
+    .zrow { gap: 18px; }
+    .zimg, .zrow:nth-child(even) .zimg { border-radius: 150px 150px 24px 24px; }
+    .zimg .img { height: 240px; }
+    .zrow p { font-size: 16px; }
+  }
 </style>

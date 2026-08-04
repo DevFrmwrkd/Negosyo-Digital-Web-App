@@ -50,4 +50,12 @@ const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq)
     .faq-grid { grid-template-columns: 1fr; }
     .faq-head { position: static; }
   }
+  @media (max-width: 760px) {
+    .faq { padding: clamp(48px, 11vw, 96px) 0; }
+    .faq h2 { font-size: clamp(28px, 7vw, 48px); }
+  }
+  @media (max-width: 520px) {
+    .faq h2 { font-size: clamp(26px, 8vw, 40px); }
+    details.qa summary { padding: 20px 0; gap: 14px; }
+  }
 </style>

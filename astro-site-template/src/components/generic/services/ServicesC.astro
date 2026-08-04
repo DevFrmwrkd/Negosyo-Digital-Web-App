@@ -34,9 +34,11 @@ const items: Array<{ num?: string; title: string; desc: string }> = Array.isArra
   .brow .leader { flex: 1; border-bottom: 2px dotted rgba(var(--paper-rgb), .4); transform: translateY(-6px); }
   .brow .bd { font-size: 14px; color: rgba(var(--paper-rgb), .78); max-width: 34ch; text-align: right; }
   @media (max-width: 760px) {
+    .board { box-shadow: 6px 6px 0 var(--ink); margin-top: 32px; }
     .board-in { padding: 10px 22px; }
-    .brow { flex-wrap: wrap; }
+    .brow { flex-wrap: wrap; gap: 10px; padding: 22px 0; }
+    .brow .bt { white-space: normal; }
     .brow .leader { display: none; }
-    .brow .bd { text-align: left; width: 100%; }
+    .brow .bd { text-align: left; width: 100%; max-width: none; }
   }
 </style>

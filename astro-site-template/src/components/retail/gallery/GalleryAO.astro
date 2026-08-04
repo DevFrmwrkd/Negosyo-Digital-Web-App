@@ -1,0 +1,55 @@
+---
+/**
+ * retail / GalleryAO — lp-03's "Inside the store" mosaic under the oversized §07
+ * index head. Tiles are art-directed .plate frames (a cycling .scene-* duotone
+ * stands in as the designed fallback; a photo layers over it via
+ * data-image-field when set), arranged in lp-03's grid where the first tile
+ * spans 2×2 and tiles 2 & 5 span two columns. A stencilled yellow crate number
+ * marks each frame (decorative). The section auto-hides only when there are no
+ * items at all.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const headline = gallery.headline || 'Inside the store';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+const scenes = ['scene-aisle', 'scene-paint', 'scene-tools', 'scene-counter', 'scene-truck', 'scene-store'];
+const spanFor = (i: number) => (i % 6 === 0 ? 'r1' : i % 6 === 1 ? 'r2' : i % 6 === 4 ? 'r5' : '');
+---
+{items.length > 0 && (
+  <section class="sec gallery" id="gallery">
+    <div class="wrap">
+      <div class="sec-head">
+        <div class="snum" aria-hidden="true">07</div>
+        <h2 class="reveal" data-field="gallery.headline" set:html={headline}></h2>
+      </div>
+      <div class="g-grid reveal">
+        {items.map((item, i) => (
+          <figure class={`plate grid-bg ${spanFor(i)}`.trim()}>
+            <div class={`ph ${scenes[i % scenes.length]}`} role="img" data-image-field={`gallery.items.${i}.image`} style={item.image ? `background-image:url('${item.image}');background-size:cover;background-position:center;` : ''}></div>
+            <span class="tag" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            {item.caption && <figcaption class="cap" data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gallery { background: var(--paper); }
+  .g-grid { display: grid; grid-template-columns: repeat(4,1fr); grid-auto-rows: 180px; gap: 10px; }
+  @media (max-width: 820px) { .g-grid { grid-template-columns: repeat(2,1fr); } }
+  .g-grid .plate { border: 2px solid var(--ink); }
+  .g-grid .plate .ph { transition: transform .6s; }
+  .g-grid .plate:hover .ph { transform: scale(1.05); }
+  .g-grid .r1 { grid-column: span 2; grid-row: span 2; }
+  .g-grid .r2 { grid-column: span 2; }
+  .g-grid .r5 { grid-column: span 2; }
+  /* Mobile: single-column stack — reset the mosaic spans so no tile forces an
+     implicit extra column (which would overflow the viewport). */
+  @media (max-width: 760px) {
+    .g-grid { grid-template-columns: 1fr; grid-auto-rows: 200px; gap: 8px; }
+    .g-grid .r1, .g-grid .r2, .g-grid .r5 { grid-column: auto; grid-row: auto; }
+  }
+</style>

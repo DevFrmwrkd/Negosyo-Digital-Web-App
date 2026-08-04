@@ -145,4 +145,10 @@ const hasAddress = !!address;
     font-size: 13px; padding: 24px; text-align: center;
   }
   @media (max-width: 799px) { .loc-plate { min-height: 300px; } }
+  /* Stack the NAP info over the map on a phone. */
+  @media (max-width: 760px) {
+    .loc-sect .grid2 { grid-template-columns: 1fr; }
+    .loc-plate { min-height: 260px; }
+    .loc-hours .hrow { max-width: none; }
+  }
 </style>

@@ -50,4 +50,15 @@ const hasButtons = !!(cta1Text || cta2Text);
   .cta-btn:hover { background: transparent; color: var(--sheet-deep); }
   .cta-btn.ghost { background: transparent; color: var(--sheet-deep); border-color: var(--sheet-deep); }
   .cta-btn.ghost:hover { background: var(--sheet-deep); color: var(--white); }
+
+  /* ---- Mobile: tighter band, smaller heading, full-width tappable CTAs ---- */
+  @media (max-width: 760px) {
+    .cta-band { padding: 40px 0; }
+    .cta-h { font-size: clamp(24px, 6vw, 42px); }
+  }
+  @media (max-width: 520px) {
+    .cta-h { font-size: clamp(22px, 7vw, 34px); }
+    .cta-actions { width: 100%; }
+    .cta-btn { flex: 1 1 100%; }
+  }
 </style>

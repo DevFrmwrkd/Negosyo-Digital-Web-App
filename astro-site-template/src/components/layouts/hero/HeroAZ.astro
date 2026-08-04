@@ -1,0 +1,67 @@
+---
+/**
+ * layouts / HeroAZ — the kiosk split hero: a sticky art-directed image column
+ * (its .sc1 duotone "scene" stands in until hero.image is set — the photo then
+ * layers over it) beside a centred copy column with a serial tag, bone eyebrow,
+ * EB Garamond display headline (italic bone accent via <em> in headlineLines)
+ * and hairline CTAs. The copy column clears the fixed nav via .panecopy padding.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const tag = hero.tag || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#reserve';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const imageCaption = hero.imageCaption || '';
+---
+<section class="split hero" aria-label="Hero">
+  <div class="stick hero-stick">
+    <div class="ph sc1" role="img" aria-label="Hero" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+    {imageCaption && <span class="cap" data-field="hero.imageCaption">{imageCaption}</span>}
+  </div>
+  <div class="panecopy hero-copy">
+    {tag && <div class="meta" data-field="hero.tag">{tag}</div>}
+    {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+    {headlineLines.length > 0 && (
+      <h1>
+        {headlineLines.map((line: string, i: number) => (
+          <span class="ln" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+        ))}
+      </h1>
+    )}
+    {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+    {(cta1Text || cta2Text) && (
+      <div class="btnrow">
+        {cta1Text && <a href={cta1Href} class="btn btn--fill" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+        {cta2Text && <a href={cta2Href} class="btn btn--ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+      </div>
+    )}
+  </div>
+</section>
+<style>
+  .hero-copy .meta { font-family: var(--sans); font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); margin-bottom: 22px; }
+  .hero-copy .eyebrow { display: inline-block; margin-bottom: 4px; }
+  .hero-copy h1 { font-size: clamp(46px,6vw,92px); margin: .16em 0 .34em; color: var(--ink); }
+  .hero-copy h1 .ln { display: block; }
+  .hero-copy .lede { font-size: 19px; color: var(--ink-soft); max-width: 44ch; margin-bottom: 30px; }
+
+  @media (max-width: 760px) {
+    /* Refit the display line so it never clips at 360px. */
+    .hero-copy h1 { font-size: clamp(38px,10vw,66px); }
+    .hero-copy .lede { font-size: 17px; margin-bottom: 24px; }
+    .hero-copy .meta { margin-bottom: 16px; }
+  }
+  @media (max-width: 520px) {
+    .hero-copy h1 { font-size: clamp(34px,10vw,52px); }
+    .btnrow { flex-direction: column; align-items: stretch; }
+    .btnrow .btn { justify-content: center; }
+  }
+</style>

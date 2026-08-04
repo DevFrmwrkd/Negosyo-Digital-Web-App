@@ -38,4 +38,10 @@ const rot = ['-1deg', '.8deg', '-.6deg', '1.4deg'];
   .gal-sub { max-width: 52ch; color: var(--ink-soft); margin: -14px 0 28px; }
   .gal-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
   .gal-tile { min-height: 260px; }
+  /* Mobile: stack the paste-up wall into a single column of full-width plates. */
+  @media (max-width: 760px) {
+    .gal-grid { grid-template-columns: 1fr; }
+    .gal-h { font-size: clamp(30px, 8.5vw, 56px); margin: 16px 0 22px; overflow-wrap: break-word; }
+    .gal-tile { min-height: 220px; transform: none !important; }
+  }
 </style>

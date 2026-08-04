@@ -18,7 +18,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   <div class="wrap nav-inner">
     <a href="#top" class="brand" data-field="footer.brand">{brand}</a>
     {navLinks.length > 0 && (
-      <nav class="nav-links" aria-label="Main">
+      <nav class="nav-links" id="nav-links-aj" aria-label="Main">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
@@ -27,8 +27,33 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
     {phone && (
       <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone" data-href-field="contact.phone.href">{phone}</a>
     )}
+    {navLinks.length > 0 && (
+      <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-links-aj">
+        <span></span><span></span><span></span>
+      </button>
+    )}
   </div>
 </header>
+{navLinks.length > 0 && (
+  <script is:inline>
+    (function () {
+      var hdr = document.querySelector('header.nav');
+      if (!hdr) return;
+      var burger = hdr.querySelector('.nav-burger');
+      var links = hdr.querySelector('.nav-links');
+      if (!burger || !links) return;
+      function setOpen(open) {
+        hdr.classList.toggle('open', open);
+        burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      burger.addEventListener('click', function () { setOpen(!hdr.classList.contains('open')); });
+      links.querySelectorAll('a').forEach(function (a) {
+        a.addEventListener('click', function () { setOpen(false); });
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+    })();
+  </script>
+)}
 <style>
   header.nav {
     position: sticky; top: 0; left: 0; right: 0; z-index: 50;
@@ -56,5 +81,52 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   .nav-links a:hover { color: var(--red-pen); }
   .nav-phone { font-family: var(--sans); font-weight: 700; font-size: 14px; color: var(--ink); }
   .nav-phone:hover { color: var(--red-pen); }
-  @media (max-width: 720px) { .nav-links { display: none; } }
+
+  /* Hamburger — hidden on desktop, revealed as the mobile menu trigger below. */
+  .nav-burger { display: none; }
+
+  /* ---------- Mobile (<=760px): real hamburger + full-width drawer ---------- */
+  @media (max-width: 760px) {
+    .nav-inner { position: relative; gap: 14px; padding-block: 15px; }
+    /* Long business names shrink with an ellipsis instead of pushing the bar
+       past the viewport; the phone + burger stay put. */
+    .brand { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 19px; }
+    .nav-phone { flex-shrink: 0; }
+
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      flex-shrink: 0; width: 44px; height: 44px; padding: 11px; margin-right: -11px;
+      background: transparent; border: 0; cursor: pointer;
+    }
+    .nav-burger span {
+      display: block; height: 2px; width: 100%; background: var(--ink);
+      border-radius: 2px; transition: transform .25s ease, opacity .2s ease;
+    }
+    header.nav.open {
+      background: rgba(251,248,241,.98); backdrop-filter: blur(8px);
+      box-shadow: 0 2px 0 var(--line);
+    }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* The link list drops to a full-width drawer under the bar, in the design's
+       own paper + ink tokens so it reads as part of the notebook. */
+    .nav-links {
+      display: none;
+      position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--paper); border-bottom: 2px solid var(--ink);
+      box-shadow: 0 10px 22px rgba(32,48,77,.16);
+      padding: 4px 18px 10px;
+    }
+    header.nav.open .nav-links { display: flex; }
+    .nav-links a {
+      font-size: 16px; color: var(--ink); min-height: 48px;
+      display: flex; align-items: center; padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-links a:last-child { border-bottom: 0; }
+    .nav-links a:hover { color: var(--red-pen); }
+  }
 </style>

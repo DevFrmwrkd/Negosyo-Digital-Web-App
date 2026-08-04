@@ -1,0 +1,107 @@
+---
+/**
+ * layouts / HeaderAV — sticky bento nav. The bar is itself a rounded, hairline
+ * ruled surface "tile" (the design signature) carrying a Spectral serif brand,
+ * Barlow Condensed uppercase links and a cobalt pill CTA.
+ *
+ * MOBILE-FIRST: a .nav-burger button collapses the <nav> into a themed
+ * full-width dropdown card at <=760px, toggled by the inline script below.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
+  ? layout.navLinks
+  : [];
+// Reuse the hero's primary CTA as the nav action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = hero.cta1?.href || '#reserve';
+---
+<header class="nav">
+  <div class="wrap">
+    <div class="nav-in">
+      <a href="#main" class="brand" data-field="footer.brand">{brand}</a>
+      {(navLinks.length > 0 || ctaText) && (
+        <>
+          <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-av-menu">
+            <span></span><span></span><span></span>
+          </button>
+          <nav class="nav-links" id="nav-av-menu" aria-label="Primary">
+            {navLinks.map((link, i) => (
+              <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+            ))}
+            {ctaText && <a href={ctaHref} class="nb" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+          </nav>
+        </>
+      )}
+    </div>
+  </div>
+</header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var menu = hdr.querySelector('.nav-links');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!hdr.classList.contains('open'));
+    });
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
+<style>
+  header.nav { position: sticky; top: 0; z-index: 60; padding: 16px 0; }
+  .nav-in {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 22px; background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: 0 10px 30px -18px rgba(0,0,0,.4);
+    position: relative;
+  }
+  .brand { font-family: var(--serif); font-size: 22px; color: var(--ink); letter-spacing: .02em; }
+  .brand:hover { color: var(--ink); }
+  .nav-links { display: flex; gap: 22px; align-items: center; }
+  .nav-links a { font-family: var(--sans); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft); }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-links .nb { background: var(--accent); color: var(--on-accent); padding: 9px 18px; border-radius: 100px; }
+  .nav-links .nb:hover { background: var(--accent-light); color: var(--on-accent); }
+
+  /* Hamburger — hidden on desktop, the mobile trigger below <=760px. */
+  .nav-burger { display: none; }
+
+  @media (max-width: 760px) {
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; margin-right: -8px;
+      background: transparent; border: 0; cursor: pointer;
+    }
+    .nav-burger span { display: block; width: 24px; height: 2px; background: var(--ink); border-radius: 2px; transition: transform .3s ease, opacity .3s ease; }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Links become a themed full-width dropdown card beneath the bar. */
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: calc(100% + 8px);
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      box-shadow: 0 18px 40px -20px rgba(0,0,0,.5);
+      padding: 6px; max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    header.nav.open .nav-links { max-height: calc(100vh - 120px); overflow-y: auto; opacity: 1; visibility: visible; }
+    .nav-links a { display: flex; align-items: center; min-height: 48px; padding: 6px 14px; font-size: 13px; color: var(--ink-soft); border-radius: 12px; }
+    .nav-links a:not(.nb) + a:not(.nb) { border-top: 1px solid var(--line); }
+    .nav-links .nb { justify-content: center; margin-top: 6px; min-height: 48px; }
+  }
+</style>

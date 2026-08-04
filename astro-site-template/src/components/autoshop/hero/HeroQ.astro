@@ -103,4 +103,15 @@ const rating = hero.rating || '';
     }
     .heroQ-headline { font-size: clamp(40px, 12vw, 68px); max-width: none; }
   }
+  @media (max-width: 760px) {
+    .heroQ { min-height: 74vh; }
+    .heroQ-headline { font-size: clamp(36px, 11vw, 60px); }
+    .heroQ-kicker { margin-bottom: 20px; }
+    .heroQ-cta { margin-top: 28px; }
+  }
+  @media (max-width: 520px) {
+    .heroQ { min-height: 70vh; }
+    .heroQ-headline { font-size: clamp(31px, 10vw, 52px); }
+    .heroQ-sub { font-size: 16px; margin-top: 20px; }
+  }
 </style>

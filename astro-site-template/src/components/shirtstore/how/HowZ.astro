@@ -60,4 +60,15 @@ const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.
     .how-fig { order: -1; }
     .how-fig .bg-img { min-height: 54vh; }
   }
+  @media (max-width: 760px) {
+    .how { padding: clamp(48px, 11vw, 96px) 0; }
+    .how-head h2 { font-size: clamp(28px, 7vw, 48px); }
+    .how-fig .bg-img { min-height: 46vh; }
+  }
+  @media (max-width: 520px) {
+    .how-head h2 { font-size: clamp(26px, 8vw, 40px); }
+    .how-step { gap: 16px; padding: 20px 0; }
+    .how-step .s { font-size: 28px; }
+    .how-step h3 { font-size: 23px; }
+  }
 </style>

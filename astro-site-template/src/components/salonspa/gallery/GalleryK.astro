@@ -51,4 +51,10 @@ const items = rawItems.filter((it: Tile) => it && it.image);
     font-family: var(--sans); font-size: 11px; text-transform: uppercase;
     letter-spacing: .12em;
   }
+  @media (max-width: 760px) {
+    /* Single column: switch the portrait tiles to a landscape ratio so a
+       stacked gallery stays a comfortable height instead of a tall tower. */
+    .gallery-grid { grid-template-columns: 1fr; gap: 12px; }
+    .g-tile { aspect-ratio: 16 / 11; }
+  }
 </style>

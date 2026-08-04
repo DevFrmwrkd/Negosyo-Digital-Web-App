@@ -110,4 +110,15 @@ const tag = hero.tag || '';
     .heroAD-headline { font-size: clamp(52px, 15vw, 96px); }
     .heroAD-fig { min-height: 60vh; }
   }
+  @media (max-width: 760px) {
+    .heroAD-copy { min-height: 60vh; padding: clamp(20px, 6vw, 40px); }
+    .heroAD-headline { font-size: clamp(44px, 13vw, 78px); }
+    .heroAD-fig { min-height: 52vh; }
+  }
+  @media (max-width: 520px) {
+    .heroAD-copy { min-height: 0; padding: 32px 20px 36px; }
+    .heroAD-headline { font-size: clamp(36px, 12vw, 58px); }
+    .heroAD-fig { min-height: 44vh; }
+    .heroAD-bottom .heroAD-sub { font-size: 15px; }
+  }
 </style>

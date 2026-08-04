@@ -85,4 +85,29 @@
     .reveal { opacity: 1; transform: none; transition: none; }
     * { animation: none !important; }
   }
+
+  /* ------------------------------------------------------------------ */
+  /* Mobile-first shared tuning — Foundry family (P–T) only. Scoped with  */
+  /* :is() to the five P–T data-pages so the sister AF wrapper (which     */
+  /* also pulls this spine) keeps its own mobile handling untouched.      */
+  /* Desktop (>760px) is unchanged; per-section grids live in each *P     */
+  /* component and stack there. These rules only tighten the SHARED       */
+  /* utilities (wrap padding, section rhythm, display type, buttons).     */
+  /* ------------------------------------------------------------------ */
+  @media (max-width: 760px) {
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .wrap { padding-inline: clamp(18px, 5vw, 26px); }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .pad-y { padding-block: clamp(52px, 9vw, 84px); }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .h-sect { font-size: clamp(30px, 7.4vw, 54px); }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .sect-head { margin-bottom: 30px; gap: 8px 22px; }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .sect-head .lead { margin-top: 8px; }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .lead { font-size: clamp(15px, 3.6vw, 18px); }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn { padding: 14px 22px; font-size: 14px; min-height: 48px; }
+  }
+  @media (max-width: 520px) {
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .wrap { padding-inline: 16px; }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .pad-y { padding-block: clamp(44px, 12vw, 62px); }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .h-sect { font-size: clamp(26px, 8.4vw, 40px); }
+    /* Thumb-friendly, full-width primary CTAs; stacked action rows. */
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn { width: 100%; justify-content: center; }
+  }
 </style>

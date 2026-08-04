@@ -41,5 +41,10 @@ const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isAr
   .gal-tile:nth-child(3n+1) { transform: rotate(-.8deg); }
   .gal-tile:nth-child(3n+2) { transform: rotate(.6deg); }
   .gal-tile:nth-child(3n) { transform: rotate(-.5deg); }
-  @media (max-width: 560px) { .gal-tile { transform: none !important; } }
+  /* Single column on a phone; drop the tilt so a full-width plate can't nudge
+     past the viewport edge. */
+  @media (max-width: 760px) {
+    .gal-grid { grid-template-columns: 1fr; }
+    .gal-tile { transform: none !important; min-height: 220px; }
+  }
 </style>

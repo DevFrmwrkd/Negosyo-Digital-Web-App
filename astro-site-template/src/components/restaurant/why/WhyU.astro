@@ -44,4 +44,12 @@ const numeral = ['i.', 'ii.', 'iii.', 'iv.', 'v.', 'vi.'];
     .exp-grid { grid-template-columns: 1fr; gap: 46px; }
     .exp-col { border-left: 0; padding: 0; }
   }
+  @media (max-width: 760px) {
+    .exp { padding-block: clamp(56px, 9vw, 92px); }
+    .exp-head { margin-bottom: 44px; }
+  }
+  @media (max-width: 520px) {
+    .exp-head h2 { font-size: clamp(30px, 8vw, 48px); }
+    .exp-grid { gap: 36px; }
+  }
 </style>

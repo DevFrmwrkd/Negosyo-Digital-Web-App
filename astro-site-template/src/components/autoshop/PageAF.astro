@@ -181,6 +181,16 @@ const __fontHref = buildFontHref(__themePairing);
     @media (min-width: 780px) {
       html[data-page="AF"] .grid2 { grid-template-columns: 1fr 1fr; align-items: start; }
     }
+    /* Mobile: trim the big default section padding + wrap gutter, and tighten
+       the engineering graph-paper ground so it still reads at phone scale. */
+    @media (max-width: 760px) {
+      html[data-page="AF"] section { padding: 44px 0; }
+      html[data-page="AF"] .wrap { padding: 0 16px; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="AF"] section { padding: 34px 0; }
+      html[data-page="AF"] body { background-size: 24px 24px; }
+    }
     @media (prefers-reduced-motion: reduce) {
       html[data-page="AF"] .reveal { opacity: 1; transform: none; transition: none; }
       html[data-page="AF"] * { animation: none !important; }

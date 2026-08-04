@@ -29,4 +29,11 @@ const cells: Array<{ num: string; label: string }> = Array.isArray(trust.cells) 
   .trust-cell { min-width: 150px; }
   .trust-cell .num { font-family: var(--display); font-weight: 700; font-size: 17px; color: var(--white); line-height: 1.15; }
   .trust-cell .lbl { font-family: var(--body); font-size: 13px; color: var(--chalk); margin-top: 4px; }
+
+  /* ---- Mobile: let the credibility cells wrap comfortably (two-up, then one) ---- */
+  @media (max-width: 520px) {
+    .trust-sect { padding: 20px 0; }
+    .trust-bar { gap: 14px 18px; }
+    .trust-cell { min-width: 130px; flex: 1 1 40%; }
+  }
 </style>

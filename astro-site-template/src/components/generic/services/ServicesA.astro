@@ -86,13 +86,21 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
     text-align: right;
     white-space: nowrap;
   }
-  @media (max-width: 680px) {
+  @media (max-width: 760px) {
+    .menu-list { margin-top: 34px; }
     .menu-row {
-      grid-template-columns: 60px 1fr;
+      grid-template-columns: 52px 1fr;
+      gap: 16px;
+      padding: 24px 4px;
     }
+    .menu-row:hover { padding-left: 4px; }
+    .menu-row .idx { font-size: 34px; }
+    .menu-row h3 { font-size: 24px; }
     .menu-row .note {
       grid-column: 2;
       text-align: left;
+      margin-top: 6px;
+      white-space: normal;
     }
   }
 </style>

@@ -104,4 +104,13 @@ const cta2Href = hero.cta2?.href || '#menu';
     .heroX-in { padding-top: 100px; }
     .heroX-sub { max-width: 100%; }
   }
+  @media (max-width: 760px) {
+    .heroX-in { padding-top: 94px; }
+    .heroX-headline { font-size: clamp(44px, 12vw, 96px); }
+  }
+  @media (max-width: 520px) {
+    .heroX { min-height: 80vh; }
+    .heroX-headline { font-size: clamp(38px, 12.5vw, 58px); line-height: 1.02; }
+    .heroX-sub { margin: 22px 0 28px; }
+  }
 </style>

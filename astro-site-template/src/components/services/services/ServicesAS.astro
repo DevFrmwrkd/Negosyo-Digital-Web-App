@@ -1,0 +1,58 @@
+---
+/**
+ * services / ServicesAS — "the service menu" on the card band. A bordered grid
+ * of .svc cells, each stamped with a mono SVC/NN code, a Courier title, a muted
+ * description and a checkmark that appears on hover. services.sub renders as the
+ * closing counter note.
+ *
+ * services.items[i].tag is the design's optional category chip; it renders on
+ * the card code line when present (mirrors the AM content model).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="sec services" id="services">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="snum" aria-hidden="true">SEC 02</span>
+        {headline && <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>}
+        {tag && <span class="lbl" style="margin-left:auto;" data-field="services.tag">{tag}</span>}
+      </div>
+      <div class="svc-grid">
+        {items.map((item, i) => (
+          <article class="svc reveal" data-delay={String((i % 3))}>
+            <div class="code" data-field={`services.items.${i}.tag`}>{item.tag ?? item.duration ?? item.price ?? `SVC/${String(i + 1).padStart(2, '0')}`}</div>
+            <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+            <span class="chk" aria-hidden="true">✓</span>
+          </article>
+        ))}
+      </div>
+      {sub && <p class="svc-note lbl" style="margin-top:20px;color:var(--muted);" data-field="services.sub">{sub}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .services { background: var(--card); }
+  .svc-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; border: 2px solid var(--ink); }
+  @media (max-width: 900px) { .svc-grid { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 760px) { .svc-grid { grid-template-columns: 1fr; } }
+  .svc { padding: 30px 26px; border-right: 2px dashed var(--line); border-bottom: 2px dashed var(--line); position: relative; transition: background .25s; }
+  .svc:nth-child(3n) { border-right: none; }
+  .svc:nth-last-child(-n+3) { border-bottom: none; }
+  @media (max-width: 900px) { .svc { border-right: 2px dashed var(--line); } .svc:nth-child(2n) { border-right: none; } }
+  @media (max-width: 760px) { .svc-grid .svc { border-right: none; padding: 26px 22px; } .svc-grid .svc:not(:last-child) { border-bottom: 2px dashed var(--line); } .svc-grid .svc:last-child { border-bottom: none; } }
+  .svc:hover { background: var(--paper2); }
+  .svc .code { font-family: var(--mono); font-size: 12px; color: var(--blue-d); letter-spacing: .06em; }
+  .svc h3 { font-family: var(--mono); font-size: 20px; margin: 12px 0 8px; color: var(--ink); }
+  .svc p { color: var(--muted); font-size: 14px; margin: 0; font-family: var(--sans); }
+  .svc .chk { position: absolute; top: 24px; right: 22px; width: 20px; height: 20px; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--blue); font-family: var(--mono); opacity: 0; transition: .25s; }
+  .svc:hover .chk { opacity: 1; }
+</style>

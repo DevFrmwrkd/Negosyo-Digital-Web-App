@@ -48,4 +48,9 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
   .svc-card p { font-size: 14px; color: var(--line); }
   .svc-price { font-family: var(--body); font-weight: 700; font-size: 14px; color: var(--haz); flex-shrink: 0; }
   .svc-dur { font-family: var(--body); text-transform: uppercase; letter-spacing: .14em; font-size: 11px; color: var(--line); opacity: .8; margin-top: 10px; }
+  @media (max-width: 760px) {
+    /* Single column — also avoids the 260px min track overflowing a ~300px phone. */
+    .svc-grid { grid-template-columns: 1fr; }
+    .svc-h { margin-bottom: 22px; }
+  }
 </style>

@@ -7,6 +7,11 @@
  * supplies navLinks (or a phone), and stays out of the way as a slim, static,
  * double-ruled edition line. With no nav data it emits nothing, leaving the
  * pure masthead-first design intact.
+ *
+ * Mobile (<=760px): the dateline links collapse into a real hamburger drawer
+ * built from the design's own newsprint tokens — the brand (edition line) stays
+ * in the bar, a three-bar burger toggles a full-width dropdown of stacked,
+ * generously-tapped links (+ the phone). Desktop layout is untouched.
  */
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
@@ -22,7 +27,10 @@ const show = navLinks.length > 0;
   <header class="dateline">
     <div class="wrap dateline-inner">
       <a href="#top" class="edition" data-field="footer.brand">{brand}</a>
-      <nav class="dateline-nav" aria-label="Main">
+      <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="dateline-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <nav id="dateline-nav" class="dateline-nav" aria-label="Main">
         {navLinks.map((link, i) => (
           <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
         ))}
@@ -32,6 +40,25 @@ const show = navLinks.length > 0;
       </nav>
     </div>
   </header>
+)}
+{show && (
+  <script is:inline>
+    (function () {
+      var h = document.querySelector('header.dateline');
+      if (!h) return;
+      var b = h.querySelector('.nav-burger');
+      if (!b) return;
+      function setOpen(open) {
+        h.classList.toggle('open', open);
+        b.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+      b.addEventListener('click', function () { setOpen(!h.classList.contains('open')); });
+      Array.prototype.forEach.call(h.querySelectorAll('.dateline-nav a'), function (a) {
+        a.addEventListener('click', function () { setOpen(false); });
+      });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+    })();
+  </script>
 )}
 <style>
   .dateline {
@@ -54,5 +81,44 @@ const show = navLinks.length > 0;
   }
   .dateline-nav a:hover { color: var(--red); }
   .dateline-phone { color: var(--ink) !important; }
-  @media (max-width: 560px) { .dateline-phone { display: none; } }
+
+  /* Hamburger — hidden on desktop, becomes the drawer toggle <=760px. */
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 11px; flex-shrink: 0;
+    background: transparent; border: 1px solid var(--rule); cursor: pointer;
+  }
+  .nav-burger span {
+    display: block; width: 100%; height: 2px; background: var(--ink);
+    transition: transform .25s ease, opacity .2s ease;
+  }
+  .dateline.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .dateline.open .nav-burger span:nth-child(2) { opacity: 0; }
+  .dateline.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Mobile drawer — full-width dropdown below the bar, design's own tokens. */
+  @media (max-width: 760px) {
+    .dateline { position: relative; }
+    .dateline-inner { flex-wrap: nowrap; }
+    .edition {
+      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .nav-burger { display: flex; }
+    .dateline-nav {
+      display: none; position: absolute; left: 0; right: 0; top: 100%;
+      flex-direction: column; align-items: stretch; gap: 0; z-index: 55;
+      background: var(--news); border-top: 1px solid var(--ink);
+      border-bottom: 4px double var(--ink);
+      box-shadow: 0 14px 26px rgba(32,32,28,.16);
+      padding: 4px 20px 10px;
+    }
+    .dateline.open .dateline-nav { display: flex; }
+    .dateline-nav a {
+      display: flex; align-items: center; min-height: 48px;
+      font-size: 13px; letter-spacing: .18em;
+      border-bottom: 1px solid var(--rule);
+    }
+    .dateline-nav a:last-child { border-bottom: 0; }
+    .dateline-phone { display: flex !important; color: var(--red) !important; }
+  }
 </style>

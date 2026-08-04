@@ -11,23 +11,55 @@ const ctaHref = content.navCtaHref || '#visit';
 <header class="nav">
   <div class="wrap nav-in">
     <a href="#top" class="brand" data-field="nav.brand">{brand}</a>
-    <div class="nav-links">
-      {navLinks.map((link: any, i: number) => (
-        <a href={link.href} data-field={`nav.links.${i}.label`} data-href-field={`nav.links.${i}.href`}>{link.label}</a>
-      ))}
-    </div>
-    <div class="nav-right">
-      {phone && (
-        <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="nav.phone" data-href-field="nav.phone.href">{phone}</a>
-      )}
-      <a href={ctaHref} class="btn btn-primary" data-field="nav.cta.text" data-href-field="nav.cta.href">{ctaText}</a>
+    <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-b-menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-collapse" id="nav-b-menu">
+      <div class="nav-links">
+        {navLinks.map((link: any, i: number) => (
+          <a href={link.href} data-field={`nav.links.${i}.label`} data-href-field={`nav.links.${i}.href`}>{link.label}</a>
+        ))}
+      </div>
+      <div class="nav-right">
+        {phone && (
+          <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="nav.phone" data-href-field="nav.phone.href">{phone}</a>
+        )}
+        <a href={ctaHref} class="btn btn-primary" data-field="nav.cta.text" data-href-field="nav.cta.href">{ctaText}</a>
+      </div>
     </div>
   </div>
 </header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var menu = hdr.querySelector('.nav-collapse');
+    if (!burger || !menu) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () {
+      setOpen(!hdr.classList.contains('open'));
+    });
+    // Close the drawer after tapping any link or CTA inside it.
+    menu.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    // Close on Escape for keyboard users.
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  })();
+</script>
 <style>
   header.nav { position: sticky; top: 0; z-index: 1000; background: rgba(var(--paper-rgb), .82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
   .nav-in { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 78px; }
   .brand { font-family: var(--serif); font-size: 32px; letter-spacing: 0; }
+  /* display:contents keeps the desktop layout identical — nav-links + nav-right
+     stay direct flex items of .nav-in (space-between) as before. */
+  .nav-collapse { display: contents; }
   .nav-links { display: flex; gap: 30px; font-size: 13px; letter-spacing: .05em; font-weight: 600; }
   .nav-links a { position: relative; padding: 4px 0; color: var(--ink-soft); }
   .nav-links a::after { content: ""; position: absolute; left: 50%; bottom: 0; height: 1.5px; width: 0; background: var(--peach); transition: .3s; transform: translateX(-50%); }
@@ -35,5 +67,56 @@ const ctaHref = content.navCtaHref || '#visit';
   .nav-links a:hover::after { width: 100%; }
   .nav-right { display: flex; align-items: center; gap: 18px; }
   .nav-phone { font-size: 14px; }
-  @media (max-width: 920px) { .nav-links, .nav-phone { display: none; } }
+
+  /* Hamburger — hidden on desktop, revealed as the mobile trigger. */
+  .nav-burger { display: none; }
+
+  /* This header packs brand + links + phone + CTA, so it collapses at its own
+     established 920px point (previously it simply hid the links here). We upgrade
+     that same breakpoint to a real burger + full-width drawer so no width is ever
+     left without a way to navigate and the bar never overflows. */
+  @media (max-width: 920px) {
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; margin-right: -10px;
+      background: transparent; border: 0; cursor: pointer;
+    }
+    .nav-burger span {
+      display: block; width: 24px; height: 2px; background: var(--ink);
+      border-radius: 2px; transition: transform .3s ease, opacity .3s ease;
+    }
+    header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Links + phone + CTA fold into a full-width dropdown in the studio's own
+       paper/line tokens so it matches the calm teal + peach palette. */
+    .nav-collapse {
+      display: flex; flex-direction: column; align-items: stretch; gap: 0;
+      position: absolute; left: 0; right: 0; top: 100%;
+      background: var(--paper-2); border-bottom: 1px solid var(--line);
+      box-shadow: 0 24px 40px -22px rgba(var(--ink-rgb), .45);
+      padding: 6px 0 14px;
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    header.nav.open .nav-collapse { max-height: calc(100vh - 78px); overflow-y: auto; opacity: 1; visibility: visible; }
+    .nav-links { flex-direction: column; gap: 0; font-size: 16px; }
+    .nav-links a {
+      display: flex; align-items: center; min-height: 48px; padding: 6px 24px;
+      color: var(--ink-soft); border-bottom: 1px solid var(--line);
+    }
+    .nav-links a::after { display: none !important; }
+    .nav-right { flex-direction: column; align-items: stretch; gap: 14px; padding: 14px 24px 6px; }
+    .nav-phone { display: inline-flex; align-items: center; min-height: 44px; font-size: 17px; font-weight: 600; color: var(--ink); }
+    .nav-right .btn { width: 100%; justify-content: center; min-height: 50px; }
+  }
+  @media (max-width: 760px) {
+    .nav-in { height: 64px; }
+    .brand { font-size: 27px; }
+    header.nav.open .nav-collapse { max-height: calc(100vh - 64px); }
+  }
+  @media (max-width: 520px) {
+    .brand { font-size: 24px; }
+  }
 </style>
