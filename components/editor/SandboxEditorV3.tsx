@@ -1,0 +1,550 @@
+"use client";
+
+/**
+ * SandboxEditorV3 — the unified editor.
+ *
+ * v2's design surface (live themeOverride recolour/refont, template design-preview
+ * swap, safe in-iframe contenteditable, batched save-once → single rebuild)
+ * + v1's structured power (schema sidebar form with add/remove/reorder lists,
+ * image picker, link popover) surfaced by ROUTING preview clicks to those tested
+ * sidebar editors — so everything v2 defers is recovered with zero new data-loss
+ * surface (arrays/links/images are still written whole by v1's logic).
+ *
+ * Same SandboxEditorProps + onSaveContent + astro build + ed:* bridge as v1/v2;
+ * a drop-in behind the editorVersion toggle. Draft model + undo/redo + local
+ * draft recovery live in useEditorDraft.
+ *
+ * NOT runtime-tested locally (Next build won't finish on the dev box) — verify on
+ * a throwaway submission per the PR's checklist.
+ */
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { injectEditorBridge } from "./editorBridge";
+import type { SandboxEditorProps } from "./SandboxEditor";
+import { TEMPLATE_FAMILIES, templateByCode } from "./templateCatalog";
+import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED } from "./editorConstants";
+import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
+import { useEditorDraft } from "./useEditorDraft";
+import { applyImageSlot, isImageField, uploadImage } from "./editorImageSlots";
+import ContentFieldsAuto from "./ContentFieldsAuto";
+import ImagePickerModal from "./ImagePickerModal";
+import LinkPopover, { type LinkPopoverData } from "./LinkPopover";
+
+const TB = "inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-600 transition-colors hover:border-neutral-300 disabled:opacity-40 disabled:cursor-not-allowed";
+
+const SCHEME_SWATCH: Record<string, string> = {
+    auto: "#94a3b8", blue: "#2563eb", green: "#16a34a", purple: "#7c3aed",
+    orange: "#ea580c", dark: "#1f2937", pink: "#db2777", brown: "#92400e",
+    red: "#dc2626", yellow: "#eab308", maroon: "#7f1d1d", black: "#111111",
+    gold: "#b8860b", whitegold: "#d4af37", professional: "#334155",
+};
+
+const VIEWPORTS: Record<string, number | null> = { desktop: null, tablet: 834, mobile: 390 };
+
+// Inject the picked Color Scheme / Font Pairing live into the same-origin preview
+// iframe — identical to v2's applyThemeToIframe (SandboxEditorV2.tsx:30-63).
+function applyThemeToIframe(iframe: HTMLIFrameElement | null, scheme: string, font: string, businessType: string) {
+    try {
+        const doc = iframe?.contentDocument;
+        if (!doc || !doc.body) return;
+        const resolvedScheme = !scheme || scheme === "auto" || scheme === "default" ? resolveAutoScheme(businessType) : scheme;
+        const pairing = !font || font === "auto" || font === "default" ? "" : font;
+        const fontHref = buildFontHref(pairing);
+        if (fontHref && doc.head) {
+            let linkEl = doc.getElementById("ed-live-font") as HTMLLinkElement | null;
+            if (!linkEl) {
+                linkEl = doc.createElement("link");
+                linkEl.id = "ed-live-font";
+                linkEl.rel = "stylesheet";
+                doc.head.appendChild(linkEl);
+            }
+            if (linkEl.href !== fontHref) linkEl.href = fontHref;
+        }
+        const css = buildOverrideCss(resolvedScheme, pairing);
+        let styleEl = doc.getElementById("ed-live-theme") as HTMLStyleElement | null;
+        if (!css) { if (styleEl) styleEl.textContent = ""; return; }
+        if (!styleEl) {
+            styleEl = doc.createElement("style");
+            styleEl.id = "ed-live-theme";
+            doc.body.appendChild(styleEl);
+        }
+        styleEl.textContent = css;
+    } catch { /* same-origin access can throw — Save still applies it for real */ }
+}
+
+type Panel = "design" | "content" | "media";
+
+export default function SandboxEditorV3(props: SandboxEditorProps) {
+    const {
+        businessName, htmlContent, submissionId, photos, enhancedImageUrls,
+        onSaveContent, websitePublishedUrl,
+        websiteGenerated, generatingWebsite, publishingWebsite, republishingWebsite,
+        unpublishingWebsite, enhancing, sendingEmail,
+        onSendToClient, onEnhanceImages, onRegenerate, onPublish, onRepublish,
+        onUnpublish, onDelete, onApprove, onReject, onToggleDetails,
+    } = props;
+
+    const m = useEditorDraft(props);
+
+    const [panel, setPanel] = useState<Panel>("design");
+    const panelRef = useRef<Panel>(panel);
+    panelRef.current = panel;
+    const [viewport, setViewport] = useState<keyof typeof VIEWPORTS>("desktop");
+    const [saving, setSaving] = useState(false);
+    const [imagePickerField, setImagePickerField] = useState<string | null>(null);
+    const [linkData, setLinkData] = useState<LinkPopoverData | null>(null);
+    const [pendingImageField, setPendingImageField] = useState<string | null>(null);
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+    const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const railRef = useRef<HTMLDivElement | null>(null);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const busy = generatingWebsite || saving;
+    const previewHtml = useMemo(() => injectEditorBridge(htmlContent || ""), [htmlContent]);
+    const curatedSchemes = m.activeFamily ? CURATED[m.activeFamily] : COLOR_SCHEMES.map((c) => c.id).filter((id) => id !== "auto");
+
+    // ── Live theme apply ──────────────────────────────────────────────────
+    const applyTheme = useCallback(() => {
+        applyThemeToIframe(iframeRef.current, m.currentScheme, m.currentFont, m.btForTheme);
+    }, [m.currentScheme, m.currentFont, m.btForTheme]);
+
+    const setThemeField = (field: "colorScheme" | "fontPairing", value: string) => {
+        m.setThemeField(field, value);
+        const nextScheme = field === "colorScheme" ? value : m.currentScheme;
+        const nextFont = field === "fontPairing" ? value : m.currentFont;
+        applyThemeToIframe(iframeRef.current, nextScheme, nextFont, m.btForTheme);
+    };
+
+    // ── Live text push to the iframe (sidebar edit → preview) ─────────────
+    const pushLiveText = useCallback((path: string, value: any) => {
+        try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:update", field: path, value }, "*"); } catch { /* ignore */ }
+    }, []);
+
+    // ── Safe in-iframe contenteditable (v2:201-252, unchanged SKIP set) ───
+    const setupInlineEditing = useCallback(() => {
+        const doc = iframeRef.current?.contentDocument;
+        if (!doc) return;
+        const SKIP = (f: string) =>
+            f === "hero.headline" ||
+            /^(nav\.brand|nav\.status|nav\.links|navbar_links)(\.|$)/.test(f) ||
+            /\.(items|steps|paragraphs)\.\d+/.test(f);
+        const readVal = (node: Element) =>
+            ((node as HTMLElement).innerText ?? node.textContent ?? "")
+                .replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+        const wire = (target: HTMLElement, ownerField: string) => {
+            const orig = readVal(target);
+            target.setAttribute("contenteditable", "true");
+            target.setAttribute("spellcheck", "false");
+            target.addEventListener("keydown", (ev: any) => {
+                if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); target.blur(); }
+            });
+            target.addEventListener("blur", () => {
+                const val = readVal(target);
+                if (val === orig) return;
+                m.setDeepDraft(ownerField, val);
+            });
+        };
+        doc.querySelectorAll<HTMLElement>("[data-field]").forEach((el) => {
+            const field = el.getAttribute("data-field") || "";
+            if (!field || (el as any).__v3wired) return;
+            if (el.hasAttribute("data-href-field") || el.hasAttribute("data-image-field")) return;
+            if (el.tagName.toLowerCase() === "a" && /^(tel:|mailto:)/i.test(el.getAttribute("href") || "")) return;
+            if (SKIP(field)) return;
+            const childEls = Array.from(el.children);
+            const looseText = Array.from(el.childNodes).filter((n) => n.nodeType === 3 && !!n.nodeValue && !!n.nodeValue.trim());
+            (el as any).__v3wired = true;
+            if (childEls.length === 0) {
+                wire(el, field);
+            } else if (looseText.length === 1 && childEls.every((c) => !(c.textContent || "").trim())) {
+                const s = doc.createElement("span");
+                el.replaceChild(s, looseText[0]);
+                s.appendChild(looseText[0]);
+                wire(s, field);
+            }
+        });
+    }, [m]);
+
+    // ── Focus a sidebar input by data-field path (v1:566-630) ─────────────
+    const focusSidebarField = useCallback((field: string, opts?: { pulse?: boolean }) => {
+        if (panelRef.current !== "content") setPanel("content");
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            const el = document.querySelector(`[data-field-input="${field}"]`) as HTMLElement | null;
+            if (!el) return;
+            el.scrollIntoView({ block: "center", behavior: "smooth" });
+            if (opts?.pulse) {
+                el.classList.add("ed-selection-pulse");
+                window.setTimeout(() => el.classList.remove("ed-selection-pulse"), 1400);
+            } else {
+                (el as any).focus?.();
+            }
+        }));
+    }, []);
+
+    // ── ed:* click routing (from v1, adapted to the 3-panel rail) ─────────
+    useEffect(() => {
+        function onMessage(e: MessageEvent) {
+            const data: any = e?.data;
+            if (!data || typeof data !== "object" || !data.type) return;
+            if (data.type === "ed:link-click") {
+                setLinkData({
+                    field: String(data.field || ""),
+                    hrefField: String(data.hrefField || ""),
+                    platformField: data.platformField ? String(data.platformField) : undefined,
+                    text: String(data.text || ""),
+                    href: String(data.href || ""),
+                    platform: data.platform ? String(data.platform) : undefined,
+                });
+                return;
+            }
+            if (data.type === "ed:image-click" && typeof data.field === "string") {
+                setImagePickerField(data.field);
+                return;
+            }
+            if (data.type === "ed:select" && typeof data.field === "string") {
+                focusSidebarField(data.field, { pulse: true });
+                return;
+            }
+            if (data.type === "ed:click" && typeof data.field === "string") {
+                // An image slot clicked as plain text → open the picker on it.
+                if (isImageField(data.field)) { setImagePickerField(data.field); return; }
+                focusSidebarField(data.field);
+            }
+        }
+        window.addEventListener("message", onMessage);
+        return () => window.removeEventListener("message", onMessage);
+    }, [focusSidebarField]);
+
+    // ── Image picker select (v1:661-670 parity: write the data-field path) ─
+    const handleImagePick = useCallback((field: string, src: string) => {
+        try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:image", field, src }, "*"); } catch { /* ignore */ }
+        m.setValue(field, src);
+        setImagePickerField(null);
+    }, [m]);
+
+    // ── Link popover save (v1:637-658) ────────────────────────────────────
+    const handleLinkSave = useCallback((next: LinkPopoverData) => {
+        try {
+            iframeRef.current?.contentWindow?.postMessage({
+                type: "ed:link-update", field: next.field, hrefField: next.hrefField,
+                text: next.text, href: next.href, platformField: next.platformField, platform: next.platform,
+            }, "*");
+        } catch { /* ignore */ }
+        if (next.field) m.setValue(next.field, next.text);
+        if (next.hrefField) m.setValue(next.hrefField, next.href);
+    }, [m]);
+
+    // ── Upload a photo into a slot (v1 assignImageToSlot path) ────────────
+    const handleUpload = useCallback(async (file: File, slot: string | null) => {
+        setUploadError(null);
+        setUploadingPhoto(true);
+        try {
+            const url = await uploadImage(file, submissionId);
+            m.replaceDraft(applyImageSlot(m.draftRef.current, slot, url));
+            if (slot) {
+                try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:image", field: slot, src: url }, "*"); } catch { /* ignore */ }
+            }
+            setPendingImageField(null);
+        } catch (err: any) {
+            setUploadError(err?.message ?? "Image upload failed");
+        } finally {
+            setUploadingPhoto(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    }, [m, submissionId]);
+
+    // ── Save (v2:301-331) — batched, single rebuild ───────────────────────
+    const handleSave = useCallback(async () => {
+        if (busy) return;
+        try { (iframeRef.current?.contentDocument?.activeElement as HTMLElement | null)?.blur?.(); } catch { /* ignore */ }
+        const currentDraft = m.draftRef.current;
+        if (m.contentDirty === false && m.customizationsDirty === false) return;
+        setSaving(true);
+        const toastId = toast.loading(m.customizationsDirty ? "Saving changes · regenerating site…" : "Saving content…", { duration: Infinity });
+        try {
+            await onSaveContent({ ...currentDraft, business_type: m.selectedBucket }, m.customizationsDirty ? m.pendingCustomizations : undefined);
+            m.setPreviewSrc(null);
+            m.clearCache();
+            toast.success("Changes saved", { id: toastId, description: m.customizationsDirty ? "Theme + content applied. Refreshing preview." : "Content updated." });
+        } catch (err: any) {
+            toast.error("Save failed", { id: toastId, description: err?.message ?? "Please try again." });
+        } finally {
+            setSaving(false);
+        }
+    }, [busy, m, onSaveContent]);
+
+    // ── Keyboard shortcuts: ⌘S save · ⌘Z undo · ⌘⇧Z redo ──────────────────
+    useEffect(() => {
+        function onKey(e: KeyboardEvent) {
+            const mod = e.metaKey || e.ctrlKey;
+            if (!mod) return;
+            const k = e.key.toLowerCase();
+            if (k === "s") { e.preventDefault(); void handleSave(); }
+            else if (k === "z" && !e.shiftKey) { e.preventDefault(); m.undo(); }
+            else if ((k === "z" && e.shiftKey) || k === "y") { e.preventDefault(); m.redo(); }
+        }
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [handleSave, m]);
+
+    // ── Template thumbnail lazy-mount (v2:268-299) ────────────────────────
+    useEffect(() => {
+        const root = railRef.current;
+        if (!root) return;
+        const W = 1280;
+        const fill = (thumb: HTMLElement) => {
+            if (thumb.dataset.done) return;
+            const src = thumb.dataset.src;
+            if (!src) return;
+            thumb.dataset.done = "1";
+            const scale = (thumb.clientWidth || 150) / W;
+            const ifr = document.createElement("iframe");
+            ifr.setAttribute("scrolling", "no");
+            ifr.setAttribute("tabindex", "-1");
+            ifr.setAttribute("aria-hidden", "true");
+            ifr.style.transform = `scale(${scale.toFixed(4)})`;
+            ifr.addEventListener("load", () => { thumb.querySelector(".v3-ph")?.remove(); });
+            ifr.src = src;
+            thumb.appendChild(ifr);
+        };
+        const thumbs = Array.from(root.querySelectorAll<HTMLElement>(".v3-thumb"));
+        if (!("IntersectionObserver" in window)) { thumbs.forEach(fill); return; }
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((e) => { if (e.isIntersecting) { io.unobserve(e.target); fill(e.target as HTMLElement); } });
+        }, { root, rootMargin: "260px 0px" });
+        thumbs.forEach((t) => io.observe(t));
+        return () => io.disconnect();
+        // panel switches re-mount the grid; re-observe when Design opens
+    }, [panel]);
+
+    const vw = VIEWPORTS[viewport];
+
+    return (
+        <div className="flex h-[calc(100vh-8rem)] min-h-[560px] flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white">
+            {/* Draft-recovery banner */}
+            {m.hasCachedDraft && (
+                <div className="flex items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2 text-[12px] text-amber-800">
+                    <span>You have unsaved edits from a previous session.</span>
+                    <span className="flex gap-2">
+                        <button type="button" onClick={m.restoreCachedDraft} className="rounded bg-amber-500 px-2.5 py-1 font-semibold text-white hover:bg-amber-600">Restore</button>
+                        <button type="button" onClick={m.dismissCachedDraft} className="rounded border border-amber-300 px-2.5 py-1 font-medium hover:bg-amber-100">Dismiss</button>
+                    </span>
+                </div>
+            )}
+
+            <div className="flex min-h-0 flex-1">
+                {/* ── Left rail ─────────────────────────────────────────── */}
+                <aside ref={railRef} className="flex w-[320px] flex-shrink-0 flex-col overflow-hidden border-r border-neutral-200 bg-neutral-50">
+                    <div className="border-b border-neutral-200 px-4 py-3">
+                        <div className="text-[11px] font-bold uppercase tracking-[0.15em] text-amber-600">Editor v3</div>
+                        <h2 className="truncate text-sm font-bold text-neutral-900">{businessName}</h2>
+                    </div>
+                    {/* Panel switch */}
+                    <div className="flex gap-1 border-b border-neutral-200 p-2">
+                        {(["design", "content", "media"] as Panel[]).map((p) => (
+                            <button
+                                key={p}
+                                type="button"
+                                onClick={() => setPanel(p)}
+                                className={`flex-1 rounded-md px-2 py-1.5 text-[11px] font-semibold capitalize transition-colors ${panel === p ? "bg-neutral-900 text-white" : "text-neutral-500 hover:bg-neutral-100"}`}
+                            >{p}</button>
+                        ))}
+                    </div>
+
+                    <div className="min-h-0 flex-1 overflow-y-auto">
+                        {panel === "design" && (
+                            <>
+                                <section className="border-b border-neutral-200 p-4">
+                                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Template</h3>
+                                    {TEMPLATE_FAMILIES.map((fam) => (
+                                        <div key={fam.family} className="mb-3 last:mb-0">
+                                            <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">{fam.label}</div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {fam.templates.map((t) => {
+                                                    const active = t.code === m.currentHeroStyle;
+                                                    return (
+                                                        <button
+                                                            key={t.code}
+                                                            type="button"
+                                                            title={t.tagline}
+                                                            aria-pressed={active}
+                                                            onClick={() => m.onPickTemplate(t.code)}
+                                                            className={`flex flex-col gap-1.5 overflow-hidden rounded-lg border p-1.5 text-left transition-all ${active ? "border-amber-500 bg-amber-50 ring-1 ring-amber-500" : "border-neutral-200 bg-white hover:border-neutral-300 hover:-translate-y-px"}`}
+                                                        >
+                                                            <div className="v3-thumb relative aspect-[16/10] w-full overflow-hidden rounded-md border border-neutral-200 bg-white [&>iframe]:pointer-events-none [&>iframe]:absolute [&>iframe]:left-0 [&>iframe]:top-0 [&>iframe]:h-[800px] [&>iframe]:w-[1280px] [&>iframe]:origin-top-left [&>iframe]:border-0" data-src={t.preview}>
+                                                                <span className="v3-ph absolute inset-0 flex items-center justify-center text-[9px] uppercase tracking-wide text-neutral-300">preview</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-neutral-800">{t.label}</span>
+                                                                <span className="flex-shrink-0 font-mono text-[8px] uppercase text-neutral-400">{t.letter}</span>
+                                                            </div>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </section>
+                                <section className="border-b border-neutral-200 p-4">
+                                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
+                                        Colors {m.activeFamily && <span className="font-normal normal-case tracking-normal text-neutral-400">· suggested for {m.activeFamily}</span>}
+                                    </h3>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {["auto", ...curatedSchemes].filter((v, i, a) => a.indexOf(v) === i).map((id) => {
+                                            const active = m.currentScheme === id;
+                                            return (
+                                                <button key={id} type="button" title={COLOR_SCHEMES.find((c) => c.id === id)?.label ?? id} aria-pressed={active}
+                                                    onClick={() => setThemeField("colorScheme", id)}
+                                                    className={`flex flex-col items-center gap-1 rounded-lg border p-1.5 transition-colors ${active ? "border-amber-500 ring-1 ring-amber-500" : "border-neutral-200 hover:border-neutral-300"}`}>
+                                                    <span className="h-5 w-full rounded" style={{ background: SCHEME_SWATCH[id] ?? "#999" }} />
+                                                    <span className="w-full truncate text-center text-[8.5px] capitalize text-neutral-500">{id}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                                <section className="border-b border-neutral-200 p-4">
+                                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Font</h3>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {FONT_PAIRINGS.map((f) => {
+                                            const active = m.currentFont === f.id;
+                                            return (
+                                                <button key={f.id} type="button" aria-pressed={active} onClick={() => setThemeField("fontPairing", f.id)}
+                                                    className={`rounded-full border px-2.5 py-1 text-[11px] transition-colors ${active ? "border-amber-500 bg-amber-50 font-semibold text-amber-700" : "border-neutral-200 text-neutral-600 hover:border-neutral-300"}`}>
+                                                    {f.label}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                                <section className="p-4">
+                                    <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Sections</h3>
+                                    <div className="space-y-0.5">
+                                        {ALL_BLOCKS.map((b) => {
+                                            const on = m.isBlockEnabled(b.visKey);
+                                            const required = b.tag === "required";
+                                            return (
+                                                <button key={b.visKey} type="button" disabled={required} onClick={() => m.toggleBlock(b.visKey)} aria-checked={on} role="switch"
+                                                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${required ? "cursor-not-allowed opacity-60" : "hover:bg-neutral-100"}`}>
+                                                    <span className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${on ? "bg-emerald-500" : "bg-neutral-300"}`}>
+                                                        <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${on ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                                                    </span>
+                                                    <span className={`flex-1 text-[11px] font-medium ${on ? "text-neutral-700" : "text-neutral-400"}`}>{b.name}</span>
+                                                    {required && <span className="font-mono text-[8px] uppercase text-neutral-400">req</span>}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </section>
+                            </>
+                        )}
+
+                        {panel === "content" && (
+                            <div className="p-3">
+                                <p className="mb-2 px-1 text-[10px] leading-snug text-neutral-400">Edit any field here, or click text in the preview to jump to it. Lists, links &amp; images add/remove/reorder safely.</p>
+                                <ContentFieldsAuto getValue={m.getValue} setValue={m.setValue} openImagePicker={(path) => setImagePickerField(path)} pushLiveText={pushLiveText} />
+                            </div>
+                        )}
+
+                        {panel === "media" && (
+                            <section className="p-4">
+                                <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Media</h3>
+                                <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+                                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUpload(f, pendingImageField); }} />
+                                <div className="flex flex-col gap-2">
+                                    <button type="button" disabled={uploadingPhoto} onClick={() => { setPendingImageField(null); fileInputRef.current?.click(); }} className={TB}>
+                                        {uploadingPhoto ? "Uploading…" : "Upload photo"}
+                                    </button>
+                                    <button type="button" disabled={uploadingPhoto} onClick={() => { setPendingImageField("favicon"); fileInputRef.current?.click(); }} className={TB}>
+                                        Set favicon
+                                    </button>
+                                    {uploadError && <p className="text-[11px] text-red-600">{uploadError}</p>}
+                                    <p className="text-[10px] leading-snug text-neutral-400">Tip: click any image in the preview to swap it from your photos.</p>
+                                </div>
+                                {photos && photos.length > 0 && (
+                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                        {photos.map((url, i) => (
+                                            <img key={i} src={url} alt="" loading="lazy" className="aspect-square w-full rounded-md border border-neutral-200 object-cover" />
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+                        )}
+                    </div>
+                </aside>
+
+                {/* ── Preview + toolbar ─────────────────────────────────── */}
+                <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 bg-white px-3 py-2">
+                        <button type="button" onClick={handleSave} disabled={busy} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40">
+                            {saving ? "Saving…" : "Save changes"}
+                        </button>
+                        <button type="button" onClick={m.undo} disabled={!m.canUndo} className={TB} title="Undo (Ctrl/Cmd+Z)">Undo</button>
+                        <button type="button" onClick={m.redo} disabled={!m.canRedo} className={TB} title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
+                        <div className="ml-1 flex overflow-hidden rounded-lg border border-neutral-200">
+                            {(Object.keys(VIEWPORTS) as Array<keyof typeof VIEWPORTS>).map((vp) => (
+                                <button key={vp} type="button" onClick={() => setViewport(vp)} className={`px-2.5 py-1.5 text-[11px] font-semibold capitalize transition-colors ${viewport === vp ? "bg-neutral-900 text-white" : "bg-white text-neutral-500 hover:bg-neutral-100"}`}>{vp}</button>
+                            ))}
+                        </div>
+                        <button type="button" onClick={onRegenerate} disabled={busy} className={TB}>Regenerate</button>
+                        <a href={websitePublishedUrl || `/api/preview/${submissionId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-neutral-300">View site</a>
+                        <button type="button" onClick={onEnhanceImages} disabled={enhancing} className={TB}>{enhancing ? "Enhancing…" : "Enhance"}</button>
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                            {onApprove && <button type="button" onClick={onApprove} className={TB}>Approve</button>}
+                            {onReject && <button type="button" onClick={onReject} className={`${TB} !text-red-600`}>Reject</button>}
+                            {websitePublishedUrl ? (
+                                <>
+                                    <button type="button" onClick={onRepublish} disabled={republishingWebsite} className={TB}>{republishingWebsite ? "Republishing…" : "Republish"}</button>
+                                    <button type="button" onClick={onUnpublish} disabled={unpublishingWebsite} className={TB}>{unpublishingWebsite ? "Unpublishing…" : "Unpublish"}</button>
+                                </>
+                            ) : (
+                                <button type="button" onClick={onPublish} disabled={publishingWebsite || !websiteGenerated} className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-700 disabled:opacity-40">{publishingWebsite ? "Publishing…" : "Publish"}</button>
+                            )}
+                            <button type="button" onClick={onSendToClient} disabled={sendingEmail} className={TB}>{sendingEmail ? "Sending…" : "Send to client"}</button>
+                            {onToggleDetails && <button type="button" onClick={onToggleDetails} className={TB}>Details</button>}
+                            <button type="button" onClick={onDelete} className={`${TB} !text-red-600`}>Delete</button>
+                        </div>
+                    </div>
+
+                    <div className="relative flex-1 overflow-auto bg-neutral-100">
+                        {busy && (
+                            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+                                <div className="flex items-center gap-3 text-sm font-medium text-neutral-600">
+                                    <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-amber-500" />
+                                    {saving ? "Saving + rebuilding…" : "Rebuilding website…"}
+                                </div>
+                            </div>
+                        )}
+                        {m.previewSrc && (
+                            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 bg-amber-500/95 px-3 py-1.5 text-[11px] font-semibold text-white">
+                                <span className="truncate">Previewing this template with demo content — click “Save changes” to apply it to your site.</span>
+                                <button type="button" onClick={() => m.setPreviewSrc(null)} className="flex-shrink-0 rounded bg-white/20 px-2 py-0.5 hover:bg-white/30">Back to my site</button>
+                            </div>
+                        )}
+                        <div className="mx-auto h-full bg-white" style={vw ? { width: vw, maxWidth: "100%", boxShadow: "0 0 0 1px rgba(0,0,0,0.06)" } : { width: "100%" }}>
+                            {m.previewSrc ? (
+                                <iframe key="v3-static" ref={iframeRef} src={m.previewSrc} title="Template design preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={applyTheme} />
+                            ) : htmlContent ? (
+                                <iframe key="v3-built" ref={iframeRef} srcDoc={previewHtml} title="Website preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={() => { setupInlineEditing(); applyTheme(); }} />
+                            ) : (
+                                <div className="flex h-full items-center justify-center text-sm text-neutral-400">No website generated yet.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <ImagePickerModal
+                open={!!imagePickerField}
+                field={imagePickerField}
+                originals={photos ?? []}
+                enhanced={(enhancedImageUrls ?? []) as unknown as Record<string, any>}
+                onClose={() => setImagePickerField(null)}
+                onSelect={handleImagePick}
+            />
+            <LinkPopover open={!!linkData} initial={linkData} onClose={() => setLinkData(null)} onSave={handleLinkSave} />
+        </div>
+    );
+}
