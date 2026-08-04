@@ -4,56 +4,65 @@ import Link from "next/link";
 import { Logo } from "./landingPrimitives";
 import { useT, type Lang } from "./i18n";
 
-const selectStyle: React.CSSProperties = {
-    appearance: "none",
-    border: "1px solid var(--neo-rule)",
-    background: "var(--neo-paper-3)",
-    color: "var(--neo-ink)",
-    padding: "8px 12px",
-    fontFamily: "var(--neo-mono)",
-    fontSize: 11,
-    letterSpacing: ".08em",
-    textTransform: "uppercase",
-    cursor: "pointer",
-    borderRadius: 8,
-};
-
 export default function Navbar() {
     const { lang, setLang, t } = useT();
-    return (
-        <div className="topbar">
-            <div
-                className="container-wide flex items-center justify-between gap-3"
-                style={{ paddingTop: 12, paddingBottom: 12 }}
-            >
-                {/* Left cluster — logo + live status (status hides on phones) */}
-                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                    <Link href="/" style={{ textDecoration: "none" }} className="flex-shrink-0">
-                        <Logo />
-                    </Link>
-                    {/* Region label — hide on <md to avoid wrap/overflow. (Region
-                        dropdown removed: PH-only for now; this label states it.) */}
-                    <div className="label items-center gap-2 hidden md:flex">
-                        <span className="live-dot"></span>
-                        {t("nav.live")}
-                    </div>
-                </div>
 
-                {/* Right cluster — language switch. (The "Get the app" button
-                    moved to the dedicated download section below the hero.) */}
-                <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+    // Anchors are home-anchored (/#id) so they work from the sub-pages too, and
+    // render as plain <a> (Next <Link> doesn't reliably scroll to same-page hashes).
+    const links = [
+        { href: "/#how-it-works", label: t("nav.how") },
+        { href: "/#proof", label: t("nav.sites") },
+        { href: "/#pricing", label: t("nav.pricing") },
+        { href: "/for-creators", label: t("nav.creators") },
+    ];
+
+    return (
+        <header className="sticky top-0 z-50 border-b border-ink/10 bg-khaki/85 backdrop-blur-md">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3.5">
+                <Link href="/" aria-label="Tendso home" className="flex-shrink-0">
+                    <Logo />
+                </Link>
+
+                <nav className="hidden items-center gap-7 md:flex">
+                    {links.map((l) =>
+                        l.href.includes("#") ? (
+                            <a
+                                key={l.href}
+                                href={l.href}
+                                className="text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+                            >
+                                {l.label}
+                            </a>
+                        ) : (
+                            <Link
+                                key={l.href}
+                                href={l.href}
+                                className="text-sm font-medium text-ink-soft transition-colors hover:text-ink"
+                            >
+                                {l.label}
+                            </Link>
+                        ),
+                    )}
+                </nav>
+
+                <div className="flex items-center gap-2 sm:gap-3">
                     <select
                         value={lang}
                         onChange={(e) => setLang(e.target.value as Lang)}
-                        style={selectStyle}
                         aria-label="Language"
-                        className="hidden sm:inline-block"
+                        className="hidden rounded-lg border border-ink/15 bg-white px-2.5 py-1.5 font-mono text-[11px] uppercase tracking-wide text-ink-soft sm:inline-block"
                     >
                         <option value="en">EN</option>
-                        <option value="tl">Tagalog</option>
+                        <option value="tl">TL</option>
                     </select>
+                    <Link
+                        href="/for-business"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+                    >
+                        {t("hero.ctaBusiness")}
+                    </Link>
                 </div>
             </div>
-        </div>
+        </header>
     );
 }

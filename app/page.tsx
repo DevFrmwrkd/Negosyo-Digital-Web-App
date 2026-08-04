@@ -1,83 +1,64 @@
 "use client";
 
-import { useState } from "react";
-
 import { LanguageProvider } from "@/components/landing/i18n";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import ScrollToTop from "@/components/landing/ScrollToTop";
 
 import HeroSection from "@/components/landing/HeroSection";
-import ShowcaseSection from "@/components/landing/ShowcaseSection";
-import HowItWorks from "@/components/landing/HowItWorks";
+import RealSitesSection from "@/components/landing/RealSitesSection";
 import ProcessSection from "@/components/landing/ProcessSection";
-import ManifestoSection from "@/components/landing/ManifestoSection";
 import BusinessPricingSection from "@/components/landing/BusinessPricingSection";
-import EarningsSection from "@/components/landing/EarningsSection";
-import DirectorySection from "@/components/landing/DirectorySection";
-import AppDownloadSection from "@/components/landing/AppDownloadSection";
+import ManifestoSection from "@/components/landing/ManifestoSection";
 import FaqSection from "@/components/landing/FaqSection";
 import CtaSection from "@/components/landing/CtaSection";
 
 import StickyCTA from "@/components/landing/StickyCTA";
 import ChatBot from "@/components/landing/ChatBot";
-import CreatorSheet from "@/components/landing/CreatorSheet";
-import BusinessSheet from "@/components/landing/BusinessSheet";
+import ScrollReveal from "@/components/landing/ScrollReveal";
 
-import type { Creator, LiveBusiness } from "@/components/landing/landingData";
-
+/**
+ * Tendso landing — WordPress-informed, modern-SaaS system on the brand palette
+ * (warm paper + one gold accent, Fraunces display + Plus Jakarta body). Every
+ * section is data-true (no fabricated counters/creators/testimonials) and
+ * bilingual (EN/TL). Owners are customers only — no owner signup anywhere.
+ *
+ * Owner-first narrative: hero → real-sites proof → pricing → how it works
+ * (process) → FAQ → manifesto → final CTA → footer. Creator content lives on
+ * /for-creators; the homepage keeps only a secondary creator pointer.
+ *
+ * ChatBot still uses the legacy `.neo` tokens, so it keeps a minimal wrapper
+ * until it's converted; everything else runs on brand tokens.
+ */
 export default function Home() {
-    const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
-    const [selectedBusiness, setSelectedBusiness] = useState<LiveBusiness | null>(null);
-
     return (
         <LanguageProvider>
-        <div className="neo min-h-screen overflow-x-hidden">
-            <Navbar />
+            <div className="reveal-scope min-h-screen overflow-x-clip bg-khaki text-ink">
+                <Navbar />
 
-            <main>
-                {/* Hero with counters + two doors */}
-                <HeroSection />
+                {/* Owner-first homepage: the paying customer (business owner) is the
+                    single primary audience. Creators keep a secondary path (the hero
+                    pointer, the "For creators" nav link, the footer, and /for-creators)
+                    — the creator earnings + creator-app bands live on /for-creators. */}
+                {/* Bands alternate paper (khaki) / wash (khaki-deep) so no two
+                    adjacent sections share a tone: p,w,p,w,p,w,ink. */}
+                <main>
+                    <HeroSection />
+                    <RealSitesSection />
+                    <BusinessPricingSection />
+                    <ProcessSection />
+                    <FaqSection businessOnly />
+                    <ManifestoSection />
+                    <CtaSection focus="business" />
+                </main>
 
-                {/* Get the app — placed high as a priority to drive downloads */}
-                <AppDownloadSection />
+                <Footer />
 
-                {/* Live map (Convex listPublished → falls back to 4 known sites) */}
-                <ShowcaseSection
-                    onSelectCreator={setSelectedCreator}
-                    onSelectBusiness={setSelectedBusiness}
-                />
-
-                {/* How it works (two tracks side-by-side) */}
-                <HowItWorks />
-
-                {/* Process — Online Kit pipeline */}
-                <ProcessSection />
-
-                {/* Manifesto — the 99% statement */}
-                <ManifestoSection />
-
-                {/* Directory (rails of creators + businesses) */}
-                <DirectorySection
-                    onSelectCreator={setSelectedCreator}
-                    onSelectBusiness={setSelectedBusiness}
-                />
-
-                {/* FAQ */}
-                <FaqSection />
-
-                {/* Final CTA (the two doors, big) */}
-                <CtaSection />
-            </main>
-
-            <Footer />
-
-            <StickyCTA />
-            <ChatBot />
-            <CreatorSheet creator={selectedCreator} onClose={() => setSelectedCreator(null)} />
-            <BusinessSheet business={selectedBusiness} onClose={() => setSelectedBusiness(null)} />
-            <ScrollToTop />
-        </div>
+                <StickyCTA />
+                <ScrollToTop />
+                <ChatBot />
+                <ScrollReveal />
+            </div>
         </LanguageProvider>
     );
 }

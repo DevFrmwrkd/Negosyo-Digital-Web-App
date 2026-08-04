@@ -1,113 +1,87 @@
 "use client";
 
+import Link from "next/link";
+import { useT } from "./i18n";
+import { Eyebrow, SectionHeading, Lead } from "./ui";
+
+/**
+ * How it works — two honest tracks side by side (business owner vs creator).
+ * WP-style: paper band, quiet bordered cards, mono step numbers, one gold accent
+ * (the per-track CTA link). Content is TRUE: owners never "sign up" (a creator
+ * comes to them; they only review + pay when live); the creator track is the one
+ * real signup. Turnaround is framed as typical, not guaranteed.
+ */
+
 function Track({
     label,
     steps,
-    kind,
+    ctaLabel,
+    ctaHref,
 }: {
     label: string;
     steps: string[];
-    kind: "business" | "creator";
+    ctaLabel: string;
+    ctaHref: string;
 }) {
-    const bg = kind === "creator" ? "var(--neo-creator-bg)" : "var(--neo-business-bg)";
-    const ink = kind === "creator" ? "var(--neo-creator-ink)" : "var(--neo-business-ink)";
     return (
-        <div className="card" style={{ background: "var(--neo-paper-3)", padding: "40px 32px 32px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 32 }}>
-                <span
-                    style={{
-                        padding: "4px 10px",
-                        background: bg,
-                        color: ink,
-                        fontFamily: "var(--neo-mono)",
-                        fontSize: 10,
-                        letterSpacing: ".12em",
-                        textTransform: "uppercase",
-                        borderRadius: 999,
-                    }}
-                >
-                    {label}
-                </span>
-            </div>
-            <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 1 }}>
+        <div className="flex flex-col rounded-2xl border border-ink/10 bg-khaki p-7 sm:p-8">
+            <span className="inline-flex w-fit items-center rounded-full border border-ink/15 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                {label}
+            </span>
+            <ol className="mt-6 flex flex-col">
                 {steps.map((s, i) => (
                     <li
                         key={i}
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: "44px 1fr",
-                            alignItems: "baseline",
-                            padding: "20px 0",
-                            borderTop: "1px solid var(--neo-rule)",
-                        }}
+                        className="grid grid-cols-[2.25rem_1fr] items-baseline gap-2 border-t border-ink/10 py-4 first:border-t-0 first:pt-0"
                     >
-                        <span
-                            style={{
-                                fontFamily: "var(--neo-mono)",
-                                fontSize: 12,
-                                color: ink,
-                                letterSpacing: ".05em",
-                            }}
-                        >
-                            0{i + 1}
-                        </span>
-                        <span
-                            style={{
-                                fontFamily: "var(--neo-serif)",
-                                fontSize: 22,
-                                lineHeight: 1.2,
-                                letterSpacing: "-.01em",
-                            }}
-                        >
-                            {s}
-                        </span>
+                        <span className="font-mono text-xs text-ink-soft">0{i + 1}</span>
+                        <span className="text-[15px] leading-snug text-ink sm:text-base">{s}</span>
                     </li>
                 ))}
             </ol>
+            <Link
+                href={ctaHref}
+                className="mt-7 inline-flex w-fit items-center gap-1 text-sm font-semibold text-rust transition-opacity hover:opacity-70"
+            >
+                {ctaLabel}
+                <span aria-hidden>→</span>
+            </Link>
         </div>
     );
 }
 
-export default function HowItWorks({ door = null }: { door?: "business" | "creator" | null }) {
-    const business = [
-        "Sign up — no card required until your site is live.",
-        "Pick a creator nearby. Or let one find you.",
-        "Sit for a short interview. 30 minutes, your shop.",
-        "Approve your site. Pay only once it's live (₱999 or ₱1,499).",
-    ];
-    const creator = [
-        "Download the app and verify your phone.",
-        "Get certified — free, fast, in 20 minutes.",
-        "Visit local businesses with guided capture.",
-        "Keep 50% of every sale — ₱500 to ₱2,500 per site · ₱1,000 referral.",
-    ];
-    const businessFirst = door !== "creator";
+export default function HowItWorks() {
+    const { t } = useT();
+
+    const business = [t("how.biz1"), t("how.biz2"), t("how.biz3"), t("how.biz4")];
+    const creator = [t("how.creator1"), t("how.creator2"), t("how.creator3"), t("how.creator4")];
 
     return (
-        <section id="how-it-works" style={{ background: "var(--neo-paper-2)" }}>
-            <div className="container-wide">
-                <div className="sect-h">
-                    <div className="eyebrow">How It Works</div>
-                    <div>
-                        <h2 className="display-2">
-                            Two flows. <em style={{ color: "var(--neo-creator)", fontStyle: "italic" }}>Side by side.</em>
-                        </h2>
-                        <p className="lede" style={{ marginTop: 12 }}>
-                            Pick yours. The other one is for someone else. That&apos;s the entire point of this page.
-                        </p>
-                    </div>
+        <section id="how-it-works" className="bg-khaki">
+            <div className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+                <div className="mx-auto max-w-2xl text-center">
+                    <Eyebrow>{t("how.eyebrow")}</Eyebrow>
+                    <SectionHeading className="mt-4">
+                        {t("how.titleA")}{" "}
+                        <span className="italic" style={{ color: "var(--rust)", fontWeight: 560 }}>
+                            {t("how.titleB")}
+                        </span>
+                    </SectionHeading>
+                    <Lead className="mx-auto mt-5 max-w-xl">{t("how.lede")}</Lead>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2">
                     <Track
-                        label={businessFirst ? "For business owners" : "For creators"}
-                        steps={businessFirst ? business : creator}
-                        kind={businessFirst ? "business" : "creator"}
+                        label={t("how.bizLabel")}
+                        steps={business}
+                        ctaLabel={t("how.bizCta")}
+                        ctaHref="/for-business"
                     />
                     <Track
-                        label={businessFirst ? "For creators" : "For business owners"}
-                        steps={businessFirst ? creator : business}
-                        kind={businessFirst ? "creator" : "business"}
+                        label={t("how.creatorLabel")}
+                        steps={creator}
+                        ctaLabel={t("how.creatorCta")}
+                        ctaHref="/for-creators"
                     />
                 </div>
             </div>

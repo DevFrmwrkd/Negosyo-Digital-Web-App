@@ -16,6 +16,7 @@ import {
     Download,
     Sparkles,
     FileText,
+    Star,
     LogOut,
     Menu,
     X,
@@ -52,6 +53,11 @@ const navItems = [
         label: "App Release",
         href: "/admin/app-release",
         icon: Download,
+    },
+    {
+        label: "Featured Sites",
+        href: "/admin/featured-sites",
+        icon: Star,
     },
     {
         label: "Train AI",

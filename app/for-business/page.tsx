@@ -2,185 +2,91 @@
 
 import Link from "next/link";
 
+import { LanguageProvider, useT } from "@/components/landing/i18n";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import ScrollToTop from "@/components/landing/ScrollToTop";
+import ChatBot from "@/components/landing/ChatBot";
+import ScrollReveal from "@/components/landing/ScrollReveal";
 
-import ShowcaseSection from "@/components/landing/ShowcaseSection";
 import ProcessSection from "@/components/landing/ProcessSection";
+import RealSitesSection from "@/components/landing/RealSitesSection";
 import BusinessPricingSection from "@/components/landing/BusinessPricingSection";
 import FaqSection from "@/components/landing/FaqSection";
 import CtaSection from "@/components/landing/CtaSection";
-import ChatBot from "@/components/landing/ChatBot";
+import { Eyebrow, Lead } from "@/components/landing/ui";
 
-import { ArrowUpRightIcon } from "@/components/landing/landingPrimitives";
-
-function PromiseBeat({
-    n,
-    big,
-    sub,
-    highlight,
-}: {
-    n: string;
-    big: string;
-    sub: string;
-    highlight?: boolean;
-}) {
+function Check() {
     return (
-        <div
-            style={{
-                padding: 20,
-                background: highlight ? "var(--neo-ink)" : "var(--neo-paper-3)",
-                color: highlight ? "var(--neo-paper)" : "var(--neo-ink)",
-                border: "1px solid " + (highlight ? "var(--neo-ink)" : "var(--neo-rule)"),
-                borderRadius: "var(--neo-r-md)",
-            }}
-        >
-            <div
-                className="label"
-                style={{ marginBottom: 8, color: highlight ? "oklch(72% 0.008 85)" : undefined }}
-            >
-                {n}
-            </div>
-            <div className="counter-num" style={{ fontSize: 36, lineHeight: 1.0, marginBottom: 8 }}>
-                {big}
-            </div>
-            <div style={{ fontSize: 12, color: highlight ? "oklch(80% 0.008 85)" : "var(--neo-ink-3)" }}>
-                {sub}
-            </div>
-        </div>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="flex-shrink-0" style={{ color: "var(--rust)" }}>
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
     );
 }
 
+/**
+ * BusinessHero — owner-facing, WP style, data-true. No owner signup (CTAs are
+ * info anchors), no "48 hours" (48–72h), no "our subdomain" (that wildcard
+ * doesn't exist), no live-map. Reuses the home hero copy + the pricing standard
+ * features as the deliverables list.
+ */
 function BusinessHero() {
+    const { t } = useT();
+    const deliverables = [
+        t("price.stdF1"), t("price.stdF2"), t("price.stdF3"),
+        t("price.stdF4"), t("price.stdF5"), t("price.stdF6"),
+    ];
     return (
-        <section style={{ paddingTop: 56, paddingBottom: 48 }}>
-            <div className="container-wide">
-                <Link
-                    href="/"
-                    className="label"
-                    style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        marginBottom: 24,
-                        textDecoration: "none",
-                        color: "var(--neo-ink-3)",
-                    }}
-                >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M9 1 L3 7 L9 13" stroke="currentColor" strokeWidth="1.4" />
-                    </svg>
-                    Back to landing
+        <section className="bg-khaki">
+            <div className="mx-auto max-w-6xl px-6 pt-10 pb-16 sm:pt-14 sm:pb-20">
+                <Link href="/" className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-ink">
+                    <span aria-hidden>←</span> {t("biz.back")}
                 </Link>
 
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "1.4fr 1fr",
-                        gap: 64,
-                        alignItems: "end",
-                    }}
-                >
+                <div className="mt-8 grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
                     <div>
-                        <div
-                            className="eyebrow"
-                            style={{
-                                marginBottom: 24,
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 10,
-                                padding: "6px 14px",
-                                border: "1px solid var(--neo-rule)",
-                                borderRadius: "var(--neo-r-pill)",
-                                background: "var(--neo-paper-3)",
-                                color: "var(--neo-business)",
-                            }}
+                        <span className="inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--rust)" }} />
+                            {t("hero.trustChip")}
+                        </span>
+                        <Eyebrow className="mt-6">{t("how.bizLabel")}</Eyebrow>
+                        <h1
+                            className="mt-3 max-w-2xl font-fraunces text-[clamp(2.25rem,5vw,3.75rem)] leading-[1.05] tracking-[-0.02em] text-ink"
+                            style={{ fontWeight: 560, fontOpticalSizing: "auto" }}
                         >
-                            <span
-                                style={{
-                                    display: "inline-block",
-                                    width: 8,
-                                    height: 8,
-                                    background: "var(--neo-business)",
-                                    transform: "rotate(45deg)",
-                                }}
-                            />
-                            For business owners
-                        </div>
-                        <h1 className="display" style={{ fontSize: "clamp(56px, 7.5vw, 120px)" }}>
-                            Your shop. <em style={{ fontStyle: "italic" }}>Online in 48 hours.</em>
+                            {t("hero.h1a")}{" "}
+                            <span className="whitespace-nowrap">
+                                {t("hero.h1b")}
+                                <span className="italic" style={{ color: "var(--rust)", fontWeight: 560 }}>{t("hero.h1c")}</span>
+                            </span>
                         </h1>
-                        <p className="lede" style={{ marginTop: 28, fontSize: 19, maxWidth: "56ch" }}>
-                            A trained creator visits your shop with a phone and a checklist. You answer questions about your business. They shoot, write, build, and publish. You approve. You pay. That&apos;s the entire process.
-                        </p>
+                        <Lead className="mt-5 max-w-xl">{t("hero.lede")}</Lead>
 
-                        <div
-                            style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(3, 1fr)",
-                                gap: 16,
-                                marginTop: 40,
-                                maxWidth: 720,
-                            }}
-                        >
-                            <PromiseBeat n="01" big="30 min" sub="Interview, in your shop" />
-                            <PromiseBeat n="02" big="48 hr" sub="From visit to live site" />
-                            <PromiseBeat n="03" big="0" sub="Times you touch a keyboard" highlight />
+                        <div className="mt-8 flex flex-wrap items-center gap-3">
+                            <a href="#proof" className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">
+                                {t("hero.ctaProof")} <span aria-hidden>→</span>
+                            </a>
+                            <a href="#pricing" className="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-ink/35">
+                                {t("biz.seePrice")}
+                            </a>
                         </div>
 
-                        <div style={{ marginTop: 32, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                            <Link
-                                href="/signup"
-                                className="door door-business"
-                                style={{ textDecoration: "none", display: "inline-flex" }}
-                            >
-                                Get started <span className="arrow"><ArrowUpRightIcon /></span>
-                            </Link>
-                            <Link
-                                href="/#showcase"
-                                className="door door-ghost"
-                                style={{ textDecoration: "none", display: "inline-flex" }}
-                            >
-                                Browse the live map
-                            </Link>
+                        <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-sm text-ink-soft">
+                            {[t("hero.tag1"), t("hero.tag2"), t("hero.tag3")].map((tag) => (
+                                <span key={tag} className="inline-flex items-center gap-1.5"><Check />{tag}</span>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="surface" style={{ padding: 24 }}>
-                        <div className="label" style={{ marginBottom: 16 }}>What lands in your hands</div>
-                        {[
-                            "A live website on your own domain or our subdomain",
-                            "World-class photography of your shop",
-                            "Written copy — your story, told properly",
-                            "Hosting + SSL — first year included",
-                            "Small edits free within 7 days of launch",
-                            "You own it all. Take it anywhere.",
-                        ].map((s, i) => (
-                            <div
-                                key={i}
-                                style={{
-                                    display: "flex",
-                                    alignItems: "baseline",
-                                    gap: 12,
-                                    padding: "10px 0",
-                                    borderTop: "1px solid var(--neo-rule)",
-                                    fontSize: 14,
-                                }}
-                            >
-                                <span
-                                    className="mono"
-                                    style={{
-                                        fontSize: 10,
-                                        color: "var(--neo-ink-3)",
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    0{i + 1}
-                                </span>
-                                <span>{s}</span>
-                            </div>
-                        ))}
+                    <div className="rounded-2xl border border-ink/10 bg-khaki-deep p-6 sm:p-7">
+                        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">{t("process.kitLabel")}</div>
+                        <ul className="mt-4 flex flex-col">
+                            {deliverables.map((d, i) => (
+                                <li key={i} className="flex items-center gap-2.5 border-t border-ink/10 py-3 text-sm leading-snug text-ink first:border-t-0 first:pt-0">
+                                    <Check /><span>{d}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -190,19 +96,22 @@ function BusinessHero() {
 
 export default function ForBusinessPage() {
     return (
-        <div className="neo min-h-screen overflow-x-hidden">
-            <Navbar />
-            <main>
-                <BusinessHero />
-                <ProcessSection />
-                <ShowcaseSection />
-                <BusinessPricingSection />
-                <FaqSection />
-                <CtaSection />
-            </main>
-            <Footer />
-            <ChatBot />
-            <ScrollToTop />
-        </div>
+        <LanguageProvider>
+            <div className="reveal-scope min-h-screen overflow-x-clip bg-khaki text-ink">
+                <Navbar />
+                <main>
+                    <BusinessHero />
+                    <RealSitesSection />
+                    <BusinessPricingSection />
+                    <ProcessSection />
+                    <FaqSection businessOnly />
+                    <CtaSection focus="business" />
+                </main>
+                <Footer />
+                <ChatBot />
+                <ScrollToTop />
+                <ScrollReveal />
+            </div>
+        </LanguageProvider>
     );
 }
