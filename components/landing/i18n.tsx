@@ -151,6 +151,8 @@ const EN: Dict = {
     "price.domF4": "You own the domain — we never auto-renew",
     "price.domF5": "A reminder before it renews",
     "price.domF6": "Same build, same review-before-you-pay",
+    "price.domainAddon":
+        "Optional add-on: prefer your own custom .com? We can register and set one up when your site goes live — just ask.",
     "price.footnote":
         "No card on file. No fine print. No charges later.",
 
@@ -381,6 +383,8 @@ const TL: Dict = {
     "price.domF4": "Sa'yo ang domain — hindi namin auto-nirerenew",
     "price.domF5": "May paalala bago mag-renew",
     "price.domF6": "Parehong build, parehong review bago magbayad",
+    "price.domainAddon":
+        "Optional add-on: gusto ng sariling custom na .com? Pwede naming i-register at i-set up kapag live na ang site — sabihin mo lang.",
     "price.footnote":
         "Walang card na nakatago. Walang maliit na letra. Walang sorpresang singil.",
 
