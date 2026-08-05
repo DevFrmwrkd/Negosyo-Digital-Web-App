@@ -397,12 +397,19 @@ export const syncSubmissionToDrive = internalAction({
                 }
             }
 
-            if (website?.htmlContent) {
+            // HTML is inline (legacy) or in file storage (htmlStorageId). Read
+            // the blob directly since this is an action with ctx.storage.
+            const siteHtml: string = website?.htmlContent
+                ? website.htmlContent
+                : ((website as any)?.htmlStorageId
+                    ? ((await (await ctx.storage.get((website as any).htmlStorageId))?.text()) ?? "")
+                    : "");
+            if (siteHtml) {
                 try {
                     await writeTextFile(
                         drive,
                         "index.html",
-                        website.htmlContent,
+                        siteHtml,
                         siteFolder.id,
                     );
                 } catch (e: any) {

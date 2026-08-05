@@ -38,7 +38,12 @@ export async function POST(request: NextRequest) {
             templateName: existingWebsite.templateName || 'default',
             extractedContent: content,
             customizations: customizations || existingWebsite.customizations,
+            // Preserve whatever HTML the row currently has — inline htmlContent
+            // for legacy rows, htmlStorageId for migrated rows — so a legacy site
+            // is NOT left with no HTML during (or after a failed) regenerate. This
+            // upsert is transient; generate-website re-saves the fresh HTML below.
             htmlContent: existingWebsite.htmlContent,
+            htmlStorageId: existingWebsite.htmlStorageId,
             status: existingWebsite.status,
         })
 

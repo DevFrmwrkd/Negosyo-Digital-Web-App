@@ -871,7 +871,15 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
         }
 
         // Save to Convex using mutations
-        const { fetchMutation } = await import('convex/nextjs')
+        const { fetchMutation, fetchAction } = await import('convex/nextjs')
+
+        // Store the built HTML in Convex file storage (it can exceed the 1 MiB
+        // per-document limit, which was throwing "Value is too large" on upsert)
+        // and keep only the reference on the row. Readers resolve it via the
+        // htmlUrl the getBySubmission* queries return — see lib/website-html.ts.
+        const htmlStorageId = await fetchAction(api.generatedWebsites.storeHtml, {
+            html: generatedHtml,
+        })
 
         // Save generated website to Convex (legacy table - kept for backward compatibility)
         const websiteId = await fetchMutation(api.generatedWebsites.upsert, {
@@ -879,7 +887,7 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             templateName: selectedTemplate,
             extractedContent: contentWithContact,
             customizations: finalCustomizations,
-            htmlContent: generatedHtml,
+            htmlStorageId,
             status: 'draft',
         })
 
