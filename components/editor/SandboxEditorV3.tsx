@@ -25,6 +25,7 @@ import type { SandboxEditorProps } from "./SandboxEditor";
 import { TEMPLATE_FAMILIES, templateByCode } from "./templateCatalog";
 import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED } from "./editorConstants";
 import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
+import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorRole, type ColorProp } from "@/lib/roleColors";
 import { useEditorDraft } from "./useEditorDraft";
 import { applyImageSlot, isImageField, uploadImage } from "./editorImageSlots";
 import ContentFieldsAuto from "./ContentFieldsAuto";
@@ -73,6 +74,25 @@ function applyThemeToIframe(iframe: HTMLIFrameElement | null, scheme: string, fo
     } catch { /* same-origin access can throw — Save still applies it for real */ }
 }
 
+// Inject per-role colour overrides (click-to-recolour) live into the preview
+// iframe. Mirrors applyThemeToIframe; the same CSS is baked into the built HTML
+// in app/api/generate-website so the colours persist on Save + Publish.
+function applyRoleColorsToIframe(iframe: HTMLIFrameElement | null, roleColors: Record<string, string> | undefined) {
+    try {
+        const doc = iframe?.contentDocument;
+        if (!doc || !doc.body) return;
+        const css = buildRoleColorCss(roleColors);
+        let styleEl = doc.getElementById("ed-role-colors") as HTMLStyleElement | null;
+        if (!css) { if (styleEl) styleEl.textContent = ""; return; }
+        if (!styleEl) {
+            styleEl = doc.createElement("style");
+            styleEl.id = "ed-role-colors";
+            doc.body.appendChild(styleEl);
+        }
+        styleEl.textContent = css;
+    } catch { /* same-origin can throw; Save bakes it in anyway */ }
+}
+
 type Panel = "design" | "content" | "media";
 
 export default function SandboxEditorV3(props: SandboxEditorProps) {
@@ -102,6 +122,10 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     const [pendingImageField, setPendingImageField] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    // Click-to-recolour (per-role): colorMode routes canvas clicks to a colour
+    // popover instead of the text/link/image editors.
+    const [colorMode, setColorMode] = useState(false);
+    const [colorPopover, setColorPopover] = useState<{ role: ColorRole; prop: ColorProp; curBg: string; curFg: string } | null>(null);
 
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const railRef = useRef<HTMLDivElement | null>(null);
@@ -188,6 +212,36 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         }));
     }, []);
 
+    // ── Click-to-recolour (per-role) ──────────────────────────────────────
+    const applyRoleColors = useCallback(() => {
+        applyRoleColorsToIframe(iframeRef.current, (m.effectiveCustomizations as any)?.roleColors);
+    }, [m.effectiveCustomizations]);
+
+    const toggleColorMode = useCallback(() => {
+        setColorMode((prev) => {
+            const next = !prev;
+            try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:set-mode", mode: next ? "color" : "edit" }, "*"); } catch { /* ignore */ }
+            if (!next) setColorPopover(null);
+            return next;
+        });
+    }, []);
+
+    const applyRoleColor = useCallback((role: ColorRole, prop: ColorProp, color: string | null) => {
+        const key = roleColorKey(role, prop);
+        m.setRoleColor(key, color);
+        const base = (((m.effectiveCustomizations as any)?.roleColors) ?? {}) as Record<string, string>;
+        const nextMap = { ...base };
+        if (color) nextMap[key] = color; else delete nextMap[key];
+        applyRoleColorsToIframe(iframeRef.current, nextMap);
+    }, [m]);
+
+    const handleIframeLoad = useCallback(() => {
+        setupInlineEditing();
+        applyTheme();
+        applyRoleColors();
+        if (colorMode) { try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:set-mode", mode: "color" }, "*"); } catch { /* ignore */ } }
+    }, [setupInlineEditing, applyTheme, applyRoleColors, colorMode]);
+
     // ── ed:* click routing (from v1, adapted to the 3-panel rail) ─────────
     useEffect(() => {
         function onMessage(e: MessageEvent) {
@@ -206,6 +260,11 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
             }
             if (data.type === "ed:image-click" && typeof data.field === "string") {
                 setImagePickerField(data.field);
+                return;
+            }
+            if (data.type === "ed:color-click" && typeof data.field === "string") {
+                const role = roleForField(data.field, !!data.isButton);
+                setColorPopover({ role, prop: COLOR_ROLES[role].defaultProp, curBg: String(data.curBg || ""), curFg: String(data.curFg || "") });
                 return;
             }
             if (data.type === "ed:select" && typeof data.field === "string") {
@@ -526,6 +585,9 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         </button>
                         <button type="button" onClick={m.undo} disabled={!m.canUndo} className={TB} title="Undo (Ctrl/Cmd+Z)">Undo</button>
                         <button type="button" onClick={m.redo} disabled={!m.canRedo} className={TB} title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
+                        <button type="button" onClick={toggleColorMode} aria-pressed={colorMode} className={`${TB}${colorMode ? " ring-2 ring-neutral-900" : ""}`} title="Colour mode — click any button, heading, or text on the page to recolour its whole kind">
+                            {colorMode ? "🎨 Colors ✓" : "🎨 Colors"}
+                        </button>
                         <div className="ml-1 flex overflow-hidden rounded-lg border border-neutral-200">
                             {(Object.keys(VIEWPORTS) as Array<keyof typeof VIEWPORTS>).map((vp) => (
                                 <button key={vp} type="button" onClick={() => setViewport(vp)} className={`px-2.5 py-1.5 text-[11px] font-semibold capitalize transition-colors ${viewport === vp ? "bg-neutral-900 text-white" : "bg-white text-neutral-500 hover:bg-neutral-100"}`}>{vp}</button>
@@ -568,9 +630,9 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         )}
                         <div className="mx-auto h-full bg-white" style={vw ? { width: vw, maxWidth: "100%", boxShadow: "0 0 0 1px rgba(0,0,0,0.06)" } : { width: "100%" }}>
                             {previewBuildHtml ? (
-                                <iframe key="v3-preview" ref={iframeRef} srcDoc={injectEditorBridge(previewBuildHtml)} title="Unsaved preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={() => { setupInlineEditing(); applyTheme(); }} />
+                                <iframe key="v3-preview" ref={iframeRef} srcDoc={injectEditorBridge(previewBuildHtml)} title="Unsaved preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={handleIframeLoad} />
                             ) : htmlContent ? (
-                                <iframe key="v3-saved" ref={iframeRef} srcDoc={previewHtml} title="Website preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={() => { setupInlineEditing(); applyTheme(); }} />
+                                <iframe key="v3-saved" ref={iframeRef} srcDoc={previewHtml} title="Website preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={handleIframeLoad} />
                             ) : (
                                 <div className="flex h-full items-center justify-center text-sm text-neutral-400">No website generated yet.</div>
                             )}
@@ -579,6 +641,46 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                 </div>
             </div>
 
+            {colorMode && !colorPopover && (
+                <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 9998, background: "#0f172a", color: "#fff", borderRadius: 999, padding: "8px 16px", fontSize: 12, fontWeight: 600, fontFamily: "ui-sans-serif, system-ui, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
+                    🎨 Colour mode — click a button, heading, or text to recolour its kind
+                </div>
+            )}
+            {colorPopover && (() => {
+                const def = COLOR_ROLES[colorPopover.role];
+                const prop = colorPopover.prop;
+                const key = roleColorKey(colorPopover.role, prop);
+                const existing = (((m.effectiveCustomizations as any)?.roleColors) ?? {})[key] as string | undefined;
+                const fallback = prop === "bg" ? (colorPopover.curBg || "#3366cc") : (colorPopover.curFg || "#111111");
+                const value = (existing || fallback || "#000000").slice(0, 7);
+                return (
+                    <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 9998, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, boxShadow: "0 16px 40px rgba(0,0,0,0.22)", padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, fontFamily: "ui-sans-serif, system-ui, sans-serif", minWidth: 300 }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#64748b" }}>Recolour</span>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap" }}>{def.label}</span>
+                        </div>
+                        {def.props.length > 1 && (
+                            <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+                                {def.props.map((p) => (
+                                    <button key={p} type="button" onClick={() => setColorPopover((c) => (c ? { ...c, prop: p } : c))}
+                                        style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer", background: prop === p ? "#0f172a" : "#fff", color: prop === p ? "#fff" : "#64748b" }}>
+                                        {p === "bg" ? "Fill" : "Text"}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <input type="color" value={value} onChange={(e) => applyRoleColor(colorPopover.role, prop, e.target.value)}
+                            style={{ width: 44, height: 36, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", padding: 2 }}
+                            aria-label={`${def.label} ${prop === "bg" ? "fill" : "text"} colour`} />
+                        {existing && (
+                            <button type="button" onClick={() => applyRoleColor(colorPopover.role, prop, null)}
+                                style={{ fontSize: 12, color: "#64748b", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>Reset</button>
+                        )}
+                        <button type="button" onClick={() => setColorPopover(null)} aria-label="Close"
+                            style={{ marginLeft: "auto", background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, paddingLeft: 6 }}>×</button>
+                    </div>
+                );
+            })()}
             <ImagePickerModal
                 open={!!imagePickerField}
                 field={imagePickerField}

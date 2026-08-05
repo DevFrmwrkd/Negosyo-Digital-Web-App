@@ -286,6 +286,17 @@ export function useEditorDraft(props: SandboxEditorProps) {
         commitState(draftRef.current, next, { coalesceKey: `theme:${field}` });
     }, [commitState, customizations]);
 
+    // Per-role colour override (click-to-recolour). Stored under
+    // customizations.roleColors keyed by "<role>:<prop>"; pass color=null to clear.
+    const setRoleColor = useCallback((key: string, color: string | null) => {
+        const base = pendingCustRef.current ?? customizations ?? {};
+        const roleColors = { ...(((base as any).roleColors as Record<string, string>) ?? {}) };
+        if (color) roleColors[key] = color;
+        else delete roleColors[key];
+        const next = { ...base, roleColors };
+        commitState(draftRef.current, next, { coalesceKey: `roleColor:${key}` });
+    }, [commitState, customizations]);
+
     const savedHero = String((customizations as any)?.heroStyle ?? "");
     const onPickTemplate = useCallback((code: string) => {
         const tpl = templateByCode(code);
@@ -332,7 +343,7 @@ export function useEditorDraft(props: SandboxEditorProps) {
         // state
         draft, draftRef, pendingCustomizations,
         // mutators
-        setDeepDraft, setValue, replaceDraft, getValue, isBlockEnabled, toggleBlock, setThemeField, onPickTemplate,
+        setDeepDraft, setValue, replaceDraft, getValue, isBlockEnabled, toggleBlock, setThemeField, setRoleColor, onPickTemplate,
         // derived
         effectiveCustomizations, currentHeroStyle, activeFamily, currentScheme, currentFont,
         savedHero, btForTheme, selectedBucket,
