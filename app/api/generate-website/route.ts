@@ -897,7 +897,19 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             // Business info
             businessName: contentWithContact.business_name,
             tagline: contentWithContact.tagline,
-            aboutText: contentWithContact.about,
+            // `content.about` can arrive as a wrapped object on branded/bespoke
+            // families (e.g. after an admin edits the About image, which writes
+            // `about.image` and turns `about` into `{ image, ... }`). The
+            // websiteContent.aboutText column is `v.string()`, so coerce — mirror
+            // transformToAstroData's description coercion (lead > description >
+            // body > joined paragraphs > ''). Without this the mutation throws
+            // ArgumentValidationError on any About-image edit.
+            aboutText: (() => {
+                const a = contentWithContact.about as any;
+                if (typeof a === 'string') return a;
+                return a?.lead ?? a?.description ?? a?.body
+                    ?? (Array.isArray(a?.paragraphs) ? a.paragraphs.join('\n\n') : '');
+            })(),
             tone: contentWithContact.tone,
             // Hero section
             heroBadgeText: contentWithContact.hero_badge_text,
