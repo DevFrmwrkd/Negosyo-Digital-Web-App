@@ -112,6 +112,7 @@ import PageAX from '../components/layouts/PageAX.astro';
 import PageAY from '../components/layouts/PageAY.astro';
 import PageAZ from '../components/layouts/PageAZ.astro';
 import PageBA from '../components/layouts/PageBA.astro';
+import PageBB from '../components/filipino/PageBB.astro';
 import siteData from '../data/site-data.json';
 
 // Live-editor support: template / colour / font / hidden-sections can be driven
@@ -162,10 +163,12 @@ const servicesMatch = /^services:(AS)$/.exec(heroStyle);
 const servicesLetter = servicesMatch ? servicesMatch[1] : null;
 const layoutsMatch = /^layouts:(A[V-Z]|BA)$/.exec(heroStyle);
 const layoutsLetter = layoutsMatch ? layoutsMatch[1] : null;
+const filipinoMatch = /^filipino:(BB)$/.exec(heroStyle);
+const filipinoLetter = filipinoMatch ? filipinoMatch[1] : null;
 const anyLetter = genericLetter || barbershopLetter || salonspaLetter
   || autoshopLetter || restaurantLetter || shirtstoreLetter
   || retailLetter || medicalLetter || fitnessLetter || educationLetter || tradesLetter || foodcraftLetter
-  || servicesLetter || layoutsLetter;
+  || servicesLetter || layoutsLetter || filipinoLetter;
 ---
 
 {genericLetter === 'A' && <PageA siteData={data} />}
@@ -221,6 +224,7 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {layoutsLetter === 'BA' && <PageBA siteData={data} />}
 {educationLetter === 'AT' && <PageAT siteData={data} />}
 {tradesLetter === 'AU' && <PageAU siteData={data} />}
+{filipinoLetter === 'BB' && <PageBB siteData={data} />}
 {!anyLetter && (
   <BaseLayout
     businessName={layout.businessName ?? ''}

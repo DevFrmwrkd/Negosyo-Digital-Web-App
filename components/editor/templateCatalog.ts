@@ -14,7 +14,7 @@
 export type TemplateFamily =
     | "generic" | "barbershop" | "salonspa" | "autoshop" | "restaurant"
     | "shirtstore" | "retail" | "medical" | "fitness" | "education"
-    | "trades" | "foodcraft" | "services" | "layouts";
+    | "trades" | "foodcraft" | "services" | "filipino" | "layouts";
 
 export interface TemplateDef {
     letter: string;
@@ -110,6 +110,10 @@ const SERVICES_TEMPLATES: TemplateDef[] = [
     { letter: "AS", code: "services:AS", label: "Labaná Laundry & Press", tagline: "Crisp + clean · laundry & services", preview: "/template-previews/as.html" },
 ];
 
+const FILIPINO_TEMPLATES: TemplateDef[] = [
+    { letter: "BB", code: "filipino:BB", label: "Tindahan · Suki Storefront", tagline: "Barangay warmth · sari-sari & corner stores", preview: "/template-previews/bb.html" },
+];
+
 /** Families in rail-display order, each with a human label. */
 export const TEMPLATE_FAMILIES: Array<{ family: TemplateFamily; label: string; templates: TemplateDef[] }> = [
     { family: "generic",    label: "Generic",     templates: GENERIC_TEMPLATES },
@@ -125,6 +129,7 @@ export const TEMPLATE_FAMILIES: Array<{ family: TemplateFamily; label: string; t
     { family: "trades",     label: "Trades",      templates: TRADES_TEMPLATES },
     { family: "foodcraft",  label: "Foodcraft",   templates: FOODCRAFT_TEMPLATES },
     { family: "services",   label: "Services",    templates: SERVICES_TEMPLATES },
+    { family: "filipino",   label: "Filipino",    templates: FILIPINO_TEMPLATES },
 ];
 
 export const ALL_TEMPLATES: TemplateDef[] = TEMPLATE_FAMILIES.flatMap((f) => f.templates);
