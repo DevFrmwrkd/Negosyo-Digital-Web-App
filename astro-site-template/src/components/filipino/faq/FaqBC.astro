@@ -1,0 +1,52 @@
+---
+/**
+ * filipino / FaqBC — lp-103's "good to know" split: an intro column (headline +
+ * a contact line) beside a stacked <details> accordion whose Archivo summaries
+ * carry a tomato "+" that rotates to "×" on open. First item opens by default.
+ * Reads content.faq.items ({q, a}). Auto-hides when empty. Mirrors FaqAS.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+const faq = content.faq || {};
+const tag = faq.tag || '';
+const headline = faq.headline || 'Good to know.';
+type Item = { q: string; a: string };
+const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq) ? faq : []);
+const phone = content.location?.phone || (content as any).contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+---
+{items.length > 0 && (
+  <section class="faq">
+    <div class="wrap">
+      <div class="sw-head"><span>Tray 07 / Good to know</span>{tag && <span data-field="faq.tag">{tag}</span>}</div>
+      <div class="faq-grid">
+        <div class="faq-intro reveal">
+          <h2 class="h2" data-field="faq.headline" set:html={headline}></h2>
+          {phone && (
+            <p class="body">Anything else — message us or ring <a href={`tel:${phoneDigits}`} class="faq-tel">{phone}</a>. Or just come to the glass and point.</p>
+          )}
+        </div>
+        <div class="faq-list reveal">
+          {items.map((item, i) => (
+            <details open={i === 0}>
+              <summary><span data-field={`faq.items.${i}.q`}>{item.q}</span></summary>
+              <p data-field={`faq.items.${i}.a`} set:html={item.a}></p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .faq-grid { display: grid; grid-template-columns: 2fr 3fr; gap: clamp(36px,5vw,88px); }
+  .faq-tel { color: var(--tomato); font-weight: 700; }
+  .faq-list details { border-bottom: 1px solid var(--rule); padding: 22px 0; }
+  .faq-list details:first-child { border-top: 2px solid var(--leaf); }
+  .faq-list summary { font-family: var(--disp); font-weight: 800; font-size: 22px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 20px; line-height: 1.12; letter-spacing: -0.02em; color: var(--leaf); }
+  .faq-list summary::-webkit-details-marker { display: none; }
+  .faq-list summary::after { content: "+"; color: var(--tomato); font-size: 24px; flex-shrink: 0; transition: 0.2s; }
+  .faq-list details[open] summary::after { transform: rotate(45deg); }
+  .faq-list p { margin: 14px 0 0; color: var(--ink-2); font-size: 14.5px; max-width: 62ch; line-height: 1.72; }
+  @media (max-width: 760px) { .faq-grid { grid-template-columns: 1fr; } }
+</style>

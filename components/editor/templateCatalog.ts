@@ -111,7 +111,13 @@ const SERVICES_TEMPLATES: TemplateDef[] = [
 ];
 
 const FILIPINO_TEMPLATES: TemplateDef[] = [
-    { letter: "BB", code: "filipino:BB", label: "Tindahan · Suki Storefront", tagline: "Barangay warmth · sari-sari & corner stores", preview: "/template-previews/bb.html" },
+    { letter: "BB", code: "filipino:BB", label: "Tindahan · Suki Storefront",  tagline: "Barangay warmth · sari-sari & corner stores", preview: "/template-previews/bb.html" },
+    { letter: "BC", code: "filipino:BC", label: "Lutong Bahay · Carinderia",   tagline: "Turo-turo warmth · carinderias & eateries",  preview: "/template-previews/bc.html" },
+    { letter: "BD", code: "filipino:BD", label: "Tahanan Panaderia",           tagline: "Dark-crust bakeshop · panaderia & bakeries", preview: "/template-previews/bd.html" },
+    { letter: "BE", code: "filipino:BE", label: "Barako Kapehan",              tagline: "Slab-roast warmth · coffee & kapehan",      preview: "/template-previews/be.html" },
+    { letter: "BF", code: "filipino:BF", label: "Lechon Manok · Spit",         tagline: "Charcoal grill · roast chicken & BBQ",      preview: "/template-previews/bf.html" },
+    { letter: "BG", code: "filipino:BG", label: "Vulca Bay",                   tagline: "Hazard-yellow grit · vulcanizing & repair", preview: "/template-previews/bg.html" },
+    { letter: "BH", code: "filipino:BH", label: "Halo Haus",                   tagline: "Ube pastel · halo-halo & desserts",         preview: "/template-previews/bh.html" },
 ];
 
 /** Families in rail-display order, each with a human label. */

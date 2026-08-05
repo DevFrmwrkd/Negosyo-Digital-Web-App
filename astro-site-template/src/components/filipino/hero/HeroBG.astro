@@ -1,0 +1,68 @@
+---
+/**
+ * filipino / HeroBG — lp-115's roadside hero: a Space Mono kicker, an oversized
+ * Archivo headline, then a lower row pairing an art-directed shop photo (left,
+ * with the "OPEN 24 HOURS · SINCE 2001" hazard tag) against the lede + CTA pair
+ * (right). The photo slot keeps a dark industrial gradient fallback until
+ * hero.image is set.
+ *
+ * Mirrors HeroBB's content contract exactly (hero.headlineLines / sub / cta1 /
+ * cta2 / image) so admin edits + derived defaults feed it unchanged.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || hero.locality || '';
+const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = hero.cta1?.href || '#book';
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#services');
+---
+<section class="hero" aria-label="Hero">
+  <div class="wrap">
+    {kicker && <div class="kick hero-kick" data-field="hero.kicker">{kicker}</div>}
+    {headlineLines.length > 0 && (
+      <h1 class="hero-headline">
+        {headlineLines.map((line: string, i: number) => (
+          <span class="ln" data-field={`hero.headlineLines.${i}`} set:html={line}></span>
+        ))}
+      </h1>
+    )}
+    <div class="hero-lower">
+      <div class="hero-photo">
+        <div class="ph" role="img" aria-label="Shop photo" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+      </div>
+      <div class="hero-right">
+        {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
+        {(cta1Text || cta2Text) && (
+          <div class="hero-ctas">
+            {cta1Text && <a class="btn btn-primary" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+            {cta2Text && <a class="btn btn-ghost" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+  .hero { padding: clamp(30px,5vw,64px) 0 clamp(56px,7vw,96px); }
+  .hero-kick { margin-bottom: 22px; }
+  .hero-headline { font-family: var(--disp); font-weight: 900; font-size: clamp(40px,6.4vw,98px); line-height: 0.92; letter-spacing: -0.03em; margin: 0 0 32px; max-width: 17ch; color: var(--steel); }
+  .hero-headline .ln { display: block; }
+  .hero-headline :global(.em) { color: var(--hazard); }
+  .hero-headline :global(.em2) { color: var(--alert); }
+  .hero-lower { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: clamp(30px,4vw,64px); align-items: end; }
+  .hero-photo { position: relative; }
+  .hero-photo .ph { width: 100%; aspect-ratio: 16/10; border-radius: 3px; background-color: var(--asphalt-2); background-size: cover; background-position: center;
+    background-image: linear-gradient(150deg, rgba(245,197,24,.18), rgba(226,59,46,.16)); }
+  .hero-photo::after { content: "OPEN 24 HOURS · SINCE 2001"; position: absolute; left: 14px; bottom: 14px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; background: var(--hazard); color: var(--asphalt); padding: 7px 12px; border-radius: 2px; }
+  .hero-right .lede { color: var(--mid-d); font-size: clamp(15px,1.5vw,17.5px); line-height: 1.72; max-width: 44ch; }
+  .hero-ctas { margin-top: 26px; display: flex; gap: 13px; flex-wrap: wrap; }
+  @media (max-width: 820px) { .hero-lower { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) { .hero-ctas .btn { flex: 1 1 100%; justify-content: center; } }
+</style>

@@ -1,0 +1,205 @@
+---
+/**
+ * filipino / PageBF — "Kanto Grill" (roadside lechon-manok rotisserie).
+ *
+ * Ported from Landing Pages v01 / lp-117-lechonmanok.html. A dark, warm
+ * charcoal grill look: Archivo display over Hanken Grotesk body with Space
+ * Mono labels, on near-black charcoal, lit by two fire hues — a marigold-gold
+ * "skin" and a rust "glaze" — with cream bone type and a live-coals band.
+ *
+ * Design isolation: lp-117's palette tokens + shared base primitives are scoped
+ * to `html[data-page="BF"]` in the global block below so no sister wrapper
+ * inherits BF's tokens or its base classes (`.wrap` / `.kick` / `.h2` / `.btn`
+ * / `.sw-head`), and vice-versa. Per-section classes live in each section
+ * component's own (Astro-scoped) <style>.
+ *
+ * Theming: this variant is a fixed DARK art-direction; its dark ground + bands
+ * are keyed to native tokens (`--char` / `--bone` / `--skin` / `--glaze`) the
+ * scheme override cannot fully remap. An explicit admin FONT pick works; an
+ * explicit COLOR-scheme pick is imperfect on a dark design (KNOWN LIMITATION —
+ * the intended experience is the hand-tuned palette, which `lockVariant: true`
+ * keeps on "auto"; the proper fix rekeys the ground onto themeable
+ * --paper/--ink, cf. autoshop/PageAP).
+ */
+import HeaderBF from './header/HeaderBF.astro';
+import HeroBF from './hero/HeroBF.astro';
+import TrustBF from './trust/TrustBF.astro';
+import AboutBF from './about/AboutBF.astro';
+import ServicesBF from './services/ServicesBF.astro';
+import WhyBF from './why/WhyBF.astro';
+import HowBF from './how/HowBF.astro';
+import TestimonialsBF from './testimonials/TestimonialsBF.astro';
+import GalleryBF from './gallery/GalleryBF.astro';
+import FaqBF from './faq/FaqBF.astro';
+import AreaBF from './area/AreaBF.astro';
+import CredentialsBF from './credentials/CredentialsBF.astro';
+import LocationBF from './location/LocationBF.astro';
+import CtaBandBF from './ctaBand/CtaBandBF.astro';
+import FooterBF from './footer/FooterBF.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="BF">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <meta name="theme-color" content="#c2451f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <!-- lp-117 native fonts. Always loaded so the variant reads as designed even
+       when the admin hasn't picked a font pairing. -->
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- lp-117 "Kanto Grill" palette + shared base primitives, scoped to
+       html[data-page="BF"] so they never leak to sister variants. -->
+  <style is:global>
+    html[data-page="BF"] {
+      /* lp-117 native palette */
+      --char: #171310; --char-2: #0f0c0a;
+      --bone: #f6efe3; --bone-2: #fdf8ef;
+      --ink: #231c16; --ink-2: #4b3f34;
+      --skin: #d9902f; --glaze: #c2451f; --calamansi: #8fa63c;
+      --mid: #8b7c6a; --mid-d: #c7b49a; --rule-d: rgba(246,239,227,0.15);
+      --disp: "Archivo", system-ui, sans-serif;
+      --sans: "Hanken Grotesk", system-ui, sans-serif;
+      --mono: "Space Mono", ui-monospace, monospace;
+      --maxw: 1280px;
+      /* Generic aliases so the theme-override machinery + WCAG contrast stay
+         legible even though the design reads its own fire tokens. Modelled on
+         the dark ground: paper = charcoal, ink = bone, accent = glaze. */
+      --accent: #c2451f; --serif: "Archivo", system-ui, sans-serif;
+      --paper-rgb: 23,19,16; --ink-rgb: 246,239,227; --accent-rgb: 194,69,31;
+      --on-accent: #fdf8ef; --on-ink: #171310; --on-paper: #f6efe3;
+    }
+    html[data-page="BF"] *, html[data-page="BF"] *::before, html[data-page="BF"] *::after { box-sizing: border-box; }
+    html[data-page="BF"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BF"] { scroll-behavior: auto; } }
+    html[data-page="BF"] body {
+      margin: 0; padding: 0; background: var(--char); color: var(--bone);
+      font-family: var(--sans); font-size: 16.5px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    html[data-page="BF"] img { max-width: 100%; display: block; }
+    html[data-page="BF"] a { color: inherit; text-decoration: none; }
+    html[data-page="BF"] a:hover { color: var(--skin); }
+    html[data-page="BF"] ::selection { background: var(--skin); color: var(--char); }
+
+    html[data-page="BF"] .wrap { width: min(var(--maxw), 93vw); margin-inline: auto; }
+    html[data-page="BF"] section { padding: clamp(74px,9vw,126px) 0; position: relative; }
+
+    html[data-page="BF"] .kick {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--skin); font-weight: 700;
+    }
+    html[data-page="BF"] .h2 {
+      font-family: var(--disp); font-weight: 900; font-size: clamp(38px,5.4vw,80px);
+      line-height: 0.98; margin: 0 0 0.3em; letter-spacing: -0.025em; color: var(--bone);
+    }
+    html[data-page="BF"] .h2 em { font-style: normal; color: var(--glaze); }
+    html[data-page="BF"] .body { color: var(--mid-d); line-height: 1.7; }
+
+    /* Squared fire buttons — glaze fill + bone ghost. */
+    html[data-page="BF"] .btn {
+      display: inline-flex; align-items: center; padding: 16px 32px;
+      font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.1em;
+      text-transform: uppercase; text-decoration: none; transition: 0.16s; border-radius: 2px;
+    }
+    html[data-page="BF"] .btn-primary { background: var(--glaze); color: var(--bone-2); }
+    html[data-page="BF"] .btn-primary:hover { background: var(--skin); color: var(--char); }
+    html[data-page="BF"] .btn-ghost { border: 1.5px solid rgba(246,239,227,0.4); color: var(--bone); }
+    html[data-page="BF"] .btn-ghost:hover { background: var(--bone); color: var(--char); border-color: var(--bone); }
+
+    /* Section header rule — mono label / meta split with a bottom border. */
+    html[data-page="BF"] .sw-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--mid-d); border-bottom: 1.5px solid var(--rule-d);
+      padding-bottom: 12px; margin-bottom: clamp(34px,4.5vw,58px); font-weight: 700; gap: 16px; flex-wrap: wrap;
+    }
+
+    /* scroll reveal (class-based; PageBF boot toggles .in) */
+    html[data-page="BF"] .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+    html[data-page="BF"] .reveal.in { opacity: 1; transform: none; }
+    html[data-page="BF"] .reveal[data-delay="1"] { transition-delay: .08s; }
+    html[data-page="BF"] .reveal[data-delay="2"] { transition-delay: .16s; }
+    html[data-page="BF"] .reveal[data-delay="3"] { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BF"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+    /* skip link */
+    html[data-page="BF"] .skip { position: absolute; left: -999px; top: 0; background: var(--glaze); color: var(--bone-2); padding: 12px 18px; z-index: 100; border-radius: 0 0 8px 0; }
+    html[data-page="BF"] .skip:focus { left: 0; top: 0; }
+
+    /* Mobile rhythm — tighter gutters + section padding on phones. */
+    @media (max-width: 760px) {
+      html[data-page="BF"] section { padding: clamp(52px,11vw,72px) 0; }
+      html[data-page="BF"] .h2 { font-size: clamp(30px,7.6vw,46px); overflow-wrap: anywhere; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <HeaderBF layout={layout} content={content} />
+  <main id="main">
+    {visibility.heroSection !== false && <HeroBF content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustBF content={content} />}
+    {visibility.aboutSection !== false && <AboutBF content={content} />}
+    {visibility.servicesSection !== false && <ServicesBF content={content} />}
+    {visibility.whyUsBlock !== false && <WhyBF content={content} />}
+    {visibility.howItWorksBlock !== false && <HowBF content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsBF content={content} />}
+    {visibility.gallerySection !== false && <GalleryBF content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqBF content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaBF content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsBF content={content} />}
+    {visibility.locationBlock !== false && <LocationBF content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandBF content={content} layout={layout} />}
+  <FooterBF layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Filipino-BF Leaflet boot — accepts (lat, lng, label) from LocationBF.
+      window.__filipinoBFInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/dark_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:#c2451f;box-shadow:0 0 0 3px #171310;border:0;"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

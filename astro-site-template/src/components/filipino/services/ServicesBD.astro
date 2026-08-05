@@ -1,0 +1,45 @@
+---
+/**
+ * filipino / ServicesBD — lp-102's "what we bake" ledger on the dark crust band:
+ * a bordered stack of rows, each a mono index (No. NN), a DM Serif title and a
+ * muted description, that shift on hover. Reads content.services.items
+ * ({title, desc}); auto-hides when empty. Mirrors ServicesAS's content contract.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+---
+{items.length > 0 && (
+  <section class="services" id="services">
+    <div class="wrap">
+      <div class="sw-head"><span>Batch 02 / What we bake</span>{tag && <span data-field="services.tag">{tag}</span>}</div>
+      {headline && <h2 class="h2 reveal" data-field="services.headline" set:html={headline}></h2>}
+      <div class="svc-rows">
+        {items.map((item, i) => (
+          <div class="svc-row reveal" data-delay={String(i % 3)}>
+            <span class="no">No. {String(i + 1).padStart(2, '0')}</span>
+            <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
+            {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
+          </div>
+        ))}
+      </div>
+      {sub && <p class="svc-note body reveal" data-field="services.sub">{sub}</p>}
+    </div>
+  </section>
+)}
+<style>
+  .services { background: var(--crust); }
+  .svc-rows { border-top: 1.5px solid var(--rule-d); }
+  .svc-row { display: grid; grid-template-columns: 110px 1fr 1.5fr; gap: clamp(18px,3vw,46px); padding: 28px 0; border-bottom: 1px solid rgba(244,231,207,0.12); align-items: baseline; transition: 0.15s; }
+  .svc-row:hover { background: rgba(176,71,47,0.12); padding-left: 12px; }
+  .svc-row .no { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.09em; color: var(--pandesal); text-transform: uppercase; font-weight: 700; }
+  .svc-row h3 { font-family: var(--disp); font-weight: 400; font-size: clamp(25px,2.7vw,36px); margin: 0; line-height: 1.04; color: var(--cream); }
+  .svc-row p { color: var(--mid-d); margin: 0; font-size: 15px; line-height: 1.66; }
+  .svc-note { margin-top: 22px; max-width: 60ch; }
+  @media (max-width: 760px) { .svc-row { grid-template-columns: 1fr; gap: 8px; } }
+</style>

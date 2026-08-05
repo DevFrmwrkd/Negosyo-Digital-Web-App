@@ -1,0 +1,63 @@
+---
+/**
+ * filipino / TestimonialsBC — lp-103's "from the tables" band on ink: the first
+ * quote runs large in Archivo with a kalamansi attribution, the rest sit below
+ * in a two-up sub-grid. Reads content.testimonials.items ({quote, who/name,
+ * role/context}). Auto-hides when empty. Mirrors TestimonialsAS's contract.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const test = content.testimonials || {};
+const tag = test.tag || '';
+type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
+const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+const named = (it: Item) => ({ who: it.who ?? it.author ?? it.name, role: it.role ?? it.context });
+const lead = items[0];
+const leadNamed = lead ? named(lead) : { who: undefined, role: undefined };
+const rest = items.slice(1);
+---
+{items.length > 0 && (
+  <section class="testimonials" id="reviews">
+    <div class="wrap">
+      <div class="sw-head"><span>Tray 05 / From the tables</span>{tag && <span data-field="testimonials.tag">{tag}</span>}</div>
+      <blockquote class="t-quote reveal" data-field="testimonials.items.0.quote">“{lead.quote}”</blockquote>
+      {(leadNamed.who || leadNamed.role) && (
+        <div class="t-attr reveal">
+          {leadNamed.who && <span data-field="testimonials.items.0.who">{leadNamed.who}</span>}
+          {leadNamed.role && <span data-field="testimonials.items.0.role"> — {leadNamed.role}</span>}
+        </div>
+      )}
+      {rest.length > 0 && (
+        <div class="t-sub reveal">
+          {rest.map((item, j) => {
+            const n = named(item);
+            const idx = j + 1;
+            return (
+              <figure>
+                <blockquote data-field={`testimonials.items.${idx}.quote`}>“{item.quote}”</blockquote>
+                {(n.who || n.role) && (
+                  <figcaption>
+                    {n.who && <span data-field={`testimonials.items.${idx}.who`}>{n.who}</span>}
+                    {n.role && <span data-field={`testimonials.items.${idx}.role`}> — {n.role}</span>}
+                  </figcaption>
+                )}
+              </figure>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .testimonials { background: var(--ink); color: var(--paper); }
+  .testimonials .sw-head { color: rgba(250,243,226,0.55); border-color: rgba(250,243,226,0.22); }
+  .t-quote { font-family: var(--disp); font-weight: 800; font-size: clamp(28px,3.7vw,52px); line-height: 1.02; max-width: 26ch; margin: 0 0 24px; letter-spacing: -0.025em; color: var(--paper); }
+  .t-quote :global(em) { font-style: normal; color: var(--kalamansi); }
+  .t-attr { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--kalamansi); margin-bottom: clamp(38px,5vw,60px); font-weight: 700; }
+  .t-sub { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px,5vw,76px); border-top: 2px solid rgba(250,243,226,0.22); padding-top: 34px; }
+  .t-sub figure { margin: 0; }
+  .t-sub blockquote { font-size: 15.5px; line-height: 1.72; margin: 0 0 12px; color: rgba(250,243,226,0.82); }
+  .t-sub figcaption { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(250,243,226,0.6); font-weight: 700; }
+  @media (max-width: 760px) { .t-sub { grid-template-columns: 1fr; } }
+</style>

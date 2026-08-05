@@ -1,0 +1,45 @@
+---
+/**
+ * filipino / GalleryBC — lp-103's "on the plate" mosaic: a three-up grid of
+ * leaf-bordered photo tiles with a tomato mono caption chip. Tiles are art-
+ * directed .ph frames (warm gradient fallback until an image is set, layered via
+ * data-image-field). Reads content.gallery.items ({image, caption}). Auto-hides
+ * only when there are no items. Mirrors GalleryAS's content contract.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+---
+{items.length > 0 && (
+  <section class="gallery">
+    <div class="wrap">
+      <div class="sw-head"><span>Tray 06 / On the plate</span>{tag && <span data-field="gallery.tag">{tag}</span>}</div>
+      {headline && <h2 class="h2 reveal" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="gal-sub body reveal" data-field="gallery.sub">{sub}</p>}
+      <div class="g-grid reveal">
+        {items.map((item, i) => (
+          <figure>
+            <div class="ph" role="img" aria-label={item.caption || 'Gallery photo'} data-image-field={`gallery.items.${i}.image`} style={item.image ? `background-image:url('${item.image}');` : ''}></div>
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gal-sub { max-width: 56ch; margin: -8px 0 clamp(28px,4vw,48px); }
+  .g-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .g-grid figure { margin: 0; position: relative; overflow: hidden; border-radius: 8px; border: 3px solid var(--leaf); }
+  .g-grid .ph { width: 100%; aspect-ratio: 4/3; background-color: var(--paper-2); background-size: cover; background-position: center; transition: transform 0.3s;
+    background-image: linear-gradient(150deg, rgba(79,143,74,.35), rgba(224,169,43,.4)); }
+  .g-grid figure:hover .ph { transform: scale(1.04); }
+  .g-grid figcaption { position: absolute; left: 0; bottom: 0; background: var(--tomato); color: var(--paper-2); font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 10px; font-weight: 700; }
+  @media (max-width: 760px) { .g-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 460px) { .g-grid { grid-template-columns: 1fr; } }
+</style>
