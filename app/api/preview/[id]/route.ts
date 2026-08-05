@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
+import { resolveWebsiteHtml } from '@/lib/website-html'
 
 export async function GET(
     request: NextRequest,
@@ -25,12 +26,13 @@ export async function GET(
             submissionId: submissionId as any
         })
 
-        if (!website || !website.htmlContent) {
+        const html = website ? await resolveWebsiteHtml(website) : ''
+        if (!html) {
             return new NextResponse('Website not found', { status: 404 })
         }
 
         // Return HTML content with security headers
-        return new NextResponse(website.htmlContent, {
+        return new NextResponse(html, {
             headers: {
                 'Content-Type': 'text/html',
                 'X-Content-Type-Options': 'nosniff',

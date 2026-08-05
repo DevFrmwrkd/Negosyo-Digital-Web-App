@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { fetchQuery, fetchMutation } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
+import { resolveWebsiteHtml } from '@/lib/website-html'
 
 /**
  * Publish a generated website to Cloudflare Pages
@@ -46,7 +47,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Website not found. Generate it first.' }, { status: 404 })
         }
 
-        if (!website.htmlContent) {
+        const htmlToDeploy = await resolveWebsiteHtml(website)
+        if (!htmlToDeploy) {
             return NextResponse.json({ error: 'No HTML content to deploy' }, { status: 400 })
         }
 
@@ -76,7 +78,7 @@ export async function POST(request: NextRequest) {
 
         // Deploy as a Cloudflare Worker (simple PUT request, no Pages Direct Upload hassles)
         const workerName = website.cfPagesProjectName || projectName
-        await deployAsWorker(cfApiToken, cfAccountId, workerName, website.htmlContent)
+        await deployAsWorker(cfApiToken, cfAccountId, workerName, htmlToDeploy)
 
         // Get the workers.dev subdomain for this account
         const workerSubdomain = await getWorkersSubdomain(cfApiToken, cfAccountId)

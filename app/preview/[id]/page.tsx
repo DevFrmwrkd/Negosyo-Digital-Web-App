@@ -110,7 +110,8 @@ export default function WebsitePreviewPage() {
             {/* Website Content */}
             <div className="pt-14">
                 <iframe
-                    srcDoc={website?.htmlContent || ''}
+                    src={(website as any)?.htmlUrl || undefined}
+                    srcDoc={(website as any)?.htmlUrl ? undefined : (website?.htmlContent || '')}
                     className="w-full h-[calc(100vh-3.5rem)] border-0"
                     title="Website Preview"
                     sandbox="allow-scripts allow-same-origin"

@@ -319,13 +319,30 @@ export default function SubmissionDetailPage() {
         : null;
 
     useEffect(() => {
-        if (existingWebsite) {
-            setWebsiteHtmlContent(existingWebsite.htmlContent || "");
-            setWebsiteContent(existingWebsite.extractedContent);
-            setWebsiteCustomizations(existingWebsite.customizations || {});
-            setWebsitePublishedUrl(existingWebsite.publishedUrl || null);
-            if (existingWebsite.htmlContent) setWebsiteGenerated(true);
+        if (!existingWebsite) return;
+        // Guard against out-of-order async resolution: two quick saves produce two
+        // different htmlUrls; without this an older fetch could win and show a
+        // stale build in the editor.
+        let ignore = false;
+        // HTML is inline (legacy) or in file storage (htmlUrl). Prefer inline;
+        // otherwise fetch the stored HTML so the editor iframe still has it.
+        const inlineHtml = existingWebsite.htmlContent || "";
+        const htmlUrl = (existingWebsite as any).htmlUrl as string | null | undefined;
+        if (inlineHtml) {
+            setWebsiteHtmlContent(inlineHtml);
+        } else if (htmlUrl) {
+            fetch(htmlUrl)
+                .then((r) => (r.ok ? r.text() : ""))
+                .then((html) => { if (!ignore) setWebsiteHtmlContent(html); })
+                .catch(() => { if (!ignore) setWebsiteHtmlContent(""); });
+        } else {
+            setWebsiteHtmlContent("");
         }
+        setWebsiteContent(existingWebsite.extractedContent);
+        setWebsiteCustomizations(existingWebsite.customizations || {});
+        setWebsitePublishedUrl(existingWebsite.publishedUrl || null);
+        if (inlineHtml || htmlUrl) setWebsiteGenerated(true);
+        return () => { ignore = true; };
     }, [existingWebsite]);
 
     // (Auto-open the Details sidebar on no-website submissions used to be

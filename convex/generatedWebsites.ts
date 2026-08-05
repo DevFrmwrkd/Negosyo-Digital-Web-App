@@ -1,14 +1,22 @@
 import { v } from 'convex/values';
-import { mutation, query, internalQuery } from './_generated/server';
+import { mutation, query, internalQuery, action, internalAction } from './_generated/server';
+import { internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 
-// Get generated website by submission ID
+// Get generated website by submission ID.
+// `htmlUrl` resolves the file-storage HTML (when the row uses htmlStorageId
+// instead of inline htmlContent — the built HTML can exceed Convex's 1 MiB
+// document limit). Readers use htmlContent when present, else fetch htmlUrl.
 export const getBySubmissionId = query({
     args: { submissionId: v.id('submissions') },
     handler: async (ctx, args) => {
-        return await ctx.db
+        const doc = await ctx.db
             .query('generatedWebsites')
             .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
             .first();
+        if (!doc) return null;
+        const htmlUrl = doc.htmlStorageId ? await ctx.storage.getUrl(doc.htmlStorageId) : null;
+        return { ...doc, htmlUrl };
     },
 });
 
@@ -16,10 +24,37 @@ export const getBySubmissionId = query({
 export const getBySubmissionInternal = internalQuery({
     args: { submissionId: v.id('submissions') },
     handler: async (ctx, args) => {
-        return await ctx.db
+        const doc = await ctx.db
             .query('generatedWebsites')
             .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
             .first();
+        if (!doc) return null;
+        const htmlUrl = doc.htmlStorageId ? await ctx.storage.getUrl(doc.htmlStorageId) : null;
+        return { ...doc, htmlUrl };
+    },
+});
+
+// Store built HTML in Convex file storage (the built HTML can exceed the 1 MiB
+// per-document limit, so it can't be inlined on the row). Returns the storageId
+// to save as `htmlStorageId`. STORE-ONLY — it never deletes: the previous blob
+// is GC'd by `upsert` (via the internal `deleteBlob`) AFTER the new reference is
+// committed, so a failed upsert can never strand a row on a deleted blob.
+// SECURITY follow-up: like every generatedWebsites mutation this is a public,
+// ungated action; a later pass should gate the whole table's API (shared secret
+// / internal-only caller) so anonymous callers can't spam orphan blobs.
+export const storeHtml = action({
+    args: { html: v.string() },
+    handler: async (ctx, args): Promise<Id<'_storage'>> => {
+        return await ctx.storage.store(new Blob([args.html], { type: 'text/html' }));
+    },
+});
+
+// Best-effort delete of a superseded HTML blob. Internal (not a public delete
+// vector) and scheduled by `upsert` only once the row points at the new blob.
+export const deleteBlob = internalAction({
+    args: { storageId: v.id('_storage') },
+    handler: async (ctx, args) => {
+        try { await ctx.storage.delete(args.storageId); } catch { /* already gone — ignore */ }
     },
 });
 
@@ -43,6 +78,7 @@ export const upsert = mutation({
             .first();
 
         if (existing) {
+            const oldBlob = existing.htmlStorageId;
             // Update existing
             await ctx.db.patch(existing._id, {
                 templateName: args.templateName,
@@ -53,6 +89,11 @@ export const upsert = mutation({
                 htmlStorageId: args.htmlStorageId,
                 status: args.status || existing.status,
             });
+            // GC the superseded HTML blob AFTER the new reference is committed
+            // (covers both replace → new id and remove → undefined).
+            if (oldBlob && oldBlob !== args.htmlStorageId) {
+                await ctx.scheduler.runAfter(0, internal.generatedWebsites.deleteBlob, { storageId: oldBlob });
+            }
             return existing._id;
         } else {
             // Create new

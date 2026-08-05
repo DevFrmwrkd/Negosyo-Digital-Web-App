@@ -16,7 +16,10 @@ export default function WebsitePage() {
 
     const loading = website === undefined
     const error = website === null ? 'Website not found' : null
+    // HTML is either inline (legacy) or in file storage (htmlUrl). Load the URL
+    // directly into the iframe when present; fall back to inline srcDoc.
     const htmlContent = website?.htmlContent || ''
+    const htmlUrl = (website as any)?.htmlUrl as string | null | undefined
 
 
     if (loading) {
@@ -71,7 +74,8 @@ export default function WebsitePage() {
     // Use iframe with srcdoc for proper rendering
     return (
         <iframe
-            srcDoc={htmlContent}
+            src={htmlUrl || undefined}
+            srcDoc={htmlUrl ? undefined : htmlContent}
             style={{
                 width: '100%',
                 height: '100vh',
