@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { submissionId, templateName, customizations } = body
+        // `preview` + `content` power the editor's "Preview my site" — build the
+        // admin's UNSAVED draft into HTML and return it WITHOUT persisting (see the
+        // early return after buildAstroSite below). Everything else is identical to
+        // a real generate, so the preview matches exactly what Save would produce.
+        const { submissionId, templateName, customizations, content: draftContent, preview } = body
 
         if (!submissionId) {
             return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 })
@@ -81,10 +85,14 @@ export async function POST(request: NextRequest) {
         })
 
         // Get or extract content - prioritization:
+        // 0. In PREVIEW mode, the admin's UNSAVED draft (from the request body) — so
+        //    the preview reflects edits that haven't been saved to Convex yet.
         // 1. Edited content from generated_websites (if exists)
         // 2. Previously extracted content from submissions
         // 3. Fresh extraction via Groq
-        let extractedContent = existingWebsite?.extractedContent || submission.website_content
+        let extractedContent = (preview && draftContent)
+            ? draftContent
+            : (existingWebsite?.extractedContent || submission.website_content)
 
         // When regenerating with existing content, override with fresh submission data
         // so admin edits to business info are reflected in the regenerated website
@@ -853,6 +861,14 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
         }
 
         const generatedHtml = await buildAstroSite(contentWithContact, finalCustomizations, photos)
+
+        // PREVIEW mode: hand the built HTML back to the editor's "Preview my site"
+        // WITHOUT persisting anything — no generatedWebsites / websiteContent upsert,
+        // no publish, no touch to the live site. Same assembly + build as a real
+        // save, so what the admin previews is exactly what Save will produce.
+        if (preview) {
+            return NextResponse.json({ success: true, html: generatedHtml })
+        }
 
         // Save to Convex using mutations
         const { fetchMutation } = await import('convex/nextjs')
