@@ -92,6 +92,11 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     panelRef.current = panel;
     const [viewport, setViewport] = useState<keyof typeof VIEWPORTS>("desktop");
     const [saving, setSaving] = useState(false);
+    // Real-content preview: `previewBuildHtml` is the built HTML of the UNSAVED
+    // draft in the picked template/theme (from /api/generate-website?preview) —
+    // shown until "Back to saved" or Save. `previewing` gates the ~30–60s build.
+    const [previewing, setPreviewing] = useState(false);
+    const [previewBuildHtml, setPreviewBuildHtml] = useState<string | null>(null);
     const [imagePickerField, setImagePickerField] = useState<string | null>(null);
     const [linkData, setLinkData] = useState<LinkPopoverData | null>(null);
     const [pendingImageField, setPendingImageField] = useState<string | null>(null);
@@ -257,7 +262,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
 
     // ── Save (v2:301-331) — batched, single rebuild ───────────────────────
     const handleSave = useCallback(async () => {
-        if (busy) return;
+        if (busy || previewing) return; // don't save while a preview build is in flight
         try { (iframeRef.current?.contentDocument?.activeElement as HTMLElement | null)?.blur?.(); } catch { /* ignore */ }
         const currentDraft = m.draftRef.current;
         if (m.contentDirty === false && m.customizationsDirty === false) return;
@@ -265,7 +270,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         const toastId = toast.loading(m.customizationsDirty ? "Saving changes · regenerating site…" : "Saving content…", { duration: Infinity });
         try {
             await onSaveContent({ ...currentDraft, business_type: m.selectedBucket }, m.customizationsDirty ? m.pendingCustomizations : undefined);
-            m.setPreviewSrc(null);
+            setPreviewBuildHtml(null);
             m.clearCache();
             toast.success("Changes saved", { id: toastId, description: m.customizationsDirty ? "Theme + content applied. Refreshing preview." : "Content updated." });
         } catch (err: any) {
@@ -273,7 +278,42 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         } finally {
             setSaving(false);
         }
-    }, [busy, m, onSaveContent]);
+    }, [busy, previewing, m, onSaveContent]);
+
+    // ── "Preview my site" — build the UNSAVED draft into real HTML and show it,
+    // persisting nothing. This is the only way to see real content in a picked
+    // template (structural change needs the astro build, ~30–60s). Colour/font/
+    // text/image edits already preview live, so this is mainly for template picks.
+    const handlePreviewBuild = useCallback(async () => {
+        if (busy || previewing) return;
+        try { (iframeRef.current?.contentDocument?.activeElement as HTMLElement | null)?.blur?.(); } catch { /* ignore */ }
+        setPreviewing(true);
+        const toastId = toast.loading("Building a preview with your content… (~30–60s)", { duration: Infinity });
+        try {
+            const res = await fetch("/api/generate-website", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    submissionId,
+                    preview: true,
+                    content: { ...m.draftRef.current, business_type: m.selectedBucket },
+                    customizations: m.pendingCustomizations,
+                }),
+            });
+            if (!res.ok) {
+                const e = await res.json().catch(() => ({}));
+                throw new Error(e?.error || `Preview failed (HTTP ${res.status})`);
+            }
+            const data = await res.json();
+            if (!data?.html) throw new Error("Preview returned no HTML");
+            setPreviewBuildHtml(data.html as string);
+            toast.success("Preview ready", { id: toastId, description: "Your content in the picked template. Save to keep it." });
+        } catch (err: any) {
+            toast.error("Preview failed", { id: toastId, description: err?.message ?? "Please try again." });
+        } finally {
+            setPreviewing(false);
+        }
+    }, [busy, previewing, submissionId, m]);
 
     // ── Keyboard shortcuts: ⌘S save · ⌘Z undo · ⌘⇧Z redo ──────────────────
     useEffect(() => {
@@ -478,8 +518,11 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                 {/* ── Preview + toolbar ─────────────────────────────────── */}
                 <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 bg-white px-3 py-2">
-                        <button type="button" onClick={handleSave} disabled={busy} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40">
+                        <button type="button" onClick={handleSave} disabled={busy || previewing} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40">
                             {saving ? "Saving…" : "Save changes"}
+                        </button>
+                        <button type="button" onClick={handlePreviewBuild} disabled={busy || previewing || !m.dirty} className={TB} title="Build your real content into the current picks (~30–60s) without saving">
+                            {previewing ? "Building…" : "Preview my site"}
                         </button>
                         <button type="button" onClick={m.undo} disabled={!m.canUndo} className={TB} title="Undo (Ctrl/Cmd+Z)">Undo</button>
                         <button type="button" onClick={m.redo} disabled={!m.canRedo} className={TB} title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
@@ -488,7 +531,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                 <button key={vp} type="button" onClick={() => setViewport(vp)} className={`px-2.5 py-1.5 text-[11px] font-semibold capitalize transition-colors ${viewport === vp ? "bg-neutral-900 text-white" : "bg-white text-neutral-500 hover:bg-neutral-100"}`}>{vp}</button>
                             ))}
                         </div>
-                        <button type="button" onClick={onRegenerate} disabled={busy} className={TB}>Regenerate</button>
+                        <button type="button" onClick={onRegenerate} disabled={busy || previewing} className={TB}>Regenerate</button>
                         <a href={websitePublishedUrl || `/api/preview/${submissionId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-neutral-300">View site</a>
                         <button type="button" onClick={onEnhanceImages} disabled={enhancing} className={TB}>{enhancing ? "Enhancing…" : "Enhance"}</button>
                         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -509,25 +552,25 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                     </div>
 
                     <div className="relative flex-1 overflow-auto bg-neutral-100">
-                        {busy && (
+                        {(busy || previewing) && (
                             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm">
                                 <div className="flex items-center gap-3 text-sm font-medium text-neutral-600">
                                     <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-amber-500" />
-                                    {saving ? "Saving + rebuilding…" : "Rebuilding website…"}
+                                    {saving ? "Saving + rebuilding…" : previewing ? "Building a preview with your content…" : "Rebuilding website…"}
                                 </div>
                             </div>
                         )}
-                        {m.previewSrc && (
+                        {previewBuildHtml && (
                             <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between gap-2 bg-amber-500/95 px-3 py-1.5 text-[11px] font-semibold text-white">
-                                <span className="truncate">Previewing this template with demo content — click “Save changes” to apply it to your site.</span>
-                                <button type="button" onClick={() => m.setPreviewSrc(null)} className="flex-shrink-0 rounded bg-white/20 px-2 py-0.5 hover:bg-white/30">Back to my site</button>
+                                <span className="truncate">Previewing your unsaved changes (real content) — click “Save changes” to keep them.</span>
+                                <button type="button" onClick={() => setPreviewBuildHtml(null)} className="flex-shrink-0 rounded bg-white/20 px-2 py-0.5 hover:bg-white/30">Back to saved</button>
                             </div>
                         )}
                         <div className="mx-auto h-full bg-white" style={vw ? { width: vw, maxWidth: "100%", boxShadow: "0 0 0 1px rgba(0,0,0,0.06)" } : { width: "100%" }}>
-                            {m.previewSrc ? (
-                                <iframe key="v3-static" ref={iframeRef} src={m.previewSrc} title="Template design preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={applyTheme} />
+                            {previewBuildHtml ? (
+                                <iframe key="v3-preview" ref={iframeRef} srcDoc={injectEditorBridge(previewBuildHtml)} title="Unsaved preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={() => { setupInlineEditing(); applyTheme(); }} />
                             ) : htmlContent ? (
-                                <iframe key="v3-built" ref={iframeRef} srcDoc={previewHtml} title="Website preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={() => { setupInlineEditing(); applyTheme(); }} />
+                                <iframe key="v3-saved" ref={iframeRef} srcDoc={previewHtml} title="Website preview (v3)" className="h-full w-full border-0 bg-white" sandbox="allow-same-origin allow-scripts allow-popups" onLoad={() => { setupInlineEditing(); applyTheme(); }} />
                             ) : (
                                 <div className="flex h-full items-center justify-center text-sm text-neutral-400">No website generated yet.</div>
                             )}
