@@ -45,11 +45,20 @@ const VIEWPORTS: Record<string, number | null> = { desktop: null, tablet: 834, m
 
 // Inject the picked Color Scheme / Font Pairing live into the same-origin preview
 // iframe — identical to v2's applyThemeToIframe (SandboxEditorV2.tsx:30-63).
-function applyThemeToIframe(iframe: HTMLIFrameElement | null, scheme: string, font: string, businessType: string) {
+function applyThemeToIframe(iframe: HTMLIFrameElement | null, scheme: string, font: string, businessType: string, isBranded: boolean) {
     try {
         const doc = iframe?.contentDocument;
         if (!doc || !doc.body) return;
-        const resolvedScheme = !scheme || scheme === "auto" || scheme === "default" ? resolveAutoScheme(businessType) : scheme;
+        // Respect lockVariant: branded / bespoke families keep their hand-tuned
+        // palette on "auto" (the real astro build emits no override), so DON'T
+        // apply the auto-by-business-type scheme for them — only generic
+        // (recolour-ready) templates resolve an auto scheme. An EXPLICIT admin
+        // pick still overrides for any family. This keeps the live preview
+        // matching the real site (fixes branded secondary/ghost buttons
+        // rendering wrong in v3 vs v1/v2).
+        const resolvedScheme = !scheme || scheme === "auto" || scheme === "default"
+            ? (isBranded ? "" : resolveAutoScheme(businessType))
+            : scheme;
         const pairing = !font || font === "auto" || font === "default" ? "" : font;
         const fontHref = buildFontHref(pairing);
         if (fontHref && doc.head) {
@@ -136,15 +145,18 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     const curatedSchemes = m.activeFamily ? CURATED[m.activeFamily] : COLOR_SCHEMES.map((c) => c.id).filter((id) => id !== "auto");
 
     // ── Live theme apply ──────────────────────────────────────────────────
+    // Branded (non-generic) families are lockVariant — their hand-tuned palette
+    // must survive "auto" in the live preview exactly as it does in the build.
+    const isBrandedFamily = !!m.activeFamily && m.activeFamily !== "generic";
     const applyTheme = useCallback(() => {
-        applyThemeToIframe(iframeRef.current, m.currentScheme, m.currentFont, m.btForTheme);
-    }, [m.currentScheme, m.currentFont, m.btForTheme]);
+        applyThemeToIframe(iframeRef.current, m.currentScheme, m.currentFont, m.btForTheme, isBrandedFamily);
+    }, [m.currentScheme, m.currentFont, m.btForTheme, isBrandedFamily]);
 
     const setThemeField = (field: "colorScheme" | "fontPairing", value: string) => {
         m.setThemeField(field, value);
         const nextScheme = field === "colorScheme" ? value : m.currentScheme;
         const nextFont = field === "fontPairing" ? value : m.currentFont;
-        applyThemeToIframe(iframeRef.current, nextScheme, nextFont, m.btForTheme);
+        applyThemeToIframe(iframeRef.current, nextScheme, nextFont, m.btForTheme, isBrandedFamily);
     };
 
     // ── Live text push to the iframe (sidebar edit → preview) ─────────────
@@ -235,12 +247,30 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         applyRoleColorsToIframe(iframeRef.current, nextMap);
     }, [m]);
 
+    // ── Instant section show/hide (Blocks toggles) ────────────────────────
+    const applyBlockVisibility = useCallback(() => {
+        try {
+            const w = iframeRef.current?.contentWindow;
+            if (!w) return;
+            for (const b of ALL_BLOCKS) {
+                w.postMessage({ type: "ed:section-visibility", block: b.visKey, visible: m.isBlockEnabled(b.visKey) }, "*");
+            }
+        } catch { /* ignore */ }
+    }, [m]);
+
+    const handleToggleBlock = useCallback((visKey: string) => {
+        const nextVisible = !m.isBlockEnabled(visKey);
+        m.toggleBlock(visKey);
+        try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:section-visibility", block: visKey, visible: nextVisible }, "*"); } catch { /* ignore */ }
+    }, [m]);
+
     const handleIframeLoad = useCallback(() => {
         setupInlineEditing();
         applyTheme();
         applyRoleColors();
+        applyBlockVisibility();
         if (colorMode) { try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:set-mode", mode: "color" }, "*"); } catch { /* ignore */ } }
-    }, [setupInlineEditing, applyTheme, applyRoleColors, colorMode]);
+    }, [setupInlineEditing, applyTheme, applyRoleColors, applyBlockVisibility, colorMode]);
 
     // ── ed:* click routing (from v1, adapted to the 3-panel rail) ─────────
     useEffect(() => {
@@ -525,7 +555,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                             const on = m.isBlockEnabled(b.visKey);
                                             const required = b.tag === "required";
                                             return (
-                                                <button key={b.visKey} type="button" disabled={required} onClick={() => m.toggleBlock(b.visKey)} aria-checked={on} role="switch"
+                                                <button key={b.visKey} type="button" disabled={required} onClick={() => handleToggleBlock(b.visKey)} aria-checked={on} role="switch"
                                                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${required ? "cursor-not-allowed opacity-60" : "hover:bg-neutral-100"}`}>
                                                     <span className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${on ? "bg-emerald-500" : "bg-neutral-300"}`}>
                                                         <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${on ? "translate-x-3.5" : "translate-x-0.5"}`} />

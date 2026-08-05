@@ -93,7 +93,15 @@ export function buildRoleColorCss(roleColors: Record<string, string> | undefined
         const [role, prop] = key.split(':') as [ColorRole, ColorProp];
         const def = COLOR_ROLES[role];
         if (!def || (prop !== 'bg' && prop !== 'fg')) continue;
-        const sel = def.selectors.join(',');
+        // Apply to base + :hover + :focus (per selector) so the picked colour
+        // holds across states instead of reverting to the template's hover
+        // colour. Appending states to the JOINED string would be wrong — each
+        // selector needs its own suffix.
+        const sel = [
+            ...def.selectors,
+            ...def.selectors.map((s) => `${s}:hover`),
+            ...def.selectors.map((s) => `${s}:focus`),
+        ].join(',');
         if (prop === 'bg') {
             rules.push(`${sel}{background:${color} !important;border-color:${color} !important;}`);
         } else {
