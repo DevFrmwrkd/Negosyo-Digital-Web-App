@@ -1,0 +1,43 @@
+---
+/**
+ * filipino / HowBD — lp-102's "how it goes" steps on the dark crust band: a
+ * four-up row of rule-topped cells, each a mono STEP label, a DM Serif title and
+ * a muted line. Reads content.how.steps (canonical `body`, legacy `desc`).
+ * Auto-hides when empty. Mirrors HowAS's content contract.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const headline = how.headline || '';
+const tag = how.tag || '';
+type Step = { title: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+---
+{steps.length > 0 && (
+  <section class="how" id="how">
+    <div class="wrap">
+      <div class="sw-head"><span>Batch 04 / How it goes</span>{tag && <span data-field="how.tag">{tag}</span>}</div>
+      {headline && <h2 class="h2 reveal" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-grid">
+        {steps.map((step, i) => (
+          <li class="reveal" data-delay={String(Math.min(i, 3))}>
+            <span class="step">Step {String(i + 1).padStart(2, '0')}</span>
+            <h3 data-field={`how.steps.${i}.title`}>{step.title}</h3>
+            {(step.body ?? step.desc ?? step.description) && (
+              <p data-field={`how.steps.${i}.body`}>{step.body ?? step.desc ?? step.description}</p>
+            )}
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  .how-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: clamp(20px,3vw,42px); padding: 0; margin: clamp(10px,2vw,20px) 0 0; }
+  .how-grid > li { list-style: none; border-top: 1.5px solid var(--rule-d); padding-top: 16px; }
+  .how-grid .step { font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--pandesal); text-transform: uppercase; font-weight: 700; }
+  .how-grid h3 { font-family: var(--disp); font-weight: 400; font-size: 25px; margin: 8px 0 8px; line-height: 1.08; color: var(--cream); }
+  .how-grid p { color: var(--mid-d); margin: 0; font-size: 13.5px; line-height: 1.64; }
+  @media (max-width: 760px) { .how-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 460px) { .how-grid { grid-template-columns: 1fr; } }
+</style>

@@ -1,0 +1,201 @@
+---
+/**
+ * filipino / PageBD — "Panaderia de San Roque" (neighbourhood bakery).
+ *
+ * Ported from Landing Pages v01 / lp-102-panaderia.html. A warm, dark-crust
+ * Filipino panaderia look: DM Serif Display (italic accents) over Hanken Grotesk
+ * body with Space Mono labels, on a deep-brown crust ground, with pandesal gold
+ * as the signature highlight, brick red for the primary actions, and cream light
+ * bands for the About / Why / Gallery sections.
+ *
+ * Design isolation: lp-102's palette tokens + shared base primitives are scoped
+ * to `html[data-page="BD"]` in the global block below so no sister wrapper
+ * inherits BD's tokens or its base classes (`.wrap` / `.kick` / `.h2` / `.btn`
+ * / `.sw-head`), and vice-versa. Per-section classes live in each section
+ * component's own (Astro-scoped) <style>.
+ *
+ * Theming: this variant reads the override-aligned neutral font tokens
+ * (`--disp` / `--sans` / `--mono`) so an explicit admin font pick recolours the
+ * type, but its hand-tuned bakery hues (`--crust` / `--cream` / `--pandesal` /
+ * `--brick`) are fixed identity. `lockVariant: true` keeps the palette on "auto".
+ */
+import HeaderBD from './header/HeaderBD.astro';
+import HeroBD from './hero/HeroBD.astro';
+import TrustBD from './trust/TrustBD.astro';
+import AboutBD from './about/AboutBD.astro';
+import ServicesBD from './services/ServicesBD.astro';
+import WhyBD from './why/WhyBD.astro';
+import HowBD from './how/HowBD.astro';
+import TestimonialsBD from './testimonials/TestimonialsBD.astro';
+import GalleryBD from './gallery/GalleryBD.astro';
+import FaqBD from './faq/FaqBD.astro';
+import AreaBD from './area/AreaBD.astro';
+import CredentialsBD from './credentials/CredentialsBD.astro';
+import LocationBD from './location/LocationBD.astro';
+import CtaBandBD from './ctaBand/CtaBandBD.astro';
+import FooterBD from './footer/FooterBD.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="BD">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <meta name="theme-color" content="#b0472f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <!-- lp-102 native fonts. Always loaded so the variant reads as designed even
+       when the admin hasn't picked a font pairing. -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- lp-102 "Panaderia de San Roque" palette + shared base primitives, scoped
+       to html[data-page="BD"] so they never leak to sister variants. -->
+  <style is:global>
+    html[data-page="BD"] {
+      /* lp-102 native palette */
+      --crust: #2a1c12; --crust-2: #35251829;
+      --cream: #f4e7cf; --cream-2: #fbf2df;
+      --pandesal: #d99a4e; --brick: #b0472f; --sage: #7d8b5a;
+      --mid: #8a7355; --mid-d: #c9b48f; --rule-d: rgba(244,231,207,0.16);
+      --disp: "DM Serif Display", Georgia, serif;
+      --sans: "Hanken Grotesk", system-ui, sans-serif;
+      --mono: "Space Mono", ui-monospace, monospace;
+      --maxw: 1240px;
+      /* Generic aliases so the theme-override machinery + WCAG contrast stay
+         legible even though the design reads its own bakery tokens. */
+      --accent: #d99a4e; --serif: "DM Serif Display", Georgia, serif;
+      --paper-rgb: 244,231,207; --ink-rgb: 42,28,18; --accent-rgb: 217,154,78;
+      --on-accent: #2a1c12; --on-ink: #f4e7cf; --on-paper: #2a1c12;
+    }
+    html[data-page="BD"] *, html[data-page="BD"] *::before, html[data-page="BD"] *::after { box-sizing: border-box; }
+    html[data-page="BD"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BD"] { scroll-behavior: auto; } }
+    html[data-page="BD"] body {
+      margin: 0; padding: 0; background: var(--crust); color: var(--cream);
+      font-family: var(--sans); font-size: 16.5px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    html[data-page="BD"] img { max-width: 100%; display: block; }
+    html[data-page="BD"] a { color: inherit; text-decoration: none; }
+    html[data-page="BD"] a:hover { color: var(--pandesal); }
+    html[data-page="BD"] ::selection { background: var(--pandesal); color: var(--crust); }
+
+    html[data-page="BD"] .wrap { width: min(var(--maxw), 92vw); margin-inline: auto; }
+    html[data-page="BD"] section { padding: clamp(76px,9vw,130px) 0; position: relative; }
+
+    html[data-page="BD"] .kick {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--pandesal); font-weight: 700;
+    }
+    html[data-page="BD"] .h2 {
+      font-family: var(--disp); font-weight: 400; font-size: clamp(40px,5.6vw,82px);
+      line-height: 1.0; margin: 0 0 0.3em; letter-spacing: -0.005em; color: var(--cream);
+    }
+    html[data-page="BD"] .h2 em { font-style: italic; color: var(--pandesal); }
+    html[data-page="BD"] .body { color: var(--mid-d); line-height: 1.7; }
+
+    /* Squared bakery buttons — brick fill + cream ghost on the dark ground. */
+    html[data-page="BD"] .btn {
+      display: inline-flex; align-items: center; padding: 16px 32px;
+      font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.1em;
+      text-transform: uppercase; text-decoration: none; transition: 0.16s; border-radius: 3px;
+    }
+    html[data-page="BD"] .btn-primary { background: var(--brick); color: var(--cream); }
+    html[data-page="BD"] .btn-primary:hover { background: var(--pandesal); color: var(--crust); }
+    html[data-page="BD"] .btn-ghost { border: 1.5px solid rgba(244,231,207,0.4); color: var(--cream); }
+    html[data-page="BD"] .btn-ghost:hover { background: var(--cream); color: var(--crust); border-color: var(--cream); }
+
+    /* Section header rule — mono label / meta split with a bottom border. */
+    html[data-page="BD"] .sw-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--mid-d); border-bottom: 1.5px solid var(--rule-d);
+      padding-bottom: 12px; margin-bottom: clamp(34px,4.5vw,60px); font-weight: 700; gap: 16px; flex-wrap: wrap;
+    }
+
+    /* scroll reveal (class-based; PageBD boot toggles .in) */
+    html[data-page="BD"] .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+    html[data-page="BD"] .reveal.in { opacity: 1; transform: none; }
+    html[data-page="BD"] .reveal[data-delay="1"] { transition-delay: .08s; }
+    html[data-page="BD"] .reveal[data-delay="2"] { transition-delay: .16s; }
+    html[data-page="BD"] .reveal[data-delay="3"] { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BD"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+    /* skip link */
+    html[data-page="BD"] .skip { position: absolute; left: -999px; top: 0; background: var(--brick); color: var(--cream); padding: 12px 18px; z-index: 100; border-radius: 0 0 8px 0; }
+    html[data-page="BD"] .skip:focus { left: 0; top: 0; }
+
+    /* Mobile rhythm — tighter gutters + section padding on phones. */
+    @media (max-width: 760px) {
+      html[data-page="BD"] section { padding: clamp(52px,11vw,72px) 0; }
+      html[data-page="BD"] .h2 { font-size: clamp(30px,7.6vw,46px); overflow-wrap: anywhere; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <HeaderBD layout={layout} content={content} />
+  <main id="main">
+    {visibility.heroSection !== false && <HeroBD content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustBD content={content} />}
+    {visibility.aboutSection !== false && <AboutBD content={content} />}
+    {visibility.servicesSection !== false && <ServicesBD content={content} />}
+    {visibility.whyUsBlock !== false && <WhyBD content={content} />}
+    {visibility.howItWorksBlock !== false && <HowBD content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsBD content={content} />}
+    {visibility.gallerySection !== false && <GalleryBD content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqBD content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaBD content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsBD content={content} />}
+    {visibility.locationBlock !== false && <LocationBD content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandBD content={content} layout={layout} />}
+  <FooterBD layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Filipino-BD Leaflet boot — accepts (lat, lng, label) from LocationBD.
+      window.__filipinoBDInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:#b0472f;box-shadow:0 0 0 3px #f4e7cf;border:0;"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

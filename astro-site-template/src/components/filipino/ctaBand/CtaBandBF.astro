@@ -1,0 +1,51 @@
+---
+/**
+ * filipino / CtaBandBF — lp-117's glaze closing band, centred: a bone eyebrow,
+ * an oversized Archivo headline, a lede and up to three CTAs (recoloured bone-
+ * fill + bone ghosts for the warm ground). Anchors #book for the hero / nav CTA.
+ * Mirrors CtaBandBB's content contract, with a fallback to the derived single
+ * `ctaBand.cta` so a first build always shows one action.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || cta.cta?.text || '';
+const cta1Href = cta.cta1?.href || cta.cta?.href || '#book';
+const cta2Text = cta.cta2?.text || '';
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const cta3Text = cta.cta3?.text || '';
+const cta3Href = cta.cta3?.href || '#location';
+const hasButtons = !!(cta1Text || cta2Text || cta3Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band" id="book">
+    <div class="wrap">
+      {tag && <div class="kick" data-field="ctaBand.tag">{tag}</div>}
+      {headline && <h2 class="cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+      {sub && <p class="cta-sub" data-field="ctaBand.sub">{sub}</p>}
+      {hasButtons && (
+        <div class="ctas">
+          {cta1Text && <a class="btn btn-primary" href={cta1Href} rel="noopener" data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn btn-ghost" href={cta2Href} rel="noopener" data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+          {cta3Text && <a class="btn btn-ghost" href={cta3Href} rel="noopener" data-field="ctaBand.cta3.text" data-href-field="ctaBand.cta3.href">{cta3Text}</a>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { background: var(--glaze); color: var(--bone-2); padding: clamp(80px,10vw,144px) 0; text-align: center; }
+  .cta-band .kick { color: var(--bone-2); }
+  .cta-h { font-family: var(--disp); font-weight: 900; font-size: clamp(42px,6.2vw,102px); line-height: 0.94; margin: 14px auto 18px; max-width: 15ch; letter-spacing: -0.03em; color: var(--bone-2); }
+  .cta-h :global(em) { font-style: normal; color: var(--skin); }
+  .cta-sub { color: rgba(253,248,239,0.92); max-width: 52ch; margin: 0 auto 34px; font-size: 17px; }
+  .ctas { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .cta-band .btn-primary { background: var(--bone-2); color: var(--glaze); }
+  .cta-band .btn-primary:hover { background: var(--skin); color: var(--char); }
+  .cta-band .btn-ghost { border-color: var(--bone-2); color: var(--bone-2); }
+  .cta-band .btn-ghost:hover { background: var(--bone-2); color: var(--glaze); }
+  @media (max-width: 520px) { .cta-band .ctas .btn { flex: 1 1 100%; justify-content: center; } }
+</style>

@@ -1,0 +1,34 @@
+---
+/**
+ * filipino / AreaBH — lp-104's "we're sweet on" strip: ube-outlined pill tags
+ * of the places served. Reads content.area.places (legacy `items`); optional
+ * headline / sub render above. Auto-hides when empty. Mirrors AreaAS's contract.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+---
+{places.length > 0 && (
+  <section class="area">
+    <div class="wrap">
+      <div class="sw-head"><span>Layer 08 / We're sweet on</span>{tag && <span data-field="area.tag">{tag}</span>}</div>
+      {headline && <h2 class="h2 reveal" data-field="area.headline" set:html={headline}></h2>}
+      {sub && <p class="area-sub body reveal" data-field="area.sub">{sub}</p>}
+      <ul class="area-list reveal">
+        {places.map((place, i) => (
+          <li data-field={`area.places.${i}`}>{place}</li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+<style>
+  .area-sub { max-width: 56ch; margin: -8px 0 8px; }
+  .area-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; padding: 0; }
+  .area-list li { list-style: none; font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 20px; border: 2px solid var(--ube); border-radius: 999px; font-weight: 700; color: var(--ink-2); transition: .2s; }
+  .area-list li:hover { background: var(--ube); color: var(--paper-2); border-color: var(--ube); }
+</style>

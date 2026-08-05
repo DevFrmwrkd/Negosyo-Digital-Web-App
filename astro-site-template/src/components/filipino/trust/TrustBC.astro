@@ -1,0 +1,31 @@
+---
+/**
+ * filipino / TrustBC — lp-103's leaf-green credibility strip under the hero: a
+ * single mono row of short trust statements split across the band. Reads
+ * content.trust.cells ({num, label}); renders num inline before the label when
+ * present so a "★★★★★" / "Since 2003" cell still reads. Auto-hides when empty.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num?: string; label?: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+---
+{cells.length > 0 && (
+  <section class="trust">
+    <div class="wrap row">
+      {cells.map((cell, i) => (
+        <span class="cell">
+          {cell.num && <em class="n" data-field={`trust.cells.${i}.num`} set:html={cell.num}></em>}
+          {cell.label && <span class="t" data-field={`trust.cells.${i}.label`}>{cell.label}</span>}
+        </span>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  .trust { background: var(--leaf); color: var(--paper-2); padding: 0; }
+  .trust .row { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 15px 0; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,250,239,0.9); font-weight: 700; }
+  .trust .cell { display: inline-flex; gap: 8px; align-items: baseline; }
+  .trust .cell .n { font-style: normal; color: #fff; }
+  @media (max-width: 640px) { .trust .row { justify-content: flex-start; gap: 14px 22px; } }
+</style>

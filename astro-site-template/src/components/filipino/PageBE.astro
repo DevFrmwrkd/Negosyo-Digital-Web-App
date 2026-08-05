@@ -1,0 +1,207 @@
+---
+/**
+ * filipino / PageBE — "Barako Roastery" (Filipino kapehan / heritage coffee).
+ *
+ * Ported from Landing Pages v01 / lp-111-barako.html. A warm, roasted-earth
+ * Batangas coffee look: Zilla Slab slab-serif display over Hanken Grotesk body
+ * with Space Mono labels, on oat-cream, with dark "bean" bands and a barako-
+ * vermilion + gold + leaf accent set — one accent tone per band.
+ *
+ * Design isolation: lp-111's palette tokens + shared base primitives are scoped
+ * to `html[data-page="BE"]` in the global block below so no sister wrapper
+ * inherits BE's tokens or its base classes (`.wrap` / `.kick` / `.h2` / `.btn`
+ * / `.sw-head`), and vice-versa. Per-section classes live in each section
+ * component's own (Astro-scoped) <style>.
+ *
+ * Theming: this variant is deliberately WARM & POLYCHROME. It reads the
+ * override-aligned neutral tokens (`--paper` / `--ink` / `--disp` / `--sans` /
+ * `--mono`) so an explicit admin scheme/font pick recolours the ground + type,
+ * but its hand-tuned accent hues (`--barako` / `--gold` / `--leaf` / `--bean`)
+ * are fixed identity — a single scheme can't sensibly remap them.
+ * `lockVariant: true` keeps the hand-tuned palette on "auto".
+ */
+import HeaderBE from './header/HeaderBE.astro';
+import HeroBE from './hero/HeroBE.astro';
+import TrustBE from './trust/TrustBE.astro';
+import AboutBE from './about/AboutBE.astro';
+import ServicesBE from './services/ServicesBE.astro';
+import WhyBE from './why/WhyBE.astro';
+import HowBE from './how/HowBE.astro';
+import TestimonialsBE from './testimonials/TestimonialsBE.astro';
+import GalleryBE from './gallery/GalleryBE.astro';
+import FaqBE from './faq/FaqBE.astro';
+import AreaBE from './area/AreaBE.astro';
+import CredentialsBE from './credentials/CredentialsBE.astro';
+import LocationBE from './location/LocationBE.astro';
+import CtaBandBE from './ctaBand/CtaBandBE.astro';
+import FooterBE from './footer/FooterBE.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="BE">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <meta name="theme-color" content="#b5471f" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <!-- lp-111 native fonts. Always loaded so the variant reads as designed even
+       when the admin hasn't picked a font pairing. -->
+  <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <!-- lp-111 "Barako Roastery" palette + shared base primitives, scoped to
+       html[data-page="BE"] so they never leak to sister variants. -->
+  <style is:global>
+    html[data-page="BE"] {
+      /* lp-111 native palette */
+      --bean: #241812; --bean-2: #1a110c;
+      --oat: #efe4d0; --oat-2: #f7efdf;
+      --ink: #2c2119; --ink-2: #52443a;
+      --barako: #b5471f; --gold: #cf9137; --leaf: #5f7a44;
+      --mid: #8a7963; --mid-d: #c9b393;
+      --rule: rgba(44,33,25,0.14); --rule-d: rgba(239,228,208,0.16);
+      --disp: "Zilla Slab", Georgia, serif;
+      --sans: "Hanken Grotesk", system-ui, sans-serif;
+      --mono: "Space Mono", ui-monospace, monospace;
+      --maxw: 1240px;
+      /* Override-aligned ground aliases so an explicit admin scheme recolours
+         the paper + default text (mapped to lp-111's oat tones). */
+      --paper: #efe4d0; --paper-2: #f7efdf;
+      /* Generic aliases so the theme-override machinery + WCAG contrast stay
+         legible even though the design reads its own accent tokens. */
+      --accent: #b5471f; --serif: "Zilla Slab", Georgia, serif;
+      --paper-rgb: 239,228,208; --ink-rgb: 44,33,25; --accent-rgb: 181,71,31;
+      --on-accent: #f7efdf; --on-ink: #efe4d0; --on-paper: #2c2119;
+    }
+    html[data-page="BE"] *, html[data-page="BE"] *::before, html[data-page="BE"] *::after { box-sizing: border-box; }
+    html[data-page="BE"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BE"] { scroll-behavior: auto; } }
+    html[data-page="BE"] body {
+      margin: 0; padding: 0; background: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 16.5px; line-height: 1.6;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    html[data-page="BE"] img { max-width: 100%; display: block; }
+    html[data-page="BE"] a { color: inherit; text-decoration: none; }
+    html[data-page="BE"] a:hover { color: var(--barako); }
+    html[data-page="BE"] ::selection { background: var(--gold); color: var(--bean); }
+
+    html[data-page="BE"] .wrap { width: min(var(--maxw), 92vw); margin-inline: auto; }
+    html[data-page="BE"] section { padding: clamp(76px,9vw,130px) 0; position: relative; }
+
+    html[data-page="BE"] .kick {
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--barako); font-weight: 700;
+    }
+    html[data-page="BE"] .h2 {
+      font-family: var(--disp); font-weight: 700; font-size: clamp(38px,5.4vw,78px);
+      line-height: 1.04; margin: 0 0 0.32em; letter-spacing: -0.01em; color: var(--ink);
+    }
+    html[data-page="BE"] .h2 em { font-style: normal; color: var(--barako); }
+    html[data-page="BE"] .body { color: var(--mid); line-height: 1.7; }
+
+    /* Slab-cut buttons — barako fill + bean ghost. */
+    html[data-page="BE"] .btn {
+      display: inline-flex; align-items: center; padding: 16px 32px;
+      font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.1em;
+      text-transform: uppercase; text-decoration: none; transition: 0.16s; border-radius: 3px;
+    }
+    html[data-page="BE"] .btn-primary { background: var(--barako); color: var(--oat-2); }
+    html[data-page="BE"] .btn-primary:hover { background: var(--bean); color: var(--oat-2); }
+    html[data-page="BE"] .btn-ghost { border: 1.5px solid var(--bean); color: var(--bean); }
+    html[data-page="BE"] .btn-ghost:hover { background: var(--bean); color: var(--oat-2); }
+
+    /* Section header rule — mono label / meta split with a bottom border. */
+    html[data-page="BE"] .sw-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--mid); border-bottom: 1.5px solid var(--rule);
+      padding-bottom: 12px; margin-bottom: clamp(34px,4.5vw,60px); font-weight: 700; gap: 16px; flex-wrap: wrap;
+    }
+
+    /* scroll reveal (class-based; PageBE boot toggles .in) */
+    html[data-page="BE"] .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+    html[data-page="BE"] .reveal.in { opacity: 1; transform: none; }
+    html[data-page="BE"] .reveal[data-delay="1"] { transition-delay: .08s; }
+    html[data-page="BE"] .reveal[data-delay="2"] { transition-delay: .16s; }
+    html[data-page="BE"] .reveal[data-delay="3"] { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BE"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+    /* skip link */
+    html[data-page="BE"] .skip { position: absolute; left: -999px; top: 0; background: var(--barako); color: var(--oat-2); padding: 12px 18px; z-index: 100; border-radius: 0 0 8px 0; }
+    html[data-page="BE"] .skip:focus { left: 0; top: 0; }
+
+    /* Mobile rhythm — tighter gutters + section padding on phones. */
+    @media (max-width: 760px) {
+      html[data-page="BE"] section { padding: clamp(52px,11vw,76px) 0; }
+      html[data-page="BE"] .h2 { font-size: clamp(30px,7.6vw,46px); overflow-wrap: anywhere; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <HeaderBE layout={layout} content={content} />
+  <main id="main">
+    {visibility.heroSection !== false && <HeroBE content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustBE content={content} />}
+    {visibility.aboutSection !== false && <AboutBE content={content} />}
+    {visibility.servicesSection !== false && <ServicesBE content={content} />}
+    {visibility.whyUsBlock !== false && <WhyBE content={content} />}
+    {visibility.howItWorksBlock !== false && <HowBE content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsBE content={content} />}
+    {visibility.gallerySection !== false && <GalleryBE content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqBE content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaBE content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsBE content={content} />}
+    {visibility.locationBlock !== false && <LocationBE content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandBE content={content} layout={layout} />}
+  <FooterBE layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Filipino-BE Leaflet boot — accepts (lat, lng, label) from LocationBE.
+      window.__filipinoBEInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/light_nolabels/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:16px;height:16px;border-radius:50%;background:#b5471f;box-shadow:0 0 0 3px #f7efdf;border:0;"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

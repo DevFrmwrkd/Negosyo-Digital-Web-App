@@ -1,0 +1,48 @@
+---
+/**
+ * filipino / GalleryBG — lp-115's "in the bay" mosaic on a steel daylight band: a
+ * three-up grid of photo tiles with an alert-red mono caption chip. Tiles are
+ * art-directed .ph frames (dark gradient fallback until an image is set, layered
+ * via data-image-field). Reads content.gallery.items ({image, caption}).
+ * Auto-hides only when there are no items. Mirrors GalleryBB's content contract.
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const items: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+---
+{items.length > 0 && (
+  <section class="gallery">
+    <div class="wrap">
+      <div class="sw-head"><span>Bay 06 / In the bay</span>{tag && <span data-field="gallery.tag">{tag}</span>}</div>
+      {headline && <h2 class="h2 reveal" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="gal-sub body reveal" data-field="gallery.sub">{sub}</p>}
+      <div class="g-grid reveal">
+        {items.map((item, i) => (
+          <figure>
+            <div class="ph" role="img" aria-label={item.caption || 'Gallery photo'} data-image-field={`gallery.items.${i}.image`} style={item.image ? `background-image:url('${item.image}');` : ''}></div>
+            {item.caption && <figcaption data-field={`gallery.items.${i}.caption`}>{item.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .gallery { background: var(--steel); color: var(--ink); }
+  .gallery .sw-head { color: var(--mid); border-color: rgba(30,34,38,0.16); }
+  .gallery .h2 { color: var(--ink); }
+  .gallery .gal-sub { max-width: 56ch; margin: -8px 0 clamp(28px,4vw,48px); color: #3b4148; }
+  .g-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+  .g-grid figure { margin: 0; position: relative; overflow: hidden; border-radius: 3px; }
+  .g-grid .ph { width: 100%; aspect-ratio: 4/3; background-color: var(--asphalt-2); background-size: cover; background-position: center; transition: transform 0.3s;
+    background-image: linear-gradient(150deg, rgba(30,34,38,.5), rgba(245,197,24,.24)); }
+  .g-grid figure:hover .ph { transform: scale(1.04); }
+  .g-grid figcaption { position: absolute; left: 0; bottom: 0; background: var(--alert); color: var(--steel-2); font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 10px; font-weight: 700; }
+  @media (max-width: 760px) { .g-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 460px) { .g-grid { grid-template-columns: 1fr; } }
+</style>
