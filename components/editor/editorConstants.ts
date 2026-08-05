@@ -101,5 +101,6 @@ export const CURATED: Record<TemplateFamily, string[]> = {
     trades:     ["blue", "dark", "black", "orange", "professional"],
     foodcraft:  ["pink", "gold", "orange", "maroon"],
     services:   ["blue", "green", "professional", "whitegold"],
+    filipino:   ["orange", "maroon", "gold", "purple", "green", "brown"],
     layouts:    ["blue", "green", "purple", "orange", "brown", "maroon", "professional", "dark"],
 };

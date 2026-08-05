@@ -1,0 +1,136 @@
+---
+/**
+ * filipino / LocationBB — lp-101's "the corner": a marigold NAP card (name /
+ * address / phone / email / hours) beside a Leaflet map. Map strategy mirrors
+ * LocationAS / the reference model:
+ *   1. build-time lat/lng → window.__filipinoBBInitMap(lat, lng, label)
+ *   2. else any address   → client-side Nominatim lookup, then Leaflet
+ *   3. else               → the designed map-face + pinging pin fallback
+ * The designed face lives inside #map until Leaflet mounts (the boot clears #map
+ * before drawing tiles). Reads content.location.* + layout.contact.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const loc = content.location || {};
+const headline = loc.headline || '';
+const sub = loc.sub || '';
+const brand = (content as any).footer?.brand || layout.businessName || '';
+const address = loc.address || layout.contact?.address || '';
+const addressLines = address ? address.split('\n') : [];
+const phone = loc.phone || layout.contact?.phone || '';
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+const email = loc.email || layout.contact?.email || '';
+const hours: Array<{ day: string; time: string }> = Array.isArray(loc.hours)
+  ? loc.hours
+  : (Array.isArray((content as any).footer?.hours) ? (content as any).footer.hours : []);
+const dirText = loc.directions?.text || '';
+const dirHref = loc.directions?.href || (address
+  ? `https://maps.google.com/?q=${encodeURIComponent(address.replace(/\n/g, ' '))}`
+  : '#');
+const lat = loc.lat != null ? Number(loc.lat) : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
+const lng = loc.lng != null ? Number(loc.lng) : (layout.contact?.lng != null ? Number(layout.contact.lng) : null);
+const label = layout.businessName || 'Our location';
+const mapAria = `Map showing ${label}`;
+const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
+const hasAddress = !!address;
+---
+<section class="loc" id="location">
+  <div class="wrap">
+    <div class="sw-head"><span>Aisle 10 / The corner</span><span>Find the shop</span></div>
+    {headline && <h2 class="h2 reveal" data-field="location.headline" set:html={headline}></h2>}
+    {sub && <p class="loc-sub body reveal" data-field="location.sub">{sub}</p>}
+    <div class="loc-grid reveal">
+      <div class="nap">
+        <address>
+          {brand && <><strong data-field="footer.brand">{brand}</strong><br /></>}
+          {address && (
+            <span class="addr" data-field="location.address">
+              {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+            </span>
+          )}
+          {(brand || address) && <br />}
+          {phone && <><a href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a><br /></>}
+          {email && <a href={`mailto:${email}`} data-field="location.email">{email}</a>}
+        </address>
+        {(hours.length > 0 || dirText) && (
+          <div class="hours">
+            {hours.map((r: any, i: number) => (
+              <div class="row"><span data-field={`location.hours.${i}.day`}>{r.day}</span><span data-field={`location.hours.${i}.time`}>{r.time}</span></div>
+            ))}
+            {dirText && <p class="gbp-note"><a class="dir" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a></p>}
+          </div>
+        )}
+      </div>
+      <div class="map-frame">
+        <div id="map" role="img" aria-label={mapAria}>
+          <div class="map-face" aria-hidden="true">
+            <div class="road" style="top:47%;left:0;right:0;height:6px;"></div>
+            <div class="road" style="top:0;bottom:0;left:44%;width:5px;"></div>
+            <div class="road" style="top:74%;left:0;right:0;height:3px;opacity:.6;"></div>
+          </div>
+          <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="mlbl">{label}</div>}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, label }}>
+    (function init() {
+      if (window.__filipinoBBInitMap) window.__filipinoBBInitMap(lat, lng, label);
+      else setTimeout(init, 80);
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, label }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(lat, lng) {
+        if (window.__filipinoBBInitMap) { window.__filipinoBBInitMap(lat, lng, label); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(lat, lng); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var lat = parseFloat(results[0].lat);
+            var lng = parseFloat(results[0].lon);
+            if (isNaN(lat) || isNaN(lng)) return;
+            tryInit(lat, lng);
+          })
+          .catch(function () { /* keep the designed map-face fallback */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  .loc-sub { max-width: 46ch; margin: -8px 0 clamp(24px,3.5vw,40px); }
+  .loc-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: clamp(24px,3.5vw,48px); }
+  .nap { background: var(--marigold); color: var(--ink); padding: 34px; border-radius: 14px; border: 3px solid var(--ink); }
+  .nap address { font-style: normal; font-family: var(--disp); font-weight: 700; font-size: 22px; line-height: 1.26; letter-spacing: -0.015em; }
+  .nap .addr { font-weight: 700; }
+  .nap a { text-decoration: none; font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--ink); }
+  .nap a:hover { color: var(--vermilion); }
+  .hours { font-family: var(--mono); font-size: 10.5px; margin-top: 24px; border-top: 2px solid rgba(35,26,36,0.24); padding-top: 18px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; }
+  .hours .row { display: flex; justify-content: space-between; padding: 4px 0; color: var(--ink-2); }
+  .hours .gbp-note { font-family: var(--sans); font-size: 12.5px; color: var(--ink-2); margin: 14px 0 0; line-height: 1.62; letter-spacing: 0; text-transform: none; font-weight: 400; }
+  .hours .dir { font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 700; color: var(--ink); border-bottom: 2px solid var(--vermilion); }
+  .map-frame { min-height: 380px; overflow: hidden; border-radius: 14px; border: 3px solid var(--ink); position: relative; background: var(--paper-2); }
+  #map { position: absolute; inset: 0; z-index: 0; min-height: 380px; }
+  .map-face { position: absolute; inset: 0; background:
+    repeating-linear-gradient(0deg,rgba(35,26,36,.06) 0 1px,transparent 1px 34px),
+    repeating-linear-gradient(90deg,rgba(35,26,36,.06) 0 1px,transparent 1px 34px),
+    linear-gradient(160deg,#f3ead2,#e8dcbf); }
+  .map-face .road { position: absolute; background: rgba(26,156,142,.5); }
+  .map-pin { position: absolute; top: 46%; left: 50%; transform: translate(-50%,-100%); z-index: 3; text-align: center; }
+  .map-pin .dot { width: 16px; height: 16px; background: var(--vermilion); border: 3px solid var(--paper-2); border-radius: 50%; margin: 0 auto; position: relative; }
+  .map-pin .dot::after { content: ""; position: absolute; inset: -10px; border: 2px solid rgba(226,72,46,.6); border-radius: 50%; animation: pingBB 2.6s ease-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .map-pin .dot::after { animation: none; } }
+  @keyframes pingBB { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.8); opacity: 0; } }
+  .map-pin .mlbl { margin-top: 10px; font-family: var(--mono); font-size: 11px; color: var(--paper-2); background: var(--vermilion); padding: 5px 9px; }
+  @media (max-width: 820px) { .loc-grid { grid-template-columns: 1fr; } .map-frame { min-height: 320px; } }
+</style>
