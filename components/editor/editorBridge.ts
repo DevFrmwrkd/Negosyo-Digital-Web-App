@@ -169,6 +169,19 @@ export const EDITOR_BRIDGE_SCRIPT = `
             return;
         }
 
+        // Instant section show/hide — the editor's Blocks toggles. Maps a
+        // visibility key to its section via the shared data-field prefix (no
+        // per-template markers needed) and toggles display live.
+        if (msg.type === 'ed:section-visibility') {
+            var PREFIX = { hero_section:'hero', about_section:'about', services_section:'services', why_us_block:'why', how_it_works_block:'how', testimonials_block:'testimonials', featured_section:'gallery', faq_block:'faq', service_area_block:'area', credentials_block:'credentials', location_block:'location', cta_band_block:'ctaBand', trust_block:'trust', footer_section:'footer' };
+            var pfx = PREFIX[msg.block];
+            if (!pfx) return;
+            var anchor = document.querySelector('[data-field^="' + pfx + '."]') || document.querySelector('[data-image-field^="' + pfx + '."]') || document.querySelector('[data-field="' + pfx + '"]');
+            var sec = (anchor && anchor.closest) ? anchor.closest('section,footer,header') : null;
+            if (sec) sec.style.display = msg.visible ? '' : 'none';
+            return;
+        }
+
         if (msg.type === 'ed:update') {
             var nodes = document.querySelectorAll('[data-field="' + cssEscape(msg.field) + '"]');
             nodes.forEach(function (n) {
