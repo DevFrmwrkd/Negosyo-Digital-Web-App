@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { buildAstroSite } from '@/lib/astro-builder'
+import { buildRoleColorCss } from '@/lib/roleColors'
 import { groqService } from '@/lib/services/groq.service'
 
 /**
@@ -860,7 +861,21 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             navCtaHref: (extractedContent as any)?.navCtaHref,
         }
 
-        const generatedHtml = await buildAstroSite(contentWithContact, finalCustomizations, photos)
+        let generatedHtml = await buildAstroSite(contentWithContact, finalCustomizations, photos)
+
+        // Bake per-role colour overrides (click-to-recolour) into the built HTML
+        // so they persist on Save + Publish (the live editor injects the same CSS
+        // client-side). Template-agnostic — keyed by the shared data-field
+        // selectors. See lib/roleColors.ts.
+        const __roleColorCss = buildRoleColorCss((finalCustomizations as any)?.roleColors)
+        if (__roleColorCss) {
+            const __styleTag = `<style id="role-colors">${__roleColorCss}</style>`
+            generatedHtml = generatedHtml.includes('</head>')
+                ? generatedHtml.replace('</head>', `${__styleTag}</head>`)
+                : (generatedHtml.includes('</body>')
+                    ? generatedHtml.replace('</body>', `${__styleTag}</body>`)
+                    : generatedHtml + __styleTag)
+        }
 
         // PREVIEW mode: hand the built HTML back to the editor's "Preview my site"
         // WITHOUT persisting anything — no generatedWebsites / websiteContent upsert,

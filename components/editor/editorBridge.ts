@@ -52,7 +52,8 @@ export const EDITOR_BRIDGE_SCRIPT = `
         '[data-image-field]{cursor:zoom-in;}',
         'a[data-href-field]{cursor:pointer;}',
         '[data-field]:hover,[data-image-field]:hover,a[data-href-field]:hover{outline:2px dashed rgba(59,130,246,.55);outline-offset:2px;}',
-        '[data-field].ed-focused,[data-image-field].ed-focused,a[data-href-field].ed-focused{outline:2px solid rgba(59,130,246,.85);outline-offset:2px;}'
+        '[data-field].ed-focused,[data-image-field].ed-focused,a[data-href-field].ed-focused{outline:2px solid rgba(59,130,246,.85);outline-offset:2px;}',
+        'html.ed-color-mode [data-field],html.ed-color-mode a[data-href-field]{cursor:crosshair !important;}'
     ].join('');
     document.head.appendChild(style);
 
@@ -65,11 +66,45 @@ export const EDITOR_BRIDGE_SCRIPT = `
         clearFocused();
         if (el) el.classList.add('ed-focused');
     }
+    function rgbToHex(rgb) {
+        var m = /rgba?\\((\\d+),\\s*(\\d+),\\s*(\\d+)/.exec(rgb || '');
+        if (!m) return '';
+        function h(n) { var s = parseInt(n, 10).toString(16); return s.length < 2 ? '0' + s : s; }
+        return '#' + h(m[1]) + h(m[2]) + h(m[3]);
+    }
 
     // ── Click handler — disambiguate link / image / text ─────────────────
+    var edColorMode = false;
     document.addEventListener('click', function (e) {
         var target = e.target;
         if (!target || !target.closest) return;
+
+        // 0. Colour mode — recolour by ROLE instead of editing. Any clickable
+        //    text / link / button element sends ed:color-click (with its current
+        //    colours so the picker starts there); images are skipped. Never
+        //    falls through to the edit routing below.
+        if (edColorMode) {
+            var colEl = target.closest('a[data-href-field],[data-field]');
+            if (colEl) {
+                e.preventDefault();
+                e.stopPropagation();
+                focusEl(colEl);
+                var _cls = (colEl.className || '') + '';
+                var _isBtn = colEl.tagName === 'BUTTON' || /\\bbtn\\b/.test(_cls) || !!(colEl.closest && colEl.closest('.btn,button'));
+                var _cs = null;
+                try { _cs = window.getComputedStyle(colEl); } catch (e2) {}
+                try {
+                    window.parent.postMessage({
+                        type: 'ed:color-click',
+                        field: colEl.getAttribute('data-field') || colEl.getAttribute('data-href-field') || '',
+                        isButton: _isBtn,
+                        curBg: _cs ? rgbToHex(_cs.backgroundColor) : '',
+                        curFg: _cs ? rgbToHex(_cs.color) : '',
+                    }, '*');
+                } catch (err) {}
+            }
+            return;
+        }
 
         // 1. Link click — highest priority. <a data-href-field> opens the
         //    link popover regardless of where on the link the user clicked.
@@ -127,6 +162,12 @@ export const EDITOR_BRIDGE_SCRIPT = `
     window.addEventListener('message', function (e) {
         var msg = e && e.data;
         if (!msg || typeof msg !== 'object' || !msg.type) return;
+
+        if (msg.type === 'ed:set-mode') {
+            edColorMode = (msg.mode === 'color');
+            try { document.documentElement.classList.toggle('ed-color-mode', edColorMode); } catch (e3) {}
+            return;
+        }
 
         if (msg.type === 'ed:update') {
             var nodes = document.querySelectorAll('[data-field="' + cssEscape(msg.field) + '"]');
