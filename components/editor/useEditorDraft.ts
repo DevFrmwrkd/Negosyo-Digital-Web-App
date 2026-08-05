@@ -69,9 +69,6 @@ export function useEditorDraft(props: SandboxEditorProps) {
     const pendingCustRef = useRef<any>(pendingCustomizations);
     pendingCustRef.current = pendingCustomizations;
 
-    // ── Template design-preview swap (demo content) ───────────────────────
-    const [previewSrc, setPreviewSrc] = useState<string | null>(null);
-
     // ── Undo/redo history over {draft, cust} snapshots ────────────────────
     const historyRef = useRef<{ stack: Snapshot[]; index: number }>({
         stack: [{ draft: draftRef.current, cust: pendingCustRef.current }],
@@ -303,11 +300,12 @@ export function useEditorDraft(props: SandboxEditorProps) {
             navbarStyle: letter,
             ...(isBranded ? { colorScheme: "auto", colorSchemeId: "auto", fontPairing: "auto", fontPairingId: "auto" } : {}),
         };
+        // Picking a template only updates the pending customizations (the grid
+        // highlights it). The real WYSIWYG preview happens when the admin clicks
+        // "Preview my site" in the editor, which builds the draft into real HTML —
+        // no placeholder swap here.
         commitState(draftRef.current, next);
-        // Instant demo-content design preview; re-picking the saved template
-        // returns to the real built site.
-        setPreviewSrc(code === savedHero ? null : (tpl?.preview ?? null));
-    }, [commitState, customizations, savedHero]);
+    }, [commitState, customizations]);
 
     // ── Derived (mirror v2:91-99) ─────────────────────────────────────────
     const effectiveCustomizations = pendingCustomizations ?? customizations ?? {};
@@ -332,7 +330,7 @@ export function useEditorDraft(props: SandboxEditorProps) {
 
     return {
         // state
-        draft, draftRef, pendingCustomizations, previewSrc, setPreviewSrc,
+        draft, draftRef, pendingCustomizations,
         // mutators
         setDeepDraft, setValue, replaceDraft, getValue, isBlockEnabled, toggleBlock, setThemeField, onPickTemplate,
         // derived
