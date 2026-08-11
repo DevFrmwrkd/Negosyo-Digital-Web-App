@@ -195,6 +195,26 @@ export default defineSchema({
         )),
         driveSyncError: v.optional(v.string()),
 
+        // ==================== OWNER INTAKE (self-serve /start) ====================
+        // The owner's typed interview, exactly as answered. Written only by
+        // ownerIntake.submitOwnerIntake; the creator funnel records audio and
+        // leaves this unset.
+        //
+        // This field brings an already-written but permanently dead read to life:
+        // hyperagent.triggerStudioRender has always sent `qa:
+        // (submission as any).interviewQa || []` to the Studio agent
+        // (convex/hyperagent.ts:119) and, with nothing in the repo writing the
+        // field, has always sent []. Owner rows now put the real pairs on that
+        // payload — the agent already accepts them.
+        //
+        // Kept alongside `transcript` rather than replacing it: the three Groq
+        // copy gates in app/api/generate-website/route.ts read prose, not pairs.
+        interviewQa: v.optional(v.array(v.object({ q: v.string(), a: v.string() }))),
+        // Where the intake came from. Absent on every creator-recorded row —
+        // 'owner_intake' is the only value, and it must never change, because
+        // queries and the /admin "Owner-submitted" badge filter on the literal.
+        contentSource: v.optional(v.string()),
+
         // ==================== PROSPECT POOL (2026-06-01 — P0 schema only) ====================
         // Links a captured interview back to the source prospect row in the
         // new global prospects pool. Optional + additive — existing
@@ -923,6 +943,28 @@ export default defineSchema({
         key: v.string(),
         count: v.number(),
         windowStart: v.number(),
+    })
+        .index('by_key', ['key']),
+
+    // ==================== OWNER INTAKE THROTTLE (self-serve /start) ====================
+    // Fixed-window counters for ownerIntake.submitOwnerIntake — the one mutation
+    // on this deployment a stranger can call, and the one whose every success
+    // spends money (a paid Hyperagent render, plus a row that
+    // submissions.getAllWithCreator re-reads on every /admin load). Read,
+    // checked and incremented inside that mutation's own transaction, so two
+    // concurrent calls can never both see the same count.
+    //
+    // Deliberately NOT the shared `rateLimits` table above: knowledgeTraining's
+    // two reset mutations read that table with an unbounded `.collect()`, and a
+    // row per submitter would walk them toward exactly the document-read limit
+    // this throttle exists to keep /admin away from.
+    ownerIntakeThrottle: defineTable({
+        // 'global' (the platform-wide ceiling / kill switch) or a per-submitter
+        // scope — 'email:<normalized>' / 'phone:<last 10 digits>'. See the
+        // scope-key builders in convex/ownerIntake.ts for the normalization.
+        key: v.string(),
+        count: v.number(),      // successes inside the current window
+        windowStart: v.number(), // first success of the window; the window rolls from here
     })
         .index('by_key', ['key']),
 

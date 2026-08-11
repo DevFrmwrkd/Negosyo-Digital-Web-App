@@ -105,13 +105,16 @@ export async function POST(request: NextRequest) {
             console.error('Failed to mint owner claim token (non-fatal):', e)
         }
 
-        // Send payment link email (includes custom domain breakdown if applicable)
+        // Send payment link email (includes custom domain breakdown if applicable).
+        // publishedUrl is computed above and now actually reaches the template —
+        // publish always precedes this route, so the bill arrives with a working
+        // link to the thing it is billing for.
         await sendPaymentLinkEmail({
             businessName: submission.businessName,
             businessOwnerName: submission.ownerName,
             businessOwnerEmail: submission.ownerEmail,
             amount: submission.amount ?? 0,
-            paymentLink,
+            websiteUrl: publishedUrl || undefined,
             referenceCode: paymentToken.referenceCode,
             platformEmail: process.env.WISE_EMAIL,
             customDomain: (submission as any).requestedDomain || undefined,

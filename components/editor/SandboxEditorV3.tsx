@@ -19,7 +19,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "convex/react";
 import { toast } from "sonner";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { injectEditorBridge } from "./editorBridge";
 import type { SandboxEditorProps } from "./SandboxEditor";
 import { TEMPLATE_FAMILIES, templateByCode } from "./templateCatalog";
@@ -142,6 +145,20 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
 
     const busy = generatingWebsite || saving;
     const previewHtml = useMemo(() => injectEditorBridge(htmlContent || ""), [htmlContent]);
+
+    // ── Stale-publish signal ──────────────────────────────────────────────
+    // Every rebuild (Save, Regenerate) resets generatedWebsites.status to
+    // 'draft' while publishedUrl stays set, so `draft + publishedUrl` means the
+    // live Cloudflare Worker is still serving the OLD HTML. Save auto-republishes
+    // (app/api/save-content), so this normally clears itself within seconds —
+    // when it does NOT (republish failed, or the admin used Regenerate, which
+    // doesn't publish), the admin has to see that the customer's site is behind.
+    // Read off the reactive row so it lights and clears on its own.
+    const websiteRow = useQuery(
+        api.generatedWebsites.getBySubmissionId,
+        submissionId ? { submissionId: submissionId as Id<"submissions"> } : "skip"
+    );
+    const publishStale = !!websiteRow?.publishedUrl && websiteRow?.status === "draft";
     const curatedSchemes = m.activeFamily ? CURATED[m.activeFamily] : COLOR_SCHEMES.map((c) => c.id).filter((id) => id !== "auto");
 
     // ── Live theme apply ──────────────────────────────────────────────────
@@ -629,9 +646,14 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         <div className="ml-auto flex flex-wrap items-center gap-2">
                             {onApprove && <button type="button" onClick={onApprove} className={TB}>Approve</button>}
                             {onReject && <button type="button" onClick={onReject} className={`${TB} !text-red-600`}>Reject</button>}
+                            {publishStale && (
+                                <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-900" title="The live site still has the previous version. Click Republish to update it.">
+                                    ⚠ Live site is out of date
+                                </span>
+                            )}
                             {websitePublishedUrl ? (
                                 <>
-                                    <button type="button" onClick={onRepublish} disabled={republishingWebsite} className={TB}>{republishingWebsite ? "Republishing…" : "Republish"}</button>
+                                    <button type="button" onClick={onRepublish} disabled={republishingWebsite} className={publishStale ? "inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40" : TB}>{republishingWebsite ? "Republishing…" : publishStale ? "Republish · changes not live" : "Republish"}</button>
                                     <button type="button" onClick={onUnpublish} disabled={unpublishingWebsite} className={TB}>{unpublishingWebsite ? "Unpublishing…" : "Unpublish"}</button>
                                 </>
                             ) : (

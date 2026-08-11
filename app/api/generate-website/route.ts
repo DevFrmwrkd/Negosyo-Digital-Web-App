@@ -150,8 +150,14 @@ ${submission.transcript ? `Business Interview Transcript:\n${submission.transcri
             const Groq = (await import('groq-sdk')).default
             const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 
-            // Count photos for featured projects generation
-            const photoCount = submission.photos?.length || 0
+            // Count photos for featured projects generation.
+            // REAL photos, not array slots: the owner-intake path deliberately
+            // stores an empty string at index 0 when the owner skips the optional
+            // portrait, so the purely positional role mapping at
+            // convex/hyperagent.ts:85-88 keeps every other photo on its own index
+            // (see ownerIntake.normalizePhotos). Counting slots would tell Groq a
+            // photo exists that it can't write copy for.
+            const photoCount = (submission.photos || []).filter(Boolean).length
 
             // Salon-aware service count — the Lumière + Maison Élite designs
             // both feature 6-service grids, so we ask for more depth when the

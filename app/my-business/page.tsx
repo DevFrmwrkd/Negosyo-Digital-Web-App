@@ -2,8 +2,13 @@
 
 /**
  * Business Owner Portal — dashboard. Lists the websites the signed-in owner has
- * claimed (via the "Edit my website" email link). Owners are a separate audience
- * from creators; this whole route group is gated by Clerk + a businessOwners row.
+ * claimed. Owners are a separate audience from creators; this whole route group
+ * is gated by Clerk + a businessOwners row.
+ *
+ * READ-ONLY BY DESIGN. Owners do not edit their own site here: edits are
+ * REQUESTED via /contact and Tendso makes the change. There is no self-serve
+ * owner editor, so this route must never imply one — see the note at the top of
+ * app/my-business/[submissionId]/page.tsx for why the old editor was removed.
  *
  * See docs/changes/OWNER-PORTAL-PRICING-PLAN.md Phase 1.
  */
@@ -14,7 +19,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useOwnerAuth } from "@/hooks/useOwnerAuth";
-import { Loader2, Globe, Pencil, Users, ExternalLink } from "lucide-react";
+import { Loader2, Globe, ArrowRight, Users, ExternalLink } from "lucide-react";
 
 export default function MyBusinessDashboard() {
     const { isOwner, isSignedIn, loading } = useOwnerAuth();
@@ -33,16 +38,23 @@ export default function MyBusinessDashboard() {
         );
     }
 
-    // Signed in but no claimed sites yet → nudge to use the email link.
+    // Signed in but no claimed sites yet → point at the one channel that works.
     if (!isOwner) {
         return (
             <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "#FBF3E0" }}>
                 <div className="max-w-md text-center space-y-4">
                     <Globe className="w-12 h-12 mx-auto" style={{ color: "#E4B05E" }} />
-                    <h1 className="text-2xl font-bold" style={{ color: "#5C3A0F" }}>No website claimed yet</h1>
+                    <h1 className="text-2xl font-bold" style={{ color: "#5C3A0F" }}>No website here yet</h1>
                     <p style={{ color: "#C89548" }}>
-                        Open the <strong>&quot;Edit my website&quot;</strong> link in any email from Tendso to claim and manage your site here.
+                        No website is linked to this account. If Tendso built one for your business, contact us and we&apos;ll help.
                     </p>
+                    <Link
+                        href="/contact"
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-medium text-sm"
+                        style={{ background: "#E4B05E" }}
+                    >
+                        Contact us
+                    </Link>
                 </div>
             </div>
         );
@@ -53,8 +65,22 @@ export default function MyBusinessDashboard() {
             <div className="max-w-2xl mx-auto space-y-6">
                 <header>
                     <h1 className="text-3xl font-bold">My business</h1>
-                    <p className="mt-1" style={{ color: "#C89548" }}>Manage your website&apos;s content.</p>
+                    <p className="mt-1" style={{ color: "#C89548" }}>See your website, its status, and the leads it brings in.</p>
                 </header>
+
+                {/* The edits policy, stated the same way on every Tendso surface. */}
+                <div className="bg-white rounded-2xl p-5" style={{ border: "1px solid #F5E4C0" }}>
+                    <p className="text-sm">
+                        <strong>Free edits for your first year.</strong> Tell us what you want changed and we&apos;ll make it for you.
+                    </p>
+                    <Link
+                        href="/contact"
+                        className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-medium text-sm"
+                        style={{ background: "#E4B05E" }}
+                    >
+                        Request an edit
+                    </Link>
+                </div>
 
                 {websites === undefined ? (
                     <Loader2 className="h-6 w-6 animate-spin" style={{ color: "#E4B05E" }} />
@@ -90,7 +116,7 @@ export default function MyBusinessDashboard() {
                                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-medium text-sm"
                                         style={{ background: "#E4B05E" }}
                                     >
-                                        <Pencil className="w-4 h-4" /> Edit website
+                                        View details <ArrowRight className="w-4 h-4" />
                                     </Link>
                                 </div>
                             </div>

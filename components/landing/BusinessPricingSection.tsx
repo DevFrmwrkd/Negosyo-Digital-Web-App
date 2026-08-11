@@ -11,7 +11,10 @@ import { BASE_PRICE, formatPHP } from "@/lib/pricing";
  * is an OPTIONAL add-on, so per Theo's feedback it's demoted to a note under the
  * one tier rather than shown as a co-equal pricing card — the "+" signals the
  * optional upgrade honestly without headlining it. One-time, no monthly, pay only
- * when live. CTAs point to the info route /for-business — owners never "sign up".
+ * when live. The CTA points at /start, the owner-intake funnel — this section
+ * renders on both `/` and `/for-business`, so it is the price and the entrance in
+ * the same card. Owners still never "sign up": /start is anonymous end to end and
+ * no account exists at any point.
  */
 
 function Check() {
@@ -70,7 +73,7 @@ export default function BusinessPricingSection() {
                         </ul>
 
                         <Link
-                            href="/for-business"
+                            href="/start"
                             className="mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
                         >
                             {t("hero.ctaBusiness")}

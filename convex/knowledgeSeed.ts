@@ -129,6 +129,7 @@ const HELP_ARTICLES: SeedArticle[] = [
                 'Professional photos of your business.',
                 'A written, designed, mobile-ready website.',
                 'A free Tendso web address and hosting.',
+                'Free edits for the first year — you ask, we make the change.',
             ),
             h('Optional add-ons'),
             p('If you want your own domain name (for example yourshop.com instead of a free Tendso address), that is a flat ₱500 add-on, bringing the total to ₱1,499.'),
@@ -161,7 +162,7 @@ const HELP_ARTICLES: SeedArticle[] = [
     {
         slug: 'what-if-i-dont-like-it',
         title: "What if you don't like the result?",
-        summary: 'You only pay after you approve. If the first draft is not right, the creator revises it once for free.',
+        summary: 'You only pay after you approve. If the first draft is not right, we revise it once for free.',
         categorySlug: 'your-website',
         workspace: 'help',
         author: 'Tendso Team',
@@ -225,21 +226,21 @@ const HELP_ARTICLES: SeedArticle[] = [
     {
         slug: 'can-i-edit-my-site',
         title: 'Can I change my website after it goes live?',
-        summary: 'Yes. Send your changes to the creator or support, and updates are made for you.',
+        summary: 'Yes. Edits are free for the first year — tell Tendso what you want changed and we make it for you.',
         categorySlug: 'your-website',
         workspace: 'help',
         author: 'Tendso Team',
         readMin: 2,
-        keywords: ['edit', 'change', 'update', 'after live', 'hours', 'photos', 'menu', 'price'],
+        keywords: ['edit', 'change', 'update', 'after live', 'hours', 'photos', 'menu', 'price', 'free edits', 'first year', 'maintenance', 'support'],
         body: [
-            p('Your website is meant to stay accurate as your business changes — new hours, new products, a new photo.'),
+            p('Your website is meant to stay accurate as your business changes — new hours, new products, a new photo. Edits are free for the first year.'),
             h('How to request a change'),
             ul(
-                'Message the creator who built your site, or contact Tendso support.',
+                'Contact Tendso from the Contact page on our website.',
                 'Describe what you want updated — text, photos, hours, or contact details.',
-                'The change is made for you and goes live, usually within a day.',
+                'We make the change for you and put it live.',
             ),
-            note('You will never be locked out of your own information. Tendso maintains the site so you can keep running your business.'),
+            note('There is nothing to install and no editor to learn. You tell us what to change, and we do it.'),
         ],
     },
     {
@@ -612,7 +613,7 @@ const WIKI_ARTICLES: SeedArticle[] = [
         author: 'Field Playbook',
         readMin: 4,
         popular: true,
-        keywords: ['scam', 'trust', 'suspicious', 'objection', 'skeptical', 'legit', 'safe', 'convince'],
+        keywords: ['scam', 'trust', 'suspicious', 'objection', 'skeptical', 'legit', 'safe', 'convince', 'edits'],
         body: [
             p('Some business owners are busy or skeptical and worry that a free-looking offer is a scam. That reaction is normal — here is how to earn their trust.'),
             h('Lead with the things that lower risk'),
@@ -620,6 +621,7 @@ const WIKI_ARTICLES: SeedArticle[] = [
                 'They pay nothing up front — Tendso builds the site first and they only pay if they approve it.',
                 'There is no subscription; it\'s a one-time ₱999.',
                 'Payment is a secure link with a unique reference — you never handle their money or card.',
+                'Edits are free for the first year — they contact Tendso and we make the change for them.',
             ),
             h('Show, don\'t just tell'),
             ol(
@@ -663,8 +665,9 @@ const FAQS: SeedFaq[] = [
     { workspace: 'help', question: 'How much does a Tendso website cost?', answer: 'A complete website is a one-time ₱999. A custom domain is an optional ₱500 add-on. No subscriptions.', linkArticleSlug: 'how-much-does-a-website-cost', order: 1 },
     { workspace: 'help', question: 'When do I pay?', answer: 'Only after you have reviewed and approved the finished website. If you do not approve, you do not pay.', linkArticleSlug: 'how-payment-works', order: 2 },
     { workspace: 'help', question: 'How fast can it go live?', answer: 'Your draft is usually ready within 48 hours of the interview, and goes live the moment you approve and pay.', linkArticleSlug: 'how-fast-can-it-go-live', order: 3 },
-    { workspace: 'help', question: 'What if I want changes?', answer: 'Tell the creator what to change — the first draft is revised once for free, and you can request updates after launch too.', linkArticleSlug: 'what-if-i-dont-like-it', order: 4 },
+    { workspace: 'help', question: 'What if I want changes?', answer: 'Tell us what to change — the first draft is revised once for free. After launch, edits are free for the first year.', linkArticleSlug: 'what-if-i-dont-like-it', order: 4 },
     { workspace: 'help', question: 'Can I use my own domain?', answer: 'Yes — a custom domain is a flat ₱500 add-on, and we register and connect it for you.', linkArticleSlug: 'custom-domain', order: 5 },
+    { workspace: 'help', question: 'Can I change my website after it goes live?', answer: 'Yes — edits are free for the first year. Contact Tendso, tell us what to change, and we make it for you.', linkArticleSlug: 'can-i-edit-my-site', order: 6 },
 
     // Wiki
     { workspace: 'wiki', question: 'How much do I earn per website?', answer: 'You earn 50% of the sell price — ₱500 at the ₱999 base, up to ₱2,500 at the ₱4,999 ceiling.', linkArticleSlug: 'how-wise-payouts-work', order: 1 },

@@ -55,8 +55,11 @@ export default function Navbar() {
                         <option value="en">EN</option>
                         <option value="tl">TL</option>
                     </select>
+                    {/* Straight to the intake funnel. This navbar also renders on
+                        /for-business, where pointing at /for-business was a
+                        self-link that reads as a broken site. */}
                     <Link
-                        href="/for-business"
+                        href="/start"
                         className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
                     >
                         {t("hero.ctaBusiness")}

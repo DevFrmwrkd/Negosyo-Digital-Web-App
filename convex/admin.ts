@@ -625,6 +625,13 @@ export const deleteSubmissionRecords = mutation({
  * Deletes: all submissions (+ their websites/content), earnings, withdrawals, payoutMethods,
  * leads, leadNotes, notifications, pushTokens, referrals, analytics, and the creator record.
  * Creates an audit log entry.
+ *
+ * This is the most destructive mutation in the codebase and it is public, so it
+ * re-checks what the route already checked. It cannot use `ctx.auth` — Next
+ * routes here call Convex through `fetchMutation` without forwarding a Clerk
+ * token, so `getUserIdentity()` is always null server-side and an identity check
+ * would break admin deletion outright. Second best: `adminId` must resolve to a
+ * real admin row instead of being trusted as an opaque string.
  */
 export const deleteCreatorRecords = mutation({
     args: {
@@ -633,8 +640,20 @@ export const deleteCreatorRecords = mutation({
         deletedAssets: v.optional(v.any()),
     },
     handler: async (ctx, args) => {
+        const actor = await ctx.db
+            .query('creators')
+            .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.adminId))
+            .first();
+        if (!actor || actor.role !== 'admin') throw new Error('Forbidden: admin access required');
+
         const creator = await ctx.db.get(args.creatorId);
         if (!creator) throw new Error('Creator not found');
+
+        // Mirrors the 403 in /api/delete-creator. Admin rows include the house
+        // self-serve creator that every owner-intake submission hangs off, so a
+        // direct call against the deployment URL must not be able to cascade
+        // through it and wipe live websites.
+        if (creator.role === 'admin') throw new Error('Cannot delete admin accounts');
 
         const creatorName = `${creator.firstName} ${creator.lastName}`;
 

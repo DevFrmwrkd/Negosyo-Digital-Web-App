@@ -109,7 +109,7 @@ export const BUSINESS_TIERS = [
             "Built from your photos, your words, your business",
             "Mobile-first — your customers find you on their phones",
             "Live in 48 hours, hosted with SSL",
-            "Free edits within 7 days of launch",
+            "Free edits for the first year — ask us, we make the change",
         ],
     },
     {
@@ -374,8 +374,8 @@ export const FAQ_BUSINESS: FaqEntry[] = [
     { q: "Will I need to learn design?", a: "No. You won't choose a template, pick a font, or stare at a blank page. A creator visits, asks a few questions, takes photos, and your site forms from that." },
     { q: "How long does it take?", a: "Live in 48–72 hours from the interview. The interview itself is around 30 minutes — at your shop, while you keep working." },
     { q: "Do I have to prepare anything?", a: "No. The creator brings the camera, the questions, and the patience. You answer between customers." },
-    { q: "What if I don't like it?", a: "You don't pay until the site is live and you've approved it. If you reject the draft, the creator revises it once for free." },
-    { q: "Can I update it later?", a: "Yes — message your creator through the app. Small edits are included for the first year. After that, a flat fee per change." },
+    { q: "What if I don't like it?", a: "You don't pay until the site is live and you've approved it. If you reject the draft, we revise it once for free." },
+    { q: "Can I update it later?", a: "Yes — you tell us what to change and we make the edit for you. Edits are free for the first year. Message us through the Contact page." },
     { q: "Who owns the website?", a: "You do. The domain, the photos, the copy — all yours. You can take it elsewhere any time, no penalty." },
     { q: "How much does it cost?", a: "₱999 for a standard site, ₱1,499 if you want a custom domain (.com included for year 1). One-time fee — no monthly hosting bills." },
 ];
@@ -396,8 +396,8 @@ export const FAQ_BUSINESS_TL: FaqEntry[] = [
     { q: "Kailangan ko bang matuto ng design?", a: "Hindi. Wala kang pipiliing template, font, o titigan na blankong page. May creator na bibisita, magtatanong, kukuha ng litrato, at doon mabubuo ang site mo." },
     { q: "Gaano katagal?", a: "Live sa loob ng 48–72 oras mula sa interview. Ang interview mismo ay mga 30 minuto — sa tindahan mo, habang nagtatrabaho ka." },
     { q: "May ihahanda ba ako?", a: "Wala. Ang creator ang may dalang kamera, mga tanong, at pasensya. Sasagot ka lang sa pagitan ng mga customer." },
-    { q: "Paano kung hindi ko gusto?", a: "Hindi ka magbabayad hangga't hindi live at na-approve mo ang site. Kung tatanggihan mo ang draft, ire-revise ito ng creator nang isang beses, libre." },
-    { q: "Pwede ko bang i-update mamaya?", a: "Oo — mag-message sa creator mo sa app. Kasama na ang maliliit na edit sa unang taon. Pagkatapos noon, may flat na bayad kada pagbabago." },
+    { q: "Paano kung hindi ko gusto?", a: "Hindi ka magbabayad hangga't hindi live at na-approve mo ang site. Kung tatanggihan mo ang draft, ire-revise namin ito nang isang beses, libre." },
+    { q: "Pwede ko bang i-update mamaya?", a: "Oo — sabihin mo lang kung ano ang papalitan, kami na ang magpapalit para sa'yo. Libreng edits sa loob ng unang taon. Mag-message sa amin sa Contact page." },
     { q: "Sino ang may-ari ng website?", a: "Ikaw. Ang domain, ang litrato, ang mga salita — sa'yo lahat. Pwede mong dalhin kahit saan anumang oras, walang penalty." },
     { q: "Magkano ang gastos?", a: "₱999 para sa standard na site, ₱1,499 kung gusto mo ng custom domain (kasama ang .com sa unang taon). Isang bayad lang — walang buwanang hosting." },
 ];
@@ -408,7 +408,7 @@ export const KNOWLEDGE_BASE: KnowledgeEntry[] = [
     { id: "kb-2", category: "For creators", title: "Your first week as a certified creator", read: "6 min", excerpt: "Day-by-day map of what to expect: certification, your first match, your first interview, your first payout." },
     { id: "kb-3", category: "Payouts", title: "How Wise payouts work", read: "4 min", excerpt: "Link your Wise account in the app. Funds land within 48 hours of a site going live. No paperwork." },
     { id: "kb-4", category: "Photography", title: "Shooting a small shop — the 12-shot list", read: "5 min", excerpt: "Front, side, sign, hands at work, hero product, two close-ups, two wide, three portraits. The app prompts you, in order." },
-    { id: "kb-5", category: "For businesses", title: "What happens if you don't like the result?", read: "2 min", excerpt: "You don't pay until you approve. If you reject the draft, the creator revises once — free. Then it's yours or it's nothing." },
+    { id: "kb-5", category: "For businesses", title: "What happens if you don't like the result?", read: "2 min", excerpt: "You don't pay until you approve. If you reject the draft, we revise once — free. Then it's yours or it's nothing." },
     { id: "kb-6", category: "Referrals", title: "How the ₱1,000 friend bonus actually works", read: "3 min", excerpt: "Share your link. Your friend signs up and lands their first paid submission. You earn ₱1,000 the day that submission is approved." },
 ];
 
