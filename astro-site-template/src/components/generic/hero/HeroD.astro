@@ -9,8 +9,11 @@ const cta1Text = hero.cta1?.text || '';
 const cta1Href = hero.cta1?.href || '#visit';
 const cta2Text = hero.cta2?.text || 'See services';
 const cta2Href = hero.cta2?.href || '#services';
-const meta1 = hero.meta1 || '★★★★★ rated on Google';
-const meta2 = hero.meta2 || '&lt; 15 min avg. response · serving Austin';
+// No stock rating or response-time line: "★★★★★ rated on Google" and
+// "< 15 min avg. response" both assert measurements nobody took for this
+// business. Owner data or nothing.
+const meta1 = hero.meta1 || '';
+const meta2 = hero.meta2 || '';
 const termCmd = hero.term?.command || 'northpoint status --client acme-co';
 const termTitle = hero.term?.title || 'northpoint — status';
 const termLines: Array<{ text: string; status?: string }> = Array.isArray(hero.term?.lines) && hero.term.lines.length ? hero.term.lines : [];
@@ -30,8 +33,8 @@ const termLines: Array<{ text: string; status?: string }> = Array.isArray(hero.t
         <a href={cta2Href} class="btn btn-ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
       </div>
       <div class="hero-meta reveal" style="transition-delay:.18s;">
-        <span data-field="hero.meta1" set:html={meta1}></span>
-        <span data-field="hero.meta2" set:html={meta2}></span>
+        {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
+        {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
       </div>
     </div>
     <div class="term reveal" style="transition-delay:.12s;">

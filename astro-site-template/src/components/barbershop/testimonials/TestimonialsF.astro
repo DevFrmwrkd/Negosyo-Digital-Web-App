@@ -5,9 +5,15 @@ const t = content.testimonials || {};
 const tag = t.tag || '';
 const headline = t.headline || '';
 const sub = t.sub || '';
-const items: Array<{ quote: string; who: string }> = Array.isArray(t.items) ? t.items : [];
+const items: Array<{ quote: string; who: string; rating?: number | string }> = Array.isArray(t.items) ? t.items : [];
 const featured = items[0];
 const side = items.slice(1);
+// A star row is a rating claim, not decoration — it puts a score in a named
+// customer's mouth. Render only the score the customer actually gave.
+const starsOf = (it: { rating?: number | string }) => {
+  const n = Math.round(Number(it.rating));
+  return n >= 1 && n <= 5 ? '★'.repeat(n) : '';
+};
 ---
 {items.length > 0 && (
   <section class="pad-y testi-sec">
@@ -22,7 +28,7 @@ const side = items.slice(1);
       <div class="quotes reveal">
         {featured && (
           <figure class="feat">
-            <div class="stars">★★★★★</div>
+            {starsOf(featured) && <div class="stars">{starsOf(featured)}</div>}
             <blockquote data-field="testimonials.items.0.quote" set:html={featured.quote}></blockquote>
             <figcaption class="by"><span data-field="testimonials.items.0.who">{featured.who || ''}</span></figcaption>
           </figure>
@@ -31,7 +37,7 @@ const side = items.slice(1);
           <div class="side">
             {side.map((q, i) => (
               <figure class="sq">
-                <div class="stars">★★★★★</div>
+                {starsOf(q) && <div class="stars">{starsOf(q)}</div>}
                 <blockquote data-field={`testimonials.items.${i + 1}.quote`} set:html={q.quote}></blockquote>
                 <figcaption class="by"><span data-field={`testimonials.items.${i + 1}.who`}>{q.who || ''}</span></figcaption>
               </figure>

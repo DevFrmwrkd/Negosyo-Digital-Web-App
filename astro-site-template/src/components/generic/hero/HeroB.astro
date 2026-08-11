@@ -9,7 +9,9 @@ const headlineLines = Array.isArray(hero.headlineLines) && hero.headlineLines.le
   : [];
 const sub = hero.sub || hero.description ||
   '';
-const trustLine = hero.trustLine || '★★★★★ &nbsp;loved by students · ratings kept live on Google';
+// No stock trust line: the old default asserted a five-star score and a live
+// Google ratings feed the business may not have. Owner data or nothing.
+const trustLine = hero.trustLine || '';
 const cta1Text = hero.cta1?.text || hero.cta_label || '';
 const cta1Href = hero.cta1?.href || hero.cta_link || '#visit';
 const cta2Text = hero.cta2?.text || 'See the schedule';
@@ -35,7 +37,7 @@ const reelDoubled = [...showreel, ...showreel];
     <div class="hero-foot">
       <div>
         <p class="hero-sub" data-field="hero.sub">{sub}</p>
-        <p class="hero-trust" data-field="hero.trustLine" set:html={trustLine}></p>
+        {trustLine && <p class="hero-trust" data-field="hero.trustLine" set:html={trustLine}></p>}
       </div>
       <div class="hero-cta">
         <a href={cta1Href} class="btn btn-primary" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>

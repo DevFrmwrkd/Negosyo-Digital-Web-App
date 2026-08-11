@@ -8,7 +8,9 @@ const address = loc.address || layout.contact?.address || 'Your address line 1\n
 const addressLines = address.split('\n');
 const phone = loc.phone || layout.contact?.phone || '+0 000 000 0000';
 const phoneDigits = phone.replace(/[^0-9+]/g, '');
-const hours = loc.hours || 'Mon–Sat · kept live on Google';
+// No stock hours line: "kept live on Google" claims a maintained Google
+// listing the business may not have. Owner data or the row hides.
+const hours = loc.hours || '';
 const dirText = loc.directions?.text || 'Call for a quote';
 const dirHref = loc.directions?.href || `tel:${phoneDigits}`;
 const lat = loc.lat != null ? Number(loc.lat) : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
@@ -31,8 +33,8 @@ const mapAria = `Map showing ${label} at ${address.replace(/\n/g, ', ')}`;
         <div class="v s">
           <a href={`tel:${phoneDigits}`} data-field="location.phone" data-href-field="location.phone.href">{phone}</a>
         </div>
-        <div class="k">Hours</div>
-        <div class="v s" data-field="location.hours">{hours}</div>
+        {hours && <div class="k">Hours</div>}
+        {hours && <div class="v s" data-field="location.hours">{hours}</div>}
         <a href={dirHref} class="btn btn-primary" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>
       </div>
     </div>

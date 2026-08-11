@@ -59,7 +59,9 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
       )}
       {hoursRows.length > 0 && (
         <div class="foot-col foot-hours">
-          <h4>Hours · live on Google</h4>
+          {/* Plain label only — "live on Google" asserted a synced Google
+              listing that nothing in the pipeline actually maintains. */}
+          <h4>Hours</h4>
           {hoursRows.map((row: any, i: number) => (
             <div>
               <span data-field={`footer.hours.${i}.day`}>{row.day}</span>

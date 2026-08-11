@@ -190,6 +190,12 @@ export async function POST(request: NextRequest) {
             wasPublished,
             republished,
             ...(republishError ? { republishError } : {}),
+            // Forward the testimonial guard verbatim. An editor Save IS a
+            // regenerate (we POST /api/generate-website above), so this is the
+            // path most likely to strip quotes — and dropping the field here
+            // would silently swallow the only notice the admin ever gets that
+            // customer praise was removed from their page.
+            ...(regenerateData.testimonialGuard ? { testimonialGuard: regenerateData.testimonialGuard } : {}),
         })
     } catch (error) {
         console.error('Save content error:', error)

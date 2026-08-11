@@ -12,8 +12,11 @@ const cta1Text = hero.cta1?.text || 'Get a free quote';
 const cta1Href = hero.cta1?.href || '#visit';
 const cta2Text = hero.cta2?.text || 'See our work';
 const cta2Href = hero.cta2?.href || '#work';
-const meta1 = hero.meta1 || '★★★★★ rated on Google';
-const meta2 = hero.meta2 || 'Licensed & insured · serving Boulder County';
+// No stock rating or credential line: "★★★★★ rated on Google" and
+// "Licensed & insured" both assert outside verification the business may not
+// have. Owner data or nothing.
+const meta1 = hero.meta1 || '';
+const meta2 = hero.meta2 || '';
 ---
 <section class="hero">
   <div class="bg-img" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
@@ -31,8 +34,8 @@ const meta2 = hero.meta2 || 'Licensed & insured · serving Boulder County';
       <a href={cta2Href} class="btn btn-light" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
     </div>
     <div class="hero-meta reveal" style="transition-delay:.18s;">
-      <span data-field="hero.meta1" set:html={meta1}></span>
-      <span data-field="hero.meta2" set:html={meta2}></span>
+      {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
+      {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
     </div>
   </div>
 </section>

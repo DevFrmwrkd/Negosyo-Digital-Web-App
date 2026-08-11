@@ -621,6 +621,16 @@ export default function SubmissionDetailPage() {
             setWebsiteContent(data.website?.extracted_content);
             setWebsiteCustomizations(data.website?.customizations);
             setWebsiteGenerated(true);
+            // Customer quotes the guard removed. Silence here is the failure
+            // mode that matters: on the creator funnel EVERY generated
+            // testimonial is stripped, so without this the admin sees a page
+            // with no testimonials band and no reason to suspect the recording
+            // contained real praise they could type back in.
+            if (data.testimonialGuard?.message) {
+                setModalType("success");
+                setModalMessage(data.testimonialGuard.message);
+                setShowModal(true);
+            }
         } catch (error: any) {
             setWebsiteError(error.message || "Failed to generate website");
         } finally {

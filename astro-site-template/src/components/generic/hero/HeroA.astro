@@ -36,7 +36,9 @@ const cta1Href = hero.cta1?.href || hero.cta_link  || '#visit';
 const cta2Text = hero.cta2?.text || hero.cta_secondary_label || 'See the menu';
 const cta2Href = hero.cta2?.href || hero.cta_secondary_link  || '#menu';
 
-const meta1 = hero.meta1 || '★★★★★ rated on Google';
+// No stock rating line: a hardcoded "★★★★★ rated on Google" claims a review
+// score and a Google profile the business may not have. Owner data or nothing.
+const meta1 = hero.meta1 || '';
 const meta2 = hero.meta2 || 'Your address line 1 · open daily';
 ---
 
@@ -72,8 +74,8 @@ const meta2 = hero.meta2 || 'Your address line 1 · open daily';
       >{cta2Text}</a>
     </div>
     <div class="hero-meta reveal" style="transition-delay:.22s;">
-      <span data-field="hero.meta1" set:html={meta1}></span>
-      <span data-field="hero.meta2" set:html={meta2}></span>
+      {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
+      {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
     </div>
   </div>
 </section>

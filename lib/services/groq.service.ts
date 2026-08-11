@@ -3,6 +3,7 @@ import fs from "fs"
 import os from "os"
 import path from "path"
 import { chunkMediaFile, getFileExtension } from './media-chunker'
+import { INTAKE_QUESTIONS, type IntakeQuestionKey } from '../narrativeFromQa'
 
 // Lazy-load Groq client to avoid build-time errors
 let groqInstance: Groq | null = null
@@ -67,6 +68,267 @@ export function delimitTranscript(transcript: string, label = 'INTERVIEW TRANSCR
 ${TRANSCRIPT_OPEN}
 ${safe}
 ${TRANSCRIPT_CLOSE}`
+}
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * FABRICATED-TESTIMONIAL GUARD
+ *
+ * A prompt rule is a request. This is the rule that cannot be argued with: a
+ * quoted customer only survives when the BUSINESS supplied the words. Everything
+ * a generator invents is dropped before it reaches extractedContent.
+ *
+ * Why this is the one output worth a deterministic guard rather than a stern
+ * paragraph: a made-up service line is bad copy the owner can correct, but a
+ * made-up customer with a name attached is a third-party endorsement that never
+ * happened, published on a real shop's website. It is the only field here where
+ * the honest failure mode — nothing at all — is unambiguously better than a
+ * plausible guess, and lib/astro-builder.ts already auto-hides the block on an
+ * empty array, so "nothing at all" renders as a complete page.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** The ONE intake answer a testimonial may come from — see the comment on this
+ *  question in lib/narrativeFromQa.ts. Keyed, never retyped as question text. */
+export const TESTIMONIAL_SOURCE_QUESTION: IntakeQuestionKey = 'what_regulars_say'
+
+/** convex/schema.ts: the only value `submissions.contentSource` ever holds, and
+ *  it must never change — the /admin badge and its queries filter the literal. */
+const OWNER_INTAKE_CONTENT_SOURCE = 'owner_intake'
+
+/** Same normalisation buildNarrativeFromQa and normalizeQa match stored pairs
+ *  with, so all three agree about a row however the question is reworded. */
+function normalizeQuestion(q: string | undefined): string {
+    return (q ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+/** Accept the pair keyed by display text (how submitOwnerIntake stores it) or by
+ *  machine key (how a direct caller might send it). */
+const TESTIMONIAL_QUESTION_ALIASES: ReadonlySet<string> = new Set(
+    INTAKE_QUESTIONS
+        .filter((entry) => entry.key === TESTIMONIAL_SOURCE_QUESTION)
+        .flatMap((entry) => [normalizeQuestion(entry.q), normalizeQuestion(entry.key)]),
+)
+
+export interface TestimonialSourceInput {
+    /** `submissions.contentSource` — 'owner_intake', or absent on the creator funnel. */
+    contentSource?: string | null
+    /** `submissions.interviewQa` — present on owner intake only. */
+    interviewQa?: ReadonlyArray<{ q?: string; a?: string }> | null
+}
+
+/**
+ * Did the business itself supply testimonial words? The two funnels are answered
+ * on their own terms — this deliberately does NOT pretend one rule fits both.
+ *
+ * OWNER INTAKE — exact. `what_regulars_say` is optional, and when it is skipped
+ * no testimonial text exists anywhere in the submission: the synthesized
+ * transcript simply omits the block. A non-blank answer is a yes; anything else
+ * is a no, with no inference in between.
+ *
+ * CREATOR FUNNEL (recorded audio, no structured Q&A) — unknowable, so the answer
+ * is NO, always. There is no field to read, and by the time speech has become a
+ * flat Whisper transcript a sentence the owner reported a customer saying and a
+ * sentence the model liked the sound of are indistinguishable. The two mistakes
+ * do not cost the same: a missing block auto-hides and an admin who heard the
+ * recording can type the real quotes into the editor before publish (admin edits
+ * are never touched by this guard — it only ever runs on freshly generated
+ * output), while a fabricated quote ships as a named stranger's endorsement of a
+ * real business. So this path trades a recoverable omission for an
+ * unrecoverable invention, on purpose, rather than guessing from the prose.
+ */
+export function hasSuppliedTestimonials(input: TestimonialSourceInput | null | undefined): boolean {
+    if (!input || input.contentSource !== OWNER_INTAKE_CONTENT_SOURCE) return false
+    const pairs = Array.isArray(input.interviewQa) ? input.interviewQa : []
+    return pairs.some(
+        (pair) =>
+            TESTIMONIAL_QUESTION_ALIASES.has(normalizeQuestion(pair?.q)) &&
+            (pair?.a ?? '').trim().length > 0,
+    )
+}
+
+/** What a single strip pass removed, so the caller can log it rather than
+ *  discard praise silently. */
+export interface TestimonialStripReport {
+    /** Top-level `testimonials` entries dropped. */
+    testimonials: number
+    /** Nested `featured_products[].testimonial` objects dropped. */
+    productTestimonials: number
+}
+
+export interface TestimonialStripOptions {
+    /**
+     * Keep the quotes a HUMAN wrote, drop the rest. For STORED content only —
+     * generator output has no human-written quotes in it by definition, so the
+     * generation call sites never pass this.
+     */
+    keepAdminAuthored?: boolean
+}
+
+/**
+ * The attribution key the editor writes, and the one thing that separates a
+ * quote a person typed from a quote a model produced — without a schema field
+ * to record it.
+ *
+ * Adding a quote in the editor clones `{ quote: '', who: '' }`
+ * (components/editor/genericContentSchema.ts) and inline click-to-edit writes
+ * `testimonials.items[i].who` (every generic TestimonialsA–E component tags its
+ * attribution line with that path), so the KEY is present on every quote a human
+ * has touched — including one saved with the attribution left blank. No prompt
+ * in this file asks for it, so nothing generated has it.
+ *
+ * That invariant is load-bearing: never add `who` to a generated output schema.
+ * Ask for `context` (or nothing) instead — see generateConversionBlocks.
+ */
+const ADMIN_ATTRIBUTION_KEY = 'who'
+
+/**
+ * The keys a MODEL writes an attribution under. Their presence is what makes a
+ * `who` untrustworthy — see below.
+ */
+const GENERATED_ATTRIBUTION_KEYS = ['name', 'author'] as const
+
+/**
+ * `who` alone is NOT proof a human wrote the quote, because two normalizers
+ * forge it. `lib/astro-builder.ts` (normalizeBlock) and
+ * `components/editor/SandboxEditor.tsx` (normalizeBlockEditor — v1, the DEFAULT
+ * editor) both alias generated testimonials with `{ name: 'who', author: 'who',
+ * context: 'role' }` on load. So an admin merely OPENING a legacy row in the
+ * editor and pressing Save writes `who` onto every invented customer in it, and
+ * /api/save-content persists that draft and republishes — laundering exactly the
+ * rows this guard exists to clean, permanently and irreversibly.
+ *
+ * The aliasing is also what makes the two cases separable: it only ever ADDS
+ * `who`, never removes the `name` / `author` it copied from. A quote a human
+ * actually created carries neither — the editor's "add quote" clone is
+ * `{ quote, who }` and inline click-to-edit writes the `who` leaf directly.
+ * So: `who` AND no `name`/`author` = typed by a person; `who` beside a `name` =
+ * a model's quote that has been through a normalizer.
+ *
+ * The one thing this costs: an admin who retypes the attribution ON a generated
+ * row (rather than adding a fresh quote) still loses it, because the `name` the
+ * model wrote is still sitting on the item. That is the correct direction to
+ * fail — the block auto-hides and the guard message tells them to add the quote
+ * in the Testimonials block, which produces a clean item.
+ */
+function isAdminAuthoredTestimonial(item: any): boolean {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return false
+    if (!(ADMIN_ATTRIBUTION_KEY in item)) return false
+    return !GENERATED_ATTRIBUTION_KEYS.some((key) => key in item)
+}
+
+/**
+ * Remove quoted customers the business never supplied.
+ *
+ * Two callers, one shape-knowledge:
+ *   • GENERATION (default) — model JSON and the hardcoded
+ *     `generateDefaultFeaturedProducts` fallback. Nothing survives.
+ *   • ASSEMBLY (`keepAdminAuthored: true`) — stored extractedContent on its way
+ *     into the built page. Everything a human typed in the editor survives;
+ *     everything a generator wrote does not. Stored content HAS to be filtered:
+ *     a regenerate generates nothing (services are already populated, a
+ *     conversion block already exists), so the generation guards never run and a
+ *     row written before this guard existed republishes its invented customers
+ *     forever.
+ *
+ * Accepts a content object or a bare `featured_products` array, because the
+ * default-products fallback hands over the array on its own.
+ *
+ * `testimonials` has three live shapes — the legacy flat array (A–O templates
+ * and ConversionBlocks), the generic-template wrapper `{ tag, headline, items[] }`,
+ * and the occasional bare string a model returns instead of an array. All end as
+ * an empty array or an empty `items[]` rather than a deleted key: astro-builder
+ * hides the block on zero length in either shape, and keeping the wrapper
+ * preserves an eyebrow/headline the admin may have written.
+ */
+export function stripFabricatedTestimonials<T>(
+    content: T,
+    options: TestimonialStripOptions = {},
+): { content: T; removed: TestimonialStripReport } {
+    const removed: TestimonialStripReport = { testimonials: 0, productTestimonials: 0 }
+    if (!content || typeof content !== 'object') return { content, removed }
+
+    const keepQuotes = (items: any[]): any[] =>
+        options.keepAdminAuthored ? items.filter(isAdminAuthoredTestimonial) : []
+
+    /**
+     * `quote` / `author` sitting directly on an object instead of inside a
+     * testimonial of its own — the shape models drift into when asked for a
+     * nested object. Nothing renders these keys today, which is exactly why they
+     * rode along unnoticed; they are still a quoted customer in the payload the
+     * editor loads and the next template could read. Returns 1 when actual words
+     * were dropped, so an empty slot isn't reported as removed praise.
+     */
+    const dropFlatQuote = (obj: Record<string, any>): number => {
+        if (!('quote' in obj) && !('author' in obj)) return 0
+        const hadWords = typeof obj.quote === 'string' && obj.quote.trim().length > 0
+        delete obj.quote
+        delete obj.author
+        return hadWords ? 1 : 0
+    }
+
+    // Product testimonials are always generated — no editor field writes
+    // `featured_products[].testimonial` — so provenance never applies here.
+    const stripProducts = (products: any[]): any[] =>
+        products.map((product) => {
+            if (!product || typeof product !== 'object') return product
+            if (!('testimonial' in product) && !('quote' in product) && !('author' in product)) return product
+            const out = { ...product }
+            if ('testimonial' in out) {
+                // An explicit `null` has to go too: `testimonial == null` reads as
+                // "nothing to strip", but the key survives every spread after it
+                // and keeps announcing a quote slot on the project.
+                const t = out.testimonial
+                const hadWords = typeof t === 'string'
+                    ? t.trim().length > 0
+                    : !!(t && typeof t === 'object' && String(t.quote ?? '').trim().length > 0)
+                if (hadWords) removed.productTestimonials += 1
+                delete out.testimonial
+            }
+            removed.productTestimonials += dropFlatQuote(out)
+            return out
+        })
+
+    if (Array.isArray(content)) {
+        return { content: stripProducts(content) as unknown as T, removed }
+    }
+
+    const src = content as any
+    const out: any = { ...src }
+
+    if (typeof src.testimonials === 'string') {
+        // Prose where the array belongs. Not one sentence in it is attributable,
+        // and [] is the shape the builder hides on.
+        if (src.testimonials.trim().length > 0) removed.testimonials += 1
+        out.testimonials = []
+    } else if (Array.isArray(src.testimonials)) {
+        const kept = keepQuotes(src.testimonials)
+        removed.testimonials += src.testimonials.length - kept.length
+        out.testimonials = kept
+    } else if (src.testimonials && typeof src.testimonials === 'object') {
+        const wrapper = { ...src.testimonials }
+        const items = Array.isArray(wrapper.items) ? wrapper.items : []
+        const kept = keepQuotes(items)
+        removed.testimonials += items.length - kept.length
+        wrapper.items = kept
+        // The A/D pull-quote lives BESIDE items[], so emptying items[] left it on
+        // the page. Same provenance rule as an item: `bigQuote`/`bigWho` are
+        // editor-only fields (genericContentSchema), so a generated payload
+        // carrying one is a model overreaching and it goes.
+        if (!options.keepAdminAuthored) {
+            if (typeof wrapper.bigQuote === 'string' && wrapper.bigQuote.trim().length > 0) removed.testimonials += 1
+            delete wrapper.bigQuote
+            delete wrapper.bigWho
+        }
+        removed.testimonials += dropFlatQuote(wrapper)
+        out.testimonials = wrapper
+    }
+
+    removed.testimonials += dropFlatQuote(out)
+
+    if (Array.isArray(src.featured_products)) {
+        out.featured_products = stripProducts(src.featured_products)
+    }
+
+    return { content: out as T, removed }
 }
 
 export const groqService = {
@@ -321,6 +583,8 @@ Create a complete HTML page with:
 8. Smooth animations and transitions
 9. Mobile-friendly layout
 
+TESTIMONIALS: only what the owner reported customers saying, in the content above. If it isn't there, leave the section out. Never invent a customer, a name, or a quote.
+
 Return ONLY the complete HTML code, starting with <!DOCTYPE html>`
 
             const groq = getGroqClient()
@@ -397,11 +661,7 @@ affiliation, awards). Same for credentials: 3-4 entries (Licensed · Trained
     { "step": "03", "title": "...", "body": "..." },
     { "step": "04", "title": "...", "body": "..." }
   ],
-  "testimonials": [
-    { "quote": "1 sentence customer quote in their voice", "name": "First-name Last-initial", "context": "1-3 word context (e.g. 'monthly client')" },
-    { "quote": "...", "name": "...", "context": "..." },
-    { "quote": "...", "name": "...", "context": "..." }
-  ],
+  "testimonials": [up to 3 of { "quote": "1 sentence, the customer's words as the owner reported them", "context": "1-3 word context (e.g. 'monthly client')" }] or [],
   "faq": [
     { "q": "real customer question, 5-9 words", "a": "1-3 sentence direct answer" },
     { "q": "...", "a": "..." },
@@ -427,7 +687,7 @@ HARD RULES (the page is one of hundreds — must stay maintenance-free):
 - NEVER mention specific dates, years (other than 'since YYYY' in trust.years), or 'this month'.
 - NEVER name individual staff members.
 - NEVER reference hours of operation — Google handles those.
-- Testimonials use realistic first-name + last-initial; don't invent real-sounding full names.
+- TESTIMONIALS: only what the owner reported customers saying, in the transcript. If it isn't there, return []. Never invent a customer or a quote — and never output a name: the owner is asked what regulars SAY, never who said it, so a name can only be made up.
 - Every claim must be supportable from the transcript — if the transcript doesn't mention licenses, return an empty array.
 - No "we offer X service" filler. Concrete, opinionated, founder-voiced.
 - Avoid emoji and exclamation marks.
@@ -501,7 +761,7 @@ OUTPUT — return ONLY a JSON object with these exact keys:
     "sub": "1-2 sentence elevator pitch in the founder's voice",
     "cta1": { "text": "2-3 word button (e.g. 'Visit us')",        "href": "#visit" },
     "cta2": { "text": "2-3 word secondary (e.g. 'See services')", "href": "#services" },
-    "meta1": "star line or rating ('★★★★★ rated on Google')",
+    "meta1": "one checkable fact from the transcript ('open since 2019', 'cash or GCash') — NEVER a star line, a rating, or a review count: nobody in this pipeline can verify one, so it can only be made up",
     "meta2": "second meta line ('open daily · address')"
   },
   "about": {
@@ -682,7 +942,9 @@ export interface ConversionBlocks {
     trust?: { years?: string; licenses?: string[]; memberships?: string[] }
     why?: { title: string; body: string }[]
     how?: { step: string; title: string; body: string }[]
-    testimonials?: { quote: string; name: string; context?: string }[]
+    // `name` is no longer asked for (a name is never sourced — see the prompt),
+    // but stays optional because rows written before that carry one.
+    testimonials?: { quote: string; name?: string; context?: string }[]
     faq?: { q: string; a: string }[]
     credentials?: { label: string; detail: string }[]
     ctaBand?: {

@@ -8,9 +8,13 @@ const body = area.body || 'Describe the area you serve. Edit in the Service area
 const places: string[] = Array.isArray(area.places) && area.places.length ? area.places : [];
 const creds = content.credentials || {};
 const credTag = creds.tag || 'credentials';
-const credHeadline = creds.headline || 'Certified & vetted.';
-const credBody = creds.body || 'Our technicians hold current industry certifications and we carry full coverage.';
+// Certification / insurance claims are checkable facts about a real business.
+// Asserting them by default puts unearned coverage on a live site, so the
+// credentials column stays empty (and hides) unless the owner fills it in.
+const credHeadline = creds.headline || '';
+const credBody = creds.body || '';
 const credItems = Array.isArray(creds.items) && creds.items.length ? creds.items : [];
+const hasCreds = Boolean(credHeadline || credBody) || credItems.length > 0;
 const credIconPaths = [
   '<path d="M12 3l8 4v6c0 5-4 7-8 8-4-1-8-3-8-8V7z"/>',
   '<rect x="3" y="4" width="18" height="14" rx="2"/>',
@@ -30,10 +34,11 @@ const credIconPaths = [
         ))}
       </div>
     </div>
+    {hasCreds && (
     <div>
       <p class="sec-tag reveal" data-field="credentials.tag">{credTag}</p>
-      <h2 class="reveal" data-field="credentials.headline" style="font-size:clamp(30px,3.6vw,46px);">{credHeadline}</h2>
-      <p class="lead reveal" data-field="credentials.body">{credBody}</p>
+      {credHeadline && <h2 class="reveal" data-field="credentials.headline" style="font-size:clamp(30px,3.6vw,46px);">{credHeadline}</h2>}
+      {credBody && <p class="lead reveal" data-field="credentials.body">{credBody}</p>}
       <div class="cred-chips reveal">
         {credItems.map((it: any, i: number) => (
           <span class="cred-chip">
@@ -43,6 +48,7 @@ const credIconPaths = [
         ))}
       </div>
     </div>
+    )}
   </div>
 </section>
 <style>
