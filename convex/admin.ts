@@ -437,6 +437,19 @@ export const markDeployed = mutation({
 
 /**
  * Mark a submission as paid — creates earning record, updates creator, triggers audit + notification + analytics
+ *
+ * Public, like every mutation the Next routes reach through `fetchMutation`
+ * (which forwards no Clerk token, so `ctx.auth` is always null here — see
+ * deleteCreatorRecords). It therefore re-checks what /api/mark-paid already
+ * checked, the same way that mutation does: `adminId` must RESOLVE to a real
+ * admin row rather than being trusted as an opaque string.
+ *
+ * Not optional. This mutation is the trigger for creditCreatorForPayment, which
+ * schedules domains.setupForSubmission — the one code path that spends money at
+ * a registrar on a saved card. Without the resolve, anyone holding a submission
+ * id could call this and buy a domain; owner intake hands every submitter their
+ * own id (ownerIntake.submitOwnerIntake returns it), so that id is no longer a
+ * secret only staff hold.
  */
 export const markPaid = mutation({
     args: {
@@ -444,6 +457,12 @@ export const markPaid = mutation({
         adminId: v.string(),
     },
     handler: async (ctx, args) => {
+        const actor = await ctx.db
+            .query('creators')
+            .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.adminId))
+            .first();
+        if (!actor || actor.role !== 'admin') throw new Error('Forbidden: admin access required');
+
         // Delegate to shared credit logic (also used by auto-payment webhook)
         await ctx.scheduler.runAfter(0, internal.payments.creditCreatorForPayment, {
             submissionId: args.submissionId,

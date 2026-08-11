@@ -62,6 +62,13 @@ export interface StartDraft {
     /** Photo slot index (which IS the role — see photoSlots.ts) → R2 public URL. */
     photos: Record<number, string>;
     coordinates: { lat: number; lng: number } | null;
+    /** The tier chosen on the confirm step. false = the ₱999 standard tier,
+     *  which is also what an owner who never touches the choice submits. */
+    wantsCustomDomain: boolean;
+    /** The address typed for the custom-domain tier. Kept even when the owner
+     *  switches back to standard: toggling is one mis-tap, and re-typing a
+     *  domain on a phone is not something to make anyone do twice. */
+    requestedDomain: string;
 }
 
 export function emptyDraft(): StartDraft {
@@ -86,6 +93,8 @@ export function emptyDraft(): StartDraft {
         hasProducts: null,
         photos: {},
         coordinates: null,
+        wantsCustomDomain: false,
+        requestedDomain: "",
     };
 }
 
@@ -160,6 +169,12 @@ export function loadDraft(): StartDraft {
             answers: stringValuesOnly<IntakeQuestionKey>(parsed.answers, (key) => QUESTION_KEYS.has(key)),
             photos: stringValuesOnly<number>(parsed.photos, isSlotIndex),
             hasProducts: typeof parsed.hasProducts === "boolean" ? parsed.hasProducts : null,
+            // Same reason stringValuesOnly exists, for the two scalars it cannot
+            // cover: the spread above would otherwise hand a number or an object
+            // straight to `.trim()` during render, on a draft that survives every
+            // refresh. A dropped tier re-asks one question on the last screen.
+            wantsCustomDomain: typeof parsed.wantsCustomDomain === "boolean" ? parsed.wantsCustomDomain : false,
+            requestedDomain: typeof parsed.requestedDomain === "string" ? parsed.requestedDomain : "",
             coordinates:
                 parsed.coordinates &&
                 typeof parsed.coordinates.lat === "number" &&

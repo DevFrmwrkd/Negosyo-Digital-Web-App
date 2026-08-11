@@ -34,7 +34,7 @@ import { ConvexError } from "convex/values";
 import { api } from "@/convex/_generated/api";
 import { BUSINESS_TYPES } from "@/lib/prospectPrefill";
 import { INTAKE_QUESTIONS, meetsAnswerMinimum } from "@/lib/narrativeFromQa";
-import { BASE_PRICE, formatPHP } from "@/lib/pricing";
+import { BASE_PRICE, CUSTOM_DOMAIN_ADDON, formatPHP, ownerTotal } from "@/lib/pricing";
 
 import {
     clearDraft,
@@ -70,6 +70,35 @@ import {
  *  on purpose: an address that passes here and fails there is a dead end the
  *  owner cannot debug. */
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Mirrors DOMAIN_PATTERN in convex/ownerIntake.ts, for the same reason
+ *  EMAIL_PATTERN is mirrored: this one is checked at the very last tap of a
+ *  ten-minute form, and a value that passes here but fails there is a dead end
+ *  the owner cannot debug. */
+const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z]{2,24})+$/;
+
+/** The same rejections normalizeRequestedDomain makes, in the same order and on
+ *  the same grounds, so nothing that passes here is turned away by the mutation.
+ *  Availability is NOT checked — see the note on that function; what the owner
+ *  types is a request our team confirms before anyone is asked to pay. */
+function validateDomain(raw: string): string | undefined {
+    const domain = raw.trim().toLowerCase();
+    if (!domain) return "Type the address you'd like — for example alingnena.com";
+    if (domain.length > 253) return "That web address is too long.";
+    if (domain.includes("/")) return "Just the address itself — no https:// and no slashes.";
+    if (domain.startsWith("www.")) return 'Leave the "www." off — we set that up for you.';
+    if (!DOMAIN_PATTERN.test(domain)) {
+        // Deliberately does NOT suggest .ph: it is on BLOCKED_TLDS
+        // (convex/lib/hostinger.ts) at ~$50/yr, so suggesting it here sends the
+        // owner down a path that only fails after they have paid ₱1,499. The
+        // mutation rejects blocked TLDs too — this is the friendlier half.
+        return "Letters, numbers and dashes, ending in .com or similar — for example alingnena.com";
+    }
+    if (domain.split(".").some((label) => label.length > 63)) {
+        return "That web address is too long — keep each part under 63 characters.";
+    }
+    return undefined;
+}
 
 type BasicsErrors = Partial<Record<keyof StartBasics, string>>;
 
@@ -122,6 +151,9 @@ export default function StartPage() {
     const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
     const [photoError, setPhotoError] = useState<string | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    /** Same shape as showBasicsErrors: the domain field stays quiet until the
+     *  owner tries to send, so it isn't scolding them at the first letter. */
+    const [showDomainError, setShowDomainError] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [geoStatus, setGeoStatus] = useState<"idle" | "asking" | "denied">("idle");
 
@@ -236,6 +268,13 @@ export default function StartPage() {
 
     const handleSubmit = useCallback(async () => {
         if (!draft || submittedRef.current) return;
+        // Before the guard, and before anything is spent: a bad domain is the one
+        // thing on this screen the owner can still get wrong, and the mutation
+        // would reject it anyway.
+        if (draft.wantsCustomDomain && validateDomain(draft.requestedDomain)) {
+            setShowDomainError(true);
+            return;
+        }
         submittedRef.current = true;
         setSubmitting(true);
         setSubmitError(null);
@@ -264,6 +303,13 @@ export default function StartPage() {
                 })).filter((pair) => pair.a.length > 0),
                 photos: buildPhotoArray(draft.photos, !!draft.hasProducts),
                 hasProducts: !!draft.hasProducts,
+                // The tier decides `amount` server-side; the domain is sent
+                // already trimmed and lower-cased, the form the mutation stores
+                // and a registrar would eventually receive.
+                submissionType: draft.wantsCustomDomain ? "with_custom_domain" : "standard",
+                requestedDomain: draft.wantsCustomDomain
+                    ? draft.requestedDomain.trim().toLowerCase()
+                    : undefined,
             });
 
             rememberSubmittedEmail(basics.ownerEmail.trim());
@@ -289,7 +335,11 @@ export default function StartPage() {
         );
     }
 
-    const { basics, answers, photos, hasProducts } = draft;
+    const { basics, answers, photos, hasProducts, wantsCustomDomain, requestedDomain } = draft;
+    const domainError = wantsCustomDomain ? validateDomain(requestedDomain) : undefined;
+    /** What the payment email will ask for. Derived, never typed: lib/pricing is
+     *  the same module the mutation prices the row with. */
+    const total = ownerTotal(BASE_PRICE, wantsCustomDomain ? "with_custom_domain" : "standard");
     // loadDraft already clamps questionIndex, but the value it clamps came out of
     // localStorage — belt and braces, because every read below assumes a question
     // and a miss here is a white screen the owner cannot refresh their way out of.
@@ -812,6 +862,118 @@ export default function StartPage() {
                                 </div>
                             </SummaryCard>
 
+                            {/* The tier. The ONE money decision on this form, and
+                                the only reason the ₱1,499 custom-domain tier is
+                                reachable for an owner at all — nothing else on
+                                this path writes submissionType. Deliberately no
+                                availability check: /api/check-domain needs a
+                                logged-in user and there is no account here, so
+                                the name typed below is a request our team
+                                confirms during the review they already do. */}
+                            <section className="rounded-xl border border-ink/10 bg-white p-5">
+                                <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                                    Your web address
+                                </h2>
+                                <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+                                    Every site comes with a web address we set up for you. If you&apos;d rather have
+                                    your own .com, we can register one for your shop.
+                                </p>
+
+                                <div className="mt-4 flex flex-col gap-3">
+                                    {[
+                                        {
+                                            value: false,
+                                            title: "The address we set up",
+                                            price: BASE_PRICE,
+                                            note: "Included. Nothing else to arrange, nothing to renew.",
+                                        },
+                                        {
+                                            value: true,
+                                            title: "Your own .com",
+                                            price: BASE_PRICE + CUSTOM_DOMAIN_ADDON,
+                                            note: `${formatPHP(BASE_PRICE)} for the website + ${formatPHP(
+                                                CUSTOM_DOMAIN_ADDON,
+                                            )} for the domain. We pay the first year; after that it's yours to renew.`,
+                                        },
+                                    ].map((option) => {
+                                        const selected = wantsCustomDomain === option.value;
+                                        return (
+                                            <button
+                                                key={option.title}
+                                                type="button"
+                                                disabled={submitting}
+                                                onClick={() =>
+                                                    patch((previous) => ({
+                                                        ...previous,
+                                                        wantsCustomDomain: option.value,
+                                                    }))
+                                                }
+                                                className={`rounded-xl border p-4 text-left transition-colors disabled:opacity-50 ${
+                                                    selected
+                                                        ? "border-rust bg-white"
+                                                        : "border-ink/15 bg-white/60 hover:border-ink/35"
+                                                }`}
+                                            >
+                                                <span className="flex items-baseline justify-between gap-3">
+                                                    <span
+                                                        className={`text-sm font-semibold ${
+                                                            selected ? "text-ink" : "text-ink-soft"
+                                                        }`}
+                                                    >
+                                                        {option.title}
+                                                    </span>
+                                                    <span className="flex-shrink-0 text-base font-semibold text-ink">
+                                                        {formatPHP(option.price)}
+                                                    </span>
+                                                </span>
+                                                <span className="mt-1 block text-[13px] leading-snug text-ink-soft">
+                                                    {option.note}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {wantsCustomDomain ? (
+                                    <div className="mt-4">
+                                        <Field
+                                            label="The address you want"
+                                            htmlFor="requestedDomain"
+                                            hint="Just the address — no www. and no https://"
+                                            error={showDomainError ? domainError : undefined}
+                                        >
+                                            <input
+                                                id="requestedDomain"
+                                                type="text"
+                                                inputMode="url"
+                                                autoComplete="off"
+                                                autoCapitalize="none"
+                                                spellCheck={false}
+                                                maxLength={253}
+                                                placeholder="alingnena.com"
+                                                className={INPUT_CLASS}
+                                                value={requestedDomain}
+                                                onChange={(event) =>
+                                                    patch((previous) => ({
+                                                        ...previous,
+                                                        requestedDomain: event.target.value,
+                                                    }))
+                                                }
+                                            />
+                                        </Field>
+                                        {/* Says what we will do, not that this
+                                            particular name is free — nothing on
+                                            this page has checked, and the owner
+                                            must not read it as a reservation. */}
+                                        <p className="mt-3 text-[13px] leading-relaxed text-ink-soft">
+                                            We check that it&apos;s free before we ask you for anything. If someone
+                                            already owns it, we&apos;ll email you the closest ones we can get and you
+                                            pick.
+                                        </p>
+                                    </div>
+                                ) : null}
+                            </section>
+
                             <div className="rounded-xl border border-ink/10 bg-khaki-deep p-5">
                                 <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
                                     What happens next
@@ -819,9 +981,15 @@ export default function StartPage() {
                                 <p className="mt-3 text-sm leading-relaxed text-ink">
                                     Our team builds your website and emails it to{" "}
                                     <strong className="font-semibold">{basics.ownerEmail}</strong> within 48–72
-                                    hours, along with how to pay {formatPHP(BASE_PRICE)}. Nothing to pay now, and
+                                    hours, along with how to pay {formatPHP(total)}. Nothing to pay now, and
                                     nothing to install.
                                 </p>
+                                {wantsCustomDomain ? (
+                                    <p className="mt-3 text-sm leading-relaxed text-ink">
+                                        That bill only goes out once we&apos;ve confirmed the address you asked for
+                                        is still free.
+                                    </p>
+                                ) : null}
                             </div>
                         </div>
                     </>
