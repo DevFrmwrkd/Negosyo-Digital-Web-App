@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Scale, Users, FileText, Banknote, ShieldAlert, Award } from "lucide-react";
+import { Scale, Users, FileText, Banknote, ShieldAlert, Award, PencilLine } from "lucide-react";
 
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -36,15 +36,60 @@ const termsSections = [
         content:
             "Creators earn 50% of the website sale price (₱500 at the ₱999 base price, scaling up to ₱2,500 as higher price tiers unlock). Referral bonuses of PHP 1,000 are credited when a referred Creator completes their first paid submission. The minimum withdrawal threshold is PHP 100, processed securely via Wise API direct to local Philippine bank accounts.",
     },
+    // The edits promise is advertised on the landing, pricing, About, /my-business,
+    // the transactional emails and the knowledge base. It had no home in the Terms,
+    // so a business owner reading the legal page found nothing about the service
+    // they actually bought. Wording deliberately mirrors the live copy (see
+    // components/landing/landingData.ts BUSINESS_TIERS + FAQ_BUSINESS) and promises
+    // nothing beyond it — no turnaround time, no revision cap, no post-year-one fee.
+    // The domain sentence is here because the ₱1,499 tier DOES leave the owner with
+    // a yearly cost: our own renewal reminder (lib/email/templates.ts,
+    // getDomainRenewalReminderEmailHtml) tells them Tendso paid year 1 and "Year 2
+    // onwards is your responsibility". A blanket "no recurring fee" would contradict
+    // the email we send them, so the no-recurring-fee promise is scoped to the site.
+    // No renewal figure is quoted — lib/pricing.ts defines none, and the only number
+    // that exists anywhere ("around 500 to 1200 PHP", templates.ts:1024) is a soft,
+    // registrar-dependent range that has no business on a legal page.
+    //
+    // Every clause of the domain sentence is sourced:
+    //   • one year, included in the price — convex/lib/hostinger.ts registerDomain
+    //     ("Register a domain for 1 year", expiresAt = +365d) bought on Tendso's
+    //     saved card by domains.setupForSubmission at mark-paid (convex/domains.ts:509).
+    //   • held on TENDSO's registrar account, not the owner's — registerDomain sends
+    //     one Hostinger WHOIS profile id as owner_id/admin_id/billing_id/tech_id
+    //     (convex/lib/hostinger.ts:409-419). The owner's name is on no contact role.
+    //     This was previously MISSING from the page and its absence made the old
+    //     "the domain is yours to renew, paid to the registrar" sentence false: the
+    //     owner has no registrar account and no standing to renew it directly.
+    //   • auto-renew off by design — convex/domains.ts:531-541 disables it on the
+    //     subscription right after purchase. Deliberately not phrased as "it will
+    //     never renew": that call is best-effort and its failure is caught and
+    //     audit-logged (:543-557), so the promise made is the one that holds either
+    //     way — nothing is billed to the OWNER, who has no card on file with us.
+    //   • ~30-day reminder, then lapse — convex/domains.ts:518-528 schedules
+    //     sendDomainRenewalReminderEmailAction at expiresAt − 30d; the email says the
+    //     domain is lost and the site unreachable if it is not renewed (templates.ts:1021).
+    //   • renew-for-you and help-transferring-out — both are offers that email
+    //     already makes verbatim (templates.ts:1028 "reply to this email and our team
+    //     will renew … on your behalf"; :1030 "need help transferring the domain to
+    //     your own account, just reply"). No code implements a transfer, so the page
+    //     says they are handled by hand over email and promises no mechanism.
     {
         marker: "§ 05",
+        icon: PencilLine,
+        title: "Your Website, Edits & Hosting",
+        content:
+            "Your one-time payment covers building your website and putting it live. For one year from the day your site goes live, edits are free — you contact Tendso through the Contact page, tell us what you want changed, and we make the change for you. There is no editor for you to learn and nothing to install. After that first year, edits are no longer included; nothing is charged automatically for the website, as we keep no card on file and the website carries no recurring fee. If you bought a custom domain, its first year of registration is included in what you paid and Tendso buys it for you; that registration is held on Tendso's own registrar account, under Tendso's registrant, administrative, billing and technical contact details, not in your name. Auto-renew is switched off deliberately, so the domain is not extended automatically and no renewal is ever charged to you. Around 30 days before it expires we email you a reminder, and if it is not renewed the registration lapses and your site stops being reachable at that address. You can reply to that reminder and ask us to renew it for you, or ask us to help move the domain into a registrar account of your own — both are handled by our team over email; there is no automated transfer. Hosting with SSL is included at no monthly cost, though we cannot guarantee uninterrupted availability.",
+    },
+    {
+        marker: "§ 06",
         icon: Users,
         title: "Intellectual Property",
         content:
             "By uploading media to Tendso, you grant us a worldwide, non-exclusive license to use, display, transcribe (via AI), and deploy the content to generate websites for the respective businesses.",
     },
     {
-        marker: "§ 06",
+        marker: "§ 07",
         icon: ShieldAlert,
         title: "Prohibited Conduct & Law",
         content:

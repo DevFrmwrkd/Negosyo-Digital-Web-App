@@ -4,7 +4,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { buildAstroSite } from '@/lib/astro-builder'
 import { buildRoleColorCss } from '@/lib/roleColors'
-import { groqService } from '@/lib/services/groq.service'
+import { groqService, delimitTranscript } from '@/lib/services/groq.service'
 
 /**
  * Used when overriding a `contentWithContact` key that has two coexisting
@@ -143,7 +143,7 @@ Location: ${submission.city}, ${submission.address}
 Phone: ${submission.owner_phone}
 ${submission.owner_email ? `Email: ${submission.owner_email}` : ''}
 
-${submission.transcript ? `Business Interview Transcript:\n${submission.transcript}` : ''}
+${submission.transcript ? delimitTranscript(submission.transcript, 'Business Interview Transcript') : ''}
             `.trim()
 
             // Extract structured content using Groq

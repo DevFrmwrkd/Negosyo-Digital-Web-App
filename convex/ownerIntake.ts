@@ -3,8 +3,9 @@ import { internalAction, mutation } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
-import { BASE_PRICE, ownerTotal } from '../lib/pricing';
+import { BASE_PRICE, ownerTotal, type SubmissionTier } from '../lib/pricing';
 import { BUSINESS_TYPES } from '../lib/prospectPrefill';
+import { BLOCKED_TLDS } from './lib/hostinger';
 import { INTAKE_QUESTIONS, buildNarrativeFromQa, meetsAnswerMinimum } from '../lib/narrativeFromQa';
 import type { IntakeQuestion, QaPair } from '../lib/narrativeFromQa';
 
@@ -29,11 +30,11 @@ import type { IntakeQuestion, QaPair } from '../lib/narrativeFromQa';
  * 100% of these by hand before a peso changes direction.
  *
  * WHY IT INSERTS DIRECTLY instead of calling submissions.create + submit:
- * `submit` early-returns unless status is 'draft' (convex/submissions.ts:581),
+ * `submit` early-returns unless status is 'draft' (convex/submissions.ts:589),
  * so the pair would have to go through 'draft' — and a stray draft under the
  * house creator is exactly what getDraftByCreatorId hands back to the next
  * caller, with no business-name filter. `submit` also runs Outscraper prospect
- * reconciliation (:612-639), which is meaningless here: no owner-originated
+ * reconciliation (:620-647), which is meaningless here: no owner-originated
  * submission has a scraped prospect behind it. Everything from `submit` that
  * DOES apply — the lead row, both analytics increments, the Studio render — is
  * mirrored below.
@@ -62,8 +63,13 @@ const MAX_POSTAL_CODE = 20;
 /** Generous next to narrativeFromQa's own per-answer budget, which truncates
  *  long answers rather than rejecting them. This is the abuse ceiling. */
 const MAX_ANSWER_CHARS = 2000;
+/** RFC 1035's ceiling on a fully-qualified name, and the same cap
+ *  /api/check-domain applies (app/api/check-domain/route.ts:33). */
+const MAX_REQUESTED_DOMAIN = 253;
+/** Per-label ceiling. No registry accepts more. */
+const MAX_DOMAIN_LABEL = 63;
 
-/** Mirrors the creator-side floor at convex/submissions.ts:584. */
+/** Mirrors the creator-side floor at convex/submissions.ts:592. */
 const MIN_PHOTOS = 3;
 /** Six roles exist (convex/hyperagent.ts:23); the tail is ignored, so anything
  *  past ten is a caller doing something other than filling in the form. */
@@ -216,6 +222,85 @@ function normalizePhotos(photos: Array<string>, r2PublicPrefix: string): Array<s
     }
 
     return normalized;
+}
+
+/**
+ * The registrable name pattern.
+ *
+ * Character-for-character the expression convex/domains.ts:89 re-checks before
+ * anything is bought, except that the TLD is additionally capped at 24 (the
+ * longest one that exists). Deliberately a SUBSET: a name that clears this
+ * cannot then be rejected as malformed downstream, which is the whole point of
+ * validating a string whose next reader is a registrar API.
+ *
+ * One leading label, then one or more letters-only suffixes — so `alingnena.com`
+ * and `alingnena.com.ph` both pass, `alingnena.c` and `aling nena.com` do not.
+ */
+const DOMAIN_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z]{2,24})+$/;
+
+/**
+ * The domain the owner asked for, in the exact form a registrar would be handed.
+ *
+ * AVAILABILITY IS NOT CHECKED HERE, on purpose: /api/check-domain requires a
+ * logged-in user (app/api/check-domain/route.ts:19) and an owner has no account.
+ * The admin confirms the name is free during the review they already do, before
+ * the payment email goes out. So what lands in the row is a REQUEST, not a
+ * promise — and nothing registers it until an admin has acted (see the pipeline
+ * note on submissionType in the insert below).
+ *
+ * What this DOES enforce is shape, because if the request is ever honoured this
+ * exact string is what convex/domains.ts hands to Hostinger with a saved card.
+ */
+function normalizeRequestedDomain(raw: string): string {
+    // Case carries no meaning in DNS and a phone keyboard capitalises the first
+    // letter of a text field by default, so this one is silently corrected.
+    // Everything below rejects instead: the rest of the string is the owner's
+    // intent and is not ours to guess at.
+    const domain = (raw ?? '').trim().toLowerCase();
+
+    if (domain.length === 0) reject('Please type the web address you want.');
+    if (domain.length > MAX_REQUESTED_DOMAIN) reject('That web address is too long.');
+    // Checked before the pattern so the two most common paste-ins get a message
+    // that says what to remove rather than the generic "that doesn't look like".
+    if (domain.includes('/')) {
+        reject('Just the address itself, please — no https:// and no slashes. For example: alingnena.com');
+    }
+    // www.alingnena.com is a host INSIDE alingnena.com, not something anyone can
+    // register; sent as-is it fails at the registrar after the owner has paid.
+    // Only this prefix is rejected — a three-part name is otherwise perfectly
+    // ordinary here (alingnena.com.ph), and telling those apart needs a public
+    // suffix list, which is exactly the judgement the admin's availability check
+    // already makes.
+    if (domain.startsWith('www.')) {
+        reject('Leave the "www." off — we set that up for you. For example: alingnena.com');
+    }
+    if (!DOMAIN_PATTERN.test(domain)) {
+        reject(
+            'That does not look like a web address. Use letters, numbers and dashes, ' +
+            'ending in .com or similar — for example alingnena.com',
+        );
+    }
+    if (domain.split('.').some((label) => label.length > MAX_DOMAIN_LABEL)) {
+        reject('That web address is too long — keep each part under 63 characters.');
+    }
+    // Reject here rather than at purchase time. BLOCKED_TLDS is checked inside
+    // registrarCheckAvailability (convex/lib/hostinger.ts:158), which does not
+    // run until AFTER the owner has been billed ₱1,499 — at which point the
+    // domain simply can never be bought and someone has to unpick a paid sale.
+    // .ph is on that list today (~$50/yr, well over the ₱500 the tier collects),
+    // and .ph is the single most natural choice for a Filipino shop, so this is
+    // the likeliest wrong turn on the whole funnel. Imported, not restated: the
+    // list is env-overridable at runtime and a second copy would drift.
+    const tld = domain.slice(domain.lastIndexOf('.') + 1);
+    if (BLOCKED_TLDS.includes(tld)) {
+        reject(
+            `We can't register .${tld} addresses at this price — they cost far more than the ` +
+            'add-on covers. Try .com, or pick the free address option and message us about .' +
+            `${tld} separately.`,
+        );
+    }
+
+    return domain;
 }
 
 /**
@@ -393,6 +478,14 @@ export const submitOwnerIntake = mutation({
         // funnel never writes it, so convex/airtable.ts:214 guesses from
         // photos.length > 4; the owner is simply asked.
         hasProducts: v.boolean(),
+        // Tier, chosen at the confirm step of /start. Same literals as
+        // submissions.setDomainTier (:499) because the fields they end up in are
+        // the same ones. OPTIONAL, and absent means 'standard': a draft saved by
+        // a build that predates the choice is still sitting in someone's
+        // localStorage, and it must submit as the ₱999 it was quoted rather than
+        // fail at the last tap of a ten-minute form.
+        submissionType: v.optional(v.union(v.literal('standard'), v.literal('with_custom_domain'))),
+        requestedDomain: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
         // ---- 1. Revalidate everything. The client is a stranger. ----------
@@ -421,6 +514,18 @@ export const submitOwnerIntake = mutation({
                 Number.isFinite(coordinates.lng) && Math.abs(coordinates.lng) <= 180;
             if (!inRange) reject('Those map coordinates are not valid.');
         }
+
+        // The only money decision on this form. Everything else about the tier —
+        // what it costs, what it buys — is settled by lib/pricing; all this line
+        // does is read which of the two the owner picked.
+        const submissionType: SubmissionTier = args.submissionType ?? 'standard';
+        const wantsCustomDomain = submissionType === 'with_custom_domain';
+        // Only read on the tier that uses it. A domain left over in the client's
+        // draft from a tier the owner then switched away from is ignored, exactly
+        // as setDomainTier ignores it (convex/submissions.ts:541).
+        const requestedDomain = wantsCustomDomain
+            ? normalizeRequestedDomain(args.requestedDomain ?? '')
+            : undefined;
 
         // Same source of truth r2.ts signs uploads against (getPublicUrlPrefix),
         // read the same way, trailing slash and all.
@@ -498,7 +603,12 @@ export const submitOwnerIntake = mutation({
             // it "patches whatever it hands back". One owner's shop overwriting
             // another's is a one-line mistake away.
             status: 'submitted',
-            amount: ownerTotal(BASE_PRICE, 'standard'),
+            // ₱999, or ₱1,499 when the owner asked for their own domain. Same
+            // function the creator path bills through — the flat
+            // CUSTOM_DOMAIN_ADDON, because no real registrar quote exists at
+            // intake (nobody is logged in to fetch one) and the admin re-prices
+            // through the existing domain flow if the real one differs.
+            amount: ownerTotal(BASE_PRICE, submissionType),
             // EXPLICIT ₱0. There is no creator to pay: creditCreatorForPayment
             // books this straight onto the attributed creator's balance at
             // payment time, and on this path that is the house row.
@@ -510,12 +620,47 @@ export const submitOwnerIntake = mutation({
             // `??` and not `||`, or every owner sale silently re-acquires a ₱500
             // liability.
             creatorPayout: 0,
+            // ---- The custom-domain tier, written here rather than through
+            // submissions.setDomainTier. Same fields and same values that
+            // mutation would produce (convex/submissions.ts:530-543; see the
+            // domainCostPHP note below for the one exception). It is NOT CALLED
+            // because it is a public ungated mutation that re-reads the creator
+            // to clamp a sell price and re-derives creatorPayout from it — on
+            // this path that would book a ₱500 payable onto the house row and
+            // undo the explicit 0 above.
+            //
+            // These two fields are the ONLY thing that makes convex/payments.ts
+            // :127 schedule domains.setupForSubmission, which registers a real
+            // domain on a saved card. Nothing here can reach that on its own: it
+            // needs an admin to have approved, published (setupForSubmission
+            // returns early without a Cloudflare Pages project, :651-657) and
+            // sent the payment email that mints the token, and then the owner to
+            // have actually paid. That pipeline DOES price-check before it buys:
+            // setupForSubmission step 1c (domains.ts:685-786) refuses anything
+            // over the automatic ceiling on this path. It still never consults
+            // checkDomainAvailability's `withinBudget` (domains.ts:110-111).
+            submissionType,
+            requestedDomain,
+            domainStatus: wantsCustomDomain ? 'pending_payment' : 'not_requested',
+            // domainCostPHP is setDomainTier's fifth field and is DELIBERATELY
+            // left unset here. It is a quote there, but the schema (:176) and
+            // domains.getTotalHostingerDomainCostsPHP (:306) both treat it as
+            // money the platform has ALREADY paid Hostinger, and that query sums
+            // every row with a value regardless of domainStatus. Writing ₱500 at
+            // intake would book a registrar bill for a domain nobody has bought
+            // — on a self-serve funnel that, by design, produces requests that
+            // are never paid for. Nothing needs it: every reader falls back to
+            // the flat CUSTOM_DOMAIN_ADDON when it is absent (the payment email
+            // at lib/email/templates.ts:239, the earnings table at
+            // convex/submissions.ts:234), so the ₱1,499 breakdown the owner sees
+            // is identical either way. domains.setRegistrarMetadata writes the
+            // real figure at the moment the domain is genuinely charged.
             airtableSyncStatus: 'pending_push',
             contentSource: 'owner_intake',
         });
 
         // ---- 6. Lead row. -------------------------------------------------
-        // Mirrors submissions.ts:640-651. The prospect-reconciliation branch
+        // Mirrors submissions.ts:648-659. The prospect-reconciliation branch
         // above it is skipped outright: an owner-originated submission has no
         // scraped Outscraper prospect to convert.
         await ctx.db.insert('leads', {
@@ -530,7 +675,7 @@ export const submitOwnerIntake = mutation({
         });
 
         // ---- 7. Analytics, daily + monthly. -------------------------------
-        // Unchanged from submissions.ts:653-669 and correct by construction:
+        // Unchanged from submissions.ts:661-677 and correct by construction:
         // creatorId is a real creators id. Owner volume aggregates under the
         // house row, isolated from every real creator's dashboard.
         const today = new Date().toISOString().split('T')[0];
@@ -556,7 +701,7 @@ export const submitOwnerIntake = mutation({
         // intakes behind a write conflict on a number nobody reads.
 
         // ---- 8. Tendso Studio image render. -------------------------------
-        // Same call submissions.ts:673-675 makes. THIS IS THE ONE PLACE ON THE
+        // Same call submissions.ts:681-683 makes. THIS IS THE ONE PLACE ON THE
         // OWNER PATH THAT SPENDS MONEY WITHOUT A HUMAN IN FRONT OF IT — a
         // stranger's form submission triggers a paid render. It fires anyway
         // because the scope rule is "the admin does the same work as today", and

@@ -1,5 +1,5 @@
 import { v } from 'convex/values'
-import { action, mutation, query, internalAction, internalMutation, internalQuery } from './_generated/server'
+import { action, mutation, query, internalAction, internalMutation, internalQuery, type ActionCtx } from './_generated/server'
 import { internal, api } from './_generated/api'
 import { Id } from './_generated/dataModel'
 import {
@@ -186,9 +186,29 @@ export const purchaseDomainForSubmission = action({
             domain: args.domain.trim().toLowerCase(),
         })
 
-        // Schedule the full setup pipeline
+        // Schedule the full setup pipeline.
+        //
+        // priceConfirmedByAdmin: this action is only reachable from the admin
+        // domain page, which checks the domain first and then asks
+        // `Purchase {domain} for ₱{pricePHP}?` before it POSTs
+        // (app/admin/submissions/[id]/domain/page.tsx:124 → /api/admin/
+        // purchase-domain → here). An admin who saw the real number and clicked
+        // OK is the decision; the automatic ceiling in setupForSubmission would
+        // only be second-guessing them.
+        //
+        // KNOWN GAP, deliberate: the flag says "an admin called the manual
+        // path", which in production means the confirm dialog, but this action
+        // is also invokable directly (Convex dashboard, a script) with admin
+        // credentials and no dialog — that caller skips the ceiling too. The
+        // price is still never unchecked: an unreadable/zero price fails closed
+        // on this path as well, and any above-ceiling spend writes a
+        // `domain_price_ceiling_overridden_by_admin` audit row. Closing it
+        // properly means the page POSTing the price it displayed and this action
+        // re-checking the live quote against it, which needs changes in the page
+        // and the API route (neither owned by this change).
         await ctx.scheduler.runAfter(0, internal.domains.setupForSubmission, {
             submissionId: args.submissionId,
+            priceConfirmedByAdmin: true,
         })
 
         // Audit log
@@ -366,8 +386,238 @@ export const getSubmissionDomainInfo = query({
 // ==================== FULL SETUP PIPELINE ====================
 
 /**
+ * ─────────────────────────── TUNE ME (one line) ───────────────────────────
+ * Default ceiling on what the platform will pay a registrar for ONE domain on
+ * the AUTOMATIC path — the mark-paid route, where no human is ever shown the
+ * price. Not applied to the admin-confirmed path (see the guard at step 1c).
+ *
+ * ₱1,000, derived from this repo's OWN cost evidence:
+ *
+ *   • An ordinary .com is the common case and costs ~₱580 —
+ *     docs/changes/CUSTOM-DOMAIN-PURCHASE-PLAN.md:21 ("~₱580 for a .com") and
+ *     its §9 table ($10.37 @ ₱56/USD). Priced with the conservative FX fallback
+ *     this code actually ships (58, convex/lib/fxRate.ts:11) that same $10.37
+ *     is ₱602. So a ceiling at CUSTOM_DOMAIN_ADDON (₱500, lib/pricing.ts) would
+ *     refuse the single most common purchase Tendso makes. The plan books that
+ *     gap as a KNOWN, ACCEPTED loss — §9 "Platform shortfall: −₱80 per .com" —
+ *     which means it must not be a hard stop.
+ *
+ *   • The outliers this guard exists for are far above that: the repo already
+ *     refuses .ph at ~$50/yr as "too expensive for the included domain budget"
+ *     (convex/lib/hostinger.ts:24-31 + :158-166, plan §3) ≈ ₱2,900 at rate 58. A .io or
+ *     .ai sits in that same multiple-of-.com band.
+ *
+ *   • ₱1,000 is the line between the two: ~66% headroom over the worst
+ *     documented ordinary registration (₱602) — room for an FX move, an expired
+ *     first-year promo, or a pricier-but-still-ordinary TLD from the funnel's
+ *     own suggestion list (.shop/.store/.online/.site/.co, hostinger.ts:226) —
+ *     while still refusing the ~₱2,900+ band. Worst case it lets through a ₱500
+ *     overspend against the ₱500 add-on, bounded, logged and alerted, instead
+ *     of an unbounded charge on the saved card.
+ *
+ * Product owner: change the number below, or set the DOMAIN_MAX_COST_PHP Convex
+ * env var to override it without a deploy.
+ */
+const DOMAIN_COST_CEILING_PHP = 1000
+
+/**
+ * How far OVER a frozen quote a purchase may still go, on the creator funnel
+ * where the owner was billed the domain's real price rather than the flat
+ * add-on (lib/pricing.ts domainAddOnFor).
+ *
+ * That quote is frozen at review time (app/submit/review/page.tsx:114 calls
+ * /api/check-domain, :184 passes domainPricePHP, convex/submissions.ts stores it
+ * as domainCostPHP) and the purchase can happen days later, re-priced from a
+ * LIVE hourly FX rate (convex/lib/fxRate.ts:63, Math.ceil(priceUSD * rate)).
+ * With zero tolerance any upward USD/PHP tick — or a registrar promo lapsing —
+ * fails a legitimate, already-paid purchase. 10% of a ~₱580 .com is ₱58, the
+ * same order as the −₱80 shortfall the plan already accepts, so the downside of
+ * the tolerance is bounded at roughly the loss the business has already signed
+ * up for.
+ *
+ * Applies ONLY to a frozen quote. The flat default above is a policy number,
+ * not a quote, and gets no tolerance.
+ */
+const FROZEN_QUOTE_TOLERANCE = 0.10
+/** Hard bound on how far a frozen quote may raise the ceiling above the policy
+ *  number. Exists because the quote arrives via an unauthenticated mutation —
+ *  see automaticCeilingForSubmission. */
+const ABSOLUTE_CEILING_MULTIPLE = 2
+
+/**
+ * The configured ceiling, overridable per deployment.
+ *
+ * The constant is the default; DOMAIN_MAX_COST_PHP overrides it. Convex env vars
+ * are editable from the dashboard, so a genuinely pricier TLD can be approved in
+ * seconds WITHOUT a deploy — the intended response to a stuck order at 2am. Same
+ * escape hatch as OWNER_INTAKE_DAILY_LIMIT (convex/ownerIntake.ts:341). A garbled
+ * value must not silently become a blank cheque, so it falls back to the constant
+ * and shouts in the logs.
+ */
+function configuredDomainCostCeilingPHP(): number {
+    const raw = process.env.DOMAIN_MAX_COST_PHP
+    if (raw === undefined || raw.trim().length === 0) return DOMAIN_COST_CEILING_PHP
+    const parsed = Number(raw)
+    if (!Number.isFinite(parsed) || parsed < 0) {
+        console.error(
+            `[DOMAINS] DOMAIN_MAX_COST_PHP="${raw}" is not a non-negative number — ` +
+            `falling back to ₱${DOMAIN_COST_CEILING_PHP}.`
+        )
+        return DOMAIN_COST_CEILING_PHP
+    }
+    return parsed
+}
+
+/**
+ * The ceiling that applies to ONE submission on the automatic path, plus a
+ * human-readable description of where it came from (used in the refusal
+ * message, the log line and the alert).
+ *
+ * Two sources, and we take the higher:
+ *   1. The policy default / env override — a flat number, no tolerance.
+ *   2. The quote frozen into this sale, +FROZEN_QUOTE_TOLERANCE. On the creator
+ *      funnel `domainCostPHP` is the domain's REAL registrar price, which is
+ *      what the owner was actually billed (lib/pricing.ts domainAddOnFor), so
+ *      spending up to it can only lose the tolerance. Owner intake deliberately
+ *      leaves the field unset (convex/ownerIntake.ts:628-641) and bills the flat
+ *      ₱500, so that path always lands on the policy default.
+ *
+ * The field is type-checked the same way getTotalHostingerDomainCostsPHP checks
+ * it (:295): `?? default` alone would let a NaN or a string in the field poison
+ * the comparison and re-open the hole.
+ */
+function automaticCeilingForSubmission(submission: any): { ceilingPHP: number; basis: string } {
+    const configured = configuredDomainCostCeilingPHP()
+    const configuredBasis =
+        process.env.DOMAIN_MAX_COST_PHP && process.env.DOMAIN_MAX_COST_PHP.trim().length > 0
+            ? 'the DOMAIN_MAX_COST_PHP override'
+            : 'the platform default for an ordinary TLD'
+
+    const frozenQuotePHP = submission?.domainCostPHP
+    const hasFrozenQuote =
+        typeof frozenQuotePHP === 'number' && Number.isFinite(frozenQuotePHP) && frozenQuotePHP > 0
+    if (!hasFrozenQuote) {
+        return { ceilingPHP: configured, basis: configuredBasis }
+    }
+
+    // The frozen quote may RAISE the ceiling, but only so far. It is written by
+    // submissions.setDomainTier, which is an unauthenticated public mutation
+    // (see its docstring) — so without this cap the submitter chooses the spend
+    // limit that is meant to constrain them: patch domainCostPHP to 90,000 and
+    // the guard waves through a 99,000-peso domain. Bounded at twice the policy
+    // number, which still absorbs every legitimate FX/promo drift while keeping
+    // the worst case a number Paul picked rather than one an attacker did.
+    const absoluteMax = configured * ABSOLUTE_CEILING_MULTIPLE
+    const withTolerance = Math.min(frozenQuotePHP * (1 + FROZEN_QUOTE_TOLERANCE), absoluteMax)
+    if (withTolerance <= configured) {
+        return { ceilingPHP: configured, basis: configuredBasis }
+    }
+    return {
+        ceilingPHP: withTolerance,
+        basis:
+            `the ₱${frozenQuotePHP.toFixed(2)} quote this sale froze at review time, ` +
+            `+${Math.round(FROZEN_QUOTE_TOLERANCE * 100)}% for FX drift since` +
+            (withTolerance === absoluteMax ? `, capped at ₱${absoluteMax.toFixed(2)}` : ''),
+    }
+}
+
+/**
+ * Creator ids of every active admin. Used only when a domain purchase is
+ * refused, so the full scan (creators has no by_role index) runs on a rare
+ * path, never in the hot one.
+ */
+export const listAdminCreatorIds = internalQuery({
+    args: {},
+    handler: async (ctx): Promise<Id<'creators'>[]> => {
+        const admins = await ctx.db
+            .query('creators')
+            .filter((q) => q.eq(q.field('role'), 'admin'))
+            .collect()
+        return admins.filter((a: any) => !a.isDeleted).map((a) => a._id)
+    },
+})
+
+/**
+ * Raise an ACTIVE alert that a domain purchase was refused.
+ *
+ * A refusal used to leave only `domainFailureReason` plus one audit row, and
+ * that field renders on a page nothing links to — i.e. a paid customer's domain
+ * silently never arrives. The success path notifies (:832 'website_live'), so a
+ * refusal gets the same treatment, through the same mechanism.
+ *
+ * Recipients: every admin, AND the attributed creator. Admins are the point —
+ * owner-intake submissions are attributed to the HOUSE creator row, which nobody
+ * signs into and which has no push tokens, so notifying only submission.creatorId
+ * (what the success path does) would reach nobody at all on exactly the path this
+ * guard exists for. Admins do sign in: notifications render at /notifications and
+ * the unread count on /dashboard, and any admin with the mobile app also gets the
+ * push. The creator is included because on the creator funnel they chose the
+ * domain and can choose another.
+ *
+ * Best-effort by construction: every failure here is caught and logged, because
+ * the caller's next statement is the throw that marks the submission failed and
+ * writes the audit row, and losing that would be worse than losing the alert.
+ */
+async function alertDomainPurchaseRefused(
+    ctx: ActionCtx,
+    params: {
+        submissionId: Id<'submissions'>
+        creatorId?: Id<'creators'>
+        businessName?: string
+        domain: string
+        quotedPHP: number
+        ceilingPHP: number
+        detail: string
+    }
+): Promise<void> {
+    const recipients: Id<'creators'>[] = []
+    try {
+        const adminIds = await ctx.runQuery(internal.domains.listAdminCreatorIds, {})
+        recipients.push(...adminIds)
+    } catch (e) {
+        console.error('[DOMAINS] Could not list admins for refusal alert:', e)
+    }
+    if (params.creatorId && !recipients.includes(params.creatorId)) {
+        recipients.push(params.creatorId)
+    }
+    if (recipients.length === 0) {
+        console.error(
+            `[DOMAINS] ⚠ Domain purchase for ${params.domain} was refused and there is NO ONE to notify ` +
+            `(no admin creator rows found). Check submission ${params.submissionId} manually.`
+        )
+        return
+    }
+
+    const title = 'Domain purchase refused — needs a human'
+    const body =
+        `${params.domain}${params.businessName ? ` (${params.businessName})` : ''} was NOT bought: ` +
+        `${params.detail} The website itself is unaffected — it is still live on its subdomain.`
+
+    for (const creatorId of recipients) {
+        try {
+            await ctx.runMutation(internal.notifications.createAndSend, {
+                creatorId,
+                type: 'system',
+                title,
+                body,
+                data: {
+                    kind: 'domain_purchase_refused',
+                    submissionId: params.submissionId,
+                    domain: params.domain,
+                    quotedPHP: params.quotedPHP,
+                    ceilingPHP: params.ceilingPHP,
+                    url: `/admin/submissions/${params.submissionId}/domain`,
+                },
+            })
+        } catch (e) {
+            console.error(`[DOMAINS] Refusal alert to creator ${creatorId} failed:`, e)
+        }
+    }
+}
+
+/**
  * Full domain setup pipeline:
- * 1. Re-verify availability
+ * 1. Re-verify availability + price
  * 2. Register with Porkbun
  * 3. Create Cloudflare zone
  * 4. Update Porkbun nameservers → Cloudflare
@@ -377,7 +627,22 @@ export const getSubmissionDomainInfo = query({
  * 8. Mark live + notify creator
  */
 export const setupForSubmission = internalAction({
-    args: { submissionId: v.id('submissions') },
+    args: {
+        submissionId: v.id('submissions'),
+        /**
+         * TRUE only when a human was shown this domain's real price and accepted
+         * it. Set by purchaseDomainForSubmission (the manual admin page), which
+         * is reached only after the confirm() at
+         * app/admin/submissions/[id]/domain/page.tsx:124.
+         *
+         * Threaded explicitly rather than inferred from submission fields: every
+         * field on the submission is reachable by the self-serve owner intake at
+         * /start, so inferring "a human approved this" from one of them would be
+         * guessable from outside. Absent (the automatic mark-paid route from
+         * convex/payments.ts:129) means NO human saw a price → guard applies.
+         */
+        priceConfirmedByAdmin: v.optional(v.boolean()),
+    },
     handler: async (ctx, args) => {
         const submission = await ctx.runQuery(internal.submissions.getByIdInternal, {
             id: args.submissionId,
@@ -429,6 +694,109 @@ export const setupForSubmission = internalAction({
                 throw new Error(`Could not resolve Hostinger catalog item_id for ${domain}. Catalog lookup returned no match — check Hostinger logs.`)
             }
             console.log(`[DOMAINS] Using item_id: ${itemId} for ${domain}`)
+
+            // Step 1c: Price guard — the last thing between here and a real charge
+            // on Tendso's saved card.
+            //
+            // It exists for the AUTOMATIC path: an admin clicks "Mark as Paid",
+            // convex/payments.ts:129 schedules this action, and nobody is ever
+            // shown a price. Owner intake accepts any letters-only TLD, so an
+            // owner typing `theirshop.io` or `.ai` at /start would otherwise be
+            // bought at whatever it costs, silently.
+            //
+            // The MANUAL admin path is NOT that. app/admin/submissions/[id]/
+            // domain/page.tsx:124 shows `Purchase {domain} for ₱{pricePHP}?` and
+            // only POSTs on OK → purchaseDomainForSubmission (:191) → here with
+            // priceConfirmedByAdmin. An admin who was shown ₱2,400 and accepted
+            // does not get silently vetoed by a constant; the ceiling is skipped
+            // and the over-ceiling spend is recorded instead.
+            const quotedPHP = availCheck.pricePHP
+            const priceReadable = Number.isFinite(quotedPHP) && quotedPHP > 0
+
+            // Fail CLOSED on a missing or unreadable price, on BOTH paths.
+            // checkAvailability parses the price defensively out of several
+            // possible shapes and yields 0 when none of them match
+            // (convex/lib/hostinger.ts:194-196 — `parseFloat(... || '0')`, which
+            // also yields NaN if `price` ever becomes an object), so a registrar
+            // that changed its response would sail under any ceiling while the
+            // card still gets billed the real amount. This is also the one case
+            // where the admin's confirm() means nothing: the dialog would have
+            // read "Purchase example.com for ₱0". Treat "no price" as over
+            // budget, not under — on the confirmed path too.
+            if (!priceReadable) {
+                const detail =
+                    `the registrar returned no readable price, so there was nothing to check the charge against.`
+                await alertDomainPurchaseRefused(ctx, {
+                    submissionId: args.submissionId,
+                    creatorId: submission.creatorId,
+                    businessName: (submission as any).businessName,
+                    domain,
+                    quotedPHP: 0,
+                    ceilingPHP: 0,
+                    detail,
+                })
+                throw new Error(
+                    `Refusing to buy ${domain}: ${detail} The Hostinger availability response parsed to ` +
+                    `${String(quotedPHP)} — its shape may have changed; check convex/lib/hostinger.ts checkAvailability ` +
+                    `against the raw response before retrying.`
+                )
+            }
+
+            const { ceilingPHP, basis } = automaticCeilingForSubmission(submission)
+            if (args.priceConfirmedByAdmin) {
+                // Human-approved. Proceed at any price — but never silently: an
+                // above-ceiling spend leaves a record an admin can find later.
+                if (quotedPHP > ceilingPHP) {
+                    console.warn(
+                        `[DOMAINS] ⚠ Admin-confirmed purchase of ${domain} at ₱${quotedPHP.toFixed(2)} is ABOVE the ` +
+                        `automatic ceiling of ₱${ceilingPHP.toFixed(2)} (${basis}). Proceeding — a human approved this price.`
+                    )
+                    await ctx.runMutation(internal.auditLogs.log, {
+                        adminId: 'system:domain-setup',
+                        action: 'manual_override',
+                        targetType: 'submission',
+                        targetId: args.submissionId,
+                        metadata: {
+                            action: 'domain_price_ceiling_overridden_by_admin',
+                            domain,
+                            quotedPHP,
+                            ceilingPHP,
+                            ceilingBasis: basis,
+                            note: 'Admin confirmed this price in the domain page dialog, so the automatic ceiling was not applied.',
+                        },
+                    })
+                } else {
+                    console.log(
+                        `[DOMAINS] Price check skipped for ${domain} (admin-confirmed ₱${quotedPHP.toFixed(2)}, ` +
+                        `within the ₱${ceilingPHP.toFixed(2)} ceiling anyway)`
+                    )
+                }
+            } else if (quotedPHP > ceilingPHP) {
+                // `detail` is customer-visible (it also reaches the attributed
+                // creator's notification), so it states the price and the limit
+                // and stops there. The operator instructions go in the thrown
+                // error, which lands in domainFailureReason, the audit row and
+                // the Convex logs — admin surfaces only.
+                const detail =
+                    `the registrar wants ₱${quotedPHP.toFixed(2)}, above the ₱${ceilingPHP.toFixed(2)} automatic ` +
+                    `limit (${basis}), so it needs a human to approve or a cheaper domain.`
+                await alertDomainPurchaseRefused(ctx, {
+                    submissionId: args.submissionId,
+                    creatorId: submission.creatorId,
+                    businessName: (submission as any).businessName,
+                    domain,
+                    quotedPHP,
+                    ceilingPHP,
+                    detail,
+                })
+                throw new Error(
+                    `Refusing to buy ${domain}: ${detail} ` +
+                    `Purchase it from the admin domain page (that path shows the price and asks for confirmation), ` +
+                    `or raise the DOMAIN_MAX_COST_PHP Convex env var to approve this price band for every automatic purchase.`
+                )
+            } else {
+                console.log(`[DOMAINS] Price check OK for ${domain}: ₱${quotedPHP.toFixed(2)} ≤ ₱${ceilingPHP.toFixed(2)} (${basis})`)
+            }
 
             // Step 2: Register. Hostinger will use the pre-created WHOIS profile
             // for this TLD (verified inside registrarRegister).

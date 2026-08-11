@@ -300,6 +300,10 @@ export default function SubmissionDetailPage() {
               video_url: videoUrl || null,
               audio_url: audioUrl || null,
               transcript: submissionData.transcript,
+              // Owner-intake only. Carried alongside the transcript because the
+              // transcript is synthesized FROM these answers — the admin needs
+              // both to see what the owner actually typed.
+              interview_qa: submissionData.interviewQa,
               status: submissionData.status,
               creator_payout: submissionData.creatorPayout,
               amount: submissionData.amount,
@@ -1058,6 +1062,7 @@ export default function SubmissionDetailPage() {
                                     city: submission.city,
                                     photos: submission.photos || [],
                                     transcript: submission.transcript,
+                                    interview_qa: submission.interview_qa,
                                     status: submission.status,
                                     creator_payout: submission.creator_payout,
                                     created_at: submission.created_at,
@@ -1202,6 +1207,7 @@ export default function SubmissionDetailPage() {
                                 city: submission.city,
                                 photos: submission.photos || [],
                                 transcript: submission.transcript,
+                                interview_qa: submission.interview_qa,
                                 status: submission.status,
                                 creator_payout: submission.creator_payout,
                                 created_at: submission.created_at,

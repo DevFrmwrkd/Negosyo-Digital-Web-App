@@ -483,7 +483,15 @@ export const update = mutation({
 
 /**
  * Set the custom domain tier and domain on a submission (creator review page).
- * Requires ownership: caller must own the creator that owns the submission.
+ *
+ * UNAUTHENTICATED: there is no identity or ownership check below — any caller
+ * with a submission id can set submissionType, requestedDomain and amount on it.
+ * Left as-is deliberately: this sits on the creator funnel's live path
+ * (app/submit/review/page.tsx) and the Next routes that reach it forward no Clerk
+ * token, so bolting a check on here would break paying customers mid-flow.
+ * TODO(auth): thread the creator identity through every caller — the review page
+ * and mobile, which shares this mutation — then gate it on "caller must own the
+ * creator that owns the submission".
  */
 export const setDomainTier = mutation({
     args: {

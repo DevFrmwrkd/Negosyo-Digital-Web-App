@@ -3,7 +3,10 @@
 import { useState, ReactNode } from "react";
 import Image from "next/image";
 import { Copy, Pencil, FileText, RefreshCw, Loader2, Check, ChevronDown } from "lucide-react";
+import { INTAKE_QUESTIONS, type IntakeQuestionKey } from "@/lib/narrativeFromQa";
 import StatusBadge from "./StatusBadge";
+
+type QaPair = { q: string; a: string };
 
 type DetailsSidebarProps = {
   submission: {
@@ -16,6 +19,10 @@ type DetailsSidebarProps = {
     city: string;
     photos: string[];
     transcript?: string;
+    /** The owner's typed interview, exactly as answered. Written only by the
+     *  /start owner funnel — the creator funnel records audio and leaves it
+     *  unset, which is why every read of it here is gated on the array. */
+    interview_qa?: QaPair[];
     status: string;
     creator_payout?: number;
     created_at: number;
@@ -41,7 +48,76 @@ type DetailsSidebarProps = {
   onRetriggerTranscription: () => void;
 };
 
-type SectionKey = "status" | "business" | "quality" | "creator" | "photos" | "interview";
+type SectionKey = "status" | "business" | "quality" | "creator" | "photos" | "intake" | "interview";
+
+/** Match a stored pair back to its canonical question, accepting either the
+ *  machine key or the display text.
+ *
+ *  This is a deliberate local copy of the rule in lib/narrativeFromQa (which
+ *  keeps its matcher private), and it is safe for the same reason
+ *  submitOwnerIntake's copy is: pairs are STORED with the canonical display
+ *  text, so every matcher only ever sees strings straight out of
+ *  INTAKE_QUESTIONS. A reworded question orphans nothing — anything that fails
+ *  to match is still rendered, see buildIntakeRows. */
+function normalizeQuestion(q: string): string {
+  return (q ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+const QUESTION_KEY_LOOKUP: ReadonlyMap<string, IntakeQuestionKey> = new Map(
+  INTAKE_QUESTIONS.flatMap((entry) => [
+    [normalizeQuestion(entry.q), entry.key] as const,
+    [normalizeQuestion(entry.key), entry.key] as const,
+  ]),
+);
+
+type IntakeRow = {
+  id: string;
+  q: string;
+  /** Empty string = nothing stored for this question. */
+  a: string;
+  /** From INTAKE_QUESTIONS. A blank optional answer is ordinary; a blank
+   *  required one means something went missing between the form and the row. */
+  optional: boolean;
+};
+
+/**
+ * Pair every canonical question with what the owner actually typed.
+ *
+ * Walks INTAKE_QUESTIONS rather than the stored array on purpose: blank answers
+ * are never written (convex/ownerIntake normalizeQa skips them), so a question
+ * the owner skipped is simply absent from the row — and an absence that renders
+ * as nothing is exactly what made a dropped answer invisible in the first place.
+ * Unrecognised pairs are appended rather than discarded for the same reason.
+ */
+function buildIntakeRows(qa: QaPair[]): IntakeRow[] {
+  const answers = new Map<IntakeQuestionKey, string>();
+  const extras: IntakeRow[] = [];
+
+  qa.forEach((pair, index) => {
+    const key = QUESTION_KEY_LOOKUP.get(normalizeQuestion(pair?.q));
+    if (!key) {
+      extras.push({
+        id: `unmatched-${index}`,
+        q: pair?.q || "Unlabelled question",
+        a: pair?.a || "",
+        optional: false,
+      });
+      return;
+    }
+    // First non-blank wins, matching buildNarrativeFromQa and normalizeQa.
+    const answer = pair?.a ?? "";
+    if (answer.trim().length > 0 && !answers.has(key)) answers.set(key, answer);
+  });
+
+  const rows = INTAKE_QUESTIONS.map<IntakeRow>((question) => ({
+    id: question.key,
+    q: question.q,
+    a: answers.get(question.key) ?? "",
+    optional: !!question.optional,
+  }));
+
+  return [...rows, ...extras];
+}
 
 function CollapsibleCard({
   sectionKey,
@@ -146,6 +222,22 @@ export default function DetailsSidebar({
       `Address: ${submission.address}`,
     ].join("\n");
     navigator.clipboard.writeText(info);
+  };
+
+  // Gated on the DATA, never on contentSource: `interviewQa` is optional on the
+  // schema and unset on every creator-recorded row, so an empty array must
+  // render nothing at all — and any future funnel that writes real pairs gets
+  // this section for free.
+  const intakeQa = submission.interview_qa ?? [];
+  const intakeRows = intakeQa.length > 0 ? buildIntakeRows(intakeQa) : null;
+  const intakeAnsweredCount = intakeRows?.filter((row) => row.a.trim().length > 0).length ?? 0;
+
+  const copyIntakeAnswers = () => {
+    if (!intakeRows) return;
+    const text = intakeRows
+      .map((row) => `${row.q}\n${row.a.trim() || "(not answered)"}`)
+      .join("\n\n");
+    navigator.clipboard.writeText(text);
   };
 
   const checklistItems = [
@@ -308,6 +400,70 @@ export default function DetailsSidebar({
           </div>
         )}
       </CollapsibleCard>
+
+      {/* Owner's typed answers — owner-intake rows only.
+          Sits directly above the transcript card because that transcript is
+          SYNTHESIZED from these answers: seeing the owner's words next to the
+          prose is the only way an admin can catch the narrative builder
+          dropping one, which is otherwise invisible to owner, admin and logs. */}
+      {intakeRows && (
+        <CollapsibleCard
+          sectionKey="intake"
+          title="Owner's Answers"
+          isOpen={isOpen("intake")}
+          onToggle={() => toggle("intake")}
+          badge={
+            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+              {intakeAnsweredCount}/{intakeRows.length}
+            </span>
+          }
+          headerActions={
+            <IconBtn onClick={copyIntakeAnswers} title="Copy as text">
+              <Copy className="w-3.5 h-3.5" />
+            </IconBtn>
+          }
+        >
+          <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 mb-2 pt-1">
+            Typed by the owner — verbatim
+          </p>
+          <ol className="space-y-3">
+            {intakeRows.map((row, i) => (
+              <li key={row.id}>
+                <p className="text-xs font-semibold text-neutral-900 mb-1 break-words">
+                  {i + 1}. {row.q}
+                </p>
+                {row.a.trim().length > 0 ? (
+                  <div className="bg-neutral-50 rounded-xl p-3">
+                    {/* pre-wrap keeps the owner's own line breaks; break-words
+                        is what stops a pasted URL or an unspaced Tagalog run
+                        blowing out the 360px sidebar. */}
+                    <p className="text-xs text-neutral-700 leading-relaxed whitespace-pre-wrap break-words">
+                      {row.a}
+                    </p>
+                  </div>
+                ) : (
+                  // An unanswered OPTIONAL question is ordinary. An unanswered
+                  // required one is not — /start and submitOwnerIntake both
+                  // enforce it — so it gets the louder treatment.
+                  <div
+                    className={`rounded-xl border border-dashed px-3 py-2 ${
+                      row.optional ? "border-neutral-200" : "border-amber-300 bg-amber-50/60"
+                    }`}
+                  >
+                    <p
+                      className={`text-xs ${
+                        row.optional ? "text-neutral-400" : "text-amber-800 font-semibold"
+                      }`}
+                    >
+                      {row.optional ? "Not answered (optional)" : "No answer stored"}
+                    </p>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+        </CollapsibleCard>
+      )}
 
       {/* Interview transcript */}
       <CollapsibleCard
