@@ -32,7 +32,9 @@ export interface DerivedSection {
         sub: string;
         cta1: { text: string; href: string };
         cta2: { text: string; href: string };
-        meta1: string;
+        /** Optional and deliberately unset — see the comment where the derived
+         *  hero is built. There is no honest default for this line. */
+        meta1?: string;
         meta2: string;
     };
     about: {
@@ -160,7 +162,16 @@ export function deriveContentDefaults(
             sub: content.tagline || (city ? `Welcome to ${name}, your local ${niceType.toLowerCase()} in ${city}.` : `Welcome to ${name}.`),
             cta1: { text: 'Get in touch', href: '#visit' },
             cta2: { text: 'See services', href: '#services' },
-            meta1: '★★★★★ rated on Google',
+            // No meta1 default. It used to be '★★★★★ rated on Google' — a
+            // five-star review score asserted, above the fold, for a business
+            // that may have no Google reviews at all. Same class as an invented
+            // testimonial and just as unrecoverable once the site is live, and
+            // the derived value defeats the template fix: HeroA/C/D/E dropped
+            // their own copy of that string, but mergeShallow(c.hero,
+            // derived.hero) in lib/astro-builder.ts fills any key the content
+            // leaves unset, so this line put it straight back on every generic
+            // site. Every hero renders the line as `{meta1 && …}`, so leaving it
+            // out simply omits it. Owner data or nothing.
             meta2: city ? `${city} · open daily` : 'Open daily',
         },
         about: {

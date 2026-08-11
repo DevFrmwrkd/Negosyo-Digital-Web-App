@@ -1,12 +1,22 @@
 ---
+/**
+ * generic / TestimonialsC — ink band with amber-bordered quote cards.
+ *
+ * Quotes, attributions and the source line are owner-supplied or absent —
+ * never invented, and the section hides outright with no real quotes. An
+ * empty band costs nothing; a fabricated one puts a stranger's endorsement
+ * on a real business's live site.
+ */
 interface Props { content: any; }
 const { content } = Astro.props;
 const t = content.testimonials || {};
 const tag = t.tag || 'Word on the street';
 const headline = t.headline || "Neighbors who'd <em>hire us again.</em>";
-const source = t.source || '★ Ratings & reviews kept live on our Google Business profile';
+// Never assert a review source (Google, etc.) the business may not have.
+const source = t.source || '';
 const items = Array.isArray(t.items) && t.items.length > 0 ? t.items : [];
 ---
+{items.length > 0 && (
 <section class="sec testi">
   <div class="wrap">
     <span class="sec-tag reveal" data-field="testimonials.tag">{tag}</span>
@@ -14,15 +24,15 @@ const items = Array.isArray(t.items) && t.items.length > 0 ? t.items : [];
     <div class="tcards">
       {items.map((it: any, i: number) => (
         <div class="rcard reveal" style={i > 0 ? `transition-delay:.${i}s;` : ''}>
-          <div class="stars">★★★★★</div>
           <p data-field={`testimonials.items.${i}.quote`} set:html={it.quote}></p>
           <div class="who" data-field={`testimonials.items.${i}.who`}>{it.who || it.name || ''}</div>
         </div>
       ))}
     </div>
-    <p class="tsrc" data-field="testimonials.source">{source}</p>
+    {source && <p class="tsrc" data-field="testimonials.source">{source}</p>}
   </div>
 </section>
+)}
 <style>
   .testi { background: var(--ink); color: var(--paper-2); }
   .testi :global(.sec-tag) { background: var(--amber); color: var(--ink); }
@@ -30,8 +40,7 @@ const items = Array.isArray(t.items) && t.items.length > 0 ? t.items : [];
   .testi h2 :global(em) { color: var(--amber); }
   .tcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 50px; }
   .rcard { background: var(--paper-2); color: var(--ink); border: 2px solid var(--amber); padding: 28px; box-shadow: 8px 8px 0 rgba(0, 0, 0, .4); }
-  .rcard .stars { color: var(--amber); letter-spacing: 2px; font-size: 18px; }
-  .rcard p { margin-top: 14px; font-size: 18px; font-weight: 500; line-height: 1.45; }
+  .rcard p { font-size: 18px; font-weight: 500; line-height: 1.45; }
   .rcard .who { margin-top: 18px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
   .tsrc { margin-top: 30px; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(var(--paper-rgb), .6); }
   @media (max-width: 820px) { .tcards { grid-template-columns: 1fr; } }

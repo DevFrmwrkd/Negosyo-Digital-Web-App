@@ -5,35 +5,43 @@
  * Editable hooks:
  *   testimonials.tag, testimonials.bigQuote, testimonials.source,
  *   testimonials.items[i].quote, testimonials.items[i].who
+ *
+ * Quotes, attributions and the source line are owner-supplied or absent —
+ * never invented. A fabricated quote reads as a named stranger endorsing a
+ * real business and is unrecoverable once live; an empty band costs nothing,
+ * so the section hides entirely when there is nothing real to show.
  */
 interface Props { content: any; }
 const { content } = Astro.props;
 const t = content.testimonials || {};
 
 const tag       = t.tag       || 'What regulars say';
-const bigQuote  = t.bigQuote  || '"The only place I\'ll walk past three other cafés to get to. The <em>house blend ruined</em> every other cup for me."';
-const sourceTag = t.source    || '★ Ratings & reviews kept live on our Google Business profile';
+const bigQuote  = t.bigQuote  || '';
+// Never assert a review source (Google, etc.) the business may not have.
+const sourceTag = t.source    || '';
 
 const items = Array.isArray(t.items) && t.items.length > 0 ? t.items
   : [];
+const hasQuotes = Boolean(bigQuote) || items.length > 0;
 ---
 
+{hasQuotes && (
 <section class="sec testi">
   <div class="wrap">
     <p class="sec-tag reveal" data-field="testimonials.tag">{tag}</p>
-    <p class="testi-big reveal" data-field="testimonials.bigQuote" set:html={bigQuote}></p>
+    {bigQuote && <p class="testi-big reveal" data-field="testimonials.bigQuote" set:html={bigQuote}></p>}
     <div class="testi-cards">
       {items.map((it: any, i: number) => (
         <div class="tc reveal" style={i > 0 ? `transition-delay:.${i}s;` : ''}>
-          <div class="stars">★★★★★</div>
           <p data-field={`testimonials.items.${i}.quote`} set:html={it.quote}></p>
           <div class="who" data-field={`testimonials.items.${i}.who`}>{it.who || it.name || ''}</div>
         </div>
       ))}
     </div>
-    <p class="testi-src" data-field="testimonials.source">{sourceTag}</p>
+    {sourceTag && <p class="testi-src" data-field="testimonials.source">{sourceTag}</p>}
   </div>
 </section>
+)}
 
 <style>
   .testi {
@@ -67,12 +75,7 @@ const items = Array.isArray(t.items) && t.items.length > 0 ? t.items
     border-radius: 16px;
     padding: 28px;
   }
-  .tc .stars {
-    color: var(--gold);
-    letter-spacing: 2px;
-  }
   .tc p {
-    margin-top: 14px;
     font-size: 18px;
     line-height: 1.5;
   }

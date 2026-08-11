@@ -28,7 +28,9 @@ const addressLines = address.split('\n');
 const phone = loc.phone || layout.contact?.phone || '+0 000 000 0000';
 const phoneDigits = phone.replace(/[^0-9+]/g, '');
 
-const hours = loc.hours || 'Open daily · hours kept live on Google';
+// No stock hours line: "hours kept live on Google" claims a maintained Google
+// listing the business may not have. Owner data or the row hides.
+const hours = loc.hours || '';
 
 const dirText = loc.directions?.text || 'Get directions';
 const dirHref = loc.directions?.href || (loc.lat && loc.lng
@@ -68,10 +70,12 @@ const mapAria = `Map showing ${label} at ${address.replace(/\n/g, ', ')}`;
             >{phone}</a>
           </div>
         </div>
-        <div class="nap-block reveal">
-          <div class="k">Hours</div>
-          <div class="v small" data-field="location.hours">{hours}</div>
-        </div>
+        {hours && (
+          <div class="nap-block reveal">
+            <div class="k">Hours</div>
+            <div class="v small" data-field="location.hours">{hours}</div>
+          </div>
+        )}
         <div class="nap-block reveal">
           <a
             href={dirHref}

@@ -2,8 +2,14 @@
 interface Props { content: any; }
 const { content } = Astro.props;
 const test = content.testimonials || {};
-type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
+type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string; rating?: number | string };
 const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+// A star row is a rating claim, not decoration — it puts a score in a named
+// customer's mouth. Render only the score the customer actually gave.
+const starsOf = (it: Item) => {
+  const n = Math.round(Number(it.rating));
+  return n >= 1 && n <= 5 ? '★'.repeat(n).split('').join(' ') : '';
+};
 ---
 {items.length > 0 && (
   <section class="quote" id="reviews">
@@ -11,9 +17,10 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
       {items.map((item, i) => {
         const who = item.who ?? item.author ?? item.name;
         const role = item.role ?? item.context;
+        const stars = starsOf(item);
         return (
           <figure class="quote-fig reveal">
-            <div class="stars" aria-hidden="true">★ ★ ★ ★ ★</div>
+            {stars && <div class="stars" aria-hidden="true">{stars}</div>}
             <blockquote data-field={`testimonials.items.${i}.quote`}>“{item.quote}”</blockquote>
             {(who || role) && (
               <figcaption class="who">

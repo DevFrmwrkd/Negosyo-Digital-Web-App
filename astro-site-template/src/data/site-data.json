@@ -1,7 +1,7 @@
 {
   "layout": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "tagline": "Everlasting Beauty Forever",
+    "businessName": "Lily Kwek kwek",
+    "tagline": "_Freshly Cooked Goodness_",
     "navLinks": [
       {
         "href": "#about",
@@ -22,28 +22,28 @@
     ],
     "socialLinks": [],
     "colorScheme": "auto",
-    "fontPairing": "auto",
+    "fontPairing": "modern",
     "contact": {
-      "address": "Heritage homes, Marilao, Bulacan, Marilao",
-      "email": "josephinecarvajal110168@gmail.com",
-      "phone": "+639177871293"
+      "address": "Pasong Camachile II General Trias Cavite, General Trias",
+      "email": "pablofetalvero@gmail.com",
+      "phone": "+639456316788"
     },
-    "navbarStyle": "salonspa:L"
+    "navbarStyle": "A"
   },
   "customizations": {
-    "heroStyle": "salonspa:L",
-    "aboutStyle": "salonspa:L",
-    "servicesStyle": "salonspa:L",
-    "galleryStyle": "salonspa:L",
-    "contactStyle": "salonspa:L",
-    "trustStyle": "salonspa:L",
-    "whyUsStyle": "salonspa:L",
-    "howItWorksStyle": "salonspa:L",
-    "testimonialsStyle": "salonspa:L",
-    "faqStyle": "salonspa:L",
-    "serviceAreaStyle": "salonspa:L",
-    "credentialsStyle": "salonspa:L",
-    "ctaBandStyle": "salonspa:L",
+    "heroStyle": "A",
+    "aboutStyle": "A",
+    "servicesStyle": "A",
+    "galleryStyle": "A",
+    "contactStyle": "A",
+    "trustStyle": "M1",
+    "whyUsStyle": "M1",
+    "howItWorksStyle": "M1",
+    "testimonialsStyle": "M1",
+    "faqStyle": "M1",
+    "serviceAreaStyle": "M1",
+    "credentialsStyle": "M1",
+    "ctaBandStyle": "M1",
     "clickToMessageStyle": "M1"
   },
   "visibility": {
@@ -87,32 +87,33 @@
     "howItWorksBlock": true,
     "testimonialsBlock": true,
     "faqBlock": true,
-    "credentialsBlock": false,
+    "credentialsBlock": true,
     "gallerySection": true,
     "ctaBandBlock": true
   },
   "hero": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "headline": "Everlasting Beauty Forever",
-    "description": "Aloja Carvajal Aesthetic and Beauty Studio is a haven for personalized beauty services, providing tailored experiences to make each client feel confident and beautiful. With years of expertise, our studio focuses on understanding individual needs and delivering exceptional care. Our goal is to become a trusted name in the beauty industry, renowned for quality and customer care.",
+    "businessName": "Lily Kwek kwek",
+    "headline": "_Freshly Cooked Goodness_",
+    "description": "Lily Kwek kwek serves freshly cooked kwek-kwek and other popular street food in General Trias, Cavite. Our focus on cleanliness and new recipes makes us a favorite among locals. We offer a variety of sauces and free cucumber and onion for added flavor.",
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/submission-photos/j971v4a6cam4shnar1np5ehyxh82h0y8/1779456468177.png"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437463701-gwnfx3lw.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437477363-xy71snha.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437487035-bx5ngmdm.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437500767-8zgljoc1.jpg"
     ],
     "services": [
       {
-        "description": "Customized haircuts and styling for all hair types",
-        "name": "Cut & Style"
+        "description": "Crispy fried quail eggs",
+        "name": "Kwek Kwek"
       },
       {
-        "description": "Professional hair coloring and highlighting services",
-        "name": "Couture Color"
+        "description": "Savory snacks and treats",
+        "name": "Street Food"
       },
       {
-        "description": "Expert makeup and hair styling for special occasions",
-        "name": "Bridal & Events"
+        "description": "Variety of sauces available",
+        "name": "Sauce Options"
       }
     ],
     "visibility": {
@@ -125,19 +126,21 @@
     }
   },
   "about": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "description": "Aloja Carvajal Aesthetic and Beauty Studio is a haven for personalized beauty services, providing tailored experiences to make each client feel confident and beautiful. With years of expertise, our studio focuses on understanding individual needs and delivering exceptional care. Our goal is to become a trusted name in the beauty industry, renowned for quality and customer care.",
+    "businessName": "Lily Kwek kwek",
+    "description": "Lily Kwek kwek serves freshly cooked kwek-kwek and other popular street food in General Trias, Cavite. Our focus on cleanliness and new recipes makes us a favorite among locals. We offer a variety of sauces and free cucumber and onion for added flavor.",
     "headline": "About Us",
     "usps": [
-      "Personalized care",
-      "Experienced professionals",
-      "Welcoming atmosphere",
-      "Customized services"
+      "Clean Preparation",
+      "Freshly Cooked",
+      "Variety of Sauces",
+      "Free Cucumber and Onion"
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437463701-gwnfx3lw.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437477363-xy71snha.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437487035-bx5ngmdm.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437500767-8zgljoc1.jpg"
     ],
     "visibility": {
       "aboutBadge": true,
@@ -152,32 +155,24 @@
     "headline": "Our Services",
     "services": [
       {
-        "description": "Customized haircuts and styling for all hair types",
-        "name": "Cut & Style"
+        "description": "Crispy fried quail eggs",
+        "name": "Kwek Kwek"
       },
       {
-        "description": "Professional hair coloring and highlighting services",
-        "name": "Couture Color"
+        "description": "Savory snacks and treats",
+        "name": "Street Food"
       },
       {
-        "description": "Expert makeup and hair styling for special occasions",
-        "name": "Bridal & Events"
+        "description": "Variety of sauces available",
+        "name": "Sauce Options"
       },
       {
-        "description": "Nourishing facial treatments for radiant skin",
-        "name": "Glow Facials"
-      },
-      {
-        "description": "Precision brow shaping and lash enhancement services",
-        "name": "Brow & Lash"
-      },
-      {
-        "description": "Personalized skin care and rejuvenation treatments",
-        "name": "Skin Treatments"
+        "description": "Quick and easy snacks",
+        "name": "Merienda"
       }
     ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif"
     ],
     "visibility": {
       "servicesBadge": true,
@@ -189,58 +184,43 @@
     }
   },
   "gallery": {
-    "headline": "Featured Services",
-    "subheadline": "Experience the art of beauty with our expert services",
+    "headline": "Featured Products",
+    "subheadline": "Our specialty street food items, made with love and care",
     "items": [
       {
-        "title": "Bridal Beauty Package",
-        "description": "Our bridal package includes a trial session, hair and makeup styling, and touch-ups throughout the event. Our team works closely with each bride to create a customized look that reflects her personal style and wedding theme. From classic elegance to modern glamour, we bring each bride's vision to life.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
+        "title": "Kwek Kwek Delight",
+        "description": "Our signature kwek kwek dish, served with a side of spicy vinegar and steamed cucumber. Made with freshly cooked quail eggs and a special blend of spices. Perfect for a quick snack or merienda.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif",
         "tags": [
-          "Bridal",
-          "Full-day"
-        ],
-        "testimonial": {
-          "author": "Maria Rodriguez",
-          "quote": "I felt like a princess on my wedding day, thanks to the talented team at Aloja Carvajal. They listened to my ideas and created a stunning look that exceeded my expectations. I highly recommend their bridal services to any bride-to-be!"
-        }
+          "Street Food",
+          "10 minutes"
+        ]
       },
       {
-        "title": "Customized Hair Color",
-        "description": "Our expert colorists work with each client to create a personalized hair color plan, taking into account their skin tone, hair type, and personal preferences. From subtle, natural-looking highlights to bold, vibrant colors, we use only the highest-quality products to achieve the desired result. Our goal is to enhance each client's natural beauty and leave them feeling confident and radiant.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
+        "title": "Street Food Platter",
+        "description": "A selection of our popular street food items, including kwek kwek, fish balls, and squid balls. Served with a variety of sauces and a side of cucumber and onion. Perfect for sharing with friends and family.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437463701-gwnfx3lw.jfif",
         "tags": [
-          "Hair Color",
-          "Half-day"
-        ],
-        "testimonial": {
-          "author": "Samantha Lee",
-          "quote": "I've never been happier with my hair color! The team at Aloja Carvajal took the time to understand my needs and created a customized color plan that perfectly complements my skin tone and personal style."
-        }
+          "Platter",
+          "20 minutes"
+        ]
       },
       {
-        "title": "Glowing Skin Treatment",
-        "description": "Our signature facial treatment includes a thorough skin analysis, personalized product recommendations, and a rejuvenating treatment tailored to each client's specific skin concerns. From hydrating and nourishing to exfoliating and brightening, our facials leave skin looking and feeling its best. Our team is dedicated to helping each client achieve their skin goals and maintain a healthy, radiant glow.",
-        "image": "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
+        "title": "Merienda Special",
+        "description": "A quick and easy snack pack, including a choice of kwek kwek, street food, or merienda item, paired with a drink and a side of cucumber and onion. Perfect for a busy day or on-the-go.",
+        "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437477363-xy71snha.jfif",
         "tags": [
-          "Facial",
-          "60-minute"
-        ],
-        "testimonial": {
-          "author": "Emily Chen",
-          "quote": "The glowing skin treatment at Aloja Carvajal was amazing! My skin felt so soft and refreshed after the treatment, and the products they recommended have really helped to improve my skin's texture and tone."
-        }
+          "Snack Pack",
+          "5 minutes"
+        ]
       }
     ],
-    "images": [
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/submission-photos/j971v4a6cam4shnar1np5ehyxh82h0y8/1779456468177.png",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c"
-    ],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/submission-photos/j971v4a6cam4shnar1np5ehyxh82h0y8/1779456468177.png"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437463701-gwnfx3lw.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437477363-xy71snha.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437487035-bx5ngmdm.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437500767-8zgljoc1.jpg"
     ],
     "visibility": {
       "galleryHeadline": true,
@@ -251,17 +231,18 @@
     }
   },
   "contact": {
-    "businessName": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "email": "josephinecarvajal110168@gmail.com",
-    "phone": "9177871293",
-    "address": "Heritage homes, Marilao, Bulacan, Marilao",
+    "businessName": "Lily Kwek kwek",
+    "email": "pablofetalvero@gmail.com",
+    "phone": "9456316788",
+    "address": "Pasong Camachile II General Trias Cavite, General Trias",
     "description": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
     "socialLinks": [],
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/submission-photos/j971v4a6cam4shnar1np5ehyxh82h0y8/1779456468177.png"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437463701-gwnfx3lw.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437477363-xy71snha.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437487035-bx5ngmdm.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437500767-8zgljoc1.jpg"
     ],
     "visibility": {
       "contactBadge": true,
@@ -272,177 +253,117 @@
     }
   },
   "location": {
-    "lat": 14.7744099,
-    "lng": 121.012818,
-    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Heritage%20homes%2C%20Marilao%2C%20Bulacan%2C%20Marilao"
-  },
-  "serviceArea": {
-    "heading": "Service area",
-    "places": [
-      "Marilao",
-      "Meycauayan",
-      "Bocaue",
-      "Sta. Maria",
-      "Bulacan"
-    ]
+    "lat": 14.364317,
+    "lng": 120.9093431,
+    "googleMapsUrl": "https://www.google.com/maps/search/?api=1&query=Pasong%20Camachile%20II%20General%20Trias%20Cavite%2C%20General%20Trias"
   },
   "messaging": {
-    "whatsapp": "639177871293"
+    "whatsapp": "639456316788"
   },
   "trust": {
-    "licenses": [
-      "PRC cosmetology",
-      "DOH facility permit",
-      "Brand-trained colourist"
-    ],
-    "memberships": [
-      "Professional association membership",
-      "Training school affiliation"
-    ],
-    "years": "A house of beauty since 2018"
+    "licenses": [],
+    "memberships": [],
+    "years": "since 2024"
   },
-  "why": {
-    "items": [
-      {
-        "body": "Our goal is to help our clients feel confident and beautiful by providing personalized beauty services that suit their individual needs. We cater to everyday beauty needs as well as special occasions like weddings, parties and events.",
-        "title": "Personalized Beauty"
-      },
-      {
-        "body": "With years of experience in the beauty industry, we focus on understanding and delivering what each client wants to help them achieve the look that best suits them. We also create a welcoming and comfortable environment where clients can relax and feel taken care of.",
-        "title": "Experienced Team"
-      },
-      {
-        "body": "We strive to continue improving our services and maintaining good relationships with our clients, marketing our business and reaching more potential customers.",
-        "title": "Committed to Excellence"
-      }
-    ]
-  },
-  "how": {
-    "steps": [
-      {
-        "body": "We start by understanding your individual needs and preferences to provide personalized beauty services.",
-        "step": "01",
-        "title": "Consultation"
-      },
-      {
-        "body": "Our experienced team delivers customized beauty services to help you achieve the look that best suits you.",
-        "step": "02",
-        "title": "Customized Service"
-      },
-      {
-        "body": "We create a welcoming and comfortable environment where you can relax and feel taken care of.",
-        "step": "03",
-        "title": "Relaxing Experience"
-      },
-      {
-        "body": "We follow up with our clients to ensure they are satisfied with our services and to maintain a good relationship.",
-        "step": "04",
-        "title": "Follow-up"
-      }
-    ]
-  },
-  "testimonials": {
-    "items": [
-      {
-        "context": "Regular client",
-        "name": "Maria G",
-        "quote": "I feel confident and beautiful after every visit.",
-        "role": "Regular client",
-        "who": "Maria G"
-      },
-      {
-        "context": "New client",
-        "name": "John D",
-        "quote": "The staff is friendly and professional.",
-        "role": "New client",
-        "who": "John D"
-      },
-      {
-        "context": "Loyal client",
-        "name": "Emily T",
-        "quote": "I love the personalized service I receive.",
-        "role": "Loyal client",
-        "who": "Emily T"
-      }
-    ]
-  },
-  "faq": {
-    "items": [
-      {
-        "a": "We offer a variety of services such as hair styling, hair color, makeup services, and other beauty treatments.",
-        "q": "What services do you offer"
-      },
-      {
-        "a": "Yes, we cater to special occasions like weddings, parties and events.",
-        "q": "Do you cater to special occasions"
-      },
-      {
-        "a": "We follow up with our clients to ensure they are satisfied with our services and to maintain a good relationship.",
-        "q": "How do you ensure client satisfaction"
-      },
-      {
-        "a": "The personalized care we give to every client and our focus on understanding and delivering what each client wants.",
-        "q": "What makes your business special"
-      },
-      {
-        "a": "We continue to improve our services and stay updated with the latest trends and techniques in the beauty industry.",
-        "q": "How do you stay up-to-date with industry trends"
-      }
-    ]
-  },
-  "credentials": {
-    "items": [
-      {
-        "detail": "PRC cosmetology",
-        "label": "Licensed"
-      },
-      {
-        "detail": "Brand-trained colourist",
-        "label": "Trained"
-      },
-      {
-        "detail": "Liability insurance",
-        "label": "Insured"
-      },
-      {
-        "detail": "Trusted beauty studio",
-        "label": "Awarded"
-      }
-    ]
-  },
+  "why": [
+    {
+      "body": "Our kwek-kwek and other street food are always freshly cooked, ensuring a delicious and satisfying snack. We also offer a variety of sauces to complement our dishes.",
+      "title": "Freshly Cooked"
+    },
+    {
+      "body": "We take pride in our clean preparation process, which sets us apart from other street food vendors in the area. Our customers can trust that they are getting a safe and healthy snack.",
+      "title": "Clean Preparation"
+    },
+    {
+      "body": "Our stall is conveniently located at the corner of Pasong Camachile II, making it easy for customers to stop by and grab a quick snack on the go.",
+      "title": "Convenient Location"
+    }
+  ],
+  "how": [
+    {
+      "body": "Simply visit our stall at the corner of Pasong Camachile II and choose from our variety of street food options.",
+      "step": "01",
+      "title": "Visit Us"
+    },
+    {
+      "body": "Select the food you want to purchase, and our staff will assist you with your order.",
+      "step": "02",
+      "title": "Select Food"
+    },
+    {
+      "body": "Pay for your food and enjoy it on the spot or take it with you on the go.",
+      "step": "03",
+      "title": "Pay and Enjoy"
+    },
+    {
+      "body": "Don't forget to add your choice of sauce, and enjoy the free pipino and sibuyas that come with your meal.",
+      "step": "04",
+      "title": "Add Your Sauce"
+    }
+  ],
+  "testimonials": [],
+  "faq": [
+    {
+      "a": "We sell kwek-kwek and other popular street food options.",
+      "q": "What types of food do you sell"
+    },
+    {
+      "a": "Currently, we do not offer delivery, but you can visit our stall to purchase our food.",
+      "q": "Do you offer delivery"
+    },
+    {
+      "a": "Yes, you can buy just one piece of our food, and we also offer a variety of sauces to complement your meal.",
+      "q": "Can I buy just one piece"
+    },
+    {
+      "a": "We have a variety of sauces to choose from, and our customers have different preferences, so feel free to try the one that suits your taste.",
+      "q": "What is the best sauce to try"
+    },
+    {
+      "a": "Yes, we take pride in our clean preparation process, ensuring that our customers get a safe and healthy snack.",
+      "q": "Is your food preparation clean"
+    }
+  ],
+  "credentials": [
+    {
+      "detail": "We maintain a clean preparation process to ensure our customers' safety and health.",
+      "label": "Clean Preparation"
+    }
+  ],
   "ctaBand": {
-    "body": "Visit us today and discover how our personalized beauty services can help you feel confident and beautiful.",
-    "heading": "Experience Personalized Beauty",
-    "primaryLabel": "Book Now",
+    "body": "Visit us today and enjoy our delicious and freshly cooked street food options.",
+    "heading": "Get Your Favorite Snack",
+    "primaryLabel": "Visit Us",
     "primaryLink": "#location",
-    "secondaryLabel": "Get Directions",
+    "secondaryLabel": "Contact Us",
     "secondaryLink": "#contact"
   },
   "content": {
-    "description": "Aloja Carvajal Aesthetic and Beauty Studio is a haven for personalized beauty services, providing tailored experiences to make each client feel confident and beautiful. With years of expertise, our studio focuses on understanding individual needs and delivering exceptional care. Our goal is to become a trusted name in the beauty industry, renowned for quality and customer care.",
+    "description": "Lily Kwek kwek serves freshly cooked kwek-kwek and other popular street food in General Trias, Cavite. Our focus on cleanliness and new recipes makes us a favorite among locals. We offer a variety of sauces and free cucumber and onion for added flavor.",
     "photos": [
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf",
-      "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c",
-      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/submission-photos/j971v4a6cam4shnar1np5ehyxh82h0y8/1779456468177.png"
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437463701-gwnfx3lw.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437477363-xy71snha.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437487035-bx5ngmdm.jfif",
+      "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437500767-8zgljoc1.jpg"
     ],
     "contact": {
-      "address": "Heritage homes, Marilao, Bulacan, Marilao",
-      "email": "josephinecarvajal110168@gmail.com",
-      "phone": "+639177871293"
+      "address": "Pasong Camachile II General Trias Cavite, General Trias",
+      "email": "pablofetalvero@gmail.com",
+      "phone": "+639456316788"
     },
     "marquee": {
       "text": "Quality ◆ Trusted ◆ Local ◆ Reliable"
     },
     "hero": {
-      "kicker": "Marilao · Barber/Salon",
-      "headline": "Aloja Carvajal Aesthetic and Beauty Studio",
+      "kicker": "General Trias · Other",
+      "headline": "Lily Kwek kwek",
       "headlineLines": [
-        "Aloja Carvajal Aesthetic and Beauty Studio",
+        "Lily Kwek kwek",
         "",
         ""
       ],
-      "sub": "Everlasting Beauty Forever",
+      "sub": "_Freshly Cooked Goodness_",
       "cta1": {
         "text": "Get in touch",
         "href": "#visit"
@@ -451,14 +372,14 @@
         "text": "See services",
         "href": "#services"
       },
-      "meta1": "★★★★★ rated on Google",
-      "meta2": "Marilao · open daily"
+      "meta1": "",
+      "meta2": "General Trias · open daily"
     },
     "about": {
       "tag": "About",
-      "headline": "About Aloja Carvajal Aesthetic and Beauty Studio",
-      "lead": "Aloja Carvajal Aesthetic and Beauty Studio is a barber/salon based in Marilao.",
-      "signature": "Aloja Carvajal Aesthetic and Beauty Studio",
+      "headline": "About Lily Kwek kwek",
+      "lead": "Lily Kwek kwek is a other based in General Trias.",
+      "signature": "Lily Kwek kwek",
       "paragraphs": [
         "We focus on quality work, honest pricing, and customers who come back.",
         "Get in touch and we'll walk you through what we can do for you."
@@ -467,22 +388,22 @@
     "services": {
       "tag": "What we offer",
       "headline": "Services we provide",
-      "sub": "A quick look at what Aloja Carvajal Aesthetic and Beauty Studio can help you with.",
+      "sub": "A quick look at what Lily Kwek kwek can help you with.",
       "items": [
         {
-          "title": "Cut & Style",
-          "desc": "Classic and modern cuts tailored to the way you wear your hair.",
-          "note": "walk-in · booked"
+          "title": "Our Services",
+          "desc": "Learn more about what Lily Kwek kwek offers and how we can help.",
+          "note": "all customers"
         },
         {
-          "title": "Beard Work",
-          "desc": "Trims, shapes, and hot-towel finishes that hold their line.",
-          "note": "add-on"
+          "title": "Get in Touch",
+          "desc": "Reach out and we'll get back to you the same day.",
+          "note": "phone · email"
         },
         {
-          "title": "Kids & Seniors",
-          "desc": "Patient, low-fuss cuts for younger and older clients.",
-          "note": "family-friendly"
+          "title": "Visit Us",
+          "desc": "Drop by our location to see what we do in person.",
+          "note": "walk-in"
         }
       ]
     },
@@ -491,49 +412,60 @@
       "headline": "A look at our work",
       "items": [
         {
-          "image": "https://diligent-ibex-454.convex.cloud/api/storage/c1e7f8f5-1b6e-440c-a142-fcbb7f35aa8c"
+          "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437454502-kc7x30wu.jfif",
+          "caption": "Our space"
         },
         {
-          "image": "https://diligent-ibex-454.convex.cloud/api/storage/6050a8dc-82cf-49c3-961f-9543a3c4ecbf"
+          "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437463701-gwnfx3lw.jfif",
+          "caption": "Our work"
         },
         {
-          "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1772959893360-27lz7b5c.jpg"
+          "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437477363-xy71snha.jfif",
+          "caption": "Behind the scenes"
+        },
+        {
+          "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437487035-bx5ngmdm.jfif",
+          "caption": "Behind the scenes"
+        },
+        {
+          "image": "https://pub-57b18c6cff15455aa3dec88f7581c5d7.r2.dev/images/1786437500767-8zgljoc1.jpg",
+          "caption": "Behind the scenes"
         }
       ]
     },
     "area": {
       "tag": "Service area",
-      "headline": "Serving Marilao and nearby",
-      "body": "Based in Marilao, we serve customers across the surrounding area.",
+      "headline": "Serving General Trias and nearby",
+      "body": "Based in General Trias, we serve customers across the surrounding area.",
       "places": [
-        "Marilao"
+        "General Trias"
       ]
     },
     "location": {
       "tag": "Visit",
       "headline": "Where to find us",
-      "lat": 14.7744099,
-      "lng": 121.012818
+      "lat": 14.364317,
+      "lng": 120.9093431
     },
     "ctaBand": {
       "headline": "Ready when you are.",
-      "sub": "Reach out to Aloja Carvajal Aesthetic and Beauty Studio and we'll get back to you the same day.",
+      "sub": "Reach out to Lily Kwek kwek and we'll get back to you the same day.",
       "cta": {
         "text": "Get in touch",
         "href": "#visit"
       },
-      "body": "Visit us today and discover how our personalized beauty services can help you feel confident and beautiful.",
-      "heading": "Experience Personalized Beauty",
-      "primaryLabel": "Book Now",
+      "body": "Visit us today and enjoy our delicious and freshly cooked street food options.",
+      "heading": "Get Your Favorite Snack",
+      "primaryLabel": "Visit Us",
       "primaryLink": "#location",
-      "secondaryLabel": "Get Directions",
+      "secondaryLabel": "Contact Us",
       "secondaryLink": "#contact"
     },
     "footer": {
-      "brand": "Aloja Carvajal Aesthetic and Beauty Studio",
-      "blurb": "Aloja Carvajal Aesthetic and Beauty Studio — a barber/salon serving Marilao.",
+      "brand": "Lily Kwek kwek",
+      "blurb": "Lily Kwek kwek — a other serving General Trias.",
       "notes": [
-        "© 2026 Aloja Carvajal Aesthetic and Beauty Studio",
+        "© 2026 Lily Kwek kwek",
         "Quality work · trusted locally"
       ],
       "brand_blurb": "For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.",
@@ -562,126 +494,85 @@
     "why": {
       "items": [
         {
-          "body": "Our goal is to help our clients feel confident and beautiful by providing personalized beauty services that suit their individual needs. We cater to everyday beauty needs as well as special occasions like weddings, parties and events.",
-          "title": "Personalized Beauty"
+          "body": "Our kwek-kwek and other street food are always freshly cooked, ensuring a delicious and satisfying snack. We also offer a variety of sauces to complement our dishes.",
+          "title": "Freshly Cooked"
         },
         {
-          "body": "With years of experience in the beauty industry, we focus on understanding and delivering what each client wants to help them achieve the look that best suits them. We also create a welcoming and comfortable environment where clients can relax and feel taken care of.",
-          "title": "Experienced Team"
+          "body": "We take pride in our clean preparation process, which sets us apart from other street food vendors in the area. Our customers can trust that they are getting a safe and healthy snack.",
+          "title": "Clean Preparation"
         },
         {
-          "body": "We strive to continue improving our services and maintaining good relationships with our clients, marketing our business and reaching more potential customers.",
-          "title": "Committed to Excellence"
+          "body": "Our stall is conveniently located at the corner of Pasong Camachile II, making it easy for customers to stop by and grab a quick snack on the go.",
+          "title": "Convenient Location"
         }
       ]
     },
     "how": {
       "steps": [
         {
-          "body": "We start by understanding your individual needs and preferences to provide personalized beauty services.",
+          "body": "Simply visit our stall at the corner of Pasong Camachile II and choose from our variety of street food options.",
           "step": "01",
-          "title": "Consultation"
+          "title": "Visit Us"
         },
         {
-          "body": "Our experienced team delivers customized beauty services to help you achieve the look that best suits you.",
+          "body": "Select the food you want to purchase, and our staff will assist you with your order.",
           "step": "02",
-          "title": "Customized Service"
+          "title": "Select Food"
         },
         {
-          "body": "We create a welcoming and comfortable environment where you can relax and feel taken care of.",
+          "body": "Pay for your food and enjoy it on the spot or take it with you on the go.",
           "step": "03",
-          "title": "Relaxing Experience"
+          "title": "Pay and Enjoy"
         },
         {
-          "body": "We follow up with our clients to ensure they are satisfied with our services and to maintain a good relationship.",
+          "body": "Don't forget to add your choice of sauce, and enjoy the free pipino and sibuyas that come with your meal.",
           "step": "04",
-          "title": "Follow-up"
+          "title": "Add Your Sauce"
         }
       ]
     },
     "trust": {
-      "licenses": [
-        "PRC cosmetology",
-        "DOH facility permit",
-        "Brand-trained colourist"
-      ],
-      "memberships": [
-        "Professional association membership",
-        "Training school affiliation"
-      ],
-      "years": "A house of beauty since 2018"
+      "licenses": [],
+      "memberships": [],
+      "years": "since 2024"
     },
     "testimonials": {
-      "items": [
-        {
-          "context": "Regular client",
-          "name": "Maria G",
-          "quote": "I feel confident and beautiful after every visit.",
-          "role": "Regular client",
-          "who": "Maria G"
-        },
-        {
-          "context": "New client",
-          "name": "John D",
-          "quote": "The staff is friendly and professional.",
-          "role": "New client",
-          "who": "John D"
-        },
-        {
-          "context": "Loyal client",
-          "name": "Emily T",
-          "quote": "I love the personalized service I receive.",
-          "role": "Loyal client",
-          "who": "Emily T"
-        }
-      ]
+      "items": []
     },
     "faq": {
       "items": [
         {
-          "a": "We offer a variety of services such as hair styling, hair color, makeup services, and other beauty treatments.",
-          "q": "What services do you offer"
+          "a": "We sell kwek-kwek and other popular street food options.",
+          "q": "What types of food do you sell"
         },
         {
-          "a": "Yes, we cater to special occasions like weddings, parties and events.",
-          "q": "Do you cater to special occasions"
+          "a": "Currently, we do not offer delivery, but you can visit our stall to purchase our food.",
+          "q": "Do you offer delivery"
         },
         {
-          "a": "We follow up with our clients to ensure they are satisfied with our services and to maintain a good relationship.",
-          "q": "How do you ensure client satisfaction"
+          "a": "Yes, you can buy just one piece of our food, and we also offer a variety of sauces to complement your meal.",
+          "q": "Can I buy just one piece"
         },
         {
-          "a": "The personalized care we give to every client and our focus on understanding and delivering what each client wants.",
-          "q": "What makes your business special"
+          "a": "We have a variety of sauces to choose from, and our customers have different preferences, so feel free to try the one that suits your taste.",
+          "q": "What is the best sauce to try"
         },
         {
-          "a": "We continue to improve our services and stay updated with the latest trends and techniques in the beauty industry.",
-          "q": "How do you stay up-to-date with industry trends"
+          "a": "Yes, we take pride in our clean preparation process, ensuring that our customers get a safe and healthy snack.",
+          "q": "Is your food preparation clean"
         }
       ]
     },
     "credentials": {
       "items": [
         {
-          "detail": "PRC cosmetology",
-          "label": "Licensed"
-        },
-        {
-          "detail": "Brand-trained colourist",
-          "label": "Trained"
-        },
-        {
-          "detail": "Liability insurance",
-          "label": "Insured"
-        },
-        {
-          "detail": "Trusted beauty studio",
-          "label": "Awarded"
+          "detail": "We maintain a clean preparation process to ensure our customers' safety and health.",
+          "label": "Clean Preparation"
         }
       ]
     },
-    "business_name": "Aloja Carvajal Aesthetic and Beauty Studio",
-    "business_type": "Barber/Salon",
-    "business_city": "Marilao"
+    "business_name": "Lily Kwek kwek",
+    "business_type": "Other",
+    "business_city": "General Trias"
   }
 }

@@ -10,8 +10,14 @@ const { content } = Astro.props;
 const test = content.testimonials || {};
 const tag = test.tag || '';
 const headline = test.headline || '';
-type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
+type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string; rating?: number | string };
 const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+// A star row is a rating claim, not decoration — it puts a score in a named
+// customer's mouth. Render only the score the customer actually gave.
+const starsOf = (it: Item) => {
+  const n = Math.round(Number(it.rating));
+  return n >= 1 && n <= 5 ? '★'.repeat(n) : '';
+};
 ---
 {items.length > 0 && (
   <section class="sec quotes" id="reviews">
@@ -24,9 +30,10 @@ const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(te
         {items.map((item, i) => {
           const who = item.who ?? item.author ?? item.name;
           const role = item.role ?? item.context;
+          const stars = starsOf(item);
           return (
             <figure class="quote reveal">
-              <div class="stars" aria-hidden="true">★★★★★</div>
+              {stars && <div class="stars" aria-hidden="true">{stars}</div>}
               <p data-field={`testimonials.items.${i}.quote`}>{item.quote}</p>
               {(who || role) && (
                 <figcaption class="who">

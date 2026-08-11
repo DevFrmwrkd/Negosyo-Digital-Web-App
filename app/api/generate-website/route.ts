@@ -4,7 +4,12 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { buildAstroSite } from '@/lib/astro-builder'
 import { buildRoleColorCss } from '@/lib/roleColors'
-import { groqService, delimitTranscript } from '@/lib/services/groq.service'
+import {
+    groqService,
+    delimitTranscript,
+    hasSuppliedTestimonials,
+    stripFabricatedTestimonials,
+} from '@/lib/services/groq.service'
 
 /**
  * Used when overriding a `contentWithContact` key that has two coexisting
@@ -78,6 +83,44 @@ export async function POST(request: NextRequest) {
         // Check if submission is rejected
         if (submission.status === 'rejected') {
             return NextResponse.json({ error: 'Cannot generate website for rejected submission' }, { status: 400 })
+        }
+
+        // ── Fabricated-testimonial gate ───────────────────────────────
+        // Read from the SUBMISSION, never from generator output: whether a
+        // quoted customer is allowed on this page is a fact about what the
+        // business told us, and no model gets a vote. See
+        // hasSuppliedTestimonials for how each funnel is answered.
+        const testimonialsAreSourced = hasSuppliedTestimonials({
+            contentSource: (submissionData as any).contentSource,
+            interviewQa: (submissionData as any).interviewQa,
+        })
+
+        // Everything the guard dropped this run, split by where it came from.
+        // A server log tells the admin nothing: on the creator funnel a
+        // recording FULL of real customer quotes strips to an empty band, and
+        // unless the response says so the admin never learns there was anything
+        // quotable to type back in. See the JSON response at the end.
+        const guardRemoved = { generated: 0, stored: 0 }
+
+        // Wrap GENERATED output — model JSON and the hardcoded default products.
+        // Stored content goes through the assembly pass further down instead,
+        // which keeps what an admin typed.
+        const guardGenerated = <T>(label: string, generated: T): T => {
+            if (testimonialsAreSourced) return generated
+            const { content, removed } = stripFabricatedTestimonials(generated)
+            const total = removed.testimonials + removed.productTestimonials
+            if (total > 0) {
+                guardRemoved.generated += total
+                // Loud on purpose. Dropping invented praise is correct, but a
+                // silent drop leaves nobody able to tell how often the models
+                // reach for it.
+                console.warn(
+                    `[TESTIMONIAL-GUARD] ${label}: dropped ${removed.testimonials} testimonial(s) + ` +
+                    `${removed.productTestimonials} product testimonial(s) — submission ${submissionData._id} ` +
+                    `supplied no testimonial text (contentSource=${(submissionData as any).contentSource || 'creator'})`
+                )
+            }
+            return content
         }
 
         // Check if there's an existing generated website with edited content (from Convex)
@@ -194,8 +237,7 @@ Generate a JSON response with the following structure:
       "description": "A detailed 2-3 sentence description of this project showcasing quality work",
       "tags": ["Tag1", "Duration"],
       "testimonial": {
-        "quote": "A realistic customer testimonial about this project (2-3 sentences)",
-        "author": "Customer Name"
+        "quote": "the customer's words as the owner reported them (2-3 sentences)"
       }
     }
   ]
@@ -209,8 +251,8 @@ IMPORTANT:
 - USPs should highlight what makes this business unique
 - Keep descriptions concise and compelling
 - Generate ${Math.min(photoCount, 3) || 3} featured_products (one for each photo if available, max 3)
-- Each featured project should have a unique title, description, tags, and testimonial
-- Make testimonials sound realistic and specific to each project
+- Each featured project should have a unique title, description and tags
+- TESTIMONIALS: only what the owner reported customers saying, in the transcript. If it isn't there, omit "testimonial" entirely. Never invent a customer or a quote — and never output a name: nobody is ever asked who said it, so a name can only be made up.
 - Tags should include project type and estimated duration
 ${isBeauty ? '- For beauty businesses, lean into ritual + intimacy + the "regular client" relationship. Avoid generic "we offer..." phrasing.' : ''}
 ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no medical claims; no specific outcomes promised.' : ''}
@@ -228,7 +270,7 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
 
                 // Clean up markdown code blocks if present
                 const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-                const freshExtraction = JSON.parse(cleanContent)
+                const freshExtraction = guardGenerated('main extraction', JSON.parse(cleanContent))
 
                 // Restore admin-edited contact info that was merged above so
                 // a re-extraction doesn't clobber owner phone/email/address.
@@ -269,7 +311,7 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                     }
                 )
                 if (blocks) {
-                    extractedContent = { ...extractedContent, ...blocks }
+                    extractedContent = { ...extractedContent, ...guardGenerated('conversion blocks', blocks) }
                 }
             } catch (err) {
                 console.error('Conversion-block generation failed (using defaults):', err)
@@ -301,7 +343,7 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
         )
         if (isGenericRender && !hasGenericSections && submission.transcript) {
             try {
-                const sections = await groqService.generateGenericSections(
+                let sections = await groqService.generateGenericSections(
                     submission.transcript,
                     {
                         name: submission.business_name,
@@ -311,6 +353,12 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                     }
                 )
                 if (sections) {
+                    // Guarded like every other generator output, though the key
+                    // whitelist below in generateGenericSections cannot emit
+                    // testimonials today — so the invariant is "generated
+                    // content is always guarded", with no per-callsite exception
+                    // to remember when that whitelist grows.
+                    sections = guardGenerated('generic sections', sections)
                     // Shallow merge — admin edits already in extractedContent
                     // win on each leaf because they were set first. We only
                     // fill keys that didn't already exist.
@@ -323,6 +371,44 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             } catch (err) {
                 console.error('Generic-section generation failed (using fallbacks):', err)
             }
+        }
+
+        // ── Stored content faces the same gate ────────────────────────
+        // Every guard above only fires on something GENERATED this run, and a
+        // regenerate generates nothing: `servicesAreSparse` is false because the
+        // services are already populated and `hasAnyConversionBlock` is true
+        // because the testimonials already exist. So the incident row's three
+        // invented customers skip all four call sites and republish verbatim —
+        // and would on every future publish, forever. The strip has to run on
+        // what we READ as well as on what we write.
+        //
+        // The tension that kept this pass out until now is real: an admin types
+        // real testimonials into the editor, and every editor Save round-trips
+        // through here (/api/save-content persists the draft, then calls this
+        // route to rebuild), so a blanket strip would delete the admin's words a
+        // second after they typed them — and with them the escape hatch the
+        // creator-funnel rule in hasSuppliedTestimonials depends on.
+        //
+        // Resolved per item rather than wholesale, using provenance that already
+        // exists in the data and needs no new schema field: the editor stamps an
+        // attribution key on every quote a human adds or edits, and nothing a
+        // generator writes carries one (see ADMIN_ATTRIBUTION_KEY). Typed quotes
+        // survive; machine-written ones do not — including on the row that
+        // stored them before this guard existed.
+        if (!testimonialsAreSourced && extractedContent) {
+            const { content, removed } = stripFabricatedTestimonials(extractedContent, {
+                keepAdminAuthored: true,
+            })
+            const total = removed.testimonials + removed.productTestimonials
+            if (total > 0) {
+                guardRemoved.stored += total
+                console.warn(
+                    `[TESTIMONIAL-GUARD] stored content: dropped ${removed.testimonials} testimonial(s) + ` +
+                    `${removed.productTestimonials} product testimonial(s) — submission ${submissionData._id} ` +
+                    `supplied no testimonial text (contentSource=${(submissionData as any).contentSource || 'creator'})`
+                )
+            }
+            extractedContent = content
         }
 
         // Template name kept for backward compat in database records
@@ -767,7 +853,14 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             // Featured section fields - generate defaults if not present
             featured_headline: (extractedContent as any)?.featured_headline || 'Featured Products',
             featured_subheadline: (extractedContent as any)?.featured_subheadline || `Take a look at some of our recent work at ${submission.business_name}`,
-            featured_products: resolvedProducts.length > 0 ? resolvedProducts : generateDefaultFeaturedProducts(submission.business_name, submission.business_type, photos.length),
+            // The defaults branch is machine-written down to the customer names
+            // (see generateDefaultFeaturedProducts), so it goes through the same
+            // guard as the models do. `resolvedProducts` derives from
+            // extractedContent, which the stored-content pass above already
+            // filtered.
+            featured_products: resolvedProducts.length > 0
+                ? resolvedProducts
+                : guardGenerated('default featured products', generateDefaultFeaturedProducts(submission.business_name, submission.business_type, photos.length)),
             featured_images: resolvedFeaturedImages.length > 0 ? resolvedFeaturedImages : undefined,
             // Featured CTA fields for style 4
             featured_cta_text: (extractedContent as any)?.featured_cta_text,
@@ -883,12 +976,39 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                     : generatedHtml + __styleTag)
         }
 
+        // ── What the admin is told about the guard ────────────────────
+        // The count is the whole point of this block. A creator-funnel
+        // recording can be full of genuine customer quotes and every one of
+        // them is stripped (nothing on that path can verify a quote), leaving a
+        // page with no testimonials band and — until this — no hint that the
+        // recording had anything quotable in it. An admin who doesn't know
+        // can't type the real words back in.
+        //
+        // The message ships from here rather than from the UI because the route
+        // is the only place that knows WHICH strip fired and therefore what the
+        // admin should do next. The caller renders `message` verbatim.
+        const testimonialGuard = {
+            /** false → this business supplied no testimonial words, so the guard was live. */
+            sourced: testimonialsAreSourced,
+            removed: guardRemoved.generated + guardRemoved.stored,
+            removedFromGenerated: guardRemoved.generated,
+            removedFromStored: guardRemoved.stored,
+            message: [
+                guardRemoved.generated > 0
+                    ? `${guardRemoved.generated} customer quote${guardRemoved.generated === 1 ? '' : 's'} written from the interview ${guardRemoved.generated === 1 ? 'was' : 'were'} removed — nothing in this submission records who said ${guardRemoved.generated === 1 ? 'it' : 'them'}. If the recording has real quotes, type them into the Testimonials block and save; typed quotes are kept.`
+                    : '',
+                guardRemoved.stored > 0
+                    ? `${guardRemoved.stored} stored customer quote${guardRemoved.stored === 1 ? '' : 's'} ${guardRemoved.stored === 1 ? 'was' : 'were'} removed from the saved content — machine-written, not supplied by the business.`
+                    : '',
+            ].filter(Boolean).join(' ') || undefined,
+        }
+
         // PREVIEW mode: hand the built HTML back to the editor's "Preview my site"
         // WITHOUT persisting anything — no generatedWebsites / websiteContent upsert,
         // no publish, no touch to the live site. Same assembly + build as a real
         // save, so what the admin previews is exactly what Save will produce.
         if (preview) {
-            return NextResponse.json({ success: true, html: generatedHtml })
+            return NextResponse.json({ success: true, html: generatedHtml, testimonialGuard })
         }
 
         // Save to Convex using mutations
@@ -1081,6 +1201,7 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                 extracted_content: contentWithContact,
                 customizations: finalCustomizations
             },
+            testimonialGuard,
             message: 'Website generated successfully'
         })
 
@@ -1121,7 +1242,12 @@ function generateDefaultFeaturedProducts(businessName: string, businessType: str
 
     const templates = productTemplates[businessType.toLowerCase()] || productTemplates['default']
 
-    // Generate projects with testimonials
+    // Generate projects with testimonials.
+    // These names and quotes are invented — nobody named below is a customer of
+    // anything. The caller runs the result through the fabricated-testimonial
+    // guard, which strips `testimonial` outright unless the business actually
+    // supplied testimonial words, so they reach a page only when they have been
+    // replaced by real ones. Do not read them as safe defaults.
     const testimonialAuthors = ['Maria Santos', 'Juan Dela Cruz', 'Ana Reyes', 'Carlo Mendoza', 'Lisa Garcia']
     const testimonialQuotes = [
         `${businessName} exceeded all our expectations. The attention to detail and professionalism was outstanding from start to finish.`,

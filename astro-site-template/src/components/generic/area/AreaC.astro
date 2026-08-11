@@ -8,8 +8,11 @@ const body = area.body || 'Describe the area you serve. Edit in the Service area
 const places: string[] = Array.isArray(area.places) && area.places.length ? area.places : [];
 const creds = content.credentials || {};
 const credTag = creds.tag || 'Credentials';
-const credHeadline = creds.headline || 'Licensed. Insured.';
+// "Licensed. Insured." is a checkable claim about a real business — never
+// assert it by default. The credentials column hides unless the owner fills it.
+const credHeadline = creds.headline || '';
 const credItems: Array<{ key: string; value: string; note: string }> = Array.isArray(creds.items) && creds.items.length ? creds.items : [];
+const hasCreds = Boolean(credHeadline) || credItems.length > 0;
 ---
 <section class="sec" id="area" style="padding-top:0;">
   <div class="wrap split2">
@@ -23,9 +26,10 @@ const credItems: Array<{ key: string; value: string; note: string }> = Array.isA
         ))}
       </div>
     </div>
+    {hasCreds && (
     <div>
       <span class="sec-tag reveal" data-field="credentials.tag">{credTag}</span>
-      <h2 class="reveal" data-field="credentials.headline" style="font-size:clamp(34px,4.4vw,52px);">{credHeadline}</h2>
+      {credHeadline && <h2 class="reveal" data-field="credentials.headline" style="font-size:clamp(34px,4.4vw,52px);">{credHeadline}</h2>}
       <div class="cred-grid">
         {credItems.map((it: any, i: number) => (
           <div class="cbadge reveal" style={i % 2 === 1 ? 'transition-delay:.08s;' : ''}>
@@ -36,6 +40,7 @@ const credItems: Array<{ key: string; value: string; note: string }> = Array.isA
         ))}
       </div>
     </div>
+    )}
   </div>
 </section>
 <style>

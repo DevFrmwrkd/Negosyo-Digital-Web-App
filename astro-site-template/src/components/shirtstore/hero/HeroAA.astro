@@ -49,7 +49,9 @@ const tag = hero.tag || '';
           {cta2Text && <a class="btn btn-ghost" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
         </div>
       </div>
-      {rating && <div class="heroAA-trust">Rated<b data-field="hero.rating">{rating}</b>kept live on Google</div>}
+      {/* Show the owner's rating verbatim — the old "kept live on Google"
+          suffix sourced it to a Google profile nothing here verifies. */}
+      {rating && <div class="heroAA-trust">Rated<b data-field="hero.rating">{rating}</b></div>}
     </div>
   </div>
 </section>
