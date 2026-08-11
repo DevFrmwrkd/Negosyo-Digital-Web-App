@@ -67,15 +67,12 @@ export async function GET(request: NextRequest) {
             const customDomain = submissionAny.requestedDomain as string | undefined
 
             let referenceCode = submission.paymentReference || 'ND-XXXX-XXXX'
-            let paymentLink = '#'
             try {
                 const token = await fetchQuery(api.paymentTokens.getBySubmissionId, {
                     submissionId: submissionId as Id<'submissions'>,
                 })
                 if (token) {
                     referenceCode = token.referenceCode
-                    const { getPaymentConfig } = await import('@/lib/payment/config')
-                    paymentLink = getPaymentConfig().getPaymentLink(token.token)
                 }
             } catch {
                 // Preview-only — placeholder is fine if token lookup fails
@@ -85,7 +82,7 @@ export async function GET(request: NextRequest) {
                 businessName: submission.businessName,
                 businessOwnerName: submission.ownerName,
                 amount: submission.amount ?? 0,
-                paymentLink,
+                websiteUrl: publishedUrl || undefined,
                 referenceCode,
                 platformEmail: process.env.WISE_EMAIL,
                 customDomain,

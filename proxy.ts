@@ -21,6 +21,11 @@ const isPublicRoute = createRouteMatcher([
     '/knowledge(.*)',
     '/help-faq(.*)',
     '/contact(.*)',
+    // The owner-intake funnel. Anonymous by design: a business owner never signs
+    // up, and the email they type on step 1 is the only channel back to them.
+    // Without this entry the redirect below sends them to /login and the funnel
+    // has no entrance at all.
+    '/start(.*)',
     // Called server-to-server from Convex (internal.submissions.transcribeMedia)
     // using the X-Internal-Secret header for auth — no Clerk cookie present.
     // The route handler enforces either a valid Clerk session OR a matching

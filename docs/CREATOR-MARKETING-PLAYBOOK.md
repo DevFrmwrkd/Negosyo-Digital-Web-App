@@ -211,7 +211,7 @@ There's always someone cheaper. What we offer for ₱1,000 includes:
 - Custom AI-generated content (not a template they fill in)
 - Professional photos enhanced via AI
 - Hosting + SSL + 24/7 uptime
-- Content edits within 7 days post-launch
+- Free edits for the first year — they contact Tendso and we make the change for them
 - Optional custom domain for ₱500 more
 
 Be honest if a competitor is genuinely cheaper for their use case. Don't fight on price alone — fight on what's included and how stable the result is.
@@ -275,7 +275,7 @@ A: Show your **Certificate of Completion** in the Profile tab (proof you're a Ce
 A: No. The AI handles Filipino and Taglish. The interview can be in any language the owner is comfortable in — the AI transcribes and the resulting site uses the same language tone.
 
 **Q: What if the owner wants edits after launch?**
-A: Within 7 days post-launch, edits are free. After that, they can request changes via support.
+A: Edits are free for the first year — they contact Tendso and we make the change for them.
 
 **Q: Can the owner cancel after payment?**
 A: Refunds within 7 days if the website hasn't gone live yet. After live, no refunds — the work is done. Be honest about this when pitching.

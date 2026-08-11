@@ -1,6 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import {
   ArrowLeft,
   RefreshCw,
@@ -17,6 +21,7 @@ import {
   MailWarning,
   Coins,
   ClipboardCheck,
+  AlertTriangle,
 } from "lucide-react";
 
 type TopActionBarProps = {
@@ -99,6 +104,20 @@ export default function TopActionBar({
   onReject,
   onDelete,
 }: TopActionBarProps) {
+  // Stale-publish signal. A regenerate (every Save in the editor runs one)
+  // resets generatedWebsites.status to 'draft' while publishedUrl stays set —
+  // so `draft + publishedUrl` means the live Worker is still serving the OLD
+  // HTML. Read straight off the reactive row rather than taking a new prop, so
+  // the badge clears by itself the moment the republish lands. Same query the
+  // page already subscribes to, so it costs nothing extra.
+  const params = useParams();
+  const submissionId = (params?.id as string) || "";
+  const website = useQuery(
+    api.generatedWebsites.getBySubmissionId,
+    submissionId ? { submissionId: submissionId as Id<"submissions"> } : "skip"
+  );
+  const publishStale = !!website?.publishedUrl && website?.status === "draft";
+
   // Eligibility
   const canApprove = status === "website_generated" || (status === "in_review" && websiteGenerated);
   const canGenerate = ["in_review", "website_generated", "approved", "deployed"].includes(status);
@@ -134,7 +153,14 @@ export default function TopActionBar({
           >
             {businessName}
           </h1>
-          <p className="text-xs text-neutral-500 hidden sm:block">Submission details</p>
+          {publishStale ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-900">
+              <AlertTriangle className="w-3 h-3" />
+              Live site is out of date — republish to update it
+            </span>
+          ) : (
+            <p className="text-xs text-neutral-500 hidden sm:block">Submission details</p>
+          )}
         </div>
 
         {/* Primary action buttons */}
@@ -233,8 +259,15 @@ export default function TopActionBar({
               onClick={websitePublishedUrl ? onRepublish : onPublish}
               loading={publishingWebsite || republishingWebsite}
               icon={Upload}
-              label={websitePublishedUrl ? "Republish" : "Publish website"}
+              label={
+                websitePublishedUrl
+                  ? publishStale
+                    ? "Republish · changes not live"
+                    : "Republish"
+                  : "Publish website"
+              }
               tone="emerald"
+              attention={publishStale}
             />
           )}
 
@@ -268,12 +301,15 @@ function PrimaryBtn({
   icon: Icon,
   label,
   tone = "emerald",
+  attention = false,
 }: {
   onClick: () => void;
   loading: boolean;
   icon: any;
   label: string;
   tone?: "emerald" | "amber" | "indigo";
+  /** Ring the button when it is the action that fixes a problem (stale live site). */
+  attention?: boolean;
 }) {
   const tones: Record<string, string> = {
     emerald: "bg-amber-600 hover:bg-amber-700 text-white",
@@ -284,7 +320,7 @@ function PrimaryBtn({
     <button
       onClick={onClick}
       disabled={loading}
-      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 min-h-[38px] whitespace-nowrap ${tones[tone]}`}
+      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-semibold text-sm transition-colors disabled:opacity-50 min-h-[38px] whitespace-nowrap ${tones[tone]}${attention ? " ring-2 ring-amber-300 ring-offset-1" : ""}`}
     >
       {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
       <span className="hidden sm:inline">{label}</span>

@@ -8,6 +8,27 @@ import { CUSTOM_DOMAIN_ADDON, formatPHP } from '@/lib/pricing'
 
 const paymentConfig = getPaymentConfig()
 
+/**
+ * Entity-encode a value before it is interpolated into the markup below.
+ *
+ * WHY: since /start exists, `businessName` / `businessOwnerName` / the owner's
+ * email reach these templates from `submitOwnerIntake` — a PUBLIC, unauthenticated
+ * Convex mutation — and the intake-received email is scheduled to a caller-supplied
+ * address with no admin in the loop. Raw interpolation would let anyone put their
+ * own HTML (a phishing link, say) inside a DKIM-signed email from our verified
+ * from-address. Every runtime string below is therefore treated as untrusted text,
+ * never as markup. Covers both text nodes and quoted attribute values (href, title).
+ */
+function escapeHtml(value: string | undefined | null): string {
+    if (!value) return ''
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+}
+
 export function getPaymentConfirmationEmailHtml(params: {
     businessName: string
     businessOwnerName: string
@@ -16,9 +37,14 @@ export function getPaymentConfirmationEmailHtml(params: {
     wiseEmail?: string
     customDomain?: string // If set, shows "domain being configured" notice
 }): string {
-    const { businessName, businessOwnerName, websiteUrl, amount, wiseEmail: customWiseEmail, customDomain } = params
+    const { amount, wiseEmail: customWiseEmail } = params
+    // Escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const websiteUrl = escapeHtml(params.websiteUrl)
+    const customDomain = escapeHtml(params.customDomain)
     
-    const wiseEmail = customWiseEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
+    const wiseEmail = escapeHtml(customWiseEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com')
 
     return `
 <!DOCTYPE html>
@@ -145,7 +171,7 @@ export function getPaymentConfirmationEmailHtml(params: {
                     <tr>
                         <td style="padding:28px 40px 0;">
                             <p style="margin:0;font-size:16px;color:#a1a1aa;line-height:1.7;">
-                                Thank you for choosing Tendso! Your business is now online and accessible to everyone. If you need any changes or support, don't hesitate to reach out.
+                                Thank you for choosing Tendso! Your business is now online and accessible to everyone. <strong style="color:#f5f5f5;">Free edits for your first year.</strong> Tell us what you want changed and we'll make it for you.
                             </p>
                         </td>
                     </tr>
@@ -179,7 +205,11 @@ export function getPaymentLinkEmailHtml(params: {
     businessName: string
     businessOwnerName: string
     amount: number
-    paymentLink: string
+    // The published Cloudflare URL. Publish always runs BEFORE this email
+    // (app/api/publish-website/route.ts writes status:'deployed'; markEmailSent
+    // stamps pending_payment afterwards), so by the time this renders the site
+    // is genuinely live — the bill arrives with the thing it is billing for.
+    websiteUrl?: string
     referenceCode: string
     platformEmail?: string
     customDomain?: string
@@ -187,13 +217,28 @@ export function getPaymentLinkEmailHtml(params: {
     // itemized breakdown correctly. Falls back to the flat CUSTOM_DOMAIN_ADDON
     // only for legacy submissions that predate real-domain pricing.
     domainCostPHP?: number
-    editMyWebsiteUrl?: string // Owner-portal claim link → "Edit my website" button
+    /**
+     * @deprecated Accepted but IGNORED. This used to render an "Edit my website"
+     * button pointing at the owner portal. There is no self-serve owner editor —
+     * edits are requested via /contact and Tendso makes the change — so the button
+     * was removed rather than left one auth fix away from mailing customers a link
+     * to a portal that cannot deliver. The field stays on the type only so existing
+     * callers (lib/email/service.ts, app/api/send-website-email/route.ts) keep
+     * compiling; delete it there and here together.
+     */
+    editMyWebsiteUrl?: string
 }): string {
-    const { businessName, businessOwnerName, amount, referenceCode, platformEmail, customDomain, domainCostPHP, editMyWebsiteUrl } = params
+    const { amount, platformEmail, domainCostPHP } = params
+    // Escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const websiteUrl = escapeHtml(params.websiteUrl)
+    const referenceCode = escapeHtml(params.referenceCode)
+    const customDomain = escapeHtml(params.customDomain)
     // Real domain charge for the line-item split; the website-package line is the remainder.
     const domainLine = domainCostPHP && domainCostPHP > 0 ? domainCostPHP : CUSTOM_DOMAIN_ADDON
     const websiteLine = amount - domainLine
-    const wiseEmail = platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
+    const wiseEmail = escapeHtml(platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com')
 
     return `
 <!DOCTYPE html>
@@ -230,6 +275,32 @@ export function getPaymentLinkEmailHtml(params: {
                             </p>
                         </td>
                     </tr>
+
+                    ${websiteUrl ? `
+                    <!-- See your website — shown before the amount, deliberately -->
+                    <tr>
+                        <td style="padding:24px 40px 0;text-align:center;">
+                            <p style="margin:0 0 14px;font-size:14px;color:#6b7280;">Here is what we built for you:</p>
+                            <!--[if mso]>
+                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${websiteUrl}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="17%" fillcolor="#E4B05E">
+                                <center style="color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;">See your website &rarr;</center>
+                            </v:roundrect>
+                            <![endif]-->
+                            <!--[if !mso]><!-->
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                                <tr>
+                                    <td style="border-radius:8px;background:linear-gradient(135deg,#C89548,#E4B05E);">
+                                        <a href="${websiteUrl}" target="_blank" style="display:block;padding:14px 32px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.3px;font-family:sans-serif;">
+                                            See your website &rarr;
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!--<![endif]-->
+                            <p style="margin:12px 0 0;font-size:12px;color:#9ca3af;word-break:break-all;">${websiteUrl}</p>
+                        </td>
+                    </tr>
+                    ` : ''}
 
                     <!-- Amount Box -->
                     <tr>
@@ -394,16 +465,15 @@ export function getPaymentLinkEmailHtml(params: {
                             </table>
                         </td>
                     </tr>
-                    ${editMyWebsiteUrl ? `
-                    <!-- Edit my website (owner portal claim link) -->
+                    <!-- Edits policy — same wording as every other Tendso surface -->
                     <tr>
                         <td style="padding:8px 40px 24px;text-align:center;">
-                            <p style="margin:0 0 12px;font-size:14px;color:#374151;">Want to update your text, photos, or details yourself?</p>
-                            <a href="${editMyWebsiteUrl}" style="display:inline-block;padding:12px 28px;background:#ffffff;border:2px solid #E4B05E;color:#92400e;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;">✏️ Edit my website</a>
-                            <p style="margin:10px 0 0;font-size:12px;color:#9ca3af;">Signs you in with this email — no password needed.</p>
+                            <p style="margin:0;font-size:14px;color:#374151;line-height:1.7;">
+                                <strong>Free edits for your first year.</strong> Tell us what you want changed and we&rsquo;ll make it for you &mdash; just <a href="https://www.tendso.com/contact" style="color:#E4B05E;font-weight:600;text-decoration:none;">contact us</a>.
+                            </p>
                         </td>
                     </tr>
-                    ` : ''}
+
                     <!-- Footer -->
                     <tr>
                         <td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
@@ -432,18 +502,22 @@ export function getPaymentLinkEmailHtml(params: {
     submissionId: string
     paymentReference?: string
 }): string {
-    const { businessName, businessOwnerName, websiteUrl, amount, submissionId } = params
+    const { amount, submissionId } = params
+    // Escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const websiteUrl = escapeHtml(params.websiteUrl)
 
-    const wiseEmail = paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
+    const wiseEmail = escapeHtml(paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com')
     // INTENTIONAL: the default stays 'Negosyo Digital' because this is the
     // LEGAL ACCOUNT NAME registered on Wise (the payment processor). Customers
     // see this string in payment-instruction emails and must match it exactly
     // when sending money — Wise will reject mismatched payee names. Flip this
     // to 'Tendso' (or set the WISE_ACCOUNT_NAME env var) ONLY after the Wise
     // account itself has been renamed to Tendso. See the 2026 rebrand doc.
-    const wiseAccountName = process.env.WISE_ACCOUNT_NAME || 'Negosyo Digital'
+    const wiseAccountName = escapeHtml(process.env.WISE_ACCOUNT_NAME || 'Negosyo Digital')
     // Use the auto-generated payment reference code, or fallback to old format
-    const reference = params.paymentReference || submissionId.substring(0, 8).toUpperCase()
+    const reference = escapeHtml(params.paymentReference || submissionId.substring(0, 8).toUpperCase())
 
     return `
 <!DOCTYPE html>
@@ -680,7 +754,11 @@ export function getDomainLiveEmailHtml(params: {
     customDomain: string
     expiresAt: number
 }): string {
-    const { businessName, businessOwnerName, customDomain, expiresAt } = params
+    const { expiresAt } = params
+    // Escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const customDomain = escapeHtml(params.customDomain)
     const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -770,7 +848,13 @@ export function getWithdrawalStatusEmailHtml(params: {
     referenceCode?: string
     submittedAt: number
 }): string {
-    const { creatorName, amount, statusLabel, statusDescription, isFinal, referenceCode, submittedAt } = params
+    const { amount, isFinal, submittedAt } = params
+    // creatorName is self-set profile text and statusLabel/statusDescription are
+    // operator-supplied; escaped at the top so no site below can be missed.
+    const creatorName = escapeHtml(params.creatorName)
+    const statusLabel = escapeHtml(params.statusLabel)
+    const statusDescription = escapeHtml(params.statusDescription)
+    const referenceCode = escapeHtml(params.referenceCode)
     const submittedDate = new Date(submittedAt).toLocaleDateString('en-US', {
         year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
     })
@@ -866,7 +950,10 @@ export function getDomainSetupInProgressEmailHtml(params: {
     businessOwnerName: string
     customDomain: string
 }): string {
-    const { businessName, businessOwnerName, customDomain } = params
+    // Escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const customDomain = escapeHtml(params.customDomain)
     return [
         '<!DOCTYPE html>',
         '<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">',
@@ -902,7 +989,11 @@ export function getDomainRenewalReminderEmailHtml(params: {
     customDomain: string
     expiresAt: number
 }): string {
-    const { businessName, businessOwnerName, customDomain, expiresAt } = params
+    const { expiresAt } = params
+    // Escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const customDomain = escapeHtml(params.customDomain)
     const expiryDate = new Date(expiresAt).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -961,16 +1052,18 @@ export function getPaymentFollowUpEmailHtml(params: {
     isManual?: boolean
 }): string {
     const {
-        businessName,
-        businessOwnerName,
-        websiteUrl,
         amount,
-        referenceCode,
         hoursLeft = 24,
         isManual = false,
     } = params
+    // Escaped at the top so no interpolation site below can be missed —
+    // including the `intro` strings, which are markup too.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const websiteUrl = escapeHtml(params.websiteUrl)
+    const referenceCode = escapeHtml(params.referenceCode)
 
-    const wiseEmail = paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com'
+    const wiseEmail = escapeHtml(paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com')
     const headlineTone = isManual ? "We're following up on your website" : 'Final reminder — your website goes offline soon'
     const intro = isManual
         ? `We're checking in on <strong style="color:#C89548;">${businessName}</strong>'s website. It's been live and waiting for you. Once we receive payment, your website stays live permanently — no monthly fees, no contracts.`
@@ -1119,6 +1212,158 @@ export function getPaymentFollowUpEmailHtml(params: {
                         <td style="padding:0 40px 32px;">
                             <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.7;">
                                 Already paid? Send us a quick screenshot at <a href="mailto:${wiseEmail}" style="color:#E4B05E;font-weight:600;text-decoration:none;">${wiseEmail}</a> and we'll mark you paid right away.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+                            <p style="margin:0 0 8px;font-size:14px;color:#6b7280;">
+                                Questions? Reply to this email or contact us at <a href="mailto:${wiseEmail}" style="color:#E4B05E;font-weight:600;text-decoration:none;">${wiseEmail}</a>
+                            </p>
+                            <p style="margin:0;font-size:12px;color:#9ca3af;">
+                                &copy; ${new Date().getFullYear()} Tendso. The Thinking Ends Here. So the work doesn't..
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>
+    `
+}
+
+// ==================== INTAKE RECEIVED EMAIL ====================
+// Sent within a minute of an owner completing /start, scheduled from
+// convex/ownerIntake's submitOwnerIntake.
+//
+// WHY IT EXISTS: the payment email cannot fire until the admin has reviewed,
+// generated, picked a template, approved and published — 48-72h of total
+// silence. On the creator funnel that silence was invisible because the creator
+// was standing in the shop closing the loop verbally. With the creator removed,
+// the owner's first contact would otherwise be a bill for a website nobody ever
+// told them was being built.
+//
+// Deliberately promises NOTHING that does not exist: no portal, no account, no
+// editor, no status page. Replying to this email is the only channel back, and
+// saying so is the truth. Style mirrors getPaymentLinkEmailHtml (white card,
+// gold header) so the email that follows it looks like the same sender.
+
+export function getIntakeReceivedEmailHtml(params: {
+    businessName: string
+    businessOwnerName: string
+    amount: number
+    platformEmail?: string
+}): string {
+    const { amount, platformEmail } = params
+    // The one template whose inputs reach us with NO admin in between (see
+    // escapeHtml) — escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+
+    const wiseEmail = escapeHtml(platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com')
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>We got your details — ${businessName}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6;">
+        <tr>
+            <td align="center" style="padding:40px 16px;">
+
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+
+                    <!-- Header (matches payment-link email) -->
+                    <tr>
+                        <td style="background-color:#E4B05E;padding:32px 40px;text-align:center;">
+                            <p style="margin:0 0 4px;font-size:13px;color:rgba(255,255,255,0.85);font-weight:600;letter-spacing:1px;text-transform:uppercase;">Tendso</p>
+                            <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;line-height:1.25;">We got your details!</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Greeting -->
+                    <tr>
+                        <td style="padding:32px 40px 0;">
+                            <p style="margin:0 0 16px;font-size:18px;color:#111827;line-height:1.6;">
+                                Hi <strong>${businessOwnerName}</strong>,
+                            </p>
+                            <p style="margin:0;font-size:16px;color:#374151;line-height:1.7;">
+                                Thank you — everything you sent for <strong style="color:#E4B05E;">${businessName}</strong> arrived safely, and we have started building your website.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Timeline box -->
+                    <tr>
+                        <td style="padding:24px 40px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;">
+                                <tr>
+                                    <td style="padding:24px;text-align:center;">
+                                        <p style="margin:0 0 4px;font-size:14px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Your Website Will Be Ready In</p>
+                                        <p style="margin:0;font-size:40px;color:#C89548;font-weight:800;">48&ndash;72 hours</p>
+                                        <p style="margin:6px 0 0;font-size:12px;color:#6b7280;">We will email you the moment it is done.</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- What happens next -->
+                    <tr>
+                        <td style="padding:0 40px 32px;">
+                            <h2 style="margin:0 0 16px;font-size:18px;color:#111827;font-weight:700;">What Happens Next</h2>
+
+                            <!-- Step 1 -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:12px;">
+                                <tr>
+                                    <td valign="top" width="36"><div style="width:28px;height:28px;background-color:#E4B05E;border-radius:50%;text-align:center;line-height:28px;color:#ffffff;font-weight:800;font-size:14px;">1</div></td>
+                                    <td style="padding-left:10px;"><p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Our team builds your website from the answers and photos you sent. <strong>Nothing else is needed from you right now.</strong></p></td>
+                                </tr>
+                            </table>
+                            <!-- Step 2 -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-bottom:12px;">
+                                <tr>
+                                    <td valign="top" width="36"><div style="width:28px;height:28px;background-color:#E4B05E;border-radius:50%;text-align:center;line-height:28px;color:#ffffff;font-weight:800;font-size:14px;">2</div></td>
+                                    <td style="padding-left:10px;"><p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Within <strong>48&ndash;72 hours</strong> we email you the <strong>link to your finished website</strong>, so you can open it and see it for yourself.</p></td>
+                                </tr>
+                            </table>
+                            <!-- Step 3 -->
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                                <tr>
+                                    <td valign="top" width="36"><div style="width:28px;height:28px;background-color:#E4B05E;border-radius:50%;text-align:center;line-height:28px;color:#ffffff;font-weight:800;font-size:14px;">3</div></td>
+                                    <td style="padding-left:10px;"><p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">That same email carries the payment instructions — <strong>₱${amount.toLocaleString('en-PH')}</strong>, payable from GCash, Maya, or any bank app.</p></td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Price note -->
+                    <tr>
+                        <td style="padding:0 40px 24px;">
+                            <div style="padding:16px 20px;background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+                                <p style="margin:0;font-size:15px;color:#1e40af;line-height:1.6;">
+                                    💡 <strong>Nothing to pay today.</strong> The price is <strong>₱${amount.toLocaleString('en-PH')}</strong>, one time — no monthly fees, no contract — and you only pay after you have seen your finished website.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Corrections -->
+                    <tr>
+                        <td style="padding:0 40px 32px;">
+                            <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.7;">
+                                Spotted a mistake in your business name, address, or phone number? Just reply to this email and we will fix it before your website is built.
                             </p>
                         </td>
                     </tr>

@@ -37,7 +37,7 @@ const businessSteps = [
   {
     icon: Globe,
     title: "Live in 24–48 hours",
-    desc: "AI builds your real coded website on a free subdomain. You pay ₱999 only when it's live.",
+    desc: "AI builds your real coded website and puts it online on a free web address. You pay ₱999 only when it's live.",
   },
 ];
 
@@ -108,7 +108,7 @@ export default function AboutPage() {
                 Your business, online in 48 hours.
               </h2>
               <p className="text-neutral-700 leading-relaxed mb-5">
-                Real coded website (not Wix or template), mobile-optimized, hosted on a free subdomain.
+                Real coded website (not Wix or template), mobile-optimized, hosted free on its own web address.
                 One-time ₱999. No monthly fees. You only pay when it&apos;s live.
               </p>
               <a
@@ -284,10 +284,10 @@ export default function AboutPage() {
               "Real coded website (not Wix or template)",
               "Mobile-responsive — works on every device",
               "Professional design tailored to your business",
-              "Free subdomain: yourbusiness.negosyodigital.ph",
+              "Your own live web address, included free",
               "AI-enhanced photos from your phone shots",
               "Hosted with SSL · Fast loading",
-              "Free edits within 7 days of launch",
+              "Free edits for the first year",
               "Live in 24–48 hours",
               "One-time ₱999 — no monthly fees",
             ].map((item) => (
@@ -304,6 +304,18 @@ export default function AboutPage() {
               </li>
             ))}
           </ul>
+
+          <p className="mt-8 max-w-2xl mx-auto text-center text-neutral-700 text-[15px] leading-relaxed">
+            Need something changed after your site is live? Just{" "}
+            <Link
+              href="/contact"
+              className="font-semibold text-amber-700 underline underline-offset-4 hover:text-amber-800"
+            >
+              contact us
+            </Link>{" "}
+            and we make the change for you — free for your first year. Prefer your own .com?
+            That&apos;s ₱1,499, with the first year of the domain included.
+          </p>
         </section>
 
         {/* FINAL CTA */}

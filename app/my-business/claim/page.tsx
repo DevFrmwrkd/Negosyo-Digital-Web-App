@@ -1,8 +1,15 @@
 "use client";
 
 /**
- * Claim landing — the target of the "Edit my website" email button.
+ * Claim landing — was the target of the "Edit my website" email button.
  * URL: /my-business/claim?token=<64hex>
+ *
+ * THAT BUTTON NO LONGER EXISTS. It was removed from the payment email because
+ * there is no self-serve owner editor: edits are REQUESTED via /contact and
+ * Tendso makes the change (see app/my-business/[submissionId]/page.tsx). No
+ * claim link is minted or sent anywhere in the repo today, so this route is
+ * effectively unreachable — kept only because it is still a valid target for a
+ * token, and because deleting it would 404 an old link. Do not advertise it.
  *
  * Flow: the owner must be signed in (Clerk passwordless, with the email the site
  * was sold to). claimWebsite enforces that the signed-in email matches the
@@ -59,7 +66,7 @@ function ClaimInner() {
             <ClaimMessage
                 icon="error"
                 title="This link can't be used"
-                body="It may have expired or already been used. Open the latest email from Tendso, or ask us to resend your link."
+                body="It may have expired or already been used. Message us from the Contact page on tendso.com and we'll help."
             />
         );
     }

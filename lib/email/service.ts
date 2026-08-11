@@ -6,6 +6,8 @@
  * preserve their original signatures so consumer routes
  * (app/api/send-*-email/route.ts + convex/domains.ts callers) need no
  * changes. The only real swap is what happens inside `sendEmail`.
+ * (`sendIntakeReceivedEmail` is a ninth, added for the /start owner-intake
+ * funnel — it never had an SMTP version, so there was nothing to preserve.)
  *
  * Env vars:
  *   - RESEND_API_KEY     — required. Format `re_xxxxxxxxxxxx…`.
@@ -33,6 +35,7 @@ import {
     getDomainSetupInProgressEmailHtml,
     getDomainRenewalReminderEmailHtml,
     getWithdrawalStatusEmailHtml,
+    getIntakeReceivedEmailHtml,
 } from './templates';
 
 // ── Transport ─────────────────────────────────────────────────────────
@@ -63,6 +66,24 @@ interface SendArgs {
 }
 
 /**
+ * Subject lines are header text, not HTML — entity-encoding them the way
+ * ./templates escapes the body would leak literal `&amp;` into inboxes. So
+ * strip markup instead, and flatten CR/LF plus every other control character
+ * so a caller-supplied value can never terminate the header.
+ *
+ * Every subject below interpolates a `businessName` (and the withdrawal one a
+ * `statusLabel`), and since /start exists those reach us from an unauthenticated
+ * submitter — see the escapeHtml note in ./templates for the full story.
+ */
+function sanitizeHeader(value: string): string {
+    return value
+        .replace(/<[^>]*>/g, '')
+        .replace(/[\u0000-\u001F\u007F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/**
  * Single source of truth for outbound mail. Every named function below
  * funnels through here so the from / reply_to / error-handling logic is
  * defined exactly once.
@@ -77,10 +98,12 @@ async function sendEmail(args: SendArgs): Promise<{ success: true; messageId: st
     const replyTo = process.env.RESEND_REPLY_TO;
     const client = getClient();
 
+    // Sanitized here rather than at each of the nine call sites — this is the
+    // choke point every one of them already funnels through.
     const result = await client.emails.send({
         from,
-        to: args.to,
-        subject: args.subject,
+        to: sanitizeHeader(args.to),
+        subject: sanitizeHeader(args.subject),
         html: args.html,
         ...(replyTo ? { replyTo } : {}),
     });
@@ -98,6 +121,42 @@ async function sendEmail(args: SendArgs): Promise<{ success: true; messageId: st
 }
 
 // ── Named functions (signatures unchanged from nodemailer version) ────
+
+interface IntakeReceivedEmailData {
+    businessName: string;
+    businessOwnerName: string;
+    businessOwnerEmail: string;
+    amount: number;
+    platformEmail?: string;
+}
+
+/**
+ * The first email an owner-intake customer ever receives — sent within a minute
+ * of them finishing /start, before any admin has touched the row.
+ *
+ * Everything else in this file fires from the admin's own clicks, which on the
+ * owner path is 48-72h away. Without this one the owner's first contact from us
+ * is a bill. See getIntakeReceivedEmailHtml for what it does and does not
+ * promise.
+ */
+export async function sendIntakeReceivedEmail(data: IntakeReceivedEmailData) {
+    try {
+        const html = getIntakeReceivedEmailHtml({
+            businessName: data.businessName,
+            businessOwnerName: data.businessOwnerName,
+            amount: data.amount,
+            platformEmail: data.platformEmail,
+        });
+        return await sendEmail({
+            to: data.businessOwnerEmail,
+            subject: `We got your details — building ${data.businessName}'s website now`,
+            html,
+        });
+    } catch (error: any) {
+        console.error('Error in sendIntakeReceivedEmail:', error);
+        throw error;
+    }
+}
 
 interface ApprovalEmailData {
     businessName: string;
@@ -135,7 +194,7 @@ interface PaymentLinkEmailData {
     businessOwnerName: string;
     businessOwnerEmail: string;
     amount: number;
-    paymentLink: string;
+    websiteUrl?: string; // Published Cloudflare URL → "See your website" button
     referenceCode: string;
     platformEmail?: string;
     customDomain?: string; // If set, template shows a website + domain breakdown
@@ -149,7 +208,7 @@ export async function sendPaymentLinkEmail(data: PaymentLinkEmailData) {
             businessName: data.businessName,
             businessOwnerName: data.businessOwnerName,
             amount: data.amount,
-            paymentLink: data.paymentLink,
+            websiteUrl: data.websiteUrl,
             referenceCode: data.referenceCode,
             platformEmail: data.platformEmail,
             customDomain: data.customDomain,
@@ -336,4 +395,5 @@ export {
     getDomainSetupInProgressEmailHtml,
     getDomainRenewalReminderEmailHtml,
     getWithdrawalStatusEmailHtml,
+    getIntakeReceivedEmailHtml,
 };

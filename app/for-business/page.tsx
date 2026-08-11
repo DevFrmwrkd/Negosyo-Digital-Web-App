@@ -25,10 +25,14 @@ function Check() {
 }
 
 /**
- * BusinessHero — owner-facing, WP style, data-true. No owner signup (CTAs are
- * info anchors), no "48 hours" (48–72h), no "our subdomain" (that wildcard
- * doesn't exist), no live-map. Reuses the home hero copy + the pricing standard
- * features as the deliverables list.
+ * BusinessHero — owner-facing, WP style, data-true. No "48 hours" (48–72h), no
+ * "our subdomain" (that wildcard doesn't exist), no live-map. Reuses the home
+ * hero copy + the pricing standard features as the deliverables list.
+ *
+ * The primary CTA is the entrance to the owner-intake funnel at /start. It used
+ * to be an in-page anchor, back when there was nothing for an owner to do here
+ * but read — still no signup, and still no account at any point, but the owner
+ * now supplies their own intake instead of waiting for a creator to visit.
  */
 function BusinessHero() {
     const { t } = useT();
@@ -63,11 +67,11 @@ function BusinessHero() {
                         <Lead className="mt-5 max-w-xl">{t("hero.lede")}</Lead>
 
                         <div className="mt-8 flex flex-wrap items-center gap-3">
-                            <a href="#proof" className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">
-                                {t("hero.ctaProof")} <span aria-hidden>→</span>
-                            </a>
-                            <a href="#pricing" className="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-ink/35">
-                                {t("biz.seePrice")}
+                            <Link href="/start" className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">
+                                {t("hero.ctaBusiness")} <span aria-hidden>→</span>
+                            </Link>
+                            <a href="#proof" className="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-ink/35">
+                                {t("hero.ctaProof")}
                             </a>
                         </div>
 

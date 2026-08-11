@@ -79,6 +79,21 @@ export default function AdminDashboard() {
     const [deleting, setDeleting] = useState(false)
     const [deleteResult, setDeleteResult] = useState<{ type: "success" | "error"; message: string } | null>(null)
 
+    // `useSubmissions` flattens each row to a fixed shape and drops
+    // `contentSource`, so read the raw query for the owner-intake flag. Convex
+    // shares one subscription across identical query+args, so this costs nothing
+    // beyond the hook's own call.
+    const rawSubmissions = useQuery(api.submissions.getAllWithCreator, isAdmin ? {} : "skip")
+    const ownerSubmittedIds = useMemo(
+        () =>
+            new Set(
+                (rawSubmissions ?? [])
+                    .filter((s) => s.contentSource === "owner_intake")
+                    .map((s) => s._id as string)
+            ),
+        [rawSubmissions]
+    )
+
     // Analytics data
     const allAnalytics = useQuery(api.analytics.getAllAnalytics, {})
     // Hostinger custom-domain fees the platform paid (deducted from gross earnings)
@@ -641,13 +656,23 @@ export default function AdminDashboard() {
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-5">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                                        <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
-                                                            {submission.creators 
-                                                                ? `${submission.creators.first_name} ${submission.creators.last_name}`.trim() 
-                                                                : "Unknown Creator"}
-                                                        </span>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                                            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                                                                {submission.creators
+                                                                    ? `${submission.creators.first_name} ${submission.creators.last_name}`.trim()
+                                                                    : "Unknown Creator"}
+                                                            </span>
+                                                        </div>
+                                                        {/* The house creator makes an owner-originated row look like any
+                                                            other, so say it out loud: no field visit, no recorded interview. */}
+                                                        {ownerSubmittedIds.has(submission.id) && (
+                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tight w-fit bg-indigo-50 text-indigo-700">
+                                                                <span className="w-1 h-1 rounded-full bg-current" />
+                                                                Owner-submitted
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-5">

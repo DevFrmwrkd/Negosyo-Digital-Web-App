@@ -318,6 +318,13 @@ export default function SubmissionDetailPage() {
           }
         : null;
 
+    // Owner-originated rows come in through the self-serve /start intake and are
+    // attributed to the house creator, so the Creator block looks normal. Flag
+    // them explicitly: there was no field visit and no recorded interview, and
+    // the transcript below is synthesized from the owner's typed answers.
+    // `contentSource` is optional on the schema and only ever set on that path.
+    const isOwnerSubmitted = submissionData?.contentSource === "owner_intake";
+
     useEffect(() => {
         if (!existingWebsite) return;
         // Guard against out-of-order async resolution: two quick saves produce two
@@ -909,6 +916,17 @@ export default function SubmissionDetailPage() {
                     onReject={() => handleStatusUpdate("rejected")}
                     onDelete={() => setShowDeleteModal(true)}
                 />
+            )}
+
+            {/* Sits outside the TopActionBar so it stays visible in the editor
+                tab too, where that bar is hidden. */}
+            {isOwnerSubmitted && (
+                <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-4">
+                    <span className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide bg-indigo-50 text-indigo-800">
+                        <span className="w-2 h-2 rounded-full bg-indigo-500" aria-hidden />
+                        Owner-submitted
+                    </span>
+                </div>
             )}
 
             <div
