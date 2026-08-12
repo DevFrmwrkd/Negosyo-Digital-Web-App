@@ -72,8 +72,11 @@ export default function BusinessPricingSection() {
                             ))}
                         </ul>
 
+                        {/* FUNNEL CLOSED UNTIL LAUNCH — becomes "/start" with the other
+                            three CTAs once Convex is deployed and the house creator row
+                            is seeded. See components/landing/Navbar.tsx for why. */}
                         <Link
-                            href="/start"
+                            href="/for-business"
                             className="mt-8 inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-5 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5"
                         >
                             {t("hero.ctaBusiness")}
