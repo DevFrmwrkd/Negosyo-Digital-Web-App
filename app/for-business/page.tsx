@@ -67,9 +67,15 @@ function BusinessHero() {
                         <Lead className="mt-5 max-w-xl">{t("hero.lede")}</Lead>
 
                         <div className="mt-8 flex flex-wrap items-center gap-3">
-                            <Link href="/start" className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">
+                            {/* FUNNEL CLOSED UNTIL LAUNCH. This becomes
+                                <Link href="/start"> — with the navbar, the pricing card
+                                and CtaSection — once Convex is deployed and the house
+                                creator row is seeded. /start has no invite gate, so
+                                linking it before the backend exists means an owner
+                                types for ten minutes and fails at submit. */}
+                            <a href="#pricing" className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5">
                                 {t("hero.ctaBusiness")} <span aria-hidden>→</span>
-                            </Link>
+                            </a>
                             <a href="#proof" className="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-white px-6 py-3.5 text-sm font-semibold text-ink transition-colors hover:border-ink/35">
                                 {t("hero.ctaProof")}
                             </a>
