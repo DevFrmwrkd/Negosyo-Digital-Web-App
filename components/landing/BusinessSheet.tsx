@@ -5,6 +5,13 @@ import Link from "next/link";
 import type { LiveBusiness } from "./landingData";
 import { ArrowUpRightIcon } from "./landingPrimitives";
 
+/**
+ * Slide-over detail panel for a live client site (map pin / carousel card).
+ *
+ * NOTE: nothing imports this today — it belongs to the ShowcaseSection/LiveMap
+ * surface that RealSitesSection replaced. Kept in sync anyway so it isn't a trap
+ * for whoever renders it next.
+ */
 export default function BusinessSheet({
     business,
     onClose,
@@ -137,8 +144,14 @@ export default function BusinessSheet({
                                     </span>
                                     <span className="arrow"><ArrowUpRightIcon /></span>
                                 </a>
+                                {/* The owner door goes to the intake funnel: someone
+                                    who has just opened a live client site and read it
+                                    is the warmest owner on the site. The old label sent
+                                    them to the creator app, which owners never install —
+                                    they supply their intake at /start and never sign up
+                                    at all. */}
                                 <Link
-                                    href="/for-business"
+                                    href="/start"
                                     className="door door-business"
                                     style={{
                                         display: "flex",
@@ -148,7 +161,7 @@ export default function BusinessSheet({
                                 >
                                     <span>
                                         <span className="meta">Want one of these?</span>
-                                        Get the app to find a creator
+                                        Get a website
                                     </span>
                                     <span className="arrow"><ArrowUpRightIcon /></span>
                                 </Link>

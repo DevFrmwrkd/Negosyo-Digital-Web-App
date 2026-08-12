@@ -4,8 +4,8 @@
  * /start form primitives, in the brand-gold language.
  *
  * Deliberately NOT the creator funnel's `.editorial` shell (app/submit/*) and
- * NOT components/ui/*. /start is linked from /for-business, so it has to look
- * like the page that sent the owner here: warm paper (--khaki), near-black ink,
+ * NOT components/ui/*. /start is linked from the landing surface, so it has to
+ * look like the page that sent the owner here: warm paper (--khaki), near-black ink,
  * one gold accent (--rust), Fraunces for display type, mono for the eyebrows.
  * Straddling the two design systems would read as two different companies
  * between the price and the form.

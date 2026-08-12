@@ -27,7 +27,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useAction, useMutation } from "convex/react";
 import { ConvexError } from "convex/values";
 
@@ -351,7 +350,10 @@ export default function StartPage() {
 
     const handleBack = () => {
         if (step === 1) {
-            router.push("/for-business");
+            // Step 1 has nothing behind it, so Back is the exit: send the owner
+            // to the pitch they came from (`/` — every entrance to this funnel
+            // is on it), never to /start again, which would loop them.
+            router.push("/");
             return;
         }
         if (step === 2) {
@@ -393,7 +395,7 @@ export default function StartPage() {
                 step={step}
                 totalSteps={TOTAL_STEPS}
                 onBack={handleBack}
-                backLabel={step === 1 ? "Back to Tendso for business" : "Back"}
+                backLabel={step === 1 ? "Back to Tendso" : "Back"}
             />
 
             <main className="mx-auto w-full max-w-xl flex-1 px-5 pb-10 pt-8">
@@ -1037,9 +1039,13 @@ export default function StartPage() {
             <footer className="border-t border-ink/10 px-5 py-5 text-center">
                 <p className="text-[13px] text-ink-soft">
                     Questions first?{" "}
-                    <Link href="/for-business" className="font-semibold text-ink underline underline-offset-2">
+                    {/* Deep-links to the explanation itself rather than the top of
+                        `/`: an owner who stalls mid-form wants the answer, not the
+                        pitch again. Plain anchor, like the navbar's home-anchored
+                        links — the hash has to survive the navigation. */}
+                    <a href="/#how-it-works" className="font-semibold text-ink underline underline-offset-2">
                         Read how it works
-                    </Link>
+                    </a>
                 </p>
             </footer>
         </div>

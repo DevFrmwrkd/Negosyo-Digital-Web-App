@@ -20,22 +20,28 @@ export default function CtaSection({
 } = {}) {
     const { t } = useT();
 
+    // Both doors are audience pitches, not forms: "Enter" promises a page that
+    // explains the offering, and the sub-copy describes one. The owner door used
+    // to be /for-business; `/` is that pitch now, so the pairing still holds —
+    // one door per audience, each landing on the page written for them.
     const doors = [
-        { href: "/for-business", kicker: t("cta.doorBiz"), label: t("cta.business"), sub: t("cta.bizSub") },
+        { href: "/", kicker: t("cta.doorBiz"), label: t("cta.business"), sub: t("cta.bizSub") },
         { href: "/for-creators", kicker: t("cta.doorCreator"), label: t("cta.creator"), sub: t("cta.creatorSub") },
     ];
 
     const isBiz = focus === "business";
-    // The owner CTA is the entrance to the intake funnel, not a link to
-    // /for-business: this band renders at the BOTTOM of /for-business, where that
-    // was a self-link — the page appeared to reload and do nothing. Same
-    // destination BusinessPricingSection uses, which also renders on both pages.
-    // The owner CTA is the entrance to the intake funnel, not a link back to the
-    // page it usually renders on.
+    // The owner CTA is the entrance to the intake funnel, not a link to the
+    // owner pitch: this band renders at the BOTTOM of the page carrying that
+    // pitch, where a link to it was a self-link — the page appeared to reload
+    // and do nothing. Same destination BusinessPricingSection uses above it.
     const primaryHref = isBiz ? "/start" : "#app";
     const primaryLabel = isBiz ? t("hero.ctaBusiness") : t("nav.getApp");
     const secondaryLead = isBiz ? t("hero.creatorLead") : t("cta.altBizLead");
-    const secondaryHref = isBiz ? "/for-creators" : "/for-business";
+    // The secondary is the cross-audience nudge, so each side points at the
+    // OTHER audience's pitch, never at that audience's form: a creator reading
+    // /for-creators has seen neither the owner offer nor the price, exactly as
+    // an owner here has seen neither the creator app nor the earnings.
+    const secondaryHref = isBiz ? "/for-creators" : "/";
     const secondaryLabel = isBiz ? t("hero.creatorLink") : t("hero.ctaBusiness");
 
     return (

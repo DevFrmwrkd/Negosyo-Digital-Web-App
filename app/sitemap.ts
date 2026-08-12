@@ -16,8 +16,14 @@ import { SITE_URL } from "@/lib/seo";
 export const revalidate = 3600;
 
 const STATIC_PATHS: Array<{ path: string; priority: number; freq: MetadataRoute.Sitemap[number]["changeFrequency"] }> = [
+    // /for-business is gone (308 → "/", see next.config.ts). A redirecting URL
+    // in a sitemap is a crawl error, and "/" below is the page it became.
+    //
+    // /start is deliberately NOT listed either: it is a four-step intake form
+    // with nothing to index, it is linked from the navbar of every page so
+    // crawlers cannot miss it, and ranking it would land cold search traffic in
+    // a form instead of on the page that explains the offer.
     { path: "/", priority: 1, freq: "weekly" },
-    { path: "/for-business", priority: 0.8, freq: "monthly" },
     { path: "/for-creators", priority: 0.8, freq: "monthly" },
     { path: "/for-field-agents", priority: 0.8, freq: "monthly" },
     { path: "/about", priority: 0.7, freq: "monthly" },

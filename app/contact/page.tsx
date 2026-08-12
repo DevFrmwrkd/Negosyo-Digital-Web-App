@@ -129,9 +129,14 @@ export default function ContactPage() {
                         >
                             {[
                                 {
+                                    // The owner door lands on the pitch, not the intake
+                                    // form: everyone in this grid arrived at /contact
+                                    // with a question, and the other three doors answer
+                                    // one. `/` is where the owner offer is explained
+                                    // now that /for-business is retired.
                                     label: "For business owners",
                                     title: "I own a shop. Get me online.",
-                                    href: "/for-business",
+                                    href: "/",
                                     tone: "business" as const,
                                 },
                                 {

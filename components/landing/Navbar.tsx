@@ -55,9 +55,9 @@ export default function Navbar() {
                         <option value="en">EN</option>
                         <option value="tl">TL</option>
                     </select>
-                    {/* Straight into the intake funnel. This navbar also renders ON
-                        /for-business, where pointing back at /for-business was a
-                        self-link that read as a broken site. */}
+                    {/* Straight into the intake funnel. This navbar renders on every
+                        page including the owner pitch at `/`, where pointing back at
+                        that pitch was a self-link that read as a broken site. */}
                     <Link
                         href="/start"
                         className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"

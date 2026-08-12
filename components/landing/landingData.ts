@@ -14,8 +14,8 @@
  *  │  Creator carousel (auto-scroll)   │  FALLBACK_CREATORS                  │
  *  │  Business pricing tiers           │  BUSINESS_TIERS                     │
  *  │  Creator earning rates            │  CREATOR_EARNINGS                   │
- *  │  FAQ — for-creators tab           │  FAQ_CREATOR                        │
- *  │  FAQ — for-business tab           │  FAQ_BUSINESS                       │
+ *  │  FAQ — creators tab               │  FAQ_CREATOR                        │
+ *  │  FAQ — business tab               │  FAQ_BUSINESS                       │
  *  │  Knowledge-base entries           │  KNOWLEDGE_BASE                     │
  *  │  Testimonials                     │  TESTIMONIALS                       │
  *  │  Map region presets               │  REGIONS                            │

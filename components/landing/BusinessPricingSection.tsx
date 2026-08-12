@@ -11,10 +11,9 @@ import { BASE_PRICE, formatPHP } from "@/lib/pricing";
  * is an OPTIONAL add-on, so per Theo's feedback it's demoted to a note under the
  * one tier rather than shown as a co-equal pricing card — the "+" signals the
  * optional upgrade honestly without headlining it. One-time, no monthly, pay only
- * when live. The CTA points at /start, the owner-intake funnel — this section
- * renders on both `/` and `/for-business`, so it is the price and the entrance in
- * the same card. Owners still never "sign up": /start is anonymous end to end and
- * no account exists at any point.
+ * when live. The CTA points at /start, the owner-intake funnel — so this section
+ * is the price and the entrance in the same card. Owners still never "sign up":
+ * /start is anonymous end to end and no account exists at any point.
  */
 
 function Check() {
