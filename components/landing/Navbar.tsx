@@ -55,15 +55,11 @@ export default function Navbar() {
                         <option value="en">EN</option>
                         <option value="tl">TL</option>
                     </select>
-                    {/* FUNNEL CLOSED UNTIL LAUNCH. This becomes "/start" — together
-                        with the pricing card, CtaSection and the /for-business hero —
-                        once Convex is deployed and the house creator row is seeded.
-                        /start has no invite gate, so linking it before the backend
-                        exists means an owner types for ten minutes and fails at submit.
-                        Note this navbar also renders ON /for-business, so until then it
-                        is a self-link; that is the lesser of the two evils. */}
+                    {/* Straight into the intake funnel. This navbar also renders ON
+                        /for-business, where pointing back at /for-business was a
+                        self-link that read as a broken site. */}
                     <Link
-                        href="/for-business"
+                        href="/start"
                         className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
                     >
                         {t("hero.ctaBusiness")}

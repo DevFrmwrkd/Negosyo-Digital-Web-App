@@ -30,8 +30,9 @@ export default function CtaSection({
     // /for-business: this band renders at the BOTTOM of /for-business, where that
     // was a self-link — the page appeared to reload and do nothing. Same
     // destination BusinessPricingSection uses, which also renders on both pages.
-    // FUNNEL CLOSED UNTIL LAUNCH — /start once Convex is deployed and seeded.
-    const primaryHref = isBiz ? "/for-business" : "#app";
+    // The owner CTA is the entrance to the intake funnel, not a link back to the
+    // page it usually renders on.
+    const primaryHref = isBiz ? "/start" : "#app";
     const primaryLabel = isBiz ? t("hero.ctaBusiness") : t("nav.getApp");
     const secondaryLead = isBiz ? t("hero.creatorLead") : t("cta.altBizLead");
     const secondaryHref = isBiz ? "/for-creators" : "/for-business";
