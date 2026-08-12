@@ -10,6 +10,10 @@ import { Eyebrow, SectionHeading, Lead } from "./ui";
  * (the per-track CTA link). Content is TRUE: owners never "sign up" (a creator
  * comes to them; they only review + pay when live); the creator track is the one
  * real signup. Turnaround is framed as typical, not guaranteed.
+ *
+ * NOTE: nothing imports this today — ProcessSection replaced it on `/` and owns
+ * the same id="how-it-works" anchor. Kept in sync anyway so it isn't a trap for
+ * whoever renders it next.
  */
 
 function Track({
@@ -71,11 +75,14 @@ export default function HowItWorks() {
                 </div>
 
                 <div className="mx-auto mt-12 grid max-w-4xl gap-6 md:grid-cols-2">
+                    {/* The owner track ends in the funnel, not in another pitch:
+                        by the last step the reader has just been told exactly how
+                        it works, and "Get a website" is the thing itself. */}
                     <Track
                         label={t("how.bizLabel")}
                         steps={business}
                         ctaLabel={t("how.bizCta")}
-                        ctaHref="/for-business"
+                        ctaHref="/start"
                     />
                     <Track
                         label={t("how.creatorLabel")}

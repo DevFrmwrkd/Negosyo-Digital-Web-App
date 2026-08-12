@@ -49,8 +49,15 @@ export default function HeroSection() {
                         </p>
 
                         <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                            {/* Straight into the intake funnel. This used to point at
+                                /for-business, which was this same pitch at a second URL;
+                                now that `/` is the only owner page, the primary action is
+                                the thing itself — same destination as the navbar CTA and
+                                the pricing card, which carry the identical label. The
+                                reader who wants the pitch first has #proof beside it and
+                                the whole page below it. */}
                             <Link
-                                href="/for-business"
+                                href="/start"
                                 className="inline-flex items-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_-12px_rgba(27,28,36,0.45)] transition-transform hover:-translate-y-0.5"
                             >
                                 {t("hero.ctaBusiness")}

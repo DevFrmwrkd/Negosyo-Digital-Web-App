@@ -22,7 +22,11 @@ export default function StickyCTA({ focus = "business" }: { focus?: "business" |
     }, []);
 
     const isBiz = focus === "business";
-    const href = isBiz ? "/for-business" : "#app";
+    // The owner pill is the intake funnel itself. It only appears 640px down —
+    // by then the reader has passed the hero and is being asked to act, not to
+    // read another page (and the page it used to point at, /for-business, was
+    // this one's content at a second URL).
+    const href = isBiz ? "/start" : "#app";
     const label = isBiz ? t("hero.ctaBusiness") : t("nav.getApp");
 
     const pill = (
