@@ -2,14 +2,19 @@
 interface Props { content: any; }
 const { content } = Astro.props;
 const why = content.why || content.whyUs || {};
-const tag = why.tag || 'why_northpoint';
+// The old eyebrow carried an invented company name ("northpoint").
+const tag = why.tag || 'why_us';
 const headline = why.headline || '';
 const items = Array.isArray(why.items) && why.items.length > 0 ? why.items : [];
+// Nothing real to list => the whole section stays out of the document
+// rather than rendering an eyebrow and heading over an empty grid.
+const hasItems = items.length > 0;
 ---
+{hasItems && (
 <section class="sec why-sec" id="why">
   <div class="wrap">
     <p class="sec-tag reveal" data-field="why.tag">{tag}</p>
-    <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>}
     <div class="why-grid">
       {items.map((it: any, i: number) => (
         <div class="why-cell reveal">
@@ -23,6 +28,7 @@ const items = Array.isArray(why.items) && why.items.length > 0 ? why.items : [];
     </div>
   </div>
 </section>
+)}
 <style>
   .why-sec { background: var(--bg-2); }
   .why-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 40px; margin-top: 46px; }

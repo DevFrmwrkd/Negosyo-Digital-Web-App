@@ -1,6 +1,24 @@
 ---
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageF actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageF.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'how', 'services', 'top', 'visit', 'work']);
+const ANCHOR_ALIAS: Record<string, string> = { gallery: 'work', location: 'visit' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const locality = hero.kicker || hero.locality || '';
@@ -10,11 +28,16 @@ const headlineLines = Array.isArray(hero.headlineLines) && hero.headlineLines.le
 const thin = hero.thin || hero.sub_kicker || '';
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#visit';
+const cta1Href = onPage(hero.cta1?.href, '#visit');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${layout.contact.phone.replace(/[^0-9+]/g, '')}` : '#');
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${layout.contact.phone.replace(/[^0-9+]/g, '')}` : '#'));
 const ratingBig = hero.rating?.big || '';
 const ratingLabel = hero.rating?.label || '';
+// The rotating seal used to read "Book a chair · Walk-ins welcome · " — a booking
+// policy this template cannot know. It now takes hero.sealText (same field HeroJ
+// uses) and otherwise just circles the business's own name; with neither, the
+// seal is not drawn at all rather than asserting a policy.
+const sealText = hero.sealText || (layout.businessName ? `${layout.businessName} · ` : '');
 const marqueeWords: string[] = Array.isArray(hero.marqueeWords) && hero.marqueeWords.length
   ? hero.marqueeWords
   : [];
@@ -26,12 +49,22 @@ const marqueeDoubled = [...marqueeWords, ...marqueeWords];
   <div class="hero-grid">
     <div class="hero-copy">
       {locality && <div class="hero-locality" data-field="hero.kicker">{locality}</div>}
-      <h1>
-        {headlineLines.map((line: string, i: number) => (
-          <span class="line"><span class={`inner${i === 1 ? ' accent' : ''}`} data-field={`hero.headlineLines.${i}`} set:html={line}></span></span>
-        ))}
-        {thin && <span class="thin" data-field="hero.thin">{thin}</span>}
-      </h1>
+      {/* Guarded: lib/derive-content-defaults.ts emits `headlineLines: []` for a
+          submission with no business name — it deliberately drops the wordmark
+          rather than printing the old 'Your Business' placeholder. An
+          unconditional <h1> then shipped a literal <h1></h1>: a heading element
+          with no heading, which is worse for screen readers and for SEO than
+          the placeholder it replaced. hero.thin is an optional extra line, so
+          it counts too — but the ELEMENT is what is conditional; moving this
+          guard inside the tag brings the empty <h1> straight back. */}
+      {(headlineLines.length > 0 || thin) && (
+        <h1>
+          {headlineLines.map((line: string, i: number) => (
+            <span class="line"><span class={`inner${i === 1 ? ' accent' : ''}`} data-field={`hero.headlineLines.${i}`} set:html={line}></span></span>
+          ))}
+          {thin && <span class="thin" data-field="hero.thin">{thin}</span>}
+        </h1>
+      )}
       {sub && <p class="hero-sub" data-field="hero.sub">{sub}</p>}
       <div class="hero-actions">
         {cta1Text && (
@@ -49,20 +82,24 @@ const marqueeDoubled = [...marqueeWords, ...marqueeWords];
           <div class="bg-img" data-image-field="hero.image" style={heroImage ? `background-image: url('${heroImage}');` : ''}></div>
         </div>
       </div>
-      <div class="hero-seal">
-        <svg class="ring" viewBox="0 0 120 120">
-          <defs><path id="sealpath-f" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" /></defs>
-          <text><textPath href="#sealpath-f" startOffset="0">Book a chair · Walk-ins welcome · </textPath></text>
-        </svg>
-        <div class="core">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M8.1 8.1L20 20M8.1 15.9L20 4M14 12l6 0" /></svg>
+      {sealText && (
+        <div class="hero-seal">
+          <svg class="ring" viewBox="0 0 120 120">
+            <defs><path id="sealpath-f" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0" /></defs>
+            <text><textPath href="#sealpath-f" startOffset="0">{sealText}</textPath></text>
+          </svg>
+          <div class="core">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M8.1 8.1L20 20M8.1 15.9L20 4M14 12l6 0" /></svg>
+          </div>
         </div>
-      </div>
+      )}
       {(ratingBig || ratingLabel) && (
         <div class="hero-tag">
           {ratingBig && <div class="big" data-field="hero.rating.big">{ratingBig}</div>}
           <div>
-            <span class="stars">★★★★★</span>
+            {/* No star row. Five filled stars are a rating claim in their own
+                right, and this one rendered regardless of the score the owner
+                actually supplied. Only their own rating text shows now. */}
             <div class="lbl" data-field="hero.rating.label" set:html={ratingLabel}></div>
           </div>
         </div>
@@ -127,7 +164,6 @@ const marqueeDoubled = [...marqueeWords, ...marqueeWords];
   }
   .hero-tag .big { font-family: var(--display); font-size: 34px; line-height: 1; color: var(--brass-bright); }
   .hero-tag .lbl { font-family: var(--cond); text-transform: uppercase; letter-spacing: .18em; font-size: 11px; color: var(--muted-light); line-height: 1.4; }
-  .hero-tag .stars { color: var(--brass); font-size: 12px; letter-spacing: 2px; display: block; margin-bottom: 3px; }
   .hero-seal { position: absolute; top: 120px; right: 34px; z-index: 5; width: 120px; height: 120px; }
   .hero-seal .ring { width: 100%; height: 100%; animation: spin 22s linear infinite; }
   .hero-seal text { font-family: var(--cond); font-size: 11.5px; letter-spacing: 3.2px; text-transform: uppercase; fill: var(--paper); }

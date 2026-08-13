@@ -2,7 +2,11 @@
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
 const f = content.footer || {};
-const brand = f.brand || layout.businessName || 'Your Restaurant';
+// No "Your Restaurant" stand-in — same class as the 'Your Business' default the
+// rest of the catalog already dropped: a placeholder ships as the customer's own
+// wordmark, and it also asserts a trade this template's owner may not be in.
+// With no name supplied the brand line hides instead.
+const brand = f.brand || layout.businessName || '';
 const blurb = f.blurb || f.brand_blurb || f.tagline || '';
 const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
   ? f.visit.lines
@@ -22,7 +26,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   <div class="wrap">
     <div class="foot-top">
       <div class="foot-brandcol">
-        <div class="foot-brand" data-field="footer.brand">{brand}</div>
+        {brand && <div class="foot-brand" data-field="footer.brand">{brand}</div>}
         {blurb && <p data-field="footer.blurb">{blurb}</p>}
         {social.length > 0 && (
           <div class="foot-social">

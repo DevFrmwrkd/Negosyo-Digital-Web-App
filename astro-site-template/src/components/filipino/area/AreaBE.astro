@@ -1,8 +1,9 @@
 ---
 /**
- * filipino / AreaBE — lp-111's "we serve" strip: bean-outlined pill tags of the
- * places served. Reads content.area.places (legacy `items`); optional headline /
- * sub render above. Auto-hides when empty. Mirrors AreaAS's contract.
+ * filipino / AreaBE — lp-111's "the neighbourhood" strip: bean-outlined pill
+ * tags of the places served. Reads content.area.places (legacy `items`);
+ * optional headline / sub render above. Hides unless the owner named a place
+ * beyond their own city. Mirrors AreaAS's contract.
  */
 interface Props { content: any; }
 const { content } = Astro.props;
@@ -11,11 +12,21 @@ const tag = area.tag || '';
 const headline = area.headline || '';
 const sub = area.sub || '';
 const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+// TRAP (round 5) — the GATE, not just the label. lib/derive-content-defaults.ts
+// sets `area.places = [city]` (and area.headline = 'Serving <city>') for EVERY
+// submission that typed a city, so `places.length > 0` was true for essentially
+// every site we ship and this strip asserted a service area nobody offered. A
+// lone pill echoing the business's own city is not a service area, it is the
+// address again. Render only when at least one place is somewhere OTHER than
+// the city on the submission — that can only have come from the owner. Do not
+// relax this back to `places.length > 0`: the layer above fills it in again.
+const homeCity = String(content.business_city || '').trim().toLowerCase();
+const namedBeyondHome = places.some((p) => { const v = String(p).trim().toLowerCase(); return v.length > 0 && v !== homeCity; });
 ---
-{places.length > 0 && (
+{namedBeyondHome && (
   <section class="area">
     <div class="wrap">
-      <div class="sw-head"><span>Roast 08 / We serve</span>{tag && <span data-field="area.tag">{tag}</span>}</div>
+      <div class="sw-head"><span>Roast 08 / The neighbourhood</span>{tag && <span data-field="area.tag">{tag}</span>}</div>
       {headline && <h2 class="h2 reveal" data-field="area.headline" set:html={headline}></h2>}
       {sub && <p class="area-sub body reveal" data-field="area.sub">{sub}</p>}
       <ul class="area-list reveal">

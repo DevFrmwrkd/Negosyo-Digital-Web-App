@@ -7,11 +7,29 @@
  *
  * The .plate keeps its .sc1 duotone as the designed fallback until hero.image is
  * set (the photo then layers over it). The ticker mirrors the day's items off
- * the services list, else a default so it always reads as designed — it is
- * aria-hidden decorative chrome, so it carries no editable field.
+ * the services list — it is aria-hidden decorative chrome, so it carries no
+ * editable field.
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAX actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAX.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'gallery', 'main', 'reserve', 'reviews', 'services', 'visit']);
+const ANCHOR_ALIAS: Record<string, string> = { location: 'visit', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (Array.isArray(hero.photos) && hero.photos[0]) || (Array.isArray(content.photos) && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
@@ -22,19 +40,24 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#reserve';
+const cta1Href = onPage(hero.cta1?.href, '#reserve');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+// TRAP (round 5): the no-phone fallback here was '#location', an id PageAX
+// never renders — LocationAX carries that section as id="visit", which is why
+// ANCHOR_ALIAS above maps location -> visit. onPage() only rewrites hrefs that
+// arrive as DATA; a fallback bypasses it entirely, so on a phoneless business
+// whose admin cleared hero.cta2.href the button scrolled nowhere. Fall back to
+// an anchor this design actually renders.
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#visit'));
 const brand = (content as any).footer?.brand || layout.businessName || '';
 
-// Ticker labels — the day's items (services titles), else a default so the
-// marquee always reads as designed.
+// Ticker labels — the day's items, taken only from the services the business
+// actually listed. No default set: the old fallback ('Open daily', 'Fair
+// prices', 'Locally sourced'…) asserted hours, pricing and sourcing that the
+// business never supplied, so it read as their own claim. Empty => no ticker.
 const services = content.services || {};
 const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
-const tickerFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
-const tickerItems = tickerFromServices.length > 0
-  ? tickerFromServices
-  : ['Made in-house', 'Small batches', 'Walk-in welcome', 'Open daily', 'Fair prices', 'Locally sourced'];
+const tickerItems = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
 ---
 <section class="hero" aria-label="Hero">
   <div class="hero-grid">
@@ -66,12 +89,14 @@ const tickerItems = tickerFromServices.length > 0
       {brand && <figcaption data-field="footer.brand">{brand}</figcaption>}
     </figure>
   </div>
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker-in">
-      {tickerItems.map((t) => (<span>{t} /</span>))}
-      {tickerItems.map((t) => (<span>{t} /</span>))}
+  {tickerItems.length > 0 && (
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-in">
+        {tickerItems.map((t) => (<span>{t} /</span>))}
+        {tickerItems.map((t) => (<span>{t} /</span>))}
+      </div>
     </div>
-  </div>
+  )}
 </section>
 <style>
   .hero { border-bottom: 2px solid var(--line); }

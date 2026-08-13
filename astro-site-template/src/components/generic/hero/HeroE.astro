@@ -1,15 +1,38 @@
 ---
 interface Props { content: any; }
 const { content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageE actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageE.
+const PAGE_ANCHORS = new Set(['about', 'area', 'faq', 'how', 'reviews', 'services', 'top', 'visit', 'why', 'work']);
+const ANCHOR_ALIAS: Record<string, string> = { classes: 'services', coverage: 'area', gallery: 'work', location: 'visit', menu: 'services' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const kicker = hero.kicker || '';
-const headlineMain = hero.headlineMain || 'Laundry day, <em>handled.</em>';
-const headlineSub = hero.headlineSub || 'Skip the basket.';
+// No stock headline: "Laundry day, handled." / "Skip the basket." sell a
+// laundry service, false for every other trade using this template.
+const headlineMain = hero.headlineMain || '';
+const headlineSub = hero.headlineSub || '';
 const sub = hero.sub || hero.description || '';
-const cta1Text = hero.cta1?.text || 'Schedule a pickup';
-const cta1Href = hero.cta1?.href || '#visit';
-const cta2Text = hero.cta2?.text || 'See pricing & services';
-const cta2Href = hero.cta2?.href || '#services';
+// CTA labels stay business-agnostic: the old defaults named a service the
+// business may not offer (classes, quotes, pickups, published pricing).
+// A neutral affordance keeps the hero usable without asserting anything.
+const cta1Text = hero.cta1?.text || 'Get in touch';
+const cta1Href = onPage(hero.cta1?.href, '#visit');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, '#services');
 // No stock rating / service claims: "★★★★★ rated on Google" and a "4.9 ·
 // hundreds of reviews" card invent a review score for a business that may
 // have none, which is the one thing an owner can never take back once the
@@ -20,27 +43,49 @@ const meta2 = hero.meta2 || '';
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const cardRating = hero.cardRating || '';
 const cardRatingSub = hero.cardRatingSub || '';
-const cardTurnTitle = hero.cardTurnTitle || 'Next-day turnaround';
-const cardTurnSub = hero.cardTurnSub || 'on most wash & fold';
+// No stock turnaround card: "Next-day turnaround on most wash & fold" is a
+// delivery promise for a service the business may not run. Card hides
+// unless the owner supplies it.
+const cardTurnTitle = hero.cardTurnTitle || '';
+const cardTurnSub = hero.cardTurnSub || '';
+// Empty art column would leave a 520px dead half-grid, so it only renders
+// when the owner gave a photo or a real card.
+const hasArt = Boolean(heroImage || cardRating || cardTurnTitle || cardTurnSub);
 ---
 <section class="hero">
-  <div class="wrap hero-grid">
+  <div class={`wrap hero-grid${hasArt ? '' : ' no-art'}`}>
     <div>
-      <span class="eyebrow" data-field="hero.kicker">{kicker}</span>
-      <h1 style="margin-top:16px;">
-        <span data-field="hero.headlineMain" set:html={headlineMain}></span>
-        <span class="hl" data-field="hero.headlineSub">{headlineSub}</span>
-      </h1>
-      <p class="hero-sub reveal" data-field="hero.sub">{sub}</p>
+      {/* Guarded: the kicker's 'Local business' default is gone from
+          lib/derive-content-defaults.ts, so it is empty for a submission with
+          neither city nor business type — an unguarded .eyebrow rendered as a
+          blank line above the headline. */}
+      {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
+      {(headlineMain || headlineSub) && (
+        <h1 style="margin-top:16px;">
+          {headlineMain && <span data-field="hero.headlineMain" set:html={headlineMain}></span>}
+          {headlineSub && <span class="hl" data-field="hero.headlineSub">{headlineSub}</span>}
+        </h1>
+      )}
+      {/* Guarded like the <h1> above it: hero.sub is undefined when there is no
+          tagline and no name to write "Welcome to …" around, so this rendered an
+          empty styled <p> holding the hero's spacing. */}
+      {sub && <p class="hero-sub reveal" data-field="hero.sub">{sub}</p>}
       <div class="hero-cta reveal" style="transition-delay:.08s;">
         <a href={cta1Href} class="btn btn-primary" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>
-        <a href={cta2Href} class="btn btn-ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
+        {cta2Text && <a href={cta2Href} class="btn btn-ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
       </div>
-      <div class="hero-meta reveal" style="transition-delay:.16s;">
-        {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
-        {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
-      </div>
+      {/* Container hides with its contents: both meta lines are legitimately
+          absent now (meta1's '★★★★★ rated on Google' is gone for good, meta2 is
+          the city or nothing), and an empty .hero-meta still spent its
+          top-margin under the CTAs. */}
+      {(meta1 || meta2) && (
+        <div class="hero-meta reveal" style="transition-delay:.16s;">
+          {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
+          {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
+        </div>
+      )}
     </div>
+    {hasArt && (
     <div class="hero-art">
       <div class="hero-img pop-card" style="transition-delay:.05s;">
         <div class="img" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
@@ -49,24 +94,31 @@ const cardTurnSub = hero.cardTurnSub || 'on most wash & fold';
         <div class="card-float card-rating pop-card" style="transition-delay:.2s;">
           <div class="big" data-field="hero.cardRating">{cardRating}</div>
           <div>
-            <div class="stars">★★★★★</div>
+            {/* No hardcoded ★★★★★ row: it painted five full stars beside whatever
+                score the owner entered, so a real 3.8 still read as a perfect
+                rating. The owner's own number is the only claim shown. */}
             {cardRatingSub && <div class="sub" data-field="hero.cardRatingSub">{cardRatingSub}</div>}
           </div>
         </div>
       )}
-      <div class="card-float card-turn pop-card" style="transition-delay:.32s;">
-        <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg></div>
-        <div class="t">
-          <b data-field="hero.cardTurnTitle">{cardTurnTitle}</b>
-          <span data-field="hero.cardTurnSub">{cardTurnSub}</span>
+      {(cardTurnTitle || cardTurnSub) && (
+        <div class="card-float card-turn pop-card" style="transition-delay:.32s;">
+          <div class="ic"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg></div>
+          <div class="t">
+            {cardTurnTitle && <b data-field="hero.cardTurnTitle">{cardTurnTitle}</b>}
+            {cardTurnSub && <span data-field="hero.cardTurnSub">{cardTurnSub}</span>}
+          </div>
         </div>
-      </div>
+      )}
     </div>
+    )}
   </div>
 </section>
 <style>
   .hero { padding: 60px 0 80px; }
   .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 50px; align-items: center; }
+  /* No owner photo or cards => copy spans the full width, no dead column. */
+  .hero-grid.no-art { grid-template-columns: 1fr; }
   .hero h1 { font-size: clamp(46px, 6.6vw, 92px); font-weight: 900; }
   .hero h1 :global(em) { font-style: normal; color: var(--blue); }
   .hero h1 .hl { position: relative; z-index: 0; white-space: nowrap; }

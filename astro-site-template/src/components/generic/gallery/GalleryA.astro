@@ -14,33 +14,40 @@ interface Props {
 const { content, layout: _layout } = Astro.props;
 const gallery = content.gallery || content.featured || {};
 
-const tag      = gallery.tag      || 'Inside the roastery';
-const headline = gallery.headline || 'A look around the counter.';
+const tag      = gallery.tag      || 'Our work';
+const headline = gallery.headline || '';
 
 const allPhotos = Array.isArray(content.photos) ? content.photos
   : Array.isArray(content.hero?.photos) ? content.hero.photos
   : [];
 
+// No stock captions: the old defaultCaps arrays labelled the owner's own
+// uploaded photos with invented scenes ("The drum roaster", "Flagstone
+// patio"), describing work the business may never have done. Photos with
+// no owner caption render as bare images.
 const fromContent = Array.isArray(gallery.items) && gallery.items.length
   ? gallery.items
   : null;
 
-const defaultCaps = ['The drum roaster', 'Pour-over bar', 'Bagged fresh', 'The counter', 'On the bar'];
 
 const items: Array<{ image?: string; caption?: string }> = fromContent || (
-  allPhotos.slice(0, 5).map((p: string, i: number) => ({ image: p, caption: defaultCaps[i] }))
+  allPhotos.slice(0, 5).map((p: string) => ({ image: p }))
 );
 
+// Nothing but the frame => the whole section stays out of the document
+// rather than rendering a heading over an empty grid.
+const tiles = items.filter((it: any) => it && it.image);
 const tileClasses = ['g-a', 'g-b', 'g-c', 'g-d', 'g-e'];
 const idx = (i: number) => String(i + 1).padStart(2, '0');
 ---
 
+{tiles.length > 0 && (
 <section class="sec" id="work">
   <div class="wrap">
     <p class="sec-tag reveal" data-field="gallery.tag">{tag}</p>
-    <h2 class="reveal" data-field="gallery.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="gallery.headline" set:html={headline}></h2>}
     <div class="gal-grid">
-      {items.filter((it: any) => it && it.image).slice(0, 5).map((it: any, i: number) => (
+      {tiles.slice(0, 5).map((it: any, i: number) => (
         <div class={`gtile ${tileClasses[i]} reveal`} style={i > 0 ? `transition-delay:.${i * 8}s;` : ''}>
           <div
             class="gtile-img"
@@ -48,7 +55,7 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
             style={it.image ? `background-image:url('${it.image}');` : ''}
           ></div>
           <div class="cap">
-            <span data-field={`gallery.items.${i}.caption`}>{it.caption}</span>
+            {it.caption && <span data-field={`gallery.items.${i}.caption`}>{it.caption}</span>}
             <span>{idx(i)}</span>
           </div>
         </div>
@@ -56,6 +63,7 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
     </div>
   </div>
 </section>
+)}
 
 <style>
   .gal-grid {

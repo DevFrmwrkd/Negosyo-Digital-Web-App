@@ -3,9 +3,13 @@ interface Props { content: any; }
 const { content } = Astro.props;
 const area = content.area || content.serviceArea || {};
 const tag = area.tag || 'Who we welcome';
-const headline = area.headline || 'Students from across <em>Portland.</em>';
-const body = area.body || 'Describe the area you serve. Edit in the Service area section.';
+// No stock headline or body: the old defaults named a specific city or
+// coverage area and left editor instructions ("Edit in the Service area
+// section") on the live page. Owner data or the column hides.
+const headline = area.headline || '';
+const body = area.body || '';
 const places: string[] = Array.isArray(area.places) && area.places.length ? area.places : [];
+const hasArea = Boolean(headline || body) || places.length > 0;
 
 const creds = content.credentials || {};
 const credTag = creds.tag || 'Credentials';
@@ -23,18 +27,21 @@ const credIconPaths = [
   '<path d="M4 7h16M4 12h16M4 17h10"/>',
 ];
 ---
+{(hasArea || hasCreds) && (
 <section class="sec area-sec" id="area">
   <div class="wrap split2">
+    {hasArea && (
     <div>
       <p class="sec-tag reveal" data-field="area.tag">{tag}</p>
-      <h2 class="reveal" data-field="area.headline" style="font-size:clamp(32px,4vw,52px);" set:html={headline}></h2>
-      <p class="reveal area-body" data-field="area.body">{body}</p>
+      {headline && <h2 class="reveal" data-field="area.headline" style="font-size:clamp(32px,4vw,52px);" set:html={headline}></h2>}
+      {body && <p class="reveal area-body" data-field="area.body">{body}</p>}
       <div class="area-chips reveal">
         {places.map((p: string, i: number) => (
           <span data-field={`area.places.${i}`}>{p}</span>
         ))}
       </div>
     </div>
+    )}
     {hasCreds && (
     <div>
       <p class="sec-tag reveal" data-field="credentials.tag">{credTag}</p>
@@ -52,6 +59,7 @@ const credIconPaths = [
     )}
   </div>
 </section>
+)}
 <style>
   .area-sec { background: var(--card); }
   .split2 { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }

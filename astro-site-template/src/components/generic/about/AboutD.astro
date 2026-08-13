@@ -5,28 +5,44 @@ const about = content.about || {};
 const tag = about.tag || 'about_us';
 const headline = about.headline || '';
 const paragraphs = Array.isArray(about.paragraphs) && about.paragraphs.length ? about.paragraphs : [];
-const note = about.note || 'Flat-rate plans. No surprise bills.';
+// No stock note or handle: "Flat-rate plans. No surprise bills." is a pricing
+// guarantee and "team@northpoint" is an invented company handle — both read as
+// the owner's own claim on a live site. Owner data or nothing.
+const note = about.note || '';
 const aboutImage = about.image || (content.photos && content.photos[0]) || '';
-const aboutTag = about.tagCode || 'team@northpoint';
+const aboutTag = about.tagCode || '';
+// Nothing real to say => the section stays out of the document rather than
+// rendering an eyebrow over an empty column.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(note || aboutImage) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="sec" id="about">
-  <div class="wrap about">
-    <div class="about-img reveal">
-      <div class="img" data-image-field="about.image" style={aboutImage ? `background-image:url('${aboutImage}');` : ''}></div>
-      <span class="tagcode" data-field="about.tagCode">{aboutTag}</span>
-    </div>
+  <div class={`wrap about${aboutImage ? '' : ' no-img'}`}>
+    {aboutImage && (
+      <div class="about-img reveal">
+        <div class="img" data-image-field="about.image" style={`background-image:url('${aboutImage}');`}></div>
+        {aboutTag && <span class="tagcode" data-field="about.tagCode">{aboutTag}</span>}
+      </div>
+    )}
     <div class="about-txt">
       <p class="sec-tag reveal" data-field="about.tag">{tag}</p>
-      <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>
+      {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
       {paragraphs.map((p: string, i: number) => (
         <p class="reveal" data-field={`about.paragraphs.${i}`}>{p}</p>
       ))}
-      <p class="note reveal" data-field="about.note">{note}</p>
+      {note && <p class="note reveal" data-field="about.note">{note}</p>}
     </div>
   </div>
 </section>
+)}
 <style>
   .about { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+  /* No owner photo => text spans the full width instead of leaving a dead column. */
+  .about.no-img { grid-template-columns: 1fr; }
   .about-img { position: relative; }
   .about-img .img { width: 100%; height: 440px; border: 1px solid var(--line); border-radius: 14px; background-size: cover; background-position: center; background-color: var(--panel); }
   .about-img .tagcode { position: absolute; left: 16px; bottom: 16px; font-family: var(--mono); font-size: 12px; color: var(--lime); background: rgba(var(--bg-rgb), .8); border: 1px solid var(--line); padding: 8px 12px; border-radius: 8px; }

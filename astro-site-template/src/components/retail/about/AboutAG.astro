@@ -22,7 +22,22 @@ const imageCaption = about.imageCaption || '';
 const image2Caption = about.image2Caption || '';
 const quote = about.quote || '';
 const signature = about.signature || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, had nothing to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which shipped an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by
+// the layer above, so counting it would keep the shell on exactly the pages
+// this gate exists to remove. Same shape as generic/AboutA–E.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(image || image2 || quote || signature) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="about-sect">
   <div class="wrap grid2">
     <div class="about-copy reveal">
@@ -46,6 +61,7 @@ const signature = about.signature || '';
     </div>
   </div>
 </section>
+)}
 <style>
   .about-h { font-size: clamp(32px, 5vw, 54px); margin: 14px 0 20px; color: var(--ink); }
   .about-p { margin-bottom: 14px; }

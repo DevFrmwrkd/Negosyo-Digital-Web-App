@@ -230,28 +230,14 @@ export function autoSchemeFor(businessType: string | undefined | null): string {
     return AUTO_SCHEME_BY_BUSINESS_TYPE[k] || ''
 }
 
-// Minimal PH city-adjacency seed for the ServiceArea block (3-4 places per
-// known business city). The brief: "service area as a real map or list of
-// named places, not a vague 'we serve the area'". We seed concrete neighbors
-// so the block reads finished cold; admin can edit any of them.
-const SERVICE_AREA_SEEDS: Record<string, string[]> = {
-    'manila': ['Sampaloc', 'Binondo', 'Ermita', 'Malate'],
-    'quezon city': ['Cubao', 'Diliman', 'Project 4', 'Novaliches'],
-    'makati': ['Poblacion', 'Salcedo Village', 'Legazpi Village', 'San Antonio'],
-    'pasig': ['Ortigas', 'Kapitolyo', 'Maybunga', 'San Miguel'],
-    'taguig': ['BGC', 'Western Bicutan', 'Lower Bicutan', 'Pinagsama'],
-    'pasay': ['Bangkal', 'San Roque', 'Manila Bay area', 'Buendia'],
-    'cebu city': ['Mandaue', 'Lapu-Lapu', 'Talisay', 'Banawa'],
-    'davao city': ['Toril', 'Bunawan', 'Calinan', 'Buhangin'],
-    'iloilo city': ['Jaro', 'La Paz', 'Mandurriao', 'Molo'],
-    'bacolod': ['Talisay', 'Silay', 'Bago', 'Murcia'],
-    'cagayan de oro': ['Lapasan', 'Carmen', 'Macasandig', 'Bulua'],
-    'baguio': ['La Trinidad', 'Itogon', 'Tuba', 'Sablan'],
-    'meycauayan': ['Marilao', 'Bocaue', 'Obando', 'Valenzuela'],
-    'marilao': ['Meycauayan', 'Bocaue', 'Sta. Maria', 'Bulacan'],
-    'bulacan': ['Malolos', 'Plaridel', 'Pulilan', 'Hagonoy'],
-}
-
+// The PH city-adjacency seed table that used to live here is gone. It mapped
+// a business city to 3-4 neighbouring districts/towns ('cebu city' →
+// Mandaue, Lapu-Lapu, Talisay …) and published them as the business's own
+// service area so "the block reads finished cold". Those are separate
+// cities: a barbershop that serves one street was advertising four
+// municipalities it has never delivered to. A coverage area is a claim, and
+// the owner is the only person who can make it — the block now renders only
+// the places they typed, and stays out of the document when they typed none.
 // Auto-derive a WhatsApp deeplink-safe phone string from a typed phone.
 // Strips non-digits. If the result starts with "0" and looks like a PH local
 // number, prepend "63". Empty string when input is unusable.
@@ -509,11 +495,25 @@ async function transformToAstroData(
         services: {
             headline: content.services_headline || 'Our Services',
             subheadline: content.services_subheadline,
-            services: content.services || [
-                { name: 'Service 1', description: 'Quality service' },
-                { name: 'Service 2', description: 'Professional service' },
-                { name: 'Service 3', description: 'Reliable service' },
-            ],
+            // No invented service menu. This used to fall back to three stock
+            // rows — 'Service 1'/'Quality service', 'Service 2'/'Professional
+            // service', 'Service 3'/'Reliable service' — i.e. a service list
+            // AND a quality claim published on behalf of an owner who listed
+            // no services at all. Exactly the same offence as the per-trade
+            // BUSINESS_TYPE_SERVICES table that was deleted from
+            // lib/derive-content-defaults.ts (see the note above
+            // BUSINESS_TYPE_KEYS there); this copy survived because it lives
+            // in the legacy `siteData.services` payload rather than the
+            // nested `siteData.content.services` one the current templates
+            // read. Deleting stock services from the .astro files and from
+            // the derived layer achieved nothing while this line stood.
+            //
+            // Empty array, not a fabricated one and not `undefined`: every
+            // Services component gates on `items.length` / `services.length`
+            // and keeps the whole section out of the document, so a business
+            // that listed nothing advertises nothing — while consumers that
+            // do `services.map(...)` without a guard still get an array.
+            services: content.services || [],
             photos: content.services_image ? [content.services_image] : (photos.length > 0 ? [photos[0]] : []),
             ctaLabel: content.services_cta?.label,
             ctaLink: content.services_cta?.link,
@@ -550,8 +550,16 @@ async function transformToAstroData(
         },
         contact: {
             businessName: content.business_name,
-            email: content.contact?.email || 'contact@example.com',
-            phone: content.contact?.phone || '+63 900 000 0000',
+            // No placeholder email or phone. These used to fall back to
+            // 'contact@example.com' and '+63 900 000 0000' — a dead address
+            // and a number that belongs to nobody, printed as the business's
+            // own contact details. LocationA/CtaBandA dropped exactly these
+            // strings from their own fallbacks; leaving them here would put
+            // them straight back. Every consumer reads them as
+            // `layout.contact?.phone || ''` and renders behind `{phone && …}`,
+            // so undefined simply omits the row.
+            email: content.contact?.email || undefined,
+            phone: content.contact?.phone || undefined,
             address: content.contact?.address,
             whatsapp: content.contact?.whatsapp,
             messenger: content.contact?.messenger,
@@ -592,14 +600,14 @@ async function transformToAstroData(
                     places: explicit,
                 }
             }
-            // Seed from business city — try lowercased exact match against the
-            // adjacency table. Falls back to silence (block renders nothing).
-            const cityKey = (content.business_city ?? '').trim().toLowerCase()
-            const seeds = SERVICE_AREA_SEEDS[cityKey]
-            if (!seeds) return undefined
+            // The owner's own city is the only place we can honestly list —
+            // it is a fact they typed. Everything beyond it was invented; see
+            // the note where the adjacency table used to be. No city, no block.
+            const city = (content.business_city ?? '').trim()
+            if (!city) return undefined
             return {
                 heading: content.serviceArea?.heading ?? 'Service area',
-                places: [content.business_city as string, ...seeds].filter(Boolean) as string[],
+                places: [city],
             }
         })(),
         messaging: {
@@ -647,6 +655,22 @@ async function transformToAstroData(
             // Per-section "did admin/AI supply anything?" — if no, use the
             // derived defaults so the section renders coherently. Each leaf
             // still falls back individually inside the section component.
+            //
+            // ⚠ This is the merge that makes lib/derive-content-defaults.ts
+            // authoritative over the templates. It starts from the DERIVED
+            // object and only lets an owner value overwrite a key when it is
+            // not undefined/null/'' — so:
+            //   • a key the derived layer omits is absent from the result, the
+            //     component's `{value && …}` guard fires, and the element is
+            //     never emitted. This is how a claim gets removed.
+            //   • a key the derived layer sets to '' is still PRESENT, and
+            //     because the loop below skips '' on the owner side, an admin
+            //     who blanks that input cannot clear it — the derived '' (or
+            //     any derived string) wins forever. That asymmetry is why
+            //     removals in the derived layer must be absent, never ''.
+            // A stock sentence left in the derived layer therefore ships on
+            // every site whose owner left the field blank, no matter what the
+            // .astro fallback says: the template is never consulted.
             const mergeShallow = <T extends object>(src: T | undefined, fb: T): T => {
                 if (!src || typeof src !== 'object') return fb
                 const out: any = { ...fb }
@@ -673,9 +697,21 @@ async function transformToAstroData(
                 // Coerce to a string: an inline About edit can upgrade
                 // content.about from a string to a {lead,headline,...} object;
                 // this field feeds <meta name="description"> so it must stay text.
-                description: typeof content.about === "string"
+                //
+                // This was the last '' left in the merged payload. Checked
+                // against the mergeShallow trap and it does NOT apply: only
+                // marquee / hero / about / services / gallery / area / ctaBand
+                // / footer go through mergeShallow, and `description` is a
+                // direct key of this object literal, so no derived '' can
+                // shadow an owner value here — the value IS the owner's about
+                // text. It is now `undefined` rather than '' anyway, so the
+                // key is dropped by JSON.stringify entirely: every consumer
+                // renders it as `{content.description && <meta … />}`, and an
+                // absent meta description is correct where an empty
+                // `content=""` one is just noise. Absent, never ''.
+                description: (typeof content.about === "string"
                     ? content.about
-                    : ((content.about as any)?.lead ?? (content.about as any)?.description ?? ""),
+                    : ((content.about as any)?.lead ?? (content.about as any)?.description)) || undefined,
                 photos,
                 contact: formattedContact,
                 marquee: mergeShallow<any>(c.marquee, derived.marquee),
@@ -694,16 +730,82 @@ async function transformToAstroData(
                             image: it?.image || photos[i] || '',
                         }))
                     } else if (photos.length) {
-                        g.items = photos.slice(0, 6).map((image, i) => ({
-                            image,
-                            caption: derived.gallery.items[i]?.caption || '',
-                        }))
+                        // No caption key at all: the derived layer no longer
+                        // invents 'Our space' / 'Behind the scenes' for a photo
+                        // nobody described, and every gallery guards
+                        // `{it.caption && …}`, so an absent caption is a photo
+                        // with no label rather than an empty one.
+                        g.items = photos.slice(0, 6).map((image) => ({ image }))
                     }
                     return g
                 })(),
                 area: mergeShallow<any>(c.area, derived.area),
                 location: { ...derived.location, ...(content.location || {}) },
-                ctaBand: mergeShallow<any>(c.ctaBand, derived.ctaBand),
+                // ── The ctaBand CTA-key contract ────────────────────────
+                // One closing CTA, emitted under every key name the ctaBand
+                // designs actually read.
+                //
+                // The derived layer (and CtaBandA–F) name the button
+                // `ctaBand.cta`. Most of the other designs read
+                // `ctaBand.cta1`, and CtaBandP / CtaBandZ read
+                // `ctaBand.primary`, with NO fallback to `.cta` — so on those
+                // pages the closing band rendered a full-width headline and
+                // no button at all. Only the filipino family, CtaBandAW and
+                // CtaBandAY carry the `cta1 || cta` chain themselves.
+                // Aliasing here fixes every one of them from one place
+                // instead of editing dozens of components.
+                ctaBand: (() => {
+                    // Copy before touching anything: mergeShallow RETURNS THE
+                    // FALLBACK OBJECT ITSELF when the owner side is absent
+                    // (`if (!src …) return fb`), so assigning to a key of the
+                    // merged result would mutate `derived.ctaBand` in place —
+                    // and the derived href read below would already be gone.
+                    const band: any = { ...mergeShallow<any>(c.ctaBand, derived.ctaBand) }
+                    const derivedHref: string | undefined = derived.ctaBand.cta?.href
+                    const ownerBand: any =
+                        c.ctaBand && typeof c.ctaBand === 'object' ? c.ctaBand : {}
+                    // Whichever name the OWNER typed their CTA under wins over
+                    // the derived one, under all three names.
+                    const ownerPrimary =
+                        [ownerBand.cta1, ownerBand.primary, ownerBand.cta].find((x: any) => x?.text)
+                    const text =
+                        ownerPrimary?.text || band.cta?.text || band.cta1?.text || band.primary?.text
+                    // TRAP — do not "tidy" this into `{ ...primary }` in a
+                    // later round: the TEXT is aliased, the HREF is not,
+                    // unless the owner actually typed one. The derived href is
+                    // '#visit' and most of these designs render no id="visit"
+                    // — CtaBandAW/AY and the filipino family ship an explicit
+                    // onPage() anchor guard precisely because of that. Copying
+                    // '#visit' into cta1/primary would out-rank each
+                    // component's own design-correct fallback ('#book',
+                    // '#location', a tel: link) and hand all of them a button
+                    // that scrolls nowhere — trading a missing button for a
+                    // dead one. Absent href => the component's fallback fires,
+                    // which is the intended contract.
+                    const ownerHref =
+                        ownerBand.cta1?.href || ownerBand.primary?.href || ownerBand.cta?.href || undefined
+                    if (text) {
+                        for (const key of ['cta', 'cta1', 'primary'] as const) {
+                            // Never clobber a key the owner set themselves —
+                            // `ctaBand.cta1.text` is the data-field these
+                            // designs expose to the admin editor.
+                            if (ownerBand[key]?.text) continue
+                            band[key] = ownerHref ? { text, href: ownerHref } : { text }
+                        }
+                        // `cta` is the only name that keeps a derived href, so
+                        // restore it when the owner supplied none — CtaBandA–F
+                        // read `band.cta.href` and '#visit' is their own anchor.
+                        if (!ownerHref && derivedHref && !ownerBand.cta?.text) {
+                            band.cta = { text, href: derivedHref }
+                        }
+                    }
+                    // Deliberately NO cta2 / secondary alias: those slots are
+                    // the SECOND button and there is only ever one derived
+                    // CTA. Filling them would invent an extra action (and the
+                    // designs already build their own "Call …" from the
+                    // owner's real phone when there is one).
+                    return band
+                })(),
                 footer: mergeShallow<any>(c.footer, derived.footer),
                 navCtaText: c.navCtaText || 'Get in touch',
                 navCtaHref: c.navCtaHref || '#visit',

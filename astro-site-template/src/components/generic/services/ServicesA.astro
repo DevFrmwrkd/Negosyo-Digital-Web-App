@@ -10,27 +10,30 @@ interface Props { content: any; }
 const { content } = Astro.props;
 const services = content.services || {};
 
-const tag      = services.tag || services.headlineEyebrow || 'What we pour & sell';
-const headline = services.headline || 'From the bar to <em>your kitchen.</em>';
+const tag      = services.tag || services.headlineEyebrow || 'What we do';
+const headline = services.headline || '';
 
 const fromContent = Array.isArray(services.items) && services.items.length
   ? services.items
   : (Array.isArray(content.services_list) ? content.services_list : null);
 
-const items = fromContent || [
-  { title: 'Espresso bar',        desc: "A full bar of espresso, pour-over, and seasonal milk drinks pulled to order — no syrups hiding a flat shot.", note: 'Dine-in · to-go' },
-  { title: 'Whole-bean retail',   desc: "Take home the same coffee we're pouring. Bags are roasted to order and stamped with the day they left the drum.", note: 'Roasted to order' },
-  { title: 'Wholesale & cafés',   desc: 'Standing weekly accounts for restaurants and offices, with dial-in support and barista training included.', note: 'Weekly delivery' },
-  { title: 'Home subscriptions',  desc: "Pick a cadence and a roast level — we'll mill, bag, and ship within hours of roasting. Pause anytime.", note: 'Ships fresh' },
-];
+// No stock service list. The old default shipped four invented coffee
+// services — espresso bar, wholesale accounts, barista training, shipping
+// subscriptions — as the owner's own menu. A business that offers none of
+// them would have advertised all four. Owner data or the section hides.
+const items = fromContent || [];
+// Nothing real to list => the whole section stays out of the document
+// rather than rendering an eyebrow and heading over an empty grid.
+const hasItems = items.length > 0;
 
 const idx = (i: number) => String(i + 1).padStart(2, '0');
 ---
 
+{hasItems && (
 <section class="sec services-sec" id="menu" style="padding-top:0;">
   <div class="wrap">
     <p class="sec-tag reveal" data-field="services.tag">{tag}</p>
-    <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>}
     <div class="menu-list">
       {items.map((it: any, i: number) => (
         <div class="menu-row reveal">
@@ -45,6 +48,7 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
     </div>
   </div>
 </section>
+)}
 
 <style>
   .menu-list {

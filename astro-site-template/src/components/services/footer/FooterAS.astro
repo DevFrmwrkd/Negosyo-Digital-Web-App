@@ -10,9 +10,31 @@
  */
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAS actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAS.
+const PAGE_ANCHORS = new Set(['about', 'book', 'faq', 'gallery', 'how', 'location', 'main', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const f = (content as any).footer || {};
-const brand = f.brand || layout.businessName || 'Your Business';
-const mark = String(brand).trim().charAt(0).toUpperCase() || 'L';
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = f.brand || layout.businessName || '';
+// The mark chip is derived from the real name, never from a stand-in initial:
+// an 'L' belongs to somebody else's business. Empty brand => the whole tile hides.
+const mark = String(brand).trim().charAt(0).toUpperCase();
 const blurb = f.blurb || f.brand_blurb || '';
 const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
   ? f.visit.lines
@@ -31,14 +53,17 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
 // Floating message pill — reuse the hero's primary CTA (falls back to CTA-band).
 const hero = (content as any).hero || {};
 const cband = (content as any).ctaBand || {};
-const msgHref = hero.cta1?.href || cband.cta1?.href || '';
-const msgText = hero.cta1?.text || cband.cta1?.text || 'Book';
+const msgHref = onPage(hero.cta1?.href || cband.cta1?.href, '');
+// No default label: "Book" asserts a booking channel the business may not
+// run.
+// No CTA text from the owner => no pill.
+const msgText = hero.cta1?.text || cband.cta1?.text || '';
 ---
 <footer>
   <div class="wrap">
     <div class="foot-grid">
       <div class="fcol">
-        <div class="brand"><span class="mk" aria-hidden="true">{mark}</span><span class="bn" data-field="footer.brand">{brand}</span></div>
+        {brand && <div class="brand"><span class="mk" aria-hidden="true">{mark}</span><span class="bn" data-field="footer.brand">{brand}</span></div>}
         {blurb && <p class="fblurb" data-field="footer.blurb">{blurb}</p>}
         {social.length > 0 && (
           <div class="foot-social">
@@ -89,8 +114,8 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Book';
     )}
   </div>
 </footer>
-{msgHref && (
-  <a class="msgr" href={msgHref} rel="noopener" aria-label="Message us" data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+{msgHref && msgText && (
+  <a class="msgr" href={msgHref} rel="noopener" aria-label={msgText} data-field="hero.cta1.text" data-href-field="hero.cta1.href">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.3 2 2 6.2 2 11.6c0 3 1.4 5.6 3.7 7.3v3.6l3.4-1.9c.9.3 1.9.4 2.9.4 5.7 0 10-4.2 10-9.5S17.7 2 12 2zm1 12.3l-2.5-2.7-5 2.7 5.5-5.8 2.6 2.7 4.9-2.7-5.5 5.8z"/></svg>
     {msgText}
   </a>

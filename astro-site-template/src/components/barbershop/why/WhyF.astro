@@ -8,6 +8,13 @@ const sub = why.sub || '';
 const items = Array.isArray(why.items) ? why.items : [];
 const idx = (i: number) => String(i + 1).padStart(2, '0');
 ---
+{/* OVER-REMOVAL GUARD — see the note in the sibling ServicesF.astro; identical
+  shape, identical cause. The three stock reasons ('Local & reliable', 'Honest
+  pricing', 'Real people') were correctly deleted from lib/block-defaults.ts,
+  which left this full-width dark band rendering only the kicker "Why us" and
+  <h2> "Why choose <name>" above an empty strip. The strip was guarded; the band
+  around it was not. Shared by PageF…PageJ. */}
+{items.length > 0 && (
 <section class="pad-y ink-sect">
   <div class="wrap">
     <div class="sect-head reveal" style="margin-bottom:0;">
@@ -30,6 +37,7 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
     )}
   </div>
 </section>
+)}
 <style>
   .why-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 54px; }
   .wcol { padding: 28px 28px 0; border-top: 2px solid var(--brass); }

@@ -9,15 +9,30 @@
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
 const cta = content.ctaBand || content.closing || {};
+// Anchor guard, mirroring the sibling Hero/Header. The content layer
+// (lib/derive-content-defaults.ts) hard-codes ctaBand.cta.href = '#visit' and
+// this design renders no id="visit" — so the band's primary button, the last
+// thing on the page, scrolled nowhere on every first build. Resolve in-page
+// hrefs against what PageBC actually renders; tel:/mailto:/http pass through.
+// Keep PAGE_ANCHORS in step with PageBC.
+const PAGE_ANCHORS = new Set(['about', 'book', 'how', 'location', 'main', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const tag = cta.tag || '';
 const headline = cta.headline || '';
 const sub = cta.sub || '';
 const cta1Text = cta.cta1?.text || cta.cta?.text || '';
-const cta1Href = cta.cta1?.href || cta.cta?.href || '#book';
+const cta1Href = onPage(cta.cta1?.href || cta.cta?.href, '#book');
 const cta2Text = cta.cta2?.text || '';
 const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
 const cta3Text = cta.cta3?.text || '';
-const cta3Href = cta.cta3?.href || '#location';
+const cta3Href = onPage(cta.cta3?.href, '#location');
 const hasButtons = !!(cta1Text || cta2Text || cta3Text);
 ---
 {(headline || hasButtons) && (

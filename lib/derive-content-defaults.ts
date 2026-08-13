@@ -12,6 +12,52 @@
  * The editor sidebar (ContentFieldsAuto) treats the same tier-3 result
  * as a "final fallback" so inputs show whatever the iframe is rendering
  * — admin never sees an empty input where the website has content.
+ *
+ * ─── WHAT MAY LIVE IN THIS FILE ────────────────────────────────────────
+ * This tier is the LAST one standing between a submission and the live
+ * page, and lib/astro-builder.ts merges it into every section with
+ * mergeShallow(c.X, derived.X) — which starts from the derived object and
+ * only lets an owner value win when it is not undefined/null/''. So a
+ * string written here is published on behalf of every owner who left that
+ * field blank, and it overrides the template's own fallback: the template
+ * never gets asked. Deleting a claim from a .astro file does nothing while
+ * a copy of it survives here.
+ *
+ * The rule, therefore: IF THE SENTENCE WOULD BE FALSE FOR SOME BUSINESS
+ * USING THIS TEMPLATE, IT MUST NOT BE IN THIS FILE.
+ *
+ *   allowed — the owner's own facts (name, city, business type, phone,
+ *             address, tagline), section labels and UI affordances
+ *             ('About', 'Get in touch'), and layout scaffolding.
+ *   banned  — anything asserting hours, speed, price, quality, reach,
+ *             credentials, reputation or a service the owner never listed.
+ *             'Trusted', 'open daily', 'same day', 'free estimates', an
+ *             invented service menu: all of it.
+ *
+ * Two corollaries, both learned the hard way:
+ *
+ *   1. A PLACEHOLDER IS A CLAIM. 'Your Business' asserts the business is
+ *      called that, and it renders as the wordmark, the H1, the footer brand
+ *      and the © line. A stand-in for a missing owner fact is banned on
+ *      exactly the same grounds as an invented rating. No derived value may
+ *      stand in for a fact the submission does not carry — missing name,
+ *      missing city, missing trade: compose around the gap and omit every
+ *      line that cannot be said without it. Three separate passes have now
+ *      each found one more instance of the same mistake here ('★★★★★ rated
+ *      on Google', the per-trade service menu, then the name itself), so
+ *      the generalisation is written down rather than the special case.
+ *   2. DON'T POINT AT CONTENT THAT MAY NOT EXIST. Sentences like "see the
+ *      Location section below" or "send us a message" describe parts of a
+ *      page that only render when the owner supplied the data behind them.
+ *      An answer may only promise what the same submission guarantees.
+ *
+ * When a claim is removed the key must be ABSENT, never ''. Absent means
+ * the merged section has no such key and the component's `{value && …}`
+ * guard drops the element; '' would still be a key, and — because
+ * mergeShallow skips '' on the OWNER side — a derived '' can never be
+ * cleared by an admin who blanks the input. Empty arrays are the array
+ * equivalent: every list-rendering component checks `items.length` and
+ * hides the whole section, so [] is the honest "nothing to say" value.
  */
 
 export interface DeriveContentInput {
@@ -23,103 +69,79 @@ export interface DeriveContentInput {
     contact?: { phone?: string; email?: string; address?: string };
 }
 
+/**
+ * Every field that can only be filled from owner data is optional: when the
+ * submission doesn't carry the fact, the key is left off entirely rather
+ * than filled with an invented one. See the "absent, never ''" note above.
+ */
 export interface DerivedSection {
-    marquee: { text: string };
+    marquee: { text?: string };
     hero: {
-        kicker: string;
-        headline: string;
+        kicker?: string;
+        /** Name-derived: absent when the submission carries no business name. */
+        headline?: string;
         headlineLines: string[];
-        sub: string;
+        sub?: string;
         cta1: { text: string; href: string };
         cta2: { text: string; href: string };
         /** Optional and deliberately unset — see the comment where the derived
-         *  hero is built. There is no honest default for this line. */
+         *  hero is built. There is no honest default for either meta line. */
         meta1?: string;
-        meta2: string;
+        meta2?: string;
     };
     about: {
         tag: string;
-        headline: string;
-        lead: string;
-        signature: string;
+        /** All three are name-derived — absent when there is no name. */
+        headline?: string;
+        lead?: string;
+        signature?: string;
         paragraphs: string[];
     };
     services: {
         tag: string;
         headline: string;
-        sub: string;
+        sub?: string;
         items: Array<{ title: string; desc: string; note?: string }>;
     };
-    why: { tag: string; headline: string; items: Array<{ title: string; body: string }> };
-    how: { tag: string; headline: string; steps: Array<{ title: string; body: string }> };
-    gallery: { tag: string; headline: string; items: Array<{ caption: string; image?: string }> };
+    why: { tag: string; headline?: string; items: Array<{ title: string; body: string }> };
+    how: { tag: string; headline?: string; steps: Array<{ title: string; body: string }> };
+    gallery: { tag: string; headline: string; items: Array<{ caption?: string; image?: string }> };
     faq: { tag: string; headline: string; items: Array<{ q: string; a: string }> };
-    area: { tag: string; headline: string; body: string; places: string[] };
+    area: { tag: string; headline?: string; body?: string; places: string[] };
     location: { tag: string; headline: string };
-    ctaBand: { headline: string; sub: string; cta: { text: string; href: string } };
-    footer: { brand: string; blurb: string; notes: string[] };
+    ctaBand: { headline: string; sub?: string; cta: { text: string; href: string } };
+    footer: { brand?: string; blurb?: string; notes: string[] };
     navbar_links: Array<{ label: string; href: string }>;
     navCtaText: string;
     navCtaHref: string;
 }
 
-export const BUSINESS_TYPE_SERVICES: Record<string, Array<{ title: string; desc: string; note?: string }>> = {
-    barber: [
-        { title: 'Cut & Style',     desc: 'Classic and modern cuts tailored to the way you wear your hair.', note: 'walk-in · booked' },
-        { title: 'Beard Work',      desc: 'Trims, shapes, and hot-towel finishes that hold their line.',     note: 'add-on' },
-        { title: 'Kids & Seniors',  desc: 'Patient, low-fuss cuts for younger and older clients.',           note: 'family-friendly' },
-    ],
-    salon: [
-        { title: 'Cut & Style',        desc: 'Personalized cuts that suit your face, hair type, and routine.',  note: 'consultation included' },
-        { title: 'Color & Highlights', desc: 'Custom color, balayage, and root touch-ups by trained colourists.', note: 'consultation included' },
-        { title: 'Treatments',         desc: 'Conditioning, gloss, and bond-building treatments to keep hair healthy.', note: 'walk-in · booked' },
-    ],
-    auto: [
-        { title: 'Repairs',     desc: 'Diagnostic and repair work for daily drivers, done right the first time.', note: 'estimates free' },
-        { title: 'Maintenance', desc: 'Oil changes, brakes, tires, and the upkeep that keeps cars on the road.',  note: 'same-day' },
-        { title: 'Inspections', desc: "Honest, written assessments so you know exactly what needs work and what doesn't.", note: 'walk-in' },
-    ],
-    restaurant: [
-        { title: 'Dine-in',  desc: 'Our menu, served at the table. Walk in or reserve ahead.', note: 'reservations open' },
-        { title: 'Takeout',  desc: "Order ahead and pick it up when you're ready.",            note: 'phone · in-person' },
-        { title: 'Delivery', desc: 'Hot food to your door through our partner delivery apps.', note: 'partner apps' },
-    ],
-    cafe: [
-        { title: 'Coffee & Drinks',  desc: 'Pour-overs, espresso, and seasonal drinks pulled to order.',   note: 'dine-in · to-go' },
-        { title: 'Pastries & Bakes', desc: 'A small selection of baked goods made fresh through the day.', note: 'while supplies last' },
-        { title: 'Beans to Go',      desc: "Take home the same coffee we're pouring at the bar.",          note: 'whole bean · ground' },
-    ],
-    retail: [
-        { title: 'In-Store Shopping', desc: "Come by and see what's on the shelves — helpful staff, no pressure.", note: 'walk-in' },
-        { title: 'Personal Picks',    desc: "Tell us what you're looking for and we'll set things aside for you.", note: 'by request' },
-        { title: 'Local Delivery',    desc: 'Free local delivery on qualifying orders inside the service area.',   note: 'within city' },
-    ],
-    clinic: [
-        { title: 'Consultations',  desc: 'Same-day appointments for new and returning patients.',         note: 'booked · walk-in' },
-        { title: 'Routine Care',   desc: 'Regular check-ups and preventive care so problems stay small.', note: 'scheduled' },
-        { title: 'Specialty Work', desc: 'Focused care for specific concerns, by trained practitioners.', note: 'by referral' },
-    ],
-    fitness: [
-        { title: 'Group Classes',    desc: 'Small-group sessions led by certified instructors who know your name.',  note: 'drop-in · pass' },
-        { title: 'Private Sessions', desc: 'One-on-one time built around your goals and current fitness level.',     note: 'by appointment' },
-        { title: 'Memberships',      desc: 'Month-to-month access with no contracts and unlimited classes.',         note: 'monthly' },
-    ],
-    education: [
-        { title: 'Group Classes',    desc: 'Structured small-group classes for kids, teens, and adults.', note: 'weekly · seasonal' },
-        { title: 'Private Tutoring', desc: "One-on-one sessions tailored to the student's goals and pace.", note: 'by appointment' },
-        { title: 'Workshops',        desc: 'Short focused workshops on specific topics throughout the year.', note: 'seasonal' },
-    ],
-    services: [
-        { title: 'Quotes & Estimates', desc: 'Free written quotes after a quick on-site or remote consultation.', note: 'free' },
-        { title: 'Booked Jobs',        desc: 'Scheduled work with clear timelines and tidy daily clean-up.',      note: 'scheduled' },
-        { title: 'Emergencies',        desc: 'Same-day response for urgent issues whenever we can.',              note: 'when possible' },
-    ],
-};
+/**
+ * Canonical business-type keys. Routing only — they pick a palette
+ * (AUTO_SCHEME_BY_BUSINESS_TYPE in lib/astro-builder.ts) and nothing else.
+ *
+ * This used to be BUSINESS_TYPE_SERVICES: the same keys mapped to a
+ * three-item service menu per trade, complete with descriptions and notes
+ * ('estimates free', 'same-day', 'no contracts', 'trained colourists',
+ * 'Free local delivery', 'reservations open'). Every one of those was a
+ * price, hours, credential or capability claim published on behalf of an
+ * owner who listed no services at all — the barber who only cuts hair
+ * advertised beard work, the shop with no delivery advertised delivery.
+ * A service the owner never mentioned is an invented service, and it
+ * reached the page even after the templates dropped their own stock lists,
+ * because mergeShallow(c.services, derived.services) in lib/astro-builder.ts
+ * fills any key the owner left unset. The table is gone; do not bring it
+ * back. Services come from the owner or the section hides.
+ */
+const BUSINESS_TYPE_KEYS = new Set([
+    'barber', 'salon', 'auto', 'restaurant', 'cafe',
+    'retail', 'clinic', 'fitness', 'education', 'services',
+]);
 
 export function normalizeBusinessType(bt: string | undefined | null): string {
     if (!bt) return '';
     const k = bt.trim().toLowerCase().replace(/[^a-z]/g, '');
-    if (BUSINESS_TYPE_SERVICES[k]) return k;
+    if (BUSINESS_TYPE_KEYS.has(k)) return k;
     if (/(barber|barbershop)/.test(k))          return 'barber';
     if (/(salon|beauty|spa|nail|hair|aesthet)/.test(k)) return 'salon';
     if (/(auto|mechanic|carshop|carrepair|tire|garage)/.test(k)) return 'auto';
@@ -141,25 +163,91 @@ export function deriveContentDefaults(
     content: DeriveContentInput,
     photos: string[] = [],
 ): DerivedSection {
-    const name = content.business_name || 'Your Business';
-    const city = content.business_city || '';
-    const bt = content.business_type || '';
+    // No placeholder wordmark. This used to be `|| 'Your Business'`, and
+    // because mergeShallow(c.X, derived.X) in lib/astro-builder.ts starts from
+    // the derived object, that string WAS the business name everywhere the
+    // page quotes it: the header mark, the H1, the marquee, the About heading
+    // and signature, the footer brand and the © line. HeaderA/HeroA/FooterA
+    // had already been stripped of their own copies and given `{brand && …}`
+    // guards — but the guards never fired, because this layer handed them a
+    // non-empty string. Deleting the fallback from 47 components did nothing
+    // while it survived here. Same trap as meta1's '★★★★★ rated on Google',
+    // one field over; see corollary 1 at the top of this file.
+    //
+    // Should the pipeline refuse a nameless submission instead? It should —
+    // but not from here. deriveContentDefaults() runs synchronously inside the
+    // admin editor's render (components/editor/SandboxEditor.tsx), where the
+    // name is legitimately absent for a moment while a draft loads, so
+    // throwing would take down the editor rather than the bad build.
+    // ExtractedContent.business_name is already typed non-optional, which
+    // makes "no name" a broken submission by contract; the gate belongs at
+    // intake / publish, upstream of this file.
+    //
+    // So this layer degrades instead, and treats a missing name exactly like a
+    // missing city or trade: every line that cannot be written without it is
+    // omitted. A nameless submission renders no wordmark, no hero headline, no
+    // About section, no footer brand and no © line — a visibly unfinished page
+    // that reads as missing data, which is the honest signal, instead of a
+    // finished-looking site for a business called 'Your Business'.
+    const name = content.business_name?.trim() || '';
+    const city = content.business_city?.trim() || '';
+    const bt = content.business_type?.trim() || '';
+    // Title-cased trade, or '' when the owner never told us. The old fallback
+    // was the literal string 'Local business', which then read out as "your
+    // local Local business in …" and, worse, asserted locality for a business
+    // that may be online-only or nationwide. No type supplied => say nothing
+    // about the type; every line below composes around an empty value.
     const niceType = bt
         ? bt.replace(/[_-]/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
-        : 'Local business';
-    const typeKey = normalizeBusinessType(bt);
-    const services = BUSINESS_TYPE_SERVICES[typeKey] || [
-        { title: 'Our Services', desc: `Learn more about what ${name} offers and how we can help.`, note: 'all customers' },
-        { title: 'Get in Touch', desc: `Reach out and we'll get back to you the same day.`,        note: 'phone · email' },
-        { title: 'Visit Us',     desc: `Drop by our location to see what we do in person.`,         note: 'walk-in' },
-    ];
+        : '';
+    const lowerType = niceType.toLowerCase();
+    // "Barbershop in Cebu City" / "Barbershop" / "based in Cebu City" / '' —
+    // built only from what the owner actually typed. The city-only form needs
+    // its own wording: joining a bare `in ${city}` onto the sentence below
+    // produced "Welcome to X — in Cebu City." for every submission that gave a
+    // city but no trade.
+    const descriptor = niceType && city
+        ? `${niceType} in ${city}`
+        : niceType || (city ? `based in ${city}` : '');
+    // Sentence-case a descriptor that has to stand on its own.
+    const asSentence = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1)}.`;
+    const phone = content.contact?.phone?.trim() || '';
+    const email = content.contact?.email?.trim() || '';
+    const address = content.contact?.address?.trim() || '';
+    // The contact channels we can actually promise, in the words of the FAQ
+    // answer below ('call +63…', 'email hi@…'). A channel the owner never
+    // supplied is not offered.
+    const contactChannels = [
+        phone ? `call ${phone}` : '',
+        email ? `email ${email}` : '',
+    ].filter(Boolean);
     return {
-        marquee: { text: 'Quality ◆ Trusted ◆ Local ◆ Reliable' },
+        // Marquee text is the owner's own name, city and trade. The default
+        // used to be 'Quality ◆ Trusted ◆ Local ◆ Reliable' — four unearned
+        // claims scrolling across the top of a site for a business that opened
+        // yesterday. MarqueeA already dropped its own copy of that string, but
+        // this layer put it back on every site: mergeShallow(c.marquee,
+        // derived.marquee) in lib/astro-builder.ts fills any key the owner
+        // left unset. Facts only; the band hides (`{text && …}`) if we have
+        // none.
+        marquee: { text: [name, city, niceType].filter(Boolean).join(' ◆ ') || undefined },
         hero: {
-            kicker: city ? `${city} · ${niceType}` : niceType,
-            headline: name,
-            headlineLines: [name, '', ''],
-            sub: content.tagline || (city ? `Welcome to ${name}, your local ${niceType.toLowerCase()} in ${city}.` : `Welcome to ${name}.`),
+            kicker: [city, niceType].filter(Boolean).join(' · ') || undefined,
+            headline: name || undefined,
+            // One line, and only when there is a name to put on it. The old
+            // [name, '', ''] padding also emitted two empty headline rows in
+            // every hero that maps over this array — and one of them picks up
+            // the accent style by index (HeroF), so the pad was visible.
+            headlineLines: name ? [name] : [],
+            // 'your local …' dropped: locality is a claim, the name/type/city
+            // around it are the owner's facts. With no name there is nobody to
+            // welcome anyone to, so the trade and city stand alone
+            // ('Barbershop in Cebu City.') and an empty submission gets no
+            // sub-line at all — every hero reads it as `{sub && …}`.
+            sub: content.tagline?.trim()
+                || (name
+                    ? (descriptor ? `Welcome to ${name} — ${descriptor}.` : `Welcome to ${name}.`)
+                    : (descriptor ? asSentence(descriptor) : undefined)),
             cta1: { text: 'Get in touch', href: '#visit' },
             cta2: { text: 'See services', href: '#services' },
             // No meta1 default. It used to be '★★★★★ rated on Google' — a
@@ -172,65 +260,131 @@ export function deriveContentDefaults(
             // leaves unset, so this line put it straight back on every generic
             // site. Every hero renders the line as `{meta1 && …}`, so leaving it
             // out simply omits it. Owner data or nothing.
-            meta2: city ? `${city} · open daily` : 'Open daily',
+            //
+            // meta2 was `${city} · open daily` (and a bare 'Open daily' when we
+            // didn't even know the city) — a trading schedule nobody verified,
+            // welded onto a real fact. The city survives; the schedule does not.
+            // Same `{meta2 && …}` guard, so no city means no line.
+            meta2: city || undefined,
         },
         about: {
             tag: 'About',
-            headline: `About ${name}`,
-            lead: city
-                ? `${name} is a ${niceType.toLowerCase()} based in ${city}.`
-                : `${name} is a local ${niceType.toLowerCase()}.`,
-            signature: name,
-            paragraphs: [
-                `We focus on quality work, honest pricing, and customers who come back.`,
-                `Get in touch and we'll walk you through what we can do for you.`,
-            ],
+            // 'About ' with nothing after it is not a heading, and the derived
+            // value is what the editor sidebar shows admin as the current
+            // content — so a name-less headline would also teach admin that
+            // the site says something it doesn't. Absent when we have no name.
+            headline: name ? `About ${name}` : undefined,
+            // Owner facts only, and only the ones we have. 'local' removed for
+            // the same reason as above. Every clause here is a sentence ABOUT
+            // the named business, so no name means no lead — AboutA guards
+            // `{lead && …}` and drops the whole section when headline, lead,
+            // signature and paragraphs are all empty.
+            lead: !name
+                ? undefined
+                : city && niceType
+                    ? `${name} is a ${lowerType} based in ${city}.`
+                    : niceType
+                        ? `${name} is a ${lowerType}.`
+                        : city
+                            ? `${name} is based in ${city}.`
+                            : undefined,
+            signature: name || undefined,
+            // No stock About prose. The two paragraphs here were "We focus on
+            // quality work, honest pricing, and customers who come back" and an
+            // offer to walk the customer through the job — a quality claim, a
+            // pricing claim and a retention claim, written in the owner's voice
+            // about a business we know nothing about. There is no honest
+            // generic About paragraph; every About component maps over this
+            // array, so [] simply renders no body copy.
+            paragraphs: [],
         },
         services: {
             tag: 'What we offer',
             headline: 'Services we provide',
-            sub: `A quick look at what ${name} can help you with.`,
-            items: services,
+            sub: name ? `A quick look at what ${name} can help you with.` : undefined,
+            // Empty by design — see BUSINESS_TYPE_KEYS above for what used to
+            // be here. Every Services component checks `items.length` and keeps
+            // the whole section out of the document when it is 0, so a business
+            // that listed no services advertises none.
+            items: [],
         },
         why: {
             tag: 'Why us',
-            headline: `Why choose ${name}`,
-            items: [
-                { title: 'Local & reliable', body: city ? `Serving ${city} and the surrounding area with consistent, dependable work.` : 'Consistent, dependable work close to home.' },
-                { title: 'Honest pricing',   body: 'Clear quotes up front. No surprise charges when the job is done.' },
-                { title: 'Real people',      body: 'Call or message and reach a real human who knows your job.' },
-            ],
+            headline: name ? `Why choose ${name}` : undefined,
+            // The three stock reasons — 'Local & reliable' ("consistent,
+            // dependable work"), 'Honest pricing' ("no surprise charges") and
+            // 'Real people' ("reach a real human who knows your job") — are
+            // reach, price and service-level promises made for a business we
+            // have never spoken to. Nothing here is derivable from a
+            // submission. The section hides on `items.length === 0`.
+            items: [],
         },
         how: {
             tag: 'How it works',
-            headline: 'Three easy steps',
-            steps: [
-                { title: 'Reach out',     body: "Send us a message, call, or stop by. We'll listen first." },
-                { title: 'We confirm',    body: "Quick reply with what we can do, when, and what it'll cost." },
-                { title: 'We get it done', body: 'On the agreed date — on time and on quote.' },
-            ],
+            // 'Three easy steps' also went: it fixes a step count the owner's
+            // real process may not match, and it renders above nothing now.
+            // The steps themselves promised a "quick reply", a quote, and work
+            // delivered "on time and on quote" — speed, price and punctuality.
+            steps: [],
         },
         gallery: {
             tag: 'Inside',
             headline: 'A look at our work',
-            items: photos.slice(0, 6).map((image, i) => ({
-                image,
-                caption: i === 0 ? 'Our space' : i === 1 ? 'Our work' : 'Behind the scenes',
-            })),
+            // Photos are the owner's; the captions were ours. 'Our space' /
+            // 'Our work' / 'Behind the scenes' describe what is in an image
+            // nobody looked at. Omit the key entirely — every gallery renders
+            // `{it.caption && …}`, so an uncaptioned photo is just a photo.
+            items: photos.slice(0, 6).map((image) => ({ image })),
         },
         faq: {
             tag: 'Good to know',
             headline: 'Questions, answered',
+            // Each Q&A is emitted only when the submission actually answers it.
+            // Dropped outright: 'What hours are you open?' — the stock answer
+            // pointed at "our Google Business profile", a profile most of these
+            // businesses do not have, to cover hours we were never given.
+            // Also dropped: the "we reply the same day" tail on the contact
+            // answer, and the phone-less variant that invited people to "stop
+            // by our location" we may not know.
+            //
+            // An answer may only promise what this same submission
+            // guarantees — see corollary 2 at the top of the file. Both items
+            // below used to break that rule in the same way.
             items: [
-                { q: 'How do I get in touch?', a: content.contact?.phone ? `Call ${content.contact.phone}, send us a message, or stop by our location.` : 'Send us a message or stop by our location — we reply the same day.' },
-                { q: 'Where are you located?', a: content.contact?.address || (city ? `Located in ${city}. See the Location section below for full details.` : 'See the Location section below for full details.') },
-                { q: 'What hours are you open?', a: 'Hours kept live on our Google Business profile — click "Hours on Google" for the latest.' },
+                // 'or send us a message' offered a channel that may not exist:
+                // these pages render a phone, an address and a map, and
+                // nothing that takes a message — no form, no inbox, and the
+                // messenger FAB is opt-in and off by default. The answer now
+                // names only the channels the owner actually gave us, and the
+                // question is skipped when they gave none.
+                ...(contactChannels.length
+                    ? [{ q: 'How do I get in touch?', a: `You can ${contactChannels.join(' or ')}.` }]
+                    : []),
+                ...(address
+                    ? [{ q: 'Where are you located?', a: address }]
+                    // City but no address. The old answer here was 'Located in
+                    // ${city}. See the Location section below for full
+                    // details.' — and this branch fires *because* the owner
+                    // gave no address, so there are no full details to see.
+                    // Worse, LocationA/B/C/D/E keep themselves out of the
+                    // document entirely unless there is an address, phone,
+                    // hours or map coords, so on a submission with only a city
+                    // the sentence pointed at a section that isn't on the page
+                    // at all. Answer with the one fact we have; promise
+                    // nothing beyond it.
+                    : city
+                        ? [{ q: 'Where are you located?', a: `We're based in ${city}.` }]
+                        : []),
             ],
         },
         area: {
             tag: 'Service area',
-            headline: city ? `Serving ${city} and nearby` : 'Where we serve',
-            body: city ? `Based in ${city}, we serve customers across the surrounding area.` : 'Based locally, we serve customers across the surrounding area.',
+            // 'and nearby' / "customers across the surrounding area" claimed a
+            // coverage radius nobody defined, and the city-less variant claimed
+            // one for a business whose location we don't even know. What is
+            // left is the city the owner typed. AreaA hides the column when
+            // headline, body and places are all empty.
+            headline: city ? `Serving ${city}` : undefined,
             places: city ? [city] : [],
         },
         location: {
@@ -239,18 +393,34 @@ export function deriveContentDefaults(
         },
         ctaBand: {
             headline: `Ready when you are.`,
-            sub: `Reach out to ${name} and we'll get back to you the same day.`,
+            // No sub-line: "we'll get back to you the same day" is a response-
+            // time guarantee. CtaBandA/B fall back to joining the real address
+            // and phone when this key is absent, which is the honest version of
+            // the same line.
             cta: { text: 'Get in touch', href: '#visit' },
         },
         footer: {
-            brand: name,
-            blurb: city
-                ? `${name} — a ${niceType.toLowerCase()} serving ${city}.`
-                : `${name} — a local ${niceType.toLowerCase()}.`,
-            notes: [
-                `© ${new Date().getFullYear()} ${name}`,
-                'Quality work · trusted locally',
-            ],
+            // FooterA…E guard `{brand && …}`; with no name the mark is simply
+            // not drawn rather than reading 'Your Business'.
+            brand: name || undefined,
+            // Every variant of the blurb is '<name> — <fact>', so it needs the
+            // name as much as the About lead does.
+            blurb: !name
+                ? undefined
+                : city && niceType
+                    ? `${name} — ${lowerType} serving ${city}.`
+                    : niceType
+                        ? `${name} — ${lowerType}.`
+                        : city
+                            ? `${name} — ${city}.`
+                            : undefined,
+            // Copyright only. 'Quality work · trusted locally' was a quality
+            // claim plus a reputation claim, sitting in the footer of every
+            // site we shipped. And a © line needs somebody to assert the
+            // copyright for: with no name it would print a bare '© 2026',
+            // so the note is dropped instead (the footer maps over this array,
+            // so [] renders no note row).
+            notes: name ? [`© ${new Date().getFullYear()} ${name}`] : [],
         },
         navbar_links: [
             { label: 'About',    href: '#about' },

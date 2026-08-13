@@ -22,9 +22,12 @@ interface Props {
 const { layout, content } = Astro.props;
 const f = content.footer || {};
 
-const brand = f.brand   || layout.businessName || 'Your Business';
-const blurb = f.blurb   || f.brand_blurb
-  || 'A brief one-line description of what this business does. Edit in the Footer section.';
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = f.brand || layout.businessName || '';
+// No stock blurb: the old default left editor instructions ("Edit in the
+// Footer section") on the live page as the business's own description.
+const blurb = f.blurb || f.brand_blurb || '';
 
 const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
   ? f.visit.lines
@@ -54,8 +57,8 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
   <div class="wrap">
     <div class="foot-grid">
       <div>
-        <div class="brand" data-field="footer.brand"><span class="dot"></span>{brand}</div>
-        <p class="blurb" data-field="footer.blurb">{blurb}</p>
+        {brand && <div class="brand" data-field="footer.brand"><span class="dot"></span>{brand}</div>}
+        {blurb && <p class="blurb" data-field="footer.blurb">{blurb}</p>}
         {social.length > 0 && (
           <div class="foot-social">
             {social.map((s: any, i: number) => (
@@ -72,7 +75,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
         )}
       </div>
       <div class="foot-col">
-        <h4>Visit</h4>
+        {visitLines.length > 0 && <h4>Visit</h4>}
         <ul>
           {visitLines.map((line: string, i: number) => (
             line === phone && phone
@@ -82,7 +85,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
         </ul>
       </div>
       <div class="foot-col">
-        <h4>Explore</h4>
+        {explore.length > 0 && <h4>Explore</h4>}
         <ul>
           {explore.map((l: any, i: number) => (
             <li>
@@ -96,7 +99,7 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
         </ul>
       </div>
       <div class="foot-col foot-hours">
-        <h4>Hours</h4>
+        {hoursRows.length > 0 && <h4>Hours</h4>}
         {hoursRows.map((row: any, i: number) => (
           <div>
             <span data-field={`footer.hours.${i}.day`}>{row.day}</span>

@@ -2,28 +2,36 @@
 interface Props { content: any; }
 const { content } = Astro.props;
 const gallery = content.gallery || content.featured || {};
-const tag = gallery.tag || 'The shop';
-const headline = gallery.headline || 'Bright, clean, and friendly.';
+const tag = gallery.tag || 'Our work';
+const headline = gallery.headline || '';
 const allPhotos = Array.isArray(content.photos) ? content.photos : [];
-const defaultCaps = ['Self-service floor', 'Folded & ready', 'Big-capacity machines', 'Pickup & delivery', 'Dry cleaning', 'On Harbor St'];
+// No stock captions: the old defaultCaps arrays labelled the owner's own
+// uploaded photos with invented scenes ("The drum roaster", "Flagstone
+// patio"), describing work the business may never have done. Photos with
+// no owner caption render as bare images.
 const fromContent = Array.isArray(gallery.items) && gallery.items.length ? gallery.items : null;
-const items: Array<{ image?: string; caption?: string }> = fromContent || allPhotos.slice(0, 6).map((p: string, i: number) => ({ image: p, caption: defaultCaps[i] }));
+const items: Array<{ image?: string; caption?: string }> = fromContent || allPhotos.slice(0, 6).map((p: string) => ({ image: p }));
+// Nothing but the frame => the whole section stays out of the document
+// rather than rendering a heading over an empty grid.
+const tiles = items.filter((it: any) => it && it.image);
 const tileClasses = ['gt1', 'gt2', 'gt3', 'gt4', 'gt5', 'gt6'];
 ---
+{tiles.length > 0 && (
 <section class="sec" id="work">
   <div class="wrap">
     <p class="sec-tag reveal" data-field="gallery.tag">{tag}</p>
-    <h2 class="reveal" data-field="gallery.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="gallery.headline" set:html={headline}></h2>}
     <div class="gal">
-      {items.filter((it: any) => it && it.image).slice(0, 6).map((it: any, i: number) => (
+      {tiles.slice(0, 6).map((it: any, i: number) => (
         <div class={`gtile ${tileClasses[i]} reveal`} style={i > 0 ? `transition-delay:.${(i % 3) * 6}s;` : ''}>
           <div class="img" data-image-field={`gallery.items.${i}.image`} style={it.image ? `background-image:url('${it.image}');` : ''}></div>
-          <div class="cap" data-field={`gallery.items.${i}.caption`}>{it.caption}</div>
+          {it.caption && <div class="cap" data-field={`gallery.items.${i}.caption`}>{it.caption}</div>}
         </div>
       ))}
     </div>
   </div>
 </section>
+)}
 <style>
   .gal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 50px; }
   .gtile { position: relative; overflow: hidden; border-radius: 22px; background: var(--blue-soft); }

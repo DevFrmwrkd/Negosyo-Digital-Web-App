@@ -2,8 +2,12 @@
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
 const f = content.footer || {};
-const brand = f.brand || layout.businessName || 'Your Business';
-const blurb = f.blurb || f.brand_blurb || 'A brief one-line description of what this business does. Edit in the Footer section.';
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = f.brand || layout.businessName || '';
+// No stock blurb: the old default left editor instructions ("Edit in the
+// Footer section") on the live page as the business's own description.
+const blurb = f.blurb || f.brand_blurb || '';
 const phone = layout.contact?.phone || '';
 const phoneDigits = phone.replace(/[^0-9+]/g, '');
 const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length ? f.visit.lines : [];
@@ -16,8 +20,8 @@ const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
   <div class="wrap">
     <div class="foot-grid">
       <div>
-        <div class="brand"><span class="mk"></span><span data-field="footer.brand">{brand}</span></div>
-        <p class="blurb" data-field="footer.blurb">{blurb}</p>
+        {brand && <div class="brand"><span class="mk"></span><span data-field="footer.brand">{brand}</span></div>}
+        {blurb && <p class="blurb" data-field="footer.blurb">{blurb}</p>}
         {social.length > 0 && (
           <div class="foot-social">
             {social.map((s: any, i: number) => (
@@ -27,7 +31,7 @@ const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
         )}
       </div>
       <div class="foot-col">
-        <h4>contact</h4>
+        {visitLines.length > 0 && <h4>contact</h4>}
         <ul>
           {visitLines.map((line: string, i: number) => (
             line === phone && phone
@@ -37,7 +41,7 @@ const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
         </ul>
       </div>
       <div class="foot-col">
-        <h4>services</h4>
+        {explore.length > 0 && <h4>services</h4>}
         <ul>
           {explore.map((l: any, i: number) => (
             <li><a href={l.href} data-field={`footer.explore.links.${i}.text`} data-href-field={`footer.explore.links.${i}.href`}>{l.text}</a></li>
@@ -45,7 +49,7 @@ const notes: string[] = Array.isArray(f.notes) && f.notes.length ? f.notes : [];
         </ul>
       </div>
       <div class="foot-col foot-hours">
-        <h4>hours · live on google</h4>
+        {hoursRows.length > 0 && <h4>hours</h4>}
         {hoursRows.map((row: any, i: number) => (
           <div>
             <span data-field={`footer.hours.${i}.day`}>{row.day}</span>

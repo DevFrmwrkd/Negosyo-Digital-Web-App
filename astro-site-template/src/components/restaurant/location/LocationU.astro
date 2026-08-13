@@ -20,18 +20,36 @@ const email = loc.email || layout.contact?.email || '';
 const hours: Array<{ day: string; time: string }> = Array.isArray(loc.hours)
   ? loc.hours
   : (Array.isArray((content as any).footer?.hours) ? (content as any).footer.hours : []);
-const ctaText = loc.cta?.text || 'Reserve a table';
-const ctaHref = loc.cta?.href || (phoneDigits ? `tel:${phoneDigits}` : '#visit');
+// WHY no default CTA label: "Reserve a table" claims both table service and a
+// reservation system. A takeout counter or carinderia has neither. Unset → the
+// whole .visit-cta block (button + note) is omitted rather than left dangling.
+const ctaText = loc.cta?.text || '';
+// No '#visit' fallback: this section IS #visit, so that href was a button that
+// scrolled to itself. With no explicit link and no phone to dial there is no
+// destination, so the button is dropped rather than shipped dead.
+const ctaHref = loc.cta?.href || (phoneDigits ? `tel:${phoneDigits}` : '');
 const ctaNote = loc.ctaNote || '';
+const hasCta = Boolean(ctaText && ctaHref);
 const lat = loc.lat != null ? Number(loc.lat) : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
 const lng = loc.lng != null ? Number(loc.lng) : (layout.contact?.lng != null ? Number(layout.contact.lng) : null);
 const mapAria = `Map showing ${brand}`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
+// Path 3 above used to render "No address on file yet." — that is an internal
+// note to the admin, and it was rendering on the restaurant's public page. With
+// neither coords nor address the map cell is dropped and the grid falls to one
+// column (.no-map) so the info column does not sit beside a dead half.
+const hasMap = hasCoords || hasAddress;
+// A location section with no location in it is an empty shell: the heading
+// (and, where the variant defaults one, its stock wording) printed over a card
+// with nothing in it. The map already hides on hasMap; the section hides too
+// unless the owner gave us something real to put in it.
+const hasLoc = hasMap || Boolean(address || phone || email || hours.length > 0 || hasCta || ctaNote);
 ---
+{hasLoc && (
 <section class="visit" id="visit">
   <div class="wrap">
-    <div class="visit-grid reveal">
+    <div class:list={['visit-grid', 'reveal', !hasMap && 'no-map']}>
       <div class="visit-info">
         {tag && <span class="kicker" data-field="location.tag">{tag}</span>}
         {headline && <h2 data-field="location.headline" set:html={headline}></h2>}
@@ -55,18 +73,22 @@ const hasAddress = !!address;
             ))}
           </div>
         )}
-        <div class="visit-cta">
-          <a class="btn btn--ghost on-dark" href={ctaHref} data-field="location.cta.text" data-href-field="location.cta.href">{ctaText}</a>
-          {ctaNote && <span class="visit-note" data-field="location.ctaNote">{ctaNote}</span>}
+        {(hasCta || ctaNote) && (
+          <div class="visit-cta">
+            {hasCta && <a class="btn btn--ghost on-dark" href={ctaHref} data-field="location.cta.text" data-href-field="location.cta.href">{ctaText}</a>}
+            {ctaNote && <span class="visit-note" data-field="location.ctaNote">{ctaNote}</span>}
+          </div>
+        )}
+      </div>
+      {hasMap && (
+        <div id="map" role="img" aria-label={mapAria}>
+          {!hasCoords && <div class="map-fallback" id="map-fallback">Loading map…</div>}
         </div>
-      </div>
-      <div id="map" role="img" aria-label={mapAria}>
-        {!hasCoords && !hasAddress && <div class="map-fallback">No address on file yet.</div>}
-        {!hasCoords && hasAddress && <div class="map-fallback" id="map-fallback">Loading map…</div>}
-      </div>
+      )}
     </div>
   </div>
 </section>
+)}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label: brand }}>
     (function init() {
@@ -113,6 +135,9 @@ const hasAddress = !!address;
 <style>
   .visit { background: var(--ink); color: var(--paper); padding-block: clamp(78px, 10vw, 160px); }
   .visit-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 0; border: 1px solid rgba(var(--paper-rgb), .16); }
+  /* No address and no coords: the map cell is not rendered, so the info column
+     takes the full frame instead of leaving a bordered empty half. */
+  .visit-grid.no-map { grid-template-columns: 1fr; }
   .visit-info { padding: clamp(40px, 5vw, 68px); border-right: 1px solid rgba(var(--paper-rgb), .16); display: flex; flex-direction: column; }
   .visit-info .kicker { margin-bottom: 26px; color: var(--accent); }
   .visit-info h2 { font-family: var(--serif); font-weight: 300; font-size: clamp(34px, 4.4vw, 56px); margin-bottom: 32px; color: var(--paper); }

@@ -22,8 +22,19 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
       <div class="faq-grid">
         <div class="faq-intro reveal">
           <h2 class="h2" data-field="faq.headline" set:html={headline}></h2>
+          {/* Contact invitation only. The old tail described the premises ("come to
+              the window", "take a booth", "follow the smoke to the kanto") — a claim
+              about a shop this template has never seen. Do not put a literal back.
+              TRAP (round 5): the surviving line still read "message us or ring
+              …", which promised an inbox. These pages render a phone, an address
+              and a map, and nothing that takes a message — no form, no inbox, and
+              the footer pill is opt-in. It is the same claim
+              lib/derive-content-defaults.ts already stripped from the "How do I
+              get in touch?" answer, alive one layer down in markup where no data
+              layer could reach it. Name the phone and nothing else; with no phone
+              the whole line is dropped. */}
           {phone && (
-            <p class="body">Anything else — message us or ring <a href={`tel:${phoneDigits}`} class="faq-tel">{phone}</a>. Or just come to the glass and point.</p>
+            <p class="body">Anything else — give us a call at <a href={`tel:${phoneDigits}`} class="faq-tel">{phone}</a>.</p>
           )}
         </div>
         <div class="faq-list reveal">

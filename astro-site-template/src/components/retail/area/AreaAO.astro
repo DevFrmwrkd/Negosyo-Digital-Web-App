@@ -9,7 +9,9 @@
 interface Props { content: any; }
 const { content } = Astro.props;
 const area = content.area || {};
-const tag = area.tag || 'We deliver around';
+// No default kicker: "We deliver around" is a delivery claim, and a shop that
+// lists the areas it serves may not deliver to them at all.
+const tag = area.tag || '';
 const headline = area.headline || '';
 const sub = area.sub || '';
 const body = area.body || '';
@@ -25,7 +27,7 @@ const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArr
         </div>
       )}
       <div class="areas reveal">
-        <div class="kicker" data-field="area.tag">{tag}</div>
+        {tag && <div class="kicker" data-field="area.tag">{tag}</div>}
         <div class="area-tags">
           {places.map((place, i) => (
             <span data-field={`area.places.${i}`}>{place}</span>

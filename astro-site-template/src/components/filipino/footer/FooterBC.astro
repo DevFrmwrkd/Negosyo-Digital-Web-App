@@ -2,13 +2,39 @@
 /**
  * filipino / FooterBC — lp-103's leaf-green footer: an Archivo wordmark + blurb, a
  * "Visit" NAP column, an "Index" links column, a colophon rule, plus lp-103's
- * floating leaf message pill (reuses the hero's primary CTA so it stays in sync).
- * Every column auto-hides when empty. Mirrors FooterAS's content contract.
+ * floating leaf message pill — opt-in, and drawn only for a business that gave
+ * us a WhatsApp or Messenger handle. Every column auto-hides when empty. Mirrors
+ * FooterAS's content contract.
  */
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageBC actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageBC.
+//
+// NOTE (round 5): the message pill below no longer calls onPage() — a message
+// channel is never an in-page anchor. The guard stays because the "Index"
+// column still emits layout.navLinks hrefs verbatim ('#why' / '#work' among
+// them), which this design does not render; that is a separate fix.
+const PAGE_ANCHORS = new Set(['about', 'book', 'how', 'location', 'main', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const f = (content as any).footer || {};
-const brand = f.brand || layout.businessName || 'Your Business';
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = f.brand || layout.businessName || '';
 const blurb = f.blurb || f.brand_blurb || '';
 const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
   ? f.visit.lines
@@ -23,17 +49,38 @@ const phone = layout.contact?.phone || '';
 const phoneDigits = phone.replace(/[^0-9+]/g, '');
 const year = new Date().getFullYear();
 
-// Floating message pill — reuse the hero's primary CTA (falls back to CTA-band).
+// Floating message pill. TRAP (round 5) — the GATE, not the label. This used to
+// reuse the hero's primary CTA, and lib/derive-content-defaults.ts sets
+// hero.cta1 = { text: 'Get in touch', href: '#visit' } on EVERY site (with
+// lib/astro-builder.ts aliasing the same text onto ctaBand.cta1), which onPage()
+// then rewrote to '#location' — so `msgHref && msgText` was true for every
+// business alive. A chat-bubble pill sat fixed to the corner of the page,
+// asserting a message thread that did not exist and merely scrolling the reader
+// down to the address. Round 4 removed the default LABEL and left the gate,
+// which is why it survived. The pill may only come off a channel the owner
+// actually typed: layout.contact.whatsapp / .messenger, which astro-builder
+// passes through verbatim. Do NOT re-point this at layout.messaging.whatsapp —
+// that one is DERIVED from contact.phone, so it is non-empty for anyone with a
+// landline and puts this bug straight back. A CTA href is never a channel.
 const hero = (content as any).hero || {};
 const cband = (content as any).ctaBand || {};
-const msgHref = hero.cta1?.href || cband.cta1?.href || '';
-const msgText = hero.cta1?.text || cband.cta1?.text || 'Message';
+const waDigits = String(layout.contact?.whatsapp || '').replace(/[^0-9]/g, '');
+const messenger = String(layout.contact?.messenger || '').trim();
+const msgHref = waDigits
+  ? `https://wa.me/${waDigits}`
+  : messenger
+    ? (/^https?:/i.test(messenger) ? messenger : `https://m.me/${messenger.replace(/^@/, '')}`)
+    : '';
+// No default label: "Message" asserts a messaging channel the kitchen may
+// not run — and with no channel there is no pill at all, whatever the
+// CTA text says.
+const msgText = msgHref ? (hero.cta1?.text || cband.cta1?.text || '') : '';
 ---
 <footer>
   <div class="wrap">
     <div class="footer-grid">
       <div class="fcol">
-        <div class="wm" data-field="footer.brand">{brand}</div>
+        {brand && <div class="wm" data-field="footer.brand">{brand}</div>}
         {blurb && <p class="fblurb" data-field="footer.blurb">{blurb}</p>}
         {social.length > 0 && (
           <div class="foot-social">
@@ -65,14 +112,17 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Message';
       )}
     </div>
     <div class="colophon">
-      <span>© {year} {String(brand).toUpperCase()}</span>
-      <span>Sarap · Mabilis · Sulit · Sampaloc</span>
+      <span>© {year}{brand ? ` ${String(brand).toUpperCase()}` : ''}</span>
+      {/* The second colophon line was a hardcoded claim strip ("OPEN 24 HOURS ·
+          ANTIPOLO", "HERITAGE LIBERICA · BATANGAS", "HOT PANDESAL FROM FIVE") —
+          hours, places and products no business here ever supplied. Nothing feeds
+          this slot, so it stays empty rather than asserting something false. */}
     </div>
   </div>
 </footer>
-{msgHref && (
+{msgHref && msgText && (
   <div class="msg-fab">
-    <a href={msgHref} rel="noopener" aria-label="Message the carinderia" data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+    <a href={msgHref} target="_blank" rel="noopener noreferrer" aria-label={msgText} data-field="hero.cta1.text">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4A11 11 0 0 0 4.5 18.5L3 22l3.7-1.4A11 11 0 1 0 20 4Z"/></svg>
       {msgText}
     </a>

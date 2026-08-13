@@ -16,7 +16,10 @@ const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs 
 const quote = about.quote || '';
 const signature = about.signature || '';
 ---
-{(headline || paragraphs.length > 0) && (
+{/* headline is deliberately NOT counted: derive-content-defaults.ts sets
+    about.headline to `About ${name}` for every named business, so including it
+    makes this gate always-true and the section renders a heading over nothing. */}
+{paragraphs.length > 0 && (
   <section class="about" id="about" aria-label="About">
     {tag && <div class="sec-lbl" data-field="about.tag">{tag}</div>}
     {headline && <h2 class="sec-h" data-field="about.headline" set:html={headline}></h2>}

@@ -3,17 +3,28 @@ interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
 const band = content.ctaBand || {};
 const headline = band.headline || '';
-const sub = band.sub || band.body || `${layout.contact?.address || 'Your address line 1, Portland'} · ${layout.contact?.phone || '+0 000 000 0000'}`;
+// No stock sub-line. The old default stitched a placeholder address
+// ("Your address line 1, Portland") and a fake phone ("+0 000 000 0000")
+// together with service claims — "open daily", "< 15 min response",
+// "free local pickup" — none of which anyone verified for this business.
+// Real contact data is joined only when the owner actually supplied it.
+const contactBits = [layout.contact?.address, layout.contact?.phone].filter(Boolean);
+const sub = band.sub || band.body || contactBits.join(' · ');
 const ctaText = band.cta?.text || band.primaryLabel || '';
 const ctaHref = band.cta?.href || band.primaryLink || '#visit';
+// Nothing to say and nowhere to send anyone => the band stays out of the
+// document rather than rendering a bare coloured strip with an empty button.
+const hasBand = Boolean(headline || sub || ctaText);
 ---
+{hasBand && (
 <section class="cta-band">
   <div class="wrap in">
-    <h2 class="reveal" data-field="ctaBand.headline" set:html={headline}></h2>
-    <p class="sub reveal" data-field="ctaBand.sub">{sub}</p>
-    <a href={ctaHref} class="btn reveal" data-field="ctaBand.cta.text" data-href-field="ctaBand.cta.href">{ctaText}</a>
+    {headline && <h2 class="reveal" data-field="ctaBand.headline" set:html={headline}></h2>}
+    {sub && <p class="sub reveal" data-field="ctaBand.sub">{sub}</p>}
+    {ctaText && <a href={ctaHref} class="btn reveal" data-field="ctaBand.cta.text" data-href-field="ctaBand.cta.href">{ctaText}</a>}
   </div>
 </section>
+)}
 <style>
   .cta-band { text-align: center; padding: 130px 0; background: var(--teal); color: var(--paper-2); position: relative; overflow: hidden; }
   .cta-band::before { content: ""; position: absolute; width: 520px; height: 520px; border-radius: 50%; background: rgba(255, 255, 255, .05); top: -200px; left: 50%; transform: translateX(-50%); }

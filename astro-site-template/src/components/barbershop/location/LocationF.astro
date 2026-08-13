@@ -16,7 +16,20 @@ const lat = loc.lat != null ? Number(loc.lat) : (layout.contact?.lat != null ? N
 const lng = loc.lng != null ? Number(loc.lng) : (layout.contact?.lng != null ? Number(layout.contact.lng) : null);
 const label = layout.businessName || 'Our location';
 const mapAria = `Map showing ${label}`;
+const hasCoords = lat != null && lng != null;
+const hasAddress = !!address;
+// No coords and no address => no map. Drop the map cell entirely rather than
+// print "No address on file yet." — that is an internal note to the admin, and
+// it was rendering on the shop's public page. The grid drops to one column
+// (.no-map) so the info card does not sit beside a dead half.
+const hasMap = hasCoords || hasAddress;
+// A location section with no location in it is an empty shell: the heading
+// (and, where the variant defaults one, its stock wording) printed over a card
+// with nothing in it. The map already hides on hasMap; the section hides too
+// unless the owner gave us something real to put in it.
+const hasLoc = hasMap || Boolean(address || phone || hours.length > 0);
 ---
+{hasLoc && (
 <section class="pad-y" id="visit">
   <div class="wrap">
     <div class="sect-head reveal">
@@ -26,7 +39,7 @@ const mapAria = `Map showing ${label}`;
       </div>
       {sub && <p class="lead" data-field="location.sub">{sub}</p>}
     </div>
-    <div class="loc-grid reveal">
+    <div class:list={['loc-grid', 'reveal', !hasMap && 'no-map']}>
       <div class="loc-info">
         {address && (
           <div class="row">
@@ -68,21 +81,26 @@ const mapAria = `Map showing ${label}`;
             </div>
           </div>
         )}
-        <div style="margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;">
-          <a class="btn btn--brass" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>
+        {/* No address and no explicit link → dirHref is '#'. Drop the button
+            entirely: a "Get directions" affordance that goes nowhere promises a
+            destination this business has not given us. */}
+        {dirHref !== '#' && (
+          <div style="margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;">
+            <a class="btn btn--brass" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>
+          </div>
+        )}
+      </div>
+      {hasMap && (
+        <div id="map" role="img" aria-label={mapAria}>
+          {!hasCoords && (
+            <div class="map-fallback" id="map-fallback">Loading map…</div>
+          )}
         </div>
-      </div>
-      <div id="map" role="img" aria-label={mapAria}>
-        {!(lat != null && lng != null) && !address && (
-          <div class="map-fallback">No address on file yet.</div>
-        )}
-        {!(lat != null && lng != null) && address && (
-          <div class="map-fallback" id="map-fallback">Loading map…</div>
-        )}
-      </div>
+      )}
     </div>
   </div>
 </section>
+)}
 {/* Map render path A: build-time coords ready. */}
 {lat != null && lng != null && (
   <script is:inline define:vars={{ lat, lng, label }}>
@@ -135,6 +153,9 @@ const mapAria = `Map showing ${label}`;
 )}
 <style>
   .loc-grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 0; border: 1px solid var(--line); }
+  /* No address and no coords: the map cell is not rendered, so the info card
+     takes the full frame instead of leaving a bordered empty half. */
+  .loc-grid.no-map { grid-template-columns: 1fr; }
   .loc-info { padding: clamp(34px, 4vw, 56px); }
   .loc-info .row { display: flex; gap: 16px; padding: 22px 0; border-bottom: 1px solid var(--line); }
   .loc-info .row:last-child { border-bottom: none; }

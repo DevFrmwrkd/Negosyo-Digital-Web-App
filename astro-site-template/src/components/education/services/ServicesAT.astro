@@ -5,9 +5,8 @@
  * cycling coral / highlighter / navy top-rule and a lift on hover. services.sub
  * renders as the sec-head note under the headline.
  *
- * services.items[i].tag is the design's filing-tab chip (falls back to a
- * computed "PROG 0X" so the card always reads as designed); price/duration are
- * accepted as legacy aliases (mirrors the AM content model).
+ * services.items[i].tag is the design's filing-tab chip, hidden when unset;
+ * price/duration are accepted as legacy aliases (mirrors the AM content model).
  */
 interface Props { content: any; }
 const { content } = Astro.props;
@@ -17,6 +16,10 @@ const headline = services.headline || '';
 const sub = services.sub || '';
 type Item = { title: string; desc?: string; price?: string; duration?: string; tag?: string };
 const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+// The filing-tab chip carries only what the school supplied. The old computed
+// "PROG 0X" put an invented course code in the tab's editable slot, reading as
+// this school's own catalogue numbering. No tag, no chip.
+const tabOf = (it: Item) => it.tag ?? it.duration ?? it.price ?? '';
 ---
 {items.length > 0 && (
   <section class="sec services" id="services">
@@ -29,7 +32,7 @@ const items: Item[] = Array.isArray(services.items) ? services.items : (Array.is
       <div class="svc-grid">
         {items.map((item, i) => (
           <article class="svc reveal">
-            <span class="tab" data-field={`services.items.${i}.tag`}>{item.tag ?? item.duration ?? item.price ?? `PROG ${String(i + 1).padStart(2, '0')}`}</span>
+            {tabOf(item) && <span class="tab" data-field={`services.items.${i}.tag`}>{tabOf(item)}</span>}
             <h3 data-field={`services.items.${i}.title`}>{item.title}</h3>
             {item.desc && <p data-field={`services.items.${i}.desc`}>{item.desc}</p>}
           </article>

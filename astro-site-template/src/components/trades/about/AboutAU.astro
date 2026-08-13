@@ -16,13 +16,33 @@ const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs 
 const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
 const imageTag = about.imageTag || '';
 const imageCaption = about.imageCaption || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, had nothing to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which shipped an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by
+// the layer above, so counting it would keep the shell on exactly the pages
+// this gate exists to remove. Same shape as generic/AboutA–E.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(image || imageTag || imageCaption) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="sec" id="about">
   <div class="wrap">
-    <div class="sec-head">
-      {tag && <span class="snum" data-field="about.tag">{tag}</span>}
-      {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
-    </div>
+    {/* Container hides with its contents: both children are already conditional,
+        so with paragraphs but no tag/headline this drew an empty .sec-head and
+        its bottom margin. Matches the sibling AboutAP. */}
+    {(tag || headline) && (
+      <div class="sec-head">
+        {tag && <span class="snum" data-field="about.tag">{tag}</span>}
+        {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
+      </div>
+    )}
     <div class="about-grid">
       <div class="about-copy reveal">
         {paragraphs.map((p: string, i: number) => (
@@ -38,6 +58,7 @@ const imageCaption = about.imageCaption || '';
     </div>
   </div>
 </section>
+)}
 <style>
   .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 52px; align-items: center; }
   @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 34px; } }

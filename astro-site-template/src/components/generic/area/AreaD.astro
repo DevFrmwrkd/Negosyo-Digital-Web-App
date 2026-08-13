@@ -2,10 +2,19 @@
 interface Props { content: any; }
 const { content } = Astro.props;
 const area = content.area || content.serviceArea || {};
-const tag = area.tag || 'coverage';
-const headline = area.headline || 'Serving greater Austin.';
-const body = area.body || 'Describe the area you serve. Edit in the Service area section.';
+// TRAP (round 5): this fell back to 'coverage' — a service asserted as a
+// section LABEL, for a business that may only ever have customers walk in.
+// Dead while lib/derive-content-defaults.ts sets area.tag = 'Service area' on
+// every build, live the moment an admin clears that field. A fallback must
+// never claim more than the derived value it stands in for.
+const tag = area.tag || 'service area';
+// No stock headline or body: the old defaults named a specific city or
+// coverage area and left editor instructions ("Edit in the Service area
+// section") on the live page. Owner data or the column hides.
+const headline = area.headline || '';
+const body = area.body || '';
 const places: string[] = Array.isArray(area.places) && area.places.length ? area.places : [];
+const hasArea = Boolean(headline || body) || places.length > 0;
 const creds = content.credentials || {};
 const credTag = creds.tag || 'credentials';
 // Certification / insurance claims are checkable facts about a real business.
@@ -22,18 +31,21 @@ const credIconPaths = [
   '<path d="M4 7h16M4 12h16M4 17h10"/>',
 ];
 ---
+{(hasArea || hasCreds) && (
 <section class="sec" id="area">
   <div class="wrap split2">
+    {hasArea && (
     <div>
       <p class="sec-tag reveal" data-field="area.tag">{tag}</p>
-      <h2 class="reveal" data-field="area.headline" style="font-size:clamp(30px,3.6vw,46px);">{headline}</h2>
-      <p class="lead reveal" data-field="area.body">{body}</p>
+      {headline && <h2 class="reveal" data-field="area.headline" style="font-size:clamp(30px,3.6vw,46px);">{headline}</h2>}
+      {body && <p class="lead reveal" data-field="area.body">{body}</p>}
       <div class="area-tags reveal">
         {places.map((p: string, i: number) => (
           <span data-field={`area.places.${i}`}>{p}</span>
         ))}
       </div>
     </div>
+    )}
     {hasCreds && (
     <div>
       <p class="sec-tag reveal" data-field="credentials.tag">{credTag}</p>
@@ -51,6 +63,7 @@ const credIconPaths = [
     )}
   </div>
 </section>
+)}
 <style>
   .split2 { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; align-items: start; }
   @media (max-width: 820px) { .split2 { grid-template-columns: 1fr; gap: 46px; } }

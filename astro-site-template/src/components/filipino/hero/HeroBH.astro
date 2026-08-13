@@ -10,17 +10,39 @@
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageBH actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageBH.
+const PAGE_ANCHORS = new Set(['about', 'book', 'how', 'location', 'main', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
+// The photo tag used to be a hardcoded CSS ::after ("SINCE 2013", "OPEN 24 HOURS",
+// "UNLI RICE"…) — a claim about a business that never supplied it. It now renders
+// only from hero.tag, so an unset tag draws nothing rather than inventing one.
+const photoTag = hero.tag || '';
 const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
   ? hero.headlineLines
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#book';
+const cta1Href = onPage(hero.cta1?.href, '#book');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#services');
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#services'));
 ---
 <section class="hero" aria-label="Hero">
   <div class="wrap">
@@ -34,7 +56,22 @@ const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layou
     )}
     <div class="hero-lower">
       <div class="hero-photo">
-        <div class="ph" role="img" aria-label="Halo-halo photo" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+        {/* The .ph slot is a styled gradient until the owner uploads a photo, but it
+          announced itself to screen readers as role="img" + "Halo-halo photo" either way —
+          a picture of the business that does not exist, asserted to exactly the
+          users who cannot see that it is a flat gradient. Same class of claim as
+          an invented testimonial, just in the accessibility tree. With an image it
+          is a real image and keeps its role + label; with none it is decoration
+          and is hidden. Astro drops attributes whose value is undefined. */}
+        <div
+          class="ph"
+          data-image-field="hero.image"
+          role={heroImage ? 'img' : undefined}
+          aria-label={heroImage ? 'Halo-halo photo' : undefined}
+          aria-hidden={heroImage ? undefined : 'true'}
+          style={heroImage ? `background-image:url('${heroImage}');` : ''}
+        ></div>
+        {photoTag && <span class="photo-tag" data-field="hero.tag">{photoTag}</span>}
       </div>
       <div class="hero-right">
         {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
@@ -59,7 +96,7 @@ const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layou
   .hero-photo { position: relative; }
   .hero-photo .ph { width: 100%; aspect-ratio: 16/10; border-radius: 18px; border: 3px solid var(--ube); background-color: var(--paper-2); background-size: cover; background-position: center;
     background-image: linear-gradient(150deg, rgba(232,178,62,.5), rgba(229,86,143,.35)); }
-  .hero-photo::after { content: "HALO, HALO · MIX IT · MADE TO ORDER"; position: absolute; left: -8px; top: -14px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; background: var(--leche); color: var(--ink); padding: 8px 14px; border-radius: 999px; border: 2.5px solid var(--ube); transform: rotate(-3deg); }
+  .hero-photo .photo-tag { white-space: nowrap; position: absolute; left: -8px; top: -14px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; background: var(--leche); color: var(--ink); padding: 8px 14px; border-radius: 999px; border: 2.5px solid var(--ube); transform: rotate(-3deg); }
   .hero-right .lede { color: var(--ink-2); font-size: clamp(15px,1.5vw,17.5px); line-height: 1.72; max-width: 44ch; }
   .hero-ctas { margin-top: 26px; display: flex; gap: 13px; flex-wrap: wrap; }
   @media (max-width: 820px) { .hero-lower { grid-template-columns: 1fr; } }

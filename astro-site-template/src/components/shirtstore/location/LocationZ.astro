@@ -32,8 +32,19 @@ const label = layout.businessName || 'Our location';
 const mapAria = `Map showing ${label}`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
+// Path 3 above used to render "No address on file yet." — that is an internal
+// note to the admin, and it was rendering on the store's public page. With
+// neither coords nor address the map cell is dropped and the split falls to one
+// column (.no-map) so the info column does not sit beside a dead half.
+const hasMap = hasCoords || hasAddress;
+// A location section with no location in it is an empty shell: the heading
+// (and, where the variant defaults one, its stock wording) printed over a card
+// with nothing in it. The map already hides on hasMap; the section hides too
+// unless the owner gave us something real to put in it.
+const hasLoc = hasMap || Boolean(address || phone || hours.length > 0 || fittings);
 ---
-<section class="loc" id="visit">
+{hasLoc && (
+<section class:list={['loc', !hasMap && 'no-map']} id="visit">
   <div class="loc-info">
     {tag && <p class="eyebrow reveal" data-field="location.tag">{tag}</p>}
     {headline && <h2 class="reveal" data-field="location.headline" set:html={headline}></h2>}
@@ -70,15 +81,15 @@ const hasAddress = !!address;
       )}
     </div>
   </div>
-  <div id="map" role="img" aria-label={mapAria}>
-    {!hasCoords && !hasAddress && (
-      <div class="map-fallback">No address on file yet.</div>
-    )}
-    {!hasCoords && hasAddress && (
-      <div class="map-fallback" id="map-fallback">Loading map…</div>
-    )}
-  </div>
+  {hasMap && (
+    <div id="map" role="img" aria-label={mapAria}>
+      {!hasCoords && (
+        <div class="map-fallback" id="map-fallback">Loading map…</div>
+      )}
+    </div>
+  )}
 </section>
+)}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label }}>
     (function init() {
@@ -124,6 +135,9 @@ const hasAddress = !!address;
 )}
 <style>
   .loc { display: grid; grid-template-columns: 1fr 1.25fr; }
+  /* No address and no coords: the map cell is not rendered, so the info column
+     takes the full width instead of leaving an empty half. */
+  .loc.no-map { grid-template-columns: 1fr; }
   .loc-info { padding: clamp(44px, 6vw, 90px) var(--pad); }
   .loc-info .eyebrow { color: var(--accent); }
   .loc-info h2 { font-size: clamp(32px, 4.2vw, 58px); margin: 8px 0 24px; }

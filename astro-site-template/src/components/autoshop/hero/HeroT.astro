@@ -9,6 +9,26 @@
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageT actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageT.
+const PAGE_ANCHORS = new Set(['about', 'book', 'creds', 'faq', 'how', 'location', 'reviews', 'services', 'top', 'why', 'work']);
+const ANCHOR_ALIAS: Record<string, string> = { gallery: 'work', visit: 'location' };
+// This design's own primary fallback was '#visit', a section PageT never had
+// either; it now names the booking block PageT does render.
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
@@ -17,9 +37,9 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#visit';
+const cta1Href = onPage(hero.cta1?.href, '#book');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || '#services';
+const cta2Href = onPage(hero.cta2?.href, '#services');
 const rating = hero.rating || '';
 const badge = hero.tag || '';
 const estYear = (layout.established || hero.est || '').toString();
@@ -40,9 +60,11 @@ const estYear = (layout.established || hero.est || '').toString();
         {cta1Text && <a class="btn btn--accent" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
         {cta2Text && <a class="btn btn--ghost" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
       </div>
+      {/* No hard-coded ★★★★★: five filled stars is a perfect-score claim, and
+          the shop may have supplied "4.2 on Google". Render the rating it
+          actually gave, nothing more. */}
       {rating && (
         <div class="hero-trust">
-          <span class="stars">★★★★★</span>
           <span class="mono" data-field="hero.rating">{rating}</span>
         </div>
       )}
@@ -53,15 +75,18 @@ const estYear = (layout.established || hero.est || '').toString();
           ? <div class="bg-img" data-image-field="hero.image" style={`background-image:url('${heroImage}');`}></div>
           : <div class="bg-img placeholder" data-image-field="hero.image"></div>}
       </div>
+      {/* Seal's third line is the shop's own locality or nothing — 'LOCAL' was
+          a placed claim about where the shop operates. */}
       {estYear && (
         <div class="hero-seal" aria-hidden="true">
-          <div class="seal"><div class="seal-in"><span>SINCE</span><b>{estYear}</b><span>{kicker || 'LOCAL'}</span></div></div>
+          <div class="seal"><div class="seal-in"><span>SINCE</span><b>{estYear}</b>{kicker && <span>{kicker}</span>}</div></div>
         </div>
       )}
+      {/* Card carries only the editable hero.tag. The old "Free multi-point
+          inspection" sub-line was a free-service promise this shop never made. */}
       {badge && (
         <div class="hero-card">
           <span class="card-lead" data-field="hero.tag">{badge}</span>
-          <span class="card-sub">Free multi-point inspection</span>
         </div>
       )}
     </div>

@@ -17,6 +17,9 @@ const headline = why.headline || '';
 
 const items = Array.isArray(why.items) && why.items.length > 0 ? why.items
   : [];
+// Nothing real to list => the whole section stays out of the document
+// rather than rendering an eyebrow and heading over an empty grid.
+const hasItems = items.length > 0;
 
 // Decorative SVG paths per index — purely visual.
 const iconPaths = [
@@ -27,10 +30,11 @@ const iconPaths = [
 ];
 ---
 
+{hasItems && (
 <section class="sec why-sec" id="why">
   <div class="wrap">
     <p class="sec-tag reveal" data-field="why.tag">{tag}</p>
-    <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>}
     <div class="why-grid">
       {items.map((it: any, i: number) => (
         <div class="why-cell reveal" style={i > 0 ? `transition-delay:.${i * 8}s;` : ''}>
@@ -44,6 +48,7 @@ const iconPaths = [
     </div>
   </div>
 </section>
+)}
 
 <style>
   .why-sec { background: var(--card); }

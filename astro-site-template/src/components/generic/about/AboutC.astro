@@ -7,32 +7,47 @@ const headline = about.headline || '';
 const paragraphs = Array.isArray(about.paragraphs) && about.paragraphs.length ? about.paragraphs : [];
 const stats: Array<{ n: string; l: string }> = Array.isArray(about.stats) && about.stats.length > 0 ? about.stats : [];
 const aboutImage = about.image || (content.photos && content.photos[0]) || '';
+// Nothing real to say => the section stays out of the document rather than
+// rendering an eyebrow over an empty column.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(aboutImage) || paragraphs.length > 0 || stats.length > 0;
 ---
+{hasAbout && (
 <section class="sec" id="about">
-  <div class="wrap about">
+  <div class={`wrap about${aboutImage ? '' : ' no-img'}`}>
     <div class="about-txt">
       <span class="sec-tag reveal" data-field="about.tag">{tag}</span>
-      <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>
+      {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
       {paragraphs.map((p: string, i: number) => (
         <p class="reveal" data-field={`about.paragraphs.${i}`}>{p}</p>
       ))}
-      <div class="about-stats reveal">
-        {stats.map((s: any, i: number) => (
-          <div class="s">
-            <div class="n" data-field={`about.stats.${i}.n`}>{s.n}</div>
-            <div class="l" data-field={`about.stats.${i}.l`} set:html={String(s.l).replace(/\n/g, '<br />')}></div>
-          </div>
-        ))}
+      {stats.length > 0 && (
+        <div class="about-stats reveal">
+          {stats.map((s: any, i: number) => (
+            <div class="s">
+              <div class="n" data-field={`about.stats.${i}.n`}>{s.n}</div>
+              <div class="l" data-field={`about.stats.${i}.l`} set:html={String(s.l).replace(/\n/g, '<br />')}></div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+    {aboutImage && (
+      <div class="about-card reveal">
+        <div class="panel"></div>
+        <div class="img" data-image-field="about.image" style={`background-image:url('${aboutImage}');`}></div>
       </div>
-    </div>
-    <div class="about-card reveal">
-      <div class="panel"></div>
-      <div class="img" data-image-field="about.image" style={aboutImage ? `background-image:url('${aboutImage}');` : ''}></div>
-    </div>
+    )}
   </div>
 </section>
+)}
 <style>
   .about { display: grid; grid-template-columns: 1.1fr .9fr; gap: 60px; align-items: center; }
+  /* No owner photo => text spans the full width instead of leaving a dead column. */
+  .about.no-img { grid-template-columns: 1fr; }
   .about-txt p { margin-top: 22px; color: var(--ink-soft); max-width: 48ch; font-size: 18px; }
   .about-stats { display: flex; gap: 40px; margin-top: 32px; }
   .about-stats .s .n { font-family: var(--disp); font-size: 46px; color: var(--amber); -webkit-text-stroke: 1.5px var(--ink); }
