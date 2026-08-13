@@ -248,6 +248,13 @@ export function deriveContentDefaults(
                 || (name
                     ? (descriptor ? `Welcome to ${name} — ${descriptor}.` : `Welcome to ${name}.`)
                     : (descriptor ? asSentence(descriptor) : undefined)),
+            // Both targets are resolved against the sections this build
+            // actually renders, in lib/astro-builder.ts — see the note on
+            // navbar_links below. cta1 keeps its label and moves to the
+            // owner's own tel:/mailto: if the Location section isn't there;
+            // cta2 names a section, so label and href move together to the
+            // next live one and the button is only dropped when there is
+            // nowhere left to browse.
             cta1: { text: 'Get in touch', href: '#visit' },
             cta2: { text: 'See services', href: '#services' },
             // No meta1 default. It used to be '★★★★★ rated on Google' — a
@@ -397,6 +404,10 @@ export function deriveContentDefaults(
             // time guarantee. CtaBandA/B fall back to joining the real address
             // and phone when this key is absent, which is the honest version of
             // the same line.
+            //
+            // '#visit' is resolved in lib/astro-builder.ts like the hero's
+            // primary CTA: it survives untouched while the Location section
+            // renders, and becomes the owner's tel:/mailto: when it doesn't.
             cta: { text: 'Get in touch', href: '#visit' },
         },
         footer: {
@@ -422,6 +433,25 @@ export function deriveContentDefaults(
             // so [] renders no note row).
             notes: name ? [`© ${new Date().getFullYear()} ${name}`] : [],
         },
+        // The CANONICAL menu, complete on purpose — not the menu that ships.
+        //
+        // Corollary 2 at the top of this file says an answer may only promise
+        // what the same submission guarantees, and a nav link is a promise
+        // like any other: every entry here names a section that auto-hides
+        // when the business supplied nothing for it, so on a sparse site four
+        // of these five scrolled nowhere. They are filtered — together with
+        // `hero.cta2`'s '#services' and `ctaBand.cta`'s '#visit' — in
+        // lib/astro-builder.ts (see the anchor-liveness block in
+        // transformToAstroData), which is the only layer that can: this
+        // function is browser-safe tier 3 and never sees the AI's services /
+        // why / gallery items or the admin's visibility toggles.
+        //
+        // So the list stays whole HERE, and that is deliberate twice over:
+        // it is what the editor sidebar lists and lets admin edit (the
+        // sidebar reads this function directly), and a business that fills
+        // its sections in gets every link back with no further edit. Adding
+        // a sixth entry means teaching the builder's `deadAnchors` set about
+        // its target too, or it can only ever be dropped by the design guard.
         navbar_links: [
             { label: 'About',    href: '#about' },
             { label: 'Services', href: '#services' },

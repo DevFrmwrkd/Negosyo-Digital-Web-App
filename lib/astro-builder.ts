@@ -325,16 +325,246 @@ async function transformToAstroData(
         ? { ...content.contact, phone: formatPhoneDisplay(content.contact.phone) || content.contact.phone }
         : content.contact
 
+    // ── Shared inputs, hoisted out of the payload literal ───────────────
+    // `d` / `derived` / `c` / mergeShallow used to be declared twice, inside
+    // the two IIFEs at the bottom. They are needed a third time now — by the
+    // anchor-liveness block below, which runs BEFORE `layout.navLinks` — and
+    // three copies of "what would this section contain" is exactly the
+    // duplication that lets two answers drift apart. One declaration, read by
+    // everything downstream.
+    const c = content as any
+    const d = defaultsFor(content.business_type)
+    const derived = deriveDefaultsFor(content, photos)
+
+    // ⚠ This is the merge that makes lib/derive-content-defaults.ts
+    // authoritative over the templates. It starts from the DERIVED
+    // object and only lets an owner value overwrite a key when it is
+    // not undefined/null/'' — so:
+    //   • a key the derived layer omits is absent from the result, the
+    //     component's `{value && …}` guard fires, and the element is
+    //     never emitted. This is how a claim gets removed.
+    //   • a key the derived layer sets to '' is still PRESENT, and
+    //     because the loop below skips '' on the owner side, an admin
+    //     who blanks that input cannot clear it — the derived '' (or
+    //     any derived string) wins forever. That asymmetry is why
+    //     removals in the derived layer must be absent, never ''.
+    // A stock sentence left in the derived layer therefore ships on
+    // every site whose owner left the field blank, no matter what the
+    // .astro fallback says: the template is never consulted.
+    const mergeShallow = <T extends object>(src: T | undefined, fb: T): T => {
+        if (!src || typeof src !== 'object') return fb
+        const out: any = { ...fb }
+        for (const [k, v] of Object.entries(src)) {
+            if (v !== undefined && v !== null && v !== '') out[k] = v
+        }
+        return out as T
+    }
+
+    // Merged section payloads that BOTH the liveness tests below and the
+    // `content` payload at the bottom read. Computed once so the nav can
+    // never disagree with the section it points at.
+    const aboutMerged = mergeShallow<any>(c.about, derived.about)
+    const whyBlock = normalizeBlock(c.why ?? derived.why, 'items', { description: 'body' })
+    const locationMerged: any = { ...derived.location, ...(content.location || {}) }
+
+    // ── Anchor liveness: which in-page targets this build actually has ──
+    // Sections auto-hide when the business supplied nothing — services,
+    // gallery, why, about and location each gate on their own content. The
+    // links that point AT them did not: lib/derive-content-defaults.ts emits
+    // the same five nav entries and the same '#services' / '#visit' CTA
+    // targets for every submission, so on a sparse site four of five nav
+    // links, the hero's secondary button and the closing band all scrolled
+    // nowhere. A link to a section that isn't on the page is the visible
+    // cost of the auto-hide work, and it is fixed here rather than at either
+    // end of the pipeline because this is the only place that knows both
+    // halves:
+    //   • lib/derive-content-defaults.ts can't — it is the browser-safe
+    //     tier-3 layer, and it never sees the AI's services/why/gallery
+    //     items or the admin's visibility toggles. Its nav list stays
+    //     complete on purpose (see the note above it): it is the canonical
+    //     menu the editor sidebar lists and edits.
+    //   • the .astro components can't — a header's own `onPage()` guard
+    //     knows which ids THIS DESIGN renders (PageA calls its services
+    //     section id="menu", PageB calls it id="classes"), not whether THIS
+    //     BUSINESS filled it.
+    // Two different truths, and they compose: the builder drops a target the
+    // DATA leaves empty, the component remaps or drops a target the DESIGN
+    // does not render.
+    //
+    // DIRECTION OF ERROR. Every predicate below proves a section is EMPTY;
+    // none of them tries to prove one is full. An anchor we don't model, a
+    // storage shape we don't recognise, a signal we don't read — all leave
+    // the link alone. Dropping a link to a section the business DID fill is
+    // the failure nobody would ever notice, so each test takes the UNION of
+    // the signals any design counts as content (a photo alone renders an
+    // About on AboutC/E; a phone alone renders a Location on LocationA–E),
+    // never the strictest gate.
+    //
+    // NOTE these are NOT the `visibility.*` flags below, and must not be
+    // folded into them. `visibility.aboutSection` / `whyUsBlock` /
+    // `locationBlock` stay pure admin toggles because that is what the editor
+    // reads back: the flag means "the admin chose to hide this", and an empty
+    // section means "there is nothing to show yet". Collapsing the two would
+    // write emptiness into the admin's own setting, so a section that was
+    // merely bare would come back OFF after the admin filled it in — and they
+    // would have no way to tell why. The components already gate themselves on
+    // content (AboutAV–AZ, WhyP and WhyBA all open with a `paragraphs.length`,
+    // `items.length` or `hasContent` test), so an empty band does not draw
+    // regardless. Nothing here changes what renders — only what may point at it.
+    const servicesSectionVisible = vis.services_section === false
+        ? false
+        : (
+            Array.isArray(c.services)
+                ? c.services.length > 0
+                : Array.isArray(c.services?.items)
+                    ? c.services.items.length > 0
+                    : false
+        )
+    const gallerySectionVisible = vis.gallery_section === false || vis.featured_section === false
+        ? false
+        : (Array.isArray(c.gallery?.items) && c.gallery.items.length > 0)
+            || photos.length > 0
+    // About: every design's `hasAbout` gate is some subset of {lead,
+    // description, signature, quote, note, tagline, paragraphs, image,
+    // tags} — so the union of all of them is the safe test. `headline` and
+    // `tag` are deliberately excluded, for the reason AboutA writes out in
+    // full: the derived layer sets `About ${name}` for every named business,
+    // so counting it would make this always-true and the test useless. The
+    // raw `content.about` string counts too — it does not currently reach
+    // the nested About section (that mapping is a known, separately-owned
+    // gap), but a business that typed an About paragraph must keep its nav
+    // link the moment that gap closes.
+    const aboutHasContent = Boolean(
+        aboutMerged.lead || aboutMerged.description || aboutMerged.signature ||
+        aboutMerged.quote || aboutMerged.note || aboutMerged.tagline ||
+        (typeof content.about === 'string' && content.about.trim()) ||
+        (Array.isArray(aboutMerged.paragraphs) && aboutMerged.paragraphs.length > 0) ||
+        (content.about_images?.length ?? 0) > 0 ||
+        (content.about_tags?.length ?? 0) > 0 ||
+        photos.length > 0,
+    )
+    const aboutSectionVisible = vis.about_section === false ? false : aboutHasContent
+    const whyBlockVisible = vis.why_us_block === false
+        ? false
+        : (whyBlock?.items?.length ?? 0) > 0
+    // Location: LocationA–E hide on `address || phone || hours || coords`;
+    // the filipino family also counts an email. Union again, and it is the
+    // reason the '#visit' target is usually alive whatever else is empty —
+    // contact comes from the submission form, not from the interview.
+    const locationBlockVisible = vis.location_block === false
+        ? false
+        : Boolean(
+            locationMerged.address || formattedContact?.address ||
+            locationMerged.phone || formattedContact?.phone ||
+            locationMerged.hours || content.footer_hours ||
+            formattedContact?.email ||
+            (typeof locationMerged.lat === 'number' && typeof locationMerged.lng === 'number'),
+        )
+
+    // Anchors we can PROVE have no section on this build. Aliases are
+    // included where a link and a section id use different names for the
+    // same content ('#gallery' is the legacy nav's name for the gallery
+    // '#work' renders under; '#location' is what several designs call
+    // '#visit') — the same two pairs each header's own ANCHOR_ALIAS maps.
+    // Design-local ids ('#menu', '#classes', '#reviews') are NOT listed:
+    // they are a design's private naming and resolving them is the
+    // component's job, not ours.
+    const deadAnchors = new Set<string>()
+    if (!servicesSectionVisible) deadAnchors.add('services')
+    if (!gallerySectionVisible) { deadAnchors.add('work'); deadAnchors.add('gallery') }
+    if (!aboutSectionVisible) deadAnchors.add('about')
+    if (!whyBlockVisible) deadAnchors.add('why')
+    if (!locationBlockVisible) { deadAnchors.add('visit'); deadAnchors.add('location') }
+    const isDeadAnchor = (href: unknown): boolean =>
+        typeof href === 'string' && href.startsWith('#') && deadAnchors.has(href.slice(1))
+
+    // A nav entry is pure navigation: its label promises a section, and with
+    // the section gone the promise is the fabrication and the link is the
+    // dead end. Drop it — there is nowhere honest to send it, and the label
+    // can't be reused for somewhere else.
+    //
+    // Dropping (rather than blanking the href) is safe for the editor: the
+    // headers assign each link's data-field index BEFORE their own filter,
+    // so indices are positional in whatever list we hand them — but
+    // navbar_links is edited from the sidebar list widget, never inline
+    // (SandboxEditorV2/V3 both put `navbar_links.*` in their inline-edit SKIP
+    // set precisely because array indices are a data-loss trap), so no field
+    // path is bound to these positions. Blanking instead would render
+    // `<a href="">` in the filipino footers' Explore column, which reloads
+    // the page — strictly worse than the anchor we're removing.
+    const filterLiveNav = (links: any): Array<{ label: string; href: string }> =>
+        (Array.isArray(links) ? links : []).filter((l: any) => l && !isDeadAnchor(l.href))
+
+    // The one contact target every "Get in touch" button aims at. When the
+    // Location section IS on the page, nothing changes (the early return in
+    // resolveContactHref keeps the original href). When it isn't, the button
+    // falls back to a channel the owner actually gave us rather than
+    // disappearing: a conversion surface with somewhere real to go beats a
+    // dead anchor, and tel:/mailto: work on every design. If they gave us
+    // neither, the href is left exactly as it was — each component's own
+    // fallback ('#book', '#location', its own tel: link) is a better guess
+    // than anything we could invent from here.
+    // Test the STRIPPED value, not the raw field. A phone can hold junk that is
+    // perfectly truthy — 'N/A', 'wala', '-' — and the strip reduces it to '' or
+    // a bare '+', leaving `tel:` behind: a button that dials nothing. That
+    // matters more here than it used to, because this href is now the fallback
+    // for every CTA whose own anchor went dead, so one dud value lands on the
+    // hero, the nav button and the CTA band at once. No digit, no phone.
+    const dialableDigits = String(formattedContact?.phone ?? '').replace(/[^0-9+]/g, '')
+    const contactChannelHref = /[0-9]/.test(dialableDigits)
+        ? `tel:${dialableDigits}`
+        : (formattedContact?.email ? `mailto:${String(formattedContact.email).trim()}` : '')
+    const CONTACT_ANCHORS = new Set(['visit', 'location'])
+    const resolveContactHref = (href: string | undefined): string | undefined => {
+        // Off-page (tel:, mailto:, https:) and non-contact anchors pass
+        // through untouched — retargeting '#services' at the phone would
+        // leave a button labelled "See services" dialling a number.
+        if (!href || !href.startsWith('#')) return href
+        const id = href.slice(1)
+        if (!CONTACT_ANCHORS.has(id) || !deadAnchors.has(id)) return href
+        return contactChannelHref || href
+    }
+
+    // The hero's SECONDARY CTA is the one button whose label names a section
+    // ("See services"). Text and href move together or not at all: retarget
+    // it and keep the old label and you have swapped a dead button for a
+    // lying one. So the fallback chain carries its own label, in
+    // browse-intent order, and only the primary's target is excluded — a
+    // second button pointing where the first one already goes is not a
+    // second conversion surface. If nothing is left to browse the key is
+    // dropped and the hero keeps its one working button; every hero renders
+    // this as `{cta2Text && …}`.
+    const BROWSE_CTA_TARGETS: Array<{ href: string; text: string }> = [
+        { href: '#services', text: 'See services' },
+        { href: '#work', text: 'See our work' },
+        { href: '#about', text: 'About us' },
+        { href: '#visit', text: 'Get in touch' },
+    ]
+    const resolveSecondaryCta = (cta: any, primaryHref: string | undefined): any => {
+        if (!cta || typeof cta !== 'object' || !isDeadAnchor(cta.href)) return cta
+        const dest = BROWSE_CTA_TARGETS.find(
+            (t) => !deadAnchors.has(t.href.slice(1)) && t.href !== primaryHref,
+        )
+        return dest ? { ...cta, ...dest } : undefined
+    }
+
     return {
         layout: {
             businessName: content.business_name,
             tagline: content.tagline,
-            navLinks: content.navbar_links || [
+            // Every header — and the filipino footers' Explore column —
+            // renders the nav from here, so this is where the dead entries
+            // have to go. The fallback list is left exactly as it was: an
+            // admin who deletes every nav link leaves `content.navbar_links`
+            // as [], and [] must stay an empty nav rather than resurrecting a
+            // menu they removed (which is why this doesn't share the
+            // `|| derived.navbar_links` fallback the copy below uses).
+            navLinks: filterLiveNav(content.navbar_links || [
                 { label: 'About', href: '#about' },
                 { label: 'Services', href: '#services' },
                 { label: 'Gallery', href: '#gallery' },
                 { label: 'Contact', href: '#contact' },
-            ],
+            ]),
             socialLinks: content.footer?.social_links || [],
             colorScheme: customizations.colorSchemeId || customizations.colorScheme || 'auto',
             fontPairing: customizations.fontPairingId || customizations.fontPairing || 'modern',
@@ -379,7 +609,7 @@ async function transformToAstroData(
             aboutImages: vis.about_images !== false,
             aboutTagline: vis.about_tagline !== false,
             aboutTags: vis.about_tags !== false,
-            servicesSection: vis.services_section !== false,
+            // (servicesSection moved below — auto-hides when empty)
             servicesBadge: vis.services_badge !== false,
             servicesHeadline: vis.services_headline !== false,
             servicesSubheadline: vis.services_subheadline !== false,
@@ -444,12 +674,28 @@ async function transformToAstroData(
                             ? (content as any).credentials.items.length > 0
                             : false
                 ),
+            // Services auto-hides on an empty menu. An empty menu is now a
+            // reachable, correct outcome — the extraction prompt no longer
+            // pads the list to fill a grid and the route no longer re-extracts
+            // until it does — so leaving this unconditional trades a
+            // fabricated service list for an "Our Services" heading over
+            // nothing, which is the same page defect one step later.
+            //
+            // Two storage shapes, both counted: Generic A–E keep the flat
+            // array extraction returns, the branded families keep
+            // `{ tag, headline, items[] }` (the split isWrappedObject handles
+            // in app/api/generate-website/route.ts). Counting only the flat
+            // one would read every branded site as having zero services and
+            // delete a section the owner filled in.
+            //
+            // Computed above, with the rest of the section-emptiness tests,
+            // because the nav filter has to reach the same verdict: a
+            // "Services" link that survives a hidden Services section is the
+            // same defect one step later.
+            servicesSection: servicesSectionVisible,
             // Gallery auto-hides when there's nothing to show (no admin
-            // gallery items AND no submission photos).
-            gallerySection: vis.gallery_section === false || vis.featured_section === false
-                ? false
-                : (Array.isArray((content as any).gallery?.items) && (content as any).gallery.items.length > 0)
-                    || photos.length > 0,
+            // gallery items AND no submission photos). Also computed above.
+            gallerySection: gallerySectionVisible,
             ctaBandBlock: vis.cta_band_block !== false,
         },
         hero: {
@@ -463,7 +709,20 @@ async function transformToAstroData(
             ctaSecondaryLabel: content.hero_cta_secondary?.label,
             ctaSecondaryLink: content.hero_cta_secondary?.link,
             photos,
-            services: content.services?.slice(0, 3),
+            // Both storage shapes, same reason as servicesSection above — and
+            // here it is not defensive, it is a crash. `?.slice` guards only a
+            // NULLISH services; on the wrapped `{ tag, headline, items[] }`
+            // object it resolves `.slice` to undefined and calls it, throwing
+            // before a single section is built. That object became reachable
+            // the moment extraction was allowed to omit `services`: the
+            // generic-section merge in app/api/generate-website/route.ts fills
+            // the now-null key with its own wrapped shape, so an interview that
+            // names no services took the whole build down with a TypeError.
+            services: Array.isArray(content.services)
+                ? content.services.slice(0, 3)
+                : Array.isArray((content as any).services?.items)
+                    ? (content as any).services.items.slice(0, 3)
+                    : undefined,
             visibility: {
                 heroHeadline: vis.hero_headline !== false,
                 heroTagline: vis.hero_tagline !== false,
@@ -512,8 +771,14 @@ async function transformToAstroData(
             // Services component gates on `items.length` / `services.length`
             // and keeps the whole section out of the document, so a business
             // that listed nothing advertises nothing — while consumers that
-            // do `services.map(...)` without a guard still get an array.
-            services: content.services || [],
+            // do `services.map(...)` without a guard still get an array — a
+            // promise `content.services || []` stopped keeping once the
+            // wrapped `{ tag, headline, items[] }` shape could reach here, an
+            // object being truthy. The wrapped menu is not translated into
+            // this legacy `{name, description}` payload: it already reaches
+            // the templates intact as `siteData.content.services`, and only
+            // that one is read.
+            services: Array.isArray(content.services) ? content.services : [],
             photos: content.services_image ? [content.services_image] : (photos.length > 0 ? [photos[0]] : []),
             ctaLabel: content.services_cta?.label,
             ctaLink: content.services_cta?.link,
@@ -622,7 +887,6 @@ async function transformToAstroData(
         // ── Conversion-cluster blocks (neutral fallback after template wipe) ──
         // Resolution order: admin-typed → generic neutral fallback.
         ...(() => {
-            const d = defaultsFor(content.business_type)
             return {
                 trust: content.trust ?? d.trust,
                 why: content.why ?? d.why,
@@ -640,9 +904,9 @@ async function transformToAstroData(
         // Existing legacy-template flows ignore this field, so it's
         // additive and doesn't affect A-O variants.
         content: (() => {
-            const d = defaultsFor(content.business_type)
-            const derived = deriveDefaultsFor(content, photos)
-            const c = content as any
+            // `d` / `derived` / `c` / mergeShallow are declared once, above
+            // the payload literal, because the anchor-liveness block needs
+            // the same merged sections this one emits.
 
             // `content.services` is "array of {name, description}" in the
             // legacy shape, "object with .items[]" in the new shape. Detect.
@@ -655,32 +919,14 @@ async function transformToAstroData(
             // Per-section "did admin/AI supply anything?" — if no, use the
             // derived defaults so the section renders coherently. Each leaf
             // still falls back individually inside the section component.
-            //
-            // ⚠ This is the merge that makes lib/derive-content-defaults.ts
-            // authoritative over the templates. It starts from the DERIVED
-            // object and only lets an owner value overwrite a key when it is
-            // not undefined/null/'' — so:
-            //   • a key the derived layer omits is absent from the result, the
-            //     component's `{value && …}` guard fires, and the element is
-            //     never emitted. This is how a claim gets removed.
-            //   • a key the derived layer sets to '' is still PRESENT, and
-            //     because the loop below skips '' on the owner side, an admin
-            //     who blanks that input cannot clear it — the derived '' (or
-            //     any derived string) wins forever. That asymmetry is why
-            //     removals in the derived layer must be absent, never ''.
-            // A stock sentence left in the derived layer therefore ships on
-            // every site whose owner left the field blank, no matter what the
-            // .astro fallback says: the template is never consulted.
-            const mergeShallow = <T extends object>(src: T | undefined, fb: T): T => {
-                if (!src || typeof src !== 'object') return fb
-                const out: any = { ...fb }
-                for (const [k, v] of Object.entries(src)) {
-                    if (v !== undefined && v !== null && v !== '') out[k] = v
-                }
-                return out as T
-            }
+            // (mergeShallow and its ⚠ note live above the payload literal.)
 
-            const heroMerged = mergeShallow<any>(c.hero, derived.hero)
+            // Copy before touching anything, for the reason spelled out in
+            // the ctaBand block below: mergeShallow RETURNS THE FALLBACK
+            // OBJECT ITSELF when the owner side is absent, so the headline
+            // backfill and the CTA resolution underneath would otherwise
+            // write straight into `derived.hero`.
+            const heroMerged: any = { ...mergeShallow<any>(c.hero, derived.hero) }
             // Headline backfills: if neither admin nor AI gave a
             // single-line headline, use derived.headline. If neither gave
             // headlineLines, fall back to splitting headline on newlines.
@@ -691,6 +937,21 @@ async function transformToAstroData(
                 if (!heroMerged.headlineLines || heroMerged.headlineLines.length === 0) {
                     heroMerged.headlineLines = derived.hero.headlineLines
                 }
+            }
+            // Hero CTAs against the sections this build actually has. cta1 is
+            // the primary "Get in touch" and only ever moves between contact
+            // targets; cta2 names a section, so it moves label-and-href
+            // together or is dropped. Both are no-ops on a site whose
+            // sections are all present.
+            const heroPrimaryHref = resolveContactHref(heroMerged.cta1?.href)
+            if (heroMerged.cta1 && heroPrimaryHref !== heroMerged.cta1.href) {
+                heroMerged.cta1 = { ...heroMerged.cta1, href: heroPrimaryHref }
+            }
+            const heroSecondary = resolveSecondaryCta(heroMerged.cta2, heroPrimaryHref)
+            if (heroSecondary === undefined) {
+                delete heroMerged.cta2
+            } else {
+                heroMerged.cta2 = heroSecondary
             }
 
             return {
@@ -716,7 +977,7 @@ async function transformToAstroData(
                 contact: formattedContact,
                 marquee: mergeShallow<any>(c.marquee, derived.marquee),
                 hero: heroMerged,
-                about: mergeShallow<any>(c.about, derived.about),
+                about: aboutMerged,
                 services: servicesNested
                     ? mergeShallow<any>(servicesNested, derived.services)
                     : derived.services,
@@ -740,7 +1001,7 @@ async function transformToAstroData(
                     return g
                 })(),
                 area: mergeShallow<any>(c.area, derived.area),
-                location: { ...derived.location, ...(content.location || {}) },
+                location: locationMerged,
                 // ── The ctaBand CTA-key contract ────────────────────────
                 // One closing CTA, emitted under every key name the ctaBand
                 // designs actually read.
@@ -761,7 +1022,14 @@ async function transformToAstroData(
                     // merged result would mutate `derived.ctaBand` in place —
                     // and the derived href read below would already be gone.
                     const band: any = { ...mergeShallow<any>(c.ctaBand, derived.ctaBand) }
-                    const derivedHref: string | undefined = derived.ctaBand.cta?.href
+                    // Both hrefs go through the contact resolver: '#visit' is
+                    // the derived target and it is the one anchor that can be
+                    // missing for a reason the owner did not choose (no
+                    // address, no phone, no hours, no coords => LocationA–E
+                    // keep themselves out of the document). Dead => the
+                    // owner's own tel:/mailto: takes over. Alive => both are
+                    // returned untouched and the contract below is unchanged.
+                    const derivedHref: string | undefined = resolveContactHref(derived.ctaBand.cta?.href)
                     const ownerBand: any =
                         c.ctaBand && typeof c.ctaBand === 'object' ? c.ctaBand : {}
                     // Whichever name the OWNER typed their CTA under wins over
@@ -782,15 +1050,27 @@ async function transformToAstroData(
                     // that scrolls nowhere — trading a missing button for a
                     // dead one. Absent href => the component's fallback fires,
                     // which is the intended contract.
-                    const ownerHref =
-                        ownerBand.cta1?.href || ownerBand.primary?.href || ownerBand.cta?.href || undefined
+                    const ownerHref = resolveContactHref(
+                        ownerBand.cta1?.href || ownerBand.primary?.href || ownerBand.cta?.href || undefined,
+                    )
+                    // …with one exception to the TRAP, and only one: an
+                    // OFF-PAGE derived href (the tel:/mailto: the resolver
+                    // hands back when '#visit' has no section) has none of the
+                    // problem the trap describes — it is not an anchor, so it
+                    // cannot miss. Every design can dial a phone. It is safe
+                    // to alias under all three names, and it is the difference
+                    // between the closing CTA working and the closing CTA
+                    // being a decoration on a page with no Location section.
+                    const derivedOffPageHref =
+                        derivedHref && !derivedHref.startsWith('#') ? derivedHref : undefined
                     if (text) {
                         for (const key of ['cta', 'cta1', 'primary'] as const) {
                             // Never clobber a key the owner set themselves —
                             // `ctaBand.cta1.text` is the data-field these
                             // designs expose to the admin editor.
                             if (ownerBand[key]?.text) continue
-                            band[key] = ownerHref ? { text, href: ownerHref } : { text }
+                            const href = ownerHref || derivedOffPageHref
+                            band[key] = href ? { text, href } : { text }
                         }
                         // `cta` is the only name that keeps a derived href, so
                         // restore it when the owner supplied none — CtaBandA–F
@@ -808,10 +1088,22 @@ async function transformToAstroData(
                 })(),
                 footer: mergeShallow<any>(c.footer, derived.footer),
                 navCtaText: c.navCtaText || 'Get in touch',
-                navCtaHref: c.navCtaHref || '#visit',
-                navbar_links: Array.isArray(c.navbar_links) && c.navbar_links.length
-                    ? c.navbar_links
-                    : derived.navbar_links,
+                // The header's own CTA is a contact button like the hero's
+                // primary — same resolver, same no-op when Location renders.
+                navCtaHref: resolveContactHref(c.navCtaHref || '#visit'),
+                // No .astro reads this copy — `layout.navLinks` is the one
+                // every header and the filipino footers' Explore column
+                // render from — but it ships in site-data.json, so it gets
+                // the same filter rather than sitting there as a second,
+                // stale answer for the next consumer to find. The editor
+                // sidebar is unaffected either way: it lists the nav from the
+                // draft and from deriveContentDefaults(), so admin still sees
+                // and edits all five entries.
+                navbar_links: filterLiveNav(
+                    Array.isArray(c.navbar_links) && c.navbar_links.length
+                        ? c.navbar_links
+                        : derived.navbar_links,
+                ),
                 // Why / How / Testimonials / FAQ / Credentials — same 3-tier
                 // resolution (admin > AI > derived) PLUS a shape normalizer
                 // because the AI / legacy paths emit flat arrays

@@ -486,6 +486,93 @@ describe('the guard end to end', () => {
         expect(republished.services).toHaveLength(3);
     });
 
+    // ── RE-EXTRACTION ────────────────────────────────────────────────────────
+    // The gate re-extracts when the transcript fingerprint moves, and
+    // re-extraction replaces extractedContent wholesale. The trigger is not only
+    // a deliberate transcript edit: the admin's "regenerate transcription" button
+    // re-runs Whisper, Whisper is non-deterministic, and the same audio comes
+    // back worded differently — so the fingerprint moves on its own and the wipe
+    // lands later, on the next Save.
+    //
+    // That wipe used to take the admin's typed testimonials with it, which is the
+    // guard's ENTIRE escape hatch: on the creator funnel nothing can verify a
+    // quote, so an admin who heard the recording typing the real words in is the
+    // only way a true testimonial ever reaches the page. Once wiped, the page has
+    // no quotes and no record that real ones ever existed.
+    //
+    // Mirrors preserveAdminTestimonials in app/api/generate-website/route.ts —
+    // same guard, same option, and nothing carried across when nothing provably
+    // human is left (an empty wrapper would answer the conversion-block gate and
+    // block the regeneration meant to replace it).
+    const preserveAdminTestimonials = (stored: any): any => {
+        if (stored?.testimonials == null) return undefined;
+        const { content } = stripFabricatedTestimonials(
+            { testimonials: stored.testimonials },
+            { keepAdminAuthored: true },
+        );
+        const kept = (content as any).testimonials;
+        if (Array.isArray(kept)) return kept.length > 0 ? kept : undefined;
+        if (kept && typeof kept === 'object') {
+            return Array.isArray(kept.items) && kept.items.length > 0 ? kept : undefined;
+        }
+        return undefined;
+    };
+
+    /** What the editor's "add quote" writes: the attribution key, and no `name`
+     *  or `author` — see ADMIN_ATTRIBUTION_KEY. */
+    const TYPED = { quote: 'Laging bagong luto, kahit hapon na.', who: 'Tita Malou' };
+
+    it('carries the admin typed quotes across a re-extraction', () => {
+        const stored = { testimonials: { tag: 'Reviews', items: [TYPED] } };
+        const preserved = preserveAdminTestimonials(stored);
+        // Fresh model JSON for the re-worded transcript — no testimonials in it,
+        // the extraction prompt no longer asks for any at this level.
+        const fresh = { business_name: 'Ate Beth Street Food', tagline: 'Bagong luto, gabi-gabi' };
+        const reExtracted: any = { ...fresh, testimonials: preserved };
+        expect(reExtracted.testimonials.items).toEqual([TYPED]);
+    });
+
+    it('carries nothing when the stored quotes are the invented ones', () => {
+        // Preservation must never become a way for fabricated content to survive
+        // the rewrite that would have removed it.
+        expect(preserveAdminTestimonials({ testimonials: FABRICATED })).toBeUndefined();
+        expect(preserveAdminTestimonials({ testimonials: { tag: 'Reviews', items: FABRICATED } })).toBeUndefined();
+        expect(preserveAdminTestimonials({ testimonials: 'Everyone says we are the best.' })).toBeUndefined();
+        expect(preserveAdminTestimonials({ business_name: 'X' })).toBeUndefined();
+    });
+
+    it('carries only the typed half of a half-corrected row', () => {
+        const preserved = preserveAdminTestimonials({
+            testimonials: { tag: 'Reviews', items: [...FABRICATED, TYPED] },
+        });
+        expect(preserved.items).toEqual([TYPED]);
+    });
+
+    it('the escape hatch survives the whole re-extraction, end to end', () => {
+        // The full sequence on a creator-funnel row whose transcript fingerprint
+        // moved: preserve → wholesale replace → regenerate the conversion blocks
+        // → guard the generated output → restore admin work on top.
+        const stored = {
+            business_name: 'Ate Beth Street Food',
+            testimonials: { tag: 'Reviews', items: [TYPED] },
+        };
+        const preserved = preserveAdminTestimonials(stored);
+
+        const freshExtraction = { business_name: 'Ate Beth Street Food', tagline: 'Bagong luto, gabi-gabi' };
+        let content: any = { ...freshExtraction, testimonials: preserved };
+
+        // The blocks call still runs — a restored key is not evidence this
+        // transcript's blocks have been written — and it invents three customers
+        // again, which the generation guard drops.
+        const blocks = guard({}, { testimonials: FABRICATED, faq: [{ q: 'Anong oras kayo?', a: 'From 3pm.' }] });
+        content = { ...content, ...blocks, testimonials: preserved };
+
+        // And the assembly pass, which runs on every save, keeps them too.
+        const published = assemble({}, content);
+        expect(published.testimonials.items).toEqual([TYPED]);
+        expect(published.faq).toHaveLength(1);
+    });
+
     it('saving from the editor keeps what the admin typed', () => {
         // /api/save-content persists the draft and then calls this route, so an
         // editor Save is a regenerate. If this stripped, the admin's words would
