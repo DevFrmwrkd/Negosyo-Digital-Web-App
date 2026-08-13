@@ -41,8 +41,18 @@ const label = layout.businessName || 'Our location';
 const mapAria = `Map showing ${label}`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
+// The fallback map-face is a drawn street grid with a pin labelled with the
+// business name — a picture claiming where this business physically is. With
+// neither coords nor an address there is nothing real behind that claim, so the
+// map cell is not rendered at all.
+const hasMap = hasCoords || hasAddress;
+// The section goes with it when nothing real is left: a "find us" heading over
+// an empty column is the same empty shell. Only owner-supplied location data
+// keeps it in the document.
+const hasLoc = hasMap || Boolean(address || phone || hours.length > 0);
 ---
-<section class="split location" id="location">
+{hasLoc && (
+<section class:list={['split', 'location', !hasMap && 'no-map']} id="location">
   <div class="panecopy loc-copy">
     {tag && <span class="eyebrow" style="display:block;margin-bottom:14px;" data-field="location.tag">{tag}</span>}
     {headline && <h2 class="loc-h" data-field="location.headline" set:html={headline}></h2>}
@@ -71,23 +81,28 @@ const hasAddress = !!address;
           </div>
         </div>
       )}
-      {dirText && (
+      {/* Gate on the target, not just the label: with no address and no
+          explicit link dirHref is '#' and the control would be dead. */}
+      {dirText && dirHref !== '#' && (
         <div class="r loc-cta"><a class="btn btn--fill" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText} <span class="arw" aria-hidden="true">→</span></a></div>
       )}
     </div>
   </div>
-  <div class="stick loc-stick">
-    <div id="map" role="img" aria-label={mapAria}>
-      <div class="map-face" aria-hidden="true">
-        <div class="road" style="top:44%;left:0;right:0;height:8px;"></div>
-        <div class="road" style="top:0;bottom:0;left:38%;width:6px;"></div>
-        <div class="road" style="top:70%;left:0;right:0;height:4px;opacity:.6;"></div>
+  {hasMap && (
+    <div class="stick loc-stick">
+      <div id="map" role="img" aria-label={mapAria}>
+        <div class="map-face" aria-hidden="true">
+          <div class="road" style="top:44%;left:0;right:0;height:8px;"></div>
+          <div class="road" style="top:0;bottom:0;left:38%;width:6px;"></div>
+          <div class="road" style="top:70%;left:0;right:0;height:4px;opacity:.6;"></div>
+        </div>
+        <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="lbl">{label}</div>}</div>
       </div>
-      <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="lbl">{label}</div>}</div>
+      {mapCaption && <span class="cap" data-field="location.mapCaption">{mapCaption}</span>}
     </div>
-    {mapCaption && <span class="cap" data-field="location.mapCaption">{mapCaption}</span>}
-  </div>
+  )}
 </section>
+)}
 {/* Render path A: build-time coords ready. */}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label }}>
@@ -135,6 +150,9 @@ const hasAddress = !!address;
   .loc-hours { display: grid; gap: 4px; }
   .loc-hours .hrow { display: flex; justify-content: space-between; gap: 16px; max-width: 320px; font-size: 15px; }
   .loc-cta { border-bottom: none !important; padding-top: 22px !important; }
+  /* No coords and no address: the map cell is not rendered, so the copy
+     column takes the full width instead of leaving a hole beside it. */
+  .split.no-map { grid-template-columns: 1fr; }
 
   /* Map lives inside the sticky image column (the .stick .ph rules don't apply
      here — #map fills the frame directly). */

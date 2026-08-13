@@ -10,9 +10,28 @@ const sign = about.signatureName || about.signature || '';
 const aboutImage = about.image || (content.photos && content.photos[0]) || '';
 const stampY = about.stampYear || '';
 const stampT = about.stampTag || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, had nothing to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which shipped an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by
+// the layer above, so counting it would keep the shell on exactly the pages
+// this gate exists to remove. Same shape as generic/AboutA–E.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(pullQuote || sign || aboutImage || stampY || stampT) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="pad-y" id="about">
   <div class="wrap about-grid reveal">
+    {/* The media column is a 70vh block of solid --ink-2 with no photo behind
+        it, so with text-only about copy it rendered half the section as an empty
+        slab. Container hides when there is nothing to put in it. */}
+    {(aboutImage || stampY || stampT) && (
     <div class="about-media">
       <div class="img" data-image-field="about.image" style={aboutImage ? `background-image:url('${aboutImage}');` : ''}></div>
       {(stampY || stampT) && (
@@ -22,9 +41,14 @@ const stampT = about.stampTag || '';
         </div>
       )}
     </div>
+    )}
     <div class="about-body">
-      <span class="kicker" data-field="about.tag">{tag}</span>
-      <h2 class="h-sect" data-field="about.headline" set:html={headline}></h2>
+      {/* Both were unguarded and both variables are '' by default now: with no
+          business name lib/derive-content-defaults.ts emits no about.headline,
+          so this shipped a styled empty kicker over an empty <h2></h2> — the
+          same headless-heading regression as the hero. */}
+      {tag && <span class="kicker" data-field="about.tag">{tag}</span>}
+      {headline && <h2 class="h-sect" data-field="about.headline" set:html={headline}></h2>}
       {pullQuote && <div class="pull" data-field="about.lead" set:html={pullQuote}></div>}
       {paragraphs.map((p: string, i: number) => (
         <p data-field={`about.paragraphs.${i}`} set:html={p}></p>
@@ -33,6 +57,7 @@ const stampT = about.stampTag || '';
     </div>
   </div>
 </section>
+)}
 <style>
   .about-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: clamp(36px, 5vw, 80px); align-items: center; }
   .about-media { position: relative; }

@@ -5,14 +5,34 @@
  * auto-hides when empty, so with just a brand + address it collapses to the
  * design's minimal three-line footer.
  *
- * The floating message pill reuses the hero's primary CTA (content.hero.cta1) —
- * the same "send your list" action — so it stays editable and in sync; it
- * renders only when that CTA (or the CTA-band's) has a link.
+ * The floating message pill reuses the hero's primary CTA (content.hero.cta1)
+ * so it stays editable and in sync; it renders only when that CTA (or the
+ * CTA-band's) has a link.
  */
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAG actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAG.
+const PAGE_ANCHORS = new Set(['gallery', 'location', 'reviews', 'top']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const f = (content as any).footer || {};
-const brand = f.brand || layout.businessName || 'Your Business';
+// No "Your Business" stand-in: a placeholder wordmark ships as the customer's
+// own name. The brand line hides instead of rendering an empty slot.
+const brand = f.brand || layout.businessName || '';
 const blurb = f.blurb || f.brand_blurb || '';
 const visitLines: string[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
   ? f.visit.lines
@@ -31,14 +51,20 @@ const phoneDigits = phone.replace(/[^0-9+]/g, '');
 // Floating message pill — reuse the hero's primary CTA (falls back to CTA-band).
 const hero = (content as any).hero || {};
 const cband = (content as any).ctaBand || {};
-const msgHref = hero.cta1?.href || cband.cta1?.href || '';
-const msgText = hero.cta1?.text || cband.cta1?.text || 'Send your list';
+const msgHref = onPage(hero.cta1?.href || cband.cta1?.href, '');
+// Neutral affordance only. "Send your list" implied a quote-by-materials-list
+// service model that most retailers on this template do not run; the sibling
+// footers (AO / AN) already default to a plain message verb.
+// No default label: "Message us" asserts a messaging channel the store may
+// not run.
+// No CTA text from the owner => no pill.
+const msgText = hero.cta1?.text || cband.cta1?.text || '';
 ---
 <footer class="foot">
   <div class="wrap">
     <div class="foot-grid">
       <div class="foot-brand">
-        <div class="brand" data-field="footer.brand">{brand}</div>
+        {brand && <div class="brand" data-field="footer.brand">{brand}</div>}
         {blurb && <p class="foot-blurb" data-field="footer.blurb">{blurb}</p>}
         {social.length > 0 && (
           <div class="foot-social">
@@ -89,9 +115,9 @@ const msgText = hero.cta1?.text || cband.cta1?.text || 'Send your list';
     )}
   </div>
 </footer>
-{msgHref && (
+{msgHref && msgText && (
   <div class="c2m">
-    <a href={msgHref} aria-label="Send your list" data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+    <a href={msgHref} aria-label={msgText} data-field="hero.cta1.text" data-href-field="hero.cta1.href">
       <span aria-hidden="true">✉</span> {msgText}
     </a>
   </div>

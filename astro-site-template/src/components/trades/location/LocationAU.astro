@@ -44,10 +44,12 @@ const mapAria = `Coverage map of the ${label} service area`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
 
-// Decorative coverage pings — labelled from the service-area list when present,
-// else a designed default set so the map always reads as intended.
-const defaultPings = ['Quezon City', 'Manila', 'Makati', 'Pasig', 'Marikina', 'Caloocan'];
-const pingLabels = (areaPlaces.length > 0 ? areaPlaces : defaultPings).slice(0, 6);
+// Decorative coverage pings. Labels come ONLY from the business's own
+// service-area list: a designed default set of city names renders as this
+// business's coverage claim, and is false for anyone who does not serve them.
+// With no data the pings stay as unlabelled dots — decoration, not a claim.
+// Do not restore a default place list here.
+const pingLabels = areaPlaces.slice(0, 6);
 const pingPos = [
   { l: '52%', t: '30%', c: '' },
   { l: '36%', t: '56%', c: 'c p2' },
@@ -56,7 +58,29 @@ const pingPos = [
   { l: '72%', t: '26%', c: 'p5' },
   { l: '32%', t: '34%', c: 'c p6' },
 ];
+// Labelled pings track the supplied places exactly; with none, the full
+// decorative dot set still draws so the map never reads as half-empty.
+const pings = pingPos.slice(0, pingLabels.length > 0 ? pingLabels.length : pingPos.length);
+// Unlabelling the pings was not enough. The plate is still a drawn region with
+// a "Dispatch grid" caption inside role="img" / "Coverage map of the <business>
+// service area" — a picture of a coverage area, and its extent is invented. It
+// is tolerable only as the loading skin it was designed to be: paths A and B
+// mount Leaflet over #map and wipe it. Without coords or an address Leaflet
+// never mounts and the invented region is what the visitor is left looking at,
+// so the plate is dropped and the grid falls to one column (.no-map).
+//
+// areaPlaces is deliberately NOT part of this test even though it feeds the ping
+// labels. lib/derive-content-defaults.ts sets area.places to [business_city] for
+// every site, and that derived value beats any component fallback — counting it
+// would hand the map straight back to every business that typed only a city.
+const hasMap = hasCoords || hasAddress;
+// And the section goes with it when nothing real is left. brand is deliberately
+// excluded: it falls back to layout.businessName, which every site has, so a
+// gate that counted it would never fire. serviceArea is real owner/city data and
+// stands on its own as a text row.
+const hasLoc = hasMap || Boolean(address || phone || storefrontNote || serviceArea || hours.length > 0 || hoursNote);
 ---
+{hasLoc && (
 <section class="sec" id="location">
   <div class="wrap">
     <div class="sec-head">
@@ -64,7 +88,7 @@ const pingPos = [
       {headline && <h2 class="reveal" data-field="location.headline" set:html={headline}></h2>}
     </div>
     {sub && <p class="loc-sub reveal" data-field="location.sub">{sub}</p>}
-    <div class="loc-grid reveal">
+    <div class:list={['loc-grid', 'reveal', !hasMap && 'no-map']}>
       <div class="loc-info">
         {brand && (
           <div class="row"><div class="k">Business</div><div class="v" data-field="footer.brand">{brand}</div></div>
@@ -101,22 +125,25 @@ const pingPos = [
           </div>
         )}
       </div>
-      <div class="loc-map">
-        <div id="map" role="img" aria-label={mapAria}>
-          <div class="covmap" aria-hidden="true">
-            <span class="lbl">Dispatch grid</span>
-            <div class="region"></div>
-            {pingLabels.map((pl, i) => (
-              <div class={`ping ${pingPos[i].c}`.trim()} style={`left:${pingPos[i].l};top:${pingPos[i].t};`}><div class="d"></div><div class="t">{pl}</div></div>
-            ))}
-            <span class="scale">◲ not to scale</span>
+      {hasMap && (
+        <div class="loc-map">
+          <div id="map" role="img" aria-label={mapAria}>
+            <div class="covmap" aria-hidden="true">
+              <span class="lbl">Dispatch grid</span>
+              <div class="region"></div>
+              {pings.map((p, i) => (
+                <div class={`ping ${p.c}`.trim()} style={`left:${p.l};top:${p.t};`}><div class="d"></div>{pingLabels[i] && <div class="t">{pingLabels[i]}</div>}</div>
+              ))}
+              <span class="scale">◲ not to scale</span>
+            </div>
           </div>
+          {mapCaption && <div class="map-cap" data-field="location.mapCaption">{mapCaption}</div>}
         </div>
-        {mapCaption && <div class="map-cap" data-field="location.mapCaption">{mapCaption}</div>}
-      </div>
+      )}
     </div>
   </div>
 </section>
+)}
 {/* Render path A: build-time coords ready. */}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label }}>
@@ -158,6 +185,10 @@ const pingPos = [
 <style>
   .loc-sub { color: var(--muted); margin: -24px 0 30px; max-width: 46ch; text-transform: none; }
   .loc-grid { display: grid; grid-template-columns: 1fr 1.1fr; border: 1px solid var(--line); }
+  /* No coords and no address: the coverage plate is not rendered, so the
+     dispatch rows take the full width. */
+  .loc-grid.no-map { grid-template-columns: 1fr; }
+  .loc-grid.no-map .loc-info { border-right: none; }
   @media (max-width: 900px) { .loc-grid { grid-template-columns: 1fr; } }
   @media (max-width: 760px) { .loc-grid { grid-template-columns: 1fr; } }
   .loc-info { padding: 44px 34px; border-right: 1px solid var(--line); }

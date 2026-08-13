@@ -3,17 +3,28 @@ interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
 const band = content.ctaBand || {};
 const headline = band.headline || '';
-const sub = band.sub || band.body || `${layout.contact?.address || 'Your address line 1, Austin'} · ${layout.contact?.phone || '+0 000 000 0000'} · < 15 min response`;
+// No stock sub-line. The old default stitched a placeholder address
+// ("Your address line 1, Portland") and a fake phone ("+0 000 000 0000")
+// together with service claims — "open daily", "< 15 min response",
+// "free local pickup" — none of which anyone verified for this business.
+// Real contact data is joined only when the owner actually supplied it.
+const contactBits = [layout.contact?.address, layout.contact?.phone].filter(Boolean);
+const sub = band.sub || band.body || contactBits.join(' · ');
 const ctaText = band.cta?.text || band.primaryLabel || '';
 const ctaHref = band.cta?.href || band.primaryLink || '#visit';
+// Nothing to say and nowhere to send anyone => the band stays out of the
+// document rather than rendering a bare coloured strip with an empty button.
+const hasBand = Boolean(headline || sub || ctaText);
 ---
+{hasBand && (
 <section class="cta-band">
   <div class="wrap in">
-    <h2 class="reveal" data-field="ctaBand.headline" set:html={headline}></h2>
-    <p class="sub reveal" data-field="ctaBand.sub">{sub}</p>
-    <a href={ctaHref} class="btn btn-primary reveal" data-field="ctaBand.cta.text" data-href-field="ctaBand.cta.href">{ctaText}</a>
+    {headline && <h2 class="reveal" data-field="ctaBand.headline" set:html={headline}></h2>}
+    {sub && <p class="sub reveal" data-field="ctaBand.sub">{sub}</p>}
+    {ctaText && <a href={ctaHref} class="btn btn-primary reveal" data-field="ctaBand.cta.text" data-href-field="ctaBand.cta.href">{ctaText}</a>}
   </div>
 </section>
+)}
 <style>
   .cta-band { text-align: center; padding: 120px 0; position: relative; overflow: hidden; border-top: 1px solid var(--line); }
   .cta-band::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 54px 54px; opacity: .35; mask-image: radial-gradient(ellipse 70% 80% at 50% 50%, #000 20%, transparent 75%); }

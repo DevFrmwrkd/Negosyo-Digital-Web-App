@@ -5,6 +5,9 @@ const why = content.why || content.whyUs || {};
 const tag = why.tag || 'Why us';
 const headline = why.headline || '';
 const items = Array.isArray(why.items) && why.items.length > 0 ? why.items : [];
+// Nothing real to list => the whole section stays out of the document
+// rather than rendering an eyebrow and heading over an empty grid.
+const hasItems = items.length > 0;
 const iconPaths = [
   '<path d="M3 21V8l9-5 9 5v13M9 21v-6h6v6"/>',
   '<path d="M12 3l8 4v6c0 5-4 7-8 8-4-1-8-3-8-8V7z"/><path d="M9 12l2 2 4-4"/>',
@@ -12,10 +15,11 @@ const iconPaths = [
   '<path d="M3 13h4l3-9 4 18 3-9h4"/>',
 ];
 ---
+{hasItems && (
 <section class="sec" id="why">
   <div class="wrap">
     <span class="sec-tag reveal" data-field="why.tag">{tag}</span>
-    <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="why.headline" set:html={headline}></h2>}
     <div class="why-grid">
       {items.map((it: any, i: number) => (
         <div class="why-cell reveal" style={i > 0 ? `transition-delay:.${i * 8}s;` : ''}>
@@ -29,6 +33,7 @@ const iconPaths = [
     </div>
   </div>
 </section>
+)}
 <style>
   .why-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin-top: 50px; }
   .why-cell { background: var(--card); border: 2px solid var(--ink); box-shadow: var(--shadow); padding: 34px; display: flex; gap: 22px; align-items: flex-start; }

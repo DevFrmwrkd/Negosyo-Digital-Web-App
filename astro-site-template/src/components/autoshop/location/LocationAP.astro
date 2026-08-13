@@ -42,7 +42,17 @@ const label = layout.businessName || 'Our location';
 const mapAria = `Map showing ${label}`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
+// The fallback map-face is a drawn street grid with a pin labelled with the
+// business name — a picture claiming where this business physically is. With
+// neither coords nor an address there is nothing real behind that claim, so the
+// map cell is not rendered at all.
+const hasMap = hasCoords || hasAddress;
+// The section goes with it when nothing real is left: a "find us" heading over
+// an empty column is the same empty shell. Only owner-supplied location data
+// keeps it in the document.
+const hasLoc = hasMap || Boolean(address || phone || hours.length > 0);
 ---
+{hasLoc && (
 <section class="sec seamtop loc" id="location">
   <div class="wrap">
     <div class="sec-head">
@@ -50,7 +60,7 @@ const hasAddress = !!address;
       {headline && <h2 class="reveal" data-field="location.headline" set:html={headline}></h2>}
     </div>
     {sub && <p class="loc-sub reveal" data-field="location.sub">{sub}</p>}
-    <div class="loc-grid reveal">
+    <div class:list={['loc-grid', 'reveal', !hasMap && 'no-map']}>
       <div class="loc-info">
         {brand && (
           <div class="row"><div class="k">Shop</div><div class="v" data-field="footer.brand">{brand}</div></div>
@@ -76,24 +86,29 @@ const hasAddress = !!address;
             </div>
           </div>
         )}
-        {dirText && (
+        {/* Gate on the target, not just the label: with no address and no
+            explicit link dirHref is '#' and the control would be dead. */}
+        {dirText && dirHref !== '#' && (
           <div class="row loc-cta"><a class="btn btn--fill" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a></div>
         )}
       </div>
-      <div class="loc-map" role="img" aria-label={mapAria}>
-        <div id="map">
-          <div class="map-face" aria-hidden="true">
-            <div class="road" style="top:47%;left:0;right:0;height:8px;"></div>
-            <div class="road" style="top:0;bottom:0;left:44%;width:6px;"></div>
-            <div class="road" style="top:74%;left:0;right:0;height:4px;opacity:.6;"></div>
+      {hasMap && (
+        <div class="loc-map" role="img" aria-label={mapAria}>
+          <div id="map">
+            <div class="map-face" aria-hidden="true">
+              <div class="road" style="top:47%;left:0;right:0;height:8px;"></div>
+              <div class="road" style="top:0;bottom:0;left:44%;width:6px;"></div>
+              <div class="road" style="top:74%;left:0;right:0;height:4px;opacity:.6;"></div>
+            </div>
+            <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="lbl">{label}</div>}</div>
           </div>
-          <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="lbl">{label}</div>}</div>
+          {mapCaption && <figcaption class="map-cap" data-field="location.mapCaption">{mapCaption}</figcaption>}
         </div>
-        {mapCaption && <figcaption class="map-cap" data-field="location.mapCaption">{mapCaption}</figcaption>}
-      </div>
+      )}
     </div>
   </div>
 </section>
+)}
 {/* Render path A: build-time coords ready. */}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label }}>
@@ -134,9 +149,14 @@ const hasAddress = !!address;
 )}
 <style>
   .loc-grid { display: grid; grid-template-columns: 1fr 1.1fr; border: 1px solid var(--line); }
+  /* No coords and no address: the map cell is not rendered, so the copy
+     column takes the full width instead of leaving a hole beside it. */
+  .loc-grid.no-map { grid-template-columns: 1fr; }
   @media (max-width: 900px) { .loc-grid { grid-template-columns: 1fr; } }
   .loc-sub { color: var(--concrete); margin: -32px 0 32px; max-width: 46ch; font-size: 16px; }
   .loc-info { padding: 44px 36px; border-right: 1px solid var(--line); }
+  /* Nothing sits to the right of the copy column when the map is gone. */
+  .loc-grid.no-map .loc-info { border-right: none; }
   @media (max-width: 900px) { .loc-info { border-right: none; border-bottom: 1px solid var(--line); } }
   .loc-info .row { padding: 18px 0; border-bottom: 1px solid var(--line); }
   .loc-info .row:last-child { border-bottom: none; }

@@ -14,7 +14,22 @@ const headline = about.headline || '';
 const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
 const quote = about.quote || '';
 const signature = about.signature || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, had nothing to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which shipped an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by
+// the layer above, so counting it would keep the shell on exactly the pages
+// this gate exists to remove. Same shape as generic/AboutA–E.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(quote || signature) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="p-sec" id="about" data-component="ABOUT" data-variant="panel">
   <span class="idx" aria-hidden="true">01</span>
   {tag && <span class="eyebrow p-eb" data-field="about.tag">{tag}</span>}
@@ -27,6 +42,7 @@ const signature = about.signature || '';
     {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
   </div>
 </section>
+)}
 <style>
   .about-body p:first-of-type { font-family: var(--serif); font-size: 24px; line-height: 1.45; color: var(--ink); }
   .about-body p:first-of-type :global(em) { font-style: italic; color: var(--accent); }

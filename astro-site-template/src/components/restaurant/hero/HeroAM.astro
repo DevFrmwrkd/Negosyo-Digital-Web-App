@@ -6,12 +6,32 @@
  * signature dish ticker is pinned to the base.
  *
  * The ticker mirrors the day's dishes off the kalan — sourced from
- * content.services items when present, else a lutong-bahay default so it always
- * reads as designed. It is aria-hidden decorative chrome, so it carries no
- * editable field. hero.cta3 is an optional third CTA (the design ships three).
+ * content.services items. It is aria-hidden decorative chrome, so it carries no
+ * editable field, and it does NOT ship a default dish list: hard-coded dishes
+ * would advertise food this kitchen may not cook, so the whole ticker is
+ * omitted when there are no service titles to roll.
+ * hero.cta3 is an optional third CTA (the design ships three).
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAM actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAM.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'gallery', 'location', 'main', 'menu', 'reserve', 'reviews']);
+const ANCHOR_ALIAS: Record<string, string> = { services: 'menu', visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
@@ -20,22 +40,22 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#reserve';
+const cta1Href = onPage(hero.cta1?.href, '#reserve');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location'));
 const cta3Text = hero.cta3?.text || '';
 const cta3Href = hero.cta3?.href || '#location';
 const tag = hero.tag || '';
 const badgeNote = hero.badgeNote || '';
 
-// Ticker labels: the day's dishes off the kalan (services titles), else a
-// lutong-bahay default so the ticker always reads as designed.
+// Ticker labels: the day's dishes off the kalan, i.e. the business's own
+// service titles. WHY no default list: a hard-coded menu ("Batchoy sa mangkok",
+// "Barako kapé") is a live claim about food this kitchen may not serve. With no
+// services on file the ticker renders nothing at all rather than an invented
+// one — see the empty-testimonials rule in lib/astro-builder.ts.
 const services = content.services || {};
 const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
-const tickerFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
-const tickerItems = tickerFromServices.length > 0
-  ? tickerFromServices
-  : ['Tapa & garlic kanin', 'Batchoy sa mangkok', 'Adobong manok sa gata', 'Pandesal sa uling', 'Barako kapé', 'Bibingka', 'Sinigang na baboy', 'Kesong puti'];
+const tickerItems = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
 ---
 <section class="hero grain" aria-label="Hero">
   <div class="hero-img" aria-hidden="true">
@@ -67,12 +87,16 @@ const tickerItems = tickerFromServices.length > 0
       )}
     </div>
   </div>
-  <div class="ticker" aria-label="Today at the kalan">
-    <div class="ticker-track" aria-hidden="true">
-      {tickerItems.map((t) => (<span>{t}</span>))}
-      {tickerItems.map((t) => (<span>{t}</span>))}
+  {/* No services on file → no ticker. An empty rolling strip (or an invented
+      menu) is worse than the strip being absent. */}
+  {tickerItems.length > 0 && (
+    <div class="ticker" aria-label="Today at the kalan">
+      <div class="ticker-track" aria-hidden="true">
+        {tickerItems.map((t) => (<span>{t}</span>))}
+        {tickerItems.map((t) => (<span>{t}</span>))}
+      </div>
     </div>
-  </div>
+  )}
 </section>
 <style>
   .hero { position: relative; min-height: 92vh; display: flex; align-items: flex-end; overflow: hidden; background: var(--ink); }

@@ -12,6 +12,11 @@
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
 const loc = content.location || {};
+// The right-hand slot of the section strip carried a hardcoded line ("Km 22,
+// Marcos Highway", "Slopes of Mt. Malarayat", "Three generations, one oven") —
+// a claim invented for the design comp. It now mirrors the rest of the family:
+// data-driven, and absent when unset. Never restore a literal here.
+const tag = loc.tag || '';
 const headline = loc.headline || '';
 const sub = loc.sub || '';
 const brand = (content as any).footer?.brand || layout.businessName || '';
@@ -33,13 +38,22 @@ const label = layout.businessName || 'Our location';
 const mapAria = `Map showing ${label}`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
+// The fallback map-face is a drawn street grid with a pin labelled with the
+// business name — a picture claiming where this business physically is. With
+// neither coords nor an address there is nothing real behind that claim, so the
+// map cell is dropped entirely and the grid falls to one column (.no-map).
+const hasMap = hasCoords || hasAddress;
+// And the section goes with it when nothing real is left: a headline over an
+// empty card is the same empty shell. Only owner-supplied contact data keeps it.
+const hasLoc = hasMap || Boolean(address || phone || email || hours.length > 0);
 ---
+{hasLoc && (
 <section class="loc" id="location">
   <div class="wrap">
-    <div class="sw-head"><span>Batch 10 / The corner</span><span>Find the bakery</span></div>
+    <div class="sw-head"><span>Batch 10 / The corner</span>{tag && <span data-field="location.tag">{tag}</span>}</div>
     {headline && <h2 class="h2 reveal" data-field="location.headline" set:html={headline}></h2>}
     {sub && <p class="loc-sub body reveal" data-field="location.sub">{sub}</p>}
-    <div class="loc-grid reveal">
+    <div class:list={['loc-grid', 'reveal', !hasMap && 'no-map']}>
       <div class="nap">
         <address>
           {brand && <><strong data-field="footer.brand">{brand}</strong><br /></>}
@@ -52,28 +66,33 @@ const hasAddress = !!address;
           {phone && <><a href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a><br /></>}
           {email && <a href={`mailto:${email}`} data-field="location.email">{email}</a>}
         </address>
-        {(hours.length > 0 || dirText) && (
+        {(hours.length > 0 || (dirText && dirHref !== '#')) && (
           <div class="hours">
             {hours.map((r: any, i: number) => (
               <div class="row"><span data-field={`location.hours.${i}.day`}>{r.day}</span><span data-field={`location.hours.${i}.time`}>{r.time}</span></div>
             ))}
-            {dirText && <p class="gbp-note"><a class="dir" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a></p>}
+            {/* Gate on the target, not just the label: with no address and no
+                explicit link dirHref is '#' and the control would be dead. */}
+            {dirText && dirHref !== '#' && <p class="gbp-note"><a class="dir" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a></p>}
           </div>
         )}
       </div>
-      <div class="map-frame">
-        <div id="map" role="img" aria-label={mapAria}>
-          <div class="map-face" aria-hidden="true">
-            <div class="road" style="top:47%;left:0;right:0;height:6px;"></div>
-            <div class="road" style="top:0;bottom:0;left:44%;width:5px;"></div>
-            <div class="road" style="top:74%;left:0;right:0;height:3px;opacity:.6;"></div>
+      {hasMap && (
+        <div class="map-frame">
+          <div id="map" role="img" aria-label={mapAria}>
+            <div class="map-face" aria-hidden="true">
+              <div class="road" style="top:47%;left:0;right:0;height:6px;"></div>
+              <div class="road" style="top:0;bottom:0;left:44%;width:5px;"></div>
+              <div class="road" style="top:74%;left:0;right:0;height:3px;opacity:.6;"></div>
+            </div>
+            <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="mlbl">{label}</div>}</div>
           </div>
-          <div class="map-pin" aria-hidden="true"><div class="dot"></div>{label && <div class="mlbl">{label}</div>}</div>
         </div>
-      </div>
+      )}
     </div>
   </div>
 </section>
+)}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label }}>
     (function init() {
@@ -111,6 +130,9 @@ const hasAddress = !!address;
   .loc { padding-top: 0; }
   .loc-sub { max-width: 46ch; margin: -8px 0 clamp(24px,3.5vw,40px); }
   .loc-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: clamp(24px,3.5vw,48px); margin-top: clamp(28px,4vw,48px); }
+  /* No coords and no address: the map cell is not rendered, so the NAP card
+     takes the full width instead of leaving a hole beside it. */
+  .loc-grid.no-map { grid-template-columns: 1fr; }
   .nap { background: var(--cream); color: var(--crust); padding: 34px; border-radius: 4px; }
   .nap address { font-style: normal; font-family: var(--disp); font-weight: 400; font-size: 24px; line-height: 1.26; }
   .nap .addr { font-weight: 400; }

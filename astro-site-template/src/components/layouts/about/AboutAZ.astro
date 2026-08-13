@@ -14,7 +14,10 @@ const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs 
 const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
 const imageCaption = about.imageCaption || '';
 ---
-{(headline || paragraphs.length > 0) && (
+{/* headline is deliberately NOT counted: derive-content-defaults.ts sets
+    about.headline to `About ${name}` for every named business, so including it
+    makes this gate always-true and the section renders a heading over nothing. */}
+{paragraphs.length > 0 && (
   <section class="split about" id="about">
     <div class="panecopy about-copy">
       {tag && <span class="eyebrow" style="display:block;margin-bottom:14px;" data-field="about.tag">{tag}</span>}
@@ -26,7 +29,19 @@ const imageCaption = about.imageCaption || '';
       </div>
     </div>
     <div class="stick about-stick">
-      <div class="ph sc6" role="img" aria-label="About" data-image-field="about.image" style={image ? `background-image:url('${image}');` : ''}></div>
+      {/* TRAP — same .ph primitive as filipino/about/AboutBB…BH, which was
+        fixed while this family was missed. Empty it is a flat gradient, but
+        role="img" + aria-label announced a photo of the business to exactly
+        the users who cannot see there is none. With an image it keeps role +
+        label; with none it is decoration. Astro drops undefined attributes. */}
+      <div
+        class="ph sc6"
+        data-image-field="about.image"
+        role={image ? 'img' : undefined}
+        aria-label={image ? 'About' : undefined}
+        aria-hidden={image ? undefined : 'true'}
+        style={image ? `background-image:url('${image}');` : ''}
+      ></div>
       {imageCaption && <span class="cap" data-field="about.imageCaption">{imageCaption}</span>}
     </div>
   </section>

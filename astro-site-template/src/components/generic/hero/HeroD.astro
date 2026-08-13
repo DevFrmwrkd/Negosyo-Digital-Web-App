@@ -1,46 +1,93 @@
 ---
 interface Props { content: any; }
 const { content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageD actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageD.
+const PAGE_ANCHORS = new Set(['about', 'area', 'faq', 'how', 'reviews', 'services', 'top', 'visit', 'why', 'work']);
+const ANCHOR_ALIAS: Record<string, string> = { classes: 'services', coverage: 'area', gallery: 'work', location: 'visit', menu: 'services' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const kicker = hero.kicker || '';
 const headlineLines = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0 ? hero.headlineLines : [];
 const sub = hero.sub || hero.description || '';
-const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#visit';
+// CTA labels stay business-agnostic: the old defaults named a service the
+// business may not offer (classes, quotes, pickups, published pricing).
+// A neutral affordance keeps the hero usable without asserting anything.
+const cta1Text = hero.cta1?.text || 'Get in touch';
+const cta1Href = onPage(hero.cta1?.href, '#visit');
 const cta2Text = hero.cta2?.text || 'See services';
-const cta2Href = hero.cta2?.href || '#services';
+const cta2Href = onPage(hero.cta2?.href, '#services');
 // No stock rating or response-time line: "★★★★★ rated on Google" and
 // "< 15 min avg. response" both assert measurements nobody took for this
 // business. Owner data or nothing.
 const meta1 = hero.meta1 || '';
 const meta2 = hero.meta2 || '';
-const termCmd = hero.term?.command || 'northpoint status --client acme-co';
-const termTitle = hero.term?.title || 'northpoint — status';
+// No stock terminal: the old defaults invented a company handle
+// ("northpoint") and a named client ("acme-co"), reading as a real account
+// this business services. The panel hides unless the owner supplies it.
+const termCmd = hero.term?.command || '';
+const termTitle = hero.term?.title || '';
 const termLines: Array<{ text: string; status?: string }> = Array.isArray(hero.term?.lines) && hero.term.lines.length ? hero.term.lines : [];
+const hasTerm = Boolean(termCmd || termTitle) || termLines.length > 0;
 ---
 <section class="hero">
-  <div class="wrap hero-in">
+  <div class={`wrap hero-in${hasTerm ? '' : ' no-term'}`}>
     <div>
-      <p class="eyebrow" data-field="hero.kicker">{kicker}</p>
-      <h1 style="margin-top:18px;">
-        {headlineLines.map((line: string, i: number) => (
-          <span class="pop"><span style={`animation-delay:.${5 + (i * 8)}s;`} data-field={`hero.headlineLines.${i}`} set:html={line}></span></span>
-        ))}
-      </h1>
-      <p class="hero-sub reveal" data-field="hero.sub">{sub}</p>
+      {/* Guarded: the kicker's 'Local business' default is gone from
+          lib/derive-content-defaults.ts, so it is empty for a submission with
+          neither city nor business type — an unguarded .eyebrow rendered as a
+          blank line above the headline. */}
+      {kicker && <p class="eyebrow" data-field="hero.kicker">{kicker}</p>}
+      {/* Guarded: lib/derive-content-defaults.ts emits `headlineLines: []` for a
+          submission with no business name — it deliberately drops the wordmark
+          rather than printing the old 'Your Business' placeholder. An
+          unconditional <h1> then shipped a literal <h1></h1>: a heading element
+          with no heading, which is worse for screen readers and for SEO than
+          the placeholder it replaced. The ELEMENT is conditional, not its
+          contents — moving this guard inside brings the empty <h1> back. */}
+      {headlineLines.length > 0 && (
+        <h1 style="margin-top:18px;">
+          {headlineLines.map((line: string, i: number) => (
+            <span class="pop"><span style={`animation-delay:.${5 + (i * 8)}s;`} data-field={`hero.headlineLines.${i}`} set:html={line}></span></span>
+          ))}
+        </h1>
+      )}
+      {/* Same shape: hero.sub is undefined when there is no tagline and no name
+          to write "Welcome to …" around, so this rendered an empty styled <p>. */}
+      {sub && <p class="hero-sub reveal" data-field="hero.sub">{sub}</p>}
       <div class="hero-cta reveal" style="transition-delay:.1s;">
         <a href={cta1Href} class="btn btn-primary" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>
         <a href={cta2Href} class="btn btn-ghost" data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
       </div>
-      <div class="hero-meta reveal" style="transition-delay:.18s;">
-        {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
-        {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
-      </div>
+      {/* Container hides with its contents: both meta lines are legitimately
+          absent now (meta1's '★★★★★ rated on Google' is gone for good, meta2 is
+          the city or nothing), and an empty .hero-meta still spent its
+          top-margin under the CTAs. */}
+      {(meta1 || meta2) && (
+        <div class="hero-meta reveal" style="transition-delay:.18s;">
+          {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
+          {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
+        </div>
+      )}
     </div>
+    {hasTerm && (
     <div class="term reveal" style="transition-delay:.12s;">
       <div class="term-bar"><i class="r"></i><i class="y"></i><i class="g"></i><span class="tt" data-field="hero.term.title">{termTitle}</span></div>
       <div class="term-body">
-        <div class="c">$ <span data-field="hero.term.command">{termCmd}</span></div>
+        {termCmd && <div class="c">$ <span data-field="hero.term.command">{termCmd}</span></div>}
         {termLines.map((ln, i) => (
           <div>
             <span class="ok">✔</span>
@@ -52,6 +99,7 @@ const termLines: Array<{ text: string; status?: string }> = Array.isArray(hero.t
         <div class="c">$ <span class="cursor"></span></div>
       </div>
     </div>
+    )}
   </div>
 </section>
 
@@ -59,6 +107,8 @@ const termLines: Array<{ text: string; status?: string }> = Array.isArray(hero.t
   .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
   .hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 54px 54px; opacity: .4; mask-image: radial-gradient(ellipse 80% 70% at 30% 30%, #000 30%, transparent 80%); }
   .hero-in { position: relative; z-index: 2; display: grid; grid-template-columns: 1.4fr .95fr; gap: 50px; align-items: center; padding: 84px 0 90px; }
+  /* No owner terminal data => copy spans the full width, no dead column. */
+  .hero-in.no-term { grid-template-columns: 1fr; }
   .hero h1 { font-size: clamp(52px, 8vw, 118px); font-weight: 800; }
   .hero h1 .pop { display: inline-block; }
   .hero h1 .pop > span { display: inline-block; transform: translateY(0); opacity: 1; }

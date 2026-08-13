@@ -8,12 +8,30 @@
  *
  * The SPEC-PANEL (gauge + spec cells) is the design's signature decorative
  * chrome, like restaurant-AM's dish ticker: it is aria-hidden and carries no
- * editable field. Its readout labels are generic (no business specifics); the
- * second cell echoes the first service title when one is present so it always
- * reads as designed. hero.tag / hero.badgeNote are the editable plate labels.
+ * editable field. Its cells are filled ONLY from the shop's own service titles
+ * — see the WHY note below — and the whole panel is omitted when there are
+ * none. hero.tag / hero.badgeNote are the editable plate labels.
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAP actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAP.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'gallery', 'location', 'main', 'quote', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
@@ -22,17 +40,23 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#quote';
+const cta1Href = onPage(hero.cta1?.href, '#quote');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location'));
 const tag = hero.tag || '';
 const badgeNote = hero.badgeNote || '';
 
-// Decorative spec cell — echo the first service title when present, else a
-// neutral designed default. No editable field (signature chrome).
+// Spec cells — the shop's own service titles, nothing else.
+//
+// WHY: the panel used to ship four hard-coded readouts ("Status / Booking",
+// "Bays / Repair + Detail", "Approach / Diagnose first", "Warranty / On labour")
+// plus an "OPEN — For quotes" gauge readout. Every one of those is a claim the
+// shop never made: a warranty on labour, an open booking queue, a diagnose-first
+// process. Decorative chrome still renders as the business's own promise, so the
+// cells now carry only real service titles and the panel disappears without them.
 const services = content.services || {};
 const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
-const specService = (svcItems[0] && svcItems[0].title) || 'Repair + Detail';
+const specCells = svcItems.map((s) => s && s.title).filter(Boolean).slice(0, 4) as string[];
 ---
 <section class="hero" aria-label="Hero">
   <div class="hazard" aria-hidden="true"></div>
@@ -64,29 +88,31 @@ const specService = (svcItems[0] && svcItems[0].title) || 'Repair + Detail';
       </div>
     </div>
   </div>
-  <!-- Signature tachometer spec panel — decorative chrome (aria-hidden). -->
-  <div class="specbar" aria-hidden="true">
-    <div class="wrap">
-      <div class="tacho">
-        <svg viewBox="0 0 200 100" role="img" aria-label="Tachometer revved and ready">
-          <path d="M20 92 A80 80 0 0 1 180 92" fill="none" stroke="#2a2f36" stroke-width="8"/>
-          <path d="M20 92 A80 80 0 0 1 120 20" fill="none" stroke="#ff6a00" stroke-width="8"/>
-          <g stroke="#9aa0a8" stroke-width="2">
-            <line x1="20" y1="92" x2="30" y2="88"/><line x1="34" y1="52" x2="43" y2="57"/>
-            <line x1="100" y1="12" x2="100" y2="22"/><line x1="166" y1="52" x2="157" y2="57"/><line x1="180" y1="92" x2="170" y2="88"/>
-          </g>
-          <g class="needle"><line x1="100" y1="92" x2="100" y2="30" stroke="#ff6a00" stroke-width="4" stroke-linecap="round"/><circle cx="100" cy="92" r="7" fill="#eef0f2"/></g>
-        </svg>
-        <div><div class="rd">OPEN</div><div class="rl">For quotes</div></div>
-      </div>
-      <div class="specrow">
-        <div class="s"><div class="sk">Status</div><div class="sv">Booking</div></div>
-        <div class="s"><div class="sk">Bays</div><div class="sv">{specService}</div></div>
-        <div class="s"><div class="sk">Approach</div><div class="sv">Diagnose first</div></div>
-        <div class="s"><div class="sk">Warranty</div><div class="sv">On labour</div></div>
+  {/* Signature tachometer spec panel — decorative chrome (aria-hidden). No
+      services on file → no panel: a gauge over four empty cells reads worse
+      than no gauge, and inventing cells to fill it is what we just removed. */}
+  {specCells.length > 0 && (
+    <div class="specbar" aria-hidden="true">
+      <div class="wrap">
+        <div class="tacho">
+          <svg viewBox="0 0 200 100" role="img" aria-label="Tachometer revved and ready">
+            <path d="M20 92 A80 80 0 0 1 180 92" fill="none" stroke="#2a2f36" stroke-width="8"/>
+            <path d="M20 92 A80 80 0 0 1 120 20" fill="none" stroke="#ff6a00" stroke-width="8"/>
+            <g stroke="#9aa0a8" stroke-width="2">
+              <line x1="20" y1="92" x2="30" y2="88"/><line x1="34" y1="52" x2="43" y2="57"/>
+              <line x1="100" y1="12" x2="100" y2="22"/><line x1="166" y1="52" x2="157" y2="57"/><line x1="180" y1="92" x2="170" y2="88"/>
+            </g>
+            <g class="needle"><line x1="100" y1="92" x2="100" y2="30" stroke="#ff6a00" stroke-width="4" stroke-linecap="round"/><circle cx="100" cy="92" r="7" fill="#eef0f2"/></g>
+          </svg>
+        </div>
+        <div class="specrow">
+          {specCells.map((title, i) => (
+            <div class="s"><div class="sk">SVC/{String(i + 1).padStart(2, '0')}</div><div class="sv">{title}</div></div>
+          ))}
+        </div>
       </div>
     </div>
-  </div>
+  )}
 </section>
 <style>
   .hero { position: relative; background: var(--black); overflow: hidden; }
@@ -131,13 +157,13 @@ const specService = (svcItems[0] && svcItems[0].title) || 'Repair + Detail';
   .tacho { padding: 20px 34px 20px 0; border-right: 1px solid var(--line); display: flex; align-items: center; gap: 16px; }
   @media (max-width: 760px) { .tacho { border-right: none; border-bottom: 1px solid var(--line); padding: 20px 0; } }
   .tacho svg { width: 120px; height: 74px; }
-  .tacho .rd { font-family: var(--big); font-size: 34px; color: var(--amber); line-height: 1; }
-  .tacho .rl { font-family: var(--mono); font-size: 11px; letter-spacing: .14em; color: var(--concrete); text-transform: uppercase; }
   .needle { transform-origin: 100px 92px; animation: rev 1.6s cubic-bezier(.5,0,.2,1) .4s both; }
   @keyframes rev { 0% { transform: rotate(-46deg); } 70% { transform: rotate(38deg); } 100% { transform: rotate(24deg); } }
   @media (prefers-reduced-motion: reduce) { .needle { animation: none; transform: rotate(24deg); } }
-  .specrow { display: grid; grid-template-columns: repeat(4,1fr); }
-  @media (max-width: 760px) { .specrow { grid-template-columns: repeat(2,1fr); } }
+  /* Auto-flow columns: the cell count now follows the shop's service list
+     (1–4), so a fixed repeat(4,1fr) would leave ruled empty columns. */
+  .specrow { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+  @media (max-width: 760px) { .specrow { grid-auto-flow: row; grid-template-columns: repeat(2,1fr); } }
   .specrow .s { padding: 20px 22px; border-right: 1px solid var(--line); }
   .specrow .s:last-child { border-right: none; }
   .specrow .sk { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--concrete); text-transform: uppercase; }

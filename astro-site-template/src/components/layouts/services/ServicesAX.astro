@@ -10,7 +10,9 @@ interface Props { content: any; }
 const { content } = Astro.props;
 const services = content.services || {};
 const headline = services.headline || 'What we do';
-const idx = services.idx || '[ The menu ]';
+// Neutral index label: '[ The menu ]' asserted a food business — `layouts` is a
+// general-purpose family, and a plumber or laundry has no menu.
+const idx = services.idx || '[ SERVICES ]';
 type Item = { title: string; desc?: string; price?: string; tag?: string };
 const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
 ---

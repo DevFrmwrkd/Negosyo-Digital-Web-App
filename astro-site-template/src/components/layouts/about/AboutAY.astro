@@ -25,12 +25,39 @@ const image = about.image || (Array.isArray(about.images) && about.images[0]) ||
 const imageCaption = about.imageCaption || '';
 const quote = about.quote || '';
 const signature = about.signature || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, had nothing to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which shipped an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by
+// the layer above, so counting it would keep the shell on exactly the pages
+// this gate exists to remove. Same shape as generic/AboutA–E.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(leadPara || image || quote || signature) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="about" id="about">
   <div class="wrap">
     <div class="split">
       <figure class="s-fig plate reveal" data-delay="1">
-        <div class="ph sc6" role="img" aria-label="About" data-image-field="about.image" style={image ? `background-image:url('${image}');` : ''}></div>
+        {/* TRAP — same .ph primitive as filipino/about/AboutBB…BH, which was
+          fixed while this family was missed. Empty it is a flat gradient, but
+          role="img" + aria-label announced a photo of the business to exactly
+          the users who cannot see there is none. With an image it keeps role +
+          label; with none it is decoration. Astro drops undefined attributes. */}
+        <div
+          class="ph sc6"
+          data-image-field="about.image"
+          role={image ? 'img' : undefined}
+          aria-label={image ? 'About' : undefined}
+          aria-hidden={image ? undefined : 'true'}
+          style={image ? `background-image:url('${image}');` : ''}
+        ></div>
         {imageCaption && <figcaption data-field="about.imageCaption">{imageCaption}</figcaption>}
       </figure>
       <div class="about-copy reveal">
@@ -54,6 +81,7 @@ const signature = about.signature || '';
     </div>
   )}
 </section>
+)}
 <style>
   .about { background: var(--paper); }
   .split { display: grid; grid-template-columns: .9fr 1.1fr; gap: 70px; align-items: center; }

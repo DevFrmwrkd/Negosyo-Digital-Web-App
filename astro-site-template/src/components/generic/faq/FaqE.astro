@@ -5,11 +5,15 @@ const faq = content.faq || {};
 const tag = faq.tag || 'Good to know';
 const headline = faq.headline || 'Questions, answered.';
 const items = Array.isArray(faq.items) && faq.items.length ? faq.items : [];
+// Nothing real to list => the whole section stays out of the document
+// rather than rendering an eyebrow and heading over an empty grid.
+const hasItems = items.length > 0;
 ---
+{hasItems && (
 <section class="sec" id="faq" style="padding-top:0;">
   <div class="wrap" style="max-width:960px;">
     <p class="sec-tag reveal" data-field="faq.tag">{tag}</p>
-    <h2 class="reveal" data-field="faq.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="faq.headline" set:html={headline}></h2>}
     <div class="faq">
       {items.map((it: any, i: number) => (
         <details class="reveal">
@@ -23,6 +27,7 @@ const items = Array.isArray(faq.items) && faq.items.length ? faq.items : [];
     </div>
   </div>
 </section>
+)}
 <style>
   .faq { margin-top: 44px; display: flex; flex-direction: column; gap: 14px; }
   details { background: var(--paper-2); border-radius: 20px; border: 1px solid var(--line); }

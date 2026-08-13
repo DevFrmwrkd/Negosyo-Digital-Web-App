@@ -11,20 +11,32 @@ interface Props { content: any; }
 const { content } = Astro.props;
 
 const area = content.area || content.serviceArea || {};
-const tag       = area.tag       || 'Where we deliver';
-const headline  = area.headline  || 'Bags & wholesale <em>across the city.</em>';
-const body      = area.body      || area.description ||
-  'Describe the area you serve. Edit in the Service area section.';
+// TRAP (round 5): this fell back to 'Where we deliver' — a service asserted as a
+// section LABEL, for a business that may only ever have customers walk in.
+// Dead while lib/derive-content-defaults.ts sets area.tag = 'Service area' on
+// every build, live the moment an admin clears that field. A fallback must
+// never claim more than the derived value it stands in for.
+const tag       = area.tag       || 'Service area';
+// No stock headline or body: the old defaults named a coverage area ("across
+// the city") and left editor instructions ("Edit in the Service area section")
+// on the live page. Owner data or the column hides.
+const headline  = area.headline  || '';
+const body      = area.body      || area.description || '';
 const places: string[] = Array.isArray(area.places) && area.places.length
   ? area.places
   : [];
+const hasArea = Boolean(headline || body) || places.length > 0;
 
 const creds = content.credentials || {};
 const credTag       = creds.tag       || 'Credentials';
-const credHeadline  = creds.headline  || 'Sourced & served right.';
+// "Sourced & served right." is an unearned quality claim standing in for real
+// credentials. The credentials column stays empty (and hides) unless the owner
+// fills it in.
+const credHeadline  = creds.headline  || '';
 const credItems = Array.isArray(creds.items) && creds.items.length
   ? creds.items
   : [];
+const hasCreds = Boolean(credHeadline) || credItems.length > 0;
 
 const credIconPaths = [
   '<path d="M12 3l8 4v6c0 5-4 7-8 8-4-1-8-3-8-8V7z"/><path d="M9 12l2 2 4-4"/>',
@@ -33,21 +45,25 @@ const credIconPaths = [
 ];
 ---
 
+{(hasArea || hasCreds) && (
 <section class="sec" id="area">
   <div class="wrap split2">
+    {hasArea && (
     <div>
       <p class="sec-tag reveal" data-field="area.tag">{tag}</p>
-      <h2 class="reveal" data-field="area.headline" style="font-size:clamp(30px,3.6vw,46px);" set:html={headline}></h2>
-      <p class="reveal area-body" data-field="area.body">{body}</p>
+      {headline && <h2 class="reveal" data-field="area.headline" style="font-size:clamp(30px,3.6vw,46px);" set:html={headline}></h2>}
+      {body && <p class="reveal area-body" data-field="area.body">{body}</p>}
       <div class="area-chips reveal">
         {places.map((p: string, i: number) => (
           <span data-field={`area.places.${i}`}>{p}</span>
         ))}
       </div>
     </div>
+    )}
+    {hasCreds && (
     <div>
       <p class="sec-tag reveal" data-field="credentials.tag">{credTag}</p>
-      <h2 class="reveal" data-field="credentials.headline" style="font-size:clamp(30px,3.6vw,46px);">{credHeadline}</h2>
+      {credHeadline && <h2 class="reveal" data-field="credentials.headline" style="font-size:clamp(30px,3.6vw,46px);">{credHeadline}</h2>}
       <div class="creds-list">
         {credItems.map((it: any, i: number) => (
           <div class="cred reveal">
@@ -62,8 +78,10 @@ const credIconPaths = [
         ))}
       </div>
     </div>
+    )}
   </div>
 </section>
+)}
 
 <style>
   .split2 {

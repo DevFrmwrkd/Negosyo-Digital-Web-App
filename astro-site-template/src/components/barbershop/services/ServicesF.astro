@@ -8,6 +8,19 @@ const sub = services.sub || '';
 const items = Array.isArray(services.items) ? services.items : [];
 const idx = (i: number) => String(i + 1).padStart(2, '0');
 ---
+{/* OVER-REMOVAL GUARD — gate the SECTION, not just the grid. The grid below was
+  already `items.length > 0`, but the header above it was not, so once the
+  invented three-row service menu was deleted from lib/astro-builder.ts and
+  lib/derive-content-defaults.ts this shipped a kicker, an <h2> "Services we
+  provide" and the lead "A quick look at what <name> can help you with." sitting
+  on top of nothing at all — a heading over a void, and a promise of a list that
+  is not there. Shared by PageF…PageJ, so all five barbershop designs did it.
+  55 other Services components already gate the whole section this way.
+  Consequence, accepted deliberately: `#services` is then an anchor with no
+  target on this design. A nav entry that scrolls nowhere is the lesser fault
+  next to a heading advertising services the owner never listed, and it is the
+  same systemic dead-nav gap that predates this branch. */}
+{items.length > 0 && (
 <section class="pad-y svc-sec" id="services">
   <div class="wrap">
     <div class="sect-head reveal">
@@ -31,6 +44,7 @@ const idx = (i: number) => String(i + 1).padStart(2, '0');
     )}
   </div>
 </section>
+)}
 <style>
   .svc-sec { background: var(--paper-2); }
   .svc-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }

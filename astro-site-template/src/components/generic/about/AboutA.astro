@@ -12,22 +12,32 @@ const about = content.about || {};
 
 const tag       = about.tag || 'Our story';
 const headline  = about.headline || '';
-const lead      = about.lead || about.description ||
-  "Ironwood started with a borrowed drum roaster and a stubborn belief that a neighborhood deserves coffee roasted <em>close enough to smell it</em> on the walk in.";
-const signature = about.signature || '# Pour by pour, since 2014.';
+// No stock lead or signature: the old defaults told an invented founding
+// story ("started with a borrowed drum roaster") and claimed a founding year
+// ("since 2014") for a business that may have neither. Owner data or nothing.
+const lead      = about.lead || about.description || '';
+const signature = about.signature || '';
 const paragraphs = Array.isArray(about.paragraphs) && about.paragraphs.length
   ? about.paragraphs
   : [];
+// Nothing real to say => the whole section stays out of the document rather
+// than rendering an eyebrow over an empty two-column grid.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(lead || signature) || paragraphs.length > 0;
 ---
 
+{hasAbout && (
 <section class="sec" id="about">
   <div class="wrap">
     <p class="sec-tag reveal" data-field="about.tag">{tag}</p>
-    <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
     <div class="about-grid" style="margin-top:42px;">
       <div class="about-col">
-        <p class="about-lead reveal" data-field="about.lead" set:html={lead}></p>
-        <p class="about-sign reveal" data-field="about.signature">{signature}</p>
+        {lead && <p class="about-lead reveal" data-field="about.lead" set:html={lead}></p>}
+        {signature && <p class="about-sign reveal" data-field="about.signature">{signature}</p>}
       </div>
       <div class="about-col">
         {paragraphs.map((para: string, i: number) => (
@@ -37,6 +47,7 @@ const paragraphs = Array.isArray(about.paragraphs) && about.paragraphs.length
     </div>
   </div>
 </section>
+)}
 
 <style>
   .about-grid {

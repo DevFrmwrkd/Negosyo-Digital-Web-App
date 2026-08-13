@@ -1,6 +1,6 @@
 ---
 /**
- * layouts / TestimonialsAX — brutalist "what locals say": a sec-bar over a
+ * layouts / TestimonialsAX — brutalist "what people say": a sec-bar over a
  * three-cell bordered row of quote cards, each the quote in body type over a
  * bone mono attribution line. Mirrors lp-21's "TESTIMONIALS / brutalist" block.
  *
@@ -10,7 +10,9 @@
 interface Props { content: any; }
 const { content } = Astro.props;
 const test = content.testimonials || {};
-const headline = test.headline || 'What locals say';
+// 'What locals say' claimed the reviewers were local to the business; nothing in
+// the data says where a testimonial came from. Neutral heading instead.
+const headline = test.headline || 'What people say';
 const idx = test.idx || '[ REVIEWS ]';
 type Item = { quote: string; who?: string; role?: string; author?: string; name?: string; context?: string };
 const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);

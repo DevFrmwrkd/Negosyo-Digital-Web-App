@@ -8,10 +8,28 @@
  *
  * The running dish-"tape" marquee (lp-20's signature identity element) is folded
  * in below the hero as decorative aria-hidden chrome — labels come from the
- * services titles, else an editorial default so it always reads as designed.
+ * services titles, and the tape is omitted entirely when there are none.
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAY actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAY.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'gallery', 'location', 'main', 'reserve', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const overline = hero.tag || hero.overline || '';
@@ -21,19 +39,18 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#reserve';
+const cta1Href = onPage(hero.cta1?.href, '#reserve');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location'));
 const imageCaption = hero.imageCaption || '';
 
-// Tape marquee labels: the day's offerings (services titles), else an editorial
-// default so the marquee always reads as designed. Decorative — no field.
+// Tape marquee labels: the day's offerings, taken only from the services the
+// business actually listed. No editorial default: the old fallback ('Crafted
+// daily', 'Locally sourced'…) asserted production and sourcing the business
+// never supplied, so it read as their own claim. Empty => no tape at all.
 const services = content.services || {};
 const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
-const tapeFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
-const tapeItems = tapeFromServices.length > 0
-  ? tapeFromServices
-  : ['Crafted daily', 'Made in-house', 'Small batches', 'Fresh & honest', 'Walk in welcome', 'Locally sourced'];
+const tapeItems = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
 ---
 <section class="hero" aria-label="Hero">
   <div class="wrap">
@@ -57,18 +74,33 @@ const tapeItems = tapeFromServices.length > 0
         )}
       </div>
       <figure class="hero-fig plate">
-        <div class="ph sc1" role="img" aria-label="Hero" data-image-field="hero.image" style={heroImage ? `background-image:url('${heroImage}');` : ''}></div>
+        {/* TRAP — .ph is the SAME photo primitive as filipino/hero/HeroBB…BH and
+          education/fitness/retail/services; those were fixed and this family was
+          missed, so the phantom shipped anyway. Empty, it is a flat gradient, but
+          role="img" + aria-label announced a photo of the business to exactly the
+          users who cannot see there is none. With an image it keeps role + label;
+          with none it is decoration. Astro drops undefined attributes. */}
+        <div
+          class="ph sc1"
+          data-image-field="hero.image"
+          role={heroImage ? 'img' : undefined}
+          aria-label={heroImage ? 'Hero' : undefined}
+          aria-hidden={heroImage ? undefined : 'true'}
+          style={heroImage ? `background-image:url('${heroImage}');` : ''}
+        ></div>
         {imageCaption && <figcaption data-field="hero.imageCaption">{imageCaption}</figcaption>}
       </figure>
     </div>
   </div>
 </section>
-<div class="tape" aria-hidden="true">
-  <div class="tape-in">
-    {tapeItems.map((t) => (<span>{t}</span>))}
-    {tapeItems.map((t) => (<span>{t}</span>))}
+{tapeItems.length > 0 && (
+  <div class="tape" aria-hidden="true">
+    <div class="tape-in">
+      {tapeItems.map((t) => (<span>{t}</span>))}
+      {tapeItems.map((t) => (<span>{t}</span>))}
+    </div>
   </div>
-</div>
+)}
 <style>
   .hero { padding: 80px 0 90px; }
   .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; align-items: stretch; min-height: 74vh; }

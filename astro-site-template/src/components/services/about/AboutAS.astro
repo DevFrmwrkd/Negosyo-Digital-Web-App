@@ -17,7 +17,23 @@ const image = about.image || (Array.isArray(about.images) && about.images[0]) ||
 const imageCaption = about.imageCaption || '';
 const quote = about.quote || '';
 const signature = about.signature || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, had nothing to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which shipped an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by
+// the layer above, so counting it would keep the shell on exactly the pages
+// this gate exists to remove. Same shape as generic/AboutA–E.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(image || quote || signature) || paragraphs.length > 0;
 ---
+{hasAbout && (
+<>
 <section class="sec" id="about">
   <div class="wrap">
     <div class="sec-head">
@@ -33,7 +49,17 @@ const signature = about.signature || '';
         {signature && <p class="about-sign" data-field="about.signature">{signature}</p>}
       </div>
       <figure class="about-fig plate reveal" data-delay="1">
-        <div class="ph scene-shop" role="img" data-image-field="about.image" style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''}></div>
+        {/* Same phantom-photo fix as the filipino/education .ph slots: role="img"
+            on an empty duotone announces a shop photograph that does not exist
+            (and, with no aria-label, announced it as an unnamed image). Real
+            image => real role; no image => decoration. Astro omits undefined. */}
+        <div
+          class="ph scene-shop"
+          data-image-field="about.image"
+          role={image ? 'img' : undefined}
+          aria-hidden={image ? undefined : 'true'}
+          style={image ? `background-image:url('${image}');background-size:cover;background-position:center;` : ''}
+        ></div>
         {tag && <span class="tk" data-field="about.tag">{tag}</span>}
         {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
       </figure>
@@ -41,6 +67,8 @@ const signature = about.signature || '';
   </div>
 </section>
 <div class="wrap"><div class="perf"></div></div>
+</>
+)}
 <style>
   .about-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 52px; align-items: center; }
   .about-copy p:first-of-type { font-family: var(--mono); font-size: 20px; line-height: 1.5; color: var(--ink); }

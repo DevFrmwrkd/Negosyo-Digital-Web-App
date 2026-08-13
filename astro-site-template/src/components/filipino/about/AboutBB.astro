@@ -8,15 +8,35 @@
 interface Props { content: any; }
 const { content } = Astro.props;
 const about = content.about || {};
+// The right-hand slot of the section strip carried a hardcoded line ("Km 22,
+// Marcos Highway", "Slopes of Mt. Malarayat", "Three generations, one oven") —
+// a claim invented for the design comp. It now mirrors the rest of the family:
+// data-driven, and absent when unset. Never restore a literal here.
+const tag = about.tag || '';
 const headline = about.headline || '';
 const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
 const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
 const quote = about.quote || '';
 const signature = about.signature || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, had nothing to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which shipped an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by
+// the layer above, so counting it would keep the shell on exactly the pages
+// this gate exists to remove. Same shape as generic/AboutA–E.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(image || quote || signature) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="about" id="about">
   <div class="wrap">
-    <div class="sw-head"><span>Aisle 01 / The store</span><span>A window in the house</span></div>
+    <div class="sw-head"><span>Aisle 01 / The store</span>{tag && <span data-field="about.tag">{tag}</span>}</div>
     <div class="about-grid">
       <div class="about-prose">
         {headline && <h2 class="h2 reveal" data-field="about.headline" set:html={headline}></h2>}
@@ -27,11 +47,26 @@ const signature = about.signature || '';
         {signature && <p class="about-sign reveal" data-field="about.signature">{signature}</p>}
       </div>
       <div class="about-fig reveal" data-delay="1">
-        <div class="ph" role="img" aria-label="Store photo" data-image-field="about.image" style={image ? `background-image:url('${image}');` : ''}></div>
+        {/* The .ph slot is a styled gradient until the owner uploads a photo, but it
+            announced itself to screen readers as role="img" + "Store photo" either way — a
+            picture of the business that does not exist, asserted to exactly the users
+            who cannot see that it is a flat gradient. Same class of claim as an invented
+            testimonial, just in the accessibility tree. With an image it is a real image
+            and keeps its role + label; with none it is decoration and is hidden. Astro
+            drops attributes whose value is undefined. */}
+        <div
+          class="ph"
+          data-image-field="about.image"
+          role={image ? 'img' : undefined}
+          aria-label={image ? 'Store photo' : undefined}
+          aria-hidden={image ? undefined : 'true'}
+          style={image ? `background-image:url('${image}');` : ''}
+        ></div>
       </div>
     </div>
   </div>
 </section>
+)}
 <style>
   .about { background: var(--paper-2); color: var(--ink); }
   .about-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: clamp(38px,5vw,84px); align-items: center; }

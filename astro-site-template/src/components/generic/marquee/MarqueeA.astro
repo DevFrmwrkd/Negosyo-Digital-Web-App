@@ -10,18 +10,22 @@ interface Props {
 }
 const { content } = Astro.props;
 
-const text = content.marquee?.text
-  || 'Quality ◆ Trusted ◆ Local ◆ Reliable';
+// No stock marquee text: "Quality ◆ Trusted ◆ Local ◆ Reliable" is
+// self-praise asserted on the owner's behalf (a brand-new or online-only
+// business is neither "Trusted" nor "Local"). The band hides unless the
+// owner supplies their own line.
+const text = content.marquee?.text || '';
 // Duplicate so the keyframe-translateX(-50%) trick keeps motion seamless.
 const doubled = `${text} ✺ ${text} ✺`;
 ---
 
+{text && (
 <div class="marquee" aria-hidden="true">
   <div class="marquee-track">
     <span data-field="marquee.text">{doubled}</span>
   </div>
 </div>
-
+)}
 <style>
   .marquee {
     background: var(--ink);

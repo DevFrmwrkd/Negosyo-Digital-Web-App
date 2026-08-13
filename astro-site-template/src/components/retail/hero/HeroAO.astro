@@ -10,14 +10,32 @@
  * index-number department nav) renders directly under the hero — decorative
  * chrome mirroring the Services departments, so it carries no editable field and
  * links to the #dept-N anchors ServicesAO renders. It derives its labels from
- * content.services items when present, else a hardware default so it always
- * reads as designed.
+ * content.services items, and hides entirely when there are none — it must
+ * never invent departments the shop does not have.
  *
  * hero.meta[] (the ruled stat grid), hero.tag (crate stamp) and
  * hero.imageCaption (plate strap) are optional extras — hidden when unset.
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAO actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAO.
+const PAGE_ANCHORS = new Set(['about', 'departments', 'faq', 'gallery', 'location', 'main', 'reserve', 'reviews']);
+const ANCHOR_ALIAS: Record<string, string> = { services: 'departments', visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
@@ -29,19 +47,21 @@ const tag = hero.tag || '';
 const imageCaption = hero.imageCaption || '';
 const meta: Array<{ label?: string; value?: string }> = Array.isArray(hero.meta) ? hero.meta : [];
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#location';
+const cta1Href = onPage(hero.cta1?.href, '#location');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location'));
 
-// Department index labels: the Services titles (the day's catalog), else a
-// hardware default so the signature index band always reads as designed.
+// Department index labels come only from the Services titles the business
+// actually supplied. There is deliberately no default list here: a hardcoded
+// one ("Fasteners, Paint, Plumbing…") reads as this shop's own departments and
+// is a false product claim for any retailer that does not stock them. With no
+// services there is also no ServicesAO section and no #dept-N anchor to link
+// to, so the whole band is hidden below rather than rendered empty.
 const services = content.services || {};
 const svcItems: Array<{ title?: string }> = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
 const deptFromServices = svcItems.map((s) => s && s.title).filter(Boolean) as string[];
 const hasServices = deptFromServices.length > 0;
-const indexLabels = hasServices
-  ? deptFromServices.slice(0, 6)
-  : ['Fasteners', 'Paint', 'Plumbing', 'Electrical', 'Tools', 'Home & garden'];
+const indexLabels = deptFromServices.slice(0, 6);
 ---
 <section class="hero" aria-label="Hero">
   <div class="wrap">
@@ -81,21 +101,23 @@ const indexLabels = hasServices
     </div>
   </div>
 </section>
-<nav class="indexband" aria-label="Departments index">
-  <div class="head">
-    <span class="t">The department index</span>
-    <span class="h">Tap a number ↓</span>
-  </div>
-  <div class="index-list">
-    {indexLabels.map((label, i) => (
-      <a class="index-item" href={hasServices ? `#dept-${i + 1}` : '#departments'}>
-        <div class="no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
-        <div class="nm">{label}</div>
-        <span class="arw" aria-hidden="true">→</span>
-      </a>
-    ))}
-  </div>
-</nav>
+{hasServices && (
+  <nav class="indexband" aria-label="Departments index">
+    <div class="head">
+      <span class="t">The department index</span>
+      <span class="h">Tap a number ↓</span>
+    </div>
+    <div class="index-list">
+      {indexLabels.map((label, i) => (
+        <a class="index-item" href={`#dept-${i + 1}`}>
+          <div class="no" aria-hidden="true">{String(i + 1).padStart(2, '0')}</div>
+          <div class="nm">{label}</div>
+          <span class="arw" aria-hidden="true">→</span>
+        </a>
+      ))}
+    </div>
+  </nav>
+)}
 <style>
   .hero { background: var(--paper); border-bottom: 2px solid var(--ink); }
   .hero .wrap { display: grid; grid-template-columns: 1.35fr .9fr; gap: 0; }

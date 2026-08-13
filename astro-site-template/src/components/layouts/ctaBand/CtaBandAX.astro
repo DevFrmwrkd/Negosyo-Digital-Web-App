@@ -11,7 +11,13 @@ const tag = cta.tag || '';
 const headline = cta.headline || '';
 const sub = cta.sub || '';
 const cta1Text = cta.cta1?.text || '';
-const cta1Href = cta.cta1?.href || '#location';
+// TRAP (round 5): this fell back to '#location', an id PageAX never renders —
+// LocationAX carries that section as id="visit". And it is not a latent bug:
+// lib/astro-builder.ts aliases the closing CTA onto ctaBand.cta1 as { text }
+// with NO href (only ctaBand.cta keeps the derived one), so `cta.cta1?.href` is
+// undefined on every build and this fallback is what actually ships. The band's
+// button pointed at nothing on every PageAX site. Anchor it to what exists.
+const cta1Href = cta.cta1?.href || '#visit';
 const cta2Text = cta.cta2?.text || '';
 const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
 const hasButtons = !!(cta1Text || cta2Text);

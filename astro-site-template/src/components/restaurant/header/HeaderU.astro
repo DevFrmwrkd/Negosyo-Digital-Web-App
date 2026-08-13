@@ -1,27 +1,62 @@
 ---
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
-const brand = (content as any).footer?.brand || layout.businessName || 'Your Restaurant';
-const navLinks: Array<{ href: string; label: string }> = (layout.navLinks && layout.navLinks.length)
-  ? layout.navLinks
-  : [];
-const ctaText = (content as any).navCtaText || 'Reservations';
-const ctaHref = (content as any).navCtaHref || '#visit';
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageU–PageY actually renders: keep it if the
+// id exists, remap it when this design carries the same section under another
+// id, otherwise fall back to the target this design was built around (headers
+// drop the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageU–PageY.
+const PAGE_ANCHORS = new Set(['about', 'gallery', 'reviews', 'services', 'top', 'visit']);
+const ANCHOR_ALIAS: Record<string, string> = { location: 'visit', menu: 'services', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+// No "Your Restaurant" stand-in — same class as the 'Your Business' default the
+// rest of the catalog already dropped: a placeholder ships as the customer's own
+// wordmark, and it also asserts a trade this template's owner may not be in.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = (content as any).footer?.brand || layout.businessName || '';
+// Nav links come from the same derived list ('#about', '#services', '#why',
+// '#work', '#visit'). Resolve each against this page and drop the ones with no
+// section to reach — a nav entry that scrolls nowhere is as broken as a dead
+// CTA, and its label promises a section this design does not have. The original
+// index rides along as .i so the editor's per-link field hooks stay correct.
+const navLinks: Array<{ href: string; label: string; i: number }> =
+  ((layout.navLinks && layout.navLinks.length) ? layout.navLinks : [])
+    .map((l: any, i: number) => ({ ...l, href: onPage(l.href, ''), i }))
+    .filter((l: any) => l.href);
+// WHY no default nav CTA label: "Reservations" advertises a booking service.
+// Plenty of businesses on this template (carinderia, takeout, fast food) take
+// no reservations, and a nav button promising them is a claim they never made.
+// Unset → the CTA is dropped from both the bar and the drawer; nav links and
+// the burger are unaffected.
+const ctaText = (content as any).navCtaText || '';
+const ctaHref = onPage((content as any).navCtaHref, '#visit');
 ---
 <header class="nav">
   <div class="nav-in">
-    <a href="#top" class="brand" data-field="footer.brand">{brand}</a>
+    {brand && <a href="#top" class="brand" data-field="footer.brand">{brand}</a>}
     {(navLinks.length > 0 || ctaText) && (
       <>
         <nav class="nav-links" id="nav-u-menu" aria-label="Primary">
-          {navLinks.map((link, i) => (
-            <a href={link.href} data-field={`navbar_links.${i}.label`} data-href-field={`navbar_links.${i}.href`}>{link.label}</a>
+          {navLinks.map((link) => (
+            <a href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
           ))}
           {ctaText && <a class="nav-resv-drawer" href={ctaHref} data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>}
         </nav>
-        <div class="nav-right">
-          {ctaText && <a class="nav-resv" href={ctaHref} data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>}
-        </div>
+        {ctaText && (
+          <div class="nav-right">
+            <a class="nav-resv" href={ctaHref} data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>
+          </div>
+        )}
         <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-u-menu">
           <span></span><span></span><span></span>
         </button>

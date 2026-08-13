@@ -2,17 +2,36 @@
 /**
  * trades / HeroAU — the dispatch hero: a two-column grid with the copy left and
  * the signature service-area coverage map (.covmap, pulsing dispatch pings)
- * right. A live "accepting calls" status pill, a giant tap-to-call dispatch
- * callbox, and the two primary CTAs. The last headline line can carry a
+ * right, shown only when the business gave us a real point to draw it around.
+ * A live "accepting calls" status pill, a giant tap-to-call dispatch callbox,
+ * and the two primary CTAs. The last headline line can carry a
  * `<span class="cy">` accent from the data (rendered via set:html).
  *
- * The coverage map is decorative chrome (role="img", aria-hidden pings) so it
- * carries no editable field — the editable service-area list lives in AreaAU.
- * The callbox number is the canonical phone (content.location.phone /
- * layout.contact.phone); its label is an optional hero field.
+ * The coverage map carries no editable field — the editable service-area list
+ * lives in AreaAU. The callbox number is the canonical phone
+ * (content.location.phone / layout.contact.phone); its label is an optional
+ * hero field.
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAU actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAU.
+const PAGE_ANCHORS = new Set(['about', 'coverage', 'faq', 'gallery', 'location', 'main', 'reserve', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { area: 'coverage', visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const loc = content.location || {};
 const kicker = hero.kicker || hero.locality || '';
@@ -20,19 +39,24 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   ? hero.headlineLines
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
-const callLabel = hero.callLabel || 'Tap to call the dispatch line';
+// Affordance only. "…the dispatch line" claimed staffed dispatch infrastructure
+// a one-person trade does not have; the label must describe the button, not the
+// business. The whole callbox is already gated on a real phone number.
+const callLabel = hero.callLabel || 'Tap to call';
 const phone = loc.phone || layout.contact?.phone || '';
 const phoneDigits = phone.replace(/[^0-9+]/g, '');
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#location';
+const cta1Href = onPage(hero.cta1?.href, '#location');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || '#coverage';
+const cta2Href = onPage(hero.cta2?.href, '#coverage');
 
-// Decorative coverage pings — labelled from the service-area list when present,
-// else a designed default set so the map always reads as intended.
+// Decorative coverage pings. Labels come ONLY from the business's own
+// service-area list: a designed default set of city names renders as this
+// business's coverage claim, and is false for anyone who does not serve them.
+// With no data the pings stay as unlabelled dots — decoration, not a claim.
+// Do not restore a default place list here.
 const areaPlaces: string[] = Array.isArray((content.area || {}).places) ? content.area.places : [];
-const defaultPings = ['Quezon City', 'Manila', 'Makati', 'Pasig', 'Marikina', 'Caloocan'];
-const pingLabels = (areaPlaces.length > 0 ? areaPlaces : defaultPings).slice(0, 6);
+const pingLabels = areaPlaces.slice(0, 6);
 const pingPos = [
   { l: '52%', t: '30%', c: '' },
   { l: '38%', t: '54%', c: 'c p2' },
@@ -41,11 +65,47 @@ const pingPos = [
   { l: '70%', t: '26%', c: 'p5' },
   { l: '34%', t: '34%', c: 'c p6' },
 ];
+// Labelled pings track the supplied places exactly; with none, the full
+// decorative dot set still draws so the map never reads as half-empty.
+const pings = pingPos.slice(0, pingLabels.length > 0 ? pingLabels.length : pingPos.length);
+// Same gate as the sibling LocationAU, and for the same reason. Unlabelling the
+// pings was never enough: .covmap is a gridded map sheet with a dashed service
+// REGION drawn on it, a "Coverage" caption, a "dispatch grid" scale and
+// role="img" / "Service-area coverage map with dispatch markers" — a picture of
+// a coverage area whose extent nobody supplied. With no places it draws all six
+// pings on purpose ("so the map never reads as half-empty"), which is six
+// invented dispatch markers above the fold for a business that told us nothing
+// about where it works. LocationAU keeps its copy only as the loading skin
+// Leaflet paints over; this one has no Leaflet behind it at all, so the invented
+// picture would be permanent. No point on the map => no map.
+//
+// areaPlaces is deliberately NOT part of this test even though it feeds the ping
+// labels: lib/derive-content-defaults.ts sets area.places to [business_city] for
+// every site and that derived value beats any component fallback, so counting it
+// would hand the map straight back to every business that typed only a city.
+// (That exact mistake was caught in LocationAU one round ago — see its note.)
+const lat = loc.lat != null
+  ? Number(loc.lat)
+  : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
+const lng = loc.lng != null
+  ? Number(loc.lng)
+  : (layout.contact?.lng != null ? Number(layout.contact.lng) : null);
+const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
+const hasAddress = !!(loc.address || layout.contact?.address);
+const hasMap = hasCoords || hasAddress;
 ---
 <section class="hero" aria-label="Hero">
-  <div class="wrap">
+  <div class:list={['wrap', !hasMap && 'no-map']}>
     <div class="hero-l">
-      {kicker && <span class="statusline"><span class="live" aria-hidden="true"></span> <span data-field="hero.kicker">{kicker}</span></span>}
+      {/* The pulsing `.live` dot is gone. It rendered whenever a kicker existed,
+          and the kicker is only "<city> · <trade>" (lib/derive-content-defaults.ts) —
+          nothing about availability. A blinking status light next to that line
+          reads as a live "we are open and accepting calls" indicator, which is
+          false for a one-person trade that is out on a job, closed, or asleep.
+          There is no opening-hours or availability field anywhere in the content
+          model to gate it on, so it cannot be made true — it is removed, not
+          hidden. Do not restore the dot without a real availability source. */}
+      {kicker && <span class="statusline"><span data-field="hero.kicker">{kicker}</span></span>}
       {headlineLines.length > 0 && (
         <h1>
           {headlineLines.map((line: string, i: number) => (
@@ -67,30 +127,34 @@ const pingPos = [
         </div>
       )}
     </div>
-    <div class="hero-r">
-      <div class="covmap" role="img" aria-label="Service-area coverage map with dispatch markers">
-        <span class="lbl">Coverage</span>
-        <div class="region" aria-hidden="true"></div>
-        {pingLabels.map((label, i) => (
-          <div class={`ping ${pingPos[i].c}`.trim()} style={`left:${pingPos[i].l};top:${pingPos[i].t};`} aria-hidden="true"><div class="d"></div><div class="t">{label}</div></div>
-        ))}
-        <span class="scale" aria-hidden="true">◲ dispatch grid</span>
+    {hasMap && (
+      <div class="hero-r">
+        <div class="covmap" role="img" aria-label="Service-area coverage map with dispatch markers">
+          <span class="lbl">Coverage</span>
+          <div class="region" aria-hidden="true"></div>
+          {pings.map((p, i) => (
+            <div class={`ping ${p.c}`.trim()} style={`left:${p.l};top:${p.t};`} aria-hidden="true"><div class="d"></div>{pingLabels[i] && <div class="t">{pingLabels[i]}</div>}</div>
+          ))}
+          <span class="scale" aria-hidden="true">◲ dispatch grid</span>
+        </div>
       </div>
-    </div>
+    )}
   </div>
 </section>
 <style>
   .hero { position: relative; overflow: hidden; border-bottom: 1px solid var(--line); }
   .hero .wrap { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; padding: 64px 30px 60px; }
+  /* No coverage plate to sit beside — the copy takes the full width instead of
+     leaving a .95fr hole where the map used to be. */
+  .hero .wrap.no-map { grid-template-columns: 1fr; }
   @media (max-width: 940px) { .hero .wrap { grid-template-columns: 1fr; gap: 40px; } }
   @media (max-width: 760px) { .hero .wrap { grid-template-columns: 1fr; gap: 30px; padding: 40px 20px 44px; } }
   .hero-l { opacity: 0; animation: hf-au .8s ease .1s forwards; }
   @keyframes hf-au { to { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .hero-l, .hero-r { opacity: 1 !important; animation: none !important; } }
   .statusline { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--cyan); border: 1px solid var(--line); padding: 7px 12px; border-radius: 100px; margin-bottom: 22px; }
-  .statusline .live { width: 9px; height: 9px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 0 0 rgba(255,210,30,.6); animation: blip-au 1.8s ease-out infinite; }
-  @keyframes blip-au { 0% { box-shadow: 0 0 0 0 rgba(255,210,30,.6); } 100% { box-shadow: 0 0 0 12px rgba(255,210,30,0); } }
-  @media (prefers-reduced-motion: reduce) { .statusline .live { animation: none; } }
+  /* .statusline .live / @keyframes blip-au deleted with the dot they animated —
+     see the note at the markup. The pill is now a plain kicker chip. */
   .hero h1 { font-size: clamp(46px,7vw,104px); }
   .hero h1 > span { display: block; }
   .hero h1 :global(.cy) { color: var(--cyan); }

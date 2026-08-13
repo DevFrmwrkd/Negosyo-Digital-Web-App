@@ -3,13 +3,17 @@ interface Props { content: any; }
 const { content } = Astro.props;
 const services = content.services || {};
 const tag = services.tag || 'What we do';
-const headline = services.headline || 'From bare dirt to <em>finished grounds.</em>';
+const headline = services.headline || '';
 const items: Array<{ num?: string; title: string; desc: string }> = Array.isArray(services.items) && services.items.length ? services.items : [];
+// Nothing real to list => the whole section stays out of the document
+// rather than rendering an eyebrow and heading over an empty grid.
+const hasItems = items.length > 0;
 ---
+{hasItems && (
 <section class="sec" id="services" style="padding-top:0;">
   <div class="wrap">
     <span class="sec-tag reveal" data-field="services.tag">{tag}</span>
-    <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>
+    {headline && <h2 class="reveal" data-field="services.headline" set:html={headline}></h2>}
     <div class="board reveal">
       <div class="board-in">
         {items.map((it: any, i: number) => (
@@ -24,6 +28,7 @@ const items: Array<{ num?: string; title: string; desc: string }> = Array.isArra
     </div>
   </div>
 </section>
+)}
 <style>
   .board { background: var(--forest); color: var(--paper-2); border: 2px solid var(--ink); box-shadow: 10px 10px 0 var(--ink); margin-top: 50px; }
   .board-in { padding: 18px 40px; }

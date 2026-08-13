@@ -14,6 +14,24 @@ interface Props {
   content: any;
 }
 const { content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageA actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageA.
+const PAGE_ANCHORS = new Set(['about', 'area', 'faq', 'how', 'menu', 'top', 'visit', 'why', 'work']);
+const ANCHOR_ALIAS: Record<string, string> = { coverage: 'area', gallery: 'work', location: 'visit', services: 'menu' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 
 const heroImage =
@@ -31,15 +49,20 @@ const headlineLines = Array.isArray(hero.headlineLines)
 const sub = hero.sub || hero.description || hero.tagline ||
   '';
 
-const cta1Text = hero.cta1?.text || hero.cta_label || 'Visit the café';
-const cta1Href = hero.cta1?.href || hero.cta_link  || '#visit';
-const cta2Text = hero.cta2?.text || hero.cta_secondary_label || 'See the menu';
-const cta2Href = hero.cta2?.href || hero.cta_secondary_link  || '#menu';
+// CTA labels stay business-agnostic: "Visit the café" / "See the menu" name a
+// trade and a menu most businesses using this template do not have. A neutral
+// affordance keeps the hero usable without asserting anything.
+const cta1Text = hero.cta1?.text || hero.cta_label || 'Get in touch';
+const cta1Href = onPage(hero.cta1?.href || hero.cta_link, '#visit');
+const cta2Text = hero.cta2?.text || hero.cta_secondary_label || '';
+const cta2Href = onPage(hero.cta2?.href || hero.cta_secondary_link, '#menu');
 
 // No stock rating line: a hardcoded "★★★★★ rated on Google" claims a review
 // score and a Google profile the business may not have. Owner data or nothing.
+// The old meta2 default also printed a placeholder address and claimed the
+// business is "open daily" — a schedule nobody verified.
 const meta1 = hero.meta1 || '';
-const meta2 = hero.meta2 || 'Your address line 1 · open daily';
+const meta2 = hero.meta2 || '';
 ---
 
 <section class="hero">
@@ -52,13 +75,28 @@ const meta2 = hero.meta2 || 'Your address line 1 · open daily';
   </div>
   <div class="scrim"></div>
   <div class="wrap hero-in">
-    <p class="hero-kicker reveal" data-field="hero.kicker">{kicker}</p>
-    <h1 class="htitle" data-field="hero.headline">
-      {headlineLines.map((line: string) => (
-        <span class="ln"><span set:html={line}></span></span>
-      ))}
-    </h1>
-    <p class="hero-sub reveal" style="transition-delay:.1s;" data-field="hero.sub">{sub}</p>
+    {/* Guarded: the kicker's 'Local business' default is gone from
+        lib/derive-content-defaults.ts, so a submission with no city and no
+        business type leaves it empty — and an unguarded render put an empty
+        gold monospace line above the headline. */}
+    {kicker && <p class="hero-kicker reveal" data-field="hero.kicker">{kicker}</p>}
+    {/* Guarded: lib/derive-content-defaults.ts emits `headlineLines: []` for a
+        submission with no business name — it deliberately drops the wordmark
+        rather than printing the old 'Your Business' placeholder. An
+        unconditional <h1> then shipped a literal <h1></h1>: a heading element
+        with no heading, which is worse for screen readers and for SEO than the
+        placeholder it replaced. The ELEMENT is conditional, not its contents —
+        moving this guard inside the tag brings the empty <h1> straight back. */}
+    {headlineLines.length > 0 && (
+      <h1 class="htitle" data-field="hero.headline">
+        {headlineLines.map((line: string) => (
+          <span class="ln"><span set:html={line}></span></span>
+        ))}
+      </h1>
+    )}
+    {/* Same shape: hero.sub is undefined when there is no tagline and no name to
+        write "Welcome to …" around, so this rendered an empty styled <p>. */}
+    {sub && <p class="hero-sub reveal" style="transition-delay:.1s;" data-field="hero.sub">{sub}</p>}
     <div class="hero-cta reveal" style="transition-delay:.16s;">
       <a
         href={cta1Href}
@@ -66,17 +104,25 @@ const meta2 = hero.meta2 || 'Your address line 1 · open daily';
         data-field="hero.cta1.text"
         data-href-field="hero.cta1.href"
       >{cta1Text}</a>
-      <a
-        href={cta2Href}
-        class="btn btn-ghost"
-        data-field="hero.cta2.text"
-        data-href-field="hero.cta2.href"
-      >{cta2Text}</a>
+      {cta2Text && (
+        <a
+          href={cta2Href}
+          class="btn btn-ghost"
+          data-field="hero.cta2.text"
+          data-href-field="hero.cta2.href"
+        >{cta2Text}</a>
+      )}
     </div>
-    <div class="hero-meta reveal" style="transition-delay:.22s;">
-      {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
-      {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
-    </div>
+    {/* Container hides with its contents: both meta lines are legitimately
+        absent now (meta1's '★★★★★ rated on Google' is gone for good, meta2 is
+        the city or nothing), and an empty .hero-meta still spent its 26px
+        top-margin under the CTAs. */}
+    {(meta1 || meta2) && (
+      <div class="hero-meta reveal" style="transition-delay:.22s;">
+        {meta1 && <span data-field="hero.meta1" set:html={meta1}></span>}
+        {meta2 && <span data-field="hero.meta2" set:html={meta2}></span>}
+      </div>
+    )}
   </div>
 </section>
 

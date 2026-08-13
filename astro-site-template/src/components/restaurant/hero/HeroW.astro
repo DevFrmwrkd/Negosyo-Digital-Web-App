@@ -11,6 +11,26 @@
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageW actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageW.
+const PAGE_ANCHORS = new Set(['about', 'gallery', 'reviews', 'services', 'top', 'visit']);
+const ANCHOR_ALIAS: Record<string, string> = { location: 'visit', menu: 'services', work: 'gallery' };
+// This design's own secondary fallback was '#menu', a section PageW never had;
+// it now names the menu block PageW actually renders, '#services'.
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
@@ -19,9 +39,9 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#visit';
+const cta1Href = onPage(hero.cta1?.href, '#visit');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || '#menu';
+const cta2Href = onPage(hero.cta2?.href, '#services');
 const rating = hero.rating || '';
 const tag = hero.tag || '';
 ---

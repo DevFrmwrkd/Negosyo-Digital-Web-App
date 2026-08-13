@@ -15,7 +15,9 @@ interface Props { content: any; }
 const { content } = Astro.props;
 const t = content.testimonials || {};
 
-const tag       = t.tag       || 'What regulars say';
+// "regulars" asserts the quotes come from repeat customers; the neutral
+// label describes the section without characterising who spoke.
+const tag       = t.tag       || 'In their words';
 const bigQuote  = t.bigQuote  || '';
 // Never assert a review source (Google, etc.) the business may not have.
 const sourceTag = t.source    || '';

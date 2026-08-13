@@ -7,12 +7,30 @@
  * hero.image is set) carries a rubber "stamp" badge and a caption.
  *
  * The ticket's service lines mirror the day's service menu — sourced from
- * content.services items when present, else a laundry default so it always
- * reads as designed. They are aria-hidden decorative chrome (like the AM
- * ticker), so they carry no editable field; edit them in the Services section.
+ * content.services items, and the list is dropped entirely when there are none.
+ * They are aria-hidden decorative chrome (like the AM ticker), so they carry no
+ * editable field; edit them in the Services section.
  */
 interface Props { content: any; layout: any; }
 const { content, layout } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageAS actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageAS.
+const PAGE_ANCHORS = new Set(['about', 'book', 'faq', 'gallery', 'how', 'location', 'main', 'reviews', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { visit: 'location', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
 const hero = content.hero || {};
 const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
 const kicker = hero.kicker || hero.locality || '';
@@ -21,36 +39,33 @@ const headlineLines: string[] = Array.isArray(hero.headlineLines) && hero.headli
   : (hero.headline ? [hero.headline] : []);
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
-const cta1Href = hero.cta1?.href || '#book';
+const cta1Href = onPage(hero.cta1?.href, '#book');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = hero.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location');
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '#location'));
 const cta3Text = hero.cta3?.text || '';
 const cta3Href = hero.cta3?.href || '#location';
 const tag = hero.tag || '';
 const badgeNote = hero.badgeNote || '';
-const brand = (content as any).footer?.brand || layout.businessName || 'Your Business';
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = (content as any).footer?.brand || layout.businessName || '';
 
-// Ticket service lines: the service menu (services titles + tag), else a
-// laundry default so the ticket always reads as designed. Decorative chrome.
+// Ticket service lines: the service menu (services titles + tag), taken only
+// from what the business listed. No laundry default: the old fallback promised
+// 'Free pickup & delivery' and dry cleaning as this business's own offer and
+// price. Empty => the ticket prints without a service list.
 const services = content.services || {};
 const svcItems: Array<{ title?: string; tag?: string; duration?: string; price?: string }> =
   Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
-const linesFromServices = svcItems
+const ticketLines = svcItems
   .map((s) => (s && s.title ? { t: s.title, v: s.tag ?? s.duration ?? s.price ?? '' } : null))
   .filter(Boolean)
   .slice(0, 3) as Array<{ t: string; v: string }>;
-const ticketLines = linesFromServices.length > 0
-  ? linesFromServices
-  : [
-      { t: 'Wash · dry · fold', v: 'Standard' },
-      { t: 'Free pickup & delivery', v: 'Local area' },
-      { t: 'Pressing & dry clean', v: 'On request' },
-    ];
 ---
 <section class="hero" aria-label="Hero">
   <div class="wrap">
     <div class="ticket">
-      <div class="thead"><span data-field="footer.brand">{brand}</span><span aria-hidden="true">Ticket No. 0001</span></div>
+      <div class="thead">{brand && <span data-field="footer.brand">{brand}</span>}<span aria-hidden="true">Ticket No. 0001</span></div>
       <div class="tbody">
         {kicker && <span class="eyebrow" data-field="hero.kicker">{kicker}</span>}
         {headlineLines.length > 0 && (
@@ -61,11 +76,13 @@ const ticketLines = linesFromServices.length > 0
           </h1>
         )}
         {sub && <p class="lede" data-field="hero.sub">{sub}</p>}
-        <ul class="lines" aria-hidden="true">
-          {ticketLines.map((l) => (
-            <li><span><span class="ck">✓</span> {l.t}</span>{l.v && <span>{l.v}</span>}</li>
-          ))}
-        </ul>
+        {ticketLines.length > 0 && (
+          <ul class="lines" aria-hidden="true">
+            {ticketLines.map((l) => (
+              <li><span><span class="ck">✓</span> {l.t}</span>{l.v && <span>{l.v}</span>}</li>
+            ))}
+          </ul>
+        )}
         {(cta1Text || cta2Text || cta3Text) && (
           <div class="cta-row">
             {cta1Text && <a href={cta1Href} class="btn btn--fill" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
@@ -76,7 +93,7 @@ const ticketLines = linesFromServices.length > 0
       </div>
       <div class="tfoot">
         <div class="barcode" aria-hidden="true"></div>
-        <div class="code" aria-hidden="true">{String(brand).toUpperCase()} · THANK YOU FOR YOUR ORDER</div>
+        <div class="code" aria-hidden="true">{brand ? `${String(brand).toUpperCase()} · ` : ''}THANK YOU FOR YOUR ORDER</div>
       </div>
     </div>
     <div class="hero-side">

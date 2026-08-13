@@ -22,7 +22,11 @@ const email = loc.email || layout.contact?.email || '';
 const hours: Array<{ day: string; time: string }> = Array.isArray(loc.hours)
   ? loc.hours
   : (Array.isArray((content as any).footer?.hours) ? (content as any).footer.hours : []);
-const ctaText = loc.cta?.text || 'Book Service';
+// No default CTA label: "Book Service" claims a booking channel, and its '#book'
+// target is the ctaBand section, which itself only renders when the owner filled
+// that block in — so the stock button was a claim attached to a link that could
+// land nowhere. Unset → the button is omitted.
+const ctaText = loc.cta?.text || '';
 const ctaHref = loc.cta?.href || '#book';
 const dirHref = loc.directionsHref || (address ? `https://maps.google.com/?q=${encodeURIComponent(address.replace(/\n/g, ' '))}` : '');
 const lat = loc.lat != null ? Number(loc.lat) : (layout.contact?.lat != null ? Number(layout.contact.lat) : null);
@@ -30,10 +34,21 @@ const lng = loc.lng != null ? Number(loc.lng) : (layout.contact?.lng != null ? N
 const mapAria = `Map showing ${brand}`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
+// Path 3 above used to render "No address on file yet." — that is an internal
+// note to the admin, and it was rendering on the shop's public page. With
+// neither coords nor address the map cell is dropped and the grid falls to one
+// column (.no-map) so the info column does not sit beside a dead half.
+const hasMap = hasCoords || hasAddress;
+// A location section with no location in it is an empty shell: the heading
+// (and, where the variant defaults one, its stock wording) printed over a card
+// with nothing in it. The map already hides on hasMap; the section hides too
+// unless the owner gave us something real to put in it.
+const hasLoc = hasMap || Boolean(address || phone || email || hours.length > 0 || ctaText);
 ---
+{hasLoc && (
 <section class="block" id="location">
   <div class="wrap">
-    <div class="loc-grid reveal">
+    <div class:list={['loc-grid', 'reveal', !hasMap && 'no-map']}>
       <div class="loc-info">
         {tag && <span class="kicker" data-field="location.tag"><span class="dot"></span> {tag}</span>}
         <h2 class="h-sect" data-field="location.headline" set:html={headline}></h2>
@@ -69,18 +84,22 @@ const hasAddress = !!address;
             </div>
           )}
         </div>
-        <div class="loc-actions">
-          <a class="btn" href={ctaHref} data-field="location.cta.text" data-href-field="location.cta.href">{ctaText}</a>
-          {dirHref && <a class="btn btn--ghost" href={dirHref} target="_blank" rel="noopener">Directions</a>}
+        {(ctaText || dirHref) && (
+          <div class="loc-actions">
+            {ctaText && <a class="btn" href={ctaHref} data-field="location.cta.text" data-href-field="location.cta.href">{ctaText}</a>}
+            {dirHref && <a class="btn btn--ghost" href={dirHref} target="_blank" rel="noopener">Directions</a>}
+          </div>
+        )}
+      </div>
+      {hasMap && (
+        <div id="map" role="img" aria-label={mapAria}>
+          {!hasCoords && <div class="map-fallback" id="map-fallback">Loading map…</div>}
         </div>
-      </div>
-      <div id="map" role="img" aria-label={mapAria}>
-        {!hasCoords && !hasAddress && <div class="map-fallback">No address on file yet.</div>}
-        {!hasCoords && hasAddress && <div class="map-fallback" id="map-fallback">Loading map…</div>}
-      </div>
+      )}
     </div>
   </div>
 </section>
+)}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label: brand }}>
     (function init() {
@@ -127,6 +146,9 @@ const hasAddress = !!address;
 <style>
   .block { padding-block: clamp(64px, 9vw, 120px); }
   .loc-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 0; border: 2px solid var(--ink); }
+  /* No address and no coords: the map cell is not rendered, so the info column
+     takes the full frame instead of leaving a bordered empty half. */
+  .loc-grid.no-map { grid-template-columns: 1fr; }
   .loc-info { padding: clamp(30px, 4vw, 48px); border-right: 2px solid var(--ink); }
   .loc-info .kicker { margin-bottom: 14px; }
   .loc-info .h-sect { font-size: clamp(28px, 3.5vw, 44px); }

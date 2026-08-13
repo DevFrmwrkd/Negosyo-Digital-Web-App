@@ -41,9 +41,20 @@ const label = layout.businessName || 'Our location';
 const mapAria = `Map showing ${label}`;
 const hasCoords = lat != null && lng != null && !isNaN(lat as number) && !isNaN(lng as number);
 const hasAddress = !!address;
+// No coords and no address => no map. Drop the plate entirely rather than print
+// "No address on file yet." — that is an internal note to the admin, and it was
+// rendering on the shop's public page. Also drop the wrap to a single column so
+// the NAP card does not sit beside a dead half.
+const hasMap = hasCoords || hasAddress;
+// A location section with no location in it is an empty shell: the heading
+// (and, where the variant defaults one, its stock wording) printed over a card
+// with nothing in it. The map already hides on hasMap; the section hides too
+// unless the owner gave us something real to put in it.
+const hasLoc = hasMap || Boolean(address || phone || hours.length > 0);
 ---
+{hasLoc && (
 <section class="loc-sect" id="location">
-  <div class="wrap grid2">
+  <div class={hasMap ? 'wrap grid2' : 'wrap'}>
     <div class="loc-info reveal">
       {tag && <p class="rubric" data-field="location.tag">{tag}</p>}
       {headline && <h2 class="loc-h" data-field="location.headline" set:html={headline}></h2>}
@@ -68,17 +79,24 @@ const hasAddress = !!address;
           ))}
         </div>
       )}
-      <a class="btn" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>
+      {/* No address and no explicit link → dirHref is '#'. Drop the button
+          entirely: a "Get directions" affordance that goes nowhere promises a
+          destination this business has not given us. */}
+      {dirHref !== '#' && (
+        <a class="btn" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>
+      )}
     </div>
-    <figure class="plate loc-plate reveal">
-      <div id="map" role="img" aria-label={mapAria}>
-        {!hasCoords && !hasAddress && (<div class="map-fallback">No address on file yet.</div>)}
-        {!hasCoords && hasAddress && (<div class="map-fallback" id="map-fallback">Loading map…</div>)}
-      </div>
-      {mapCaption && <figcaption data-field="location.mapCaption">{mapCaption}</figcaption>}
-    </figure>
+    {hasMap && (
+      <figure class="plate loc-plate reveal">
+        <div id="map" role="img" aria-label={mapAria}>
+          {!hasCoords && (<div class="map-fallback" id="map-fallback">Loading map…</div>)}
+        </div>
+        {mapCaption && <figcaption data-field="location.mapCaption">{mapCaption}</figcaption>}
+      </figure>
+    )}
   </div>
 </section>
+)}
 {/* Render path A: build-time coords ready. */}
 {hasCoords && (
   <script is:inline define:vars={{ lat, lng, label }}>

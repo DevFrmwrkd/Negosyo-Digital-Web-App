@@ -7,6 +7,12 @@ const headline = how.headline || '';
 const sub = how.sub || '';
 const steps = Array.isArray(how.steps) ? how.steps : [];
 ---
+{/* OVER-REMOVAL GUARD — see the note in the sibling ServicesF.astro; identical
+  shape, identical cause. With the stock steps gone from lib/block-defaults.ts
+  this rendered the bare kicker "How it works" and nothing else — 'Three easy
+  steps' over zero steps. The timeline was guarded; the section was not.
+  Shared by PageF…PageJ. */}
+{steps.length > 0 && (
 <section class="pad-y" id="how">
   <div class="wrap">
     <div class="sect-head reveal">
@@ -29,6 +35,7 @@ const steps = Array.isArray(how.steps) ? how.steps : [];
     )}
   </div>
 </section>
+)}
 <style>
   .timeline { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 24px; }
   .timeline::before { content: ""; position: absolute; top: 24px; left: 4px; right: 4px; height: 2px; background: var(--line); }

@@ -5,30 +5,47 @@ const about = content.about || {};
 const tag = about.tag || 'Our story';
 const headline = about.headline || '';
 const paragraphs = Array.isArray(about.paragraphs) && about.paragraphs.length ? about.paragraphs : [];
-const bubbleN = about.bubbleN || "Since '12";
+// No stock bubble: "Since '12" claims a founding year for a business that may
+// have opened last month. Owner data or the bubble hides.
+const bubbleN = about.bubbleN || '';
 const bubbleL = about.bubbleL || '';
 const aboutImage = about.image || (content.photos && content.photos[0]) || '';
+// Nothing real to say => the section stays out of the document rather than
+// rendering an eyebrow over an empty column.
+// NOTE: `headline` is deliberately NOT counted here. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+const hasAbout = Boolean(aboutImage) || paragraphs.length > 0;
 ---
+{hasAbout && (
 <section class="sec" id="about">
-  <div class="wrap about">
-    <div class="about-art reveal">
-      <div class="img" data-image-field="about.image" style={aboutImage ? `background-image:url('${aboutImage}');` : ''}></div>
-      <div class="about-bubble">
-        <div class="n" data-field="about.bubbleN">{bubbleN}</div>
-        <div class="l" data-field="about.bubbleL">{bubbleL}</div>
+  <div class={`wrap about${aboutImage ? '' : ' no-img'}`}>
+    {aboutImage && (
+      <div class="about-art reveal">
+        <div class="img" data-image-field="about.image" style={`background-image:url('${aboutImage}');`}></div>
+        {(bubbleN || bubbleL) && (
+          <div class="about-bubble">
+            {bubbleN && <div class="n" data-field="about.bubbleN">{bubbleN}</div>}
+            {bubbleL && <div class="l" data-field="about.bubbleL">{bubbleL}</div>}
+          </div>
+        )}
       </div>
-    </div>
+    )}
     <div class="about-txt">
       <p class="sec-tag reveal" data-field="about.tag">{tag}</p>
-      <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>
+      {headline && <h2 class="reveal" data-field="about.headline" set:html={headline}></h2>}
       {paragraphs.map((p: string, i: number) => (
         <p class="reveal" data-field={`about.paragraphs.${i}`}>{p}</p>
       ))}
     </div>
   </div>
 </section>
+)}
 <style>
   .about { display: grid; grid-template-columns: 1fr 1.1fr; gap: 60px; align-items: center; }
+  /* No owner photo => text spans the full width instead of leaving a dead column. */
+  .about.no-img { grid-template-columns: 1fr; }
   .about-art { position: relative; }
   .about-art .img { width: 100%; height: 460px; border-radius: var(--r); background-size: cover; background-position: center; background-color: var(--blue-soft); }
   .about-bubble { position: absolute; right: -18px; bottom: 30px; background: var(--yellow); border-radius: 22px; padding: 18px 24px; box-shadow: 0 14px 34px rgba(var(--ink-rgb), .18); }
