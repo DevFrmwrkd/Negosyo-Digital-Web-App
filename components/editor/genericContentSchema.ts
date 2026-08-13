@@ -152,8 +152,24 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 hrefPath: 'hero.cta2.href',
                 placeholder: 'See services',
             },
-            { kind: 'text', label: 'Meta line 1', path: 'hero.meta1', placeholder: '★★★★★ rated on Google' },
-            { kind: 'text', label: 'Meta line 2', path: 'hero.meta2', placeholder: 'Open daily · address' },
+            // A placeholder is a suggestion, and these two suggested exactly
+            // what the extraction prompt now forbids the model to write:
+            // '★★★★★ rated on Google' asserts a review score and a Google
+            // profile nobody in this pipeline can verify, and
+            // 'Open daily · address' asserts a schedule nobody checked (it is
+            // the string just deleted from the prompt and from
+            // lib/derive-content-defaults.ts). Admin-typed content is exempt
+            // from every guard on this branch, so the greyed-out text an admin
+            // reads while typing is the last place those claims can re-enter.
+            // Show the shape of the field; name nothing we can't stand behind.
+            {
+                kind: 'text',
+                label: 'Meta line 1',
+                path: 'hero.meta1',
+                placeholder: 'A short fact — e.g. Est. 2016',
+                hint: 'Sits under the CTAs. Publish only what the business can back up.',
+            },
+            { kind: 'text', label: 'Meta line 2', path: 'hero.meta2', placeholder: 'A second short fact — e.g. the street' },
             { kind: 'text', label: 'Trust line (Stillwater)', path: 'hero.trustLine', hint: 'Used by Stillwater hero only.' },
         ],
     },
@@ -297,7 +313,18 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
             { kind: 'text', label: 'Eyebrow tag', path: 'testimonials.tag', placeholder: 'Reviews' },
             { kind: 'text', label: 'Headline', path: 'testimonials.headline' },
             { kind: 'textarea', label: 'Big pull-quote (A/D templates)', path: 'testimonials.bigQuote' },
-            { kind: 'text', label: 'Source line', path: 'testimonials.source', placeholder: '★ Reviews on Google' },
+            // '★ Reviews on Google' was a provenance claim printed under the
+            // quotes — the one line on the page that says where they came
+            // from — suggested to the admin for a profile we never read. Same
+            // reason as hero.meta1 above: the field is for naming the real
+            // source, so the placeholder asks for one instead of supplying it.
+            {
+                kind: 'text',
+                label: 'Source line',
+                path: 'testimonials.source',
+                placeholder: 'Where these quotes came from',
+                hint: 'Only name a source the business actually gave you.',
+            },
             {
                 kind: 'list',
                 label: 'Quotes',

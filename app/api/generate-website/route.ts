@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { fetchQuery } from 'convex/nextjs'
@@ -23,6 +24,177 @@ import {
  */
 function isWrappedObject(v: any): boolean {
     return v != null && typeof v === 'object' && !Array.isArray(v)
+}
+
+/**
+ * The key on saved content that records which transcript the copy was
+ * extracted from. Nested inside `extractedContent` (`v.any()` — see
+ * convex/schema.ts:247), so it needs no schema change and no migration.
+ */
+const EXTRACTION_MARKER_KEY = 'extractedFrom'
+
+/**
+ * Fingerprint of the transcript a page's copy was written from.
+ *
+ * Not a security boundary and never compared against anything an attacker
+ * chooses — it only has to change when the transcript does, which is what
+ * separates "the owner re-did the interview" from "the admin edited a
+ * headline". Length is prefixed so two transcripts would have to collide in
+ * both to read as the same source.
+ *
+ * A missing transcript gets its own stable value rather than being skipped.
+ * "We extracted with nothing to go on" is a real state that has to converge
+ * like any other, and it has to differ from the interview the owner records a
+ * week later — otherwise the one submission that most needs re-extracting is
+ * the one that never gets it.
+ */
+function fingerprintTranscript(transcript?: string): string {
+    const text = (transcript || '').trim()
+    if (!text) return 'no-transcript'
+    return `${text.length}:${createHash('sha256').update(text).digest('hex').slice(0, 16)}`
+}
+
+/**
+ * ── What survives a re-extraction ───────────────────────────────────────────
+ *
+ * Re-extraction replaces `extractedContent` WHOLESALE, so anything not named
+ * here is destroyed. The loss is also deferred and invisible: the trigger is a
+ * changed transcript fingerprint, and the "regenerate transcription" button in
+ * app/admin/submissions/[id]/page.tsx re-runs Whisper — which is
+ * non-deterministic, so re-transcribing the same audio moves the fingerprint on
+ * its own. Nothing regenerates at that moment; the wipe lands later, on the
+ * admin's next Save, with no visible connection to the button they pressed.
+ *
+ * THE LINE, so whoever extends this has the rule rather than the list: a key
+ * belongs here when the ADMIN is the only thing that can write it, and it is
+ * therefore unrecoverable once dropped. A key any GENERATOR also writes stays
+ * OUT — its stored value may be model output about the very interview we are
+ * re-reading, and carrying that across would preserve stale fabrication instead
+ * of human work, which is this branch's own bug wearing a different hat. When
+ * the two cannot be told apart, the answer is out: losing a field the model
+ * rewrites from the new transcript costs one regenerate, keeping an invented
+ * one costs a real business its credibility.
+ *
+ * Every key a generator can emit, so the test is checkable rather than
+ * remembered: the extraction prompt below (business_name, tagline, about,
+ * services, unique_selling_points, tone, featured_headline,
+ * featured_subheadline, featured_products); generateConversionBlocks (trust,
+ * why, how, testimonials, faq, credentials, ctaBand); generateGenericSections
+ * (marquee, hero, about, services, gallery, area, location, footer,
+ * navbar_links, navCtaText, navCtaHref). None of them is in the list below.
+ */
+const ADMIN_ONLY_CONTENT_KEYS = [
+    // FACTS, never copy — the same rule the contact merge inside POST states at
+    // length. They come from the submission or from what the admin typed, and no
+    // prompt in lib/services/groq.service.ts asks a model for any of them.
+    'contact',
+    'googleMapsUrl',
+    'serviceArea',
+    'messaging',
+
+    // CHROME the admin switched off. Nothing generates `visibility`; it is
+    // written by the editor's Blocks tab and defaulted further down this file.
+    // Dropping it turns every section the admin deliberately hid back on, on a
+    // site that is already live.
+    'visibility',
+
+    // IMAGE PICKS — which photo sits in which slot. These hold storage refs and
+    // URLs, never words: the only writers are the editor's picker and this
+    // route's own resolution of the business's OWN photos, so nothing here can
+    // be a model's invention. (The picks nested inside the wrapped sections —
+    // gallery.items[].image, hero.image — are not here; see the counter-list.)
+    'images',
+    'about_images',
+    'featured_images',
+    'services_image',
+
+    // TYPED COPY for the A–O template families. Every one of these flat fields
+    // is editor-only: the extraction prompt writes `featured_*` and the flat
+    // `about`/`services`, generateGenericSections writes the NESTED
+    // `about.headline` / `services.headline`, and neither ever writes the
+    // snake_case field beside it. A value sitting on one of these keys was put
+    // there by a person.
+    'hero_badge_text',
+    'hero_cta',
+    'hero_cta_secondary',
+    'about_headline',
+    'about_description',
+    'about_tagline',
+    'about_tags',
+    'services_headline',
+    'services_subheadline',
+    'services_cta',
+    'methodology',
+    'featured_cta_text',
+    'featured_cta_link',
+    'navbar_cta_text',
+    'navbar_cta_link',
+    'navbar_headline',
+] as const
+
+/**
+ * Deliberately NOT preserved, and why. The counter-list carries as much weight
+ * as the list — each entry is a field somebody will reasonably want to add:
+ *
+ *  • `footer`, `navbar_links`, `navCtaText`/`navCtaHref`, `location`, and every
+ *    wrapped section (`hero`, `about`, `services`, `gallery`, `area`,
+ *    `marquee`) — generateGenericSections writes exactly these keys. The admin
+ *    edits leaves INSIDE the same objects the model wrote, and nothing in the
+ *    payload records which leaf came from whom. Preserving the key would carry
+ *    the model's sentences about the OLD interview onto a page rebuilt from the
+ *    new one. (These keys also answer the `hasGenericSections` gate below, so
+ *    adding one here would silently switch generic-section generation off.)
+ *
+ *  • `trust`, `why`, `how`, `faq`, `credentials`, `ctaBand` — same reason, from
+ *    generateConversionBlocks.
+ *
+ *  • `featured_products` — model-written projects. An admin's image pick inside
+ *    one is genuine work and it is lost here; there is no way to keep the pick
+ *    without keeping the invented project it hangs on.
+ *
+ *  • `hero_testimonial` — a quoted customer carried as a bare value with NO
+ *    provenance marker. `testimonials` can be split item by item because the
+ *    editor stamps ADMIN_ATTRIBUTION_KEY on anything a human touched; this
+ *    field has no such mark, so it is all-or-nothing and it is left out.
+ *
+ *    Be honest about what that buys, because it is not what it looks like: no
+ *    generator writes this key — the editor is its only writer — and
+ *    stripFabricatedTestimonials does not read it either. So excluding it does
+ *    NOT stop a fabricated hero quote republishing; an ordinary regenerate
+ *    republishes whatever is stored, untouched. What the exclusion actually
+ *    costs is an admin's typed hero quote on a transcript change, and what it
+ *    buys is only that a transcript change does not carry one forward blind.
+ *    By the rule above this key arguably qualifies for the list. It is out
+ *    because dropping it is recoverable by retyping and the wrong call here is
+ *    cheap, not because keeping it would resurrect anything.
+ */
+
+/**
+ * The admin's typed quotes, and nothing else.
+ *
+ * `testimonials` is the one key that is BOTH generated and typed into, so it can
+ * be neither preserved nor dropped wholesale. It is carried item by item, on the
+ * same provenance the assembly pass uses and THROUGH THE SAME FUNCTION — there
+ * is no second implementation of "did a human write this" here to drift from
+ * stripFabricatedTestimonials. Whatever the guard would strip on the way out is
+ * never carried across on the way in, so preservation cannot resurrect anything.
+ *
+ * Undefined when nothing provably human is left, so the caller carries no key at
+ * all: an empty array or wrapper would preserve nothing while still answering
+ * the conversion-block gate, blocking the regeneration meant to replace it.
+ */
+function preserveAdminTestimonials(stored: any): unknown | undefined {
+    if (stored?.testimonials == null) return undefined
+    const { content } = stripFabricatedTestimonials(
+        { testimonials: stored.testimonials },
+        { keepAdminAuthored: true },
+    )
+    const kept = (content as any).testimonials
+    if (Array.isArray(kept)) return kept.length > 0 ? kept : undefined
+    if (kept && typeof kept === 'object') {
+        return Array.isArray(kept.items) && kept.items.length > 0 ? kept : undefined
+    }
+    return undefined
 }
 
 export async function POST(request: NextRequest) {
@@ -102,9 +274,11 @@ export async function POST(request: NextRequest) {
         // quotable to type back in. See the JSON response at the end.
         const guardRemoved = { generated: 0, stored: 0 }
 
-        // Wrap GENERATED output — model JSON and the hardcoded default products.
-        // Stored content goes through the assembly pass further down instead,
-        // which keeps what an admin typed.
+        // Wrap GENERATED output — every piece of model JSON this run produces.
+        // (It used to wrap a hardcoded default-products block too; that block is
+        // gone, because stripping invented quotes off invented projects still left
+        // the invented projects.) Stored content goes through the assembly pass
+        // further down instead, which keeps what an admin typed.
         const guardGenerated = <T>(label: string, generated: T): T => {
             if (testimonialsAreSourced) return generated
             const { content, removed } = stripFabricatedTestimonials(generated)
@@ -144,38 +318,104 @@ export async function POST(request: NextRequest) {
             extractedContent = {
                 ...extractedContent,
                 business_name: submission.business_name,
+                // Contact details are facts, never copy: they come from the
+                // submission or from what the admin typed, and from nowhere
+                // else. The placeholders that used to sit on the end of these
+                // chains (contact@example.com, +63 900 000 0000) shipped a
+                // phone number that reaches nobody onto a paying customer's
+                // live site. Missing is recoverable; wrong is not.
                 contact: {
                     ...((extractedContent as any)?.contact || {}),
-                    email: submission.owner_email || (extractedContent as any)?.contact?.email || 'contact@example.com',
-                    phone: submission.owner_phone || (extractedContent as any)?.contact?.phone || '+63 900 000 0000',
+                    email: submission.owner_email || (extractedContent as any)?.contact?.email,
+                    phone: submission.owner_phone || (extractedContent as any)?.contact?.phone,
                     address: submission.address ? `${submission.address}, ${submission.city}` : (extractedContent as any)?.contact?.address || submission.city
                 }
             }
         }
 
-        // Validate that extractedContent has required fields
-        const hasRequiredFields = extractedContent &&
-            extractedContent.business_name &&
-            extractedContent.tagline &&
-            extractedContent.about
+        // ── When does extraction run? ─────────────────────────────────
+        // On whether it has ALREADY RUN for this transcript — never on what it
+        // returned. Every version of this gate that inspected the output looped,
+        // and had to: GROUNDING now tells the model that an empty tagline and an
+        // omitted services list are correct answers, so "re-extract when services
+        // are missing" (and the `tagline && about` check that sat beside it)
+        // asks a business that genuinely named no services to keep failing the
+        // same test forever. It burns a Groq call on every regenerate and can
+        // never succeed, because succeeding would mean the model inventing the
+        // thing the interview does not contain.
+        //
+        // The second edge is worse. Re-extraction REPLACES extractedContent
+        // wholesale, so the admin who deletes a fabricated services list — the
+        // exact cleanup the fabrication incident requires — drops the count to
+        // zero and has the list written back on the next save. An output-shaped
+        // gate cannot tell that deletion apart from a gap.
+        //
+        // So we record what we did instead of grading what came back.
+        const transcriptFingerprint = fingerprintTranscript(submission.transcript)
 
-        // For beauty/salon businesses, the new design grids need 5-6 services.
-        // If a previous extraction only produced 3 (the old prompt's target),
-        // re-extract so the page fills out properly. Same for sparse 1-2.
-        const businessTypeLowerCheck = (submission.business_type || '').toLowerCase()
-        const isBeautyCheck = /salon|spa|beauty|barber|nail|hair|lash|brow|aesthetic/.test(businessTypeLowerCheck)
-        const servicesCount = Array.isArray((extractedContent as any)?.services)
-            ? (extractedContent as any).services.length
-            : 0
-        const servicesAreSparse =
-            (isBeautyCheck && servicesCount < 5) || servicesCount < 3
+        // Read the marker off what is STORED, not off `extractedContent`: in
+        // preview mode that variable holds the admin's unsaved draft, and the
+        // editor round-trip (/api/save-content writes the draft verbatim, then
+        // calls this route) can drop a key the editor knows nothing about.
+        // Either would otherwise read as "never extracted".
+        const storedContent = (existingWebsite?.extractedContent || submission.website_content) as any
+        const lastExtraction =
+            storedContent?.[EXTRACTION_MARKER_KEY] ?? (extractedContent as any)?.[EXTRACTION_MARKER_KEY]
 
-        // Force re-extraction when content exists but doesn't meet the
-        // current grid requirements. Preserves admin-edited contact info
-        // (already merged above) by saving it as override before re-extraction.
-        const preservedContact = (extractedContent as any)?.contact
+        // Structural, not semantic: "a content object exists" is a fact about the
+        // database. "The content object has a tagline" is a fact about what a
+        // model chose to write, and we are done gating on those.
+        const hasStoredContent = !!extractedContent && Object.keys(extractedContent).length > 0
 
-        if (!extractedContent || !hasRequiredFields || (servicesAreSparse && submission.transcript)) {
+        // A missing marker NEVER means "extract". Every row written before this
+        // marker existed has none, as does any draft that lost the key on the way
+        // through the editor, and re-extracting over either is precisely the wipe
+        // this is here to stop. Absent marker = adopt what is stored (stamped
+        // below), so the row converges on the next save and a LATER transcript
+        // change is still caught.
+        const transcriptChanged = !!lastExtraction && lastExtraction.transcript !== transcriptFingerprint
+
+        // Stamped onto the saved content further down. Starts as the most this
+        // run can honestly claim, and is upgraded if extraction actually runs.
+        let extractionMarker = lastExtraction ?? {
+            transcript: transcriptFingerprint,
+            at: Date.now(),
+            // 'adopted' — this content predates the marker (or lost it in the
+            // editor round-trip). We did not write it and cannot claim we did;
+            // what we can record is which transcript it now corresponds to,
+            // which is the whole of what makes the next change detectable.
+            source: 'adopted' as const,
+        }
+
+        // Everything the admin has that the wholesale replacement below would
+        // otherwise destroy. Contact was the first member of this list and is
+        // still the only one needing a merge rather than a straight carry (see
+        // the restore inside the branch); the rule that decides membership, and
+        // the fields deliberately left out of it, are on ADMIN_ONLY_CONTENT_KEYS.
+        const preservedAdminWork: Record<string, any> = {}
+        for (const key of ADMIN_ONLY_CONTENT_KEYS) {
+            const value = (extractedContent as any)?.[key]
+            if (value !== undefined) preservedAdminWork[key] = value
+        }
+        // Split off, because this is the one key that is both generated and typed
+        // into: only the items a human provably wrote come across.
+        const preservedTestimonials = preserveAdminTestimonials(extractedContent)
+        if (preservedTestimonials !== undefined) preservedAdminWork.testimonials = preservedTestimonials
+
+        // What was ACTUALLY carried across — empty on every run that did not
+        // re-extract, which is nearly all of them. Two things below have to know
+        // the difference: the conversion-block gate (a key we just restored is
+        // not evidence this transcript's blocks have been written) and the merge
+        // under it (admin work outranks anything generated this run).
+        let restoredAdminWork: Record<string, any> = {}
+
+        // Nothing stored yet → first extraction. Transcript genuinely different
+        // from the one the copy was written from → the source of truth changed
+        // and re-extracting the COPY is the right answer: it was written about a
+        // different interview. It is not the right answer for the rest of the
+        // admin's work, which was never about the transcript at all — hence the
+        // preserve-list above.
+        if (!hasStoredContent || transcriptChanged) {
 
             // Build context from submission data
             const context = `
@@ -223,18 +463,16 @@ Generate a JSON response with the following structure:
   "tagline": "A catchy, memorable tagline (max 10 words)",
   "about": "A compelling 2-3 sentence description of the business that highlights what makes it special",
   "services": [
-    ${Array.from({ length: targetServices }, (_, i) =>
-      `{"name": "2-3 WORDS MAX", "description": "ONE single sentence, 12-20 words, no clauses, no semicolons"}`
-    ).join(',\n    ')}
+    {"name": "2-3 WORDS MAX", "description": "ONE single sentence, 12-20 words, no clauses, no semicolons"}
   ],
-  "unique_selling_points": ["USP 1", "USP 2", "USP 3", "USP 4"],
+  "unique_selling_points": ["one short phrase per difference the owner actually claimed"],
   "tone": "${isBeauty ? 'warm, refined, aspirational' : 'professional-friendly'}",
   "featured_headline": "Featured Products",
-  "featured_subheadline": "A brief description of what makes these projects special",
+  "featured_subheadline": "A brief description of the work shown below — omit this field alongside featured_products when the interview describes no specific job",
   "featured_products": [
     {
-      "title": "Project title related to the business",
-      "description": "A detailed 2-3 sentence description of this project showcasing quality work",
+      "title": "a job or piece of work the owner actually described",
+      "description": "2-3 sentences using only details the owner gave about it",
       "tags": ["Tag1", "Duration"],
       "testimonial": {
         "quote": "the customer's words as the owner reported them (2-3 sentences)"
@@ -244,16 +482,17 @@ Generate a JSON response with the following structure:
 }
 
 IMPORTANT:
+- SOURCE: every fact — services, prices, hours, years in business, guarantees, past work — comes from the interview above. Rephrase it, infer from it ("we open at 5am and close at 11pm" is opening hours), write it well. Never add one that isn't there. If the interview doesn't support a field, omit that field: an absent field is correct output, a plausible invention is not.
 - Make the tagline creative and memorable. For beauty: short, italic-ready, ends without a period.
-- Services MUST have exactly ${targetServices} items, specific to this business type. ${isBeauty ? 'Cover: cuts/styling · color · treatments · bridal/event · nails or lash · facials/skin (pick whichever fits this business).' : ''}
-- SERVICE NAMES: 2-3 words MAX. Editorial titles like "Cut & Style", "Couture Color", "Bridal & Events", "Glow Facials", "Brow & Lash Studio". NEVER full sentences or descriptions in the name.
+- Services: only the ones the owner said they offer, around ${targetServices} for a business like this. That number is a ceiling on padding, not a quota to reach: fewer is right when fewer were named, omit "services" entirely when none were, and when the owner rattled off more real ones than that — nine services named in one breath is a real menu — list every one of them. Cutting a service the shop actually sells is the same mistake as inventing one, made in the direction nobody checks. Never round the list out to fill a grid.
+- SERVICE NAMES: 2-3 words MAX, editorial rather than descriptive — the owner's own word for the thing, sharpened, or two of them joined by "&". Build every name out of what THIS owner said: their plainest word is still the right name when it is the word they used ("Labada", "Dry cleaning") — an ordinary trade has ordinary vocabulary and does not need a cleverer one. What belongs to somebody else's shop is a service they never mentioned, added because businesses of this type usually have it. NEVER full sentences or descriptions in the name.
 - SERVICE DESCRIPTIONS: ONE sentence only, 12-20 words. No clauses joined by semicolons. No "we offer" / "we provide" filler. Concrete and specific.
-- USPs should highlight what makes this business unique
+- USPs: only differences the owner actually claimed. Omit when none were.
 - Keep descriptions concise and compelling
-- Generate ${Math.min(photoCount, 3) || 3} featured_products (one for each photo if available, max 3)
+- featured_products: only work the owner actually described, at most ${Math.min(photoCount, 3) || 3}. Omit the array when the interview describes no specific job — and omit "featured_subheadline" with it, since there is then no work for it to describe.
 - Each featured project should have a unique title, description and tags
 - TESTIMONIALS: only what the owner reported customers saying, in the transcript. If it isn't there, omit "testimonial" entirely. Never invent a customer or a quote — and never output a name: nobody is ever asked who said it, so a name can only be made up.
-- Tags should include project type and estimated duration
+- Tags: the kind of work, plus how long it took only when the owner said so
 ${isBeauty ? '- For beauty businesses, lean into ritual + intimacy + the "regular client" relationship. Avoid generic "we offer..." phrasing.' : ''}
 ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no medical claims; no specific outcomes promised.' : ''}
 - Return ONLY valid JSON, no markdown or additional text`
@@ -272,15 +511,31 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                 const cleanContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
                 const freshExtraction = guardGenerated('main extraction', JSON.parse(cleanContent))
 
-                // Restore admin-edited contact info that was merged above so
-                // a re-extraction doesn't clobber owner phone/email/address.
-                if (preservedContact) {
-                    freshExtraction.contact = {
+                // Put the admin's work back on top of the fresh copy. The
+                // transcript changed, so the model's SENTENCES change with it —
+                // but a hidden section, an image pick, a typed quote or an owner's
+                // phone number was never a statement about the interview, and
+                // re-reading the interview is no reason to throw them away.
+                //
+                // Contact keeps the merge it has always had rather than a straight
+                // overwrite: fresh fields fill gaps, admin/submission values win.
+                restoredAdminWork = { ...preservedAdminWork }
+                if (restoredAdminWork.contact) {
+                    restoredAdminWork.contact = {
                         ...(freshExtraction.contact || {}),
-                        ...preservedContact,
+                        ...restoredAdminWork.contact,
                     }
                 }
-                extractedContent = freshExtraction
+                extractedContent = { ...freshExtraction, ...restoredAdminWork }
+
+                // Claim only what just happened. The fingerprint is the
+                // transcript this copy was actually written from, so the next
+                // regenerate can see there is nothing new to read.
+                extractionMarker = {
+                    transcript: transcriptFingerprint,
+                    at: Date.now(),
+                    source: 'extracted' as const,
+                }
 
             } catch (error) {
                 console.error('Groq extraction error:', error)
@@ -295,10 +550,14 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
         // If transcript is missing or generation fails, per-business-type
         // defaults from lib/block-defaults.ts kick in at build time.
         const ec = extractedContent as any
-        const hasAnyConversionBlock = !!(
-            ec?.trust || ec?.why || ec?.how ||
-            ec?.testimonials || ec?.faq || ec?.credentials || ec?.ctaBand
-        )
+        // A key RESTORED a moment ago is not evidence this submission's blocks
+        // have been written. `testimonials` is the only key that is ever both
+        // restored and a conversion block, and letting the admin's carried-over
+        // quotes answer this question would skip generating the other six for a
+        // transcript nothing has read yet — the admin would keep their words and
+        // lose the whole rest of the page's conversion content instead.
+        const hasAnyConversionBlock = ['trust', 'why', 'how', 'testimonials', 'faq', 'credentials', 'ctaBand']
+            .some((key) => !(key in restoredAdminWork) && !!ec?.[key])
         if (!hasAnyConversionBlock && submission.transcript) {
             try {
                 const blocks = await groqService.generateConversionBlocks(
@@ -311,7 +570,16 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                     }
                 )
                 if (blocks) {
-                    extractedContent = { ...extractedContent, ...guardGenerated('conversion blocks', blocks) }
+                    // Restored admin work goes on last. The model has just written
+                    // testimonials from the new transcript; the quotes a human
+                    // typed outrank them, the same order the generic-section merge
+                    // below keeps. Without this the preservation above would be
+                    // undone one call later, on the only path that triggers it.
+                    extractedContent = {
+                        ...extractedContent,
+                        ...guardGenerated('conversion blocks', blocks),
+                        ...restoredAdminWork,
+                    }
                 }
             } catch (err) {
                 console.error('Conversion-block generation failed (using defaults):', err)
@@ -375,10 +643,10 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
 
         // ── Stored content faces the same gate ────────────────────────
         // Every guard above only fires on something GENERATED this run, and a
-        // regenerate generates nothing: `servicesAreSparse` is false because the
-        // services are already populated and `hasAnyConversionBlock` is true
-        // because the testimonials already exist. So the incident row's three
-        // invented customers skip all four call sites and republish verbatim —
+        // regenerate generates nothing: the extraction gate is satisfied because
+        // this transcript has already been read, and `hasAnyConversionBlock` is
+        // true because the testimonials already exist. So the incident row's three
+        // invented customers skip every generator call site and republish verbatim —
         // and would on every future publish, forever. The strip has to run on
         // what we READ as well as on what we write.
         //
@@ -783,16 +1051,35 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
 
         // Ensure all required fields are present with fallbacks from submission data
         const contentWithContact = {
-            // Core required fields with fallbacks
+            // Core required fields with fallbacks.
+            //
+            // These three fallbacks stay, and the line they sit on the right side
+            // of is the whole point of this file: they are assembled ONLY out of
+            // what the business itself put on the submission form — its name, its
+            // category, its city. They assert no capability, no promise and no
+            // quality. Nothing below may be restored on the same reasoning: the
+            // moment a default names a service, a turnaround, a rating or a
+            // customer, it is speaking for a business that never said it.
+            //
+            // The tagline default now carries real weight. It used to be nearly
+            // dead, because a missing tagline forced a re-extraction until one
+            // appeared; that check is gone (it could not converge), so an
+            // interview that yields no tagline keeps its blank one and this is
+            // the only thing standing between it and a headless hero.
             business_name: extractedContent?.business_name || submission.business_name,
             tagline: extractedContent?.tagline || `Welcome to ${submission.business_name}`,
             about: extractedContent?.about || `${submission.business_name} is a ${submission.business_type} located in ${submission.city}.`,
-            services: extractedContent?.services || [
-                { name: 'Service 1', description: 'Quality service for our customers' },
-                { name: 'Service 2', description: 'Professional and reliable' },
-                { name: 'Service 3', description: 'Customer satisfaction guaranteed' }
-            ],
-            unique_selling_points: extractedContent?.unique_selling_points || ['Quality', 'Reliability', 'Service'],
+            // No invented menu, and no invented virtues. If the interview never
+            // named a service, this business has no service list on its site and
+            // the section self-hides — the same rule the conversion blocks already
+            // follow (lib/astro-builder.ts:439). "Customer satisfaction
+            // guaranteed" is a promise nobody here made.
+            //
+            // `?? []` rather than leaving these undefined: an empty array is
+            // truthy, so it holds the line against the `|| [...]` fallbacks that
+            // still sit downstream instead of handing them back the fabrication.
+            services: extractedContent?.services ?? [],
+            unique_selling_points: extractedContent?.unique_selling_points ?? [],
             tone: extractedContent?.tone || 'professional-friendly',
             // Optional fields
             hero_cta: extractedContent?.hero_cta,
@@ -850,17 +1137,24 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             services_headline: (extractedContent as any)?.services_headline,
             services_subheadline: (extractedContent as any)?.services_subheadline,
             services_image: resolvedServicesImage,
-            // Featured section fields - generate defaults if not present
+            // Featured section fields. The headline is a band LABEL, not a claim,
+            // so it keeps its default the way services_headline / about_headline
+            // do in the builder; everything under it must be real or absent.
             featured_headline: (extractedContent as any)?.featured_headline || 'Featured Products',
-            featured_subheadline: (extractedContent as any)?.featured_subheadline || `Take a look at some of our recent work at ${submission.business_name}`,
-            // The defaults branch is machine-written down to the customer names
-            // (see generateDefaultFeaturedProducts), so it goes through the same
-            // guard as the models do. `resolvedProducts` derives from
-            // extractedContent, which the stored-content pass above already
-            // filtered.
-            featured_products: resolvedProducts.length > 0
-                ? resolvedProducts
-                : guardGenerated('default featured products', generateDefaultFeaturedProducts(submission.business_name, submission.business_type, photos.length)),
+            // "Take a look at some of our recent work" is a claim that recent
+            // work exists and that we know what it was. Left blank, the band
+            // renders its heading over the business's own photos and says
+            // nothing it can't back.
+            featured_subheadline: (extractedContent as any)?.featured_subheadline,
+            // Real work or nothing. The removed fallback invented entire
+            // projects ("Complete Kitchen Renovation", "We transformed the heart
+            // of X") and attributed praise for them to five recycled names. The
+            // testimonial guard stripped the quotes, but only the quotes — the
+            // invented projects shipped regardless, and on a business that DID
+            // supply testimonials the guard stood down and the names shipped too.
+            // `resolvedProducts` derives from extractedContent, which the
+            // stored-content pass above has already filtered.
+            featured_products: resolvedProducts,
             featured_images: resolvedFeaturedImages.length > 0 ? resolvedFeaturedImages : undefined,
             // Featured CTA fields for style 4
             featured_cta_text: (extractedContent as any)?.featured_cta_text,
@@ -879,17 +1173,21 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             // This keeps the user's content editor choices (slot 1 = X, slot 2 = Y) intact
             // while filtering out expired Airtable URLs
             images: hasValidUserEditedImages ? userEditedImages : photos,
-            // Contact info from submission (or from existing extracted content if edited)
+            // Contact info from submission (or from existing extracted content if
+            // edited). Every field here is the submission's own — no placeholder
+            // tail, for the same reason as the merge near the top of this file: a
+            // live site is better missing a phone number than showing one that
+            // rings nowhere.
             contact: (extractedContent as any)?.contact || {
-                email: submission.owner_email || 'contact@example.com',
-                phone: submission.owner_phone || '+63 900 000 0000',
+                email: submission.owner_email,
+                phone: submission.owner_phone,
                 address: submission.address ? `${submission.address}, ${submission.city}` : submission.city
             },
-            // Footer section fields
-            footer: (extractedContent as any)?.footer || {
-                brand_blurb: `For any inquiries or to explore your vision further, we invite you to contact our professional team using the details provided below.`,
-                social_links: []
-            },
+            // Footer section fields — whatever the admin wrote, or nothing. The
+            // removed default ("explore your vision further… our professional
+            // team") was agency copy for a business we know nothing about, and it
+            // rendered as the footer blurb on every site that never set one.
+            footer: (extractedContent as any)?.footer,
             // ── New v01-spec block content (feeds Location/ServiceArea/ClickToMessage) ──
             // Coordinates: submitter-set wins; else falls back to whatever the
             // editor may have stored under extractedContent.location.
@@ -958,6 +1256,16 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                 ? { marquee: (extractedContent as any).marquee } : {}),
             navCtaText: (extractedContent as any)?.navCtaText,
             navCtaHref: (extractedContent as any)?.navCtaHref,
+            // Not content — provenance, and the only reason the extraction gate
+            // above can converge. Nothing renders it; it rides along inside
+            // extractedContent because that is the object that survives the
+            // editor round-trip, and it has to come back to us on the next
+            // regenerate to answer "have we already read this transcript?".
+            //
+            // It lives here rather than being spread in from extractedContent
+            // because this literal is a whitelist: a key that is not named here
+            // does not reach Convex.
+            [EXTRACTION_MARKER_KEY]: extractionMarker,
         }
 
         let generatedHtml = await buildAstroSite(contentWithContact, finalCustomizations, photos)
@@ -1066,11 +1374,26 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             // Services section
             servicesHeadline: contentWithContact.services_headline,
             servicesSubheadline: contentWithContact.services_subheadline,
-            services: contentWithContact.services?.map((s: any) => ({
-                name: s.name || s.title || '',
-                description: s.description || '',
-                icon: s.icon,
-            })),
+            // The same two shapes the builder now reads (lib/astro-builder.ts
+            // servicesSection / hero.services): flat `{name, description}` from
+            // extraction, wrapped `{ tag, headline, items[] }` from
+            // generateGenericSections and the generic editor. `?.map` guards
+            // only a nullish value, so the wrapped object threw here too — and
+            // this call sits after the HTML is already stored, so the failure
+            // would have surfaced as a 500 on an otherwise successful build.
+            // The `title`/`desc` aliases are the wrapped item's own key names;
+            // dropping them would file the owner's real menu as blank rows.
+            services: (() => {
+                const s: any = contentWithContact.services
+                const list = Array.isArray(s)
+                    ? s
+                    : Array.isArray(s?.items) ? s.items : undefined
+                return list?.map((it: any) => ({
+                    name: it.name || it.title || '',
+                    description: it.description || it.desc || '',
+                    icon: it.icon,
+                }))
+            })(),
             // Featured section
             featuredHeadline: contentWithContact.featured_headline,
             featuredSubheadline: contentWithContact.featured_subheadline,
@@ -1212,56 +1535,4 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             { status: 500 }
         )
     }
-}
-
-/**
- * Generate default featured projects based on business info
- * Used when no featured_products are provided in extractedContent
- */
-function generateDefaultFeaturedProducts(businessName: string, businessType: string, photoCount: number) {
-    const productCount = Math.min(Math.max(photoCount, 1), 3) // 1-3 projects based on photos
-
-    // Business type specific project templates
-    const productTemplates: Record<string, Array<{ title: string; description: string; tags: string[] }>> = {
-        'restaurant': [
-            { title: 'Complete Kitchen Renovation', description: `We transformed the heart of ${businessName} with a modern kitchen setup featuring state-of-the-art equipment and efficient workflow design. The result is a space that enhances productivity while maintaining the highest standards of quality.`, tags: ['Kitchen', 'Renovation'] },
-            { title: 'Dining Area Enhancement', description: `A complete refresh of the dining space at ${businessName}, creating an inviting atmosphere for guests. We focused on comfortable seating, ambient lighting, and décor that reflects the restaurant's unique character.`, tags: ['Interior', 'Design'] },
-            { title: 'Outdoor Patio Setup', description: `Expanded the dining capacity with a beautiful outdoor patio area. The space features weather-resistant furniture and ambient lighting, perfect for al fresco dining experiences.`, tags: ['Outdoor', 'Expansion'] }
-        ],
-        'retail': [
-            { title: 'Store Layout Optimization', description: `Redesigned the floor layout at ${businessName} to improve customer flow and product visibility. The new arrangement has significantly enhanced the shopping experience and increased customer engagement.`, tags: ['Retail', 'Layout'] },
-            { title: 'Display System Installation', description: `Installed custom display systems that showcase products beautifully while maximizing floor space. The modular design allows for easy reconfiguration for seasonal changes.`, tags: ['Display', 'Custom'] },
-            { title: 'Checkout Area Modernization', description: `Upgraded the checkout experience with modern POS systems and a welcoming counter design. The improvements have reduced wait times and improved customer satisfaction.`, tags: ['Technology', 'Service'] }
-        ],
-        'default': [
-            { title: 'Complete Business Setup', description: `A comprehensive project for ${businessName} that included space planning, equipment installation, and finishing touches. The result is a professional environment that perfectly serves business needs.`, tags: ['Setup', 'Complete'] },
-            { title: 'Service Area Enhancement', description: `Upgraded the main service area to improve workflow efficiency and customer experience. The modern design reflects the quality and professionalism of ${businessName}.`, tags: ['Enhancement', 'Service'] },
-            { title: 'Customer Experience Improvement', description: `Focused improvements on the customer-facing areas, creating a welcoming atmosphere that encourages return visits and positive reviews.`, tags: ['Customer', 'Experience'] }
-        ]
-    }
-
-    const templates = productTemplates[businessType.toLowerCase()] || productTemplates['default']
-
-    // Generate projects with testimonials.
-    // These names and quotes are invented — nobody named below is a customer of
-    // anything. The caller runs the result through the fabricated-testimonial
-    // guard, which strips `testimonial` outright unless the business actually
-    // supplied testimonial words, so they reach a page only when they have been
-    // replaced by real ones. Do not read them as safe defaults.
-    const testimonialAuthors = ['Maria Santos', 'Juan Dela Cruz', 'Ana Reyes', 'Carlo Mendoza', 'Lisa Garcia']
-    const testimonialQuotes = [
-        `${businessName} exceeded all our expectations. The attention to detail and professionalism was outstanding from start to finish.`,
-        `Working with ${businessName} was a pleasure. They truly understood our vision and delivered beyond what we imagined.`,
-        `The team at ${businessName} transformed our space completely. We couldn't be happier with the results and the service we received.`
-    ]
-
-    return templates.slice(0, productCount).map((template, index) => ({
-        title: template.title,
-        description: template.description,
-        tags: template.tags,
-        testimonial: {
-            quote: testimonialQuotes[index % testimonialQuotes.length],
-            author: testimonialAuthors[index % testimonialAuthors.length]
-        }
-    }))
 }

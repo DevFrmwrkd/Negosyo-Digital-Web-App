@@ -70,6 +70,70 @@ ${safe}
 ${TRANSCRIPT_CLOSE}`
 }
 
+/**
+ * The grounding rule, interpolated verbatim into three of this file's four
+ * prompts: extractBusinessContent, generateConversionBlocks and
+ * generateGenericSections. `generateWebsite` is the exception — it never sees a
+ * transcript, only the already-extracted BusinessContent, so it carries its own
+ * CONTENT paragraph saying the same thing about the fields it does get. If you
+ * change the rule here, change that paragraph too; nothing enforces the pair.
+ *
+ * WHY one constant instead of a paragraph per prompt: what these prompts
+ * used to share was the failure. "If information is not mentioned, use
+ * reasonable defaults" told the model to invent, and the schema examples showed
+ * it what invented output looks like, so every downstream layer spent its time
+ * deleting content that was requested here. Stated once, the rule stays short —
+ * a bloated instruction block makes the model literal and terse, which is its
+ * own way of ruining the copy — and the prompts cannot drift apart again.
+ *
+ * The line it draws is deliberately NOT "only repeat the transcript". Inference
+ * is the job: "we also do LPG refills" is a service, "I check every order myself
+ * before it goes out" is a reason to choose them. Both examples have to be legal
+ * in every prompt that interpolates this block, which is why neither is about
+ * hours any more: the opening-hours example that used to lead here is banned
+ * outright by two of them ("NEVER reference hours of operation — Google handles
+ * those"), so the governing rule was demonstrating correct behaviour using the
+ * one thing the surrounding prompt forbids. What is banned is the unsaid — the
+ * credential, the price, the guarantee, the customer, the place, the date that
+ * nobody in this pipeline can check against reality.
+ *
+ * Hence "unsaid dates" and not "dates" in the ban list. The lead clause already
+ * scopes the whole line, but a flat noun in a ban list applies pressure of its
+ * own, and a date is the one item here the prompts openly ask for: trust.years
+ * wants a founding year, hero.meta1's own example is 'open since 2019',
+ * footer.notes wants '© year'. A business that said "we've been here since 2018"
+ * must not lose its trust line to a word.
+ *
+ * Prices, customers and service areas now sit under the same "unsaid" modifier,
+ * for the same reason and with one measurable consequence. Every one of them is
+ * also asked for somewhere: a quoted price is part of a service in the owner's
+ * own words, what regulars say is the ONLY legal source of a testimonial, and
+ * generateGenericSections asks for area.places in this very prompt. That last
+ * one is the one that renders. mergeShallow (lib/astro-builder.ts) skips only
+ * undefined/null/'', so a model that reads "no service areas" and returns
+ * `places: []` OVERRIDES derived.area.places = [city] — and a business that told
+ * us "deliver kami sa Mandaue, Lapu-Lapu, tapos minsan hanggang Consolacion"
+ * ends up with fewer places on the page than it would have had with no AI at all.
+ *
+ * The last two lines carry as much weight as the ban. A model reads an empty
+ * field as its own mistake and fills it, and a schema showing three array
+ * entries reads as a quota for three. Both have to be contradicted out loud or
+ * the model obeys the shape instead of the rule.
+ *
+ * The last line has to cut BOTH ways, and the second half of it is not padding.
+ * Collapsing those padded schema examples down to a single entry fixed the quota
+ * pressure and created the opposite one: "counts below are ceilings" read against
+ * a one-entry example says the ceiling is one, which would cap a sari-sari store
+ * that named five things it sells at one service. A rule that empties a field for
+ * a business that DID answer is the same bug as one that fills a field for a
+ * business that didn't — it just fails in the direction nobody is watching.
+ */
+const GROUNDING = `GROUNDING — the transcript is the only source:
+- INFER from what the owner said: "we also do LPG refills" is a service, "I check every order myself before it goes out" is a reason to choose them. Rephrase, condense, find their voice.
+- NEVER state what they did not say: no licences, awards, ratings, review counts or response-time promises, and no unsaid prices, customers, service areas or dates.
+- An empty field is CORRECT output, not a failure. Leave it "" or [] rather than write something plausible — the page hides what is empty.
+- Counts below are ceilings, not quotas, and a one-entry example is a shape, not a number: list every real one. Two real services beat four invented ones.`
+
 /* ────────────────────────────────────────────────────────────────────────────
  * FABRICATED-TESTIMONIAL GUARD
  *
@@ -512,24 +576,23 @@ export const groqService = {
 
 ${delimitTranscript(transcript, 'TRANSCRIPT')}
 
+${GROUNDING}
+
 Extract the following information in JSON format:
 {
-  "tagline": "A short, catchy tagline for the business (max 10 words)",
-  "about": "A compelling 2-3 sentence description of the business",
-  "services": ["Service 1", "Service 2", "Service 3"],
+  "tagline": "short tagline built from how the owner describes the place (max 10 words), or empty",
+  "about": "up to 3 sentences describing the business, drawn from the transcript",
+  "services": ["one entry per service the owner named, in their words"],
   "contact": {
-    "phone": "Phone number if mentioned",
-    "email": "Email if mentioned",
-    "address": "Physical address if mentioned"
+    "phone": "phone number if mentioned",
+    "email": "email if mentioned",
+    "address": "physical address if mentioned"
   },
-  "highlights": ["Key highlight 1", "Key highlight 2", "Key highlight 3"]
+  "highlights": ["one entry per reason the owner gives for choosing them"]
 }
 
 IMPORTANT:
-- If information is not mentioned, use reasonable defaults or leave empty
-- Make the tagline creative and memorable
-- Services should be clear and specific
-- Highlights should emphasize unique selling points
+- A tagline is memorable because it is specific to THIS business — never a line that would fit any shop of this type.
 - Return ONLY valid JSON, no additional text`
 
             const groq = getGroqClient()
@@ -561,27 +624,36 @@ IMPORTANT:
      */
     async generateWebsite(businessContent: BusinessContent, businessInfo: BusinessInfo): Promise<string> {
         try {
+            // An absent list is now valid extraction output — it is what "the owner
+            // never mentioned any" correctly looks like — and .join() on it threw
+            // before the prompt was ever built. The interface types these as
+            // required, but the value here is JSON.parse of model output.
+            const services = Array.isArray(businessContent.services) ? businessContent.services : []
+            const highlights = Array.isArray(businessContent.highlights) ? businessContent.highlights : []
+
             const prompt = `You are a professional web designer. Create a beautiful, modern, single-page website for this business.
 
 BUSINESS INFORMATION:
 Name: ${businessInfo.name}
 Type: ${businessInfo.type}
-Tagline: ${businessContent.tagline}
-About: ${businessContent.about}
-Services: ${businessContent.services.join(', ')}
-Contact: ${JSON.stringify(businessContent.contact)}
-Highlights: ${businessContent.highlights.join(', ')}
+Tagline: ${businessContent.tagline || ''}
+About: ${businessContent.about || ''}
+Services: ${services.join(', ')}
+Contact: ${JSON.stringify(businessContent.contact || {})}
+Highlights: ${highlights.join(', ')}
 
 Create a complete HTML page with:
 1. Modern, responsive design using Tailwind CSS (via CDN)
 2. Professional color scheme matching the business type
 3. Hero section with business name and tagline
-4. About section
-5. Services section with cards
-6. Highlights/Features section
+4. About section, when there is content for it
+5. Services section with cards, when services were named
+6. Highlights/Features section, when highlights were given
 7. Contact section
 8. Smooth animations and transitions
 9. Mobile-friendly layout
+
+CONTENT — the information above is the only source. A field that is blank means the business never told us: drop that section from the page rather than writing copy to fill it. A shorter true page is the goal. Never add prices, credentials, awards, guarantees, star ratings, review counts, or service areas of your own.
 
 TESTIMONIALS: only what the owner reported customers saying, in the content above. If it isn't there, leave the section out. Never invent a customer, a name, or a quote.
 
@@ -635,43 +707,25 @@ Type: ${businessInfo.type}
 Location: ${businessInfo.location}
 Owner: ${businessInfo.owner}
 
-OUTPUT — return ONLY a JSON object with these exact keys:
+${GROUNDING}
 
-For beauty/salon/spa businesses specifically, MAXIMIZE the trust block — those
-buyers vet credentials hard. Aim for 3+ licenses and 3+ memberships if even
-remotely plausible from the transcript (PRC cosmetology, DOH facility permit,
-brand-trained colourist, professional association membership, training school
-affiliation, awards). Same for credentials: 3-4 entries (Licensed · Trained
-· Insured · Awarded). Other categories can be sparser.
+Beauty/salon/spa buyers vet credentials hard, so surface every licence, permit, training or membership the owner DID mention. If they mentioned none, the trust block stays empty — that is a true answer about the business, and the page drops the block.
+
+OUTPUT — return ONLY a JSON object with these exact keys:
 
 {
   "trust": {
-    "years": "string or null (e.g. 'A house of beauty since 2018'; only if a founding year is mentioned)",
-    "licenses": ["short claim 1", "short claim 2", "short claim 3"] or [],
-    "memberships": ["short claim 1", "short claim 2"] or []
+    "years": "string or null (e.g. 'A house of beauty since 2018'; only if the owner gave a founding year)",
+    "licenses": ["short claim, one per licence or permit the owner named"] or [],
+    "memberships": ["short claim, one per membership the owner named"] or []
   },
-  "why": [
-    { "title": "5-7 word concrete claim", "body": "2 sentence proof, specific" },
-    { "title": "...", "body": "..." },
-    { "title": "...", "body": "..." }
-  ],
-  "how": [
-    { "step": "01", "title": "2-4 word step name", "body": "1-2 sentence specifics" },
-    { "step": "02", "title": "...", "body": "..." },
-    { "step": "03", "title": "...", "body": "..." },
-    { "step": "04", "title": "...", "body": "..." }
-  ],
+  "why": [up to 3 of { "title": "5-7 word concrete claim", "body": "2 sentence proof, specific" } — each resting on something the owner said] or [],
+  "how": [up to 4 of { "step": "01", "title": "2-4 word step name", "body": "1-2 sentence specifics" } — numbered "01" upward, only steps the owner described] or [],
   "testimonials": [up to 3 of { "quote": "1 sentence, the customer's words as the owner reported them", "context": "1-3 word context (e.g. 'monthly client')" }] or [],
-  "faq": [
-    { "q": "real customer question, 5-9 words", "a": "1-3 sentence direct answer" },
-    { "q": "...", "a": "..." },
-    { "q": "...", "a": "..." },
-    { "q": "...", "a": "..." },
-    { "q": "...", "a": "..." }
-  ],
+  "faq": [up to 5 of { "q": "real customer question, 5-9 words", "a": "1-3 sentence direct answer" } — ONLY questions the transcript actually answers] or [],
   "credentials": [
-    { "label": "1-3 word category", "detail": "specific credential" }
-  ],
+    { "label": "1-3 word category", "detail": "the credential the owner named" }
+  ] or [],
   "ctaBand": {
     "heading": "5-9 word closing call",
     "body": "1 sentence reinforcement",
@@ -688,7 +742,6 @@ HARD RULES (the page is one of hundreds — must stay maintenance-free):
 - NEVER name individual staff members.
 - NEVER reference hours of operation — Google handles those.
 - TESTIMONIALS: only what the owner reported customers saying, in the transcript. If it isn't there, return []. Never invent a customer or a quote — and never output a name: the owner is asked what regulars SAY, never who said it, so a name can only be made up.
-- Every claim must be supportable from the transcript — if the transcript doesn't mention licenses, return an empty array.
 - No "we offer X service" filler. Concrete, opinionated, founder-voiced.
 - Avoid emoji and exclamation marks.
 
@@ -751,52 +804,43 @@ Type: ${businessInfo.type}
 Location: ${businessInfo.location}
 Owner: ${businessInfo.owner}
 
+${GROUNDING}
+
 OUTPUT — return ONLY a JSON object with these exact keys:
 
 {
-  "marquee": { "text": "5-10 short words separated by spaces, no punctuation, evocative of this trade (e.g. 'Fresh roasted daily Single origin Pour over')" },
+  "marquee": { "text": "5-10 short words separated by spaces, no punctuation, drawn from what this business actually does (a coffee roaster's might read 'Fresh roasted daily Single origin Pour over')" },
   "hero": {
     "kicker": "12-20 char tagline (location · trade descriptor)",
     "headlineLines": ["line 1 (2-4 words)", "line 2 (2-4 words)", "line 3 (1-3 words; may include <em>highlight</em>)"],
     "sub": "1-2 sentence elevator pitch in the founder's voice",
     "cta1": { "text": "2-3 word button (e.g. 'Visit us')",        "href": "#visit" },
     "cta2": { "text": "2-3 word secondary (e.g. 'See services')", "href": "#services" },
-    "meta1": "one checkable fact from the transcript ('open since 2019', 'cash or GCash') — NEVER a star line, a rating, or a review count: nobody in this pipeline can verify one, so it can only be made up",
-    "meta2": "second meta line ('open daily · address')"
+    "meta1": "one checkable fact from the transcript ('open since 2019', 'cash or GCash'), or empty when the transcript holds none — and NEVER a star line, a rating, or a review count: nobody in this pipeline can verify one, so it can only be made up",
+    "meta2": "second checkable fact ('cash or GCash', 'parking out front', the address), or empty — the HARD RULE against hours applies here too"
   },
   "about": {
     "tag": "2-3 word eyebrow ('Our story')",
     "headline": "8-14 word headline; may include <em>highlight</em>",
     "lead": "1-2 sentence lead paragraph in the founder's voice",
-    "signature": "5-9 word signature line (e.g. 'Pour by pour, since 2014.')",
-    "paragraphs": ["1-2 sentences", "1-2 sentences"]
+    "signature": "5-9 word signature line (e.g. 'Pour by pour, every single morning.')",
+    "paragraphs": ["1-2 sentences — one entry per point the owner actually made about the place"] or []
   },
   "services": {
     "tag": "What we offer / What we do",
     "headline": "5-10 word section headline",
-    "items": [
-      { "title": "2-4 word service name", "desc": "1-2 sentence value prop", "note": "1-3 word meta (e.g. 'walk-in · to-go')" },
-      { "title": "...", "desc": "...", "note": "..." },
-      { "title": "...", "desc": "...", "note": "..." },
-      { "title": "...", "desc": "...", "note": "..." }
-    ]
+    "items": [up to 4 of { "title": "2-4 word service name", "desc": "1-2 sentence value prop", "note": "1-3 word meta (e.g. 'walk-in · to-go'), or omit" } — ONE entry per service the owner actually named, never padded to fill the grid] or []
   },
   "gallery": {
     "tag": "2-3 word eyebrow ('Inside the shop')",
     "headline": "3-6 word headline",
-    "items": [
-      { "caption": "2-4 word caption" },
-      { "caption": "..." },
-      { "caption": "..." },
-      { "caption": "..." },
-      { "caption": "..." }
-    ]
+    "items": [up to 5 of { "caption": "2-4 word caption" } — captioning only things the owner described] or []
   },
   "area": {
     "tag": "2-3 word eyebrow ('Where we serve')",
     "headline": "4-8 word headline",
-    "body": "1 sentence describing the area",
-    "places": ["neighborhood/city 1", "neighborhood/city 2", "neighborhood/city 3", "neighborhood/city 4", "neighborhood/city 5", "neighborhood/city 6"]
+    "body": "1 sentence describing the area, or empty",
+    "places": ["only neighbourhoods, cities or barangays the owner named — [] if they named none, never the ones that merely sound nearby"]
   },
   "location": {
     "tag": "2-3 word eyebrow ('Come by')",
@@ -823,7 +867,6 @@ HARD RULES:
 - NEVER reference operating hours (Google handles those).
 - Use real, opinionated copy. Avoid generic SaaS phrasing.
 - No emoji. No exclamation marks. Sparing <em>highlights</em> in headlines only.
-- Every claim must be supportable from the transcript.
 
 Return ONLY the JSON object, no markdown fence, no commentary.`
 
