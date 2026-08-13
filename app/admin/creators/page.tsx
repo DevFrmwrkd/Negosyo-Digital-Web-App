@@ -20,8 +20,16 @@ type CreatorStatus = 'pending' | 'active' | 'suspended' | 'deleted'
 // routes still redirect here for any external bookmarks.
 type CreatorView = 'all' | 'pending' | 'rejected'
 
-function getInitials(first: string, last: string) {
-    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
+// Both names are OPTIONAL in the schema (convex/schema.ts:45-46 — mobile allows
+// signing up with neither), so typing them as `string` here was a lie the
+// compiler believed. On 2026-08-12 a real signup arrived with a firstName and no
+// lastName and `undefined.charAt(0)` took the ENTIRE page down with a client-side
+// exception — one incomplete row, and no admin could reach the creator list at
+// all. Degrade to whatever initials exist, then to '?', and never throw.
+function getInitials(first?: string | null, last?: string | null) {
+    const a = (first ?? '').trim().charAt(0)
+    const b = (last ?? '').trim().charAt(0)
+    return `${a}${b}`.toUpperCase() || '?'
 }
 
 // Wrap the page so the useSearchParams() call inside is allowed in the
