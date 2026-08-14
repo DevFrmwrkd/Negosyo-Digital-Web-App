@@ -1,6 +1,7 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { query, mutation, action, internalQuery, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
+import { ADMIN_REQUIRED, NOT_AUTHENTICATED } from './lib/auth';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { normalizePhone } from './lib/phone';
@@ -249,7 +250,7 @@ export const getCountBySubmission = query({
 // ============================================================================
 async function requireIdentity(ctx: any) {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error('Not authenticated');
+    if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
     return identity;
 }
 
@@ -259,7 +260,7 @@ async function requireAdminIdentity(ctx: any) {
         .query('creators')
         .withIndex('by_clerk_id', (q: any) => q.eq('clerkId', identity.subject))
         .first();
-    if (!me || me.role !== 'admin') throw new Error('Forbidden: admin access required');
+    if (!me || me.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
     return identity;
 }
 
@@ -839,11 +840,11 @@ export const generatePreviewImageUploadUrl = action({
         // Action-context auth: query the admin role via internal query is overkill,
         // so we resolve the calling identity + look it up directly.
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const me = await ctx.runQuery(internal.leads.getCreatorRoleByClerkIdInternal, {
             clerkId: identity.subject,
         });
-        if (!me || me.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!me || me.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
 
         const validation = validatePreviewImageUploadArgs({
             mimeType: args.mimeType,
@@ -970,7 +971,7 @@ export const geocodePendingSubmissions = action({
         failed: number;
     }> => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
 
         // Fetch pending submissions (address but no coordinates) via an
         // internal query. We cap at `limit` to keep each invocation bounded.

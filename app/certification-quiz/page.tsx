@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useQuery, useMutation, useConvexAuth } from "convex/react"
+import { ConvexError } from "convex/values"
 import { api } from "@/convex/_generated/api"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -177,7 +178,17 @@ export default function CertificationQuizPage() {
             setTimeout(() => setPassAnimated(true), 50)
         } catch (e) {
             console.error("Marking quiz passed failed:", e)
-            setSaveError(e instanceof Error ? e.message : String(e))
+            // Prefer ConvexError.data: it's the clean sentence the backend meant to
+            // send. `e.message` wraps it in the client's own stacktrace preamble
+            // ("[CONVEX M(creators:markQuizPassed)] [Request ID: …] … Called by
+            // client"), which is noise to a creator.
+            setSaveError(
+                e instanceof ConvexError && typeof e.data === "string"
+                    ? e.data
+                    : e instanceof Error
+                        ? e.message
+                        : String(e)
+            )
             failedWhileSignedOutRef.current = !isAuthenticated
             setPhase("saveFailed")
         } finally {

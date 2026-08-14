@@ -1,5 +1,6 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { query, mutation } from './_generated/server';
+import { NOT_AUTHENTICATED } from './lib/auth';
 
 // ==================== MUTATIONS ====================
 
@@ -35,7 +36,7 @@ export const add = mutation({
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const creator = await ctx.db
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', identity.subject))
