@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useUser } from "@clerk/nextjs"
-import { useQuery, useMutation } from "convex/react"
+import { useQuery, useMutation, useConvexAuth } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import Logo from "@/public/tendso-logo.png"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Loader2, CheckCircle, XCircle, Trophy, RotateCcw, Award } from "lucide-react"
+import { ArrowLeft, Loader2, CheckCircle, XCircle, Trophy, RotateCcw, Award, AlertTriangle } from "lucide-react"
 
 const QUIZ_QUESTIONS = [
     {
@@ -117,14 +117,29 @@ export default function CertificationQuizPage() {
     // approval), matching mobile — NOT auto-certified. Admin approves in
     // /admin/pending-approvals, which sets certifiedAt and releases the gate.
     const markQuizPassed = useMutation(api.creators.markQuizPassed)
+    // markQuizPassed is identity-scoped: it throws "Not authenticated" unless the
+    // Convex socket carries a Clerk token. Clerk's own `isLoaded`/`user` say nothing
+    // about that — the socket can drop its token mid-quiz while Clerk still reports a
+    // signed-in user — so we read Convex's view of auth too. Used ONLY to explain the
+    // failure and to auto-retry; never to gate the quiz. `isAuthenticated` settles to
+    // false (not "loading") when the token pipeline is broken, so gating on it would
+    // lock every creator out of finishing instead of just failing loudly.
+    const { isAuthenticated } = useConvexAuth()
 
     const [currentQ, setCurrentQ] = useState(0)
     const [selected, setSelected] = useState<number | null>(null)
     const [answered, setAnswered] = useState(false)
     const [answers, setAnswers] = useState<number[]>([])
-    const [phase, setPhase] = useState<"quiz" | "pass" | "fail">("quiz")
+    const [phase, setPhase] = useState<"quiz" | "pass" | "fail" | "saveFailed">("quiz")
     const [certifying, setCertifying] = useState(false)
     const [passAnimated, setPassAnimated] = useState(false)
+    const [saveError, setSaveError] = useState<string | null>(null)
+
+    // Set when the save failed while the Convex socket was unauthenticated — i.e. the
+    // failure is one that reconnecting can fix. Refs, not state: they must not trigger
+    // a render, and the one-shot flag must survive the retry that reads it.
+    const failedWhileSignedOutRef = useRef(false)
+    const autoRetriedRef = useRef(false)
 
     useEffect(() => {
         if (isLoaded && !user) router.push("/login")
@@ -134,6 +149,53 @@ export default function CertificationQuizPage() {
     useEffect(() => {
         if (creator && creator.role === 'admin') router.push("/admin")
     }, [creator, router])
+
+    /**
+     * Record the pass. Only advances to the "pass" screen once the write actually
+     * lands, because `quizPassedAt` is the ONLY thing that puts a creator into the
+     * admin approval queue (creators.listPendingApproval filters on it, as does the
+     * Discord poll cron). Nothing else in the app can set it afterwards — so a
+     * swallowed failure here used to strand the creator permanently: they saw
+     * "your application is now under review", pressed Continue, and /pending bounced
+     * them straight back to /training with no explanation and no way to recover.
+     *
+     * Safe to call repeatedly — the mutation returns early if quizPassedAt or
+     * certifiedAt is already set.
+     */
+    const submitPass = useCallback(async () => {
+        if (!creator?._id) {
+            setSaveError("We couldn't load your creator profile.")
+            failedWhileSignedOutRef.current = !isAuthenticated
+            setPhase("saveFailed")
+            return
+        }
+        setCertifying(true)
+        try {
+            await markQuizPassed({ id: creator._id })
+            setSaveError(null)
+            setPhase("pass")
+            setTimeout(() => setPassAnimated(true), 50)
+        } catch (e) {
+            console.error("Marking quiz passed failed:", e)
+            setSaveError(e instanceof Error ? e.message : String(e))
+            failedWhileSignedOutRef.current = !isAuthenticated
+            setPhase("saveFailed")
+        } finally {
+            setCertifying(false)
+        }
+    }, [creator?._id, markQuizPassed, isAuthenticated])
+
+    // Self-heal the common case: the socket lost its token for a moment and gets it
+    // back a second later. Retry once, silently, so a creator who is staring at the
+    // error screen doesn't have to do anything. One-shot — if the retry also fails,
+    // the screen's own "Try again" button takes over rather than looping.
+    useEffect(() => {
+        if (phase !== "saveFailed" || certifying) return
+        if (!failedWhileSignedOutRef.current || !isAuthenticated) return
+        if (autoRetriedRef.current) return
+        autoRetriedRef.current = true
+        void submitPass()
+    }, [phase, certifying, isAuthenticated, submitPass])
 
     if (!isLoaded || creator === undefined) {
         return (
@@ -167,15 +229,7 @@ export default function CertificationQuizPage() {
         } else {
             const score = newAnswers.filter((a, i) => a === QUIZ_QUESTIONS[i].correctIndex).length
             if (score >= 4) {
-                setCertifying(true)
-                try {
-                    if (creator?._id) await markQuizPassed({ id: creator._id })
-                } catch (e) {
-                    console.error("Marking quiz passed failed:", e)
-                }
-                setCertifying(false)
-                setPhase("pass")
-                setTimeout(() => setPassAnimated(true), 50)
+                await submitPass()
             } else {
                 setPhase("fail")
             }
@@ -224,6 +278,50 @@ export default function CertificationQuizPage() {
                         Continue
                     </Button>
                 </div>
+            </div>
+        )
+    }
+
+    // ==================== SAVE-FAILED SCREEN ====================
+    // They passed, but the result never reached the server. Say so plainly instead of
+    // showing the pass screen — a creator who believes they're under review when no
+    // record exists has no way of ever finding out otherwise.
+    if (phase === "saveFailed") {
+        return (
+            <div
+                className="editorial min-h-screen flex flex-col items-center justify-center px-4 text-center"
+                style={{ background: "var(--ed-paper)", color: "var(--ed-ink)", fontFamily: "var(--ed-sans)" }}
+            >
+                <div className="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mb-6">
+                    <AlertTriangle className="w-10 h-10 text-amber-500" />
+                </div>
+                <h1 className="text-2xl font-bold text-zinc-900 mb-2">We couldn&apos;t save your result</h1>
+                <p className="text-zinc-500 mb-4 max-w-sm">
+                    You scored <span className="font-bold text-amber-600">{finalScore}/5</span> — that&apos;s a pass. But your
+                    result didn&apos;t reach us, so your application hasn&apos;t gone for review yet.
+                </p>
+                {!isAuthenticated && (
+                    <p className="text-zinc-500 mb-4 max-w-sm text-sm">
+                        Your session isn&apos;t connected to the server right now. Trying again usually fixes it.
+                    </p>
+                )}
+                {saveError && (
+                    <p className="text-[11px] text-zinc-400 mb-8 max-w-sm break-words">{saveError}</p>
+                )}
+                <Button
+                    onClick={() => { void submitPass() }}
+                    disabled={certifying}
+                    className="w-full max-w-xs h-12 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl"
+                >
+                    {certifying ? <Loader2 className="h-5 w-5 animate-spin" /> : "Try again"}
+                </Button>
+                <p className="mt-4 text-xs text-zinc-500">
+                    Still stuck?{" "}
+                    <Link href="/contact" className="underline font-medium text-zinc-700">
+                        Contact us
+                    </Link>{" "}
+                    and we&apos;ll sort it out for you.
+                </p>
             </div>
         )
     }
