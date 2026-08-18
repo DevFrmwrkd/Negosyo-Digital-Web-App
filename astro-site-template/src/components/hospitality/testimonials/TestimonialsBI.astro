@@ -1,0 +1,176 @@
+---
+/**
+ * hospitality / TestimonialsBI — "Palm Hour" GUEST REVIEWS: the deep lagoon shade
+ * band, a single quote run at display size in Fraunces under an oversized
+ * watermark quote mark, then the remaining quotes as rounded low-alpha cards.
+ *
+ * ROLE: the social proof a stay is bought on. Which is exactly why this file
+ * prints NOTHING the owner did not put on record.
+ *
+ * Reads content.testimonials.items ({quote, who/author/name, role/context,
+ * rating}). Auto-hides when empty (astro-builder also forces
+ * visibility.testimonialsBlock false when there are no quotes). Mirrors
+ * TestimonialsBB's content contract.
+ *
+ * EDITABLE HOOKS
+ *   testimonials.tag                     — the sec-head right slot
+ *   testimonials.items.${i}.quote        — the lead quote is row 0 of the ORIGINAL
+ *   testimonials.items.${i}.who            array (so these read
+ *   testimonials.items.${i}.role           testimonials.items.0.* on every real
+ *                                          site, exactly as the precedent does);
+ *                                          the card grid continues with the same
+ *                                          original indices, never a re-count
+ *
+ * ANTI-FABRICATION, the hard rule of this section:
+ *   - NO hardcoded star row. There is no "★★★★★" anywhere in this file.
+ *   - NO review count, NO average score, NO platform name ("on Google", "on
+ *     Airbnb"), NO "guest favourite" / "superhost" badge. None of it is in the
+ *     data contract, so all of it would be invented.
+ *   - The rating dots render ONLY from a finite numeric rating in 1..5 on the
+ *     lead item (see dotsOf). Anything else — absent, '', 'five', 0, 7, NaN —
+ *     yields 0 and the dots do not render at all. Expect them to be dormant on
+ *     essentially every real site, and do NOT add a fallback row.
+ *   - Quote, name and context are each guarded on their own, so a quote with no
+ *     attribution renders as an unattributed quote rather than an empty caption.
+ *
+ * CLASS-NAME NOTE (engine): this section must NOT be class "testi" —
+ * buildOverrideCss pins `.testi,.testi p{color:<on-ink>!important}` and
+ * `.testi .btn{…}`. The band is class "voices" and carries no buttons at all, so
+ * nothing here is reachable by the engine's label pins.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const test = content.testimonials || {};
+const tag = test.tag || '';
+type Item = { quote?: string; who?: string; role?: string; author?: string; name?: string; context?: string; rating?: number | string };
+const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+const named = (it: Item) => ({ who: it.who ?? it.author ?? it.name, role: it.role ?? it.context });
+/* A rating is a CLAIM. Only a real, finite 1–5 number becomes dots; everything
+   else is 0, which renders nothing. Never widen this. */
+const dotsOf = (it: Item) => {
+  const r = Number(it.rating);
+  return Number.isFinite(r) && r >= 1 && r <= 5 ? Math.round(r) : 0;
+};
+/* Normalise ONCE, carrying the ORIGINAL array index, then drop rows that would
+   render as an empty bordered card (no quote, no name, no context). Preserving
+   `i` is what keeps every data-field pointing at the real slot — the same
+   technique the gallery uses for image-less rows. Gating on `rows` rather than
+   `items` also means a block of blank rows hides instead of emitting a rule and
+   a padded box with nothing in them. */
+const rows = items
+  .map((it, i) => ({ quote: it.quote || '', ...named(it), dots: dotsOf(it), i }))
+  .filter((r) => r.quote || r.who || r.role);
+const lead = rows[0];
+const rest = rows.slice(1);
+---
+{rows.length > 0 && (
+  <section class="voices band-shade weave-i" id="reviews">
+    <div class="wrap">
+      <span class="qmark" aria-hidden="true">”</span>
+      <div class="sec-head">
+        <span class="sh-l">In their words</span>
+        <span class="sh-rule" aria-hidden="true"></span>
+        {tag && <span class="sh-r" data-field="testimonials.tag">{tag}</span>}
+      </div>
+      {lead.quote && (
+        <blockquote class="v-lead reveal" data-field={`testimonials.items.${lead.i}.quote`} set:html={lead.quote}></blockquote>
+      )}
+      {(lead.who || lead.role || lead.dots > 0) && (
+        <p class="mono v-attr reveal">
+          {lead.dots > 0 && (
+            <span class="rdots" role="img" aria-label={`Rated ${lead.dots} out of 5`}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <span data-off={n <= lead.dots ? undefined : 'true'}></span>
+              ))}
+            </span>
+          )}
+          {lead.who && <span data-field={`testimonials.items.${lead.i}.who`}>{lead.who}</span>}
+          {lead.role && <span data-field={`testimonials.items.${lead.i}.role`}>{lead.role}</span>}
+        </p>
+      )}
+      {rest.length > 0 && (
+        <div class="v-sub">
+          {rest.map((row) => (
+            <figure class="v-card">
+              {row.quote && (
+                <blockquote data-field={`testimonials.items.${row.i}.quote`} set:html={row.quote}></blockquote>
+              )}
+              {(row.who || row.role) && (
+                <figcaption class="mono">
+                  {row.who && <span data-field={`testimonials.items.${row.i}.who`}>{row.who}</span>}
+                  {row.role && <span data-field={`testimonials.items.${row.i}.role`}>{row.role}</span>}
+                </figcaption>
+              )}
+            </figure>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .voices .wrap { position: relative; }
+  /* decorative watermark — a tint of the paper token, never an accent-as-text */
+  .qmark {
+    position: absolute; top: clamp(-10px, -1vw, 0px); right: 2%; z-index: 0;
+    font-family: var(--disp); font-weight: 800;
+    font-size: clamp(80px, 10vw, 160px); line-height: 0.6;
+    color: rgba(var(--paper-rgb), 0.14);
+    pointer-events: none;
+  }
+  .v-lead {
+    position: relative; z-index: 1;
+    font-family: var(--disp); font-weight: 700;
+    font-size: clamp(26px, 3.6vw, 50px); line-height: 1.06; letter-spacing: -0.02em;
+    color: var(--paper); max-width: 28ch; margin: 0 0 22px;
+  }
+  /* emphasis inside set:html output is an UNDERLINE, never a colour swap: an
+     accent-coloured label fails 4.5:1 in 8 of the 13 schemes. rgba() cannot take
+     a hex token, so the rule is a two-stop gradient of the token itself. */
+  .v-lead :global(em),
+  .v-lead :global(.em) {
+    font-style: normal; color: inherit;
+    background-image: linear-gradient(var(--accent-light), var(--accent-light));
+    background-repeat: no-repeat; background-size: 100% 0.10em; background-position: 0 92%;
+  }
+  .v-attr {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin: 0 0 clamp(38px, 5vw, 62px);
+    font-size: 10.5px; letter-spacing: 0.16em;
+  }
+  .rdots { display: inline-flex; gap: 4px; }
+  .rdots span { width: 7px; height: 7px; border-radius: 50%; background-color: var(--accent-light); }
+  .rdots span[data-off] { background-color: rgba(var(--paper-rgb), 0.28); }
+  .v-sub {
+    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(20px, 3vw, 32px);
+    border-top: 1px solid rgba(var(--paper-rgb), 0.22); padding-top: 34px;
+  }
+  .v-card {
+    margin: 0; padding: 26px 28px; border-radius: var(--r-lg);
+    background-color: rgba(var(--paper-rgb), 0.05);
+    border: 1px solid rgba(var(--paper-rgb), 0.14);
+  }
+  .v-card blockquote {
+    margin: 0; font-size: 15.5px; line-height: 1.72;
+    color: rgba(var(--paper-rgb), 0.86); overflow-wrap: anywhere;
+  }
+  .v-card blockquote :global(em) { font-style: normal; }
+  .v-card figcaption {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px;
+    font-size: 10.5px; letter-spacing: 0.14em;
+    color: rgba(var(--paper-rgb), 0.74);
+  }
+  @media (max-width: 760px) {
+    .v-sub { grid-template-columns: 1fr; }
+    .v-card { padding: 22px 20px; }
+    .qmark { opacity: 0.5; }
+  }
+  @media (max-width: 520px) {
+    /* the watermark is removed rather than shrunk, so it can never sit under the
+       quote at 360px */
+    .qmark { display: none; }
+    .v-lead { font-size: clamp(22px, 7.6vw, 28px); max-width: none; overflow-wrap: anywhere; }
+    .v-card { padding: 18px 16px; }
+    .v-attr { letter-spacing: 0.12em; }
+  }
+</style>

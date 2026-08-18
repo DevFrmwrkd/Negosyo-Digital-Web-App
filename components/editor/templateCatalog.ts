@@ -14,7 +14,8 @@
 export type TemplateFamily =
     | "generic" | "barbershop" | "salonspa" | "autoshop" | "restaurant"
     | "shirtstore" | "retail" | "medical" | "fitness" | "education"
-    | "trades" | "foodcraft" | "services" | "filipino" | "layouts";
+    | "trades" | "foodcraft" | "services" | "filipino" | "hospitality"
+    | "layouts";
 
 export interface TemplateDef {
     letter: string;
@@ -120,22 +121,27 @@ const FILIPINO_TEMPLATES: TemplateDef[] = [
     { letter: "BH", code: "filipino:BH", label: "Halo Haus",                   tagline: "Ube pastel · halo-halo & desserts",         preview: "/template-previews/bh.html" },
 ];
 
+const HOSPITALITY_TEMPLATES: TemplateDef[] = [
+    { letter: "BI", code: "hospitality:BI", label: "Palm Hour", tagline: "Terracotta & lagoon shade · hotels, villas & short stays", preview: "/template-previews/bi.html" },
+];
+
 /** Families in rail-display order, each with a human label. */
 export const TEMPLATE_FAMILIES: Array<{ family: TemplateFamily; label: string; templates: TemplateDef[] }> = [
-    { family: "generic",    label: "Generic",     templates: GENERIC_TEMPLATES },
-    { family: "restaurant", label: "Restaurant",  templates: RESTAURANT_TEMPLATES },
-    { family: "barbershop", label: "Barbershop",  templates: BARBERSHOP_TEMPLATES },
-    { family: "salonspa",   label: "Salon & Spa", templates: SALONSPA_TEMPLATES },
-    { family: "autoshop",   label: "Auto",        templates: AUTOSHOP_TEMPLATES },
-    { family: "shirtstore", label: "Apparel",     templates: SHIRTSTORE_TEMPLATES },
-    { family: "retail",     label: "Retail",      templates: RETAIL_TEMPLATES },
-    { family: "medical",    label: "Medical",     templates: MEDICAL_TEMPLATES },
-    { family: "fitness",    label: "Fitness",     templates: FITNESS_TEMPLATES },
-    { family: "education",  label: "Education",   templates: EDUCATION_TEMPLATES },
-    { family: "trades",     label: "Trades",      templates: TRADES_TEMPLATES },
-    { family: "foodcraft",  label: "Foodcraft",   templates: FOODCRAFT_TEMPLATES },
-    { family: "services",   label: "Services",    templates: SERVICES_TEMPLATES },
-    { family: "filipino",   label: "Filipino",    templates: FILIPINO_TEMPLATES },
+    { family: "generic",     label: "Generic",        templates: GENERIC_TEMPLATES },
+    { family: "restaurant",  label: "Restaurant",     templates: RESTAURANT_TEMPLATES },
+    { family: "barbershop",  label: "Barbershop",     templates: BARBERSHOP_TEMPLATES },
+    { family: "salonspa",    label: "Salon & Spa",    templates: SALONSPA_TEMPLATES },
+    { family: "autoshop",    label: "Auto",           templates: AUTOSHOP_TEMPLATES },
+    { family: "shirtstore",  label: "Apparel",        templates: SHIRTSTORE_TEMPLATES },
+    { family: "retail",      label: "Retail",         templates: RETAIL_TEMPLATES },
+    { family: "medical",     label: "Medical",        templates: MEDICAL_TEMPLATES },
+    { family: "fitness",     label: "Fitness",        templates: FITNESS_TEMPLATES },
+    { family: "education",   label: "Education",      templates: EDUCATION_TEMPLATES },
+    { family: "trades",      label: "Trades",         templates: TRADES_TEMPLATES },
+    { family: "foodcraft",   label: "Foodcraft",      templates: FOODCRAFT_TEMPLATES },
+    { family: "services",    label: "Services",       templates: SERVICES_TEMPLATES },
+    { family: "filipino",    label: "Filipino",       templates: FILIPINO_TEMPLATES },
+    { family: "hospitality", label: "Hotels & Stays", templates: HOSPITALITY_TEMPLATES },
 ];
 
 export const ALL_TEMPLATES: TemplateDef[] = TEMPLATE_FAMILIES.flatMap((f) => f.templates);

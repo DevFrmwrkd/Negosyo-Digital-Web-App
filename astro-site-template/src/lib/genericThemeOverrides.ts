@@ -186,6 +186,13 @@ const AUTO_BY_BUSINESS_TYPE: Record<string, string> = {
     school: 'purple', tutor: 'purple', workshop: 'purple', academy: 'purple', education: 'purple', learning: 'purple',
     trade: 'maroon', service: 'maroon', plumbing: 'maroon', electric: 'maroon', hvac: 'maroon',
     landscaping: 'maroon', cleaning: 'maroon', laundry: 'maroon',
+    // Hospitality family (BI · Palm Hour) default = brown, the terracotta
+    // warmth the design is built on. Longest keys first, because the fuzzy
+    // scan below returns the FIRST key contained in the typed business type —
+    // 'inn' and 'bnb' are last so 'guesthouse'/'airbnb' win over them.
+    hotel: 'brown', motel: 'brown', resort: 'brown', villa: 'brown', hostel: 'brown',
+    guesthouse: 'brown', homestay: 'brown', staycation: 'brown', apartment: 'brown',
+    condo: 'brown', lodge: 'brown', transient: 'brown', airbnb: 'brown', bnb: 'brown', inn: 'brown',
 };
 
 function resolveAutoScheme(businessType: string | undefined | null): string {

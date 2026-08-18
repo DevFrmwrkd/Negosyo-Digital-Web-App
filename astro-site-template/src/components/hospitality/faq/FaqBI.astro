@@ -1,0 +1,160 @@
+---
+/**
+ * hospitality / FaqBI — "Palm Hour" HOUSE RULES & POLICIES: an intro column
+ * (headline + the owner's phone number, if there is one) beside a stack of
+ * plaster-card <details> whose Fraunces summaries carry a terracotta-tinted "+"
+ * that rotates to "×" on open. First row opens by default.
+ *
+ * ROLE: in this vertical the FAQ is where check-in windows, pets, parties,
+ * deposits and cancellation actually live — the questions that decide whether a
+ * guest enquires at all.
+ *
+ * Reads content.faq.items ({q, a}); tolerates the legacy bare array at
+ * content.faq. Auto-hides when empty. Mirrors FaqBB's content contract.
+ *
+ * EDITABLE HOOKS
+ *   faq.tag              — the sec-head right slot (the ONLY data slot there)
+ *   faq.headline         — no literal fallback here: the derived layer always
+ *                          supplies one, so a fallback would be dead code, and a
+ *                          headline over nothing is worse than no headline
+ *   faq.items.${i}.q
+ *   faq.items.${i}.a     — set:html, so an owner can emphasise inside an answer
+ *   (the optional tel affordance carries NO hook on purpose — see the note at
+ *    its call site; it mirrors the Location group's Phone field)
+ *
+ * ANTI-FABRICATION — this is the single most dangerous section in a hospitality
+ * template, so the rule is absolute: NOT ONE POLICY IS SHIPPED BY THIS FILE.
+ * No default check-in or check-out time, no cancellation window, no deposit or
+ * damage terms, no pet / party / smoking / quiet-hours rule, no minimum stay, no
+ * extra-guest fee. Every one of those would be a legally-flavoured claim about a
+ * property this template has never seen. If the owner typed no questions, the
+ * section does not exist.
+ *
+ * TRAP (carried over from FaqBB, deliberately NOT repeated here): the precedent
+ * closes its intro column with a baked sentence — "Anything else — give us a
+ * call at {phone}." That line carries no data-field, so an owner can never edit
+ * or remove it (R1), and it promises an answered call the owner never offered
+ * (R2). Here the affordance is the phone NUMBER ITSELF as the link label — an
+ * owner-supplied fact and nothing more. With no phone the whole line is dropped.
+ * Do not put a sentence back.
+ *
+ * The +/× marker is a MEANING-BEARING glyph (it states the open/closed state), so
+ * it follows the template's glyph law: INK on an accent-TINTED field (9.71:1) —
+ * never var(--accent) or var(--accent-deep) as the glyph colour, which collapses
+ * to 1.29:1 under the maroon scheme.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+const faq = content.faq || {};
+const tag = faq.tag || '';
+const headline = faq.headline || '';
+type Item = { q?: string; a?: string };
+const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq) ? faq : []);
+/* A row with no question has no honest presentation in an accordion: the summary
+   IS the label, so an answer-only row would render a tappable pill carrying
+   nothing but the "+" marker. Filter those out, but carry the ORIGINAL index so
+   every data-field still points at the real array slot (same technique the
+   gallery uses for image-less rows). Gating the section on rows — not items —
+   also means an all-malformed block hides instead of shipping an empty column. */
+const rows = items.map((it, i) => ({ ...it, i })).filter((r) => r.q);
+const phone = content.location?.phone || content.contact?.phone || '';
+const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
+/* The intro column holds only a headline and (optionally) the phone. With neither,
+   it would spend a whole grid track on nothing — so it is omitted and the grid
+   collapses to one column, the same `.nofig` / `.no-map` idiom the family uses. */
+const hasIntro = Boolean(headline || phone);
+---
+{rows.length > 0 && (
+  <section class="rules" id="faq">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sh-l">Good to know</span>
+        <span class="sh-rule" aria-hidden="true"></span>
+        {tag && <span class="sh-r" data-field="faq.tag">{tag}</span>}
+      </div>
+      <div class:list={['faq-grid', !hasIntro && 'nointro']}>
+        {hasIntro && (
+          <div class="faq-intro reveal">
+            {headline && <h2 class="h2" data-field="faq.headline" set:html={headline}></h2>}
+            {/* Deliberately NO data-field. This was data-field="location.phone",
+                the first `location.*` hook in the document — and editorBridge
+                resolves a block toggle to the FIRST section containing a matching
+                prefix, so the editor's LOCATION toggle hid the House Rules band
+                and left Location on screen. Retargeting to contact.phone would be
+                worse: the read chain is location.phone || contact.phone, so the
+                node would RENDER one value while being LABELLED another. Dropping
+                the hook makes location.* resolve to LocationBI where it belongs.
+                Nothing is lost — the number stays owner-supplied and fully
+                editable through the Location group's Phone field; this is a
+                mirror of an editable value, not orphaned copy. */}
+            {phone && (
+              <a class="linkc faq-tel" href={`tel:${phoneDigits}`}>{phone}</a>
+            )}
+          </div>
+        )}
+        <div class="faq-list reveal">
+          {rows.map((row, k) => (
+            <details open={k === 0}>
+              <summary><span data-field={`faq.items.${row.i}.q`}>{row.q}</span></summary>
+              {row.a && <p data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+            </details>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .faq-grid { display: grid; grid-template-columns: 2fr 3fr; gap: clamp(34px, 5vw, 84px); }
+  .faq-grid.nointro { grid-template-columns: 1fr; }
+  .faq-tel { margin-top: 18px; }
+  .faq-list details {
+    background-color: var(--paper-2);
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    /* Vertical padding lives on the SUMMARY, not here: the summary is the sole
+       control of this section, and with the padding on the card its hit area was
+       only the 26px text strip. Same total closed height as before (18+26+18),
+       but the whole band is now tappable. */
+    padding: 0 22px; margin-bottom: 10px;
+  }
+  .faq-list details[open] { border-color: rgba(var(--accent-rgb), 0.55); padding-bottom: 18px; }
+  .faq-list summary {
+    display: flex; justify-content: space-between; align-items: center; gap: 18px;
+    list-style: none; cursor: pointer; padding: 18px 0; min-height: 44px;
+    font-family: var(--disp); font-weight: 700;
+    font-size: clamp(18px, 1.7vw, 21px); line-height: 1.16; color: var(--ink);
+  }
+  /* Open: the answer's own margin-top keeps today's gap, and details[open]
+     restores the bottom edge — so the close affordance still clears 44px. */
+  .faq-list details[open] summary { padding-bottom: 0; }
+  .faq-list summary::-webkit-details-marker { display: none; }
+  /* meaning-bearing glyph: ink on an accent-tinted field, never accent-as-glyph */
+  .faq-list summary::after {
+    content: "+"; flex: 0 0 auto;
+    display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+    background-color: rgba(var(--accent-rgb), 0.16); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1;
+    transition: transform 0.2s ease;
+  }
+  .faq-list details[open] summary::after { transform: rotate(45deg); }
+  .faq-list p {
+    margin: 14px 0 0; font-size: 14.5px; line-height: 1.74;
+    color: var(--ink-soft); max-width: 62ch;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .faq-list summary::after { transition: none; }
+  }
+  @media (max-width: 760px) {
+    .faq-grid { grid-template-columns: 1fr; gap: 28px; }
+  }
+  @media (max-width: 520px) {
+    /* .faq-tel is a .linkc, not a .btn, so the shared full-width CTA pass does not
+       reach it — widen it here so the tap target spans the column */
+    .faq-tel { width: 100%; justify-content: center; }
+    .faq-list details { padding: 0 16px; }
+    .faq-list details[open] { padding-bottom: 15px; }
+    .faq-list summary { font-size: 17px; gap: 12px; overflow-wrap: anywhere; padding: 15px 0; }
+    .faq-list summary::after { width: 24px; height: 24px; }
+    .faq-list p { font-size: 14px; max-width: none; }
+  }
+</style>

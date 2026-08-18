@@ -1,0 +1,239 @@
+---
+/**
+ * hospitality / FooterBI — THE COLOPHON. Palm Hour's deep lagoon-shade closing
+ * rail under a terracotta hairline: a Fraunces wordmark + blurb, tinted social
+ * chips, a "Visit" NAP column, an "Index" links column, and the owner's own
+ * copyright line. Plus the floating message pill — drawn ONLY for a chat channel
+ * the owner actually gave us.
+ *
+ * Hospitality role: the last place a guest looks for the address and the phone
+ * before they give up, so every column is real data or absent.
+ *
+ * Editable hooks:
+ *   footer.brand                                     — the wordmark
+ *   footer.blurb                                     — the standing line under it
+ *   footer.social.${i}.platform + footer.social.${i}.url  — one chip per channel
+ *   footer.visit.lines.${i}                          — NAP lines (phone auto-tel:)
+ *   footer.explore.links.${i}.text + .href           — the Index column
+ *   footer.notes.${i}                                — the copyright / colophon
+ *   hero.cta1.text                                   — the message-pill label
+ *
+ * Never visibility-gated (no PageXX honours a footer toggle). Every column, and
+ * every row inside it, auto-hides when empty. Colour: tokens only.
+ *
+ * The RIGHT-HAND colophon slot is deliberately EMPTY: nothing feeds it, and the
+ * literal that used to sit there ("OPEN 24 HOURS · ANTIPOLO") was a claim strip
+ * no business ever supplied. Do not fill it.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageBI actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise drop it (the Index column is wayfinding, so a dead entry is worse
+// than a missing one). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageBI.
+//
+// NOTE: the message pill below deliberately does NOT call onPage() — a chat
+// channel is never an in-page anchor.
+const PAGE_ANCHORS = new Set(['about', 'amenities', 'book', 'faq', 'gallery', 'how', 'location', 'main', 'nearby', 'reviews', 'rooms']);
+const ANCHOR_ALIAS: Record<string, string> = { contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+const f = (content as any).footer || {};
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = f.brand || layout.businessName || '';
+const blurb = f.blurb || f.brand_blurb || '';
+const phone = layout.contact?.phone || '';
+const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
+// NAP lines: admin rows first, else the owner's real address + phone. Blank rows
+// are dropped so the address block never opens a gap it cannot fill. Every row
+// keeps its ORIGINAL index (.i) so the editor's field hooks survive the filter.
+type Row = { v: string; i: number };
+const visitSource: any[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
+  ? f.visit.lines
+  : [layout.contact?.address, phone].filter(Boolean);
+const visitLines: Row[] = visitSource
+  .map((l: any, i: number) => ({ v: String(l ?? '').trim(), i }))
+  .filter((r: Row) => r.v);
+// Index column: admin rows first, else the nav list. The ORIGINAL index rides
+// along so the editor's per-row field hooks stay correct after the filter.
+const exploreLinks: Array<{ text: string; href: string; i: number }> =
+  ((Array.isArray(f.explore?.links) && f.explore.links.length
+    ? f.explore.links
+    : (Array.isArray(layout.navLinks) ? layout.navLinks.map((l: any) => ({ text: l.label, href: l.href })) : [])) as any[])
+    .map((l: any, i: number) => ({ text: l?.text || '', href: onPage(l?.href, ''), i }))
+    .filter((l) => l.href && l.text);
+// Social chips: a row needs BOTH a platform label and a url — a chip with only
+// one of them is either a nameless pill or a link to nowhere.
+const social: Array<{ platform: string; url: string; i: number }> =
+  ((Array.isArray(f.social) && f.social.length
+    ? f.social
+    : (Array.isArray(layout.socialLinks) ? layout.socialLinks : [])) as any[])
+    .map((s: any, i: number) => ({ platform: s?.platform || '', url: s?.url || '', i }))
+    .filter((s) => s.platform && s.url);
+// Copyright / colophon. derive-content-defaults emits `['© <year> <name>']` and
+// deliberately suppresses a bare '© 2026' with no name, so there is nothing to
+// invent here — no year fallback, no "all rights reserved".
+const notes: Row[] = (Array.isArray(f.notes) ? f.notes : [])
+  .map((n: any, i: number) => ({ v: String(n ?? '').trim(), i }))
+  .filter((n: Row) => n.v);
+
+// Floating message pill. TRAP — the GATE is the CHANNEL, not the label. This
+// used to reuse the hero's primary CTA, and lib/derive-content-defaults.ts sets
+// hero.cta1 = { text: 'Get in touch', href: '#visit' } on EVERY site, which
+// onPage() then rewrote to '#location' — so the gate was true for every business
+// alive and a chat bubble sat fixed to the corner asserting a message thread
+// that did not exist, merely scrolling the reader down to the address. The pill
+// may only come off a channel the owner actually typed: layout.contact.whatsapp
+// / .messenger, which astro-builder passes through verbatim. Do NOT re-point
+// this at layout.messaging.whatsapp — that one is DERIVED from contact.phone, so
+// it is non-empty for anyone with a landline and puts the bug straight back.
+// visibility.clickToMessage is NOT what gates it either. A CTA href is never a
+// channel.
+const hero = (content as any).hero || {};
+const waDigits = String(layout.contact?.whatsapp || '').replace(/[^0-9]/g, '');
+const messenger = String(layout.contact?.messenger || '').trim();
+const msgHref = waDigits
+  ? `https://wa.me/${waDigits}`
+  : messenger
+    ? (/^https?:/i.test(messenger) ? messenger : `https://m.me/${messenger.replace(/^@/, '')}`)
+    : '';
+// No default label: "Message" asserts a tone the property may not use — and with
+// no channel there is no pill at all, whatever the CTA text says.
+const msgText = msgHref ? (hero.cta1?.text || '') : '';
+---
+<footer class="colo band-shade weave-i">
+  <div class="wrap">
+    <div class="f-grid">
+      <div class="f-brand">
+        {brand && <p class="wm" data-field="footer.brand">{brand}</p>}
+        {blurb && <p class="f-blurb" data-field="footer.blurb">{blurb}</p>}
+        {social.length > 0 && (
+          <div class="f-soc">
+            {social.map((s) => (
+              <a href={s.url} target="_blank" rel="noopener noreferrer" class="chip" data-field={`footer.social.${s.i}.platform`} data-href-field={`footer.social.${s.i}.url`}>{s.platform}</a>
+            ))}
+          </div>
+        )}
+      </div>
+      {visitLines.length > 0 && (
+        <div class="f-col">
+          <h4 class="mono">Visit</h4>
+          <address>
+            {visitLines.map((line) => (
+              line.v === phone && phone
+                ? <a href={`tel:${phoneDigits}`} data-field={`footer.visit.lines.${line.i}`}>{line.v}</a>
+                : <span data-field={`footer.visit.lines.${line.i}`}>{line.v}<br /></span>
+            ))}
+          </address>
+        </div>
+      )}
+      {exploreLinks.length > 0 && (
+        <div class="f-col">
+          <h4 class="mono">Index</h4>
+          {exploreLinks.map((l) => (
+            <a href={l.href} data-field={`footer.explore.links.${l.i}.text`} data-href-field={`footer.explore.links.${l.i}.href`}>{l.text}</a>
+          ))}
+        </div>
+      )}
+    </div>
+    {notes.length > 0 && (
+      <div class="f-foot">
+        {notes.map((n) => (
+          <span data-field={`footer.notes.${n.i}`}>{n.v}</span>
+        ))}
+      </div>
+    )}
+  </div>
+</footer>
+{msgHref && msgText && (
+  <div class="msg-fab">
+    {/* Sibling AFTER </footer> and carrying NO .btn class, so buildOverrideCss's
+        `footer .btn { color: <on-ink> !important }` pin cannot reach it. */}
+    <a href={msgHref} target="_blank" rel="noopener noreferrer" data-field="hero.cta1.text">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4A11 11 0 0 0 4.5 18.5L3 22l3.7-1.4A11 11 0 1 0 20 4Z"/></svg>
+      {msgText}
+    </a>
+  </div>
+)}
+<style>
+  .colo { padding: clamp(56px,7vw,84px) 0 30px; border-top: 3px solid var(--accent); }
+  .f-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 40px; }
+  .wm {
+    margin: 0; font-family: var(--disp); font-weight: 700;
+    font-size: clamp(21px,2vw,25px); color: var(--paper);
+    font-variation-settings: "SOFT" 45, "WONK" 1; overflow-wrap: anywhere;
+  }
+  .f-blurb { margin: 12px 0 0; font-size: 15px; line-height: 1.64; color: rgba(var(--paper-rgb),.78); max-width: 34ch; overflow-wrap: anywhere; }
+  .f-soc { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 16px; }
+  .f-soc .chip { min-height: 36px; }
+  .f-soc .chip:hover { border-color: var(--accent-light); }
+  /* No `color` here on purpose: the h4 already carries class="mono", so it
+     inherits the shade-band value rgba(var(--paper-rgb),.74) from PageBI. The
+     duplicated literal is what let this drift to .60, which measures 4.13:1 on
+     the green scheme's ink — under AA for 9.5px text. .74 holds 5.41:1 worst-case. */
+  .f-col h4 { margin: 0 0 14px; font-size: 9.5px; letter-spacing: .18em; }
+  .f-col address { font-style: normal; font-size: 14.5px; line-height: 1.72; color: rgba(var(--paper-rgb),.78); overflow-wrap: anywhere; }
+  .f-col a { display: block; padding: 4px 0; font-size: 14.5px; color: rgba(var(--paper-rgb),.78); border-bottom: 2px solid transparent; overflow-wrap: anywhere; }
+  .f-col a:hover { color: var(--paper); border-bottom-color: var(--accent-light); }
+  /* The Visit column's tel:/mailto: rows sit inside <address> and otherwise read
+     exactly like the static address lines above them — same token, weight and
+     size — so nothing marks them as links until hover (WCAG 1.4.1). Underline
+     them at rest. Qualifying with `address` deliberately leaves the Index column
+     alone: those are nav links in a list, already unambiguous by position.
+     text-decoration adds no box, so hover thickening cannot shift the rows. */
+  .f-col address a { text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .f-col address a:hover { text-decoration-color: var(--accent-light); text-decoration-thickness: 2px; }
+  .f-foot {
+    margin-top: 48px; padding-top: 18px; border-top: 1px solid rgba(var(--paper-rgb),.16);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    font-family: var(--mono); font-weight: 500; font-size: 9.5px;
+    /* .f-foot has no .mono class, so it needs the literal — .74, not .60. */
+    letter-spacing: .14em; text-transform: uppercase; color: rgba(var(--paper-rgb),.74);
+    overflow-wrap: anywhere;
+  }
+
+  /* The pill's fill is the darkest token and its label the lightest, so it is
+     legible floating over ANY band; the shared DUO focus ring does the rest. */
+  .msg-fab { position: fixed; right: 20px; bottom: 20px; z-index: 100; }
+  .msg-fab a {
+    display: inline-flex; align-items: center; gap: 9px; min-height: 48px;
+    padding: 13px 20px; border-radius: 999px;
+    background-color: var(--ink); color: var(--paper);
+    border: 1px solid rgba(var(--paper-rgb),.30);
+    font-family: var(--mono); font-weight: 500; font-size: 11.5px;
+    letter-spacing: .12em; text-transform: uppercase;
+    box-shadow: 0 12px 30px rgba(0,0,0,.30), 0 0 0 3px rgba(var(--accent-rgb),.30);
+  }
+  /* Hover darkens the SAME fill (inset black) — it never goes light or
+     transparent, so the label can never strand. */
+  .msg-fab a:hover {
+    background-color: var(--ink); color: var(--paper);
+    box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 12px 30px rgba(0,0,0,.30), 0 0 0 5px rgba(var(--accent-rgb),.30);
+  }
+  .msg-fab svg { width: 15px; height: 15px; flex: 0 0 auto; }
+
+  @media (max-width: 760px) {
+    /* Extra bottom padding so the fixed pill never covers an Index link. */
+    .colo { padding-bottom: 76px; }
+    .f-grid { grid-template-columns: 1fr; gap: 26px; }
+    .f-foot { margin-top: 34px; }
+  }
+  @media (max-width: 520px) {
+    .wm { font-size: 20px; }
+    .f-blurb { max-width: none; }
+    .msg-fab { right: 14px; bottom: 14px; }
+    .msg-fab a { padding: 12px 16px; font-size: 11px; max-width: calc(100vw - 28px); }
+  }
+</style>

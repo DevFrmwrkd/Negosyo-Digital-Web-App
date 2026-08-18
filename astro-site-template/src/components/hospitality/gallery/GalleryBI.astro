@@ -1,0 +1,124 @@
+---
+/**
+ * hospitality / GalleryBI — "Palm Hour"'s property photo set, and the
+ * centrepiece of this vertical: one 21/9 lead print over a staggered three-up of
+ * portrait 4/5 tiles, hung on the deep lagoon shade band (.band-shade) so flat
+ * phone photos gain apparent contrast instead of dying against cream. Portrait
+ * tiles because that is the shape a phone actually shoots, so an owner's snap
+ * crops well rather than being centre-cropped to a letterbox.
+ *
+ * Reads content.gallery.items ({image, caption}); the legacy bare-array form
+ * lives at content.gallery (NOT the local `gallery` alias — that is deliberate).
+ * Rows are FILTERED down to the ones that actually carry an image, with the
+ * ORIGINAL index carried through as `.i`, which buys two things:
+ *   1. a caption-only row can never render an empty frame, and
+ *   2. role="img" is honest by construction — nothing in this section announces
+ *      "Property photo" over a flat gradient to exactly the users who cannot
+ *      see that it is a gradient.
+ * The count tiers are DETERMINISTIC (.g1 for one trailing tile, .g2 for two,
+ * three-up beyond) instead of a span-cycle: a cycle leaves a visible hole at
+ * exactly the counts the derived layer produces (photos.slice(0, 6)).
+ *
+ * Auto-hides when no row carries an image. astro-builder additionally forces
+ * visibility.gallerySection false when there are neither rows nor submission
+ * photos.
+ *
+ * Editable hooks:
+ *   gallery.tag · gallery.headline · gallery.sub
+ *   gallery.items.<original i>.caption
+ *   data-image-field gallery.items.<original i>.image   (lead print + every tile)
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+const sub = gallery.sub || '';
+type Tile = { image?: string; caption?: string };
+const raw: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+// Keep the ORIGINAL row index on every surviving tile: the editor writes the
+// data-field path verbatim into the draft, so a filtered index would patch the
+// wrong row (or create a dead key).
+const tiles: Array<Tile & { i: number }> = raw.map((t, i) => ({ ...t, i })).filter((t) => Boolean(t.image));
+const lead: any = tiles.length > 0 ? tiles[0] : null;
+const rest = tiles.slice(1);
+---
+{tiles.length > 0 && (
+  <section class="gal band-shade weave-i" id="gallery">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sh-l">Look around</span>
+        <span class="sh-rule" aria-hidden="true"></span>
+        {tag && <span class="sh-r" data-field="gallery.tag">{tag}</span>}
+      </div>
+      {headline && <h2 class="h2 reveal" data-field="gallery.headline" set:html={headline}></h2>}
+      {sub && <p class="body g-sub reveal" data-field="gallery.sub">{sub}</p>}
+      <figure class="plate g-lead" style="aspect-ratio:21/9;min-height:0">
+        <div class="ph" role="img" aria-label={lead.caption || 'Property photo'} data-image-field={`gallery.items.${lead.i}.image`} style={`background-image:url('${lead.image}');`}></div>
+        {lead.caption && <figcaption class="cap" data-field={`gallery.items.${lead.i}.caption`}>{lead.caption}</figcaption>}
+      </figure>
+      {rest.length > 0 && (
+        <div class:list={['g-grid', rest.length === 1 && 'g1', rest.length === 2 && 'g2', rest.length === 4 && 'g4']}>
+          {rest.map((t, k) => (
+            <figure class="plate g-tile reveal" data-delay={String(k % 3)} style="aspect-ratio:4/5;min-height:0">
+              <div class="ph" role="img" aria-label={t.caption || 'Property photo'} data-image-field={`gallery.items.${t.i}.image`} style={`background-image:url('${t.image}');`}></div>
+              {t.caption && <figcaption class="cap" data-field={`gallery.items.${t.i}.caption`}>{t.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .g-sub { max-width: 56ch; margin-bottom: clamp(18px,2.4vw,28px); }
+  .g-lead { margin: 0 0 12px; }
+  .g-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+    /* start, not the default stretch: the tiles size themselves from their
+       inline aspect-ratio, and the middle tile's drop must not stretch its
+       neighbours out of that ratio to match the taller row. */
+    align-items: start; }
+  /* Deterministic tiers, so every trailing count lands on a full row instead of
+     a hole: 1 tile goes full width, 2 and 4 go two-up (2x2 for four), 3 and 5
+     stay three-up. Five is the only count with a part-filled last row, and a
+     3 + 2 tail reads as a normal grid; a lone 4th tile in a three-up did not,
+     which is why .g4 exists on top of the spec's .g1 / .g2 ladder. */
+  .g-grid.g1 { grid-template-columns: 1fr; }
+  .g-grid.g2, .g-grid.g4 { grid-template-columns: repeat(2,1fr); }
+  .g-tile { margin: 0; }
+  /* A lone trailing tile takes the whole 1fr track, and the inline aspect-ratio
+     4/5 turns that into a ~1240x1550 portrait at desktop — 3x the designed 3-up
+     tile and taller than the viewport. Cap it to the designed tile width; the
+     auto inline margins absorb the rest of the track so it centres rather than
+     sitting beside an empty half. Declared AFTER .g-tile so the margin reset
+     cannot undo it, and (0,3,0) under Astro's cid so it needs no !important.
+     max-width never binds once the track is narrower than 420px, so mobile and
+     the 520px pass are untouched. The 4/5 ratio stays: an owner's phone snap
+     must not be centre-cropped to a letterbox. */
+  .g-grid.g1 .g-tile { max-width: 420px; margin-inline: auto; }
+  /* The drop on the middle tile is what makes a set of unequal phone photos read
+     art-directed rather than gridded. It is a MARGIN, not a span cycle, so it
+     can never open a hole in a ragged last row. */
+  .g-grid .g-tile:nth-child(2) { margin-top: clamp(0px,3vw,32px); }
+  .plate:hover .ph { transform: scale(1.04); }
+
+  @media (max-width: 760px) {
+    /* The lead's ratio is set INLINE, so a scoped `aspect-ratio` could not win.
+       An explicit height makes both axes definite instead, which retires the
+       inline ratio without an !important. */
+    .g-lead { height: clamp(200px,52vw,300px); }
+    /* .g1 is deliberately NOT restated here: `.g-grid.g1` (two compounds) already
+       out-specifies `.g-grid`, so a single trailing photo keeps the full width
+       instead of becoming a half-width tile beside an empty track. */
+    .g-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .g-grid .g-tile:nth-child(2) { margin-top: 0; }
+  }
+  @media (max-width: 520px) {
+    .g-lead { height: clamp(190px,58vw,260px); }
+    /* Deliberately STAYS 2-up: at 360px each tile is ~157px, which is a readable
+       lookbook thumbnail and cannot overflow. Two classes because the base
+       primitive is `html[data-page="BI"] :where(.plate) .cap` (0,2,1) and a
+       single scoped class would only reach (0,2,0). */
+    .plate .cap { font-size: 8.5px; padding: 5px 9px; left: 8px; bottom: 8px; }
+  }
+</style>

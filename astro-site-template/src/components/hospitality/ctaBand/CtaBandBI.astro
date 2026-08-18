@@ -1,0 +1,120 @@
+---
+/**
+ * hospitality / CtaBandBI — "Palm Hour"'s booking call: one confident action on
+ * a floating woven slab, with quiet text-link alternates (call, get directions)
+ * beside it. Anchors #book for the hero CTA and the header pill.
+ *
+ * BUTTON SAFETY (why the classes are what they are). buildOverrideCss pins
+ * `.testi .btn, .cta-band .btn, footer .btn { color: <on-ink> !important }` for
+ * EVERY state, so a .btn in this band can never recolour its own label. That is
+ * fine here BY CONSTRUCTION: the only .btn in the band is a .btn--fill whose fill
+ * is var(--ink), and --on-ink is by definition the legible colour on an ink
+ * fill (11.88:1 native, 9.11:1 worst of the 13 schemes). The hover therefore
+ * keeps the SAME opaque ink fill and only darkens it with an inset
+ * rgba(0,0,0,.16) — never light, never transparent, never a hue change, because
+ * the pinned label would strand on anything lighter and vanish.
+ * cta2 / cta3 are `.linkc` text links: they carry no .btn class, so the pin
+ * cannot reach them at all. NEVER add a .btn--line (or any transparent-fill
+ * button) to this band.
+ *
+ * Reads content.ctaBand (legacy content.closing). Falls back to the derived
+ * single `ctaBand.cta` so a first build always shows one real action.
+ *
+ * KNOWN LIMITATION (recorded, not fixed): the sidebar form exposes only
+ * ctaBand.cta.text, and SandboxEditorV2 returns early on any element carrying
+ * data-href-field — so the cta2 / cta3 LABELS are effectively fixed once set.
+ * The band is designed to work fully with cta1 alone for exactly that reason.
+ *
+ * Editable hooks:
+ *   ctaBand.tag · ctaBand.headline · ctaBand.sub ·
+ *   ctaBand.cta1.text + data-href-field ctaBand.cta1.href ·
+ *   ctaBand.cta2.text + data-href-field ctaBand.cta2.href ·
+ *   ctaBand.cta3.text + data-href-field ctaBand.cta3.href
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+// Anchor guard, mirroring the sibling Header / Hero / Footer. The content layer
+// (lib/derive-content-defaults.ts) hard-codes ctaBand.cta.href = '#visit', and
+// this design renders no id="visit" — so without this the band's primary button,
+// the last thing on the page, scrolls nowhere on every first build. Resolve every
+// in-page href against what PageBI actually renders: keep it if the id exists,
+// remap it when this design carries the same section under another id, otherwise
+// fall back to the target this band was built around. Off-page hrefs (tel:,
+// mailto:, http) pass through untouched.
+// Keep PAGE_ANCHORS in step with PageBI — and with the other three copies
+// (HeaderBI / HeroBI / FooterBI), which have no shared import.
+const PAGE_ANCHORS = new Set(['about', 'amenities', 'book', 'faq', 'gallery', 'how', 'location', 'main', 'nearby', 'reviews', 'rooms']);
+const ANCHOR_ALIAS: Record<string, string> = { contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+const cta1Text = cta.cta1?.text || cta.cta?.text || '';
+const cta1Href = onPage(cta.cta1?.href || cta.cta?.href, '#book');
+const cta2Text = cta.cta2?.text || '';
+// No onPage() and no anchor fallback on purpose: cta2 is the owner's phone or
+// nothing, and it renders only when BOTH a label and a real target exist.
+const cta2Href = cta.cta2?.href || (layout.contact?.phone ? `tel:${String(layout.contact.phone).replace(/[^0-9+]/g, '')}` : '');
+const cta3Text = cta.cta3?.text || '';
+const cta3Href = onPage(cta.cta3?.href, '#location');
+const hasButtons = !!(cta1Text || cta2Text || cta3Text);
+---
+{(headline || hasButtons) && (
+  <section class="cta-band" id="book">
+    <div class="wrap">
+      <div class="slab weave cta-inner">
+        <span class="sun s1" aria-hidden="true"></span>
+        <span class="sun s2" aria-hidden="true"></span>
+        {tag && <div class="kick c-kick" data-field="ctaBand.tag">{tag}</div>}
+        {headline && <h2 class="h2 cta-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="lede cta-sub" data-field="ctaBand.sub">{sub}</p>}
+        {hasButtons && (
+          <div class="ctas">
+            {cta1Text && <a class="btn btn--fill" href={cta1Href} data-field="ctaBand.cta1.text" data-href-field="ctaBand.cta1.href">{cta1Text}</a>}
+            {cta2Text && cta2Href && <a class="linkc" href={cta2Href} data-field="ctaBand.cta2.text" data-href-field="ctaBand.cta2.href">{cta2Text}</a>}
+            {cta3Text && <a class="linkc" href={cta3Href} data-field="ctaBand.cta3.text" data-href-field="ctaBand.cta3.href">{cta3Text}</a>}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .cta-band { padding: clamp(40px,5vw,72px) 0 clamp(56px,7vw,104px); }
+  /* .slab supplies the woven card ground, border and lift; overflow clips the
+     two decorative sun arcs to the slab's own radius. */
+  .cta-inner { overflow: hidden; border-radius: clamp(24px,3vw,40px);
+    padding: clamp(56px,7vw,104px) clamp(24px,4vw,72px); text-align: center;
+    box-shadow: 0 30px 70px rgba(var(--ink-rgb),.12); }
+  .cta-inner .sun { width: clamp(220px,30vw,420px); height: clamp(220px,30vw,420px); }
+  .cta-inner .s1 { top: -28%; left: -14%; }
+  .cta-inner .s2 { bottom: -30%; right: -12%; }
+  /* z-index 1 on every text layer so the sun arcs (z-index 0) stay behind. */
+  .c-kick { position: relative; z-index: 1; justify-content: center; }
+  .cta-h { position: relative; z-index: 1; font-size: clamp(34px,5.4vw,80px);
+    letter-spacing: -.03em; max-width: 20ch; margin: 14px auto 18px; }
+  .cta-sub { position: relative; z-index: 1; max-width: 52ch; margin: 0 auto 34px; color: var(--ink-soft); }
+  .ctas { position: relative; z-index: 1; display: flex; gap: 18px; flex-wrap: wrap;
+    justify-content: center; align-items: center; }
+
+  @media (max-width: 760px) {
+    .cta-inner { padding: clamp(40px,8vw,64px) clamp(20px,5vw,32px); }
+    .cta-h { font-size: clamp(28px,8vw,44px); max-width: none; overflow-wrap: anywhere; }
+  }
+  @media (max-width: 520px) {
+    .cta-inner { border-radius: var(--r-lg); }
+    /* Stacked, full-width actions. .linkc needs its own width rule because the
+       shared 520px pass only widens .btn. */
+    .ctas { flex-direction: column; gap: 16px; }
+    .btn--fill { width: 100%; }
+    .linkc { width: 100%; justify-content: center; }
+    .cta-sub { font-size: 15.5px; }
+  }
+</style>

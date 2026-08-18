@@ -1,0 +1,85 @@
+---
+/**
+ * hospitality / TrustBI — "Palm Hour"'s stay-at-a-glance rail on the deep lagoon
+ * shade band directly under the hero: guests, bedrooms, minimum nights, years
+ * hosting — whatever the owner actually typed, each figure in Fraunces over a
+ * mono label, separated by warm hairlines.
+ *
+ * Editable hooks: trust.cells.${i}.num (set:html, so "★★★★★" / "&amp;" survive) ·
+ * trust.cells.${i}.label
+ *
+ * R2 — THE HIGHEST-RISK BAND IN THE TEMPLATE. content.trust has no derived
+ * default (lib/block-defaults.ts NEUTRAL carries no trust key), so it exists only
+ * when an admin filled it. There are no literal cells here, no invented capacity,
+ * no star row of our own and no zeros: with nothing supplied the whole coloured
+ * band is omitted rather than rendering an empty strip. astro-builder also forces
+ * visibility.trustBlock false when the cells array is empty; this gate is the
+ * belt to that brace. Each cell's num and label are guarded independently, so a
+ * half-filled row prints one line instead of an empty div. A row that is present
+ * but BLANK is dropped entirely, and the band hides when every row is blank —
+ * astro-builder counts raw array length, so it cannot make that call for us.
+ *
+ * CLASS-NAME LAW: the section IS class="trust", deliberately. buildOverrideCss
+ * pins `.trust,.trust .num,.trust .lbl{color:<on-ink>!important}` — and because
+ * this band's ground is var(--ink), that pin is CORRECT in all 13 schemes
+ * (pickOn(ink) flips with ink; 9.11:1 worst case). This is the one engine pin the
+ * family leans into rather than dodges. No id: nothing links here.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num?: string; label?: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+// A row the admin added but never filled would otherwise render an inked band, a
+// top hairline and a lone decorative dash over nothing — the editor's Add button
+// inserts { num: '', label: '' }, and astro-builder gates on raw array LENGTH so
+// it cannot see that the row is blank. Drop the blanks here, but carry the
+// ORIGINAL index so every data-field keeps pointing at the real array slot (the
+// same pattern services / why / testimonials / faq use).
+const rows = cells
+  .map((c, i: number) => ({ ...c, i }))
+  .filter((r) => Boolean(String(r.num ?? '').trim() || String(r.label ?? '').trim()));
+---
+{rows.length > 0 && (
+  <section class="trust band-shade weave-i">
+    <div class="wrap">
+      <div class="cells">
+        {rows.map((r, k) => (
+          <div class="cell reveal" data-delay={String(k % 3)}>
+            <span class="cbar" aria-hidden="true"></span>
+            {r.num && <div class="fig n" data-field={`trust.cells.${r.i}.num`} set:html={r.num}></div>}
+            {r.label && <div class="mono t" data-field={`trust.cells.${r.i}.label`}>{r.label}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Text colour is entirely inherited from .band-shade + the .fig / .mono
+     primitives (and the engine's on-ink pin above). The only colour written here
+     is the decorative .cbar, which carries no text. No hex in this file. */
+  .trust { padding: clamp(30px,4vw,46px) 0; border-top: 1px solid rgba(var(--paper-rgb),.14); }
+  /* auto-fit rather than a fixed column count: two cells read as two, five read as
+     five, and a partial last row leaves no inked gap. */
+  .cells { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: clamp(18px,3vw,40px); }
+  .cell { padding-left: clamp(16px,2vw,28px); border-left: 1px solid rgba(var(--paper-rgb),.20); }
+  .cell:first-child { padding-left: 0; border-left: 0; }
+  .cbar { display: block; width: 26px; height: 3px; background: var(--accent-light); margin-bottom: 12px; }
+  .n { font-size: clamp(30px,3.4vw,46px); line-height: 1; overflow-wrap: anywhere; }
+  /* set:html content: an owner may paste <em>4</em> guests, so neutralise italics. */
+  .n :global(em) { font-style: normal; }
+  .t { margin-top: 8px; font-size: 10px; letter-spacing: .16em; overflow-wrap: anywhere; }
+
+  @media (max-width: 760px) {
+    .cells { grid-template-columns: 1fr 1fr; }
+    .cell { padding: 14px 0 0; border-left: 0; border-top: 1px solid rgba(var(--paper-rgb),.18); }
+  }
+  @media (max-width: 520px) {
+    /* Deliberately STAYS 2-up (R5 permits it): at 360px each column is ~150px,
+       and both text nodes already carry overflow-wrap:anywhere, so a long figure
+       or label wraps rather than widening the row. */
+    .n { font-size: clamp(24px,7vw,30px); }
+    .t { font-size: 9px; letter-spacing: .12em; }
+    .cbar { width: 22px; }
+  }
+</style>
