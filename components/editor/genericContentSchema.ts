@@ -289,6 +289,12 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 kind: 'list',
                 label: 'Items',
                 path: 'services.items',
+                // The legacy shape stores this block as a BARE ARRAY at
+                // content.services. Every sibling list declares the same kind of
+                // fallback (testimonials, faq, credentials); services was the one
+                // that did not, so an owner's real rooms read as "Items (0)" and
+                // + Add then wrote onto an Array — silently dropped on save.
+                fallbackPaths: ['services'],
                 // Every row key below is OPTIONAL and blank on a new row, so a
                 // template that renders none of them is unchanged — an empty
                 // string reads exactly like the missing key it replaces.

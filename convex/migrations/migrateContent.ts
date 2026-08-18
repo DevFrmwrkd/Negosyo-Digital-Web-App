@@ -84,7 +84,14 @@ export const migrateWebsiteContent = mutation({
                     // Services section
                     servicesHeadline: content.services_headline,
                     servicesSubheadline: content.services_subheadline,
-                    services: content.services?.map((s: { name?: string; title?: string; description?: string; icon?: string }) => ({
+                    // Both shapes: optional chaining guards null, not the wrong
+                    // TYPE — a nested wrapper made .map throw, and the per-row
+                    // catch below swallowed it, so the migration reported success
+                    // while silently skipping every nested submission.
+                    services: (Array.isArray(content.services)
+                        ? content.services
+                        : ((content.services as any)?.items ?? [])
+                    ).map((s: { name?: string; title?: string; description?: string; icon?: string }) => ({
                         name: s.name || s.title || '',
                         description: s.description || '',
                         icon: s.icon,
