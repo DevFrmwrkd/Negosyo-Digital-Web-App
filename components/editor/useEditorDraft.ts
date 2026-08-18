@@ -29,7 +29,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SandboxEditorProps } from "./SandboxEditor";
 import { TEMPLATE_BUCKETS } from "./templateCatalog";
-import { familyOf, templateByCode, type TemplateFamily } from "./templateCatalog";
+import { familyOf, templateByCode, BLOCK_TIER, type TemplateFamily } from "./templateCatalog";
+import { ALL_BLOCKS } from "./editorConstants";
 
 // The 12 per-section style keys a template pick stamps (mirrors v2:46-50).
 const STYLE_KEYS = [
@@ -115,7 +116,17 @@ export const normalizeDraft = (raw: any): any => {
         how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
         testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
         faq: normalizeBlockEditor(raw.faq, 'items', { question: 'q', answer: 'a' }),
-        credentials: normalizeBlockEditor(raw.credentials, 'items', { description: 'desc', body: 'desc' }),
+        // label/detail are what the AI actually emits (groq.service.ts:949) while
+        // the sidebar schema edits title/body — without these two the panel showed
+        // blank rows over content the page was rendering fine, because the .astro
+        // components fall back to .label/.detail themselves. description/body ->
+        // desc stay first so an already-correct row is untouched.
+        // ORDER MATTERS: body -> desc must come LAST. detail -> body then
+        // body -> desc is a chain, and with body -> desc first the second pass
+        // derives a desc the first pass did not, so normalizeDraft stops being
+        // idempotent — which silently breaks the clean-sync equality test and
+        // makes the editor stop adopting server updates. Covered by a test.
+        credentials: normalizeBlockEditor(raw.credentials, 'items', { description: 'desc', label: 'title', detail: 'body', body: 'desc' }),
     };
 };
 
@@ -124,6 +135,10 @@ export function useEditorDraft(props: SandboxEditorProps) {
 
     // ── Content draft (+ visibility) ──────────────────────────────────────
     const [draft, setDraft] = useState<any>(() => normalizeDraft(content));
+    // Tracks the content prop every render so isDirtyNow() can recompute without
+    // waiting for the clean-sync effect.
+    const contentPropRef = useRef<any>(content);
+    contentPropRef.current = content;
     const draftRef = useRef<any>(draft);
     draftRef.current = draft;
 
@@ -340,6 +355,14 @@ export function useEditorDraft(props: SandboxEditorProps) {
     // ── Section visibility (v2:256-263) ───────────────────────────────────
     const isBlockEnabled = useCallback((visKey: string): boolean => (draftRef.current?.visibility ?? {})[visKey] !== false, []);
     const toggleBlock = useCallback((visKey: string) => {
+        // Essential sections are not switchable. Until now this was enforced only
+        // by a `disabled` attribute on a button, so any other caller — a keyboard
+        // shortcut, a preview-side control — could strip HERO, SERVICES, LOCATION
+        // or FOOTER from a customer's site silently. Keyed on the TIER, not on the
+        // per-block `tag`: LOCATION's tag is merely 'recommended', which is exactly
+        // how it stayed switchable in v3.
+        const blockName = ALL_BLOCKS.find((b) => b.visKey === visKey)?.name;
+        if (blockName && BLOCK_TIER[blockName] === 'essential') return;
         const prev = draftRef.current;
         const next = {
             ...(prev ?? {}),
@@ -401,7 +424,20 @@ export function useEditorDraft(props: SandboxEditorProps) {
         return match?.id ?? "services";
     })();
 
-    const contentDirty = j(draft) !== j(content);
+    // Normalise the right-hand side too. The draft is normalised at every seed
+    // point, so comparing it against the RAW prop reported every Groq-shaped
+    // submission as permanently dirty — which would defeat any dirty-gated Save.
+    // Fresh dirty state read from the REFS. Render-time contentDirty below is
+    // captured in a closure, so a caller that has just committed something
+    // synchronously (blurring an inline edit commits it) would otherwise test
+    // pre-mutation state and wrongly conclude there is nothing to save.
+    const isDirtyNow = useCallback(() => {
+        const content = j(draftRef.current) !== j(normalizeDraft(contentPropRef.current));
+        const cust = j(pendingCustRef.current ?? null) !== j(syncedCustRef.current ?? null);
+        return { contentDirty: content, customizationsDirty: cust, dirty: content || cust };
+    }, []);
+
+    const contentDirty = j(draft) !== j(normalizeDraft(content));
     const customizationsDirty = j(pendingCustomizations ?? null) !== j(customizations ?? null);
     const dirty = contentDirty || customizationsDirty;
 
@@ -416,7 +452,7 @@ export function useEditorDraft(props: SandboxEditorProps) {
         // derived
         effectiveCustomizations, currentHeroStyle, activeFamily, currentScheme, currentFont,
         savedHero, btForTheme, selectedBucket,
-        contentDirty, customizationsDirty, dirty,
+        contentDirty, customizationsDirty, dirty, isDirtyNow,
         // undo/redo
         undo, redo, canUndo, canRedo,
         // draft recovery

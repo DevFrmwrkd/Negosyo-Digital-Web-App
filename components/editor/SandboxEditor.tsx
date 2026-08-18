@@ -405,7 +405,15 @@ export default function SandboxEditor(props: SandboxEditorProps) {
             how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
             testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
             faq: normalizeBlockEditor(raw.faq, 'items', { question: 'q', answer: 'a' }),
-            credentials: normalizeBlockEditor(raw.credentials, 'items', { description: 'desc', body: 'desc' }),
+            // label/detail are what the AI emits; the schema edits title/body.
+            // Kept in step with useEditorDraft.normalizeDraft (the shared copy)
+            // so v1 and v3 agree for as long as v1 is still selectable.
+            // ORDER MATTERS: body -> desc must come LAST. detail -> body then
+            // body -> desc is a chain, and with body -> desc first the second pass
+            // derives a desc the first pass did not, so normalizeDraft stops being
+            // idempotent — which silently breaks the clean-sync equality test and
+            // makes the editor stop adopting server updates. Covered by a test.
+            credentials: normalizeBlockEditor(raw.credentials, 'items', { description: 'desc', label: 'title', detail: 'body', body: 'desc' }),
         };
     };
 
