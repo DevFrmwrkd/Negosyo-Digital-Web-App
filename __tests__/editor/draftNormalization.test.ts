@@ -144,3 +144,42 @@ describe("draft normalization (v3 silent data loss)", () => {
         expect(normalizeDraft({ faq: "not an array" }).faq).toBe("not an array");
     });
 });
+
+describe("services (the rooms list) normalization", () => {
+    it("lifts the LEGACY bare-array services into the shape the schema edits", () => {
+        // astro-builder documents two shapes: legacy `[{name, description}]` and
+        // new `{tag, headline, items[]}`. Only the second is what ServicesBJ and
+        // the sidebar read, so without this an edit to a legacy list wrote
+        // `.items` onto an Array — dropped by JSON.stringify on the way to Convex.
+        const d = normalizeDraft({
+            services: [
+                { name: "Amihan Room", description: "Corner room, sea view." },
+                { name: "Kubo Room", description: "The quiet one." },
+            ],
+        });
+        expect(d.services.items).toHaveLength(2);
+        expect(d.services.items[0].title).toBe("Amihan Room");  // name → title
+        expect(d.services.items[0].desc).toBe("Corner room, sea view."); // description → desc
+    });
+
+    it("survives the round trip, which is the failure this prevents", () => {
+        const d: any = normalizeDraft({ services: [{ name: "Room 1" }] });
+        d.services = { ...d.services, items: [{ title: "Edited room", price: "3400" }] };
+        const saved = JSON.parse(JSON.stringify(d));
+        expect(saved.services.items[0].title).toBe("Edited room");
+        expect(saved.services.items[0].price).toBe("3400");
+    });
+
+    it("leaves an already-nested services object alone", () => {
+        const d = normalizeDraft({
+            services: { tag: "The rooms", headline: "Stay", items: [{ title: "A", desc: "b" }] },
+        });
+        expect(d.services.tag).toBe("The rooms");
+        expect(d.services.items).toHaveLength(1);
+    });
+
+    it("is idempotent, like every other block", () => {
+        const raw = { services: [{ name: "R", description: "d" }] };
+        expect(JSON.stringify(normalizeDraft(normalizeDraft(raw)))).toBe(JSON.stringify(normalizeDraft(raw)));
+    });
+});

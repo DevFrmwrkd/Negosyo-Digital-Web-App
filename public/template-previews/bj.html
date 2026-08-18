@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  STYLE MANIFESTO — "Kubo Stays"  ·  hospitality (BJ)
+  Cream & deep green. Era: the hand-lettered notice card pinned beside a
+  Batangas gate, reset in Instrument Serif.
+  Reference: lime-washed plaster, a mango-wood terrace, deep forest shade,
+  burnt clay, one gold rule. Photographs sit flush inside white cards, not in
+  mats — this house has no lobby, so nothing here is framed like a hotel.
+  Signature twist: the emphasis inside every headline is a REAL Instrument
+  Serif italic, never a colour swap. The italic IS the accent.
+  Palette law: solid button fill is always --ink with a --paper label (and the
+  exact inverse on a green band); --accent is a rule, a dot, a numeral and a
+  10px eyebrow, and gold is decoration on shade only — never body text.
+  ============================================================================
+-->
+<html lang="en-PH" data-page="BJ">
+<head>
+  <!-- preview: Kubo Stays (hand-authored) -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Casa Amihan — Three Rooms for Rent, Nasugbu, Batangas</title>
+<meta name="description" content="Casa Amihan is a family house on the ridge above Nasugbu, Batangas, with three rooms let one at a time or all together. One owner, one gate, no front desk. From ₱1,950 a night.">
+<meta name="theme-color" content="#FAF6F0">
+<meta property="og:title" content="Casa Amihan — Nasugbu, Batangas">
+<meta property="og:description" content="Three rooms in one quiet house ten minutes above the water. Take one room, or the whole house.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════════
+     TOKENS — byte-identical to PageBJ's baked palette.
+     The design's own terracotta (#C4622D) measures 3.83:1 on cream, so the
+     template ships it darkened to #A9501F (5.06:1) for the 10px eyebrows.
+     Gold #E0A63A is decoration on the green band only — never text on cream.
+     ═══════════════════════════════════════════════════════════════════ */
+  :root {
+    /* grounds — cream / oatmeal tint / white card */
+    --paper:#FAF6F0; --paper-2:#F3EDE2; --card:#FFFFFF;
+    /* ink — the design's DEEP GREEN, both a text colour and a band ground */
+    --ink:#143F38; --ink-soft:#4C5F57; --line:#E6DED1;
+    /* warmth — darkened terracotta primary, forest deep, gold decoration */
+    --accent:#A9501F; --accent-deep:#0F2E29; --accent-light:#E0A63A;
+    --muted:#6E6759;
+    --paper-rgb:250,246,240; --ink-rgb:20,63,56; --accent-rgb:169,80,31;
+    --on-ink:#FAF6F0; --on-paper:#143F38;
+    --disp:"Instrument Serif",Georgia,"Times New Roman",serif;
+    --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+    --sans:"DM Sans",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    /* This design has no monospace: its small tracked caps are DM Sans. */
+    --mono:"DM Sans",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+    --maxw:1240px; --r-lg:20px; --r-md:18px; --r-sm:12px;
+  }
+
+  /* ── reset + document ──────────────────────────────────────────────── */
+  *,*::before,*::after{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} }
+  body{
+    margin:0;padding:0;background-color:var(--paper);color:var(--ink);
+    font-family:var(--sans);font-size:16.5px;line-height:1.7;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  img{max-width:100%;display:block;}
+  a{color:inherit;text-decoration:none;}
+  ::selection{background:var(--ink);color:var(--paper);}
+  h1,h2,h3,h4{margin:0;font-family:var(--disp);font-weight:400;color:var(--ink);letter-spacing:0;line-height:1.06;}
+  p{margin:0 0 1em;}
+
+  /* ── layout scaffolding ───────────────────────────────────────────── */
+  .wrap{width:min(var(--maxw),92vw);margin-inline:auto;}
+  section{padding:clamp(60px,8vw,92px) 0;position:relative;}
+
+  /* ── BAND GROUNDS. Three, and only three. Default (no class) = cream. ── */
+  .band-tint{background-color:var(--paper-2);}
+  .band-card{background-color:var(--card);}
+  .band-shade{background-color:var(--ink);color:var(--paper);}
+  .band-shade .h2,.band-shade .fig{color:var(--paper);}
+  .band-shade .body,.band-shade .lede{color:rgba(var(--paper-rgb),.78);}
+  .band-shade .mono{color:rgba(var(--paper-rgb),.74);}
+  .band-shade .kick{color:rgba(var(--paper-rgb),.82);}
+  .band-shade .plate{border-color:rgba(var(--paper-rgb),.18);}
+  .band-shade .chip{color:rgba(var(--paper-rgb),.86);border-color:rgba(var(--paper-rgb),.30);}
+
+  /* ── .kick / .eyebrow — the eyebrow. 10px caps, wide tracking, terracotta.
+        Two class names because the real template's sections are split between
+        them; they are the same object. ─────────────────────────────────── */
+  .kick,.eyebrow{
+    display:inline-block;font-family:var(--sans);font-weight:600;font-size:10px;
+    letter-spacing:.4em;text-transform:uppercase;color:var(--accent);overflow-wrap:anywhere;}
+  .voices .eyebrow,.faqs .eyebrow,.howto .eyebrow{letter-spacing:.34em;}
+
+  /* ── display headline + the ITALIC SERIF EMPHASIS (the design's signature).
+        <em> is ITALIC ONLY and keeps `inherit`: accent-as-text collapses under
+        several schemes, and --ink already carries the design's deep green. ── */
+  .h2{font-family:var(--disp);font-weight:400;font-size:clamp(30px,4.3vw,56px);
+    line-height:1.06;letter-spacing:0;margin:0 0 .3em;color:var(--ink);max-width:22ch;}
+  .h2 em,.h2 .em,.em{font-style:italic;color:inherit;}
+  .lede{color:var(--ink-soft);font-size:clamp(15.5px,1.5vw,17.5px);line-height:1.7;max-width:46ch;margin:0;}
+  .body{color:var(--ink-soft);font-size:clamp(14.5px,1.3vw,15.5px);line-height:1.7;}
+  .mono{font-family:var(--mono);font-weight:500;font-size:10.5px;letter-spacing:.2em;
+    text-transform:uppercase;color:var(--muted);}
+  .fig{font-family:var(--disp);font-weight:400;color:var(--ink);
+    font-variant-numeric:tabular-nums lining-nums;line-height:1;}
+
+  /* ── BUTTONS. No fill is EVER a mid-tone: every one is the darkest or the
+        lightest token of the pair, and hover only DARKENS the same fill with
+        an inset black wash — never lighter, never transparent, never a hue
+        change, so a label can not strand mid-transition. The design's
+        terracotta-filled pill is deliberately not reproduced. ─────────── */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:.55em;
+    padding:16px 30px;min-height:48px;border-radius:999px;border:1px solid transparent;
+    font-family:var(--sans);font-weight:600;font-size:12px;letter-spacing:.16em;
+    text-transform:uppercase;text-decoration:none;cursor:pointer;white-space:nowrap;
+    transition:background-color .18s ease,box-shadow .18s ease,transform .18s ease,border-color .18s ease;}
+  .btn--fill{background-color:var(--ink);color:var(--paper);border-color:var(--ink);}
+  .btn--fill:hover{background-color:var(--ink);color:var(--paper);border-color:var(--ink);
+    box-shadow:inset 0 0 0 999px rgba(0,0,0,.16),0 0 0 4px rgba(var(--accent-rgb),.28);
+    transform:translateY(-2px);}
+  .btn--fill:active{transform:translateY(0);}
+  /* The design's secondary pill: a white card fill inside a hairline. */
+  .btn--line{background-color:var(--card);color:var(--ink);border-color:var(--line);}
+  .btn--line:hover{background-color:var(--ink);color:var(--paper);border-color:var(--ink);transform:translateY(-2px);}
+  .btn--line:active{transform:translateY(0);}
+  /* INSIDE a green band both variants invert. Declared once, globally. */
+  .band-shade .btn--fill{background-color:var(--paper);color:var(--ink);border-color:var(--paper);}
+  .band-shade .btn--fill:hover{background-color:var(--paper);color:var(--ink);border-color:var(--paper);
+    box-shadow:inset 0 0 0 999px rgba(0,0,0,.16),0 0 0 4px rgba(var(--paper-rgb),.24);}
+  .band-shade .btn--line{background-color:transparent;color:var(--paper);border-color:rgba(var(--paper-rgb),.45);}
+  .band-shade .btn--line:hover{background-color:rgba(var(--paper-rgb),.14);color:var(--paper);border-color:var(--paper);}
+  @media (prefers-reduced-motion:reduce){
+    .btn{transition:none;} .btn--fill:hover,.btn--line:hover{transform:none;}
+  }
+
+  /* ── .linkc — quiet text-link action. Its colour never changes on hover
+        (only the rule under it thickens), so it can not fail a contrast check
+        mid-interaction. ────────────────────────────────────────────────── */
+  .linkc{display:inline-flex;align-items:center;gap:.5em;min-height:44px;
+    font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.04em;color:var(--ink);
+    border-bottom:2px solid var(--accent);padding-bottom:2px;
+    transition:border-bottom-width .18s ease,border-bottom-color .18s ease,transform .18s ease;}
+  .linkc:hover{color:var(--ink);border-bottom-width:3px;border-bottom-color:var(--ink);transform:translateY(-1px);}
+  .band-shade .linkc{color:var(--paper);border-bottom-color:var(--accent-light);}
+  .band-shade .linkc:hover{color:var(--paper);border-bottom-color:var(--paper);}
+  @media (prefers-reduced-motion:reduce){ .linkc{transition:none;} }
+
+  /* ── FOCUS · the DUO ring (paper outline inside an ink halo) ──────── */
+  a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visible{
+    outline:3px solid var(--paper);outline-offset:0;box-shadow:0 0 0 6px var(--ink);border-radius:var(--r-sm);}
+  .btn:focus-visible,.linkc:focus-visible{border-radius:999px;}
+
+  /* ── .plate — THE photo frame. Every image on the page is one of these. ── */
+  .plate{position:relative;overflow:hidden;border-radius:var(--r-lg);
+    background-color:var(--paper-2);border:1px solid var(--line);isolation:isolate;}
+  .plate .ph{position:absolute;inset:0;z-index:1;background-color:var(--paper-2);
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    background-image:
+      radial-gradient(78% 64% at 22% 14%,rgba(var(--accent-rgb),.22),transparent 62%),
+      radial-gradient(66% 60% at 84% 90%,rgba(var(--ink-rgb),.22),transparent 60%);
+    transition:transform .5s ease;}
+  /* Caption on an OPAQUE ink pill, never a gradient scrim: paper-on-ink holds
+     over ANY owner photo, however dark or blown out. */
+  .plate .cap{position:absolute;left:12px;bottom:12px;z-index:3;max-width:calc(100% - 24px);
+    background-color:var(--ink);color:var(--paper);font-family:var(--sans);font-weight:600;
+    font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:6px 12px;
+    border-radius:100px;overflow-wrap:anywhere;}
+  @media (prefers-reduced-motion:reduce){ .plate .ph{transition:none;} }
+
+  /* ── photograph stand-ins. No remote hosts (the picker's sanitiser strips
+        them), so every "photo" is a layered CSS gradient in the family
+        palette — cream plaster, forest shade, clay roof, one gold sun. ── */
+  .ph.sc-house{background-image:
+    radial-gradient(26% 20% at 79% 15%,rgba(224,166,58,.78),transparent 64%),
+    linear-gradient(180deg,#D7E3DD 0 28%,#A9501F 28% 37%,#FAF6F0 37% 63%,#3E6E52 63% 82%,#143F38 82% 100%);}
+  .ph.sc-sea-room{background-image:
+    linear-gradient(90deg,transparent 0 56%,rgba(20,63,56,.16) 56% 58%,rgba(140,190,196,.85) 58% 88%,rgba(20,63,56,.16) 88% 90%,transparent 90%),
+    radial-gradient(30% 30% at 26% 62%,rgba(255,255,255,.9),transparent 66%),
+    linear-gradient(180deg,#F3EBDD 0 60%,#E2D5BE 60% 78%,#C9B99C 78% 100%);}
+  .ph.sc-garden-room{background-image:
+    linear-gradient(90deg,transparent 0 60%,rgba(20,63,56,.20) 60% 62%,#3E6E52 62% 92%,rgba(20,63,56,.20) 92% 94%,transparent 94%),
+    radial-gradient(34% 28% at 24% 58%,rgba(255,255,255,.88),transparent 66%),
+    linear-gradient(180deg,#F1E9DA 0 58%,#DFD2BA 58% 80%,#C3B295 80% 100%);}
+  .ph.sc-kubo-room{background-image:
+    linear-gradient(180deg,#8A6534 0 20%,#B98B47 20% 30%,transparent 30%),
+    radial-gradient(38% 32% at 70% 62%,rgba(250,246,240,.82),transparent 64%),
+    linear-gradient(180deg,#2A3B33 0 30%,#EDE3D2 30% 74%,#B9A683 74% 100%);}
+  .ph.sc-terrace{background-image:
+    repeating-linear-gradient(90deg,rgba(20,63,56,.24) 0 6px,transparent 6px 42px),
+    linear-gradient(180deg,#DCE8E2 0 22%,#8CBEC4 22% 32%,#EFE6D6 32% 68%,#C6B18C 68% 100%);}
+  .ph.sc-garden{background-image:
+    radial-gradient(44% 38% at 24% 20%,rgba(224,166,58,.34),transparent 62%),
+    repeating-linear-gradient(68deg,rgba(20,63,56,.20) 0 3px,transparent 3px 15px),
+    linear-gradient(170deg,#4F7C57 0 42%,#2F5A44 42% 76%,#183A31 76% 100%);}
+  .ph.sc-kitchen{background-image:
+    radial-gradient(circle at 34% 56%,rgba(255,255,255,.94) 0 9%,transparent 10%),
+    radial-gradient(circle at 62% 44%,rgba(169,80,31,.62) 0 6%,transparent 7%),
+    linear-gradient(180deg,#F2EADA 0 46%,#8F7A55 46% 52%,#E5DAC4 52% 100%);}
+  .ph.sc-bath{background-image:
+    repeating-linear-gradient(0deg,rgba(20,63,56,.10) 0 1px,transparent 1px 26px),
+    repeating-linear-gradient(90deg,rgba(20,63,56,.10) 0 1px,transparent 1px 26px),
+    linear-gradient(160deg,#EFF2EE,#CFDCD4);}
+  .ph.sc-detail{background-image:
+    radial-gradient(circle at 52% 46%,rgba(224,166,58,.80) 0 12%,rgba(224,166,58,.20) 26%,transparent 42%),
+    linear-gradient(150deg,#A9501F 0 18%,#EDE2CE 18% 72%,#3E6E52 72% 100%);}
+  .ph.sc-gate{background-image:
+    radial-gradient(circle at 30% 38%,rgba(224,166,58,.76) 0 6%,rgba(224,166,58,.20) 18%,transparent 34%),
+    linear-gradient(180deg,#20362F 0 54%,#162924 54% 80%,#0F1F1B 80% 100%);}
+  .ph.sc-host{background-image:
+    radial-gradient(46% 44% at 50% 34%,#E8C79E 0 42%,transparent 46%),
+    linear-gradient(180deg,#EFE6D6 0 46%,#A9501F 46% 100%);}
+
+  /* ── .chip — the design's outline pill. Hairline border, no fill: an
+        accent-TINTED chip would go invisible under the darker schemes. ── */
+  .chip{display:inline-flex;align-items:center;background-color:transparent;color:var(--ink-soft);
+    border:1px solid var(--line);border-radius:999px;padding:6px 12px;
+    font-family:var(--sans);font-weight:500;font-size:10px;letter-spacing:.12em;text-transform:uppercase;}
+
+  /* ── .rowrule — the one hairline row separator. Per-cell border, never a
+        gap-over-inked-container trick. ─────────────────────────────────── */
+  .rowrule{border-bottom:1px solid var(--line);}
+
+  /* ── scroll reveal. Opacity is only dropped once JS has confirmed it can
+        put it back, so with scripting off nothing is invisible. ────────── */
+  .reveal-ready .reveal{opacity:0;transform:translateY(16px);transition:opacity .7s ease,transform .7s ease;}
+  .reveal-ready .reveal.in{opacity:1;transform:none;}
+  .reveal-ready .reveal[data-delay="1"]{transition-delay:.08s;}
+  .reveal-ready .reveal[data-delay="2"]{transition-delay:.16s;}
+  .reveal-ready .reveal[data-delay="3"]{transition-delay:.24s;}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1!important;transform:none!important;transition:none!important;}
+  }
+
+  /* ── skip link ────────────────────────────────────────────────────── */
+  .skip{position:absolute;left:-999px;top:0;z-index:100;background-color:var(--ink);color:var(--paper);
+    padding:12px 18px;border-radius:0 0 var(--r-sm) 0;font-family:var(--sans);font-weight:600;
+    font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;}
+  .skip:focus{left:0;top:0;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     HeaderBJ — the gate sign
+     ═══════════════════════════════════════════════════════════════════ */
+  header.nav{position:sticky;top:0;z-index:60;background-color:rgba(var(--paper-rgb),.93);
+    backdrop-filter:blur(14px);border-top:2px solid var(--accent);border-bottom:1px solid var(--line);}
+  .nav-inner{display:flex;align-items:center;gap:18px;padding:14px 0;}
+  /* Wordmark + locality tag share a baseline row; the whole lock takes the
+     auto margin, so the pill and burger stay pinned right. */
+  .wm-lock{display:flex;align-items:baseline;gap:10px;margin-right:auto;min-width:0;}
+  .wm{font-family:var(--disp);font-weight:400;font-size:clamp(22px,2.4vw,27px);line-height:1.1;
+    color:var(--ink);border-bottom:2px solid transparent;
+    min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .wm:hover{border-bottom-color:var(--accent);}
+  .loc{flex:0 1 auto;min-width:0;font-family:var(--sans);font-weight:600;font-size:9px;
+    letter-spacing:.32em;text-transform:uppercase;color:var(--accent);
+    overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+  .nav-links{display:flex;gap:30px;margin-right:auto;}
+  .nav-links a{font-family:var(--sans);font-weight:400;font-size:13px;color:var(--ink-soft);
+    border-bottom:2px solid transparent;padding-bottom:2px;}
+  /* Hover darkens to --ink and reveals the terracotta rule. The design
+     recolours the LABEL to terracotta; the rule carries the colour instead. */
+  .nav-links a:hover{color:var(--ink);border-bottom-color:var(--accent);}
+  .navc{display:inline-flex;align-items:center;justify-content:center;min-height:44px;
+    padding:12px 24px;flex:none;border-radius:999px;border:1px solid var(--ink);
+    background-color:var(--ink);color:var(--paper);font-family:var(--sans);font-weight:600;
+    font-size:12px;letter-spacing:.16em;text-transform:uppercase;transition:box-shadow .18s ease;}
+  .navc:hover{background-color:var(--ink);color:var(--paper);box-shadow:inset 0 0 0 999px rgba(0,0,0,.16);}
+  @media (prefers-reduced-motion:reduce){ .navc{transition:none;} }
+  .nav-burger{display:none;flex-direction:column;justify-content:center;gap:5px;width:46px;height:44px;
+    padding:11px 10px;flex-shrink:0;background:transparent;border:1px solid rgba(var(--ink-rgb),.55);
+    border-radius:12px;cursor:pointer;}
+  .nav-burger span{display:block;width:100%;height:2px;background:var(--ink);
+    transition:transform .2s ease,opacity .2s ease;}
+  header.nav.open .nav-burger span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+  header.nav.open .nav-burger span:nth-child(2){opacity:0;}
+  header.nav.open .nav-burger span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+  @media (prefers-reduced-motion:reduce){ .nav-burger span{transition:none;} }
+
+  /* ═══════════════════════════════════════════════════════════════════
+     HeroBJ — the arrival
+
+     THUMBNAIL CROP NOTE. The picker renders this file in a 1280x800 iframe
+     scaled into a 16/10 card, so only the top ~800px is ever seen. Kubo
+     Stays' cream ground sits close to the filipino family's, and the proof
+     RAIL (the four-cell oatmeal card) is what separates it at a glance — so
+     the arrival's own vertical rhythm is tightened here, and the proof band's
+     top pad with it, to bring that rail fully inside the crop. Palette, type,
+     section order and every section layout are unchanged.
+     ═══════════════════════════════════════════════════════════════════ */
+  .arrival{padding:clamp(22px,2.6vw,30px) 0 clamp(24px,2.8vw,32px);}
+  .a-grid{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);
+    gap:clamp(30px,4.4vw,56px);align-items:center;}
+  .a-copy{min-width:0;}
+  .a-kick{display:inline-block;font-family:var(--sans);font-weight:600;font-size:10px;
+    letter-spacing:.4em;text-transform:uppercase;color:var(--accent);overflow-wrap:anywhere;}
+  .a-h1{font-family:var(--disp);font-weight:400;font-size:clamp(40px,5.8vw,84px);
+    line-height:1.01;letter-spacing:-.005em;margin:.22em 0 .3em;color:var(--ink);}
+  .a-h1 .ln{display:block;}
+  /* The signature. Italic only — never a colour swap. */
+  .a-h1 .ln-em,.a-h1 em{font-style:italic;color:inherit;}
+  .a-lede{font-size:clamp(16px,1.5vw,17.5px);line-height:1.7;color:var(--ink-soft);
+    max-width:46ch;margin:0 0 clamp(22px,2.6vw,32px);}
+  .a-ctas{display:flex;gap:13px;flex-wrap:wrap;align-items:center;}
+  .a-plate{width:100%;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TrustBJ — the proof rail (a light oatmeal card, NOT an inverted band)
+     ═══════════════════════════════════════════════════════════════════ */
+  .proof{padding:clamp(26px,3.2vw,42px) 0 0;}
+  .cells{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));
+    background-color:var(--paper-2);border:1px solid var(--line);border-radius:18px;overflow:hidden;}
+  .cell{min-width:0;text-align:center;padding:clamp(22px,2.6vw,30px) clamp(13px,1.8vw,22px);
+    border-left:1px solid var(--line);}
+  /* border-LEFT on every cell but the first: three cells, two rules, none
+     trailing against the card edge. */
+  .cell:first-child{border-left:0;}
+  .pnum{font-family:var(--disp);font-weight:400;font-size:clamp(26px,3vw,30px);line-height:1;
+    color:var(--ink);font-variant-numeric:tabular-nums lining-nums;overflow-wrap:anywhere;}
+  .plab{margin-top:9px;font-family:var(--sans);font-size:10px;letter-spacing:.2em;
+    text-transform:uppercase;line-height:1.5;color:var(--muted);overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     ServicesBJ — THE ROOMS, as three cards plus the whole-house band
+     ═══════════════════════════════════════════════════════════════════ */
+  .r-head{display:flex;align-items:flex-end;justify-content:space-between;
+    gap:clamp(20px,3vw,30px);flex-wrap:wrap;margin-bottom:clamp(28px,4vw,42px);}
+  .r-head-l{max-width:100%;min-width:0;}
+  .r-h2{margin:.24em 0 0;}
+  .r-head .r-lede{max-width:38ch;font-size:15px;}
+  /* auto-fit with a 320px floor caps the row at THREE cards on a 1240px wrap,
+     gives two at ~900 and one at ~640 with no media query at all. */
+  .r-grid{display:grid;gap:22px;align-items:stretch;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));}
+  .room{display:flex;flex-direction:column;min-width:0;background-color:var(--card);
+    border:1px solid var(--line);border-radius:18px;overflow:hidden;}
+  /* The plate sits flush inside the card's own rounded border, so it drops the
+     frame it wears everywhere else on the page. */
+  /* Qualified with the parent: the 760 pass restyles .plate LATER in source
+     order, and a bare .r-ph would tie on specificity and lose it — putting the
+     page's rounded frame back inside the card and re-rounding the photo. */
+  .room .r-ph{height:252px;flex:none;border:0;border-radius:0;}
+  .room:hover .r-ph .ph{transform:scale(1.04);}
+  @media (prefers-reduced-motion:reduce){ .room:hover .r-ph .ph{transform:none;} }
+  /* The badge sits on an OPAQUE ink pill, never a scrim. */
+  .floor{position:absolute;left:12px;top:12px;z-index:3;max-width:calc(100% - 24px);
+    background-color:var(--ink);color:var(--paper);font-family:var(--sans);font-size:9px;
+    font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding:6px 11px;border-radius:100px;}
+  .r-body{display:flex;flex-direction:column;gap:9px;flex:1 1 auto;padding:22px;min-width:0;}
+  .r-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+  .r-meta{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+  .r-rate{display:inline-flex;align-items:baseline;gap:5px;font-size:13px;color:var(--ink);
+    font-variant-numeric:tabular-nums lining-nums;white-space:nowrap;}
+  /* Decoration, and the only reason it may carry accent: it is aria-hidden and
+     exists only beside a number the owner typed. */
+  .star{color:var(--accent);}
+  .r-name{font-family:var(--disp);font-weight:400;font-size:26px;line-height:1.14;
+    margin:0;color:var(--ink);overflow-wrap:anywhere;}
+  .r-body .r-desc{margin:0;font-size:14px;line-height:1.7;color:var(--ink-soft);}
+  .feats{display:flex;flex-wrap:wrap;gap:7px;margin-top:3px;}
+  /* ONE wrapper takes the auto margin, so the foot and the button stay locked
+     together at the bottom of a card of any height. */
+  .r-tail{margin-top:auto;display:flex;flex-direction:column;}
+  .r-foot{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    flex-wrap:wrap;padding-top:18px;border-top:1px solid var(--line);}
+  .f-note{font-size:12px;color:var(--muted);}
+  .f-rate{margin-left:auto;display:inline-flex;align-items:baseline;gap:6px;}
+  /* The card rate is set in the BODY face at 600: the display serif is reserved
+     for the room name above it and the whole-house figure below. */
+  .f-price{font-family:var(--sans);font-weight:600;font-size:17px;color:var(--ink);
+    font-variant-numeric:tabular-nums lining-nums;}
+  .f-unit{font-size:12px;color:var(--muted);}
+  /* The card ground IS .btn--line's own fill, so the pill would go invisible
+     inside its own hairline. It takes the cream fill instead — and RESTATES
+     the hover, or the base rule would out-specify it. */
+  .r-cta{margin-top:14px;width:100%;flex:0 0 auto;padding:13px 18px;min-height:44px;
+    font-size:11px;white-space:normal;background-color:var(--paper);}
+  .r-cta:hover{background-color:var(--ink);color:var(--paper);border-color:var(--ink);}
+  /* The whole-house band: one inverted slab under the grid. */
+  .whole{margin-top:22px;border-radius:18px;padding:clamp(26px,3.4vw,34px) clamp(24px,3.8vw,38px);
+    display:flex;align-items:center;justify-content:space-between;gap:clamp(22px,3vw,32px);flex-wrap:wrap;}
+  .w-copy{min-width:0;flex:1 1 340px;}
+  .w-h{font-family:var(--disp);font-weight:400;font-size:clamp(24px,2.6vw,29px);line-height:1.1;
+    margin:.24em 0 .3em;color:var(--paper);overflow-wrap:anywhere;}
+  .w-h em{font-style:italic;color:inherit;}
+  .whole .w-body{margin:0;max-width:56ch;}
+  .w-act{flex:0 1 auto;text-align:right;}
+  .w-rate{display:block;}
+  .w-price{font-size:clamp(32px,3.6vw,40px);}
+  .w-unit{font-size:13px;color:rgba(var(--paper-rgb),.72);margin-left:4px;}
+  .w-cta{margin-top:14px;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     WhyBJ — THE HOUSE + the amenity ledger
+     ═══════════════════════════════════════════════════════════════════ */
+  .house-grid{display:grid;grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr);
+    gap:clamp(32px,4.6vw,60px);align-items:center;}
+  .house-grid .house-fig{border-radius:20px;}
+  .house-copy{min-width:0;}
+  .house-h{font-family:var(--disp);font-weight:400;font-size:clamp(30px,3.8vw,52px);
+    line-height:1.06;letter-spacing:-.01em;margin:.24em 0 .34em;color:var(--ink);
+    max-width:20ch;overflow-wrap:anywhere;}
+  .house-copy .house-lead{margin:0 0 24px;font-size:clamp(15.5px,1.4vw,16px);line-height:1.8;
+    color:var(--ink-soft);max-width:50ch;overflow-wrap:anywhere;}
+  /* Two columns of hairline rows; the note is pushed right by the LABEL's auto
+     margin, so a row carrying only a note still reads left-aligned. */
+  .am-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(20px,2.6vw,32px);}
+  .am-row{display:flex;align-items:baseline;gap:12px;min-width:0;padding:11px 0;
+    border-bottom:1px solid var(--line);}
+  .am-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none;transform:translateY(-3px);}
+  .am-label{font-size:15px;color:var(--ink);margin-right:auto;overflow-wrap:anywhere;}
+  .am-note{font-size:12px;color:var(--muted);text-align:right;overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     GalleryBJ — the mosaic, clipped as ONE rounded slab (the design's move)
+     ═══════════════════════════════════════════════════════════════════ */
+  .f-head{margin:0 0 clamp(20px,2.8vw,32px);}
+  .f-h2{font-family:var(--disp);font-weight:400;font-size:clamp(28px,3.6vw,48px);
+    line-height:1.06;letter-spacing:-.01em;color:var(--ink);margin:.24em 0 0;max-width:22ch;}
+  /* The 12px gaps let the page ground through between tiles, and the four
+     corner tiles take the block's radius — so tiles carry no radius of
+     their own. minmax(0,…) on every track, never a bare fr. */
+  .mosaic{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);
+    grid-auto-rows:180px;gap:12px;border-radius:20px;overflow:hidden;}
+  .mosaic .tile{margin:0;min-height:0;position:relative;overflow:hidden;border-radius:0;border:0;}
+  .mosaic .tile .ph{position:absolute;inset:0;background-size:cover;background-position:center;}
+  .mosaic .tile:first-child{grid-row:span 2;}
+  .tile .cap{left:12px;bottom:12px;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     AboutBJ — YOUR HOST (one column of prose plus the identity row)
+     ═══════════════════════════════════════════════════════════════════ */
+  .host-copy{max-width:62ch;}
+  .host-h{font-family:var(--disp);font-weight:400;font-size:clamp(30px,3.8vw,52px);
+    line-height:1.06;letter-spacing:-.01em;margin:.24em 0 .34em;color:var(--ink);
+    max-width:20ch;overflow-wrap:anywhere;}
+  .host-copy .host-p{margin:0 0 1em;font-size:clamp(15.5px,1.4vw,16px);line-height:1.8;
+    color:var(--ink-soft);max-width:52ch;overflow-wrap:anywhere;}
+  .host-copy .host-p:last-of-type{margin-bottom:0;}
+  .host-id{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px;}
+  .host-id .host-ava{width:60px;height:60px;border-radius:50%;flex:none;}
+  .host-who{display:flex;flex-direction:column;min-width:0;}
+  .host-name{font-family:var(--disp);font-weight:400;font-size:22px;line-height:1.15;
+    color:var(--ink);overflow-wrap:anywhere;}
+  .host-role{font-size:13px;line-height:1.4;color:var(--muted);margin-top:2px;overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     CredentialsBJ — THE PROMISES. Continues the host block: same ground, no
+     top rule, and a much smaller top pad, so the two read as one spread.
+     ═══════════════════════════════════════════════════════════════════ */
+  .promises{padding-top:clamp(20px,3vw,40px);}
+  .pr-h{font-family:var(--disp);font-weight:400;font-size:clamp(28px,3.4vw,46px);
+    line-height:1.06;letter-spacing:-.01em;margin:.24em 0 .34em;color:var(--ink);
+    max-width:20ch;overflow-wrap:anywhere;}
+  .pr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;
+    margin-top:clamp(14px,2vw,24px);}
+  .pr-card{background-color:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:24px 26px;min-width:0;}
+  /* DERIVED from the display index in the real component, never stored. */
+  .pr-n{display:block;font-family:var(--disp);font-style:italic;font-size:22px;line-height:1;
+    color:var(--accent);margin-bottom:10px;}
+  .pr-t{font-family:var(--disp);font-weight:400;font-size:21px;line-height:1.14;
+    margin:0 0 7px;color:var(--ink);overflow-wrap:anywhere;}
+  .pr-card .pr-p{margin:0;font-size:14px;line-height:1.7;color:var(--ink-soft);overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     HowBJ — HOW IT WORKS, the full-bleed green band
+     ═══════════════════════════════════════════════════════════════════ */
+  .howto{background-color:var(--ink);color:var(--paper);}
+  /* paper-derived, NOT gold: gold is sub-AA at 10px on this band. */
+  .howto .eyebrow{color:rgba(var(--paper-rgb),.78);}
+  .howto .h2{font-family:var(--disp);font-weight:400;font-size:clamp(30px,4.3vw,56px);
+    line-height:1.06;letter-spacing:-.005em;margin:.24em 0 clamp(30px,4vw,50px);
+    color:var(--paper);max-width:24ch;overflow-wrap:anywhere;}
+  .how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:clamp(22px,3.2vw,40px);list-style:none;margin:0;padding:0;}
+  .step{list-style:none;border-top:2px solid var(--accent-light);padding-top:20px;}
+  /* The numeral counts DISPLAYED steps — 01/02/03, derived, never stored. */
+  .sno{display:block;font-family:var(--disp);font-weight:400;font-style:italic;
+    font-size:clamp(28px,3vw,34px);line-height:1;color:var(--accent-light);}
+  .step h3{font-family:var(--disp);font-weight:400;font-size:clamp(21px,2vw,26px);
+    line-height:1.14;margin:12px 0 10px;color:var(--paper);overflow-wrap:anywhere;}
+  .step p{margin:0;font-size:15px;line-height:1.75;color:rgba(var(--paper-rgb),.78);overflow-wrap:anywhere;}
+  .how-act{margin-top:clamp(30px,4vw,50px);}
+  /* Inverted-band button: opaque --paper fill, --ink label, and a hover that
+     darkens the SAME fill. */
+  .howto .btn--fill{background-color:var(--paper);color:var(--ink);border-color:var(--paper);}
+  .howto .btn--fill:hover{background-color:var(--paper);color:var(--ink);border-color:var(--paper);
+    box-shadow:inset 0 0 0 999px rgba(0,0,0,.16),0 0 0 4px rgba(var(--paper-rgb),.24);}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     TestimonialsBJ — IN THEIR WORDS
+     ═══════════════════════════════════════════════════════════════════ */
+  .v-head{text-align:center;margin-bottom:clamp(30px,4vw,46px);}
+  .voices .h2{font-family:var(--disp);font-weight:400;font-size:clamp(30px,4.3vw,56px);
+    line-height:1.06;letter-spacing:-.005em;margin:.24em auto 0;color:var(--ink);
+    max-width:22ch;overflow-wrap:anywhere;}
+  .v-src{margin:14px 0 0;font-family:var(--sans);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);overflow-wrap:anywhere;}
+  .v-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(18px,2.4vw,26px);}
+  .v-card{margin:0;background-color:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:clamp(24px,2.4vw,30px) clamp(20px,2.2vw,28px);}
+  /* Where the design put a fixed five-star row. Purely decorative, so it is
+     aria-hidden and states nothing. */
+  .v-card .v-rule{display:block;width:34px;height:2px;border-radius:2px;
+    background-color:var(--accent);margin:0 0 18px;}
+  .v-card blockquote{margin:0 0 18px;font-family:var(--disp);font-weight:400;
+    font-size:clamp(18px,1.7vw,20px);line-height:1.5;color:var(--ink);overflow-wrap:anywhere;}
+  .v-card figcaption{font-family:var(--sans);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     AreaBJ — WHAT IS NEAR
+     ═══════════════════════════════════════════════════════════════════ */
+  .n-head{margin:0 0 clamp(18px,2.4vw,26px);max-width:62ch;}
+  .n-h2{font-family:var(--disp);font-weight:400;font-size:clamp(28px,3.6vw,48px);
+    line-height:1.06;letter-spacing:-.01em;color:var(--ink);margin:.24em 0 0;max-width:22ch;}
+  .n-body{margin:.7em 0 0;font-size:15.5px;line-height:1.7;color:var(--ink-soft);max-width:52ch;}
+  .places{display:flex;flex-wrap:wrap;gap:9px;}
+  /* NOT the .chip primitive: nothing it does not ask for can arrive from
+     elsewhere and change what a place name looks like. */
+  .place{display:inline-flex;align-items:center;background-color:var(--card);
+    border:1px solid var(--line);border-radius:100px;padding:8px 14px;
+    font-family:var(--sans);font-weight:500;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--ink-soft);max-width:100%;overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     LocationBJ — GETTING HERE + the house rules card
+     ═══════════════════════════════════════════════════════════════════ */
+  .g-head{display:flex;align-items:flex-end;justify-content:space-between;gap:22px 30px;
+    flex-wrap:wrap;margin:0 0 clamp(22px,3vw,34px);}
+  .g-head-l{min-width:0;}
+  .g-head-r{min-width:0;max-width:38ch;}
+  .g-h2{font-family:var(--disp);font-weight:400;font-size:clamp(28px,3.8vw,52px);
+    line-height:1.06;letter-spacing:-.01em;color:var(--ink);margin:.24em 0 0;max-width:20ch;}
+  .g-addr{margin:.6em 0 0;font-size:15.5px;line-height:1.7;color:var(--ink-soft);
+    max-width:40ch;overflow-wrap:anywhere;}
+  .g-sub{margin:0;font-size:15px;line-height:1.7;color:var(--ink-soft);}
+  .g-dir{margin-top:14px;}
+  .g-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:26px;align-items:stretch;}
+  .map-frame{position:relative;min-height:340px;overflow:hidden;border-radius:18px;
+    border:1px solid var(--line);background-color:var(--card);}
+  #map{position:absolute;inset:0;z-index:0;min-height:340px;}
+  .map-face{position:absolute;inset:0;background-color:var(--card);
+    background-image:
+      repeating-linear-gradient(0deg,rgba(var(--ink-rgb),.07) 0 1px,transparent 1px 44px),
+      repeating-linear-gradient(90deg,rgba(var(--ink-rgb),.07) 0 1px,transparent 1px 44px);}
+  .road{position:absolute;background-color:rgba(var(--ink-rgb),.20);}
+  .road-h{top:47%;left:0;right:0;height:5px;}
+  .road-v{top:0;bottom:0;left:43%;width:4px;}
+  /* width:max-content alongside the max-width, or abspos shrink-to-fit would
+     collapse the stack on every long property name. */
+  .map-pin{position:absolute;top:47%;left:43%;transform:translate(-50%,-100%);
+    display:grid;justify-items:center;gap:8px;width:max-content;max-width:calc(100% - 24px);z-index:1;}
+  .dot{width:14px;height:14px;border-radius:50%;background-color:var(--accent);border:3px solid var(--paper);}
+  .mlbl{background-color:var(--ink);color:var(--paper);font-family:var(--sans);font-weight:600;
+    font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:5px 11px;
+    border-radius:100px;text-align:center;overflow-wrap:anywhere;}
+  .map-cap{position:absolute;left:16px;bottom:16px;z-index:2;background-color:var(--paper);
+    color:var(--ink-soft);font-family:var(--sans);font-weight:600;font-size:10px;
+    letter-spacing:.2em;text-transform:uppercase;padding:5px 10px;border-radius:100px;
+    max-width:calc(100% - 32px);overflow-wrap:anywhere;}
+  .rules{background-color:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:10px clamp(20px,2.4vw,28px);}
+  .rule{display:flex;justify-content:space-between;gap:16px;padding:13px 0;}
+  /* Adjacent-sibling rule, so no hairline is ever left over against the card
+     edge on the last row. */
+  .rule + .rule{border-top:1px solid var(--line);}
+  .rk{font-size:13px;line-height:1.5;color:var(--ink-soft);min-width:0;overflow-wrap:anywhere;}
+  .rv{font-size:14px;line-height:1.5;color:var(--ink);text-align:right;min-width:0;overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     FaqBJ — OFTEN ASKED
+     ═══════════════════════════════════════════════════════════════════ */
+  .faq-grid{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);
+    gap:clamp(34px,4.6vw,56px);align-items:start;}
+  /* Sticky only where there are two columns; the 900 pass releases it, so it
+     can never pin a heading over the answers on a phone. */
+  .faq-head{position:sticky;top:clamp(84px,11vh,108px);}
+  .faqs .h2{font-family:var(--disp);font-weight:400;font-size:clamp(28px,3.8vw,52px);
+    line-height:1.06;letter-spacing:-.005em;margin:.24em 0 0;color:var(--ink);overflow-wrap:anywhere;}
+  .q-row{border-bottom:1px solid var(--line);padding:22px 0;}
+  .q-row h3{font-family:var(--disp);font-weight:400;font-size:clamp(19px,1.8vw,22px);
+    line-height:1.2;margin:0 0 9px;color:var(--ink);overflow-wrap:anywhere;}
+  .q-row p{margin:0;font-size:15px;line-height:1.75;color:var(--ink-soft);
+    max-width:64ch;overflow-wrap:anywhere;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     CtaBandBJ — THE CLOSING CALL
+     ═══════════════════════════════════════════════════════════════════ */
+  .closing{padding:clamp(40px,5vw,72px) 0 clamp(56px,7vw,92px);}
+  .c-slab{border-radius:22px;text-align:center;padding:clamp(48px,7vw,72px) clamp(22px,4vw,56px);}
+  .c-h{font-size:clamp(32px,4.8vw,64px);line-height:1.04;max-width:18ch;
+    margin:.22em auto .34em;overflow-wrap:anywhere;}
+  .c-slab .c-sub{max-width:44ch;margin:0 auto 30px;}
+  .c-acts{display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:center;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     FooterBJ — the colophon on the oatmeal tint (never an inverted band:
+     the design ends on warmth, and the green already closed the CTA slab)
+     ═══════════════════════════════════════════════════════════════════ */
+  .colo{background-color:var(--paper-2);border-top:1px solid var(--line);
+    padding:clamp(44px,6vw,58px) 0 38px;}
+  .f-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:40px;
+    padding-bottom:38px;border-bottom:1px solid var(--line);}
+  .f-wm-lock{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .colo .wm{margin:0;font-family:var(--disp);font-weight:400;font-size:clamp(21px,2vw,25px);
+    line-height:1.1;color:var(--ink);overflow:visible;white-space:normal;overflow-wrap:anywhere;}
+  .f-blurb{margin:0 0 18px;font-size:14px;line-height:1.7;color:var(--ink-soft);
+    max-width:36ch;overflow-wrap:anywhere;}
+  .f-cta{font-size:13px;}
+  .f-soc{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px;}
+  .f-soc .chip{min-height:36px;}
+  .f-soc .chip:hover{border-color:var(--accent);color:var(--ink);}
+  .f-h{margin:0 0 14px;font-family:var(--sans);font-weight:600;font-size:10px;
+    letter-spacing:.3em;text-transform:uppercase;color:var(--accent);overflow-wrap:anywhere;}
+  .f-col a{display:block;padding:4px 0;font-size:14px;color:var(--ink-soft);
+    border-bottom:2px solid transparent;overflow-wrap:anywhere;}
+  .f-col a:hover{color:var(--ink);border-bottom-color:var(--accent);}
+  .f-col address{font-style:normal;margin-top:4px;font-size:14px;line-height:1.75;
+    color:var(--ink-soft);overflow-wrap:anywhere;}
+  /* The address and email links would otherwise read exactly like the static
+     lines above them, so they are underlined at rest (WCAG 1.4.1). */
+  .f-col address a,.f-col a.f-mail{text-decoration:underline;text-decoration-color:currentColor;
+    text-decoration-thickness:1px;text-underline-offset:3px;}
+  .f-col address a:hover,.f-col a.f-mail:hover{text-decoration-color:var(--accent);text-decoration-thickness:2px;}
+  .f-foot{margin-top:22px;padding-top:22px;display:flex;justify-content:space-between;
+    flex-wrap:wrap;gap:12px;font-family:var(--sans);font-weight:500;font-size:10px;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--muted);overflow-wrap:anywhere;}
+  .msg-fab{position:fixed;right:20px;bottom:20px;z-index:100;}
+  .msg-fab a{display:inline-flex;align-items:center;gap:9px;min-height:48px;padding:13px 20px;
+    border-radius:999px;background-color:var(--ink);color:var(--paper);
+    border:1px solid rgba(var(--paper-rgb),.30);font-family:var(--sans);font-weight:600;
+    font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+    box-shadow:0 12px 30px rgba(0,0,0,.24),0 0 0 3px rgba(var(--accent-rgb),.28);}
+  .msg-fab a:hover{background-color:var(--ink);color:var(--paper);
+    box-shadow:inset 0 0 0 999px rgba(0,0,0,.16),0 12px 30px rgba(0,0,0,.24),0 0 0 5px rgba(var(--accent-rgb),.28);}
+  .msg-fab svg{width:15px;height:15px;flex:0 0 auto;}
+
+  /* ═══════════════════════════════════════════════════════════════════
+     RESPONSIVE — 900 (nav, hero, split grids) · 760 · 640 · 520
+     ═══════════════════════════════════════════════════════════════════ */
+  /* ONE nav collapse breakpoint: never a width where neither links nor burger
+     is on screen. */
+  @media (max-width:900px){
+    .nav-links a{display:none;}
+    .nav-burger{display:flex;}
+    .nav-links{position:absolute;left:0;right:0;top:100%;display:none;flex-direction:column;
+      align-items:stretch;gap:0;background-color:var(--paper-2);
+      border-top:1px solid var(--line);border-bottom:1px solid var(--ink);
+      box-shadow:0 14px 30px rgba(var(--ink-rgb),.16);padding:6px 0 12px;max-height:78vh;overflow-y:auto;}
+    header.nav.open .nav-links{display:flex;}
+    header.nav.open .nav-links a{display:flex;align-items:center;min-height:48px;padding:12px 22px;
+      font-size:14px;color:var(--ink-soft);border-bottom:1px dotted var(--line);}
+    /* display:block (not inline-flex) so text-overflow:ellipsis actually
+       applies; 12px padding + 20px line-height still gives a 44px target. */
+    .navc{display:block;line-height:20px;padding:12px 16px;font-size:10px;letter-spacing:.1em;
+      max-width:42vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .a-grid{grid-template-columns:1fr;gap:clamp(24px,4vw,34px);}
+    .a-plate{aspect-ratio:auto;height:clamp(240px,58vw,420px);}
+    .a-h1{font-size:clamp(38px,6.6vw,58px);}
+    .house-grid{grid-template-columns:1fr;gap:28px;}
+    .house-grid .house-fig{aspect-ratio:auto;height:clamp(230px,58vw,380px);}
+    .house-copy .house-lead,.house-h{max-width:none;}
+    .v-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .g-grid{grid-template-columns:minmax(0,1fr);}
+    .g-head-r{max-width:none;}
+    .faq-grid{grid-template-columns:1fr;gap:26px;}
+    .faq-head{position:static;}
+  }
+  @media (max-width:760px){
+    section{padding:clamp(48px,10vw,72px) 0;}
+    .wrap{width:min(var(--maxw),90vw);}
+    .h2{font-size:clamp(27px,7.2vw,42px);max-width:none;overflow-wrap:anywhere;}
+    .lede{max-width:none;}
+    .plate{border-radius:var(--r-md);}
+    /* 2 x 2. The vertical rule now belongs to the right-hand cell of each pair,
+       and the second row gains a horizontal one. */
+    .cells{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .cell:nth-child(odd){border-left:0;}
+    .cell:nth-child(even){border-left:1px solid var(--line);}
+    .cell:nth-child(n+3){border-top:1px solid var(--line);}
+    .r-head{align-items:flex-start;gap:16px;}
+    .r-head .r-lede{max-width:none;}
+    .whole{flex-direction:column;align-items:flex-start;}
+    .w-act{text-align:left;width:100%;}
+    .w-cta{width:100%;}
+    /* Two columns; the lead keeps its two-row span, so 5 tiles land on full
+       rows here (1 tall + 2 + 2, no hole). */
+    .mosaic{grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+      grid-auto-rows:clamp(132px,20vw,168px);gap:10px;}
+    .host-copy,.host-copy .host-p,.host-h{max-width:none;}
+    .pr-grid{grid-template-columns:1fr 1fr;}
+    .pr-h{max-width:none;}
+    .how-grid{grid-template-columns:1fr 1fr;}
+    .n-body{font-size:15px;}
+    .places{gap:8px;}
+    .map-frame,#map{min-height:300px;}
+    .g-addr{font-size:15px;}
+    .rules{padding:8px 20px;}
+    .c-h{font-size:clamp(28px,7.2vw,44px);max-width:none;}
+    .colo{padding-bottom:76px;}
+    .f-grid{grid-template-columns:1fr;gap:26px;padding-bottom:26px;}
+    .f-foot{margin-top:18px;}
+  }
+  @media (max-width:640px){
+    .v-grid{grid-template-columns:1fr;}
+  }
+  @media (max-width:520px){
+    body{font-size:16px;}
+    .h2{font-size:clamp(25px,8vw,32px);}
+    .kick,.eyebrow{font-size:9.5px;letter-spacing:.26em;}
+    .mono{letter-spacing:.14em;}
+    .btn{padding:15px 22px;font-size:11px;letter-spacing:.12em;white-space:normal;
+      text-align:center;flex:1 1 100%;}
+    .nav-inner{gap:10px;padding:12px 0;}
+    .wm{font-size:20px;}
+    .loc{letter-spacing:.22em;}
+    .navc{max-width:38vw;padding:12px 13px;}
+    .a-kick{font-size:9.5px;letter-spacing:.3em;}
+    .a-h1{font-size:clamp(32px,9.4vw,46px);overflow-wrap:anywhere;}
+    .a-lede{max-width:none;}
+    .a-ctas{gap:10px;}
+    .a-ctas .btn{flex:1 1 100%;white-space:normal;text-align:center;}
+    /* One column at phone width: a 10px label with .2em tracking cannot hold a
+       ~150px half-column without splitting mid-word. Every nth-child rule from
+       the 760 pass is restated rather than left to lapse. */
+    .cells{grid-template-columns:minmax(0,1fr);}
+    .cell:nth-child(even){border-left:0;}
+    .cell:nth-child(n+2){border-top:1px solid var(--line);}
+    .pnum{font-size:clamp(24px,7vw,30px);}
+    .plab{font-size:9.5px;letter-spacing:.16em;}
+    .r-grid{gap:16px;}
+    .room .r-ph{height:clamp(190px,54vw,252px);}
+    .r-name{font-size:23px;}
+    .r-body{padding:18px;}
+    .r-body .r-desc{overflow-wrap:anywhere;}
+    .r-foot{gap:8px;}
+    .whole{padding:24px 20px;}
+    .w-price{font-size:30px;}
+    .am-list{grid-template-columns:1fr;}
+    .house-h{font-size:clamp(27px,8.4vw,34px);}
+    .am-label{font-size:14.5px;}
+    /* One column: a 157px tile is too small to read as a room photo. Every span
+       is reset so nothing reaches a track that is not there. */
+    .mosaic{grid-template-columns:minmax(0,1fr);grid-auto-rows:clamp(150px,44vw,200px);border-radius:16px;}
+    .mosaic .tile:first-child{grid-row:auto;}
+    .tile .cap{left:8px;bottom:8px;font-size:9px;padding:5px 10px;max-width:calc(100% - 16px);}
+    .host-h{font-size:clamp(27px,8.4vw,34px);}
+    .host-id{gap:14px;}
+    .host-cta{flex:1 1 100%;white-space:normal;text-align:center;}
+    .pr-grid{grid-template-columns:1fr;}
+    .pr-card{padding:20px;}
+    .pr-h{font-size:clamp(25px,7.8vw,32px);}
+    .how-grid{grid-template-columns:1fr;gap:22px;}
+    .howto .h2{font-size:clamp(26px,7.6vw,34px);max-width:none;}
+    .sno{font-size:28px;}
+    .step{padding-top:16px;}
+    .step h3{font-size:20px;margin:10px 0 8px;}
+    .step p{font-size:14.5px;}
+    .howto .btn--fill{width:100%;padding:15px 24px;}
+    .voices .h2{font-size:clamp(26px,7.6vw,34px);max-width:none;}
+    .v-card{padding:20px 18px;}
+    .v-card blockquote{font-size:18px;margin-bottom:14px;}
+    .v-src{letter-spacing:.14em;}
+    .place{padding:7px 12px;font-size:10.5px;letter-spacing:.1em;}
+    .map-frame,#map{min-height:250px;}
+    .map-frame,.rules{border-radius:14px;}
+    .mlbl{font-size:8.5px;letter-spacing:.14em;}
+    .map-cap{left:10px;bottom:10px;font-size:9px;letter-spacing:.14em;max-width:calc(100% - 20px);}
+    /* The two-up rule row becomes a stack: label above, value below. */
+    .rule{flex-direction:column;gap:3px;padding:11px 0;}
+    .rv{text-align:left;}
+    .g-dir{width:100%;justify-content:center;}
+    .faqs .h2{font-size:clamp(26px,7.6vw,34px);}
+    .q-row{padding:18px 0;}
+    .q-row h3{font-size:19px;}
+    .q-row p{font-size:14.5px;max-width:none;}
+    .c-slab{border-radius:18px;}
+    .c-h{font-size:clamp(26px,8vw,34px);}
+    .c-acts{flex-direction:column;gap:14px;align-items:stretch;}
+    .c-cta{width:100%;flex:0 0 auto;}
+    .c-tel{width:100%;justify-content:center;}
+    .colo .wm{font-size:20px;}
+    .f-blurb{max-width:none;}
+    .f-foot{letter-spacing:.16em;gap:8px;}
+    .msg-fab{right:14px;bottom:14px;}
+    .msg-fab a{padding:12px 16px;font-size:11px;max-width:calc(100vw - 28px);}
+  }
+  /* At 360px the locality tag is the first thing to go: the wordmark, the pill
+     and the burger are all load-bearing, the tag is a flourish. */
+  @media (max-width:400px){
+    header.nav .loc{display:none;}
+  }
+</style>
+</head>
+
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<!-- BLOCK: HEADER [required] -->
+<header class="nav" data-component="HEADER" data-variant="v1">
+  <div class="wrap nav-inner">
+    <div class="wm-lock">
+      <a class="wm" href="#main" aria-label="Casa Amihan home">Casa Amihan</a>
+      <span class="loc">Nasugbu</span>
+    </div>
+    <nav class="nav-links" id="nav-primary-BJ" aria-label="Primary">
+      <a href="#rooms">The rooms</a>
+      <a href="#amenities">The house</a>
+      <a href="#host">Your host</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <!-- The booking pill sits OUTSIDE .nav-links on purpose: .nav-links becomes
+         a display:none drawer at 900px, and the one action this template exists
+         for must not disappear with it. -->
+    <a href="#book" class="navc">Message the owner</a>
+    <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-primary-BJ">
+      <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+    </button>
+  </div>
+</header>
+<!-- /BLOCK: HEADER -->
+
+<main id="main">
+
+<!-- BLOCK: HERO [required] -->
+<section class="arrival" aria-label="Hero" data-component="HERO" data-variant="v1" data-screen-label="Hero">
+  <div class="wrap a-grid">
+    <div class="a-copy">
+      <span class="a-kick">Rooms for rent · Nasugbu, Batangas</span>
+      <h1 class="a-h1">
+        <span class="ln">Three rooms in</span>
+        <span class="ln ln-em">one quiet house.</span>
+      </h1>
+      <p class="a-lede">A family house on the ridge above Nasugbu, ten minutes from the water. Rent a single room or take all three. One owner, one gate, no front desk.</p>
+      <div class="a-ctas">
+        <a class="btn btn--fill" href="#book">Message the owner</a>
+        <a class="btn btn--line" href="#rooms">See the rooms</a>
+      </div>
+    </div>
+    <div class="plate a-plate reveal" style="aspect-ratio:11/10;min-height:0">
+      <div class="ph sc-house" role="img" aria-label="Casa Amihan — property photo"></div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: HERO -->
+
+<!-- BLOCK: TRUST [recommended] -->
+<section class="proof" data-component="TRUST" data-variant="v1">
+  <div class="wrap">
+    <div class="cells" style="--cols:4">
+      <div class="cell reveal" data-delay="0">
+        <div class="pnum">3</div>
+        <div class="plab">Rooms, that is all</div>
+      </div>
+      <div class="cell reveal" data-delay="1">
+        <div class="pnum">4.92</div>
+        <div class="plab">Average guest rating</div>
+      </div>
+      <div class="cell reveal" data-delay="2">
+        <div class="pnum">&lt; 1 hr</div>
+        <div class="plab">Typical reply time</div>
+      </div>
+      <div class="cell reveal" data-delay="0">
+        <div class="pnum">0</div>
+        <div class="plab">Booking fees added</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: TRUST -->
+
+<!-- BLOCK: SERVICES [required] — the rooms, add or remove a listing -->
+<section class="rooms" id="rooms" data-component="SERVICES" data-variant="v1" data-screen-label="Rooms">
+  <div class="wrap">
+    <div class="r-head">
+      <div class="r-head-l">
+        <span class="kick">The rooms</span>
+        <h2 class="h2 r-h2 reveal">Take one room, <em>or the whole house.</em></h2>
+      </div>
+      <p class="lede r-lede">Every room locks on its own key and has its own aircon. Kitchen, garden and terrace are shared — and there are only ever three rooms of us.</p>
+    </div>
+
+    <div class="r-grid" data-cards="3">
+
+      <article class="room reveal" data-delay="0">
+        <div class="plate r-ph">
+          <div class="ph sc-sea-room" role="img" aria-label="Amihan Room"></div>
+          <span class="floor">Upstairs</span>
+        </div>
+        <div class="r-body">
+          <div class="r-top">
+            <span class="r-meta">Private bath</span>
+            <span class="r-rate"><span class="star" aria-hidden="true">&#9733;</span><span>4.96</span></span>
+          </div>
+          <h3 class="r-name">Amihan Room</h3>
+          <p class="r-desc">The corner room with the sea view and the best cross-breeze in the house.</p>
+          <div class="feats">
+            <span class="chip">Sea view</span>
+            <span class="chip">Queen bed</span>
+            <span class="chip">Own balcony</span>
+          </div>
+          <div class="r-tail">
+            <div class="r-foot">
+              <span class="f-note">Sleeps 2 · Queen bed</span>
+              <span class="f-rate"><span class="f-price">₱3,200</span><span class="f-unit">/ night</span></span>
+            </div>
+            <a class="btn btn--line r-cta" href="#book">Enquire about this room</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="room reveal" data-delay="1">
+        <div class="plate r-ph">
+          <div class="ph sc-garden-room" role="img" aria-label="Talisay Room"></div>
+          <span class="floor">Ground floor</span>
+        </div>
+        <div class="r-body">
+          <div class="r-top">
+            <span class="r-meta">Private bath</span>
+            <span class="r-rate"><span class="star" aria-hidden="true">&#9733;</span><span>4.91</span></span>
+          </div>
+          <h3 class="r-name">Talisay Room</h3>
+          <p class="r-desc">Opens straight onto the garden. Good for a small family or three friends.</p>
+          <div class="feats">
+            <span class="chip">Garden door</span>
+            <span class="chip">Extra bed</span>
+            <span class="chip">Step-free</span>
+          </div>
+          <div class="r-tail">
+            <div class="r-foot">
+              <span class="f-note">Sleeps 3 · Queen + single</span>
+              <span class="f-rate"><span class="f-price">₱2,800</span><span class="f-unit">/ night</span></span>
+            </div>
+            <a class="btn btn--line r-cta" href="#book">Enquire about this room</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="room reveal" data-delay="2">
+        <div class="plate r-ph">
+          <div class="ph sc-kubo-room" role="img" aria-label="Kubo Room"></div>
+          <span class="floor">Garden annex</span>
+        </div>
+        <div class="r-body">
+          <div class="r-top">
+            <span class="r-meta">Shared bath</span>
+            <span class="r-rate"><span class="star" aria-hidden="true">&#9733;</span><span>4.88</span></span>
+          </div>
+          <h3 class="r-name">Kubo Room</h3>
+          <p class="r-desc">A small nipa-roofed room set apart from the house. The quiet one.</p>
+          <div class="feats">
+            <span class="chip">Separate entrance</span>
+            <span class="chip">Double bed</span>
+            <span class="chip">Most private</span>
+          </div>
+          <div class="r-tail">
+            <div class="r-foot">
+              <span class="f-note">Sleeps 2 · Double bed</span>
+              <span class="f-rate"><span class="f-price">₱1,950</span><span class="f-unit">/ night</span></span>
+            </div>
+            <a class="btn btn--line r-cta" href="#book">Enquire about this room</a>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="whole band-shade reveal">
+      <div class="w-copy">
+        <span class="kick">Whole house</span>
+        <h3 class="w-h">All three rooms — <em>sleeps 7</em></h3>
+        <p class="body w-body">Family, barkada or a small offsite: book the house and the kitchen, garden and terrace are yours alone. Two-night minimum on weekends.</p>
+      </div>
+      <div class="w-act">
+        <div class="w-rate">
+          <span class="fig w-price">₱7,200</span><span class="w-unit">/ night</span>
+        </div>
+        <a class="btn btn--fill w-cta" href="#book">Message the owner</a>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: SERVICES -->
+
+<!-- BLOCK: WHY-US [recommended] — the house + the amenity ledger -->
+<section class="house" id="amenities" data-component="WHY-US" data-variant="v1">
+  <div class="wrap">
+    <div class="house-grid">
+      <div class="plate house-fig" style="aspect-ratio:1/1;min-height:0">
+        <div class="ph sc-terrace" role="img" aria-label="Property photo"></div>
+      </div>
+      <div class="house-copy">
+        <span class="kick">The house</span>
+        <h2 class="h2 house-h reveal">Shared where it counts, <em>private where it matters.</em></h2>
+        <p class="house-lead reveal">My father built the house in 1994 and I have reworked it room by room since. Guests share the kitchen, the long terrace and the garden; the rooms themselves stay yours. Mornings are quiet enough to hear the boats.</p>
+        <div class="am-list reveal">
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Shared kitchen</span>
+            <span class="am-note">Gas range</span>
+          </div>
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Fibre wifi</span>
+            <span class="am-note">180 Mbps</span>
+          </div>
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Aircon in every room</span>
+            <span class="am-note">Inverter</span>
+          </div>
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Long terrace</span>
+            <span class="am-note">Sea-facing</span>
+          </div>
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Free parking</span>
+            <span class="am-note">Inside gate</span>
+          </div>
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Washing machine</span>
+            <span class="am-note">Guest use</span>
+          </div>
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Generator backup</span>
+            <span class="am-note">Whole house</span>
+          </div>
+          <div class="am-row">
+            <span class="am-dot" aria-hidden="true"></span>
+            <span class="am-label">Hot shower</span>
+            <span class="am-note">All baths</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: WHY-US -->
+
+<!-- BLOCK: GALLERY [recommended] — the mosaic -->
+<section class="frames" id="gallery" data-component="GALLERY" data-variant="v1">
+  <div class="wrap">
+    <div class="f-head reveal">
+      <span class="eyebrow">Look around</span>
+      <h2 class="h2 f-h2">The house, <em>room by room.</em></h2>
+    </div>
+    <div class="mosaic reveal">
+      <figure class="plate tile">
+        <div class="ph sc-garden" role="img" aria-label="The garden from the terrace steps"></div>
+        <figcaption class="cap">The garden from the steps</figcaption>
+      </figure>
+      <figure class="plate tile">
+        <div class="ph sc-kitchen" role="img" aria-label="The shared kitchen"></div>
+        <figcaption class="cap">The shared kitchen</figcaption>
+      </figure>
+      <figure class="plate tile">
+        <div class="ph sc-terrace" role="img" aria-label="The long terrace"></div>
+        <figcaption class="cap">The long terrace</figcaption>
+      </figure>
+      <figure class="plate tile">
+        <div class="ph sc-bath" role="img" aria-label="A private bath"></div>
+        <figcaption class="cap">Private bath, upstairs</figcaption>
+      </figure>
+      <figure class="plate tile">
+        <div class="ph sc-detail" role="img" aria-label="A detail of the house"></div>
+        <figcaption class="cap">Morning, the front door</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: GALLERY -->
+
+<!-- BLOCK: ABOUT [recommended] — your host -->
+<section class="host" id="host" data-component="ABOUT" data-variant="v1" data-screen-label="Host">
+  <div class="wrap">
+    <div class="host-copy">
+      <span class="kick">Your host</span>
+      <h2 class="h2 host-h reveal">You will be messaging me, <em>not an office.</em></h2>
+      <p class="host-p reveal">I live on the property and manage all three rooms myself. That means one person to ask about the gate code, the water, or where to buy fish — and an answer usually inside the hour.</p>
+      <p class="host-p reveal" data-delay="1">I keep rice, coffee and salt stocked before every arrival, and can arrange a cook for lechon or fresh catch if you ask ahead.</p>
+      <div class="host-id reveal">
+        <div class="plate host-ava" style="min-height:0">
+          <div class="ph sc-host" role="img" aria-label="Marisol Nava"></div>
+        </div>
+        <div class="host-who">
+          <span class="host-name">Marisol Nava</span>
+          <span class="host-role">Owner · Hosting since 2019 · Lives on site</span>
+        </div>
+        <a class="btn btn--line host-cta" href="#book">Message the owner</a>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: ABOUT -->
+
+<!-- BLOCK: CREDENTIALS [recommended] — the promises. Same ground as the host
+     block and no top rule, so the two read as one spread. -->
+<section class="promises" id="promises" data-component="CREDENTIALS" data-variant="v1">
+  <div class="wrap">
+    <span class="kick">What I promise</span>
+    <h2 class="h2 pr-h reveal">Three things I <em>put in writing.</em></h2>
+    <div class="pr-grid has-head">
+      <div class="pr-card reveal" data-delay="0">
+        <!-- DERIVED from the display index in the real component, never stored. -->
+        <span class="pr-n" aria-hidden="true">01</span>
+        <h3 class="pr-t">One price, said once</h3>
+        <p class="pr-p">The nightly rate is the rate. No service charge appears later and there is no fee at the gate.</p>
+      </div>
+      <div class="pr-card reveal" data-delay="1">
+        <span class="pr-n" aria-hidden="true">02</span>
+        <h3 class="pr-t">Photos from this month</h3>
+        <p class="pr-p">What you see is the room you get. If something changes in the house, the photos change with it.</p>
+      </div>
+      <div class="pr-card reveal" data-delay="2">
+        <span class="pr-n" aria-hidden="true">03</span>
+        <h3 class="pr-t">Dates held while you decide</h3>
+        <p class="pr-p">Tell me you are interested and I will hold the room for a day before offering it on.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: CREDENTIALS -->
+
+<!-- BLOCK: HOW-IT-WORKS [recommended] — the green band -->
+<section class="howto" id="how" data-component="HOW-IT-WORKS" data-variant="v1">
+  <div class="wrap">
+    <span class="eyebrow">How it works</span>
+    <h2 class="h2 reveal">Three messages and the key is yours.</h2>
+    <ol class="how-grid">
+      <li class="step reveal" data-delay="0">
+        <span class="sno" aria-hidden="true">01</span>
+        <h3>Message me</h3>
+        <p>Send the room you like, your dates, and how many of you there are. One message is enough.</p>
+      </li>
+      <li class="step reveal" data-delay="1">
+        <span class="sno" aria-hidden="true">02</span>
+        <h3>I confirm what is free</h3>
+        <p>You get a straight answer on availability and the full price written out, usually within the hour.</p>
+      </li>
+      <li class="step reveal" data-delay="2">
+        <span class="sno" aria-hidden="true">03</span>
+        <h3>Arrive and settle in</h3>
+        <p>Pinned directions and the gate code come the day before. Everything else we sort in person.</p>
+      </li>
+    </ol>
+    <div class="how-act reveal">
+      <a class="btn btn--fill" href="#book">Message the owner</a>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: HOW-IT-WORKS -->
+
+<!-- BLOCK: TESTIMONIALS [recommended] -->
+<section class="voices" id="reviews" data-component="TESTIMONIALS" data-variant="v1">
+  <div class="wrap">
+    <div class="v-head reveal">
+      <span class="eyebrow">In their words</span>
+      <h2 class="h2">Guests who came back</h2>
+      <p class="v-src">From guest messages, shared with permission</p>
+    </div>
+    <div class="v-grid">
+      <figure class="v-card reveal" data-delay="0">
+        <span class="v-rule" aria-hidden="true"></span>
+        <blockquote>Took the upstairs room for three nights. The breeze off the terrace at sunset is the whole reason to book.</blockquote>
+        <figcaption>Denise R. · Makati</figcaption>
+      </figure>
+      <figure class="v-card reveal" data-delay="1">
+        <span class="v-rule" aria-hidden="true"></span>
+        <blockquote>We rented all three rooms for a family weekend. Marisol left rice and coffee and told us where to buy fish.</blockquote>
+        <figcaption>Paolo M. · Quezon City</figcaption>
+      </figure>
+      <figure class="v-card reveal" data-delay="2">
+        <span class="v-rule" aria-hidden="true"></span>
+        <blockquote>The annex room is cheap and genuinely quiet. Third stay this year and the price has never moved.</blockquote>
+        <figcaption>Aya D. · Pasig</figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: TESTIMONIALS -->
+
+<!-- BLOCK: SERVICE-AREA [recommended] — what is near -->
+<section class="nearby" id="nearby" data-component="SERVICE-AREA" data-variant="v1">
+  <div class="wrap">
+    <div class="n-head reveal">
+      <span class="eyebrow">Around here</span>
+      <h2 class="h2 n-h2">Everything is <em>ten minutes down.</em></h2>
+      <p class="body n-body">The ridge is quiet, but the coast road is a short drive and the cove beaches are closer than the town is. Ask me and I will tell you honestly which ones are worth your morning.</p>
+    </div>
+    <div class="places reveal">
+      <span class="place">Nasugbu public beach</span>
+      <span class="place">Munting Buhangin cove</span>
+      <span class="place">Calayo cove</span>
+      <span class="place">Fortune Island jump-off</span>
+      <span class="place">Mount Batulao trailhead</span>
+      <span class="place">Kaybiang tunnel</span>
+      <span class="place">Nasugbu public market</span>
+      <span class="place">Lian beach</span>
+      <span class="place">Tagaytay ridge</span>
+      <span class="place">Wawa fish landing</span>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: SERVICE-AREA -->
+
+<!-- BLOCK: LOCATION [required] — getting here + the house rules -->
+<section class="getting" id="location" data-component="LOCATION" data-variant="v1" data-screen-label="Location">
+  <div class="wrap">
+    <div class="g-head reveal">
+      <div class="g-head-l">
+        <span class="eyebrow">Getting here</span>
+        <h2 class="h2 g-h2">Ten minutes <em>above the water.</em></h2>
+        <p class="g-addr">Barangay Wawa<br>Nasugbu, Batangas 4231<br>Philippines</p>
+      </div>
+      <div class="g-head-r">
+        <p class="body g-sub">I send pinned directions and the gate code once your dates are set. Parking is inside the gate.</p>
+        <a class="linkc g-dir" href="#location" rel="noopener noreferrer">Open in Maps</a>
+      </div>
+    </div>
+    <div class="g-grid reveal">
+      <div class="map-frame">
+        <div id="map" role="img" aria-label="Map showing Casa Amihan in Barangay Wawa, Nasugbu, Batangas">
+          <div class="map-face" aria-hidden="true">
+            <span class="road road-h"></span>
+            <span class="road road-v"></span>
+          </div>
+          <div class="map-pin">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="mlbl">Casa Amihan</span>
+          </div>
+        </div>
+        <span class="map-cap">Nasugbu</span>
+      </div>
+      <div class="rules">
+        <div class="rule"><span class="rk">Check in</span><span class="rv">After 2:00 PM</span></div>
+        <div class="rule"><span class="rk">Check out</span><span class="rv">Before 11:00 AM</span></div>
+        <div class="rule"><span class="rk">Minimum stay</span><span class="rv">1 night (2 on weekends)</span></div>
+        <div class="rule"><span class="rk">Quiet hours</span><span class="rv">10:00 PM onwards</span></div>
+        <div class="rule"><span class="rk">Pets</span><span class="rv">Allowed, tell me first</span></div>
+        <div class="rule"><span class="rk">Events</span><span class="rv">Whole-house bookings only</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: LOCATION -->
+
+<!-- BLOCK: FAQ [recommended] -->
+<section class="faqs" id="faq" data-component="FAQ" data-variant="v1">
+  <div class="wrap">
+    <div class="faq-grid">
+      <div class="faq-head reveal">
+        <span class="eyebrow">Good to know</span>
+        <h2 class="h2">Often asked</h2>
+      </div>
+      <div class="q-list reveal">
+        <div class="q-row">
+          <h3>How do I book a room?</h3>
+          <p>Tap any contact button on this page. It opens a direct chat with me — send the room, your dates and your headcount, and I will confirm what is free.</p>
+        </div>
+        <div class="q-row">
+          <h3>Do I pay through this site?</h3>
+          <p>No — there is no checkout here. This page is for enquiries only. Once I confirm the room is free, we arrange payment between us directly.</p>
+        </div>
+        <div class="q-row">
+          <h3>Can I rent just one room?</h3>
+          <p>Yes, that is the normal way. Each of the three rooms is let on its own, with its own key. You would be sharing the kitchen and terrace with at most two other rooms.</p>
+        </div>
+        <div class="q-row">
+          <h3>Can I take the whole house?</h3>
+          <p>Yes. All three rooms together sleeps seven and gives you the kitchen, garden and terrace to yourselves. Two-night minimum on weekends.</p>
+        </div>
+        <div class="q-row">
+          <h3>Is the price on the card final?</h3>
+          <p>That is the nightly rate for the room. The only thing added is a one-off cleaning fee, and I state it in writing when I reply.</p>
+        </div>
+        <div class="q-row">
+          <h3>What if I need to cancel?</h3>
+          <p>Free cancellation up to five days before check-in. Inside five days, the first night is charged. I put the terms in writing before anything is agreed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: FAQ -->
+
+</main>
+
+<!-- BLOCK: CTA-BAND [recommended] — the closing call -->
+<section class="closing" id="book" data-component="CTA-BAND" data-variant="v1">
+  <div class="wrap">
+    <div class="c-slab band-shade">
+      <span class="kick">Ready when you are</span>
+      <h2 class="h2 c-h">Send me your <em>dates.</em></h2>
+      <p class="lede c-sub">Tell me which room, how many of you, and how long. I will come back with what is free.</p>
+      <div class="c-acts">
+        <a class="btn btn--fill c-cta" href="#book">Message the owner</a>
+        <a class="linkc c-tel" href="tel:+639175550142">+63 917 555 0142</a>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- /BLOCK: CTA-BAND -->
+
+<!-- BLOCK: FOOTER [required] -->
+<footer class="colo" data-component="FOOTER" data-variant="v1">
+  <div class="wrap">
+    <div class="f-grid">
+      <div class="f-brand">
+        <div class="f-wm-lock">
+          <p class="wm">Casa Amihan</p>
+          <span class="loc">Nasugbu</span>
+        </div>
+        <p class="f-blurb">Three rooms for rent in one owner-hosted house on the ridge above Nasugbu, Batangas.</p>
+        <a class="linkc f-cta" href="#book">
+          <span>Message the owner</span>
+          <span aria-hidden="true">&#8594;</span>
+        </a>
+        <div class="f-soc">
+          <a class="chip" href="#book" rel="noopener noreferrer">Facebook</a>
+          <a class="chip" href="#book" rel="noopener noreferrer">Instagram</a>
+        </div>
+      </div>
+      <div class="f-col">
+        <h4 class="f-h">This page</h4>
+        <a href="#rooms">The rooms</a>
+        <a href="#amenities">The house</a>
+        <a href="#host">Your host</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="f-col">
+        <h4 class="f-h">Get in touch</h4>
+        <a href="#book">Message the owner</a>
+        <address>
+          <a href="tel:+639175550142">+63 917 555 0142</a>
+          <span>Barangay Wawa<br>Nasugbu, Batangas 4231</span>
+        </address>
+        <a class="f-mail" href="mailto:stay@casaamihan.ph">stay@casaamihan.ph</a>
+      </div>
+    </div>
+    <div class="f-foot">
+      <span>© <span id="year">2026</span> Casa Amihan · Nasugbu, Batangas</span>
+      <span>Nightly rates in Philippine pesos</span>
+    </div>
+  </div>
+</footer>
+<!-- /BLOCK: FOOTER -->
+
+<!-- BLOCK: CLICK-TO-MESSAGE (floating) [recommended] -->
+<div class="msg-fab" data-component="CLICK-TO-MESSAGE" data-variant="v1">
+  <a href="#book" aria-label="Send a message to Casa Amihan" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4A11 11 0 0 0 4.5 18.5L3 22l3.7-1.4A11 11 0 1 0 20 4Z"/></svg>
+    Message me
+  </a>
+</div>
+<!-- /BLOCK: CLICK-TO-MESSAGE -->
+
+<script>
+(function () {
+  /* Scroll reveal. Opacity is only dropped after JS has confirmed it can put
+     it back, so with scripting disabled the page renders fully visible. */
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var items = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    for (var i = 0; i < items.length; i++) { items[i].classList.add('in'); }
+  } else {
+    document.documentElement.classList.add('reveal-ready');
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.14, rootMargin: '0px 0px -8% 0px' });
+    for (var j = 0; j < items.length; j++) { io.observe(items[j]); }
+    var vh = function () { return window.innerHeight || document.documentElement.clientHeight; };
+    var sweep = function () {
+      for (var k = 0; k < items.length; k++) {
+        var el = items[k];
+        if (el.classList.contains('in')) continue;
+        var r = el.getBoundingClientRect();
+        if (r.top < vh() * 0.94 && r.bottom > 0) el.classList.add('in');
+      }
+    };
+    sweep();
+    window.addEventListener('scroll', sweep, { capture: true, passive: true });
+    window.addEventListener('resize', sweep, { passive: true });
+  }
+
+  /* Burger. The booking pill lives OUTSIDE the drawer, so it needs its own
+     close selector — that is why '.navc' is in the list. */
+  var hdr = document.querySelector('header.nav');
+  var btn = hdr && hdr.querySelector('.nav-burger');
+  if (hdr && btn) {
+    var setOpen = function (open) {
+      hdr.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    btn.addEventListener('click', function () { setOpen(!hdr.classList.contains('open')); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+    hdr.querySelectorAll('.nav-links a, .navc').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+  }
+
+  var y = document.getElementById('year');
+  if (y) y.textContent = String(new Date().getFullYear());
+})();
+</script>
+
+</body>
+</html>

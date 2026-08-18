@@ -1,0 +1,197 @@
+---
+/**
+ * hospitality / WhyBJ — "THE HOUSE" (Kubo Stays / BJ).
+ *
+ * ROLE: the shared-house block. One photograph of the property on the left; on
+ * the right the eyebrow, the Instrument Serif headline, the owner's paragraph
+ * about the house, and the amenity ledger — a two-column list of hairline rows,
+ * each an accent dot, the amenity name, and the owner's own note pushed to the
+ * right. It is the section that says what is SHARED and what stays private,
+ * which is the whole proposition of renting a room inside someone's home.
+ *
+ * WHY THE PHOTO LIVES ON why.* (not on gallery.* or about.*): editorBridge
+ * resolves a Blocks visibility toggle by counting the data-field hooks of a
+ * prefix inside each <section> and hiding the richest one. A section mixing two
+ * prefixes would be hidden by EITHER toggle, so one <section> carries one
+ * content prefix. The whole house block is why.*, hence why.image and why.lead —
+ * both declared in components/editor/genericContentSchema.ts's "Why us" group.
+ * Without that declaration the hooks below would be DEAD (they would look
+ * editable in v3 and focus nothing), which is the acceptance criterion this
+ * template turns on.
+ *
+ * EDITABLE HOOKS (every one schema-owned, so v3 focuses a real field):
+ *   why.image              (data-image-field) — the terrace / living-area photo
+ *   why.tag                — eyebrow
+ *   why.headline           — h2 (set:html, so an owner's <em> picks up the
+ *                            wrapper's italic-serif emphasis)
+ *   why.lead               — the house paragraph
+ *   why.items.${i}.title   — amenity name
+ *   why.items.${i}.body    — amenity note. CANONICAL key: the value may arrive
+ *                            as .desc / .description through astro-builder's
+ *                            alias map, but the hook must spell the key the
+ *                            schema declares or the sidebar never gets the edit.
+ *
+ * R2 — NOTHING IS SUPPLIED BY THIS FILE. No amenity, no "fibre wifi", no
+ * "sea-facing", no count of anything. Every guard sits OUTSIDE its tag, so an
+ * empty value removes the ELEMENT rather than leaving an inked row with no text.
+ * The section itself is gated on real content (photo, paragraph, or at least one
+ * filled amenity row): derive-content-defaults ALWAYS emits why.tag ('Why us')
+ * and why.headline ('Why choose X'), so counting those would ship an empty band
+ * on every first build — exactly what the gate exists to prevent.
+ *
+ * NO PER-AMENITY ICONS. The dot is a decorative accent circle, aria-hidden, and
+ * carries no data-field. A drawn pictogram claims WHICH amenity it depicts; a
+ * pool glyph on a house with no pool is the same class of defect as an invented
+ * review. The owner's words are the only signal here.
+ *
+ * ANCHOR: id="amenities". PageBJ's ANCHOR_ALIAS remaps the derived '#why' and
+ * '#about' nav hrefs onto it, so renaming this id strands those links in all
+ * four onPage() copies. Keep them in step.
+ *
+ * THEMING (R3): no baked hex. Colour comes only from PageBJ's token vocabulary
+ * (--ink --ink-soft --muted --line --accent --disp --sans). The photo frame is
+ * the wrapper's .plate/.ph primitive, sized INLINE (aspect-ratio + min-height:0)
+ * so no base-primitive metric can squish it.
+ */
+// layout is accepted but unused: PageBJ passes it to every section uniformly,
+// and this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+// The eyebrow is why.tag ONLY. This template ships no design literal beside it:
+// criterion A admits no hardcoded visible string, so there is no left-hand
+// "Comforts"-style word here as there is in the BI sibling.
+const image = why.image || '';
+const tag = why.tag || '';
+const headline = why.headline || '';
+const lead = why.lead || '';
+type Item = { title?: string; body?: string; desc?: string; description?: string };
+const items: Item[] = Array.isArray(why.items) ? why.items : [];
+const bodyOf = (item: Item): string => item.body ?? item.desc ?? item.description ?? '';
+// A row the owner added but never filled would otherwise spend a hairline and
+// 22px of padding on a lone dot. Drop the blanks (whitespace counts as blank),
+// but carry the ORIGINAL index so every data-field still writes to the real
+// array slot — removing amenity 2 must never redirect an edit to amenity 3.
+const rows = items
+  .map((it, i: number) => ({ ...it, i }))
+  .filter((r) => Boolean(String(r.title || '').trim() || bodyOf(r).trim()));
+// Section gate. Deliberately excludes tag and headline: both are DERIVED for
+// every site by lib/derive-content-defaults.ts, so counting them would make this
+// gate always-true and ship an eyebrow over an empty grid.
+const hasHouse = Boolean(image || lead) || rows.length > 0;
+---
+{hasHouse && (
+  <section class="house" id="amenities">
+    <div class="wrap">
+      <div class:list={['house-grid', !image && 'nofig']}>
+        {image && (
+          /* Gated on `image`, so this plate always holds a real photograph and
+             role="img" is honest by construction. The aria-label is a
+             non-visible accessible name (family precedent: AboutBI), never page
+             copy — an empty slot never ships here, so nothing can announce a
+             photo that does not exist. */
+          <div class="plate house-fig" style="aspect-ratio:1/1;min-height:0">
+            <div
+              class="ph"
+              data-image-field="why.image"
+              role="img"
+              aria-label="Property photo"
+              style={`background-image:url('${image}');`}
+            ></div>
+          </div>
+        )}
+        <div class="house-copy">
+          {tag && <span class="kick" data-field="why.tag">{tag}</span>}
+          {headline && <h2 class="h2 house-h reveal" data-field="why.headline" set:html={headline}></h2>}
+          {lead && <p class="house-lead reveal" data-field="why.lead">{lead}</p>}
+          {rows.length > 0 && (
+            <div class="am-list reveal">
+              {rows.map((it) => (
+                <div class="am-row">
+                  <span class="am-dot" aria-hidden="true"></span>
+                  {it.title && <span class="am-label" data-field={`why.items.${it.i}.title`}>{it.title}</span>}
+                  {bodyOf(it) && <span class="am-note" data-field={`why.items.${it.i}.body`}>{bodyOf(it)}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* ── the split. .nofig is what a photo-less house gets: one column, and a
+        wider measure so the paragraph does not read as a narrow strip. */
+  .house-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr);
+    gap: clamp(32px, 4.6vw, 60px);
+    align-items: center;
+  }
+  .house-grid.nofig { grid-template-columns: 1fr; }
+  .house-grid.nofig .house-lead { max-width: 66ch; }
+  /* Restates only the corner radius of the shared .plate frame. */
+  .house-fig { border-radius: 20px; }
+  .house-copy { min-width: 0; }
+
+  /* The eyebrow is the wrapper's shared .kick primitive — 10px tracked caps in
+     --accent (the AA-darkened terracotta, 5.06:1 on paper, which 10px text
+     needs). Restating it here would fork it from the rest of the template. */
+
+  /* Instrument Serif ships ONE weight — 400. Asking for 700 makes the browser
+     synthesise a faux bold, so the weight is pinned here rather than inherited
+     from whatever the base .h2 primitive asks for. The <em> emphasis rule is
+     GLOBAL in PageBJ on purpose: Astro's scoped styles cannot reach elements
+     created by set:html, so an italic rule written in this block would never
+     apply to the owner's own emphasis. */
+  .house-h {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(30px, 3.8vw, 52px); line-height: 1.06; letter-spacing: -.01em;
+    margin: .24em 0 .34em; color: var(--ink); max-width: 20ch; overflow-wrap: anywhere;
+  }
+  /* PageBJ's `:where(p){margin:0 0 1em}` is (0,1,1), so every paragraph rule
+     here is qualified with the parent class to out-specify it. */
+  .house-copy .house-lead {
+    margin: 0 0 24px; font-size: clamp(15.5px, 1.4vw, 16px); line-height: 1.8;
+    color: var(--ink-soft); max-width: 50ch; overflow-wrap: anywhere;
+  }
+
+  /* No headline is a real case (the owner cleared it), and then the eyebrow
+     would sit flush on the next block — the h2's own .24em top margin is what
+     normally opens that gap. Adjacency, so these fire ONLY in that case. The
+     paragraph rule is (0,4,0) after scoping, so this one is qualified to match. */
+  .house-copy .kick + .house-lead { margin-top: 14px; }
+  .kick + .am-list { margin-top: 14px; }
+
+  /* ── the amenity ledger. Two columns of hairline rows; the note is pushed
+        right by the LABEL's auto margin, so a row carrying only a note still
+        reads left-aligned beside its dot instead of floating off to the right. */
+  .am-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 clamp(20px, 2.6vw, 32px); }
+  .am-row {
+    display: flex; align-items: baseline; gap: 12px; min-width: 0;
+    padding: 11px 0; border-bottom: 1px solid var(--line);
+  }
+  .am-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; transform: translateY(-3px); }
+  .am-label { font-size: 15px; color: var(--ink); margin-right: auto; overflow-wrap: anywhere; }
+  .am-note { font-size: 12px; color: var(--muted); text-align: right; overflow-wrap: anywhere; }
+
+  /* ── 900: one column, photograph first (it already leads in the DOM). The
+        plate is sized INLINE, so `aspect-ratio` here could never win — a
+        definite height is what actually retunes it (with both axes definite the
+        ratio simply stops applying). */
+  @media (max-width: 900px) {
+    .house-grid { grid-template-columns: 1fr; gap: 28px; }
+    .house-fig { height: clamp(230px, 58vw, 380px); }
+    .house-copy .house-lead { max-width: none; }
+    .house-h { max-width: none; }
+  }
+
+  /* ── 520: the ledger goes single-column. Two ~150px tracks at 360px would put
+        a wrapped label above a wrapped note on every row. */
+  @media (max-width: 520px) {
+    .am-list { grid-template-columns: 1fr; }
+    .house-h { font-size: clamp(27px, 8.4vw, 34px); }
+    .am-label { font-size: 14.5px; }
+  }
+</style>

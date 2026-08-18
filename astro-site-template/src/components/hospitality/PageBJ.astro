@@ -1,0 +1,603 @@
+---
+/**
+ * hospitality / PageBJ — "Kubo Stays" (rooms for rent in an owner-hosted house).
+ *
+ * Cream & deep green: Instrument Serif display over DM Sans body on a warm
+ * cream ground, with a terracotta eyebrow and two full-bleed green bands. The
+ * signature of the design is the ITALIC SERIF EMPHASIS inside a headline — the
+ * hero's last line, and any <em> an owner types into a section h2.
+ *
+ * ROLE OF THIS FILE: the wrapper emits the WHOLE document (doctype, head,
+ * tokens, fonts, Leaflet boot, skip link, scroll-reveal). It does NOT compose
+ * with BaseLayout. It is the only file in the variant that touches `siteData`;
+ * the 15 section components receive only `layout` + `content`.
+ *
+ * EDITABLE HOOKS OWNED BY THIS FILE: none. PageBJ renders no editable text of
+ * its own — it only READS layout.businessName / layout.tagline (<title>),
+ * content.description (<meta name="description">), layout.favicon (<link
+ * rel="icon">) and layout.ogImage || layout.favicon (og:image). Every
+ * data-field / data-image-field / data-href-field hook lives in a section
+ * component. Section visibility is the 13 camelCase `visibility.*` keys below,
+ * every one tested `!== false` (undefined ⇒ render).
+ *
+ * THE ONE HARDCODED VISIBLE STRING in the whole template is the skip link's
+ * "Skip to content" below. It is an a11y affordance, visible on focus only, and
+ * it matches PageBI. Flagged here so it reads as a decision, not an oversight.
+ *
+ * PROP PLUMBING: every section is handed BOTH `content` and `layout`, even the
+ * ones whose contract lists only content.* keys. Extra props are inert in
+ * Astro, whereas a section that reaches for layout.contact.phone with no
+ * `layout` prop throws at build. This variant was authored in parallel, so the
+ * uniform call is the safe one.
+ *
+ * DESIGN ISOLATION: every selector in the global block is prefixed
+ * `html[data-page="BJ"]`, including the `*` reset, `body`, `img`, `a`,
+ * `::selection` and the base primitives, so nothing leaks into a sister wrapper
+ * built in the same run — and nothing leaks in.
+ *
+ * THEMING: the native palette is emitted FIRST and the engine's
+ * `html:root{…!important}` block LAST in <head>, which is the only reason an
+ * explicit admin colour pick wins the cascade. Never move it above the design's
+ * global style block or above the {__fontHref} link.
+ *
+ * FONT-PAIRING SENTINEL (two lines, wrapper-local, touches no shared file):
+ * lib/astro-builder.ts defaults `layout.fontPairing` to the literal 'modern',
+ * and resolveTheme's `lockVariant` only blanks ''/'auto'/'default' — so without
+ * the sentinel buildOverrideCss force-swaps Space Grotesk + Inter with
+ * !important on ~every real site and Instrument Serif never reaches a visitor.
+ * We treat astro-builder's DEFAULT as unset; a deliberate admin pick still
+ * applies.
+ *
+ * FORBIDDEN CLASS NAMES in this template (read lib/genericThemeOverrides.ts
+ * before adding a button anywhere):
+ *   .btn-primary .btn-ghost .btn-yellow .btn-light .nav-cta .nav-right
+ *   .testi .cta-band .trust, and `.hero` on a <section>.
+ * Note .trust and .cta-band are forbidden HERE although PageBI uses both: the
+ * engine pins `.trust{color:<on-ink>}` and `.cta-band .btn{color:<on-ink>}`,
+ * which is correct only for an element sitting on an INK fill. BJ's proof band
+ * sits on the light --paper-2 tint (class .proof) and BJ's closing band carries
+ * a PAPER-filled button (class .closing), so both pins would strand a label.
+ * Buttons here are .btn--fill / .btn--line / .linkc (double dash) — they dodge
+ * the engine's `.btn-primary{color:<on-primary>!important}` pin, which is
+ * sub-AA in 6 of 13 schemes.
+ *
+ * PALETTE DEVIATIONS FROM THE DESIGN, all deliberate:
+ *  (a) --ink is the design's DEEP GREEN #143F38, not its near-black #17140F.
+ *      The green bands (How, the whole-house slab, the closing band) must be
+ *      painted with var(--ink) on var(--paper): buildOverrideCss remaps
+ *      --accent-deep to palette.primaryDeep, which is #FFFFFF in the 'dark'
+ *      scheme and #E5E5E5 in 'black' — both allowed for this family — so a
+ *      green band built on --accent-deep would render white-on-white. The
+ *      ink/paper pair is the only pairing legible in all 13 schemes, in both
+ *      directions.
+ *  (b) --accent is a DARKENED terracotta #A9501F (5.06:1 on cream) rather than
+ *      the design's #C4622D (3.83:1): the eyebrows are 10px caps and must
+ *      clear AA.
+ *  (c) --muted is #6E6759 (5.20:1 on cream, 4.81 on the tint) rather than the
+ *      design's label grey #8C8578, which measures 3.40:1 on cream and fails
+ *      AA for the 10–12px text it is used on. It sits between the design's own
+ *      two greys (#5C554B body, #8C8578 label) and reads as the same stone.
+ *  (d) The headline <em> is ITALIC ONLY, with `color: inherit`. The design
+ *      tints it green against a near-black headline; here the headline is
+ *      already that green, and the obvious substitute — var(--accent) — is
+ *      1.72:1 against the maroon scheme's paper, which would delete a word
+ *      from the middle of a sentence. The italic serif IS the signature.
+ *  GOLD (--accent-light) IS DECORATION ONLY: never a button fill, never body
+ *  text, never an eyebrow on an inverted band. The engine remaps it to
+ *  palette.accent (#A52A2A maroon, #A0A0A0 dark/black), so gold-on-green would
+ *  become maroon-on-ink. It is confined to aria-hidden numerals and hairlines.
+ *
+ * KNOWN RISK, recorded not fixed: the eyebrow (.kick) is var(--accent) per the
+ * contract's palette decision. Native cream that is 5.06:1, but the engine
+ * remaps --accent to palette.primary, which is #800000 on the maroon scheme's
+ * #2D0000 paper = 1.72:1. Every eyebrow in the template is decorative-adjacent
+ * (the h2 beneath always repeats the section's meaning), so a dimmed eyebrow
+ * degrades rather than breaks — but the honest fix is a shared-file change to
+ * the maroon palette, which is out of scope here.
+ *
+ * RENDER ORDER: Header, Hero, Trust, Services (the rooms), Why (the house),
+ * Gallery, About (your host), Credentials (the promises), How, Testimonials,
+ * Area, Location, Faq, CtaBand, Footer. Rooms lead, because on this vertical
+ * the rate and the room are the product. Credentials sits immediately after
+ * About on purpose: the design nests the promise cards in the host section's
+ * right column, and one content prefix per <section> forbids that — see
+ * CredentialsBJ.
+ *
+ * INVERTED BANDS: a section that wants the green ground carries BOTH its own
+ * name and `band-shade` (e.g. class="closing band-shade"), exactly as PageBI's
+ * footer does. That one class flips the h2, body, eyebrow, chip, hairline and
+ * button treatments in this file; a section should not restate them.
+ *
+ * Leaflet: this wrapper defines window.__hospitalityBJInitMap (family-unique)
+ * and LocationBJ calls that exact string. Keep `el.innerHTML = ''` in the boot —
+ * it is what erases the drawn fallback map-face — and keep id="map" literal.
+ */
+import HeaderBJ from './header/HeaderBJ.astro';
+import HeroBJ from './hero/HeroBJ.astro';
+import TrustBJ from './trust/TrustBJ.astro';
+import ServicesBJ from './services/ServicesBJ.astro';
+import WhyBJ from './why/WhyBJ.astro';
+import GalleryBJ from './gallery/GalleryBJ.astro';
+import AboutBJ from './about/AboutBJ.astro';
+import CredentialsBJ from './credentials/CredentialsBJ.astro';
+import HowBJ from './how/HowBJ.astro';
+import TestimonialsBJ from './testimonials/TestimonialsBJ.astro';
+import AreaBJ from './area/AreaBJ.astro';
+import LocationBJ from './location/LocationBJ.astro';
+import FaqBJ from './faq/FaqBJ.astro';
+import CtaBandBJ from './ctaBand/CtaBandBJ.astro';
+import FooterBJ from './footer/FooterBJ.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __resolvedPairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+// 'modern' is astro-builder's DEFAULT, not a choice (lib/astro-builder.ts).
+// Treating it as unset keeps Instrument Serif; a deliberate admin pick applies.
+const __themePairing = __resolvedPairing === 'modern' ? '' : __resolvedPairing;
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="BJ">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <!-- Browser-chrome tint. A <meta> cannot read a CSS var, so this duplicates
+       the cream ground token (--paper) that the sticky header sits on. -->
+  <meta name="theme-color" content="#FAF6F0" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <!-- Kubo Stays native fonts, taken verbatim from the design: Instrument Serif
+       with BOTH italic axes (the italic is the template's signature, so it must
+       be a real cut and never a synthesised oblique) plus DM Sans for body and
+       labels. Always loaded so the variant reads as designed even when the
+       admin never touched the font dropdown. -->
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <style is:global>
+    /* ═══════════════════════════════════════════════════════════════════════
+       PageBJ · "Kubo Stays" — hospitality (rooms for rent, owner-hosted).
+       Tokens + shared base primitives. EVERY selector is prefixed
+       html[data-page="BJ"] so nothing leaks into a sister wrapper, or in.
+
+       FIVE LOAD-BEARING FACTS. Do not "tidy" any of them:
+
+       1. SPECIFICITY. Every appearance-bearing base primitive is wrapped in
+          :where() -> (0,1,1), so an Astro-scoped single-compound section rule
+          (0,2,0) wins. Removing a :where() is the documented cause of every
+          photo frame collapsing to the base height (squished band). BELT AND
+          BRACES: sections also size .plate with an INLINE
+          style="aspect-ratio:X;min-height:0" — inline outranks every selector,
+          so the specificity argument never has to be won per section.
+
+       2. BUTTON CLASS NAMES. .btn--fill / .btn--line / .linkc, double-dash, on
+          purpose. They dodge buildOverrideCss's
+          `.btn-primary,…{color:<on-primary>!important}` (sub-AA in 6 of 13
+          schemes) and `.hero .btn-ghost{…!important}` (which would strand a
+          white label on this cream hero — the arrival section is class
+          "arrival", never "hero"). NEVER use in this template:
+          .btn-primary .btn-ghost .btn-yellow .btn-light .nav-cta .nav-right
+          .testi .cta-band .trust. The proof band is .proof and the closing band
+          is .closing precisely so the engine's on-ink pins cannot reach them —
+          BJ's proof band sits on a LIGHT tint and BJ's closing band carries a
+          PAPER-filled button, so both pins would be wrong. There is ZERO
+          !important in this template outside the reduced-motion reveal reset.
+
+       3. HOVER. Never changes hue, never goes light or transparent. An inset
+          rgba(0,0,0,.16) darkens only the fill (it paints above the background
+          and below the label), so a label can never strand mid-transition.
+
+       4. FOCUS. One DUO ring for everything: a 3px var(--paper) outline inside
+          a 6px var(--ink) halo. Built from the ink/paper pair, so on cream the
+          ink halo separates the ring from the page and on a green band the
+          paper ring separates from the halo — the same pair, both directions,
+          in all 13 schemes.
+
+       5. HEAD ORDER. This block must be followed by
+          {__fontHref && <link href={__fontHref} rel="stylesheet" />} and then,
+          as the LAST node in the head, a global style node fed
+          set:html={__overrideCss}. The engine's html:root{…!important} only
+          beats these tokens because it comes later in source order.
+          (Never write a literal closing style or script tag inside this block,
+          comments included — it is an HTML raw-text element, so the parser
+          would end the stylesheet right there.)
+    ═══════════════════════════════════════════════════════════════════════ */
+
+    html[data-page="BJ"] {
+      /* grounds — cream / oatmeal tint / white card */
+      --paper: #FAF6F0;
+      --paper-2: #F3EDE2;
+      --card: #FFFFFF;
+      /* ink — the design's DEEP GREEN. Both a text colour and the ground of
+         every inverted band. See PALETTE DEVIATION (a). */
+      --ink: #143F38;
+      --ink-soft: #4C5F57;
+      --line: #E6DED1;
+      /* warmth — darkened terracotta primary, forest deep, gold decoration */
+      --accent: #A9501F;
+      --accent-deep: #0F2E29;
+      --accent-light: #E0A63A;
+      --muted: #6E6759;
+      /* rgb triplets for token-driven tints (all remapped by buildOverrideCss) */
+      --paper-rgb: 250,246,240;
+      --ink-rgb: 20,63,56;
+      --accent-rgb: 169,80,31;
+      /* contrast aliases the override engine + inherited rules expect */
+      --on-ink: #FAF6F0;
+      --on-paper: #143F38;
+      --on-accent: #FFFFFF;
+      --on-primary: #FFFFFF;
+      /* type + metrics */
+      --disp: "Instrument Serif", Georgia, "Times New Roman", serif;
+      --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+      --sans: "DM Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      /* This design has no monospace: its small caps labels are DM Sans. The
+         token exists because the engine sets it and shared primitives read it. */
+      --mono: "DM Sans", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      --maxw: 1240px;
+      --r-lg: 20px;
+      --r-md: 18px;
+      --r-sm: 12px;
+    }
+
+    /* VERIFIED CONTRAST (sRGB relative luminance, native palette):
+       ink/paper 10.85 · ink/paper-2 10.03 · ink/card 11.68
+       ink-soft/paper 6.33 · /paper-2 5.85 · /card 6.81
+       muted/paper 5.20 · /paper-2 4.81 · /card 5.60
+       accent/paper 5.06 (eyebrows, 10px caps) · accent/card 5.45
+       paper on ink 10.85 · rgba(paper,.86) 8.9 · .78 7.6 · .62 5.1
+       BANNED, recorded as evidence: design terracotta #C4622D/paper 3.83 ·
+       design label grey #8C8578/paper 3.40 · gold #E0A63A as text on cream 1.87 ·
+       engine --accent-deep (#FFFFFF) as a band ground on the dark scheme 1.00 ·
+       engine --accent as text on the maroon scheme's paper 1.72.
+       WORST OF THE 6 SCHEMES THIS FAMILY ALLOWS: ink/paper 9.11 (maroon) ·
+       our paper label on a 16%-darkened ink fill 10.0+ everywhere. Nothing
+       carrying text is below 4.5:1 except the eyebrow under a remap — see the
+       KNOWN RISK note in the frontmatter. */
+
+    /* ── reset + document ─────────────────────────────────────────────── */
+    html[data-page="BJ"] *,
+    html[data-page="BJ"] *::before,
+    html[data-page="BJ"] *::after { box-sizing: border-box; }
+    html[data-page="BJ"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BJ"] { scroll-behavior: auto; } }
+    html[data-page="BJ"] body {
+      margin: 0; padding: 0;
+      background-color: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 16.5px; line-height: 1.7;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    html[data-page="BJ"] img { max-width: 100%; display: block; }
+    html[data-page="BJ"] a { color: inherit; text-decoration: none; }
+    html[data-page="BJ"] ::selection { background: var(--ink); color: var(--paper); }
+    html[data-page="BJ"] :where(h1,h2,h3,h4) {
+      margin: 0; font-family: var(--disp); font-weight: 400; color: var(--ink);
+      letter-spacing: 0; line-height: 1.06;
+    }
+    /* This bare-element paragraph reset is (0,1,1): always qualify a section's
+       own paragraph rules with a parent class (.host-prose p) so they win. */
+    html[data-page="BJ"] :where(p) { margin: 0 0 1em; }
+
+    /* ── layout scaffolding ───────────────────────────────────────────── */
+    html[data-page="BJ"] :where(.wrap) { width: min(var(--maxw), 92vw); margin-inline: auto; }
+    html[data-page="BJ"] section { padding: clamp(60px,8vw,92px) 0; position: relative; }
+
+    /* ── BAND GROUNDS. Three, and only three. Sections pick one by name.
+          Default (no class) = cream --paper. A section wanting the green ground
+          carries `band-shade` ALONGSIDE its own class name. */
+    html[data-page="BJ"] :where(.band-tint) { background-color: var(--paper-2); }
+    html[data-page="BJ"] :where(.band-card) { background-color: var(--card); }
+    html[data-page="BJ"] :where(.band-shade) { background-color: var(--ink); color: var(--paper); }
+    html[data-page="BJ"] :where(.band-shade) .h2,
+    html[data-page="BJ"] :where(.band-shade) .fig { color: var(--paper); }
+    html[data-page="BJ"] :where(.band-shade) .body,
+    html[data-page="BJ"] :where(.band-shade) .lede { color: rgba(var(--paper-rgb),.78); }
+    html[data-page="BJ"] :where(.band-shade) .mono { color: rgba(var(--paper-rgb),.74); }
+    html[data-page="BJ"] :where(.band-shade) .plate { border-color: rgba(var(--paper-rgb),.18); }
+
+    /* ── .kick — the eyebrow. 10px caps, wide tracking, terracotta. On an
+          inverted band it becomes paper-derived: the design's gold eyebrow is
+          NOT portable (the engine turns gold into #A52A2A on maroon and
+          #A0A0A0 on dark), and gold is decoration only in this template. */
+    html[data-page="BJ"] :where(.kick) {
+      display: inline-block;
+      font-family: var(--sans); font-weight: 600; font-size: 10px;
+      letter-spacing: .4em; text-transform: uppercase; color: var(--ink-soft);
+    }
+    html[data-page="BJ"] :where(.band-shade) .kick { color: rgba(var(--paper-rgb),.82); }
+
+    /* ── display headline + the ITALIC SERIF EMPHASIS (the design's signature).
+          <em> is ITALIC ONLY and keeps `inherit` — see PALETTE DEVIATION (d).
+          Sections feed the h2 with set:html so an owner can place the emphasis
+          anywhere in their own sentence. */
+    html[data-page="BJ"] :where(.h2) {
+      font-family: var(--disp); font-weight: 400;
+      font-size: clamp(30px,4.3vw,56px); line-height: 1.06; letter-spacing: 0;
+      margin: 0 0 .3em; color: var(--ink); max-width: 22ch;
+    }
+    html[data-page="BJ"] :where(.h2 em),
+    html[data-page="BJ"] :where(.h2 .em),
+    html[data-page="BJ"] :where(.em) { font-style: italic; color: inherit; }
+    html[data-page="BJ"] :where(.lede) {
+      color: var(--ink-soft); font-size: clamp(15.5px,1.5vw,17.5px); line-height: 1.7;
+      max-width: 46ch; margin: 0;
+    }
+    html[data-page="BJ"] :where(.body) {
+      color: var(--ink-soft); font-size: clamp(14.5px,1.3vw,15.5px); line-height: 1.7;
+    }
+    /* ── .mono — small tracked caps on a light ground (--muted, 4.81 worst) */
+    html[data-page="BJ"] :where(.mono) {
+      font-family: var(--mono); font-weight: 500; font-size: 10.5px;
+      letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+    }
+    /* ── .fig — the serif money/stat figure. tabular-nums survives a font swap. */
+    html[data-page="BJ"] :where(.fig) {
+      font-family: var(--disp); font-weight: 400; color: var(--ink);
+      font-variant-numeric: tabular-nums lining-nums; line-height: 1;
+    }
+
+    /* ── BUTTONS ───────────────────────────────────────────────────────
+       Proven pairs (native / worst of the 6 schemes this family allows):
+         .btn--fill            paper on ink                 10.85 / 9.11
+         .btn--fill:hover      paper on ink+16% black        12.4 / 10.3
+         .btn--line            ink on card                   11.68 / 9.4
+         .btn--line:hover      paper on ink                  10.85 / 9.11
+         .band-shade .btn--fill  ink on paper                10.85 / 9.11
+         .band-shade .btn--line  paper on ink                10.85 / 9.11
+         .linkc                ink on cream (never changes on hover) 10.85 / 9.11
+       No fill is EVER a mid-tone: every one is the darkest or the lightest
+       token of the pair. The design's terracotta-filled pill is deliberately
+       NOT reproduced — an --accent fill under a --paper label measures 1.72:1
+       on the maroon scheme, where both tokens collapse into the same red. */
+    html[data-page="BJ"] :where(.btn) {
+      display: inline-flex; align-items: center; justify-content: center; gap: .55em;
+      padding: 16px 30px; min-height: 48px;
+      border-radius: 999px; border: 1px solid transparent;
+      font-family: var(--sans); font-weight: 600; font-size: 12px;
+      letter-spacing: .16em; text-transform: uppercase; text-decoration: none;
+      cursor: pointer; white-space: nowrap;
+      transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+    }
+    html[data-page="BJ"] :where(.btn--fill) {
+      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+    }
+    html[data-page="BJ"] :where(.btn--fill:hover) {
+      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+      box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 4px rgba(var(--accent-rgb),.28);
+      transform: translateY(-2px);
+    }
+    html[data-page="BJ"] :where(.btn--fill:active) { transform: translateY(0); }
+    /* The design's secondary pill: a white card fill inside a hairline. */
+    html[data-page="BJ"] :where(.btn--line) {
+      background-color: var(--card); color: var(--ink); border-color: var(--line);
+    }
+    html[data-page="BJ"] :where(.btn--line:hover) {
+      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+      transform: translateY(-2px);
+    }
+    html[data-page="BJ"] :where(.btn--line:active) { transform: translateY(0); }
+    /* INSIDE a green band both variants invert. Declared once, globally, so no
+       section has to restate them — and so no section is tempted to invent a
+       gold fill, which the engine would turn into maroon-on-ink. */
+    html[data-page="BJ"] :where(.band-shade) .btn--fill {
+      background-color: var(--paper); color: var(--ink); border-color: var(--paper);
+    }
+    html[data-page="BJ"] :where(.band-shade) .btn--fill:hover {
+      background-color: var(--paper); color: var(--ink); border-color: var(--paper);
+      box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 4px rgba(var(--paper-rgb),.24);
+    }
+    html[data-page="BJ"] :where(.band-shade) .btn--line {
+      background-color: transparent; color: var(--paper); border-color: rgba(var(--paper-rgb),.45);
+    }
+    html[data-page="BJ"] :where(.band-shade) .btn--line:hover {
+      background-color: rgba(var(--paper-rgb),.14); color: var(--paper); border-color: var(--paper);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="BJ"] .btn { transition: none; }
+      html[data-page="BJ"] .btn--fill:hover,
+      html[data-page="BJ"] .btn--line:hover { transform: none; }
+    }
+
+    /* ── .linkc — quiet text-link action. Used INSTEAD of a second button in the
+          footer and inside any band the engine pins, because it carries no .btn
+          class. Its colour never changes on hover (only the rule under it
+          thickens), so it cannot fail a contrast check mid-interaction. */
+    html[data-page="BJ"] :where(.linkc) {
+      display: inline-flex; align-items: center; gap: .5em; min-height: 44px;
+      font-family: var(--sans); font-weight: 600; font-size: 13px;
+      letter-spacing: .04em; color: var(--ink);
+      border-bottom: 2px solid var(--accent); padding-bottom: 2px;
+      transition: border-bottom-width .18s ease, border-bottom-color .18s ease, transform .18s ease;
+    }
+    html[data-page="BJ"] :where(.linkc:hover) {
+      color: var(--ink); border-bottom-width: 3px; border-bottom-color: var(--ink);
+      transform: translateY(-1px);
+    }
+    html[data-page="BJ"] :where(.band-shade) .linkc { color: var(--paper); border-bottom-color: var(--accent-light); }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BJ"] .linkc { transition: none; } }
+
+    /* ── FOCUS · the DUO ring. See load-bearing fact 4. */
+    html[data-page="BJ"] :where(a,button,summary,[tabindex]):focus-visible {
+      outline: 3px solid var(--paper); outline-offset: 0;
+      box-shadow: 0 0 0 6px var(--ink);
+      border-radius: var(--r-sm);
+    }
+    html[data-page="BJ"] :where(.btn):focus-visible,
+    html[data-page="BJ"] :where(.linkc):focus-visible { border-radius: 999px; }
+
+    /* ── .plate — THE photo frame. Every image in the template is one of these.
+          Sections size it with an inline style="aspect-ratio:X;min-height:0".
+          The fallback face is token-built, so it recolours with the scheme —
+          and a section must OMIT the plate entirely when the owner supplied no
+          photo rather than ship a decorative empty box. */
+    html[data-page="BJ"] :where(.plate) {
+      position: relative; overflow: hidden; border-radius: var(--r-lg);
+      background-color: var(--paper-2); border: 1px solid var(--line); isolation: isolate;
+    }
+    html[data-page="BJ"] :where(.plate) .ph {
+      position: absolute; inset: 0; z-index: 1;
+      background-color: var(--paper-2);
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+      background-image:
+        radial-gradient(78% 64% at 22% 14%, rgba(var(--accent-rgb),.22), transparent 62%),
+        radial-gradient(66% 60% at 84% 90%, rgba(var(--ink-rgb),.22), transparent 60%);
+      transition: transform .5s ease;
+    }
+    /* .cap — caption on an OPAQUE ink pill, never a gradient scrim: 10.85 over
+       ANY owner photo, however dark or blown out. */
+    html[data-page="BJ"] :where(.plate) .cap {
+      position: absolute; left: 12px; bottom: 12px; z-index: 3;
+      max-width: calc(100% - 24px);
+      background-color: var(--ink); color: var(--paper);
+      font-family: var(--sans); font-weight: 600; font-size: 9px;
+      letter-spacing: .18em; text-transform: uppercase;
+      padding: 6px 11px; border-radius: 999px;
+    }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BJ"] :where(.plate) .ph { transition: none; } }
+
+    /* ── .chip — the design's outline pill (room features, footer channels).
+          Hairline border, ink-soft label, no fill: an accent-TINTED chip would
+          go invisible under the dark and black schemes, where --accent-rgb is
+          a mid grey. */
+    html[data-page="BJ"] :where(.chip) {
+      display: inline-flex; align-items: center;
+      background-color: transparent; color: var(--ink-soft);
+      border: 1px solid var(--line); border-radius: 999px;
+      padding: 6px 12px;
+      font-family: var(--sans); font-weight: 500; font-size: 10px;
+      letter-spacing: .12em; text-transform: uppercase;
+    }
+    html[data-page="BJ"] :where(.band-shade) .chip {
+      color: rgba(var(--paper-rgb),.86); border-color: rgba(var(--paper-rgb),.30);
+    }
+
+    /* ── .rowrule — the one hairline row separator used by every list/ledger in
+          the template (amenities, house rules, FAQ). Per-cell border, never a
+          gap-over-inked-container trick: that paints a visible block in the
+          EMPTY tracks of a partial last row. */
+    html[data-page="BJ"] :where(.rowrule) { border-bottom: 1px solid var(--line); }
+    html[data-page="BJ"] :where(.band-shade) .rowrule { border-bottom-color: rgba(var(--paper-rgb),.20); }
+
+    /* ── scroll reveal (the boot IIFE at the end of the body toggles .in) ── */
+    html[data-page="BJ"] :where(.reveal) { opacity: 0; transform: translateY(16px); transition: opacity .7s ease, transform .7s ease; }
+    html[data-page="BJ"] :where(.reveal.in) { opacity: 1; transform: none; }
+    html[data-page="BJ"] :where(.reveal[data-delay="1"]) { transition-delay: .08s; }
+    html[data-page="BJ"] :where(.reveal[data-delay="2"]) { transition-delay: .16s; }
+    html[data-page="BJ"] :where(.reveal[data-delay="3"]) { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="BJ"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* ── skip link ────────────────────────────────────────────────────── */
+    html[data-page="BJ"] :where(.skip) {
+      position: absolute; left: -999px; top: 0; z-index: 100;
+      background-color: var(--ink); color: var(--paper);
+      padding: 12px 18px; border-radius: 0 0 var(--r-sm) 0;
+      font-family: var(--sans); font-weight: 600; font-size: 11.5px;
+      letter-spacing: .14em; text-transform: uppercase;
+    }
+    html[data-page="BJ"] :where(.skip:focus) { left: 0; top: 0; }
+
+    /* ── SHARED MOBILE PASS · 760px ───────────────────────────────────── */
+    @media (max-width: 760px) {
+      html[data-page="BJ"] section { padding: clamp(48px,10vw,72px) 0; }
+      html[data-page="BJ"] :where(.wrap) { width: min(var(--maxw), 90vw); }
+      html[data-page="BJ"] :where(.h2) { font-size: clamp(27px,7.2vw,42px); max-width: none; overflow-wrap: anywhere; }
+      html[data-page="BJ"] :where(.lede) { max-width: none; }
+      html[data-page="BJ"] :where(.plate) { border-radius: var(--r-md); }
+    }
+
+    /* ── SHARED MOBILE PASS · 520px (verified no horizontal overflow at 360px) ── */
+    @media (max-width: 520px) {
+      html[data-page="BJ"] body { font-size: 16px; }
+      html[data-page="BJ"] :where(.h2) { font-size: clamp(25px,8vw,32px); }
+      html[data-page="BJ"] :where(.kick) { font-size: 9.5px; letter-spacing: .26em; }
+      html[data-page="BJ"] :where(.mono) { letter-spacing: .14em; }
+      html[data-page="BJ"] :where(.btn) { padding: 15px 22px; font-size: 11px; letter-spacing: .12em; white-space: normal; text-align: center; flex: 1 1 100%; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <HeaderBJ layout={layout} content={content} />
+  <main id="main">
+    {visibility.heroSection !== false && <HeroBJ content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustBJ content={content} layout={layout} />}
+    {/* Rooms → the house → gallery lead, BEFORE the story: on this vertical the
+        rate and the room are the product. Deliberate; do not reorder. */}
+    {visibility.servicesSection !== false && <ServicesBJ content={content} layout={layout} />}
+    {visibility.whyUsBlock !== false && <WhyBJ content={content} layout={layout} />}
+    {visibility.gallerySection !== false && <GalleryBJ content={content} layout={layout} />}
+    {visibility.aboutSection !== false && <AboutBJ content={content} layout={layout} />}
+    {/* The promise cards sit immediately under the host block, on the same
+        ground and with no top rule, so the two read as one spread — the design
+        nests them in the host section's right column, which one-content-prefix-
+        per-section forbids. */}
+    {visibility.credentialsBlock !== false && <CredentialsBJ content={content} layout={layout} />}
+    {visibility.howItWorksBlock !== false && <HowBJ content={content} layout={layout} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsBJ content={content} layout={layout} />}
+    {visibility.serviceAreaBlock !== false && <AreaBJ content={content} layout={layout} />}
+    {visibility.locationBlock !== false && <LocationBJ content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqBJ content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandBJ content={content} layout={layout} />}
+  <FooterBJ layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Kubo Stays / BJ Leaflet boot — accepts (lat, lng, label) from LocationBJ.
+      // The global name is family-unique on purpose: a preview harness can render
+      // two wrappers in one document, and a shared name cross-wires the maps.
+      window.__hospitalityBJInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        // Erases LocationBJ's drawn fallback map-face; without this the tiles
+        // stack on top of the drawn grid.
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        // LABELLED basemap: a guest orienting to a barangay, pier or highway
+        // needs place names, so this family uses CARTO voyager, not nolabels.
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        // Marker colours are READ from the live tokens rather than baked, so an
+        // explicit admin colour pick recolours the pin too (buildOverrideCss sets
+        // them on html:root, which is this same element).
+        var cs = window.getComputedStyle(document.documentElement);
+        var accent = (cs.getPropertyValue('--accent') || '').trim() || '#A9501F';
+        var paper = (cs.getPropertyValue('--paper') || '').trim() || '#FAF6F0';
+        var icon = L.divIcon({
+          className: '',
+          html: '<div style="width:14px;height:14px;border-radius:50%;background:' + accent + ';box-shadow:0 0 0 3px ' + paper + ';border:0;"></div>',
+          iconSize: [14, 14], iconAnchor: [7, 7]
+        });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

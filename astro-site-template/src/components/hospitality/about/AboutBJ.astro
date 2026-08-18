@@ -1,0 +1,214 @@
+---
+/**
+ * hospitality / AboutBJ — "YOUR HOST" (Kubo Stays / BJ).
+ *
+ * ROLE: the one section that says a person, not an office, answers the message.
+ * Eyebrow, Instrument Serif headline, the owner's own paragraphs, then the
+ * identity row — a circular portrait, the host's name, the role line under it,
+ * and the page's single contact action inline beside them.
+ *
+ * SPLIT vs CredentialsBJ (the one deliberate deviation from the design): the
+ * design nests the three promise cards in this section's right-hand column.
+ * They are a SIBLING <section> here (credentials/CredentialsBJ.astro, id
+ * "promises") because editorBridge resolves a Blocks visibility toggle by
+ * counting a prefix's hooks inside each <section> and hiding the richest one — a
+ * section carrying both about.* and credentials.* would be hidden by EITHER
+ * toggle. One <section>, one content prefix. CredentialsBJ then sits directly
+ * under this block with a reduced top pad so the two still read as one idea, and
+ * it stacks better at 360px than a nested column ever would.
+ *
+ * EDITABLE HOOKS (every one schema-owned, so v3 focuses a real field):
+ *   about.tag              — eyebrow
+ *   about.headline         — h2 (set:html, so an owner's <em> picks up the
+ *                            wrapper's italic-serif emphasis)
+ *   about.lead             — FIRST paragraph. Rendered here on purpose: the
+ *                            sidebar's "Lead paragraph" box writes about.lead,
+ *                            and the BI sibling never renders it, which makes
+ *                            that box dead there. A schema field no component
+ *                            draws is the mirror of a dead hook and just as
+ *                            broken.
+ *   about.paragraphs.${i}  — the remaining paragraphs (set:html)
+ *   about.image            (data-image-field) — the circular host portrait
+ *   about.signature        — the host's NAME (the schema's "Signature line";
+ *                            derive-content-defaults already sets it to the
+ *                            business name, so a first build is never nameless)
+ *   about.role             — the free-text line under the name
+ *   hero.cta1.text + hero.cta1.href — the inline contact action
+ *
+ * WHY THE CTA IS hero.cta1 AND NOT A NEW FIELD: this page has ONE contact
+ * action, typed once. Reusing it means an owner who changes their Messenger link
+ * changes it everywhere. The cross-prefix hook is safe against the visibility
+ * bridge — the hero section carries several hero.* hooks against this section's
+ * one, so the hero toggle always resolves to the hero, never to the host block.
+ *
+ * R2 — NOTHING IS SUPPLIED BY THIS FILE. No host name, no "hosting since", no
+ * "replies within the hour", no role. about.role in particular is ONE piece of
+ * free text and is never assembled from parts: "Owner · Hosting since 2019 ·
+ * Lives on site" is three claims only the owner may make. Every guard sits
+ * OUTSIDE its tag, so an empty value removes the ELEMENT — no empty avatar
+ * circle, no role line floating under no name.
+ *
+ * ANCHOR: id="host", one of PageBJ's PAGE_ANCHORS.
+ *
+ * THEMING (R3): no baked hex — only --ink --ink-soft --muted --line --accent
+ * --disp --sans, plus the wrapper's .plate/.ph and .btn--line primitives.
+ * R4: the inline action is a .btn--line (ink label on the cream ground; hover
+ * fills OPAQUE ink and takes the paper label from the wrapper). It is never
+ * .btn-primary / .btn-ghost / .nav-cta, whose labels buildOverrideCss pins with
+ * !important for every state.
+ */
+// layout is accepted but unused: PageBJ passes it to every section uniformly,
+// and this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+const hero = content.hero || {};
+// ── Anchor guard. A FIFTH byte-identical copy of the Header / Hero / CtaBand /
+// Footer helper, and it has to be here: lib/derive-content-defaults.ts hardcodes
+// hero.cta1.href = '#visit' on EVERY site, and this design renders no id="visit"
+// — so without the remap this button scrolls nowhere on every first build. Keep
+// PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBJ and with the other copies
+// (there is no shared import). Off-page hrefs (tel:, mailto:, http) pass through.
+const PAGE_ANCHORS = new Set(['book', 'faq', 'gallery', 'host', 'how', 'location', 'main', 'nearby', 'promises', 'reviews', 'rooms', 'amenities']);
+const ANCHOR_ALIAS: Record<string, string> = { about: 'amenities', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+// The eyebrow is about.tag ONLY — criterion A admits no design literal beside it.
+const tag = about.tag || '';
+const headline = about.headline || '';
+const lead = about.lead || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+// A blank row in the admin's paragraph list would otherwise render an empty <p>
+// that still spends its 1em margin. Drop the blanks, but carry the ORIGINAL
+// index so data-field keeps pointing at the real array slot.
+const paraRows = paragraphs
+  .map((text, i: number) => ({ text: String(text ?? ''), i }))
+  .filter((row) => row.text.trim().length > 0);
+const image = about.image || '';
+const name = about.signature || '';
+const role = about.role || '';
+const ctaText = hero.cta1?.text || '';
+const ctaHref = onPage(hero.cta1?.href, '#book');
+// The name+role stack is gated on the NAME: a role line with no name attributes
+// a claim to nobody. The PORTRAIT is gated only on its own upload — dropping a
+// photo the owner actually uploaded because another box is empty is the mirror
+// failure (a live sidebar field that changes nothing on the page).
+const hasIdentity = Boolean(name);
+// Section gate. tag and headline are deliberately excluded: derive-content-
+// defaults sets about.tag = 'About' on every site and about.headline =
+// `About ${name}` for every named business, so counting either would make this
+// gate always-true and ship a heading over nothing. The gate requires real BODY
+// content — and counts paraRows, because a list of blank strings is not content.
+const hasHost = Boolean(lead || image || name) || paraRows.length > 0;
+---
+{hasHost && (
+  <section class="host" id="host">
+    <div class="wrap">
+      <div class="host-copy">
+        {tag && <span class="kick" data-field="about.tag">{tag}</span>}
+        {headline && <h2 class="h2 host-h reveal" data-field="about.headline" set:html={headline}></h2>}
+        {/* about.lead is plain text from a textarea, so it is bound as text
+            rather than set:html — the paragraph LIST below is the place an owner
+            writes markup. */}
+        {lead && <p class="host-p reveal" data-field="about.lead">{lead}</p>}
+        {paraRows.map((row, k: number) => (
+          <p class="host-p reveal" data-delay={String(k % 3)} data-field={`about.paragraphs.${row.i}`} set:html={row.text}></p>
+        ))}
+        {(image || hasIdentity || ctaText) && (
+          <div class="host-id reveal">
+            {image && (
+              /* Gated on a real upload, so role="img" is honest by construction
+                 and an empty circle never ships. The accessible name is the
+                 owner's OWN name when there is one — never a literal describing
+                 a person we cannot see — and with no name the portrait is
+                 hidden from the accessibility tree rather than announced as
+                 somebody. */
+              <div class="plate host-ava" style="min-height:0">
+                <div
+                  class="ph"
+                  data-image-field="about.image"
+                  role={name ? 'img' : undefined}
+                  aria-label={name || undefined}
+                  aria-hidden={name ? undefined : 'true'}
+                  style={`background-image:url('${image}');`}
+                ></div>
+              </div>
+            )}
+            {hasIdentity && (
+              <div class="host-who">
+                <span class="host-name" data-field="about.signature">{name}</span>
+                {/* Guarded separately AND nested inside the name gate: a role
+                    line with no name attributes a claim to nobody. */}
+                {role && <span class="host-role" data-field="about.role">{role}</span>}
+              </div>
+            )}
+            {ctaText && <a class="btn btn--line host-cta" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* One column on the cream ground: the design's right-hand column is now the
+     sibling promises section, so this block is pure prose plus the identity row. */
+  .host-copy { max-width: 62ch; }
+
+  /* The eyebrow is the wrapper's shared .kick primitive — 10px tracked caps in
+     --accent (the AA-darkened terracotta, 5.06:1 on paper, which 10px text
+     needs). Restating it here would fork it from the rest of the template. */
+
+  /* Instrument Serif ships ONE weight — 400; asking for 700 synthesises a faux
+     bold, so the weight is pinned rather than inherited. The <em> emphasis rule
+     is GLOBAL in PageBJ on purpose: Astro's scoped styles cannot reach elements
+     created by set:html, so an italic rule written here would never apply to the
+     owner's own emphasis. */
+  .host-h {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(30px, 3.8vw, 52px); line-height: 1.06; letter-spacing: -.01em;
+    margin: .24em 0 .34em; color: var(--ink); max-width: 20ch; overflow-wrap: anywhere;
+  }
+  /* PageBJ's `:where(p){margin:0 0 1em}` is (0,1,1), so the paragraph rule is
+     qualified with the parent class to out-specify it. */
+  .host-copy .host-p {
+    margin: 0 0 1em; font-size: clamp(15.5px, 1.4vw, 16px); line-height: 1.8;
+    color: var(--ink-soft); max-width: 52ch; overflow-wrap: anywhere;
+  }
+  .host-copy .host-p:last-of-type { margin-bottom: 0; }
+  /* No headline is a real case (the owner cleared it), and then the eyebrow
+     would sit flush on the paragraph — the h2's own .24em top margin is what
+     normally opens that gap. Adjacency, so it fires ONLY in that case, and it
+     is qualified because the paragraph rule above is (0,4,0) after scoping and
+     its shorthand would otherwise re-zero the top margin. The identity row
+     needs no such rule: it carries its own 28px. */
+  .host-copy .kick + .host-p { margin-top: 14px; }
+
+  /* ── the identity row. Wraps rather than shrinks, so a long name and a long
+        button never fight for the same line. */
+  .host-id { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 28px; }
+  /* Overrides only the shape and size of the shared .plate frame — the wrapper
+     declares it inside :where(), so this single-class scoped rule wins. */
+  .host-ava { width: 60px; height: 60px; border-radius: 50%; flex: none; }
+  .host-who { display: flex; flex-direction: column; min-width: 0; }
+  .host-name { font-family: var(--disp); font-weight: 400; font-size: 22px; line-height: 1.15; color: var(--ink); overflow-wrap: anywhere; }
+  .host-role { font-size: 13px; line-height: 1.4; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+
+  @media (max-width: 760px) {
+    .host-copy, .host-copy .host-p { max-width: none; }
+    .host-h { max-width: none; }
+  }
+
+  /* ── 520: the action takes its own full-width line and is allowed to wrap.
+        The base .btn is `white-space: nowrap`, so a long owner label ("Message
+        me on Messenger") would otherwise push the page sideways at 360px. */
+  @media (max-width: 520px) {
+    .host-h { font-size: clamp(27px, 8.4vw, 34px); }
+    .host-id { gap: 14px; }
+    .host-cta { flex: 1 1 100%; white-space: normal; text-align: center; }
+  }
+</style>

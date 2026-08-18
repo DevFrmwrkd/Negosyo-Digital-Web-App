@@ -1,0 +1,197 @@
+---
+/**
+ * hospitality / HeroBJ — "Kubo Stays"' arrival. A tracked terracotta kicker, an
+ * oversized Instrument Serif headline whose LAST line falls into italic, a lede,
+ * two actions, and one tall rounded photo plate on the right.
+ *
+ * Editable hooks (every one is declared by components/editor/
+ * genericContentSchema.ts, so each is live in the v3 sidebar AND inline):
+ *   hero.kicker · hero.headlineLines.${i} (or hero.headline, see below) ·
+ *   hero.sub · hero.cta1.text + hero.cta1.href · hero.cta2.text +
+ *   hero.cta2.href · data-image-field hero.image
+ * Deliberately NOT emitted (both are dead hooks in HeroBI — a data-field whose
+ * path the schema does not own looks editable in v3 and focuses nothing):
+ *   hero.tag · hero.photos.1. hero.meta1 / meta2 / trustLine are schema-owned
+ *   but this design has no element for them, exactly as in HeroBI.
+ *
+ * THE ITALIC EMPHASIS IS DERIVED, never stored. The design's signature is a
+ * serif headline that turns italic on its closing phrase. That is rendered as:
+ * the last RENDERED line goes italic, and only when two or more lines survive
+ * the blank filter. So an owner who adds a third line simply moves the emphasis,
+ * and an owner with a one-line headline gets no orphan italic. There is no
+ * second content field and no splitting of the owner's copy on punctuation.
+ * (Owner-authored <em> inside any line renders italic too — the lines are
+ * set:html, the family idiom.)
+ *
+ * COLOUR NOTE (R3): the headline is var(--ink), which in this template IS the
+ * deep green the design paints its emphasis in — PageBJ's palette deviation.
+ * The base line therefore reads green rather than the design's near-black; that
+ * pairing is the only one legible in all 13 schemes, and it is why the emphasis
+ * is carried by the italic alone rather than by a colour swap.
+ *
+ * CLASS-NAME LAW (not inferable, do not "tidy"): the section is .arrival, NOT
+ * .hero — buildOverrideCss force-paints `.hero .btn-ghost` white-on-transparent
+ * with !important, which would strand a white label on this cream band. The
+ * buttons are .btn--fill / .btn--line (double dash) for the same reason: they
+ * dodge the engine's `.btn-primary,.btn-yellow,.nav-cta{color:<on-primary>
+ * !important}` pin. Never use .btn-primary / .btn-ghost / .nav-cta / .btn-light
+ * / .btn-yellow in this family.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+// Anchor guard. lib/derive-content-defaults.ts hard-codes '#visit' for
+// hero.cta1 and '#services' for hero.cta2 — ids no page in this family renders,
+// so the hero's primary button scrolled nowhere. Resolve every in-page href
+// against what PageBJ actually renders: keep it when the id exists, remap it
+// when this design carries the same block under another id, otherwise fall back
+// to the target this design was built around. Off-page hrefs (tel:, mailto:,
+// http) pass through untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBJ — and with the copies
+// in HeaderBJ, CtaBandBJ and FooterBJ. There is no shared import by design (a
+// section component in this repo receives only `content` + `layout`); the four
+// copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['main', 'rooms', 'amenities', 'gallery', 'host', 'promises', 'how', 'reviews', 'nearby', 'location', 'faq', 'book']);
+const ANCHOR_ALIAS: Record<string, string> = { services: 'rooms', why: 'amenities', work: 'gallery', visit: 'location', contact: 'location', about: 'amenities' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+const hero = content.hero || {};
+// Display fallbacks only — the HOOK below is always hero.image, the path the
+// sidebar's image picker writes.
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const kicker = hero.kicker || '';
+// derive-content-defaults sets headlineLines to [businessName]; an AI extraction
+// may fill several. A row the admin added but never typed into would print an
+// empty block-level span (a gap inside the headline), so blanks are dropped —
+// with the ORIGINAL index carried, so every data-field still points at the real
+// array slot after a removal.
+const fromLines = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0;
+const rawLines: any[] = fromLines ? hero.headlineLines : (hero.headline ? [hero.headline] : []);
+const lines = rawLines
+  .map((t: any, i: number) => ({ text: String(t ?? ''), i }))
+  .filter((l) => l.text.trim() !== '');
+// When the copy arrived as the single-line hero.headline there IS no array, so
+// hooking hero.headlineLines.0 would aim an inline edit at a slot the sidebar is
+// not showing. Bind the field the value actually came from — both paths are
+// schema-owned ('Headline (single line)' and the 'Headline lines' list).
+const lineField = (i: number): string => (fromLines ? `hero.headlineLines.${i}` : 'hero.headline');
+// Accessible name for the photo, DERIVED from the owner's own business name (no
+// literal, no claim about what the picture shows beyond the slot it was dropped
+// into). Never rendered as visible text.
+const photoLabel = layout.businessName ? `${layout.businessName} — property photo` : 'Property photo';
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = onPage(hero.cta1?.href, '#book');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, '#rooms');
+---
+<section class="arrival" aria-label="Hero">
+  <div class={heroImage ? 'wrap a-grid' : 'wrap a-grid a-grid--solo'}>
+    <div class="a-copy">
+      {kicker && <span class="a-kick" data-field="hero.kicker">{kicker}</span>}
+      {lines.length > 0 && (
+        <h1 class="a-h1">
+          {lines.map((l, k) => (
+            <span
+              class={lines.length > 1 && k === lines.length - 1 ? 'ln ln-em' : 'ln'}
+              data-field={lineField(l.i)}
+              set:html={l.text}
+            ></span>
+          ))}
+        </h1>
+      )}
+      {sub && <p class="a-lede" data-field="hero.sub">{sub}</p>}
+      {(cta1Text || cta2Text) && (
+        <div class="a-ctas">
+          {cta1Text && <a class="btn btn--fill" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>}
+          {cta2Text && <a class="btn btn--line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>}
+        </div>
+      )}
+    </div>
+    {/* No photo ⇒ no column. The grid falls to one track and the copy takes the
+        full measure, rather than reserving a tinted rectangle for a picture the
+        owner never uploaded. The .ph slot announces itself as an image ONLY when
+        there is one; the empty case never renders at all. */}
+    {heroImage && (
+      <div class="plate a-plate reveal" style="aspect-ratio:11/10;min-height:0">
+        <div
+          class="ph"
+          data-image-field="hero.image"
+          role="img"
+          aria-label={photoLabel}
+          style={`background-image:url('${heroImage}');`}
+        ></div>
+      </div>
+    )}
+  </div>
+</section>
+<style>
+  /* Colour comes only from the token vocabulary (--ink --ink-soft --accent
+     --disp --sans) and from PageBJ's shared primitives .wrap .plate .ph
+     .btn--fill .btn--line .reveal. There is no hex in this file. */
+  .arrival { padding: clamp(30px,4.4vw,64px) 0 clamp(36px,4.6vw,60px); }
+  .a-grid {
+    display: grid; grid-template-columns: minmax(0,1.02fr) minmax(0,.98fr);
+    gap: clamp(30px,4.4vw,56px); align-items: center;
+  }
+  .a-copy { min-width: 0; }
+  /* No photo ⇒ ONE track. Without this the second column stays reserved and the
+     arrival reads as a layout with a hole in it; the headline keeps a measure so
+     it does not run the full 1240px either. */
+  .a-grid--solo { grid-template-columns: minmax(0,1fr); }
+  .a-grid--solo .a-h1 { max-width: 18ch; }
+  /* The eyebrow is var(--accent) per the template's palette contract: the native
+     terracotta is darkened specifically to clear AA at this 10px cap size. */
+  .a-kick {
+    display: inline-block; font-family: var(--sans); font-weight: 600;
+    font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
+    color: var(--ink-soft); overflow-wrap: anywhere;
+  }
+  .a-h1 {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(40px,5.8vw,84px); line-height: 1.01; letter-spacing: -.005em;
+    margin: .22em 0 .3em; color: var(--ink);
+  }
+  .a-h1 .ln { display: block; }
+  /* The signature. Italic only — never a colour swap: accent-as-text collapses
+     under some schemes, and --ink already carries the design's deep green. */
+  .a-h1 .ln-em { font-style: italic; }
+  /* :global() because Astro cannot scope markup that arrived through set:html. */
+  .a-h1 :global(em) { font-style: italic; color: inherit; }
+  .a-lede {
+    font-size: clamp(16px,1.5vw,17.5px); line-height: 1.7; color: var(--ink-soft);
+    max-width: 46ch; margin: 0 0 clamp(22px,2.6vw,32px);
+  }
+  .a-ctas { display: flex; gap: 13px; flex-wrap: wrap; align-items: center; }
+  /* position/overflow are also carried by PageBJ's .plate primitive; restating
+     them costs nothing and means the photo can never escape its frame if the
+     wrapper's rule is ever narrowed. No colour is restated — that stays in the
+     primitive so the theme engine keeps control of it. */
+  .a-plate { width: 100%; position: relative; overflow: hidden; }
+  .a-plate .ph {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+  }
+
+  @media (max-width: 900px) {
+    /* One column, copy first (it is first in the DOM), photo under it. The
+       plate's ratio is set INLINE, so it cannot be overridden by a selector — a
+       definite height makes aspect-ratio inert instead, no !important needed. */
+    .a-grid { grid-template-columns: 1fr; gap: clamp(24px,4vw,34px); }
+    .a-plate { aspect-ratio: auto; height: clamp(240px,58vw,420px); }
+    .a-h1 { font-size: clamp(38px,6.6vw,58px); }
+  }
+  @media (max-width: 520px) {
+    .a-kick { font-size: 9.5px; letter-spacing: .3em; }
+    .a-h1 { font-size: clamp(32px,9.4vw,46px); overflow-wrap: anywhere; }
+    .a-lede { max-width: none; }
+    .a-ctas { gap: 10px; }
+    /* Belt to PageBJ's shared 520 pass: a long uppercase label must wrap rather
+       than push the row past 360px. */
+    .a-ctas .btn { flex: 1 1 100%; white-space: normal; text-align: center; }
+  }
+</style>

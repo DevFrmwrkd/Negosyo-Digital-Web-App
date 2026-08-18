@@ -122,7 +122,8 @@ const FILIPINO_TEMPLATES: TemplateDef[] = [
 ];
 
 const HOSPITALITY_TEMPLATES: TemplateDef[] = [
-    { letter: "BI", code: "hospitality:BI", label: "Palm Hour", tagline: "Terracotta & lagoon shade · hotels, villas & short stays", preview: "/template-previews/bi.html" },
+    { letter: "BI", code: "hospitality:BI", label: "Palm Hour",  tagline: "Terracotta & lagoon shade · hotels, villas & short stays", preview: "/template-previews/bi.html" },
+    { letter: "BJ", code: "hospitality:BJ", label: "Kubo Stays", tagline: "Cream & deep green · rooms, homestays & guest houses",     preview: "/template-previews/bj.html" },
 ];
 
 /** Families in rail-display order, each with a human label. */
@@ -151,8 +152,8 @@ export const ALL_TEMPLATES: TemplateDef[] = TEMPLATE_FAMILIES.flatMap((f) => f.t
  *
  * Derived by scanning every Page<CODE>.astro for its `visibility.*` gates
  * (scripts/check-template-blocks.mjs regenerates and verifies this). Across all
- * 61 wrappers there are only THREE distinct shapes, so this is expressed as a
- * base list plus two exception sets rather than 61 hand-written arrays:
+ * 62 wrappers there are only THREE distinct shapes, so this is expressed as a
+ * base list plus two exception sets rather than 62 hand-written arrays:
  *
  *   • every template renders the same 14 blocks
  *   • 11 of them also render a MARQUEE
