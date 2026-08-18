@@ -1143,3 +1143,29 @@ section[id] { scroll-margin-top: 5rem; }
 .cl-identityPreviewEditButtonIcon {
   color: #0a0a0a !important;
 }
+
+/* ---------------------------------------------------------------------------
+   Editor selection pulse.
+
+   Moved here from components/editor/SandboxEditor.module.css. v3 adds and
+   removes the .ed-selection-pulse class but imports no stylesheet of its own —
+   its only reference to v1 is a type-only import, which is erased at build
+   time. So the highlight worked purely because the route happened to also load
+   v1's CSS module. On the day SandboxEditor.tsx is deleted the pulse would have
+   become a silent no-op: no error, no failing build, nothing to catch it.
+
+   Global (not a module) because it is applied to sidebar inputs by class name
+   from the preview bridge.
+   --------------------------------------------------------------------------- */
+.ed-selection-pulse {
+    position: relative;
+    animation: ed-selection-pulse 1.4s ease-out;
+}
+@keyframes ed-selection-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); background: rgba(16, 185, 129, 0.10); }
+    60%  { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);   background: rgba(16, 185, 129, 0.05); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);     background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ed-selection-pulse { animation: none; }
+}

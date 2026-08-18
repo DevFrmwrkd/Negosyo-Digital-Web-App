@@ -25,13 +25,14 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { injectEditorBridge } from "./editorBridge";
 import type { SandboxEditorProps } from "./SandboxEditor";
-import { TEMPLATE_FAMILIES, templateByCode, blocksForTemplate, BLOCK_TIER } from "./templateCatalog";
+import { TEMPLATE_FAMILIES, templateByCode, blocksForTemplate, BLOCK_TIER, TIER_META, BLOCK_CONTENT_PATHS } from "./templateCatalog";
 import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED } from "./editorConstants";
 import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
 import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorRole, type ColorProp } from "@/lib/roleColors";
 import { useEditorDraft } from "./useEditorDraft";
 import { applyImageSlot, isImageField, uploadImage } from "./editorImageSlots";
 import ContentFieldsAuto from "./ContentFieldsAuto";
+import { isSchemaEditablePath } from "./genericContentSchema";
 import { deriveContentDefaults, getDerivedAt } from "@/lib/derive-content-defaults";
 import ImagePickerModal from "./ImagePickerModal";
 import LinkPopover, { type LinkPopoverData } from "./LinkPopover";
@@ -171,6 +172,52 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     // hero.headlineLines, a blank copyright row for footer.notes, and an empty
     // service area. Every section eyebrow and the closing-band CTA also render
     // as empty boxes on essentially every submission.
+    // ── Photos actually in play ───────────────────────────────────────────
+    // draft.images when the admin has uploaded any, else the submission's own
+    // photos — the same rule v1 uses. Reading the raw `photos` prop instead (as
+    // this panel did) meant a photo uploaded through v3's own button could NEVER
+    // appear: /api/upload-image returns an R2 url into draft.images and never
+    // touches submissions.photos, and the prop is rebuilt from the submission.
+    // The admin watched the spinner stop, saw nothing, and re-uploaded.
+    const effectivePhotos: string[] = useMemo(() => {
+        const own = (m.draft as any)?.images;
+        return Array.isArray(own) && own.length > 0 ? own : (photos ?? []);
+    }, [m.draft, photos]);
+
+    // Seeded from the POOL, not from draft.images — otherwise removing the first
+    // photo of a submission that has never been edited is a no-op (v1's own bug:
+    // it filters an array that is still empty).
+    const removePhoto = useCallback((index: number) => {
+        m.replaceDraft({
+            ...(m.draftRef.current ?? {}),
+            images: effectivePhotos.filter((_, i) => i !== index),
+        });
+    }, [m, effectivePhotos]);
+
+    // Advisory only - it labels the toggle, it never disables it, because an
+    // admin may be switching a section ON precisely in order to go and write it.
+    // Depends on the draft being NORMALISED (Pass 1): several of these paths have
+    // no bare-array fallback, so on raw AI content this would have stamped a
+    // false "no content yet" on the very sections that DO have content.
+    const blockHasContent = useCallback((blockName: string): boolean | null => {
+        const paths = BLOCK_CONTENT_PATHS[blockName];
+        if (!paths) return null; // HERO / FOOTER - always populated
+        for (const path of paths) {
+            const v = m.getValue(path);
+            if (Array.isArray(v) ? v.length > 0 : typeof v === "string" ? v.trim() !== "" : Boolean(v)) return true;
+        }
+        return false;
+    }, [m]);
+
+    const faviconUrl: string = (m.getValue('favicon') as string) || '';
+    const clearFavicon = useCallback(() => {
+        // `undefined` is what save-content stores and astro-builder reads as
+        // "emit no icon link" — an empty string would ship <link href="">.
+        const next = { ...(m.draftRef.current ?? {}) };
+        delete next.favicon;
+        m.replaceDraft(next);
+    }, [m]);
+
     const derived = useMemo(() => deriveContentDefaults({
         business_name: (m.draft as any)?.business_name || businessName,
         business_city: (m.draft as any)?.business_city || (m.draft as any)?.contact?.city,
@@ -212,9 +259,23 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     const setupInlineEditing = useCallback(() => {
         const doc = iframeRef.current?.contentDocument;
         if (!doc) return;
+        // Allow-list, not deny-list. A node is inline-editable only if the
+        // sidebar schema declares that exact path, so a template that ships a new
+        // data-field cannot silently acquire a destructive editor (see
+        // isSchemaEditablePath). The three structural exclusions stay on top:
+        // hero.headline is a whole <h1> assembled from lines, and nav.* is
+        // layout-backed, so editing either as raw text corrupts the structure.
         const SKIP = (f: string) =>
+            !isSchemaEditablePath(f) ||
             f === "hero.headline" ||
             /^(nav\.brand|nav\.status|nav\.links|navbar_links)(\.|$)/.test(f) ||
+            // Array rows stay OUT, even though the schema owns them. An earlier
+            // adversarial pass on the inline editor found that committing one
+            // row inline dropped its siblings, which is why they were excluded
+            // in the first place. The allow-list above must only ever NARROW
+            // what is editable — never re-open something that was closed for a
+            // data-loss reason. Rows are edited in the sidebar, which writes the
+            // whole array at once.
             /\.(items|steps|paragraphs)\.\d+/.test(f);
         const readVal = (node: Element) =>
             ((node as HTMLElement).innerText ?? node.textContent ?? "")
@@ -259,12 +320,17 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
             const el = document.querySelector(`[data-field-input="${field}"]`) as HTMLElement | null;
             if (!el) return;
             el.scrollIntoView({ block: "center", behavior: "smooth" });
-            if (opts?.pulse) {
-                el.classList.add("ed-selection-pulse");
-                window.setTimeout(() => el.classList.remove("ed-selection-pulse"), 1400);
-            } else {
-                (el as any).focus?.();
-            }
+            // N3 — INLINE EDITING IS THE PRIMARY PATH, so this never steals focus
+            // back from the iframe. It used to call .focus() here, two rAFs after
+            // every ed:click, which blurred the element the bridge had just put a
+            // caret in: v3's headline feature only worked on fields that had NO
+            // sidebar input, i.e. exactly the off-schema paths B3 now forbids.
+            // With the allow-list in place every editable field HAS an input, so
+            // focusing here would have left inline editing reachable for nothing.
+            // The sidebar still scrolls to the matching field and pulses, so the
+            // admin can see where the value lives and use it if they prefer.
+            el.classList.add("ed-selection-pulse");
+            window.setTimeout(() => el.classList.remove("ed-selection-pulse"), 1400);
         }));
     }, []);
 
@@ -297,6 +363,12 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
             const w = iframeRef.current?.contentWindow;
             if (!w) return;
             for (const b of ALL_BLOCKS) {
+                // Essentials are never hidden, so never broadcast one. Stored
+                // content can carry visibility.hero_section === false from an old
+                // save, and replaying that on load blanked whichever section the
+                // resolver picked — with the toggle rendered disabled, leaving the
+                // admin no way to put it back.
+                if ((BLOCK_TIER[b.name] ?? "extra") === "essential") continue;
                 w.postMessage({ type: "ed:section-visibility", block: b.visKey, visible: m.isBlockEnabled(b.visKey) }, "*");
             }
         } catch { /* ignore */ }
@@ -394,6 +466,16 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     }, [m, submissionId]);
 
     // ── Save (v2:301-331) — batched, single rebuild ───────────────────────
+    const handleReset = useCallback(() => {
+        if (!m.dirty) return;
+        m.resetDraft();
+        // The appliers inject theme / role colours / section visibility straight
+        // into the iframe, so without re-running them the preview would keep
+        // rendering the look that was just discarded.
+        requestAnimationFrame(() => { applyTheme(); applyRoleColors(); applyBlockVisibility(); });
+        toast.success("Changes discarded", { description: "Back to the last saved version." });
+    }, [m, applyTheme, applyRoleColors, applyBlockVisibility]);
+
     const handleSave = useCallback(async () => {
         if (busy || previewing) return; // don't save while a preview build is in flight
         try { (iframeRef.current?.contentDocument?.activeElement as HTMLElement | null)?.blur?.(); } catch { /* ignore */ }
@@ -541,6 +623,27 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                             <>
                                 <section className="border-b border-neutral-200 p-4">
                                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Template</h3>
+                                    {m.customizationsDirty && (
+                                        <div className="mb-2 rounded-lg bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-200">
+                                            Pending · click Save changes to apply
+                                            {m.savedHero && m.savedHero !== m.currentHeroStyle && (
+                                                <span className="ml-1 font-normal">(saved: {m.savedHero})</span>
+                                            )}
+                                        </div>
+                                    )}
+                                    {/* S6 — "no template" is a real routed state (index.astro falls
+                                        through to a bare stub), and without this card a mis-clicked
+                                        template on a legacy submission could not be undone, nor could
+                                        an admin see that no template was set. */}
+                                    <button
+                                        type="button"
+                                        aria-pressed={m.currentHeroStyle === ""}
+                                        onClick={() => m.onPickTemplate("")}
+                                        className={`mb-3 flex w-full items-center gap-2 rounded-lg border border-dashed p-2 text-left text-[11px] transition-colors ${m.currentHeroStyle === "" ? "border-amber-500 bg-amber-50 text-amber-800" : "border-neutral-300 text-neutral-500 hover:border-neutral-400"}`}
+                                    >
+                                        <span className="font-semibold">Auto / placeholder</span>
+                                        <span className="text-neutral-400">use when no template is set</span>
+                                    </button>
                                     {TEMPLATE_FAMILIES.map((fam) => (
                                         <div key={fam.family} className="mb-3 last:mb-0">
                                             <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">{fam.label}</div>
@@ -629,23 +732,42 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                 <section className="p-4">
                                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Sections</h3>
                                     <div className="space-y-0.5">
-                                        {ALL_BLOCKS.filter((b) => blocksForTemplate(String((m.effectiveCustomizations as any)?.heroStyle ?? "")).has(b.name)).map((b) => {
-                                            const on = m.isBlockEnabled(b.visKey);
-                                            // Tier, not b.tag: LOCATION's tag is "recommended", so the
-                                            // old test left it switchable and a site could ship with no
-                                            // address, map or directions block.
-                                            const required = (BLOCK_TIER[b.name] ?? "extra") === "essential";
-                                            return (
-                                                <button key={b.visKey} type="button" disabled={required} onClick={() => handleToggleBlock(b.visKey)} aria-checked={on} role="switch"
-                                                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${required ? "cursor-not-allowed opacity-60" : "hover:bg-neutral-100"}`}>
-                                                    <span className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${on ? "bg-emerald-500" : "bg-neutral-300"}`}>
-                                                        <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${on ? "translate-x-3.5" : "translate-x-0.5"}`} />
-                                                    </span>
-                                                    <span className={`flex-1 text-[11px] font-medium ${on ? "text-neutral-700" : "text-neutral-400"}`}>{b.name}</span>
-                                                    {required && <span className="font-mono text-[8px] uppercase text-neutral-400">req</span>}
-                                                </button>
-                                            );
-                                        })}
+                                        {/* Grouped by tier so an admin can see what is structural and
+                                            what is enrichment. The four essential blocks sit at
+                                            ALL_BLOCKS positions 1, 5, 13 and 16, so in declaration
+                                            order they really were scattered among the optional ones. */}
+                                        {(() => {
+                                            const allowed = blocksForTemplate(String((m.effectiveCustomizations as any)?.heroStyle ?? ""));
+                                            const visible = ALL_BLOCKS.filter((b) => allowed.has(b.name));
+                                            return TIER_META.map((tier) => {
+                                                const inTier = visible.filter((b) => (BLOCK_TIER[b.name] ?? "extra") === tier.id);
+                                                if (!inTier.length) return null;
+                                                return (
+                                                    <div key={tier.id} className="mb-3 last:mb-0">
+                                                        <div className="mb-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-neutral-400">
+                                                            {tier.label}<span className="ml-1 font-normal text-neutral-300">{inTier.length}</span>
+                                                        </div>
+                                                        <p className="mb-1.5 text-[10px] leading-snug text-neutral-400">{tier.blurb}</p>
+                                                        {inTier.map((b) => {
+                                                            const on = m.isBlockEnabled(b.visKey);
+                                                            const required = tier.id === "essential";
+                                                            const empty = blockHasContent(b.name) === false;
+                                                            return (
+                                                                <button key={b.visKey} type="button" disabled={required} onClick={() => handleToggleBlock(b.visKey)} aria-checked={on} role="switch"
+                                                                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${required ? "cursor-not-allowed opacity-60" : "hover:bg-neutral-100"}`}>
+                                                                    <span className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${on ? "bg-emerald-500" : "bg-neutral-300"}`}>
+                                                                        <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${on ? "translate-x-3.5" : "translate-x-0.5"}`} />
+                                                                    </span>
+                                                                    <span className={`min-w-0 flex-1 truncate text-[11px] font-medium ${on ? "text-neutral-700" : "text-neutral-400"}`}>{b.name}</span>
+                                                                    {empty && <span className="flex-shrink-0 rounded bg-neutral-100 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-neutral-400" title="Nothing to show here yet - the section will render empty or auto-hide.">empty</span>}
+                                                                    {required && <span className="flex-shrink-0 font-mono text-[8px] uppercase text-neutral-400">locked</span>}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                );
+                                            });
+                                        })()}
                                     </div>
                                 </section>
                             </>
@@ -673,12 +795,65 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                     {uploadError && <p className="text-[11px] text-red-600">{uploadError}</p>}
                                     <p className="text-[10px] leading-snug text-neutral-400">Tip: click any image in the preview to swap it from your photos.</p>
                                 </div>
-                                {photos && photos.length > 0 && (
-                                    <div className="mt-3 grid grid-cols-3 gap-2">
-                                        {photos.map((url, i) => (
-                                            <img key={i} src={url} alt="" loading="lazy" className="aspect-square w-full rounded-md border border-neutral-200 object-cover" />
-                                        ))}
+                                {/* Favicon card: v3 had a bare "Set favicon" button with no
+                                    thumbnail, no current-state and no way to clear one — and a
+                                    wrong favicon ships to the customer's browser tab and to link
+                                    unfurls, where astro-builder also uses it as the og:image
+                                    fallback. */}
+                                <div className="mt-3 flex items-center gap-3 rounded-lg border border-neutral-200 p-2">
+                                    {faviconUrl
+                                        ? <img src={faviconUrl} alt="" className="h-10 w-10 shrink-0 rounded border border-neutral-200 object-cover" />
+                                        : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-dashed border-neutral-300 text-[9px] text-neutral-400">none</div>}
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-400">Favicon</p>
+                                        <p className="truncate text-[10px] text-neutral-500">{faviconUrl || "Using the template default"}</p>
                                     </div>
+                                    {faviconUrl && (
+                                        <button type="button" onClick={clearFavicon} className="shrink-0 text-[10px] font-semibold text-red-600 hover:underline">Remove</button>
+                                    )}
+                                </div>
+
+                                {effectivePhotos.length > 0 && (
+                                    <>
+                                        <div className="mt-3 flex items-baseline justify-between">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">
+                                                Photos <span className="text-neutral-300">· {effectivePhotos.length}</span>
+                                            </h4>
+                                            {pendingImageField && (
+                                                <button type="button" onClick={() => setPendingImageField(null)} className="text-[10px] font-semibold text-neutral-500 hover:underline">Cancel</button>
+                                            )}
+                                        </div>
+                                        {/* Click-to-assign: with a slot pending, the grid becomes a
+                                            picker so an EXISTING photo can fill it with no re-upload.
+                                            v3 had no path to that at all. */}
+                                        {pendingImageField && (
+                                            <p className="mt-1 text-[10px] text-amber-700">Pick a photo for <b>{pendingImageField}</b>.</p>
+                                        )}
+                                        <div className="mt-2 grid grid-cols-3 gap-2">
+                                            {effectivePhotos.map((url, i) => {
+                                                const uploaded = !(photos ?? []).includes(url);
+                                                return (
+                                                    <div key={`${url}-${i}`} className="group relative">
+                                                        <img
+                                                            src={url} alt="" loading="lazy"
+                                                            onClick={() => { if (pendingImageField) { m.replaceDraft(applyImageSlot(m.draftRef.current, pendingImageField, url)); setPendingImageField(null); } }}
+                                                            className={`aspect-square w-full rounded-md border object-cover ${pendingImageField ? "cursor-pointer border-amber-400 hover:ring-2 hover:ring-amber-400" : "border-neutral-200"}`}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removePhoto(i)}
+                                                            title="Remove this photo"
+                                                            aria-label="Remove this photo"
+                                                            className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white group-hover:flex"
+                                                        >×</button>
+                                                        {uploaded && (
+                                                            <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1 py-0.5 text-[8px] font-semibold text-white">uploaded · unsaved</span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
                                 )}
                             </section>
                         )}
@@ -688,9 +863,14 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                 {/* ── Preview + toolbar ─────────────────────────────────── */}
                 <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 bg-white px-3 py-2">
-                        <button type="button" onClick={handleSave} disabled={busy || previewing} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40">
-                            {saving ? "Saving…" : "Save changes"}
+                        {/* Dirty-gated, so the button IS the unsaved indicator. v3 injects
+                            theme and colour live into the iframe, so without this the page
+                            looks changed while nothing is persisted — an admin could pick a
+                            scheme, watch it apply, and leave believing it had saved. */}
+                        <button type="button" onClick={handleSave} disabled={busy || previewing || !m.dirty} className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-40">
+                            {saving ? "Saving…" : m.dirty ? "Save changes" : "Saved"}
                         </button>
+                        <button type="button" onClick={handleReset} disabled={busy || previewing || !m.dirty} className={TB} title="Discard every unsaved change and go back to the last saved version">Reset</button>
                         <button type="button" onClick={handlePreviewBuild} disabled={busy || previewing || !m.dirty} className={TB} title="Build your real content into the current picks (~30–60s) without saving">
                             {previewing ? "Building…" : "Preview my site"}
                         </button>
@@ -705,7 +885,16 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                             ))}
                         </div>
                         <button type="button" onClick={onRegenerate} disabled={busy || previewing} className={TB}>Regenerate</button>
-                        <a href={websitePublishedUrl || `/api/preview/${submissionId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-neutral-300">View site</a>
+                        {/* Two anchors, both present. They are not interchangeable: after a
+                            Regenerate (which rebuilds but never publishes) the published URL
+                            still serves the OLD page, so collapsing them with `||` broke
+                            exactly the comparison the "out of date" badge asks for. */}
+                        {websiteGenerated && (
+                            <a href={`/api/preview/${submissionId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-neutral-300" title="The build currently on disk, published or not">View build</a>
+                        )}
+                        {websitePublishedUrl && (
+                            <a href={websitePublishedUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-neutral-300" title="The page the public sees right now">Live</a>
+                        )}
                         <button type="button" onClick={onEnhanceImages} disabled={enhancing} className={TB}>{enhancing ? "Enhancing…" : "Enhance"}</button>
                         <div className="ml-auto flex flex-wrap items-center gap-2">
                             {/* Hidden once the submission is settled. Re-approving is not a

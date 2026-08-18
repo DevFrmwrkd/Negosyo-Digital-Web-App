@@ -546,3 +546,56 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
         ],
     },
 ];
+
+
+/* ────────────────────────────────────────────────────────────────────────────
+ * WHICH data-field PATHS THE FORM ACTUALLY OWNS
+ *
+ * v3 makes text in the preview directly editable. It decided what was editable
+ * with a hand-written SKIP regex, which is an unwinnable game: every template
+ * family that ships a new data-field path gets inline editing for free, whether
+ * or not the schema can represent it. LocationBI's `location.hours.<i>.day` slipped
+ * through exactly that way, and the deep writer then converted the existing
+ * `location.hours` STRING into an array — silently dropping every other hours row
+ * on the next rebuild.
+ *
+ * Inverting it kills the whole class: a node is editable only if the form could
+ * have edited it anyway.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+const SCALAR_PATHS = new Set<string>();
+const LIST_SHAPES: Array<{ path: string; itemPaths: string[] }> = [];
+
+for (const group of GENERIC_CONTENT_SCHEMA) {
+    for (const field of group.fields) {
+        if ((field as ListSpec).kind === 'list') {
+            const l = field as ListSpec;
+            LIST_SHAPES.push({ path: l.path, itemPaths: (l.itemFields ?? []).map((f) => f.path) });
+        } else {
+            const f = field as FieldSpec;
+            SCALAR_PATHS.add(f.path);
+            if (f.kind === 'link') SCALAR_PATHS.add(f.hrefPath || `${f.path}.href`);
+        }
+    }
+}
+
+/**
+ * True when `path` is a field this schema declares — including list rows, whose
+ * rendered paths are `<list>.<n>` (string arrays) or `<list>.<n>.<itemField>`.
+ */
+export function isSchemaEditablePath(path: string): boolean {
+    if (!path) return false;
+    if (SCALAR_PATHS.has(path)) return true;
+    for (const list of LIST_SHAPES) {
+        if (!path.startsWith(list.path + '.')) continue;
+        const rest = path.slice(list.path.length + 1);
+        const m = /^(\d+)(?:\.(.+))?$/.exec(rest);
+        if (!m) continue;
+        // `<list>.<n>` with no sub-path is a plain string row (area.places).
+        // A string-array list declares one item field with an EMPTY path
+        // (area.places), so `<list>.<n>` is the whole row.
+        if (!m[2]) return list.itemPaths.length === 0 || list.itemPaths.includes('');
+        if (list.itemPaths.includes(m[2])) return true;
+    }
+    return false;
+}

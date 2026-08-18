@@ -346,6 +346,17 @@ export function useEditorDraft(props: SandboxEditorProps) {
 
     const getValue = useCallback((path: string) => deepGet(draftRef.current, path), []);
 
+    /**
+     * Discard every unsaved change — content AND customizations — back to what
+     * the server last gave us. replaceDraft cannot do this: it deliberately
+     * carries pendingCustRef forward, so it can never roll back a template pick.
+     * Callers must re-run their iframe appliers afterwards or the preview keeps
+     * showing the discarded look.
+     */
+    const resetDraft = useCallback(() => {
+        commitState(normalizeDraft(contentPropRef.current), syncedCustRef.current);
+    }, [commitState]);
+
     // Commit a whole new draft object (used by image-slot writes / normalization
     // that rebuild the draft rather than set one dotted path).
     const replaceDraft = useCallback((nextDraft: any, coalesceKey?: string) => {
@@ -391,6 +402,18 @@ export function useEditorDraft(props: SandboxEditorProps) {
 
     const savedHero = String((customizations as any)?.heroStyle ?? "");
     const onPickTemplate = useCallback((code: string) => {
+        if (!code) {
+            // "Auto / placeholder" — clear heroStyle and every sibling *Style key.
+            // Deliberately does NOT stamp navbarStyle or force colorScheme/
+            // fontPairing to auto: familyOf('') is null, so the isBranded test
+            // below would treat "no template" as branded and wipe the admin's
+            // palette on the way out.
+            const cleared = { ...(pendingCustRef.current ?? customizations ?? {}) } as Record<string, any>;
+            cleared.heroStyle = "";
+            for (const k of STYLE_KEYS) cleared[k] = "";
+            commitState(draftRef.current, cleared);
+            return;
+        }
         const tpl = templateByCode(code);
         const letter = tpl?.letter ?? "A";
         const isBranded = familyOf(code) !== "generic";
@@ -448,7 +471,7 @@ export function useEditorDraft(props: SandboxEditorProps) {
         // state
         draft, draftRef, pendingCustomizations,
         // mutators
-        setDeepDraft, setValue, replaceDraft, getValue, isBlockEnabled, toggleBlock, setThemeField, setRoleColor, onPickTemplate,
+        setDeepDraft, setValue, replaceDraft, resetDraft, getValue, isBlockEnabled, toggleBlock, setThemeField, setRoleColor, onPickTemplate,
         // derived
         effectiveCustomizations, currentHeroStyle, activeFamily, currentScheme, currentFont,
         savedHero, btForTheme, selectedBucket,
