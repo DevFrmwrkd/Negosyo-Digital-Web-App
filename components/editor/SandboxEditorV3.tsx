@@ -25,7 +25,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { injectEditorBridge } from "./editorBridge";
 import type { SandboxEditorProps } from "./SandboxEditor";
-import { TEMPLATE_FAMILIES, templateByCode, blocksForTemplate } from "./templateCatalog";
+import { TEMPLATE_FAMILIES, templateByCode, blocksForTemplate, BLOCK_TIER } from "./templateCatalog";
 import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED } from "./editorConstants";
 import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
 import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorRole, type ColorProp } from "@/lib/roleColors";
@@ -115,7 +115,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         websiteGenerated, generatingWebsite, publishingWebsite, republishingWebsite,
         unpublishingWebsite, enhancing, sendingEmail,
         onSendToClient, onEnhanceImages, onRegenerate, onPublish, onRepublish,
-        onUnpublish, onDelete, onApprove, onReject, onToggleDetails,
+        onUnpublish, onDelete, onApprove, onReject, onToggleDetails, submissionStatus,
     } = props;
 
     const m = useEditorDraft(props);
@@ -398,14 +398,18 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         if (busy || previewing) return; // don't save while a preview build is in flight
         try { (iframeRef.current?.contentDocument?.activeElement as HTMLElement | null)?.blur?.(); } catch { /* ignore */ }
         const currentDraft = m.draftRef.current;
-        if (m.contentDirty === false && m.customizationsDirty === false) return;
+        // Recompute from refs: the blur above may be what committed the edit, and
+        // m.contentDirty is this render's closure - i.e. pre-blur. Reading it here
+        // made Save silently no-op with no network call, no toast and no error.
+        const now = m.isDirtyNow();
+        if (!now.dirty) { toast.info("Nothing to save", { description: "No changes since the last save." }); return; }
         setSaving(true);
-        const toastId = toast.loading(m.customizationsDirty ? "Saving changes · regenerating site…" : "Saving content…", { duration: Infinity });
+        const toastId = toast.loading(now.customizationsDirty ? "Saving changes · regenerating site…" : "Saving content…", { duration: Infinity });
         try {
-            await onSaveContent({ ...currentDraft, business_type: m.selectedBucket }, m.customizationsDirty ? m.pendingCustomizations : undefined);
+            await onSaveContent({ ...currentDraft, business_type: m.selectedBucket }, now.customizationsDirty ? m.pendingCustomizations : undefined);
             setPreviewBuildHtml(null);
             m.clearCache();
-            toast.success("Changes saved", { id: toastId, description: m.customizationsDirty ? "Theme + content applied. Refreshing preview." : "Content updated." });
+            toast.success("Changes saved", { id: toastId, description: now.customizationsDirty ? "Theme + content applied. Refreshing preview." : "Content updated." });
         } catch (err: any) {
             toast.error("Save failed", { id: toastId, description: err?.message ?? "Please try again." });
         } finally {
@@ -474,6 +478,12 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
             thumb.dataset.done = "1";
             const scale = (thumb.clientWidth || 150) / W;
             const ifr = document.createElement("iframe");
+            // Every one of the 55 preview documents contains a <script>, and 30 of
+            // them pull leaflet from a CDN. v1 mounted them with sandbox="" so all of
+            // that was inert; without it they execute same-origin with /admin, where
+            // they can reach the admin session's storage. Expect the map previews to
+            // stop painting - that is exactly v1's behaviour, not a regression.
+            ifr.setAttribute("sandbox", "");
             ifr.setAttribute("scrolling", "no");
             ifr.setAttribute("tabindex", "-1");
             ifr.setAttribute("aria-hidden", "true");
@@ -565,7 +575,12 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                         Colors {m.activeFamily && <span className="font-normal normal-case tracking-normal text-neutral-400">· suggested for {m.activeFamily}</span>}
                                     </h3>
                                     <div className="grid grid-cols-4 gap-2">
-                                        {["auto", ...curatedSchemes].filter((v, i, a) => a.indexOf(v) === i).map((id) => {
+                                        {/* m.currentScheme is spliced in so a scheme saved OUTSIDE this
+                                            family's curated set still shows as selected. v1 is the default
+                                            today and lets any scheme be set on any template, so those rows
+                                            exist - and they used to open here with every swatch unlit,
+                                            reading as "nothing set". */}
+                                        {["auto", ...curatedSchemes, m.currentScheme].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i).map((id) => {
                                             const active = m.currentScheme === id;
                                             return (
                                                 <button key={id} type="button" title={COLOR_SCHEMES.find((c) => c.id === id)?.label ?? id} aria-pressed={active}
@@ -577,6 +592,25 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                             );
                                         })}
                                     </div>
+                                    {/* The curated set is a shortlist, never a hard limit - the
+                                        stated intent in editorConstants was that any scheme stays
+                                        selectable. Without this an admin simply could not make a
+                                        clinic site black and gold: medical hides 10 of the 15. */}
+                                    {COLOR_SCHEMES.filter((c) => c.id !== "auto" && !curatedSchemes.includes(c.id) && c.id !== m.currentScheme).length > 0 && (
+                                        <details className="mt-2">
+                                            <summary className="cursor-pointer text-[10px] font-semibold text-neutral-500 hover:text-neutral-700">More colours</summary>
+                                            <div className="mt-2 grid grid-cols-4 gap-2">
+                                                {COLOR_SCHEMES.filter((c) => c.id !== "auto" && !curatedSchemes.includes(c.id) && c.id !== m.currentScheme).map((c) => (
+                                                    <button key={c.id} type="button" title={c.label} aria-pressed={false}
+                                                        onClick={() => setThemeField("colorScheme", c.id)}
+                                                        className="flex flex-col items-center gap-1 rounded-lg border border-neutral-200 p-1.5 transition-colors hover:border-neutral-300">
+                                                        <span className="h-5 w-full rounded" style={{ background: SCHEME_SWATCH[c.id] ?? "#999" }} />
+                                                        <span className="w-full truncate text-center text-[8.5px] capitalize text-neutral-500">{c.id}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </details>
+                                    )}
                                 </section>
                                 <section className="border-b border-neutral-200 p-4">
                                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Font</h3>
@@ -597,7 +631,10 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                     <div className="space-y-0.5">
                                         {ALL_BLOCKS.filter((b) => blocksForTemplate(String((m.effectiveCustomizations as any)?.heroStyle ?? "")).has(b.name)).map((b) => {
                                             const on = m.isBlockEnabled(b.visKey);
-                                            const required = b.tag === "required";
+                                            // Tier, not b.tag: LOCATION's tag is "recommended", so the
+                                            // old test left it switchable and a site could ship with no
+                                            // address, map or directions block.
+                                            const required = (BLOCK_TIER[b.name] ?? "extra") === "essential";
                                             return (
                                                 <button key={b.visKey} type="button" disabled={required} onClick={() => handleToggleBlock(b.visKey)} aria-checked={on} role="switch"
                                                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${required ? "cursor-not-allowed opacity-60" : "hover:bg-neutral-100"}`}>
@@ -671,8 +708,12 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         <a href={websitePublishedUrl || `/api/preview/${submissionId}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold text-neutral-700 hover:border-neutral-300">View site</a>
                         <button type="button" onClick={onEnhanceImages} disabled={enhancing} className={TB}>{enhancing ? "Enhancing…" : "Enhance"}</button>
                         <div className="ml-auto flex flex-wrap items-center gap-2">
-                            {onApprove && <button type="button" onClick={onApprove} className={TB}>Approve</button>}
-                            {onReject && <button type="button" onClick={onReject} className={`${TB} !text-red-600`}>Reject</button>}
+                            {/* Hidden once the submission is settled. Re-approving is not a
+                                no-op: it re-sends the creator an approval notification and
+                                re-increments the approvedCount that drives their price-ceiling
+                                unlock, and nothing server-side guards against it. */}
+                            {onApprove && submissionStatus !== "approved" && submissionStatus !== "rejected" && <button type="button" onClick={onApprove} className={TB}>Approve</button>}
+                            {onReject && submissionStatus !== "rejected" && <button type="button" onClick={onReject} className={`${TB} !text-red-600`}>Reject</button>}
                             {publishStale && (
                                 <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-900" title="The live site still has the previous version. Click Republish to update it.">
                                     ⚠ Live site is out of date

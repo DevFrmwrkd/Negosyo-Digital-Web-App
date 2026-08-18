@@ -97,18 +97,23 @@ describe("draft normalization (v3 silent data loss)", () => {
         expect(d.testimonials.items[0].who).toBe("Marisol D.");         // name → who
         expect(d.testimonials.items[0].role).toBe("April");             // context → role
 
-        // NOT aliased, and this is a real (pre-existing, both-editors) gap:
-        // Groq emits credentials as {label, detail}; the normalizer only aliases
-        // description|body -> desc; and the sidebar schema reads title/body. So
-        // AI-generated credential rows render fine on the page (the .astro
-        // components fall back to .label/.detail) but show BLANK in the sidebar.
-        // Pinned here as current behaviour, not endorsed — fixing it means adding
-        // `label: 'title', detail: 'body'` to the credentials aliases, which is a
-        // separate decision from this pass.
+        // Credentials: the AI emits {label, detail} but the schema edits
+        // {title, body}, so without these two aliases the panel showed blank rows
+        // over content the page was rendering fine (the .astro components fall
+        // back to .label/.detail themselves).
+        expect(d.credentials.items[0].title).toBe("DOT accredited");   // label → title
+        expect(d.credentials.items[0].body).toBe("Accommodation enterprise"); // detail → body
+        // The originals survive, so the components' own fallbacks keep working.
         expect(d.credentials.items[0].label).toBe("DOT accredited");
         expect(d.credentials.items[0].detail).toBe("Accommodation enterprise");
-        expect(d.credentials.items[0].desc).toBeUndefined();
-        expect(d.credentials.items[0].title).toBeUndefined();
+    });
+
+    it("does not let the credentials aliases clobber an already-correct row", () => {
+        const d = normalizeDraft({
+            credentials: [{ title: "Set by hand", body: "Edited copy", label: "old", detail: "old" }],
+        });
+        expect(d.credentials.items[0].title).toBe("Set by hand");
+        expect(d.credentials.items[0].body).toBe("Edited copy");
     });
 
     it("is idempotent, so re-seeding an already-normalized draft is a no-op", () => {
