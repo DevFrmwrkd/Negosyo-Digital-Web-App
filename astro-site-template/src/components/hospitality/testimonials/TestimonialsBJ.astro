@@ -99,17 +99,16 @@ const hasHead = Boolean(tag || headline || source);
     display: inline-block;
     font-family: var(--sans); font-weight: 600; font-size: 10px;
     letter-spacing: 0.34em; text-transform: uppercase;
-    color: var(--ink-soft); overflow-wrap: anywhere;
+    color: var(--accent); overflow-wrap: anywhere;
   }
   .voices .h2 {
     font-family: var(--disp); font-weight: 400;
     font-size: clamp(30px, 4.3vw, 56px); line-height: 1.06; letter-spacing: -0.005em;
     margin: 0.24em auto 0; color: var(--ink); max-width: 22ch; overflow-wrap: anywhere;
   }
-  /* Signature emphasis: a real italic, colour inherited. Never an accent colour
-     swap — accent-as-text is sub-AA in most of the schemes this family allows. */
+  /* Signature emphasis: italic serif in the deep green, as the design draws it. */
   .voices .h2 :global(em),
-  .voices .h2 :global(.em) { font-style: italic; color: inherit; }
+  .voices .h2 :global(.em) { font-style: italic; color: var(--green); }
   .v-src {
     margin: 14px 0 0;
     font-family: var(--sans); font-size: 11px; letter-spacing: 0.18em;

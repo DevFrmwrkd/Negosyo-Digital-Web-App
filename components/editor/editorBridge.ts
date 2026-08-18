@@ -185,11 +185,20 @@ export const EDITOR_BRIDGE_SCRIPT = `
             // scored by how many hooks of this prefix it actually contains, and
             // the richest one wins — the real Location section always holds more
             // location.* hooks than a header that happens to carry one phone.
+            //
+            // A template may also put TWO blocks inside one <section> — the
+            // hospitality BJ host section holds the about copy and the promise
+            // cards side by side, because that is how the design draws it. Such
+            // a template marks each region with data-block="<prefix>", and that
+            // marker wins over the enclosing section: without it, hiding the
+            // promises would blank the host copy beside them. Templates with no
+            // marker are unaffected and still resolve to their section.
             var sel = '[data-field^="' + pfx + '."],[data-image-field^="' + pfx + '."],[data-field="' + pfx + '"]';
             var hits = document.querySelectorAll(sel);
             var hosts = [], counts = [], k;
             for (var hi = 0; hi < hits.length; hi++) {
-                var host = hits[hi].closest ? hits[hi].closest('section,footer') : null;
+                var marked = hits[hi].closest ? hits[hi].closest('[data-block="' + pfx + '"]') : null;
+                var host = marked || (hits[hi].closest ? hits[hi].closest('section,footer') : null);
                 if (!host) continue;
                 var at = -1;
                 for (k = 0; k < hosts.length; k++) { if (hosts[k] === host) { at = k; break; } }

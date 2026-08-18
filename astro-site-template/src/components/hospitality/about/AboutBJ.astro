@@ -7,15 +7,17 @@
  * identity row — a circular portrait, the host's name, the role line under it,
  * and the page's single contact action inline beside them.
  *
- * SPLIT vs CredentialsBJ (the one deliberate deviation from the design): the
- * design nests the three promise cards in this section's right-hand column.
- * They are a SIBLING <section> here (credentials/CredentialsBJ.astro, id
- * "promises") because editorBridge resolves a Blocks visibility toggle by
- * counting a prefix's hooks inside each <section> and hiding the richest one — a
- * section carrying both about.* and credentials.* would be hidden by EITHER
- * toggle. One <section>, one content prefix. CredentialsBJ then sits directly
- * under this block with a reduced top pad so the two still read as one idea, and
- * it stacks better at 360px than a nested column ever would.
+ * THE RIGHT-HAND COLUMN is CredentialsBJ, passed in by PageBJ as this
+ * component's children — the design nests the three promise cards beside the
+ * host copy, and that is how it is built. An earlier pass made them a sibling
+ * <section> to suit editorBridge's hook-counting visibility resolver; that put
+ * a full-width card stack under the host block instead of a column beside it,
+ * which is not the design. The bridge is taught about the pairing instead (see
+ * components/editor/editorBridge.ts) rather than the layout bent around it.
+ *
+ * Both columns keep their own Blocks toggle. PageBJ passes showCopy={aboutSection}
+ * and gates the children on credentialsBlock, so either column can be switched
+ * off on its own and the section only vanishes when both are.
  *
  * EDITABLE HOOKS (every one schema-owned, so v3 focuses a real field):
  *   about.tag              — eyebrow
@@ -59,8 +61,8 @@
  */
 // layout is accepted but unused: PageBJ passes it to every section uniformly,
 // and this block reads nothing outside content.*.
-interface Props { content: any; layout?: any; }
-const { content } = Astro.props;
+interface Props { content: any; layout?: any; showCopy?: boolean; }
+const { content, showCopy = true } = Astro.props;
 const about = content.about || {};
 const hero = content.hero || {};
 // ── Anchor guard. A FIFTH byte-identical copy of the Header / Hero / CtaBand /
@@ -105,59 +107,97 @@ const hasIdentity = Boolean(name);
 // gate always-true and ship a heading over nothing. The gate requires real BODY
 // content — and counts paraRows, because a list of blank strings is not content.
 const hasHost = Boolean(lead || image || name) || paraRows.length > 0;
+// The promise column arrives as children. It is rendered to a string ONCE so the
+// grid can drop the second track entirely when the Blocks tab has the promises
+// switched off — an empty track would leave the host copy at 1.1fr with a hole
+// beside it. `Astro.slots.has` is not enough on its own: PageBJ passes a
+// conditional expression, so the slot exists even when it renders to nothing.
+const asideHtml = Astro.slots.has('default') ? (await Astro.slots.render('default')).trim() : '';
+const hasAside = asideHtml.length > 0;
+const showsCopy = showCopy && hasHost;
+const hasSection = showsCopy || hasAside;
 ---
-{hasHost && (
+{hasSection && (
   <section class="host" id="host">
     <div class="wrap">
-      <div class="host-copy">
-        {tag && <span class="kick" data-field="about.tag">{tag}</span>}
-        {headline && <h2 class="h2 host-h reveal" data-field="about.headline" set:html={headline}></h2>}
-        {/* about.lead is plain text from a textarea, so it is bound as text
-            rather than set:html — the paragraph LIST below is the place an owner
-            writes markup. */}
-        {lead && <p class="host-p reveal" data-field="about.lead">{lead}</p>}
-        {paraRows.map((row, k: number) => (
-          <p class="host-p reveal" data-delay={String(k % 3)} data-field={`about.paragraphs.${row.i}`} set:html={row.text}></p>
-        ))}
-        {(image || hasIdentity || ctaText) && (
-          <div class="host-id reveal">
-            {image && (
-              /* Gated on a real upload, so role="img" is honest by construction
-                 and an empty circle never ships. The accessible name is the
-                 owner's OWN name when there is one — never a literal describing
-                 a person we cannot see — and with no name the portrait is
-                 hidden from the accessibility tree rather than announced as
-                 somebody. */
-              <div class="plate host-ava" style="min-height:0">
-                <div
-                  class="ph"
-                  data-image-field="about.image"
-                  role={name ? 'img' : undefined}
-                  aria-label={name || undefined}
-                  aria-hidden={name ? undefined : 'true'}
-                  style={`background-image:url('${image}');`}
-                ></div>
-              </div>
-            )}
-            {hasIdentity && (
-              <div class="host-who">
-                <span class="host-name" data-field="about.signature">{name}</span>
-                {/* Guarded separately AND nested inside the name gate: a role
-                    line with no name attributes a claim to nobody. */}
-                {role && <span class="host-role" data-field="about.role">{role}</span>}
-              </div>
-            )}
-            {ctaText && <a class="btn btn--line host-cta" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+      <div class:list={['host-grid', !(showsCopy && hasAside) && 'host-grid--solo']}>
+        {showsCopy && (
+          <div class="host-copy" data-block="about">
+          {tag && <span class="kick" data-field="about.tag">{tag}</span>}
+          {headline && <h2 class="h2 host-h reveal" data-field="about.headline" set:html={headline}></h2>}
+          {/* about.lead is plain text from a textarea, so it is bound as text
+              rather than set:html — the paragraph LIST below is the place an owner
+              writes markup. */}
+          {lead && <p class="host-p reveal" data-field="about.lead">{lead}</p>}
+          {paraRows.map((row, k: number) => (
+            <p class="host-p reveal" data-delay={String(k % 3)} data-field={`about.paragraphs.${row.i}`} set:html={row.text}></p>
+          ))}
+          {(image || hasIdentity || ctaText) && (
+            <div class="host-id reveal">
+              {image && (
+                /* Gated on a real upload, so role="img" is honest by construction
+                   and an empty circle never ships. The accessible name is the
+                   owner's OWN name when there is one — never a literal describing
+                   a person we cannot see — and with no name the portrait is
+                   hidden from the accessibility tree rather than announced as
+                   somebody. */
+                <div class="plate host-ava" style="min-height:0">
+                  <div
+                    class="ph"
+                    data-image-field="about.image"
+                    role={name ? 'img' : undefined}
+                    aria-label={name || undefined}
+                    aria-hidden={name ? undefined : 'true'}
+                    style={`background-image:url('${image}');`}
+                  ></div>
+                </div>
+              )}
+              {hasIdentity && (
+                <div class="host-who">
+                  <span class="host-name" data-field="about.signature">{name}</span>
+                  {/* Guarded separately AND nested inside the name gate: a role
+                      line with no name attributes a claim to nobody. */}
+                  {role && <span class="host-role" data-field="about.role">{role}</span>}
+                </div>
+              )}
+              {ctaText && <a class="btn btn--line host-cta" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+            </div>
+          )}
           </div>
+        )}
+        {/* The promise column, handed in by PageBJ as this component's children.
+            Fragment + set:html because the children were rendered to a string in
+            the frontmatter so the grid could decide whether the second track
+            exists at all; the child's own scoped class names and hoisted <style>
+            survive that, and so does every data-field hook inside it. */}
+        {hasAside && (
+          <div class="host-aside"><Fragment set:html={asideHtml} /></div>
         )}
       </div>
     </div>
   </section>
 )}
 <style>
-  /* One column on the cream ground: the design's right-hand column is now the
-     sibling promises section, so this block is pure prose plus the identity row. */
-  .host-copy { max-width: 62ch; }
+  /* The design's split: host copy at 1.1fr, the promise column at .9fr, centred
+     against each other. --solo drops to one track whenever only one of the two
+     columns is switched on, so a hidden column never leaves a hole. */
+  .host-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1.1fr) minmax(0,.9fr);
+    gap: clamp(30px,4.6vw,60px);
+    align-items: center;
+  }
+  .host-grid--solo { grid-template-columns: minmax(0,1fr); }
+  /* PREVIEW ONLY. editorBridge hides one marked column with an inline
+     display:none, and an explicit two-track template would keep the empty track
+     — so the live preview would show the remaining column squeezed into 1.1fr
+     with a hole beside it. The published build never needs this: it decides the
+     track count in the frontmatter (--solo above). Both serialisations of the
+     inline style are matched because that is browser-dependent. */
+  .host-grid:has(> [data-block][style*="display: none"]),
+  .host-grid:has(> [data-block][style*="display:none"]) { grid-template-columns: minmax(0,1fr); }
+  .host-copy { min-width: 0; }
+  .host-aside { min-width: 0; }
 
   /* The eyebrow is the wrapper's shared .kick primitive — 10px tracked caps in
      --accent (the AA-darkened terracotta, 5.06:1 on paper, which 10px text
@@ -198,6 +238,11 @@ const hasHost = Boolean(lead || image || name) || paraRows.length > 0;
   .host-name { font-family: var(--disp); font-weight: 400; font-size: 22px; line-height: 1.15; color: var(--ink); overflow-wrap: anywhere; }
   .host-role { font-size: 13px; line-height: 1.4; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
 
+  /* One column before the copy measure gets squeezed: at 900px the .9fr track is
+     ~330px, which is the narrowest a 21px display title over 14px body reads at. */
+  @media (max-width: 900px) {
+    .host-grid { grid-template-columns: minmax(0,1fr); gap: clamp(26px,4vw,40px); }
+  }
   @media (max-width: 760px) {
     .host-copy, .host-copy .host-p { max-width: none; }
     .host-h { max-width: none; }

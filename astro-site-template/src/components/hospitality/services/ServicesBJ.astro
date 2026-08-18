@@ -91,7 +91,20 @@ type Item = {
 };
 // Both shapes: the wrapped `{tag, headline, sub, items[]}` and the legacy bare
 // array at content.services.
-const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+const rawItems: any[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+// …and both VOCABULARIES. lib/astro-builder.ts maps name→title / description→desc
+// when content.services arrives as a bare array, but not when it arrives already
+// wrapped — and a wrapped row still carrying the legacy key names is exactly what
+// the editor's brief draft-normalisation window wrote. Without this mapping every
+// room on such a site fails the "did the owner fill anything in?" filter below and
+// the WHOLE ROOMS SECTION vanishes while the data sits untouched in the record.
+const items: Item[] = rawItems.map((it: any) => {
+  if (!it || typeof it !== 'object') return it;
+  const out: any = { ...it };
+  if (out.title == null && out.name != null) out.title = out.name;
+  if (out.desc == null && out.description != null) out.desc = out.description;
+  return out;
+});
 // A row the owner added and never filled would otherwise spend a card, a border
 // and 252px of photo well on nothing. Drop the blanks — but carry the ORIGINAL
 // index so every data-field keeps addressing the real array slot. Removing room
@@ -169,7 +182,6 @@ const hasSection = rows.length > 0 || hasWhole;
                       class="ph"
                       data-image-field={`services.items.${it.i}.image`}
                       role={labelled ? 'img' : undefined}
-                      aria-hidden="true"
                       aria-hidden={labelled ? undefined : 'true'}
                       style={it.image ? `background-image:url('${it.image}');` : undefined}
                     ></div>
@@ -303,11 +315,11 @@ const hasSection = rows.length > 0 || hasWhole;
   .room:hover .r-ph .ph { transform: scale(1.04); }
   @media (prefers-reduced-motion: reduce) { .room:hover .r-ph .ph { transform: none; } }
 
-  /* The badge sits on an OPAQUE ink pill, never a scrim: it has to stay legible
-     over a blown-out phone photo as well as a dark one. */
+  /* The design's floor badge: an OPAQUE deep-green pill, never a scrim — it has
+     to stay legible over a blown-out phone photo as well as a dark one. */
   .floor { position: absolute; left: 12px; top: 12px; z-index: 3;
     max-width: calc(100% - 24px);
-    background-color: var(--ink); color: var(--paper);
+    background-color: var(--green); color: var(--on-green);
     font-family: var(--sans); font-size: 9px; font-weight: 600;
     letter-spacing: .2em; text-transform: uppercase;
     padding: 6px 11px; border-radius: 100px; }
@@ -325,7 +337,7 @@ const hasSection = rows.length > 0 || hasWhole;
   /* Decoration, and the only reason it may carry accent: it is aria-hidden, it
      says nothing, and it exists only next to a number the owner typed. It also
      sits OUTSIDE the data-field span, so an inline edit cannot swallow it. */
-  .star { color: var(--ink-soft); }
+  .star { color: var(--accent); }
   .r-name { font-family: var(--disp); font-weight: 400; font-size: 26px;
     line-height: 1.14; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
   .r-body .r-desc { margin: 0; font-size: 14px; line-height: 1.7; color: var(--ink-soft); }
@@ -360,7 +372,7 @@ const hasSection = rows.length > 0 || hasWhole;
   .r-cta { margin-top: 14px; width: 100%; flex: 0 0 auto;
     padding: 13px 18px; min-height: 44px; font-size: 11px; white-space: normal;
     background-color: var(--paper); }
-  .r-cta:hover { background-color: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .r-cta:hover { background-color: var(--green); color: var(--on-green); border-color: var(--green); }
 
   /* ── the whole-house band: one inverted slab under the grid, copy left, rate
         and action right. Ground, eyebrow, body copy, figure and button colours
@@ -371,11 +383,11 @@ const hasSection = rows.length > 0 || hasWhole;
     gap: clamp(22px,3vw,32px); flex-wrap: wrap; }
   .w-copy { min-width: 0; flex: 1 1 340px; }
   /* An h3, so it takes neither .h2's size nor its <em> rule: both are restated
-     here at the band's own scale. The emphasis stays `inherit` — terracotta on
-     ink is unreadable, and the italic serif is the signature anyway. */
+     here at the band's own scale. On the green the emphasis is GOLD — the green
+     tint it carries on cream would delete the words. */
   .w-h { font-family: var(--disp); font-weight: 400; font-size: clamp(24px,2.6vw,29px);
-    line-height: 1.1; margin: .24em 0 .3em; color: var(--paper); overflow-wrap: anywhere; }
-  .w-h em { font-style: italic; color: inherit; }
+    line-height: 1.1; margin: .24em 0 .3em; color: var(--on-green); overflow-wrap: anywhere; }
+  .w-h em { font-style: italic; color: var(--accent-light); }
   .whole .w-body { margin: 0; max-width: 56ch; }
   .w-act { flex: 0 1 auto; text-align: right; }
   .w-rate { display: block; }

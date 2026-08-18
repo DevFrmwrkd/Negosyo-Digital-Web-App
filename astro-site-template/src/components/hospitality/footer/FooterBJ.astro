@@ -277,12 +277,12 @@ const msgText = msgHref ? ctaText : '';
   .f-wm-lock { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
   .wm {
     margin: 0; font-family: var(--disp); font-weight: 400;
-    font-size: clamp(21px,2vw,25px); line-height: 1.1; color: var(--ink);
+    font-size: clamp(21px,2vw,25px); line-height: 1.1; color: var(--green);
     overflow-wrap: anywhere;
   }
   .loc {
     font-family: var(--sans); font-weight: 600; font-size: 9px;
-    letter-spacing: .32em; text-transform: uppercase; color: var(--ink-soft);
+    letter-spacing: .32em; text-transform: uppercase; color: var(--accent);
     overflow-wrap: anywhere;
   }
   .f-blurb {
@@ -301,7 +301,7 @@ const msgText = msgHref ? ctaText : '';
      instead of printing the designer's word. */
   .f-h {
     margin: 0 0 14px; font-family: var(--sans); font-weight: 600; font-size: 10px;
-    letter-spacing: .3em; text-transform: uppercase; color: var(--ink-soft);
+    letter-spacing: .3em; text-transform: uppercase; color: var(--accent);
     overflow-wrap: anywhere;
   }
   .f-col a { display: block; padding: 4px 0; font-size: 14px; color: var(--ink-soft); border-bottom: 2px solid transparent; overflow-wrap: anywhere; }
@@ -334,7 +334,7 @@ const msgText = msgHref ? ctaText : '';
   .msg-fab a {
     display: inline-flex; align-items: center; gap: 9px; min-height: 48px;
     padding: 13px 20px; border-radius: 999px;
-    background-color: var(--ink); color: var(--paper);
+    background-color: var(--green); color: var(--on-green);
     border: 1px solid rgba(var(--paper-rgb),.30);
     font-family: var(--sans); font-weight: 600; font-size: 11.5px;
     letter-spacing: .12em; text-transform: uppercase;
@@ -345,9 +345,9 @@ const msgText = msgHref ? ctaText : '';
   /* The DUO focus ring must survive a hover: this rule is (0,3,0) and PageBJ's
      focus rule is (0,2,1), and box-shadow is a single property — so the ink halo
      has to be restated here beside the hover wash, not left to the page. */
-  .msg-fab a:hover:focus-visible { box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 6px var(--ink); }
+  .msg-fab a:hover:focus-visible { box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 6px var(--green); }
   .msg-fab a:hover {
-    background-color: var(--ink); color: var(--paper);
+    background-color: var(--green); color: var(--on-green);
     box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 12px 30px rgba(0,0,0,.24), 0 0 0 5px rgba(var(--accent-rgb),.28);
   }
   .msg-fab svg { width: 15px; height: 15px; flex: 0 0 auto; }

@@ -114,7 +114,7 @@ const ctaHref = onPage(hero.cta1?.href, '#book');
   /* Full-bleed inverted band. Painted here rather than through a page-level band
      class so the section is self-contained: the only colours it reads are the
      ink/paper pair, which the engine guarantees to be a legible pairing. */
-  .howto { background-color: var(--ink); color: var(--paper); }
+  .howto { background-color: var(--green); color: var(--on-green); }
 
   .eyebrow {
     display: inline-block;
@@ -129,13 +129,13 @@ const ctaHref = onPage(hero.cta1?.href, '#book');
     font-family: var(--disp); font-weight: 400;
     font-size: clamp(30px, 4.3vw, 56px); line-height: 1.06; letter-spacing: -0.005em;
     margin: 0.24em 0 clamp(30px, 4vw, 50px);
-    color: var(--paper); max-width: 24ch; overflow-wrap: anywhere;
+    color: var(--on-green); max-width: 24ch; overflow-wrap: anywhere;
   }
   /* The template's signature emphasis: a real Instrument Serif italic, colour
-     inherited. Never an accent colour swap — accent-as-text fails 4.5:1 in most
-     of the allowed schemes, and on this band it would be accent-on-ink. */
+     gold on this band: the green tint it carries on cream would delete the
+     emphasised words against the green ground. */
   .howto .h2 :global(em),
-  .howto .h2 :global(.em) { font-style: italic; color: inherit; }
+  .howto .h2 :global(.em) { font-style: italic; color: var(--accent-light); }
 
   /* auto-fit so 2, 3, 4 or 5 owner-typed steps all fill the row without a hole */
   .how-grid {
@@ -154,21 +154,22 @@ const ctaHref = onPage(hero.cta1?.href, '#book');
   .step h3 {
     font-family: var(--disp); font-weight: 400;
     font-size: clamp(21px, 2vw, 26px); line-height: 1.14;
-    margin: 12px 0 10px; color: var(--paper); overflow-wrap: anywhere;
+    margin: 12px 0 10px; color: var(--on-green); overflow-wrap: anywhere;
   }
   .step p {
     margin: 0; font-size: 15px; line-height: 1.75;
-    color: rgba(var(--paper-rgb), 0.78); overflow-wrap: anywhere;
+    color: var(--green-soft); overflow-wrap: anywhere;
   }
 
   .how-act { margin-top: clamp(30px, 4vw, 50px); }
-  /* Inverted-band button: opaque --paper fill, --ink label. Shape is declared in
-     full so the pill is identical whether or not the page shell styles .btn. */
+  /* The design's btnGold: opaque gold fill, near-black label (8.48:1). Shape is
+     declared in full so the pill is identical whether or not the page shell
+     styles .btn. */
   .howto .btn--fill {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     min-height: 44px; padding: 16px 32px; border-radius: 999px;
-    border: 1px solid var(--paper);
-    background-color: var(--paper); color: var(--ink);
+    border: 1px solid var(--accent-light);
+    background-color: var(--accent-light); color: var(--ink);
     font-family: var(--sans); font-weight: 600; font-size: 11.5px;
     letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none;
     overflow-wrap: anywhere;
@@ -177,7 +178,7 @@ const ctaHref = onPage(hero.cta1?.href, '#book');
      Never lighter, never transparent, never a hue change — and never a rule that
      recolours the label, which buildOverrideCss can pin out from under us. */
   .howto .btn--fill:hover {
-    background-color: var(--paper); color: var(--ink); border-color: var(--paper);
+    background-color: var(--accent-light); color: var(--ink); border-color: var(--accent-light);
     box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.16);
   }
 

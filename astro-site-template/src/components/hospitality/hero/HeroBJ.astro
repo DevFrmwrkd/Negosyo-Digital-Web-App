@@ -144,12 +144,12 @@ const cta2Href = onPage(hero.cta2?.href, '#book');
      it does not run the full 1240px either. */
   .a-grid--solo { grid-template-columns: minmax(0,1fr); }
   .a-grid--solo .a-h1 { max-width: 18ch; }
-  /* The eyebrow is var(--accent) per the template's palette contract: the native
-     terracotta is darkened specifically to clear AA at this 10px cap size. */
+  /* The design's terracotta eyebrow, #C4622D. 3.80:1 at this size — the
+     design's own choice; see the ACCESSIBILITY NOTE in PageBJ. */
   .a-kick {
     display: inline-block; font-family: var(--sans); font-weight: 600;
     font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
-    color: var(--ink-soft); overflow-wrap: anywhere;
+    color: var(--accent); overflow-wrap: anywhere;
   }
   .a-h1 {
     font-family: var(--disp); font-weight: 400;
@@ -157,11 +157,11 @@ const cta2Href = onPage(hero.cta2?.href, '#book');
     margin: .22em 0 .3em; color: var(--ink);
   }
   .a-h1 .ln { display: block; }
-  /* The signature. Italic only — never a colour swap: accent-as-text collapses
-     under some schemes, and --ink already carries the design's deep green. */
-  .a-h1 .ln-em { font-style: italic; }
+  /* THE SIGNATURE: italic serif in the deep green (10.85:1 on cream), exactly
+     as the design draws "one quiet house." */
+  .a-h1 .ln-em { font-style: italic; color: var(--green); }
   /* :global() because Astro cannot scope markup that arrived through set:html. */
-  .a-h1 :global(em) { font-style: italic; color: inherit; }
+  .a-h1 :global(em) { font-style: italic; color: var(--green); }
   .a-lede {
     font-size: clamp(16px,1.5vw,17.5px); line-height: 1.7; color: var(--ink-soft);
     max-width: 46ch; margin: 0 0 clamp(22px,2.6vw,32px);

@@ -67,13 +67,11 @@ const show = rows.length >= 2 || Boolean(body);
 )}
 <style>
   .n-head { margin: 0 0 clamp(18px,2.4vw,26px); max-width: 62ch; }
-  /* The signature eyebrow: 10px caps at .4em on the darkened terracotta (5.06:1
-     on the cream ground — the reason --accent is darkened from the design's
-     #C4622D, which measured 3.83:1 at this size). */
+  /* The signature eyebrow: 10px caps at .4em on the design's terracotta. */
   .eyebrow {
     display: inline-block; font-family: var(--sans); font-weight: 600;
     font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
-    color: var(--ink-soft);
+    color: var(--accent);
   }
   .n-h2 {
     font-family: var(--disp); font-weight: 400; font-size: clamp(28px,3.6vw,48px);
