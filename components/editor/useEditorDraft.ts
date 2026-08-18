@@ -56,11 +56,74 @@ function deepGet(obj: any, path: string): any {
 
 const j = (v: any) => JSON.stringify(v ?? null);
 
+/**
+ * Normalise Why / How / Testimonials / FAQ / Credentials on the way INTO the
+ * draft.
+ *
+ * The AI extraction (lib/services/groq.service.ts) emits these five as BARE
+ * ARRAYS with its own field names, while the sidebar schema reads
+ * `why.items`, `how.steps`, `faq.items` … So without this the five panels
+ * render "No items yet" beside an iframe showing three reasons and five FAQs.
+ *
+ * Worse, WRITING was destructive: setValue('why.items', …) clones the bare
+ * array and hangs an `.items` property on it, and JSON.stringify drops
+ * non-index properties of an array — so the edit vanished between the success
+ * toast and Convex. Normalising at the seed is what makes the shape survive
+ * the round trip.
+ *
+ * Mirrors lib/astro-builder.ts#normalizeBlock (render-time) and the copy that
+ * lived only in SandboxEditor.tsx (v1). Keep the three in step.
+ */
+const normalizeBlockEditor = (
+    input: any,
+    itemsKey: 'items' | 'steps' = 'items',
+    aliases: Record<string, string> = {},
+    altItemsKey?: string,
+): any => {
+    if (input == null) return input;
+    let arr: any[] | null = null;
+    let wrapper: Record<string, any> = {};
+    if (Array.isArray(input)) {
+        arr = input;
+    } else if (typeof input === 'object') {
+        wrapper = { ...input };
+        if (Array.isArray(input[itemsKey])) {
+            arr = input[itemsKey];
+        } else if (altItemsKey && Array.isArray(input[altItemsKey])) {
+            arr = input[altItemsKey];
+        }
+    }
+    if (!arr) return input;
+    const mapped = arr.map((it: any) => {
+        if (!it || typeof it !== 'object') return it;
+        const out: Record<string, any> = { ...it };
+        for (const [from, to] of Object.entries(aliases)) {
+            if (out[from] != null && out[to] == null) out[to] = out[from];
+        }
+        return out;
+    });
+    delete wrapper[itemsKey];
+    if (altItemsKey) delete wrapper[altItemsKey];
+    return { ...wrapper, [itemsKey]: mapped };
+};
+
+export const normalizeDraft = (raw: any): any => {
+    if (!raw || typeof raw !== 'object') return raw ?? {};
+    return {
+        ...raw,
+        why: normalizeBlockEditor(raw.why, 'items', { description: 'body' }),
+        how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
+        testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
+        faq: normalizeBlockEditor(raw.faq, 'items', { question: 'q', answer: 'a' }),
+        credentials: normalizeBlockEditor(raw.credentials, 'items', { description: 'desc', body: 'desc' }),
+    };
+};
+
 export function useEditorDraft(props: SandboxEditorProps) {
     const { content, customizations, businessType, submissionId } = props;
 
     // ── Content draft (+ visibility) ──────────────────────────────────────
-    const [draft, setDraft] = useState<any>(() => ({ ...(content ?? {}) }));
+    const [draft, setDraft] = useState<any>(() => normalizeDraft(content));
     const draftRef = useRef<any>(draft);
     draftRef.current = draft;
 
@@ -183,17 +246,23 @@ export function useEditorDraft(props: SandboxEditorProps) {
     const restoreCachedDraft = useCallback(() => {
         const c = cachedRef.current;
         if (!c) return;
-        commitState({ ...(c.draft ?? {}) }, c.cust);
+        // Normalised on restore too: a draft cached before this fix landed
+        // still carries the bare-array shape.
+        commitState(normalizeDraft(c.draft), c.cust);
         setHasCachedDraft(false);
     }, [commitState]);
 
     // ── Clean-sync guards: adopt server props only when the editor is clean ─
     const syncedContentRef = useRef<any>(content);
     useEffect(() => {
-        const clean = j(draftRef.current) === j(syncedContentRef.current);
+        // Compare like with like: draftRef holds a NORMALISED draft, so the
+        // synced props must be normalised before the equality test. Comparing
+        // a normalised draft against raw content reads as permanently dirty,
+        // and the editor silently stops adopting server updates.
+        const clean = j(draftRef.current) === j(normalizeDraft(syncedContentRef.current));
         syncedContentRef.current = content;
         if (clean) {
-            const next = { ...(content ?? {}) };
+            const next = normalizeDraft(content);
             commitState(next, pendingCustRef.current, { noHistory: true });
             historyRef.current = { stack: [{ draft: next, cust: pendingCustRef.current }], index: 0 };
             refreshUndoFlags();
