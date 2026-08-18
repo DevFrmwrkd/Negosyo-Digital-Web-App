@@ -1,0 +1,94 @@
+---
+/**
+ * hospitality / AreaBI — "Palm Hour"'s what's-nearby ledger: the places the
+ * owner named, one per hairline row with a terracotta bead, on the linen band.
+ * In this vertical proximity is the buying reason (beach, airport, mall, dive
+ * site), which is why it gets a real ledger rather than a strip of pills.
+ *
+ * Reads content.area.places (legacy `items`); optional headline / sub render
+ * above. NO distances and NO travel times anywhere: we have no such data, and
+ * "8 minutes from the beach" is a claim the owner never made. Each place also
+ * stays in ONE editable node — never split on a dash to right-align a figure,
+ * because the editor patches the text of the element carrying data-field and a
+ * split would collapse on the first edit.
+ *
+ * Gate: hides unless the owner named a place beyond their own city (see below).
+ *
+ * Editable hooks: area.tag · area.headline · area.sub · area.places.<i>.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const sub = area.sub || area.body || '';
+const places: string[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+// TRAP — the GATE, not just the label. lib/derive-content-defaults.ts sets
+// `area.places = [city]` (and area.headline = 'Serving <city>') for EVERY
+// submission that typed a city, so `places.length > 0` is true for essentially
+// every site we ship and this section would assert a nearby-places list nobody
+// supplied. A lone row echoing the property's own city is not "what's nearby",
+// it is the address again. Render only when at least one place is somewhere
+// OTHER than the city on the submission — that can only have come from the
+// owner. Do not relax this back to `places.length > 0`: the layer above fills
+// it in again on the next build.
+const homeCity = String(content.business_city || '').trim().toLowerCase();
+const namedBeyondHome = places.some((p) => { const v = String(p).trim().toLowerCase(); return v.length > 0 && v !== homeCity; });
+// A blank string in the array would still render an <li> carrying the hairline,
+// 30px of padding and a floating terracotta bead — a list row naming nothing.
+// The index MUST stay the original array position or an inline edit writes into
+// the wrong area.places.<n> slot. No empty-guard needed on `rows`: namedBeyondHome
+// already guarantees at least one non-blank entry.
+const rows = places
+  .map((p, i: number) => ({ v: String(p ?? '').trim(), i }))
+  .filter((r) => r.v.length > 0);
+---
+{namedBeyondHome && (
+  <section class="nearby band-linen" id="nearby">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sh-l">Around here</span>
+        <span class="sh-rule" aria-hidden="true"></span>
+        {tag && <span class="sh-r" data-field="area.tag">{tag}</span>}
+      </div>
+      {headline && <h2 class="h2 reveal" data-field="area.headline" set:html={headline}></h2>}
+      {sub && <p class="body n-sub reveal" data-field="area.sub">{sub}</p>}
+      <ul class="place-list reveal">
+        {rows.map((r) => (
+          <li class="rowrule" data-field={`area.places.${r.i}`}>{r.v}</li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+<style>
+  .n-sub { max-width: 56ch; margin-bottom: clamp(14px,2vw,22px); }
+  .place-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr));
+    /* Column gap only. A row gap would break the hairline ledger into floating
+       dashes, and gap-over-an-inked-container paints a visible block in the
+       EMPTY tracks of a partial last row. */
+    gap: 0 clamp(24px,4vw,56px); margin: clamp(18px,3vw,28px) 0 0; padding: 0; }
+  .place-list li { list-style: none; display: flex; align-items: center; gap: 12px;
+    padding: 15px 2px; font-family: var(--disp); font-weight: 700;
+    font-size: clamp(17px,1.6vw,19px); line-height: 1.2; color: var(--ink);
+    font-optical-sizing: auto; font-variation-settings: "SOFT" 35, "WONK" 0;
+    overflow-wrap: anywhere; }
+  /* A warm bead per destination — decorative, carries no text, so the accent is
+     used as a mark and never as a label. */
+  .place-list li::before { content: ''; flex: 0 0 auto; width: 8px; height: 8px;
+    border-radius: 50%; background-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(var(--accent-rgb),.18); }
+
+  @media (max-width: 760px) {
+    .place-list { grid-template-columns: 1fr 1fr; gap: 0 24px; }
+    .place-list li { font-size: 16px; }
+  }
+  @media (max-width: 520px) {
+    /* One column: a place name is prose-length and reads worse in a 157px
+       column than full width. Nothing is positioned outside its cell, so 360px
+       has no overflow. */
+    .place-list { grid-template-columns: 1fr; }
+    .place-list li { padding: 13px 2px; }
+    .place-list li::before { width: 7px; height: 7px; box-shadow: 0 0 0 3px rgba(var(--accent-rgb),.18); }
+  }
+</style>

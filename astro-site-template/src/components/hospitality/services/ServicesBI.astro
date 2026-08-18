@@ -1,0 +1,185 @@
+---
+/**
+ * hospitality / ServicesBI — "Stays": the rooms / units ledger, and the
+ * commercial heart of the template. A published-tariff table on plaster — a 4/3
+ * photo thumb, the unit name, what is in it, an optional capacity note and chip,
+ * and a right-aligned rate carrying an accent rule. Rate prominence is size,
+ * display face and a hairline — never a coloured fill and never text ON accent.
+ *
+ * Reads content.services (both the wrapped `{tag, headline, sub, items[]}` shape
+ * and the legacy bare array at content.services). Auto-hides when there are no
+ * items, and drops any row whose every field is blank rather than spending a
+ * hairline and 26px of padding on it. Mirrors ServicesAS/ServicesBB's content
+ * contract exactly — no new keys.
+ *
+ * ONE column template for the WHOLE table, decided up front from the data:
+ *   anyPhoto → the photo cell renders for EVERY row (so a row with no image
+ *              still keeps the column's gradient plate and the table stays
+ *              aligned) — and when NO row has an image the column disappears
+ *              entirely and the ledger becomes a pure hairline text ledger, the
+ *              single-unit case a one-listing owner actually hits.
+ *   anyPrice → the rate cell AND its aria-hidden header row render together, so
+ *              a rateless ledger looks deliberate rather than broken. There is
+ *              no empty currency symbol and no "from" with nothing after it,
+ *              because the price string is printed VERBATIM: we never prepend a
+ *              currency, append "per night", or infer "sleeps N". Any of those
+ *              would be a claim the owner did not make.
+ *
+ * Editable hooks:
+ *   services.tag                  — .sec-head right slot (the ONLY data slot)
+ *   services.headline             — h2 (set:html)
+ *   services.sub                  — closing note
+ *   services.items.${i}.title     — unit name
+ *   services.items.${i}.desc      — what is in it
+ *   services.items.${i}.note      — capacity / occupancy note (mono)
+ *   services.items.${i}.tag       — category chip
+ *   services.items.${i}.price     — rate figure (printed verbatim)
+ *   services.items.${i}.duration  — rate unit line (printed verbatim)
+ *   services.items.${i}.image (img) — the row's photo
+ *
+ * KNOWN, out of scope here (R7): price / duration / tag are not in
+ * components/editor/genericContentSchema.ts (the row form is title/desc/note/
+ * image) and SandboxEditorV2's SKIP regex blocks inline editing of
+ * `…items.N.…`, so the rate is currently unreachable from the admin. The design
+ * handles that honestly via anyPrice; adding the three row fields is a separate
+ * change to the editor schema.
+ *
+ * Theming: no baked hex — only --ink --line --muted --ink-soft --accent.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+// Left span of .sec-head is a design literal describing the TEMPLATE, and it is
+// the deliberately neutral word "Stays" — not "Rooms & rates", which would
+// assert plural rooms and published rates on a single unpriced unit. The right
+// span is the ONLY data slot; a literal there is a fabrication.
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+type Item = { title?: string; desc?: string; note?: string; image?: string; tag?: string; price?: string; duration?: string };
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+// A row the admin added but never filled would otherwise render 26px of padding,
+// a hairline and a decorative index over nothing. Drop the blanks, but carry the
+// ORIGINAL index so every data-field keeps pointing at the real array slot (same
+// pattern the family uses for nav links and gallery tiles). The visible numeral
+// is the DISPLAY position instead, so the ledger reads 01, 02, 03 with no gaps —
+// it is decorative chrome and carries no information.
+const rows = items
+  .map((it, i: number) => ({ ...it, i }))
+  .filter((r) => Boolean(r.title || r.desc || r.note || r.tag || r.price || r.duration || r.image));
+// Column decisions, made once for the whole table (see the header note).
+const anyPhoto = rows.some((r) => Boolean(r.image));
+const anyPrice = rows.some((r) => Boolean(r.price || r.duration));
+---
+{rows.length > 0 && (
+  <section class="rooms" id="rooms">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sh-l">Stays</span>
+        <span class="sh-rule" aria-hidden="true"></span>
+        {tag && <span class="sh-r" data-field="services.tag">{tag}</span>}
+      </div>
+      {headline && <h2 class="h2 reveal" data-field="services.headline" set:html={headline}></h2>}
+      <div class:list={['ledger', !anyPhoto && 'nophoto', !anyPrice && 'norate']}>
+        {anyPrice && (
+          <div class="r-head" aria-hidden="true">
+            {anyPhoto && <span></span>}
+            <span>Room or unit</span>
+            <span>Rate</span>
+          </div>
+        )}
+        {rows.map((it, k) => (
+          <article class="room rowrule reveal" data-delay={String(k % 3)}>
+            {anyPhoto && (
+              <div class="plate r-ph" style="aspect-ratio:4/3;min-height:0">
+                {/* With an image this is a real photograph and keeps role + label;
+                    with none it is the designed gradient and is decoration, so it
+                    is hidden rather than announced as a room that does not exist.
+                    Astro drops attributes whose value is undefined. */}
+                <div
+                  class="ph"
+                  data-image-field={`services.items.${it.i}.image`}
+                  role={it.image ? 'img' : undefined}
+                  aria-label={it.image ? (it.title || 'Room photo') : undefined}
+                  aria-hidden={it.image ? undefined : 'true'}
+                  style={it.image ? `background-image:url('${it.image}');` : ''}
+                ></div>
+              </div>
+            )}
+            <div class="r-body">
+              <span class="rno" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+              {it.title && <h3 data-field={`services.items.${it.i}.title`}>{it.title}</h3>}
+              {it.desc && <p data-field={`services.items.${it.i}.desc`}>{it.desc}</p>}
+              {(it.note || it.tag) && (
+                <div class="r-meta">
+                  {it.note && <span class="mono" data-field={`services.items.${it.i}.note`}>{it.note}</span>}
+                  {it.tag && <span class="chip" data-field={`services.items.${it.i}.tag`}>{it.tag}</span>}
+                </div>
+              )}
+            </div>
+            {anyPrice && (
+              <div class="r-rate">
+                {it.price && <span class="fig rate" data-field={`services.items.${it.i}.price`}>{it.price}</span>}
+                {it.duration && <span class="mono unit" data-field={`services.items.${it.i}.duration`}>{it.duration}</span>}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+      {sub && <p class="body r-note reveal" data-field="services.sub">{sub}</p>}
+    </div>
+  </section>
+)}
+<style>
+  /* ── the ledger. One template, four widths, chosen by the data on the container
+        (.nophoto / .norate) rather than per row — so the table cannot go ragged. */
+  .ledger { border-top: 2px solid var(--ink); }
+  .r-head { display: grid; grid-template-columns: 300px 1fr 170px; gap: clamp(20px,3vw,44px); padding: 10px 0; font-family: var(--mono); font-weight: 500; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .r-head span:last-child { text-align: right; }
+  /* .rowrule supplies the shared hairline at (0,1,1); this single-class scoped
+     rule is (0,2,0), so border-top:0 wins and the rows separate downwards from
+     the ledger's own 2px ink cap. */
+  .room { display: grid; grid-template-columns: 300px 1fr 170px; gap: clamp(20px,3vw,44px); align-items: center; padding: 26px 0; border-top: 0; border-bottom: 1px solid var(--line); }
+  .ledger.nophoto .room,
+  .ledger.nophoto .r-head { grid-template-columns: 1fr 170px; }
+  .ledger.norate .room,
+  .ledger.norate .r-head { grid-template-columns: 300px 1fr; }
+  .ledger.nophoto.norate .room { grid-template-columns: 1fr; }
+  .room:hover .r-ph .ph { transform: scale(1.04); }
+
+  .rno { display: block; font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em; color: var(--muted); margin-bottom: 6px; }
+  .r-body h3 { font-family: var(--disp); font-weight: 700; font-size: clamp(21px,2vw,27px); line-height: 1.08; overflow-wrap: anywhere; }
+  /* Qualified with the parent class so it out-specifies PageBI's
+     `:where(p){margin:0 0 1em}` at (0,1,1). */
+  .r-body p { margin: 8px 0 0; font-size: 15px; line-height: 1.7; color: var(--ink-soft); max-width: 54ch; }
+  .r-meta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+
+  /* ── the rate. Size + display face + an accent RULE. Never a coloured fill,
+        never text on accent (accent-as-text fails 4.5:1 in 8 of 13 schemes). */
+  .r-rate { text-align: right; }
+  .rate { display: inline-block; font-size: clamp(22px,2.2vw,30px); border-bottom: 2px solid var(--accent); padding-bottom: 4px; }
+  .unit { display: block; margin-top: 6px; font-size: 9.5px; }
+  .r-note { margin-top: 22px; max-width: 60ch; }
+
+  /* ── 760: the table becomes a stack. The decorative header row goes, and the
+        rate re-forms as a labelled footer line under each unit. The photo plate
+        is sized INLINE, so a definite `height` (not `aspect-ratio`) is what
+        retunes it here. */
+  @media (max-width: 760px) {
+    .r-head { display: none; }
+    .room,
+    .ledger.nophoto .room,
+    .ledger.norate .room,
+    .ledger.nophoto.norate .room { grid-template-columns: 1fr; gap: 14px; padding: 22px 0; }
+    .r-ph { height: clamp(180px,52vw,240px); }
+    .r-rate { text-align: left; display: flex; justify-content: space-between; align-items: baseline; gap: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+    .unit { margin-top: 0; }
+  }
+
+  @media (max-width: 520px) {
+    .r-body h3 { font-size: 20px; }
+    .rate { font-size: clamp(20px,6vw,24px); }
+    .r-body p { font-size: 14.5px; overflow-wrap: anywhere; }
+    .r-meta { gap: 8px; }
+  }
+</style>

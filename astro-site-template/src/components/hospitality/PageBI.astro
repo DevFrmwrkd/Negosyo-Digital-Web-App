@@ -1,0 +1,644 @@
+---
+/**
+ * hospitality / PageBI — "Palm Hour" (hotels, villas & short stays).
+ *
+ * Terracotta & lagoon shade: Fraunces display over Figtree body with DM Mono
+ * labels, on sun-warmed plaster, alternating into a deep lagoon-green "shade"
+ * band. The warm ground and the shade bands exist to FLATTER an owner's phone
+ * photography rather than expose it — that is the whole art direction, and it is
+ * why every photo lives in an inset `.plate` frame with a paper mat rather than
+ * bleeding full-width.
+ *
+ * ROLE OF THIS FILE: the wrapper emits the WHOLE document (doctype, <head>,
+ * tokens, fonts, Leaflet boot, skip link, scroll-reveal). It does NOT compose
+ * with BaseLayout. It is the only file in the family that touches `siteData`;
+ * the 15 section components receive only `layout` + `content`.
+ *
+ * EDITABLE HOOKS OWNED BY THIS FILE: none. PageBI renders no editable text of
+ * its own — it only READS layout.businessName / layout.tagline (<title>),
+ * content.description (<meta name="description">), layout.favicon (<link
+ * rel="icon">) and layout.ogImage || layout.favicon (og:image). Every
+ * data-field / data-image-field / data-href-field hook lives in a section
+ * component. Section visibility is the 13 camelCase `visibility.*` keys below,
+ * every one tested `!== false` (undefined ⇒ render).
+ *
+ * DESIGN ISOLATION: every selector in the global block is prefixed
+ * `html[data-page="BI"]`, including the `*` reset, `body`, `img`, `a`,
+ * `::selection` and the base primitives, so nothing leaks into a sister wrapper
+ * built in the same run — and nothing leaks in.
+ *
+ * THEMING: the native palette is emitted FIRST and the engine's
+ * `html:root{…!important}` block LAST in <head>, which is the only reason an
+ * explicit admin colour pick wins the cascade. Never move it above the design
+ * <style is:global> or above the {__fontHref} link.
+ *
+ * FONT-PAIRING SENTINEL (two lines, wrapper-local, touches no shared file):
+ * lib/astro-builder.ts defaults `layout.fontPairing` to the literal 'modern',
+ * and resolveTheme's `lockVariant` only blanks ''/'auto'/'default' — so without
+ * the sentinel buildOverrideCss force-swaps Space Grotesk + Inter with
+ * !important on ~every real site and Fraunces never reaches a visitor. We treat
+ * astro-builder's DEFAULT as unset; a deliberate admin pick still applies.
+ *
+ * FORBIDDEN CLASS NAMES in this family (none of these is inferable — read
+ * lib/genericThemeOverrides.ts before adding a button anywhere):
+ *   .btn-primary .btn-ghost .btn-yellow .btn-light .nav-cta .nav-right .testi
+ *   and `.hero` on a <section> (the engine force-paints `.hero .btn-ghost`
+ *   white-on-transparent, which would strand a white label on this light hero;
+ *   the arrival section is therefore class="arrival").
+ * This family's buttons are `.btn--fill` / `.btn--line` / `.linkc` (double
+ * dash) on purpose: they dodge the engine's `.btn-primary{color:<on-primary>
+ * !important}` pin, which is sub-AA in 6 of 13 schemes. There is ZERO
+ * !important in this template outside the reduced-motion reveal reset — the
+ * rename removes the fight instead of winning it.
+ * TWO names are REQUIRED and deliberate: the stat rail IS class="trust" and the
+ * closing band IS class="cta-band", because in both places the engine's on-ink
+ * label pin is CORRECT (both sit on an ink fill, and pickOn(ink) flips with ink
+ * — 9.11:1 in the worst of the 13 schemes).
+ *
+ * KNOWN LIMITATIONS, recorded rather than fixed (fixing any of them needs a
+ * shared-file change, which is out of scope here):
+ *  1. components/editor/editorBridge.ts resolves a section by the FIRST
+ *     [data-field^="<prefix>."] in document order. HeaderBI's wordmark carries
+ *     `footer.brand` and its CTA pill carries `hero.cta1.text`, so toggling
+ *     FOOTER or HERO off in the editor hides the HEADER. Family-wide; the
+ *     alternatives either invent a content key (R7) or make the brand
+ *     un-editable (R1).
+ *  2. components/editor/genericContentSchema.ts declares `location.hours` as a
+ *     single TEXT field, so LocationBI's Array.isArray(loc.hours) always falls
+ *     through to content.footer.hours while still emitting
+ *     data-field="location.hours.N.day". That path does not match
+ *     SandboxEditorV2's SKIP regex, so a first inline edit would create a fresh
+ *     location.hours array and orphan the remaining footer rows.
+ *  3. ctaBand cta2/cta3 LABELS are effectively fixed (no sidebar form field, and
+ *     the inline editor returns early on any element carrying data-href-field),
+ *     which is why the closing band is designed to work fully with cta1 alone.
+ *  4. services.items[].price / .duration / .tag are not in
+ *     genericContentSchema's services row (title/desc/note/image), so the
+ *     per-night RATE is currently unreachable from the admin. ServicesBI handles
+ *     that honestly — `anyPrice` suppresses the rate column AND its header row
+ *     together — but the commercial value only lands once those three fields are
+ *     added to the row schema. Filed, not fixed (R7).
+ *  5. Derived headlines read generic on a hotel ('Services we provide' over the
+ *     room ledger, 'A look at our work' over the lookbook). mergeShallow makes
+ *     the derived layer authoritative, so a .astro fallback there is dead code —
+ *     the admin edits services.headline / gallery.headline / why.headline.
+ *
+ * RENDER ORDER is deliberate and NOT the family norm: rooms → amenities →
+ * gallery come BEFORE the story, because in this vertical photography and the
+ * tariff are the product. Do not "restore" the gallery to a late slot.
+ *
+ * Leaflet: this wrapper defines window.__hospitalityBIInitMap (family-unique) and
+ * LocationBI calls that exact string. Keep `el.innerHTML = ''` in the boot — it
+ * is what erases the drawn fallback map-face — and keep id="map" literal.
+ */
+import HeaderBI from './header/HeaderBI.astro';
+import HeroBI from './hero/HeroBI.astro';
+import TrustBI from './trust/TrustBI.astro';
+import ServicesBI from './services/ServicesBI.astro';
+import WhyBI from './why/WhyBI.astro';
+import GalleryBI from './gallery/GalleryBI.astro';
+import AboutBI from './about/AboutBI.astro';
+import HowBI from './how/HowBI.astro';
+import TestimonialsBI from './testimonials/TestimonialsBI.astro';
+import FaqBI from './faq/FaqBI.astro';
+import AreaBI from './area/AreaBI.astro';
+import CredentialsBI from './credentials/CredentialsBI.astro';
+import LocationBI from './location/LocationBI.astro';
+import CtaBandBI from './ctaBand/CtaBandBI.astro';
+import FooterBI from './footer/FooterBI.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __resolvedPairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+// 'modern' is astro-builder's DEFAULT, not a choice (lib/astro-builder.ts).
+// Treating it as unset keeps Fraunces; any deliberate admin pick still applies.
+const __themePairing = __resolvedPairing === 'modern' ? '' : __resolvedPairing;
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="BI">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <!-- Browser-chrome tint. A <meta> cannot read a CSS var, so this duplicates
+       the plaster ground token (--paper) that the sticky header sits on. -->
+  <meta name="theme-color" content="#F6EBDC" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <!-- Palm Hour native fonts: Fraunces (variable, SOFT + WONK axes) display,
+       Figtree body, DM Mono labels. Always loaded so the variant reads as
+       designed even when the admin never touched the font dropdown.
+       FALLBACK, swap in wholesale if the multi-axis tuple ever 400s (one bad
+       tuple kills all three families):
+       https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,800&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap -->
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..800,0..100,0..1&family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+
+  <style is:global>
+    /* ═══════════════════════════════════════════════════════════════════════
+       PageBI · "Palm Hour" — hospitality (hotels / villas / short stays).
+       Tokens + shared base primitives. EVERY selector is prefixed
+       html[data-page="BI"] so nothing leaks into a sister wrapper, or in.
+
+       FIVE LOAD-BEARING FACTS. Do not "tidy" any of them:
+
+       1. R6 / SPECIFICITY. Every appearance-bearing base primitive is wrapped in
+          :where() -> (0,1,1), so an Astro-scoped single-compound section rule
+          (0,2,0) wins. Removing a :where() is the documented cause of every photo
+          frame collapsing to the base height (squished band). BELT AND BRACES:
+          sections also size .plate with an INLINE style="aspect-ratio:X;min-height:0"
+          — inline outranks every selector, so the specificity argument never has
+          to be won per section.
+
+       2. BUTTON CLASS NAMES. .btn--fill / .btn--line / .linkc, double-dash, on
+          purpose. They dodge buildOverrideCss's
+          `.btn-primary,…{color:<on-primary>!important}` (sub-AA in 6 of 13
+          schemes) and `.hero .btn-ghost{color:#FFF!important;background:transparent
+          !important}` (which would strand a white label on this light hero).
+          NEVER use in this family: .btn-primary .btn-ghost .btn-yellow .btn-light
+          .nav-cta .nav-right .testi .cta-band. NEVER put a .btn--line inside
+          .cta-band or footer — EVERY .btn label there is pinned to --on-ink, so a
+          transparent fill would strand it. Use .linkc. There is NO !important
+          reclaim war anywhere in this template: the rename removes the fight.
+
+       3. HOVER. Never changes hue, never goes light or transparent. An inset
+          rgba(0,0,0,.16) darkens only the fill (it paints above the background and
+          below the label). Label on the darkened fill: 13.07 native, 10.04 worst
+          (green), 11.83 (maroon, where --ink is the light token).
+
+       4. FOCUS. One DUO ring for everything: a 3px var(--paper) outline inside a
+          6px var(--ink) halo. Built from the ink/paper pair, so on a light ground
+          the ink halo separates the ring from the page (>=8.40 in all 13 schemes)
+          and on a shade ground the paper ring separates from the halo (same pair).
+          This replaces outline:currentColor, which measured 1.00:1 on a filled
+          button (paper ring on paper ground) in every scheme.
+
+       5. HEAD ORDER. This block must be followed by
+          {__fontHref && <link href={__fontHref} rel="stylesheet" />} and then, as
+          the LAST node in the head, a global style node fed set:html={__overrideCss}.
+          The engine's html:root{…!important} only beats these tokens because it
+          comes later in source order.
+          (Never write a literal closing style/script tag inside this block — it is
+          an HTML raw-text element, so the parser would end the stylesheet here.)
+    ═══════════════════════════════════════════════════════════════════════ */
+
+    html[data-page="BI"] {
+      /* grounds — sun-warmed plaster / linen / woven sand */
+      --paper: #F6EBDC;
+      --paper-2: #FDF7EE;
+      --card: #EDDFC9;
+      /* shade — the deep lagoon-green ground behind every inverted band */
+      --ink: #12312C;
+      --ink-soft: #3F5A4F;
+      --line: #DCC7AA;
+      /* warmth — terracotta primary, burnt clay, mango light (NEVER text) */
+      --accent: #BD5028;
+      --accent-deep: #8E3517;
+      --accent-light: #E9A03C;
+      --muted: #6E5B47;
+      /* rgb triplets for token-driven tints (all remapped by buildOverrideCss) */
+      --paper-rgb: 246,235,220;
+      --ink-rgb: 18,49,44;
+      --accent-rgb: 189,80,40;
+      /* contrast aliases the override engine + inherited rules expect */
+      --on-ink: #F6EBDC;
+      --on-paper: #12312C;
+      --on-accent: #FFFFFF;
+      --on-primary: #FFFFFF;
+      /* type + metrics */
+      --disp: "Fraunces", Georgia, "Times New Roman", serif;
+      --serif: "Fraunces", Georgia, "Times New Roman", serif;
+      --sans: "Figtree", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      --mono: "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --maxw: 1240px;
+      --r-lg: 26px;
+      --r-md: 18px;
+      --r-sm: 12px;
+    }
+
+    /* VERIFIED CONTRAST (sRGB relative luminance):
+       ink/paper 11.88 · ink/paper-2 13.13 · ink/card 10.66
+       ink-soft/paper 6.40 · /paper-2 7.07 · /card 5.74 · /card+weave(#E2D6C1) 5.25
+       muted/paper 5.49 · /paper-2 6.07 · /card 4.92 (tightest light pair)
+       paper on ink 11.88 · rgba(paper,.86)=#D6D1C3 9.17 · .78=#C4C2B5 7.81
+       .74=#BBBBAE 7.21 · .60=#9BA196 5.28
+       ink on rgba(accent,.16)/paper = #EDD2BF 9.71 · over card #E5C8AF 8.80
+       paper on rgba(accent,.16)/ink = #2D362B 10.65
+       caption pill: paper on OPAQUE ink 11.88 over ANY photo
+       BANNED, recorded as evidence: accent-as-text/paper 4.11 · accent-light 1.87 ·
+       engine accent-deep on maroon paper 1.29 · engine accent-light on dark ink 2.43
+       WORST OF 13 SCHEMES: ink/paper 8.40 (green) · pinned on-ink on ink 9.11 (green) ·
+       our paper label on the 16%-darkened hover fill 10.04 (green) / 11.83 (maroon) ·
+       .btn--line hover rgba(paper,.14) on shade 5.87 (green) ·
+       ink-soft/card 4.95 (dark). NOTHING carrying text is below 4.5:1. */
+
+    /* ── reset + document ─────────────────────────────────────────────── */
+    html[data-page="BI"] *,
+    html[data-page="BI"] *::before,
+    html[data-page="BI"] *::after { box-sizing: border-box; }
+    html[data-page="BI"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BI"] { scroll-behavior: auto; } }
+    html[data-page="BI"] body {
+      margin: 0; padding: 0;
+      background-color: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 16.5px; line-height: 1.68;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+      /* faint linen tooth on the plaster ground — token-driven, so it recolours */
+      background-image: repeating-linear-gradient(0deg, rgba(var(--ink-rgb),.022) 0 1px, transparent 1px 5px);
+    }
+    html[data-page="BI"] img { max-width: 100%; display: block; }
+    html[data-page="BI"] a { color: inherit; text-decoration: none; }
+    html[data-page="BI"] ::selection { background: rgba(var(--accent-rgb),.28); color: var(--ink); }
+    html[data-page="BI"] :where(h1,h2,h3,h4) {
+      margin: 0; font-family: var(--disp); color: var(--ink);
+      font-optical-sizing: auto; letter-spacing: -.02em; line-height: 1.06;
+    }
+    html[data-page="BI"] :where(h1) { font-variation-settings: "SOFT" 45, "WONK" 1; }
+    html[data-page="BI"] :where(h3,h4) { font-variation-settings: "SOFT" 35, "WONK" 0; }
+    /* This bare-element paragraph reset is (0,1,1): always qualify a section's own
+       paragraph rules with a parent class (.about-prose p) so they out-specify it. */
+    html[data-page="BI"] :where(p) { margin: 0 0 1em; }
+
+    /* ── layout scaffolding ───────────────────────────────────────────── */
+    html[data-page="BI"] :where(.wrap) { width: min(var(--maxw), 92vw); margin-inline: auto; }
+    html[data-page="BI"] section { padding: clamp(76px,9vw,128px) 0; position: relative; }
+
+    /* ── BAND GROUNDS. Four, and only four. Sections pick one by name.
+          Default (no class) = plaster --paper. */
+    html[data-page="BI"] :where(.band-linen) { background-color: var(--paper-2); }
+    html[data-page="BI"] :where(.band-sand)  { background-color: var(--card); }
+    html[data-page="BI"] :where(.band-shade) { background-color: var(--ink); color: var(--paper); }
+    html[data-page="BI"] :where(.band-shade) .h2 { color: var(--paper); }
+    html[data-page="BI"] :where(.band-shade) .body,
+    html[data-page="BI"] :where(.band-shade) .lede { color: rgba(var(--paper-rgb),.86); }
+    html[data-page="BI"] :where(.band-shade) .sec-head { color: rgba(var(--paper-rgb),.74); }
+    html[data-page="BI"] :where(.band-shade) .sec-head .sh-rule {
+      background: linear-gradient(90deg, var(--accent-light), rgba(var(--paper-rgb),.20));
+    }
+    html[data-page="BI"] :where(.band-shade) .plate { border-color: rgba(var(--paper-rgb),.16); }
+    html[data-page="BI"] :where(.band-shade) .plate.mat { border-color: var(--ink); }
+
+    /* ── .kick — eyebrow. Mono label preceded by a decorative terracotta lozenge.
+          The label text is --muted (5.49 on paper); the colour hit is the ::before,
+          which carries no text. */
+    html[data-page="BI"] :where(.kick) {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-family: var(--mono); font-weight: 500; font-size: 10.5px;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
+    }
+    html[data-page="BI"] :where(.kick)::before {
+      content: ""; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 2px;
+      background: var(--accent); transform: rotate(45deg);
+    }
+    html[data-page="BI"] :where(.band-shade) .kick { color: rgba(var(--paper-rgb),.74); }
+
+    /* ── .sec-head — literal WORD label · warm hairline · data tag.
+          .sh-l is a design literal describing the TEMPLATE. It is a WORD, never a
+          number: every section self-hides when empty, so numbered eyebrows render a
+          ledger with visible gaps on a sparse site. .sh-r is the ONLY data slot and
+          must come from <sec>.tag — a hardcoded right-hand line is a fabrication. */
+    html[data-page="BI"] :where(.sec-head) {
+      display: flex; align-items: center; gap: clamp(12px,2vw,22px);
+      margin: 0 0 clamp(30px,4vw,52px);
+      font-family: var(--mono); font-weight: 500; font-size: 10px;
+      letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
+    }
+    html[data-page="BI"] :where(.sec-head) .sh-rule {
+      flex: 1 1 auto; min-width: 24px; height: 1px; opacity: .85;
+      background: linear-gradient(90deg, var(--accent), var(--line));
+    }
+    html[data-page="BI"] :where(.sec-head) .sh-r { text-align: right; }
+
+    /* ── display headline + UNDERLINE emphasis.
+          Emphasis is an underline, never a colour swap: accent-as-text is 4.11 and
+          the engine's --accent-deep collapses to 1.29 under maroon. The text keeps
+          `inherit` — ink on light bands, paper on .band-shade. */
+    html[data-page="BI"] :where(.h2) {
+      font-family: var(--disp); font-weight: 700; font-size: clamp(34px,4.8vw,66px);
+      line-height: 1.0; letter-spacing: -.025em; margin: 0 0 .34em;
+      color: var(--ink); max-width: 24ch;
+      font-optical-sizing: auto; font-variation-settings: "SOFT" 45, "WONK" 1;
+    }
+    html[data-page="BI"] :where(.h2 em),
+    html[data-page="BI"] :where(.h2 .em),
+    html[data-page="BI"] :where(.uline) {
+      font-style: normal; color: inherit;
+      background-image: linear-gradient(rgba(var(--accent-rgb),.55), rgba(var(--accent-rgb),.55));
+      background-repeat: no-repeat; background-size: 100% .16em; background-position: 0 92%;
+    }
+    html[data-page="BI"] :where(.body) {
+      color: var(--ink-soft); font-size: clamp(15.5px,1.4vw,17.5px); line-height: 1.74;
+    }
+    html[data-page="BI"] :where(.lede) {
+      color: var(--ink-soft); font-size: clamp(16px,1.5vw,18.5px); line-height: 1.72;
+      max-width: 46ch; margin: 0;
+    }
+    /* ── .mono — small mono meta on a light ground (--muted, 4.92 worst: on card) */
+    html[data-page="BI"] :where(.mono) {
+      font-family: var(--mono); font-weight: 500; font-size: 10.5px;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+    }
+    html[data-page="BI"] :where(.band-shade) .mono { color: rgba(var(--paper-rgb),.74); }
+    /* ── .fig — the tabular money/stat figure. tabular-nums survives a font swap. */
+    html[data-page="BI"] :where(.fig) {
+      font-family: var(--disp); font-weight: 700; color: var(--ink);
+      font-variant-numeric: tabular-nums lining-nums; letter-spacing: -.01em;
+    }
+    html[data-page="BI"] :where(.band-shade) .fig { color: var(--paper); }
+
+    /* ── BUTTONS ───────────────────────────────────────────────────────
+       Proven pairs (native / worst of 13):
+         .btn--fill            paper on ink                    11.88 / 8.40
+         .btn--fill:hover      paper on ink+16% black          13.07 / 10.04
+         .btn--fill pinned     on-ink on ink (cta-band/footer) 11.88 / 9.11
+         .btn--line            ink on paper                    11.88 / 8.40
+         .btn--line:hover      paper on ink                    11.88 / 8.40
+         .btn--line on shade   paper on ink                    11.88 / 8.40
+         ..:hover on shade     paper on rgba(paper,.14)/ink     8.01 / 5.87
+         .linkc                ink on card/paper (never changes on hover) 10.66 / 8.40
+       No fill is ever a mid-tone: every one is the darkest or the lightest token. */
+    html[data-page="BI"] :where(.btn) {
+      display: inline-flex; align-items: center; justify-content: center; gap: .55em;
+      padding: 15px 28px; min-height: 48px;
+      border-radius: 999px; border: 1.5px solid transparent;
+      font-family: var(--mono); font-weight: 500; font-size: 11.5px;
+      letter-spacing: .14em; text-transform: uppercase; text-decoration: none;
+      cursor: pointer; white-space: nowrap;
+      transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+    }
+    html[data-page="BI"] :where(.btn--fill) {
+      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+    }
+    html[data-page="BI"] :where(.btn--fill:hover) {
+      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+      box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 4px rgba(var(--accent-rgb),.30);
+      transform: translateY(-2px);
+    }
+    html[data-page="BI"] :where(.btn--fill:active) { transform: translateY(0); }
+    html[data-page="BI"] :where(.btn--line) {
+      background-color: transparent; color: var(--ink); border-color: rgba(var(--ink-rgb),.55);
+    }
+    html[data-page="BI"] :where(.btn--line:hover) {
+      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+      transform: translateY(-2px);
+    }
+    html[data-page="BI"] :where(.btn--line:active) { transform: translateY(0); }
+    /* .btn--line INSIDE a shade band inverts. Declared here once, globally, so no
+       section has to restate it. */
+    html[data-page="BI"] :where(.band-shade) .btn--line {
+      color: var(--paper); border-color: rgba(var(--paper-rgb),.5);
+    }
+    html[data-page="BI"] :where(.band-shade) .btn--line:hover {
+      background-color: rgba(var(--paper-rgb),.14); color: var(--paper); border-color: var(--paper);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="BI"] .btn { transition: none; }
+      html[data-page="BI"] .btn--fill:hover,
+      html[data-page="BI"] .btn--line:hover { transform: none; }
+    }
+
+    /* ── .linkc — quiet text-link action. Used INSTEAD of a second button inside
+          .cta-band / footer, because it carries no .btn class and so is never
+          touched by the engine's on-ink label pin. Colour never changes on hover
+          (only the accent underline thickens), so it cannot fail. */
+    html[data-page="BI"] :where(.linkc) {
+      display: inline-flex; align-items: center; gap: .5em; min-height: 44px;
+      font-family: var(--mono); font-weight: 500; font-size: 11.5px;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--ink);
+      border-bottom: 2px solid var(--accent); padding-bottom: 3px;
+      transition: border-bottom-width .18s ease, border-bottom-color .18s ease, transform .18s ease;
+    }
+    html[data-page="BI"] :where(.linkc:hover) {
+      color: var(--ink); border-bottom-width: 3px; border-bottom-color: var(--accent-deep);
+      transform: translateY(-1px);
+    }
+    html[data-page="BI"] :where(.band-shade) .linkc { color: var(--paper); border-bottom-color: var(--accent-light); }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BI"] .linkc { transition: none; } }
+
+    /* ── FOCUS · the DUO ring. See load-bearing fact 4. */
+    html[data-page="BI"] :where(a,button,summary,[tabindex]):focus-visible {
+      outline: 3px solid var(--paper); outline-offset: 0;
+      box-shadow: 0 0 0 6px var(--ink);
+      border-radius: var(--r-sm);
+    }
+    html[data-page="BI"] :where(.btn):focus-visible,
+    html[data-page="BI"] :where(.linkc):focus-visible { border-radius: 999px; }
+
+    /* ── .plate — THE photo frame. Every image in the template is one of these.
+          Sections size it with an inline style="aspect-ratio:X;min-height:0".
+          The fallback gradient is token-built, so it recolours with the scheme. */
+    html[data-page="BI"] :where(.plate) {
+      position: relative; overflow: hidden; border-radius: var(--r-lg);
+      background-color: var(--card); border: 1px solid var(--line); isolation: isolate;
+    }
+    html[data-page="BI"] :where(.plate) .ph {
+      position: absolute; inset: 0; z-index: 1;
+      background-color: var(--card);
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+      background-image:
+        radial-gradient(78% 64% at 24% 16%, rgba(var(--accent-rgb),.30), transparent 62%),
+        radial-gradient(66% 60% at 84% 90%, rgba(var(--ink-rgb),.28), transparent 60%),
+        repeating-linear-gradient(48deg, rgba(var(--ink-rgb),.05) 0 1px, transparent 1px 7px);
+      transition: transform .5s ease;
+    }
+    /* .cap — caption on an OPAQUE ink pill, never a gradient scrim: 11.88 over ANY
+       owner photo, however dark or blown out. */
+    html[data-page="BI"] :where(.plate) .cap {
+      position: absolute; left: 12px; bottom: 12px; z-index: 3;
+      max-width: calc(100% - 24px);
+      background-color: var(--ink); color: var(--paper);
+      font-family: var(--mono); font-weight: 500; font-size: 9.5px;
+      letter-spacing: .10em; text-transform: uppercase;
+      padding: 7px 12px; border-radius: 999px;
+    }
+    /* .mat — stacked-print variant: a paper mat separating an overlapping inset
+       photo from the plate beneath it. Dignifies a mediocre phone snap. */
+    html[data-page="BI"] :where(.plate).mat {
+      border: 6px solid var(--paper);
+      box-shadow: 0 22px 46px rgba(var(--ink-rgb),.22);
+    }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BI"] :where(.plate) .ph { transition: none; } }
+
+    /* ── .weave / .weave-i — rattan tooth. Apply ALONGSIDE background-color, never
+          with the `background` shorthand (which would wipe the image layers). */
+    html[data-page="BI"] :where(.weave) {
+      background-image:
+        repeating-linear-gradient(45deg, rgba(var(--ink-rgb),.05) 0 1px, transparent 1px 7px),
+        repeating-linear-gradient(-45deg, rgba(var(--ink-rgb),.04) 0 1px, transparent 1px 7px);
+    }
+    html[data-page="BI"] :where(.weave-i) {
+      background-image:
+        repeating-linear-gradient(45deg, rgba(var(--paper-rgb),.05) 0 1px, transparent 1px 7px),
+        repeating-linear-gradient(-45deg, rgba(var(--paper-rgb),.04) 0 1px, transparent 1px 7px);
+    }
+
+    /* ── .sun — decorative sun arc. Always aria-hidden, always z-index 0. */
+    html[data-page="BI"] :where(.sun) {
+      position: absolute; z-index: 0; pointer-events: none; border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%,
+        rgba(var(--accent-rgb),.22), rgba(var(--accent-rgb),.06) 58%, transparent 72%);
+    }
+
+    /* ── .slab — the raised woven panel (front-desk card, NAP card, CTA slab). */
+    html[data-page="BI"] :where(.slab) {
+      position: relative; background-color: var(--card);
+      border: 1px solid var(--line); border-radius: var(--r-lg);
+      box-shadow: 0 20px 44px rgba(var(--ink-rgb),.12);
+    }
+
+    /* ── .chip — tinted meta chip. Ink glyph/label on an accent-TINTED field: the
+          tint is the colour, the label is the contrast (9.71 on paper, 8.80 on card). */
+    html[data-page="BI"] :where(.chip) {
+      display: inline-flex; align-items: center;
+      background-color: rgba(var(--accent-rgb),.16); color: var(--ink);
+      border: 1px solid rgba(var(--accent-rgb),.42); border-radius: 999px;
+      padding: 5px 11px;
+      font-family: var(--mono); font-weight: 500; font-size: 9.5px;
+      letter-spacing: .12em; text-transform: uppercase;
+    }
+    html[data-page="BI"] :where(.band-shade) .chip { color: var(--paper); border-color: rgba(var(--paper-rgb),.28); }
+
+    /* ── .rowrule — the one hairline row separator used by every list/ledger in the
+          template. Per-cell border-top + auto-fit grids, deliberately NOT a
+          gap-over-inked-container trick: that paints a visible block in the EMPTY
+          tracks of a partial last row (5 amenities in a 4-col grid). */
+    html[data-page="BI"] :where(.rowrule) { border-top: 1px solid var(--line); }
+    html[data-page="BI"] :where(.band-shade) .rowrule { border-top-color: rgba(var(--paper-rgb),.20); }
+
+    /* ── .tick — the amenity/credential glyph. 34px rounded square, accent-tinted
+          field, INK checkmark. No clip-art, no seal, no shield: a drawn badge is a
+          visual claim of certification. */
+    html[data-page="BI"] :where(.tick) {
+      position: relative; display: block; width: 34px; height: 34px;
+      border-radius: 11px; border: 1.5px solid var(--accent);
+      background-color: rgba(var(--accent-rgb),.10);
+    }
+    html[data-page="BI"] :where(.tick)::after {
+      content: ""; position: absolute; left: 10px; top: 9px; width: 12px; height: 6px;
+      border-left: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+      transform: rotate(-45deg);
+    }
+    html[data-page="BI"] :where(.band-shade) .tick::after { border-color: var(--paper); }
+
+    /* ── scroll reveal (PageBI's boot IIFE toggles .in) ───────────────── */
+    html[data-page="BI"] :where(.reveal) { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+    html[data-page="BI"] :where(.reveal.in) { opacity: 1; transform: none; }
+    html[data-page="BI"] :where(.reveal[data-delay="1"]) { transition-delay: .08s; }
+    html[data-page="BI"] :where(.reveal[data-delay="2"]) { transition-delay: .16s; }
+    html[data-page="BI"] :where(.reveal[data-delay="3"]) { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="BI"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* ── skip link ────────────────────────────────────────────────────── */
+    html[data-page="BI"] :where(.skip) {
+      position: absolute; left: -999px; top: 0; z-index: 100;
+      background-color: var(--ink); color: var(--paper);
+      padding: 12px 18px; border-radius: 0 0 var(--r-sm) 0;
+      font-family: var(--mono); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase;
+    }
+    html[data-page="BI"] :where(.skip:focus) { left: 0; top: 0; }
+
+    /* ── SHARED MOBILE PASS · 760px ───────────────────────────────────── */
+    @media (max-width: 760px) {
+      html[data-page="BI"] section { padding: clamp(56px,11vw,80px) 0; }
+      html[data-page="BI"] :where(.wrap) { width: min(var(--maxw), 90vw); }
+      html[data-page="BI"] :where(.h2) { font-size: clamp(28px,7.4vw,44px); max-width: none; overflow-wrap: anywhere; }
+      html[data-page="BI"] :where(.lede) { max-width: none; }
+      html[data-page="BI"] :where(.sec-head) { font-size: 9.5px; letter-spacing: .14em; }
+      html[data-page="BI"] :where(.plate) { border-radius: var(--r-md); }
+    }
+
+    /* ── SHARED MOBILE PASS · 520px (verified no horizontal overflow at 360px) ── */
+    @media (max-width: 520px) {
+      html[data-page="BI"] body { font-size: 16px; }
+      html[data-page="BI"] :where(.h2) { font-size: clamp(26px,8.2vw,34px); letter-spacing: -.02em; }
+      html[data-page="BI"] :where(.kick) { font-size: 10px; letter-spacing: .14em; }
+      html[data-page="BI"] :where(.btn) { padding: 14px 22px; font-size: 11px; letter-spacing: .12em; white-space: normal; text-align: center; flex: 1 1 100%; }
+      html[data-page="BI"] :where(.plate).mat { border-width: 4px; }
+      html[data-page="BI"] :where(.sec-head) { flex-wrap: wrap; gap: 8px 12px; }
+      html[data-page="BI"] :where(.sec-head) .sh-rule { order: 3; flex-basis: 100%; }
+      html[data-page="BI"] :where(.sec-head) .sh-r { text-align: left; }
+    }
+  </style>
+
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <HeaderBI layout={layout} content={content} />
+  <main id="main">
+    {visibility.heroSection !== false && <HeroBI content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustBI content={content} />}
+    {/* Rooms → amenities → gallery lead, BEFORE the story: in this vertical the
+        tariff and the photography are the product. Deliberate; do not reorder. */}
+    {visibility.servicesSection !== false && <ServicesBI content={content} />}
+    {visibility.whyUsBlock !== false && <WhyBI content={content} />}
+    {visibility.gallerySection !== false && <GalleryBI content={content} layout={layout} />}
+    {visibility.aboutSection !== false && <AboutBI content={content} />}
+    {visibility.howItWorksBlock !== false && <HowBI content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsBI content={content} />}
+    {visibility.faqBlock !== false && <FaqBI content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaBI content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsBI content={content} />}
+    {visibility.locationBlock !== false && <LocationBI content={content} layout={layout} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandBI content={content} layout={layout} />}
+  <FooterBI layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      // Palm Hour / BI Leaflet boot — accepts (lat, lng, label) from LocationBI.
+      // The global name is family-unique on purpose: a preview harness can render
+      // two wrappers in one document, and a shared name cross-wires the maps.
+      window.__hospitalityBIInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return;
+        // Erases LocationBI's drawn fallback map-face; without this the tiles
+        // stack on top of the gradient.
+        el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        // LABELLED basemap: a guest orienting to a beach, pier or airport needs
+        // place names, so this family uses CARTO voyager rather than nolabels.
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19, subdomains: 'abcd' }).addTo(map);
+        // Marker colours are READ from the live tokens rather than baked, so an
+        // explicit admin colour pick recolours the pin too (buildOverrideCss sets
+        // them on html:root, which is this same element).
+        var cs = window.getComputedStyle(document.documentElement);
+        var accent = (cs.getPropertyValue('--accent') || '').trim() || '#BD5028';
+        var paper = (cs.getPropertyValue('--paper') || '').trim() || '#F6EBDC';
+        var icon = L.divIcon({
+          className: '',
+          html: '<div style="width:16px;height:16px;border-radius:50%;background:' + accent + ';box-shadow:0 0 0 3px ' + paper + ';border:0;"></div>',
+          iconSize: [16, 16], iconAnchor: [8, 8]
+        });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

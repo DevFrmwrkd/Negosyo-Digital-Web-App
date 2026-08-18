@@ -1,0 +1,98 @@
+---
+/**
+ * hospitality / WhyBI — "Comforts": the amenities grid on the linen band. A
+ * four-second scan — an accent-tinted tick, the amenity name in Fraunces, and
+ * the owner's own line under it — laid out as an auto-fit grid of hairline-topped
+ * cells so a partial last row (five amenities in a four-column grid) leaves no
+ * inked gap where nothing is.
+ *
+ * Reads content.why.items ONLY (this key has no legacy bare-array form). The body
+ * line resolves through the alias chain `body ?? desc ?? description`, but the
+ * data-field always spells the CANONICAL key `why.items.${i}.body` — spelling a
+ * legacy key there silently breaks the editor. Auto-hides when empty, and drops
+ * any cell with neither a title nor a body. Mirrors WhyAS/WhyBB's content
+ * contract; no new keys.
+ *
+ * The .tick glyph is decorative, aria-hidden and carries NO data-field: this
+ * section never claims WHICH amenity a mark depicts. Drawing a pool pictogram for
+ * a property with no pool is the same class of defect as an invented testimonial,
+ * so there are no per-amenity icons here — only the owner's words.
+ *
+ * The id is "amenities" because PageBI's ANCHOR_ALIAS remaps the derived '#why'
+ * nav link onto it; renaming it strands that link in all four anchor-guard copies.
+ *
+ * Editable hooks:
+ *   why.tag                — .sec-head right slot (the ONLY data slot there)
+ *   why.headline           — h2 (set:html)
+ *   why.items.${i}.title   — amenity name
+ *   why.items.${i}.body    — amenity line (canonical key, whatever it arrived as)
+ *
+ * Theming: no baked hex. Colour comes only from PageBI's tokens (--ink-soft via
+ * the band, --accent through the shared .tick and .rowrule primitives).
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const why = content.why || {};
+// Left span of .sec-head is a design literal describing the TEMPLATE
+// ("Comforts"); the right span is the ONLY data slot and must stay data-driven.
+const tag = why.tag || '';
+const headline = why.headline || '';
+type Item = { title?: string; body?: string; desc?: string; description?: string };
+const items: Item[] = Array.isArray(why.items) ? why.items : [];
+const bodyOf = (item: Item): string => item.body ?? item.desc ?? item.description ?? '';
+// A row the admin added but never filled would otherwise render a lone tick over
+// a hairline in a cell that still spends its grid track. Drop the blanks, but
+// carry the ORIGINAL index so data-field keeps pointing at the real array slot.
+const cells = items
+  .map((it, i: number) => ({ ...it, i }))
+  .filter((c) => Boolean(c.title || bodyOf(c)));
+---
+{cells.length > 0 && (
+  <section class="amen band-linen" id="amenities">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sh-l">Comforts</span>
+        <span class="sh-rule" aria-hidden="true"></span>
+        {tag && <span class="sh-r" data-field="why.tag">{tag}</span>}
+      </div>
+      {headline && <h2 class="h2 reveal" data-field="why.headline" set:html={headline}></h2>}
+      <div class="am-grid">
+        {cells.map((it, k) => (
+          <div class="am rowrule reveal" data-delay={String(k % 3)}>
+            <span class="tick" aria-hidden="true"></span>
+            {it.title && <h3 data-field={`why.items.${it.i}.title`}>{it.title}</h3>}
+            {bodyOf(it) && <p data-field={`why.items.${it.i}.body`}>{bodyOf(it)}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Per-cell .rowrule over an auto-fit grid — deliberately NOT a gap-over-inked-
+     container trick, which paints a visible block in the EMPTY tracks of a
+     partial last row. */
+  .am-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: clamp(20px,3vw,40px); }
+  .am { padding-top: 18px; }
+  .am h3 { font-family: var(--disp); font-weight: 700; font-size: 20px; line-height: 1.12; margin: 14px 0 8px; overflow-wrap: anywhere; }
+  /* Qualified with the parent class so it out-specifies PageBI's
+     `:where(p){margin:0 0 1em}` at (0,1,1). */
+  .am p { margin: 0; font-size: 14.5px; line-height: 1.7; color: var(--ink-soft); max-width: 34ch; overflow-wrap: anywhere; }
+
+  @media (max-width: 760px) {
+    .am-grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+    .tick { width: 30px; height: 30px; }
+    .tick::after { left: 8px; top: 8px; }
+  }
+
+  /* ── 520: one column. Amenity bodies are prose and read better full width than
+        in a ~157px track at 360px. */
+  @media (max-width: 520px) {
+    .am-grid { grid-template-columns: 1fr; }
+    .am { padding-top: 14px; }
+    .am h3 { font-size: 18px; }
+    /* The 520 pass collapses .am-grid to one column so bodies read full width —
+       relax the 34ch cap with it, or they stay pinned to ~73% of the column. */
+    .am p { font-size: 14px; max-width: none; }
+  }
+</style>

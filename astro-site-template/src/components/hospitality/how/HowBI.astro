@@ -1,0 +1,113 @@
+---
+/**
+ * hospitality / HowBI — "Palm Hour" HOW TO BOOK: the enquire → confirm → check-in
+ * sequence, as an <ol> of terracotta-topped cells, each opened by an oversized
+ * Fraunces numeral. Plaster ground (no band class), so it reads as the quiet
+ * step between the shade bands either side of it.
+ *
+ * ROLE: this is the only section that tells a guest HOW a booking actually
+ * happens on a property with no booking engine — the owner's own words for how
+ * to enquire, how a stay gets confirmed, and what arrival looks like.
+ *
+ * Reads content.how.steps (canonical `body`; legacy `desc` / `description`) and
+ * falls back to content.how.items. Auto-hides when empty, and drops any step whose title and body are
+ * both blank. Mirrors HowBB's
+ * content contract exactly — only the skin differs.
+ *
+ * EDITABLE HOOKS
+ *   how.tag                  — the sec-head right slot (the ONLY data slot there)
+ *   how.headline             — usually ABSENT: derive-content-defaults supplies no
+ *                              how.headline (the old "Three easy steps" fixed the
+ *                              step count), so the <h2> must stay guarded
+ *   how.steps.${i}.title
+ *   how.steps.${i}.body      — canonical key, spelled even when the value arrived
+ *                              as .desc / .description
+ *
+ * ANTI-FABRICATION: not one step is supplied by this file. The numeral is derived
+ * from the loop index, is aria-hidden and carries no data-field — it is chrome,
+ * not content. No "we reply within X", no "instant confirmation", no payment or
+ * deposit wording: the owner types the steps or there is no section.
+ *
+ * A11Y NOTE on .sno: it is the one place in this template that leans on the
+ * decorative allowance (rgba(accent,.55) ≈ 2.5:1, which does not even reach 3:1).
+ * That is deliberate and safe — the <ol>, the accent top rule and the reading
+ * order carry the sequence, so deleting the numeral removes nothing a reader
+ * needs, and it is aria-hidden so it is never announced.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+const bodyOf = (s: Step) => s.body ?? s.desc ?? s.description ?? '';
+// A step the admin added but never filled would otherwise print a 2px terracotta
+// rule and an oversized numeral over nothing, and an all-blank list would render
+// the whole booking section. Drop blank rows (whitespace counts as blank), but
+// keep the ORIGINAL index so each data-field still writes to the real array slot.
+const rows = steps
+  .map((s, i: number) => ({ ...s, i }))
+  .filter((r) => Boolean((r.title || '').trim() || bodyOf(r).trim()));
+---
+{rows.length > 0 && (
+  <section class="howto" id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="sh-l">How it goes</span>
+        <span class="sh-rule" aria-hidden="true"></span>
+        {tag && <span class="sh-r" data-field="how.tag">{tag}</span>}
+      </div>
+      {headline && <h2 class="h2 reveal" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-grid">
+        {rows.map((step, k) => (
+          <li class="step reveal" data-delay={String(Math.min(k, 3))}>
+            {/* The numeral counts DISPLAYED steps (01/02/03, never a gap) while
+                data-field carries the original index, so dropping a blank row
+                cannot renumber the sequence or misdirect an edit. */}
+            <span class="sno" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+            {step.title && <h3 data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+            {bodyOf(step) && <p data-field={`how.steps.${step.i}.body`}>{bodyOf(step)}</p>}
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+<style>
+  /* auto-fit so 2, 3, 4 or 5 owner-typed steps all fill the row without a hole */
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: clamp(18px, 3vw, 40px);
+    padding: 0;
+    margin: clamp(10px, 2vw, 22px) 0 0;
+  }
+  .step { list-style: none; border-top: 2px solid var(--accent); padding-top: 14px; }
+  .sno {
+    display: block;
+    font-family: var(--disp); font-weight: 800;
+    font-size: clamp(44px, 5vw, 72px); line-height: 1; letter-spacing: -0.04em;
+    color: rgba(var(--accent-rgb), 0.55);
+    margin-bottom: -6px;
+  }
+  .step h3 {
+    font-family: var(--disp); font-weight: 700;
+    font-size: clamp(19px, 1.8vw, 23px); line-height: 1.1;
+    margin: 8px 0; overflow-wrap: anywhere;
+  }
+  .step p {
+    margin: 0; font-size: 14px; line-height: 1.66;
+    color: var(--ink-soft); max-width: 30ch; overflow-wrap: anywhere;
+  }
+  @media (max-width: 760px) {
+    .how-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 520px) {
+    .how-grid { grid-template-columns: 1fr; }
+    .sno { font-size: clamp(36px, 11vw, 44px); }
+    .step h3 { font-size: 18px; }
+    .step { padding-top: 12px; }
+    .step p { max-width: none; }
+  }
+</style>

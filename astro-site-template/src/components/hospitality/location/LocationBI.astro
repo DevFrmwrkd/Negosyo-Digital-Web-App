@@ -1,0 +1,273 @@
+---
+/**
+ * hospitality / LocationBI — "Palm Hour"'s finding-us band: a woven NAP slab
+ * (name / address / phone / email / hours / directions) beside a real, LABELLED
+ * map, because in this vertical arrival logistics decide the booking.
+ *
+ * Map strategy, three tiers, mirroring LocationAS / LocationBB:
+ *   1. build-time lat/lng → window.__hospitalityBIInitMap(lat, lng, label)
+ *   2. else any address   → client-side Nominatim lookup, then the same boot
+ *   3. else               → the designed map-face + pinging pin fallback
+ * The designed face lives inside #map until Leaflet mounts (PageBI's boot clears
+ * #map before drawing tiles, which is what erases the drawn face). The literal
+ * id="map" and the exact global name __hospitalityBIInitMap are a contract with
+ * PageBI — renaming either silently leaves the fallback face on screen.
+ *
+ * Reads content.location.* with layout.contact fallbacks.
+ *
+ * There is deliberately NO heading over the hours rows. A literal
+ * "Check-in & check-out" would assert that those times exist and that these rows
+ * are them; the rows print the owner's own day/time strings verbatim, and the
+ * block disappears when the owner supplied none. Nothing here invents hours, a
+ * response time, or a check-in window.
+ *
+ * KNOWN LIMITATION (family-wide, recorded rather than fixed):
+ * components/editor/genericContentSchema.ts declares location.hours as a single
+ * TEXT field, so Array.isArray(loc.hours) normally falls through to
+ * content.footer.hours — yet these rows emit data-field="location.hours.N.day"
+ * to match precedent. That path does not match SandboxEditorV2's SKIP regex, so
+ * a first inline edit creates a fresh location.hours array and orphans the
+ * remaining footer rows (same failure mode as hero.headlineLines).
+ *
+ * Editable hooks:
+ *   location.tag · location.headline · location.sub · footer.brand ·
+ *   location.address · location.phone · location.email ·
+ *   location.hours.<i>.day · location.hours.<i>.time ·
+ *   location.directions.text + data-href-field location.directions.href
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const loc = content.location || {};
+// The right-hand slot of the section strip is the ONLY data slot in .sec-head —
+// data-driven, and absent when unset. A hardcoded line there ("Steps from the
+// shore", "Two minutes from the pier") is a claim invented for a design comp and
+// has already been reverted once from this family. Never restore a literal.
+const tag = loc.tag || '';
+const headline = loc.headline || '';
+const sub = loc.sub || '';
+const brand = (content as any).footer?.brand || layout.businessName || '';
+const address = loc.address || layout.contact?.address || '';
+const addressLines: string[] = address ? String(address).split('\n') : [];
+const phone = loc.phone || layout.contact?.phone || '';
+const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
+const email = loc.email || layout.contact?.email || '';
+// Blank rows are dropped: the editor's "Hours rows" Add button inserts
+// { day: '', time: '' }, and .rowrule would otherwise spend a hairline plus 12px
+// of padding on a row with nothing in it. Every row keeps its ORIGINAL index so
+// the inline field hooks survive the filter. This also makes the hasLoc gate
+// below honest — an hours array of nothing but blanks no longer keeps the
+// section alive, which is what this file's docstring already claimed.
+type HourRow = { day: string; time: string; i: number };
+const hours: HourRow[] = (Array.isArray(loc.hours)
+  ? loc.hours
+  : (Array.isArray((content as any).footer?.hours) ? (content as any).footer.hours : []))
+  .map((h: any, i: number) => ({ day: String(h?.day ?? '').trim(), time: String(h?.time ?? '').trim(), i }))
+  .filter((h: HourRow) => Boolean(h.day || h.time));
+const dirText = loc.directions?.text || '';
+const dirHref = loc.directions?.href || (address
+  ? `https://maps.google.com/?q=${encodeURIComponent(String(address).replace(/\n/g, ' '))}`
+  : '#');
+// A CLEARED coordinate field leaves an empty string, which passes `!= null` and
+// which Number('') turns into 0 — so the old test booted Leaflet and pinned the
+// property at 0,0 in the Gulf of Guinea, with its name on the marker. That is a
+// map asserting a location the owner never gave (R2). Reject blank/whitespace and
+// out-of-range values so a cleared field falls through to the address lookup
+// instead. `??` rather than `||` so a genuine 0 coordinate survives.
+const num = (v: any, max: number): number | null => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+};
+const lat = num(loc.lat, 90) ?? num(layout.contact?.lat, 90);
+const lng = num(loc.lng, 180) ?? num(layout.contact?.lng, 180);
+const label = layout.businessName || 'Our location';
+const mapAria = `Map showing ${label}`;
+const hasCoords = lat !== null && lng !== null;
+const hasAddress = !!address;
+// The fallback map-face is a drawn street grid with a pin labelled with the
+// property name — a picture claiming where this property physically is. With
+// neither coords nor an address there is nothing real behind that claim, so the
+// map cell is dropped entirely and the grid falls to one column (.no-map).
+const hasMap = hasCoords || hasAddress;
+// And the section goes with it when nothing real is left: a headline over an
+// empty slab is the same empty shell. Only owner-supplied contact data keeps it.
+const hasLoc = hasMap || Boolean(address || phone || email || hours.length > 0);
+---
+{hasLoc && (
+<section class="where band-linen" id="location">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sh-l">Finding us</span>
+      <span class="sh-rule" aria-hidden="true"></span>
+      {tag && <span class="sh-r" data-field="location.tag">{tag}</span>}
+    </div>
+    {headline && <h2 class="h2 reveal" data-field="location.headline" set:html={headline}></h2>}
+    {sub && <p class="body w-sub reveal" data-field="location.sub">{sub}</p>}
+    <div class:list={['loc-grid', 'reveal', !hasMap && 'no-map']}>
+      <div class="slab weave nap">
+        <address>
+          {brand && <strong data-field="footer.brand">{brand}</strong>}
+          {address && (
+            <span class="addr" data-field="location.address">
+              {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+            </span>
+          )}
+          {phone && <a href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>}
+          {email && <a href={`mailto:${email}`} data-field="location.email">{email}</a>}
+        </address>
+        {hours.length > 0 && (
+          <div class="hours">
+            {/* Both spans always render, even when one is blank:
+                `.hours .row span:last-child` right-aligns the second cell, so
+                dropping an empty one would promote the day span and drift it to
+                the wrong edge. An empty span is invisible under space-between. */}
+            {hours.map((r) => (
+              <div class="row rowrule"><span data-field={`location.hours.${r.i}.day`}>{r.day}</span><span data-field={`location.hours.${r.i}.time`}>{r.time}</span></div>
+            ))}
+          </div>
+        )}
+        {/* Gate on the TARGET, not just the label: with no address and no
+            explicit link dirHref is '#' and the control would be dead. */}
+        {dirText && dirHref !== '#' && <a class="linkc dir" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>}
+      </div>
+      {hasMap && (
+        <div class="map-frame">
+          <div id="map" role="img" aria-label={mapAria}>
+            <div class="map-face" aria-hidden="true">
+              <span class="road"></span>
+              <span class="road"></span>
+              <span class="road"></span>
+            </div>
+            <div class="map-pin" aria-hidden="true"><span class="dot"></span>{label && <span class="mlbl">{label}</span>}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+)}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, label }}>
+    (function init() {
+      if (window.__hospitalityBIInitMap) window.__hospitalityBIInitMap(lat, lng, label);
+      else setTimeout(init, 80);
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, label }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(lat, lng) {
+        if (window.__hospitalityBIInitMap) { window.__hospitalityBIInitMap(lat, lng, label); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(lat, lng); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var lat = parseFloat(results[0].lat);
+            var lng = parseFloat(results[0].lon);
+            if (isNaN(lat) || isNaN(lng)) return;
+            tryInit(lat, lng);
+          })
+          .catch(function () { /* keep the designed map-face fallback */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  .w-sub { max-width: 56ch; margin-bottom: clamp(16px,2.2vw,24px); }
+  .loc-grid { display: grid; grid-template-columns: .95fr 1.35fr; gap: clamp(24px,3.5vw,48px); align-items: start; }
+  /* No coords and no address: the map cell is not rendered, so the NAP slab
+     takes the full width instead of leaving a hole beside it. */
+  .loc-grid.no-map { grid-template-columns: 1fr; }
+
+  .nap { padding: clamp(26px,3vw,36px); }
+  .nap address { font-style: normal; display: grid; gap: 10px; }
+  .nap strong { font-family: var(--disp); font-weight: 700; font-size: clamp(21px,2vw,25px);
+    line-height: 1.1; color: var(--ink); font-optical-sizing: auto;
+    font-variation-settings: "SOFT" 35, "WONK" 0; }
+  /* overflow-wrap on every owner-typed string in the slab: a long single-line
+     address or a long email is the one thing here that could push past 360px. */
+  .nap .addr { font-weight: 600; font-size: 15.5px; line-height: 1.6; color: var(--ink); overflow-wrap: anywhere; }
+  /* Underlined at rest, not just on hover: these sit directly under .addr in the
+     same token, weight and size, so without a permanent non-colour cue nothing
+     says they are tappable (WCAG 1.4.1 / G183). text-decoration rather than a
+     border: it adds no box, so thickening on hover cannot shift the grid rows,
+     and it follows each line box of a wrapped email. currentColor is scheme-proof
+     — it is the already-proven text colour (10.66 native / 8.40 worst case),
+     where an rgba tint measured ~2.5:1 over the woven slab. */
+  .nap address a { font-weight: 600; font-size: 15px; color: var(--ink); justify-self: start; overflow-wrap: anywhere;
+    text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  .nap address a:hover { text-decoration-thickness: 2px; text-decoration-color: var(--accent); }
+
+  /* --ink-soft, not --muted: the slab carries .weave, and --ink-soft still holds
+     5.25:1 over the woven card ground where --muted would go marginal. */
+  .hours { margin-top: 24px; font-family: var(--mono); font-weight: 500; font-size: 10.5px;
+    letter-spacing: .10em; text-transform: uppercase; }
+  .hours .row { display: flex; justify-content: space-between; gap: 14px; padding: 6px 0; color: var(--ink-soft); }
+  .hours .row span { min-width: 0; overflow-wrap: anywhere; }
+  .hours .row span:last-child { text-align: right; }
+  .dir { margin-top: 22px; }
+
+  .map-frame { position: relative; min-height: 420px; overflow: hidden;
+    border-radius: var(--r-lg); border: 1px solid var(--line); background-color: var(--card); }
+  #map { position: absolute; inset: 0; z-index: 0; min-height: 420px; }
+  /* The drawn face is the tier-3 fallback only. PageBI's boot empties #map before
+     Leaflet draws, so tiles never stack on top of it. */
+  .map-face { position: absolute; inset: 0; background-color: var(--card);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(var(--ink-rgb),.06) 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, rgba(var(--ink-rgb),.06) 0 1px, transparent 1px 34px); }
+  .road { position: absolute; left: -10%; width: 120%; height: 2px; background-color: rgba(var(--accent-rgb),.42); }
+  .road:nth-child(1) { top: 28%; transform: rotate(18deg); }
+  .road:nth-child(2) { top: 56%; transform: rotate(-32deg); }
+  .road:nth-child(3) { top: 76%; transform: rotate(74deg); }
+  /* max-width sits on the ABSPOS pin, not the label: percentages here resolve
+     against #map, so the pill can never exceed the frame minus 12px of air each
+     side. On .mlbl it would have resolved against .map-pin — whose own width
+     comes from the label — and clamped to nothing useful. width:max-content is
+     required once nowrap is gone, or abspos shrink-to-fit would collapse the
+     pill to (containing block − left) and narrow every pin, long name or short. */
+  .map-pin { position: absolute; left: 50%; top: 48%; transform: translate(-50%,-50%);
+    display: grid; justify-items: center; gap: 8px;
+    width: max-content; max-width: calc(100% - 24px); }
+  .dot { position: relative; width: 16px; height: 16px; border-radius: 50%;
+    background-color: var(--accent); border: 3px solid var(--paper); }
+  .dot::after { content: ''; position: absolute; inset: -8px; border-radius: 50%;
+    border: 2px solid var(--accent); animation: pingBI 2.2s ease-out infinite; }
+  /* No white-space:nowrap — .map-frame clips overflow, so a long property name
+     was sliced off at BOTH ends. Wrapping beats truncating on the one element
+     that names the property; the frame is 260px tall at <=520px, so even a long
+     name sets as two centred lines with nothing lost. */
+  .mlbl { background-color: var(--ink); color: var(--paper); font-family: var(--mono);
+    font-weight: 500; font-size: 10px; letter-spacing: .10em; text-transform: uppercase;
+    padding: 5px 9px; border-radius: 999px; text-align: center; overflow-wrap: anywhere; }
+  @keyframes pingBI { 0% { opacity: .8; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.5); } }
+  @media (prefers-reduced-motion: reduce) { .dot::after { animation: none; } }
+
+  @media (max-width: 820px) {
+    /* NAP slab first, map second — the address is what a guest copies. */
+    .loc-grid { grid-template-columns: 1fr; }
+    .map-frame, #map { min-height: 320px; }
+  }
+  @media (max-width: 760px) {
+    .nap { padding: 24px; }
+    .hours .row { font-size: 10px; }
+  }
+  @media (max-width: 520px) {
+    .nap { border-radius: var(--r-md); }
+    .nap strong { font-size: 20px; }
+    .nap .addr { font-size: 15px; }
+    .map-frame, #map { min-height: 260px; }
+    .mlbl { font-size: 9.5px; }
+    /* .dir is a .linkc, not a .btn, so the shared 520px full-width rule does not
+       reach it — widen it here so the only action in the slab is thumb-sized. */
+    .dir { width: 100%; justify-content: center; }
+  }
+</style>

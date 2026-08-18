@@ -3268,7 +3268,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                     })()}
 
                     {/* ── CONTENT ──────────────────────────────── */}
-                    {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS)$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
+                    {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS|hospitality:BI)$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
                         // Derive the same "tier-3" fallback the build pipeline
                         // uses so inputs always show what the iframe shows. The
                         // editor's getValue() chain becomes:

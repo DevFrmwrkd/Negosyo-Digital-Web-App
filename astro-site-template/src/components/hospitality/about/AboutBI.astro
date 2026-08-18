@@ -1,0 +1,182 @@
+---
+/**
+ * hospitality / AboutBI — "The place": the property story on the linen band.
+ * Prose left (headline, the owner's paragraphs, an optional pull-quote and a
+ * mono signature); two stacked prints right — a 4/5 plate with a smaller matted
+ * 3/4 print overlapping its lower-left corner, under a soft terracotta sun arc.
+ * On a phone the photograph leads and the overlap becomes a plain stack, so no
+ * negative offset can clip at 360px.
+ *
+ * Reads content.about only. Every leaf is optional and every guard sits OUTSIDE
+ * its tag, so a sparse submission renders fewer elements rather than empty ones:
+ * no image ⇒ the whole figure column is omitted and .nofig collapses the grid to
+ * one column; no prose at all ⇒ .noprose does the mirror image; no
+ * about.images[1] ⇒ no matted print and no reserved space.
+ *
+ * Editable hooks:
+ *   about.tag                — .sec-head right slot (the ONLY data slot there)
+ *   about.headline           — h2 (set:html)
+ *   about.paragraphs.${i}    — prose paragraphs (set:html)
+ *   about.quote              — pull-quote
+ *   about.signature          — mono signature line
+ *   about.imageCaption       — caption pill on the main print
+ *   about.image        (img) — the main print
+ *   about.images.1     (img) — the matted overlap print
+ *
+ * Theming: no baked hex. Colour is read only from PageBI's token vocabulary
+ * (--paper-2 --ink --ink-soft --accent --r-md), so buildOverrideCss recolours
+ * the whole band. Sizing of the two plates is set INLINE (aspect-ratio +
+ * min-height:0) so the wrapper's base .plate metrics can never pin them to a
+ * squished band, whatever the specificity of the base primitive.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+// The right-hand slot of .sec-head is the ONLY data slot in that strip: the left
+// span is a design literal describing the TEMPLATE ("The place"), never the
+// business. A hardcoded right-hand line is exactly the fabrication that was
+// reverted from this family — never restore a literal here.
+const tag = about.tag || '';
+const headline = about.headline || '';
+const paragraphs: string[] = Array.isArray(about.paragraphs) ? about.paragraphs : (about.body ? [about.body] : []);
+// A blank row in the admin's paragraph list would otherwise render an empty <p>
+// that still spends its 1em margin. Drop the blanks, but carry the ORIGINAL
+// index so data-field keeps pointing at the real array slot (same pattern the
+// family uses for nav links and gallery tiles).
+const paraRows = paragraphs
+  .map((text, i: number) => ({ text: String(text ?? ''), i }))
+  .filter((row) => row.text.trim().length > 0);
+const image = about.image || (Array.isArray(about.images) && about.images[0]) || '';
+// Second print. Optional by design: with one photo the figure is a single plate.
+const img2 = (Array.isArray(about.images) && about.images[1]) || '';
+const imageCaption = about.imageCaption || '';
+const quote = about.quote || '';
+const signature = about.signature || '';
+// Section gate. `visibility.aboutSection` in every PageX is
+// `vis.about_section !== false` — always true — so this section, unlike
+// gallery / trust / testimonials / credentials, has nothing above it to stop it
+// rendering empty. With no business name lib/derive-content-defaults.ts
+// legitimately emits no headline, no lead, no signature and `paragraphs: []`,
+// which would ship an eyebrow over an empty grid. about.tag is deliberately NOT
+// part of this test: it is the derived literal 'About', set on every site by the
+// layer above, so counting it would keep the shell on exactly the pages this
+// gate exists to remove.
+// NOTE: `headline` is deliberately NOT counted either. derive-content-defaults.ts
+// sets about.headline to `About ${name}` for every named business, so including
+// it makes this gate always-true and the section renders a heading over nothing —
+// the same reason about.tag is excluded. The gate must require real BODY content.
+// Counts paraRows, not paragraphs: a list of blank strings is not body content.
+const hasAbout = Boolean(image || quote || signature) || paraRows.length > 0;
+// The mirror of .nofig. A nameless submission that uploaded only an about photo
+// has no headline either (derive-content-defaults emits `About ${name}` only for
+// a named business), which would leave the prose column an empty grid track with
+// the photo squeezed into the other half. Guard the column, collapse the grid.
+// (!image && !hasProse cannot reach the markup — hasAbout would be false.)
+const hasProse = Boolean(headline || quote || signature) || paraRows.length > 0;
+---
+{hasAbout && (
+<section class="story band-linen" id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="sh-l">The place</span>
+      <span class="sh-rule" aria-hidden="true"></span>
+      {tag && <span class="sh-r" data-field="about.tag">{tag}</span>}
+    </div>
+    <div class:list={['story-grid', !image && 'nofig', !hasProse && 'noprose']}>
+      {hasProse && (
+        <div class="story-prose">
+          {headline && <h2 class="h2 reveal" data-field="about.headline" set:html={headline}></h2>}
+          {paraRows.map((row, k: number) => (
+            <p class="reveal" data-delay={String(k % 3)} data-field={`about.paragraphs.${row.i}`} set:html={row.text}></p>
+          ))}
+          {quote && <blockquote class="s-quote reveal" data-field="about.quote">“{quote}”</blockquote>}
+          {signature && <p class="mono s-sign reveal" data-field="about.signature">{signature}</p>}
+        </div>
+      )}
+      {image && (
+        <div class="story-fig">
+          <span class="sun" aria-hidden="true"></span>
+          {/* The main print. Because this whole column is gated on `image`, the
+              plate always holds a real photograph here — so role="img" is honest
+              by construction and there is no phantom-photo case to hide. (The
+              gradient-only .ph slots elsewhere in this family switch to
+              aria-hidden precisely because announcing "Property photo" over a
+              flat gradient asserts a picture that does not exist.) */}
+          <figure class="plate fig-main" style="aspect-ratio:4/5;min-height:0">
+            <div
+              class="ph"
+              data-image-field="about.image"
+              role="img"
+              aria-label="Property photo"
+              style={`background-image:url('${image}');`}
+            ></div>
+            {imageCaption && <figcaption class="cap" data-field="about.imageCaption">{imageCaption}</figcaption>}
+          </figure>
+          {img2 && (
+            <div class="plate mat fig-inset" style="aspect-ratio:3/4;min-height:0">
+              <div
+                class="ph"
+                data-image-field="about.images.1"
+                role="img"
+                aria-label="Property photo"
+                style={`background-image:url('${img2}');`}
+              ></div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+)}
+<style>
+  /* ── the split. .nofig is what a photo-less submission gets: one column, and a
+        wider prose measure so the paragraphs do not read as a narrow strip. */
+  .story-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(36px,5vw,80px); align-items: center; }
+  .story-grid.nofig { grid-template-columns: 1fr; }
+  .story-grid.nofig .story-prose p { max-width: 66ch; }
+  /* Photo-only: one column, and the print is capped so a 4/5 plate at full wrap
+     width does not become a two-screen-tall column. */
+  .story-grid.noprose { grid-template-columns: 1fr; }
+  .story-grid.noprose .story-fig { max-width: 560px; }
+
+  /* PageBI's `:where(p){margin:0 0 1em}` is (0,1,1); a bare `p` here would lose,
+     so every paragraph rule is qualified with the parent class. */
+  .story-prose p { font-size: clamp(16px,1.5vw,18.5px); line-height: 1.78; margin: 0 0 1em; color: var(--ink-soft); max-width: 46ch; }
+  .s-quote { font-family: var(--disp); font-weight: 700; font-size: clamp(19px,2.2vw,25px); line-height: 1.32; color: var(--ink); margin: 22px 0 0; padding-left: 18px; border-left: 3px solid var(--accent); }
+  .s-sign { margin-top: 18px; letter-spacing: .16em; }
+
+  /* ── the stacked prints. The sun arc is decorative and sits at z-index 0. */
+  .story-fig { position: relative; }
+  .story-fig .sun { width: clamp(120px,16vw,200px); height: clamp(120px,16vw,200px); top: -7%; right: -7%; }
+  .fig-main { position: relative; z-index: 1; margin: 0; }
+  .fig-inset { position: absolute; width: 46%; left: -13%; bottom: -8%; z-index: 2; border-radius: var(--r-md); }
+  /* The mat colour is the one thing the base primitive cannot know: on this
+     linen band the mat is --paper-2, not --paper. `:where(.plate).mat` in the
+     wrapper is (0,2,1) — the `.mat` sits OUTSIDE the :where() — so a
+     single-class scoped rule (0,2,0) would lose. Two classes puts us at (0,3,0). */
+  .plate.fig-inset { border-color: var(--paper-2); }
+
+  /* ── 820: one column, and the photograph leads on a narrow viewport. The plates
+        are sized INLINE, so `aspect-ratio` here could never win; a definite
+        `height` is what actually retunes them (with both axes definite the ratio
+        simply stops applying). */
+  @media (max-width: 820px) {
+    .story-grid { grid-template-columns: 1fr; gap: 32px; }
+    .story-fig { order: -1; }
+    .fig-main { height: clamp(230px,58vw,340px); }
+    .fig-inset { width: 40%; left: -6%; bottom: -7%; }
+  }
+
+  @media (max-width: 760px) {
+    .story-prose p { max-width: none; }
+  }
+
+  /* ── 520: the overlap becomes a stack. Every negative offset is gone well
+        before 360px, so nothing can clip or push the page sideways. */
+  @media (max-width: 520px) {
+    .fig-inset { position: static; width: 100%; margin-top: 10px; height: clamp(150px,40vw,200px); }
+    .plate.fig-inset { border-width: 4px; }
+    .s-quote { font-size: 18px; padding-left: 14px; }
+  }
+</style>

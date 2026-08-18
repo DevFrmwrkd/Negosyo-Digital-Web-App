@@ -1,0 +1,188 @@
+---
+/**
+ * hospitality / HeaderBI — the FRONT DESK BAR. A sticky plaster rail under a
+ * terracotta hairline: Fraunces wordmark, DM Mono wayfinding, and a booking
+ * action that never leaves the screen — including at 360px with the drawer shut.
+ *
+ * Hospitality role: on this vertical the booking affordance is the page. So the
+ * CTA pill is a SIBLING of .nav-links rather than a child of it, which means it
+ * survives the mobile drawer collapse and stays tappable next to the burger.
+ *
+ * Editable hooks:
+ *   footer.brand                                  — the wordmark
+ *   navbar_links.${i}.label + navbar_links.${i}.href — each nav link (ORIGINAL,
+ *                                                   pre-filter index)
+ *   hero.cta1.text + hero.cta1.href               — the .navc booking pill
+ *
+ * Never visibility-gated (there is no header toggle any PageXX honours). With no
+ * brand the wordmark is OMITTED — 'Your Business' was a shipped placeholder that
+ * rendered as the customer's own name.
+ *
+ * Colour: tokens only. The pill is deliberately NOT .btn / .nav-cta / inside
+ * .nav-right — buildOverrideCss pins the label colour on all three.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+// Anchor guard. The content layer (lib/derive-content-defaults.ts) hard-codes
+// '#visit' for hero.cta1 / navCtaHref / ctaBand.cta, '#services' for hero.cta2
+// and nav links to '#why' / '#work' — ids most designs never render, so those
+// links scrolled nowhere and the page's primary button did nothing. Resolve
+// every in-page href against what PageBI actually renders: keep it if the id
+// exists, remap it when this design carries the same section under another id,
+// otherwise fall back to the target this design was built around (headers drop
+// the link instead). Off-page hrefs (tel:, mailto:, http) pass through.
+// Keep PAGE_ANCHORS in step with PageBI: trust, credentials and the footer carry
+// NO id, and the arrival (hero) section is labelled, not anchored.
+const PAGE_ANCHORS = new Set(['about', 'amenities', 'book', 'faq', 'gallery', 'how', 'location', 'main', 'nearby', 'reviews', 'rooms']);
+// This design renames three of the derived targets, so alias rather than drop:
+// '#services' is the room ledger, '#why' is the amenity grid, '#work' is the
+// lookbook, and both '#visit' and layout.navLinks' default '#contact' land on
+// the location section — which is where the address, phone and email live.
+const ANCHOR_ALIAS: Record<string, string> = { contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = (content as any).footer?.brand || layout.businessName || '';
+// Nav links come from the derived list ('#about', '#services', '#why', '#work',
+// '#visit' / '#contact'). Resolve each against this page and DROP the ones with
+// no section to reach — a nav entry that scrolls nowhere is as broken as a dead
+// CTA, and its label promises a section this design does not have. The original
+// index rides along as .i so the editor's per-link field hooks stay correct.
+// A label-less link is dropped too: an empty <a> is a 0-width tap target.
+const navLinks: Array<{ href: string; label: string; i: number }> =
+  ((layout.navLinks && layout.navLinks.length) ? layout.navLinks : [])
+    .map((l: any, i: number) => ({ ...l, href: onPage(l.href, ''), i }))
+    .filter((l: any) => l.href && l.label);
+// Reuse the hero's primary CTA as the nav action so it stays in sync.
+const hero = (content as any).hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = onPage(hero.cta1?.href, '#book');
+---
+<header class="nav">
+  <div class="wrap nav-inner">
+    {brand && <a class="wm" href="#main" aria-label={`${brand} home`} data-field="footer.brand">{brand}</a>}
+    {(navLinks.length > 0 || ctaText) && (
+      <Fragment>
+        <nav class="nav-links" id="nav-primary-BI" aria-label="Primary">
+          {navLinks.map((link) => (
+            <a href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
+          ))}
+        </nav>
+        {/* The booking pill sits OUTSIDE .nav-links on purpose: .nav-links
+            becomes a display:none drawer at <=900px, and the one action this
+            vertical exists for must not disappear with it. */}
+        {ctaText && <a href={ctaHref} class="navc" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        {navLinks.length > 0 && (
+          <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-primary-BI">
+            <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+          </button>
+        )}
+      </Fragment>
+    )}
+  </div>
+</header>
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.nav');
+    if (!hdr) return;
+    var btn = hdr.querySelector('.nav-burger');
+    if (!btn) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () { setOpen(!hdr.classList.contains('open')); });
+    // '.navc' is in this selector because the pill lives OUTSIDE the drawer —
+    // tapping it while the drawer is open must still close the drawer.
+    hdr.querySelectorAll('.nav-links a, .navc').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  header.nav {
+    position: sticky; top: 0; z-index: 60;
+    background-color: rgba(var(--paper-rgb),.88); backdrop-filter: blur(12px);
+    border-top: 3px solid var(--accent); border-bottom: 1px solid var(--line);
+  }
+  .nav-inner { display: flex; align-items: center; gap: 16px; padding: 13px 0; }
+  .wm {
+    font-family: var(--disp); font-weight: 700; font-size: 22px; letter-spacing: -.02em;
+    color: var(--ink); font-variation-settings: "SOFT" 45, "WONK" 1; margin-right: auto;
+    /* The border is present-but-transparent at rest so the hover state cannot
+       grow the bar by 2px and jitter the whole sticky rail. */
+    border-bottom: 2px solid transparent;
+    /* A long single-word property name must not push the pill and burger off
+       screen at 360px: flex items are blockified, so ellipsis applies here. */
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .wm:hover { border-bottom-color: var(--accent); }
+  .nav-links { display: flex; gap: 26px; }
+  .nav-links a {
+    font-family: var(--mono); font-weight: 500; font-size: 10.5px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--ink-soft);
+    border-bottom: 2px solid transparent; padding-bottom: 2px;
+  }
+  .nav-links a:hover { color: var(--ink); border-bottom-color: var(--accent); }
+
+  /* The booking pill. Ink-on-plaster at rest (11.88), paper-on-ink on hover
+     (11.88) — no mid-tone fill, no transparent hover, no engine-pinned label. */
+  .navc {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 9px 18px;
+    border-radius: 999px; border: 1.5px solid rgba(var(--ink-rgb),.55); color: var(--ink);
+    font-family: var(--mono); font-weight: 500; font-size: 11px;
+    letter-spacing: .12em; text-transform: uppercase;
+  }
+  .navc:hover { background-color: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .nav-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 46px; height: 44px; padding: 11px 10px; flex-shrink: 0;
+    background: transparent; border: 1.5px solid rgba(var(--ink-rgb),.55);
+    border-radius: 12px; cursor: pointer;
+  }
+  .nav-burger span { display: block; width: 100%; height: 2px; background: var(--ink); transition: transform .2s ease, opacity .2s ease; }
+  header.nav.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.nav.open .nav-burger span:nth-child(2) { opacity: 0; }
+  header.nav.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (prefers-reduced-motion: reduce) { .nav-burger span { transition: none; } }
+
+  /* ONE collapse breakpoint. The precedent family used 880px for hiding the
+     links and 760px for showing the burger, leaving a 120px band where neither
+     was on screen. Links out and burger in happen at the same width here. */
+  @media (max-width: 900px) {
+    .nav-links a { display: none; }
+    .nav-burger { display: flex; }
+    .nav-links {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch; gap: 0;
+      background-color: var(--paper-2);
+      border-top: 1px solid var(--line); border-bottom: 1px solid var(--ink);
+      box-shadow: 0 14px 30px rgba(var(--ink-rgb),.16);
+      padding: 6px 0 12px; max-height: 78vh; overflow-y: auto;
+    }
+    header.nav.open .nav-links { display: flex; }
+    header.nav.open .nav-links a {
+      display: flex; align-items: center; min-height: 48px; padding: 12px 22px;
+      font-size: 13px; color: var(--ink-soft); border-bottom: 1px dotted var(--line);
+    }
+    /* display:block (not inline-flex) so text-overflow:ellipsis actually applies;
+       9px padding + 26px line-height still gives the 44px touch target. */
+    .navc {
+      display: block; line-height: 26px; padding: 9px 13px;
+      font-size: 10px; letter-spacing: .08em;
+      max-width: 44vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+  }
+  @media (max-width: 520px) {
+    .wm { font-size: 20px; }
+    .navc { max-width: 40vw; }
+  }
+</style>
