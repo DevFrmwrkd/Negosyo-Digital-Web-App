@@ -106,20 +106,40 @@ const exploreTitle = String(f.explore?.title ?? '').trim();
 // DESIGN's order (phone above address). Blank rows are dropped so the block
 // never opens a gap it cannot fill. Every row keeps its ORIGINAL index (.i) so
 // the editor's field hooks survive the filter.
-type Row = { v: string; i: number };
-const visitSource: any[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
+type Row = { v: string; i: number; hook?: string };
+// Only the PRIMARY array can carry index hooks. When the column falls back to
+// derived rows the array does not exist, so footer.visit.lines.<i> would point at
+// nothing: the sidebar list reads "(0)" and an edit there creates a fresh array
+// that silently orphans what the page is showing. Track the source and hook
+// accordingly — a derived row stays visible, just not individually editable
+// until the admin adds real rows.
+const visitFromAdmin = Array.isArray(f.visit?.lines) && f.visit.lines.length > 0;
+const visitSource: any[] = visitFromAdmin
   ? f.visit.lines
   : [phone, layout.contact?.address].filter(Boolean);
 const visitLines: Row[] = visitSource
-  .map((l: any, i: number) => ({ v: String(l ?? '').trim(), i }))
+  .map((l: any, i: number) => ({
+    v: String(l ?? '').trim(),
+    i,
+    // undefined when the row is DERIVED — Astro omits an undefined attribute, so
+    // a derived row renders normally but carries no hook to a path that does not exist.
+    hook: visitFromAdmin ? `footer.visit.lines.${i}` : undefined,
+  }))
   .filter((r: Row) => r.v);
 // Links column: admin rows first, else the nav list. The ORIGINAL index rides
 // along so the editor's per-row field hooks stay correct after the filter.
-const exploreLinks: Array<{ text: string; href: string; i: number }> =
-  ((Array.isArray(f.explore?.links) && f.explore.links.length
+// Same rule as the visit column: index hooks only when the admin's own array is
+// the source, or they point at a path that does not exist.
+const exploreFromAdmin = Array.isArray(f.explore?.links) && f.explore.links.length > 0;
+const exploreLinks: Array<{ text: string; href: string; i: number; textHook?: string; hrefHook?: string }> =
+  ((exploreFromAdmin
     ? f.explore.links
     : (Array.isArray(layout.navLinks) ? layout.navLinks.map((l: any) => ({ text: l?.label, href: l?.href })) : [])) as any[])
-    .map((l: any, i: number) => ({ text: l?.text || '', href: onPage(l?.href, ''), i }))
+    .map((l: any, i: number) => ({
+      text: l?.text || '', href: onPage(l?.href, ''), i,
+      textHook: exploreFromAdmin ? `footer.explore.links.${i}.text` : undefined,
+      hrefHook: exploreFromAdmin ? `footer.explore.links.${i}.href` : undefined,
+    }))
     .filter((l) => l.href && l.text);
 // Social chips: a row needs BOTH a platform label and a url — a chip with only
 // one of them is either a nameless pill or a link to nowhere.
@@ -175,13 +195,13 @@ const msgText = msgHref ? ctaText : '';
               </div>
             )}
             {blurb && <p class="f-blurb" data-field="footer.blurb">{blurb}</p>}
+            {/* Both hooks live on the ANCHOR: LinkPopover reads data-field from
+                the element that carries data-href-field, so a label on an inner
+                span left it editing an empty path and silently dropped whatever
+                the admin typed. The arrow is generated content (see the
+                stylesheet), so the glyph can never enter the stored value. */}
             {ctaText && (
-              <a class="linkc f-cta" href={ctaHref} data-href-field="hero.cta1.href">
-                {/* The label is its own element and the arrow sits OUTSIDE it,
-                    so an inline edit commits the words and never the glyph. */}
-                <span data-field="hero.cta1.text">{ctaText}</span>
-                <span aria-hidden="true">&#8594;</span>
-              </a>
+              <a class="linkc f-cta" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>
             )}
             {social.length > 0 && (
               <div class="f-soc">
@@ -196,7 +216,7 @@ const msgText = msgHref ? ctaText : '';
           <div class="f-col">
             {exploreTitle && <h4 class="f-h" data-field="footer.explore.title">{exploreTitle}</h4>}
             {exploreLinks.map((l) => (
-              <a href={l.href} data-field={`footer.explore.links.${l.i}.text`} data-href-field={`footer.explore.links.${l.i}.href`}>{l.text}</a>
+              <a href={l.href} data-field={l.textHook} data-href-field={l.hrefHook}>{l.text}</a>
             ))}
           </div>
         )}
@@ -212,8 +232,8 @@ const msgText = msgHref ? ctaText : '';
               <address>
                 {visitLines.map((line) => (
                   line.v === phone && phone
-                    ? <a href={`tel:${phoneDigits}`} data-field={`footer.visit.lines.${line.i}`}>{line.v}</a>
-                    : <span data-field={`footer.visit.lines.${line.i}`}>{line.v}<br /></span>
+                    ? <a href={`tel:${phoneDigits}`} data-field={line.hook}>{line.v}</a>
+                    : <span data-field={line.hook}>{line.v}<br /></span>
                 ))}
               </address>
             )}
@@ -269,6 +289,8 @@ const msgText = msgHref ? ctaText : '';
     margin: 0 0 18px; font-size: 14px; line-height: 1.7;
     color: var(--ink-soft); max-width: 36ch; overflow-wrap: anywhere;
   }
+  /* Generated content, so the glyph can never enter the stored value */
+  .f-cta::after { content: '→'; margin-left: .35em; }
   .f-cta { font-size: 13px; }
   .f-soc { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 18px; }
   .f-soc .chip { min-height: 36px; }
@@ -320,6 +342,10 @@ const msgText = msgHref ? ctaText : '';
   }
   /* Hover darkens the SAME fill (inset black) — it never goes light or
      transparent, so the label can never strand. */
+  /* The DUO focus ring must survive a hover: this rule is (0,3,0) and PageBJ's
+     focus rule is (0,2,1), and box-shadow is a single property — so the ink halo
+     has to be restated here beside the hover wash, not left to the page. */
+  .msg-fab a:hover:focus-visible { box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 6px var(--ink); }
   .msg-fab a:hover {
     background-color: var(--ink); color: var(--paper);
     box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 12px 30px rgba(0,0,0,.24), 0 0 0 5px rgba(var(--accent-rgb),.28);

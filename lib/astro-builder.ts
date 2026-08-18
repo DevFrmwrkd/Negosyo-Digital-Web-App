@@ -171,7 +171,13 @@ function normalizeBlock(
         // section. Keep the wrapper; the caller's own guards decide what shows.
         // (An input that was never an object still yields undefined, because
         // `wrapper` stays empty and there is nothing to preserve.)
-        return Object.keys(wrapper).length > 0 ? { ...wrapper } : undefined
+        if (!Object.keys(wrapper).length) return undefined
+        delete wrapper[itemsKey]
+        if (opts.altItemsKey) delete wrapper[opts.altItemsKey]
+        // Emit an EMPTY list rather than omitting the key: {tag, headline,
+        // items: []} is already the shape every site without an admin-supplied
+        // block ships today, so consumers that index into .items keep working.
+        return { ...wrapper, [itemsKey]: [] }
     }
     // Apply field aliases per item. Never overwrite an existing canonical key.
     const mappedItems = arr.map((it: any) => {

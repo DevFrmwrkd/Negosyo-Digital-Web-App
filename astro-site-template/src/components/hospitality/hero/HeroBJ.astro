@@ -51,7 +51,7 @@ const { content, layout } = Astro.props;
 // section component in this repo receives only `content` + `layout`); the four
 // copies must stay identical by hand.
 const PAGE_ANCHORS = new Set(['main', 'rooms', 'amenities', 'gallery', 'host', 'promises', 'how', 'reviews', 'nearby', 'location', 'faq', 'book']);
-const ANCHOR_ALIAS: Record<string, string> = { services: 'rooms', why: 'amenities', work: 'gallery', visit: 'location', contact: 'location', about: 'amenities' };
+const ANCHOR_ALIAS: Record<string, string> = { about: 'host', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
 const onPage = (href: string | undefined, fallback: string): string => {
   if (!href) return fallback;
   if (!href.startsWith('#')) return href;
@@ -87,7 +87,7 @@ const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
 const cta1Href = onPage(hero.cta1?.href, '#book');
 const cta2Text = hero.cta2?.text || '';
-const cta2Href = onPage(hero.cta2?.href, '#rooms');
+const cta2Href = onPage(hero.cta2?.href, '#book');
 ---
 <section class="arrival" aria-label="Hero">
   <div class={heroImage ? 'wrap a-grid' : 'wrap a-grid a-grid--solo'}>

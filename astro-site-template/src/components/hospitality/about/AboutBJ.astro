@@ -70,7 +70,7 @@ const hero = content.hero || {};
 // PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBJ and with the other copies
 // (there is no shared import). Off-page hrefs (tel:, mailto:, http) pass through.
 const PAGE_ANCHORS = new Set(['book', 'faq', 'gallery', 'host', 'how', 'location', 'main', 'nearby', 'promises', 'reviews', 'rooms', 'amenities']);
-const ANCHOR_ALIAS: Record<string, string> = { about: 'amenities', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const ANCHOR_ALIAS: Record<string, string> = { about: 'host', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
 const onPage = (href: string | undefined, fallback: string): string => {
   if (!href) return fallback;
   if (!href.startsWith('#')) return href;
