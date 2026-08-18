@@ -96,10 +96,16 @@ const rest = tiles.slice(1);
      the 520px pass are untouched. The 4/5 ratio stays: an owner's phone snap
      must not be centre-cropped to a letterbox. */
   .g-grid.g1 .g-tile { max-width: 420px; margin-inline: auto; }
-  /* The drop on the middle tile is what makes a set of unequal phone photos read
-     art-directed rather than gridded. It is a MARGIN, not a span cycle, so it
-     can never open a hole in a ragged last row. */
-  .g-grid .g-tile:nth-child(2) { margin-top: clamp(0px,3vw,32px); }
+  /* The drop on the MIDDLE tile of a three-up is what makes a set of unequal
+     phone photos read art-directed rather than gridded. It is a MARGIN, not a
+     span cycle, so it can never open a hole in a ragged last row.
+     Scoped to the three-up ONLY. In the two-column tiers (.g2 = two tiles,
+     .g4 = a 2x2) the second tile is not a middle tile at all — it is the top of
+     the RIGHT COLUMN, so the same drop reads as a column that failed to line up,
+     and it leaves a gap under the left tile because the taller row pushes row 2
+     down for both columns. .g1 is a single centred tile, so it has no second
+     tile to drop. This is why the rule is already cancelled at <=760px. */
+  .g-grid:not(.g1):not(.g2):not(.g4) .g-tile:nth-child(2) { margin-top: clamp(0px,3vw,32px); }
   .plate:hover .ph { transform: scale(1.04); }
 
   @media (max-width: 760px) {
