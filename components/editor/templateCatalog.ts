@@ -225,7 +225,7 @@ export const TIER_META: Array<{ id: BlockTier; label: string; blurb: string }> =
 export const BLOCK_CONTENT_PATHS: Record<string, string[]> = {
     "TRUST": ["trust.cells", "trust"],
     "ABOUT": ["about.body", "about.lead", "about.paragraphs", "about"],
-    "SERVICES": ["services.items"],
+    "SERVICES": ["services.items", "services"],
     "WHY-US": ["why.items"],
     "HOW-IT-WORKS": ["how.steps", "how.items"],
     "TESTIMONIALS": ["testimonials.items", "testimonials"],
