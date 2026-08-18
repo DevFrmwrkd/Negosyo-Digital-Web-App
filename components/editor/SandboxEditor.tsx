@@ -401,12 +401,6 @@ export default function SandboxEditor(props: SandboxEditorProps) {
         if (!raw || typeof raw !== 'object') return raw ?? {};
         return {
             ...raw,
-            // services is the ROOMS list in the hospitality family. Groq emits it
-            // nested, but the LEGACY shape is a bare array of {name, description}
-            // and astro-builder used to discard that outright. Normalising it here
-            // means an edit writes services.items on a real wrapper instead of
-            // hanging a property on an Array, which JSON.stringify would drop.
-            services: normalizeBlockEditor(raw.services, 'items', { name: 'title', description: 'desc' }),
             why: normalizeBlockEditor(raw.why, 'items', { description: 'body' }),
             how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
             testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),

@@ -992,7 +992,7 @@ export default function VisualEditor({
     const updateService = (index: number, field: keyof Service, value: string) => {
         setContent(prev => ({
             ...prev,
-            services: prev.services.map((service, i) =>
+            services: (Array.isArray(prev.services) ? prev.services : ((prev.services as any)?.items ?? [])).map((service: any, i: number) =>
                 i === index ? { ...service, [field]: value } : service
             )
         }))
@@ -3091,9 +3091,9 @@ export default function VisualEditor({
                                         <div className="space-y-3 mt-3 pt-3 border-t border-gray-200">
                                             <div className="flex items-center justify-between">
                                                 <p className="text-xs font-medium text-gray-600">Edit your services:</p>
-                                                <span className="text-xs text-gray-400">{content.services?.length || 0} services</span>
+                                                <span className="text-xs text-gray-400">{(Array.isArray(content.services) ? content.services : ((content.services as any)?.items ?? [])).length} services</span>
                                             </div>
-                                            {content.services && content.services.length > 0 && content.services.map((service, index) => (
+                                            {(Array.isArray(content.services) ? content.services : ((content.services as any)?.items ?? [])).length > 0 && (Array.isArray(content.services) ? content.services : ((content.services as any)?.items ?? [])).map((service: any, index: number) => (
                                                 <div key={index} className="p-3 bg-gray-50 rounded-lg space-y-2 relative group">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-xs text-gray-400 font-medium w-5">{index + 1}.</span>
@@ -3107,7 +3107,7 @@ export default function VisualEditor({
                                                         <button
                                                             type="button"
                                                             onClick={() => {
-                                                                const newServices = content.services.filter((_, i) => i !== index)
+                                                                const newServices = (Array.isArray(content.services) ? content.services : ((content.services as any)?.items ?? [])).filter((_: any, i: number) => i !== index)
                                                                 updateField('services', newServices)
                                                             }}
                                                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
