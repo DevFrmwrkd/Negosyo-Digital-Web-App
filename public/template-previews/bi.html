@@ -346,7 +346,8 @@
   .g-lead{margin:0 0 12px;}
   .g-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
   .g-tile{margin:0;}
-  .g-grid .g-tile:nth-child(2){margin-top:clamp(0px,3vw,32px);}
+  /* three-up only: in a 2-col tier this tile is the top of the right column */
+  .g-grid:not(.g1):not(.g2):not(.g4) .g-tile:nth-child(2){margin-top:clamp(0px,3vw,32px);}
   .gal .plate:hover .ph{transform:scale(1.04);}
 
   /* ═══════════════════════════════════════════════════════════════════
