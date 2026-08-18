@@ -203,6 +203,7 @@ function normalizeBlock(
 // ─── Derived defaults for generic templates ────────────────────────────
 // Shared, browser-safe helpers live in ./derive-content-defaults so the
 // editor sidebar (ContentFieldsAuto) can mirror what we render here.
+import { asServiceArray } from './services-shape'
 import {
     deriveContentDefaults,
     normalizeBusinessType,
@@ -482,7 +483,9 @@ async function transformToAstroData(
             ctaSecondaryLabel: content.hero_cta_secondary?.label,
             ctaSecondaryLink: content.hero_cta_secondary?.link,
             photos,
-            services: content.services?.slice(0, 3),
+            // Both shapes — a nested wrapper here threw `.slice is not a function`
+            // and took the whole build down for that submission.
+            services: asServiceArray(content.services).slice(0, 3),
             visibility: {
                 heroHeadline: vis.hero_headline !== false,
                 heroTagline: vis.hero_tagline !== false,

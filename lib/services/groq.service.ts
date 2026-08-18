@@ -4,6 +4,7 @@ import os from "os"
 import path from "path"
 import { chunkMediaFile, getFileExtension } from './media-chunker'
 import { INTAKE_QUESTIONS, type IntakeQuestionKey } from '../narrativeFromQa'
+import { asServiceArray, serviceLabel } from '../services-shape'
 
 // Lazy-load Groq client to avoid build-time errors
 let groqInstance: Groq | null = null
@@ -568,7 +569,7 @@ Name: ${businessInfo.name}
 Type: ${businessInfo.type}
 Tagline: ${businessContent.tagline}
 About: ${businessContent.about}
-Services: ${businessContent.services.join(', ')}
+Services: ${asServiceArray(businessContent.services).map(serviceLabel).filter(Boolean).join(', ')}
 Contact: ${JSON.stringify(businessContent.contact)}
 Highlights: ${businessContent.highlights.join(', ')}
 
