@@ -1,7 +1,7 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { query, mutation, internalQuery, internalMutation } from './_generated/server';
 import { internal } from './_generated/api';
-import { requireAuth } from './lib/auth';
+import { requireAuth, ADMIN_REQUIRED, NOT_AUTHENTICATED } from './lib/auth';
 
 // ==================== QUERIES ====================
 
@@ -120,7 +120,7 @@ export const deleteAccount = mutation({
         const creator = await ctx.db.get(args.id);
         if (!creator) throw new Error('Creator not found');
         if (creator.clerkId !== identity.subject) {
-            throw new Error('Forbidden: you can only delete your own account');
+            throw new ConvexError('Forbidden: you can only delete your own account');
         }
         if (creator.isDeleted) throw new Error('Account is already deleted');
 
@@ -463,10 +463,10 @@ export const markQuizPassed = mutation({
     args: { id: v.id('creators') },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const creator = await ctx.db.get(args.id);
         if (!creator || creator.clerkId !== identity.subject) {
-            throw new Error('Forbidden: you can only update your own account');
+            throw new ConvexError('Forbidden: you can only update your own account');
         }
         if (creator.certifiedAt) return;
         if (creator.quizPassedAt) return;
@@ -490,12 +490,12 @@ export const approveCreator = mutation({
     args: { id: v.id('creators') },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const me = await ctx.db
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', identity.subject))
             .first();
-        if (!me || me.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!me || me.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
 
         const creator = await ctx.db.get(args.id);
         if (!creator) throw new Error('Creator not found');
@@ -523,12 +523,12 @@ export const listPendingApproval = query({
     args: {},
     handler: async (ctx) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const me = await ctx.db
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', identity.subject))
             .first();
-        if (!me || me.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!me || me.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
 
         const all = await ctx.db.query('creators').collect();
         return all
@@ -582,12 +582,12 @@ export const rejectCreator = mutation({
     },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const me = await ctx.db
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', identity.subject))
             .first();
-        if (!me || me.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!me || me.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
 
         const creator = await ctx.db.get(args.id);
         if (!creator) throw new Error('Creator not found');
@@ -701,10 +701,10 @@ export const requestRecertification = mutation({
     args: { id: v.id('creators') },
     handler: async (ctx, args) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const creator = await ctx.db.get(args.id);
         if (!creator || creator.clerkId !== identity.subject) {
-            throw new Error('Forbidden: you can only update your own account');
+            throw new ConvexError('Forbidden: you can only update your own account');
         }
         if (!creator.rejectedAt) {
             throw new Error('Only rejected creators can request recertification');
@@ -730,12 +730,12 @@ export const listRejected = query({
     args: {},
     handler: async (ctx) => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const me = await ctx.db
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', identity.subject))
             .first();
-        if (!me || me.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!me || me.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
 
         const all = await ctx.db.query('creators').collect();
         return all

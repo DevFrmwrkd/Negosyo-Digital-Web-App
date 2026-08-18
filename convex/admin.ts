@@ -1,6 +1,7 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { internal } from './_generated/api';
+import { ADMIN_REQUIRED } from './lib/auth';
 import { PRICE_CEILING, UNLOCK_THRESHOLD } from '../lib/pricing';
 
 // Submission statuses that count as "approved or beyond" for the price-tier
@@ -461,7 +462,7 @@ export const markPaid = mutation({
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.adminId))
             .first();
-        if (!actor || actor.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!actor || actor.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
 
         // Delegate to shared credit logic (also used by auto-payment webhook)
         await ctx.scheduler.runAfter(0, internal.payments.creditCreatorForPayment, {
@@ -663,7 +664,7 @@ export const deleteCreatorRecords = mutation({
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.adminId))
             .first();
-        if (!actor || actor.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!actor || actor.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
 
         const creator = await ctx.db.get(args.creatorId);
         if (!creator) throw new Error('Creator not found');

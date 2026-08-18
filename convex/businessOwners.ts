@@ -1,5 +1,6 @@
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 import { query, mutation, internalMutation } from './_generated/server';
+import { ADMIN_REQUIRED, NOT_AUTHENTICATED } from './lib/auth';
 import type { QueryCtx, MutationCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import {
@@ -46,7 +47,7 @@ async function requireOwnership(
         .withIndex('by_submission', (q) => q.eq('submissionId', submissionId))
         .filter((q) => q.eq(q.field('businessOwnerId'), owner._id))
         .first();
-    if (!link) throw new Error('Forbidden: you do not own this website');
+    if (!link) throw new ConvexError('Forbidden: you do not own this website');
     return owner;
 }
 
@@ -145,12 +146,12 @@ export const issueClaimTokenForEmail = mutation({
     args: { submissionId: v.id('submissions') },
     handler: async (ctx, args): Promise<{ token: string }> => {
         const identity = await ctx.auth.getUserIdentity();
-        if (!identity) throw new Error('Not authenticated');
+        if (!identity) throw new ConvexError(NOT_AUTHENTICATED);
         const me = await ctx.db
             .query('creators')
             .withIndex('by_clerk_id', (q) => q.eq('clerkId', identity.subject))
             .first();
-        if (!me || me.role !== 'admin') throw new Error('Forbidden: admin access required');
+        if (!me || me.role !== 'admin') throw new ConvexError(ADMIN_REQUIRED);
         return await mintClaimToken(ctx, args.submissionId);
     },
 });
