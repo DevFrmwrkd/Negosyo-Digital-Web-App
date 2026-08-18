@@ -45,7 +45,9 @@ export default function ContentEditor({
     const updateService = (index: number, field: keyof Service, value: string) => {
         setContent(prev => ({
             ...prev,
-            services: prev.services.map((service, i) =>
+            // Both shapes: legacy bare array, and the nested { items[] } the AI
+            // extraction emits. Reading only the array left `.map` undefined.
+            services: (Array.isArray(prev.services) ? prev.services : ((prev.services as any)?.items ?? [])).map((service: any, i: number) =>
                 i === index ? { ...service, [field]: value } : service
             )
         }))
@@ -157,7 +159,7 @@ export default function ContentEditor({
             {/* Services */}
             <div className="space-y-4">
                 <h4 className="font-medium text-gray-900">Services / Products</h4>
-                {content.services.map((service, index) => (
+                {(Array.isArray(content.services) ? content.services : ((content.services as any)?.items ?? [])).map((service: any, index: number) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-2">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
