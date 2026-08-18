@@ -67,7 +67,6 @@ const n = tiles.length;
             <div
               class="ph"
               role={t.caption ? 'img' : undefined}
-              aria-hidden="true"
               aria-hidden={t.caption ? undefined : 'true'}
               data-image-field={`gallery.items.${t.i}.image`}
               style={`background-image:url('${t.image}');`}
@@ -81,13 +80,13 @@ const n = tiles.length;
 )}
 <style>
   .f-head { margin: 0 0 clamp(20px,2.8vw,32px); }
-  /* The signature eyebrow: 10px caps at .4em on the darkened terracotta. Styled
+  /* The signature eyebrow: 10px caps at .4em on the design's terracotta. Styled
      here rather than inherited so the section reads correctly on its own terms;
      the colour is a token, so the theme engine still recolours it. */
   .eyebrow {
     display: inline-block; font-family: var(--sans); font-weight: 600;
     font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
-    color: var(--ink-soft);
+    color: var(--accent);
   }
   .f-h2 {
     font-family: var(--disp); font-weight: 400; font-size: clamp(28px,3.6vw,48px);
@@ -158,7 +157,7 @@ const n = tiles.length;
   .tile .cap {
     position: absolute; left: 12px; bottom: 12px; z-index: 3;
     max-width: calc(100% - 24px);
-    background-color: var(--ink); color: var(--paper);
+    background-color: var(--green); color: var(--on-green);
     font-family: var(--sans); font-weight: 600; font-size: 9.5px;
     letter-spacing: .12em; text-transform: uppercase;
     padding: 6px 12px; border-radius: 100px;

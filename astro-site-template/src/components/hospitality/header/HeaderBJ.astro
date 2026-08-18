@@ -159,7 +159,7 @@ const ctaHref = onPage(c.navCtaHref || hero.cta1?.href, '#book');
   }
   .wm {
     font-family: var(--disp); font-weight: 400; font-size: clamp(22px,2.4vw,27px);
-    line-height: 1.1; color: var(--ink);
+    line-height: 1.1; color: var(--green);
     /* The border is present-but-transparent at rest so the hover state cannot
        grow the bar by 2px and jitter the whole sticky rail. */
     border-bottom: 2px solid transparent;
@@ -171,7 +171,7 @@ const ctaHref = onPage(c.navCtaHref || hero.cta1?.href, '#book');
   .loc {
     flex: 0 1 auto; min-width: 0;
     font-family: var(--sans); font-weight: 600; font-size: 9px;
-    letter-spacing: .32em; text-transform: uppercase; color: var(--ink-soft);
+    letter-spacing: .32em; text-transform: uppercase; color: var(--accent);
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   }
 
@@ -198,8 +198,8 @@ const ctaHref = onPage(c.navCtaHref || hero.cta1?.href, '#book');
   .navc {
     display: inline-flex; align-items: center; justify-content: center;
     min-height: 44px; padding: 12px 24px; flex: none;
-    border-radius: 999px; border: 1px solid var(--ink);
-    background-color: var(--ink); color: var(--paper);
+    border-radius: 999px; border: 1px solid var(--accent);
+    background-color: var(--accent); color: var(--on-accent);
     font-family: var(--sans); font-weight: 600; font-size: 12px;
     letter-spacing: .16em; text-transform: uppercase;
     transition: box-shadow .18s ease;
@@ -208,9 +208,9 @@ const ctaHref = onPage(c.navCtaHref || hero.cta1?.href, '#book');
      never transparent, never a hue change, so the label cannot strand. */
   /* Same collision as FooterBJ's FAB: a hovered-and-focused pill kept only the
      paper outline, drawn on the paper header — 1.00:1. Restate the ink halo. */
-  .navc:hover:focus-visible { box-shadow: 0 0 0 6px var(--ink); }
+  .navc:hover:focus-visible { box-shadow: 0 0 0 6px var(--accent); }
   .navc:hover {
-    background-color: var(--ink); color: var(--paper);
+    background-color: var(--accent); color: var(--on-accent);
     box-shadow: inset 0 0 0 999px rgba(0,0,0,.16);
   }
   @media (prefers-reduced-motion: reduce) { .navc { transition: none; } }

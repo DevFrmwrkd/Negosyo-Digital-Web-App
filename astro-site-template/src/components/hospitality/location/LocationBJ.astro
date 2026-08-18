@@ -190,11 +190,11 @@ const hasLoc = hasMap || rules.length > 0;
     gap: 22px 30px; flex-wrap: wrap; margin: 0 0 clamp(22px,3vw,34px); }
   .g-head-l { min-width: 0; }
   .g-head-r { min-width: 0; max-width: 38ch; }
-  /* The signature eyebrow: 10px caps at .4em on the darkened terracotta. */
+  /* The signature eyebrow: 10px caps at .4em on the design's terracotta. */
   .eyebrow {
     display: inline-block; font-family: var(--sans); font-weight: 600;
     font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
-    color: var(--ink-soft);
+    color: var(--accent);
   }
   .g-h2 {
     font-family: var(--disp); font-weight: 400; font-size: clamp(28px,3.8vw,52px);
@@ -223,9 +223,9 @@ const hasLoc = hasMap || rules.length > 0;
      the design's baked greens. */
   .map-face { position: absolute; inset: 0; background-color: var(--card);
     background-image:
-      repeating-linear-gradient(0deg, rgba(var(--ink-rgb),.07) 0 1px, transparent 1px 44px),
-      repeating-linear-gradient(90deg, rgba(var(--ink-rgb),.07) 0 1px, transparent 1px 44px); }
-  .road { position: absolute; background-color: rgba(var(--ink-rgb),.20); }
+      repeating-linear-gradient(0deg, rgba(var(--green-rgb),.07) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(var(--green-rgb),.07) 0 1px, transparent 1px 44px); }
+  .road { position: absolute; background-color: rgba(var(--green-rgb),.20); }
   .road-h { top: 47%; left: 0; right: 0; height: 5px; }
   .road-v { top: 0; bottom: 0; left: 43%; width: 4px; }
   /* max-width sits on the ABSPOS pin, not on the bubble: percentages here resolve
@@ -240,7 +240,7 @@ const hasLoc = hasMap || rules.length > 0;
   /* No white-space:nowrap — .map-frame clips overflow, so a long property name
      would be sliced off at BOTH ends. Wrapping beats truncating on the one
      element that names the property. */
-  .mlbl { background-color: var(--ink); color: var(--paper);
+  .mlbl { background-color: var(--green); color: var(--on-green);
     font-family: var(--sans); font-weight: 600; font-size: 9px;
     letter-spacing: .18em; text-transform: uppercase;
     padding: 5px 11px; border-radius: 100px; text-align: center; overflow-wrap: anywhere; }

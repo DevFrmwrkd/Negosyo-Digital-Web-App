@@ -61,47 +61,39 @@
  * the engine's `.btn-primary{color:<on-primary>!important}` pin, which is
  * sub-AA in 6 of 13 schemes.
  *
- * PALETTE DEVIATIONS FROM THE DESIGN, all deliberate:
- *  (a) --ink is the design's DEEP GREEN #143F38, not its near-black #17140F.
- *      The green bands (How, the whole-house slab, the closing band) must be
- *      painted with var(--ink) on var(--paper): buildOverrideCss remaps
- *      --accent-deep to palette.primaryDeep, which is #FFFFFF in the 'dark'
- *      scheme and #E5E5E5 in 'black' — both allowed for this family — so a
- *      green band built on --accent-deep would render white-on-white. The
- *      ink/paper pair is the only pairing legible in all 13 schemes, in both
- *      directions.
- *  (b) --accent is a DARKENED terracotta #A9501F (5.06:1 on cream) rather than
- *      the design's #C4622D (3.83:1): the eyebrows are 10px caps and must
- *      clear AA.
- *  (c) --muted is #6E6759 (5.20:1 on cream, 4.81 on the tint) rather than the
- *      design's label grey #8C8578, which measures 3.40:1 on cream and fails
- *      AA for the 10–12px text it is used on. It sits between the design's own
- *      two greys (#5C554B body, #8C8578 label) and reads as the same stone.
- *  (d) The headline <em> is ITALIC ONLY, with `color: inherit`. The design
- *      tints it green against a near-black headline; here the headline is
- *      already that green, and the obvious substitute — var(--accent) — is
- *      1.72:1 against the maroon scheme's paper, which would delete a word
- *      from the middle of a sentence. The italic serif IS the signature.
- *  GOLD (--accent-light) IS DECORATION ONLY: never a button fill, never body
- *  text, never an eyebrow on an inverted band. The engine remaps it to
- *  palette.accent (#A52A2A maroon, #A0A0A0 dark/black), so gold-on-green would
- *  become maroon-on-ink. It is confined to aria-hidden numerals and hairlines.
+ * PALETTE — THE DESIGN IS THE SPECIFICATION. Every value below is lifted
+ * verbatim from "Kubo Stays Landing.dc.html". An earlier pass altered four of
+ * them so the template would survive all 13 admin colour schemes; that traded
+ * the design away for a constraint nobody asked for, and it is reverted. The
+ * green is the design's green, the terracotta is the design's terracotta, and
+ * the headline <em> carries the green tint that is this design's signature.
  *
- * KNOWN RISK, recorded not fixed: the eyebrow (.kick) is var(--accent) per the
- * contract's palette decision. Native cream that is 5.06:1, but the engine
- * remaps --accent to palette.primary, which is #800000 on the maroon scheme's
- * #2D0000 paper = 1.72:1. Every eyebrow in the template is decorative-adjacent
- * (the h2 beneath always repeats the section's meaning), so a dimmed eyebrow
- * degrades rather than breaks — but the honest fix is a shared-file change to
- * the maroon palette, which is out of scope here.
+ * THE GREEN IS NOT --ink. --ink is the design's near-black #17140F (headlines
+ * and body). The deep green #143F38 is its own token, --green, because it is a
+ * GROUND (the How band, the whole-house slab, the closing slab, the floor
+ * pills, the map label) as well as an accent (the wordmark, the <em>, the proof
+ * figures). buildOverrideCss does not know --green, so an admin colour pick
+ * recolours ink/paper/accent around it and the green bands stay green. That is
+ * deliberate: the bands are the design.
+ *
+ * ACCESSIBILITY NOTE, stated not silently fixed: the design's terracotta on its
+ * cream measures 3.80:1, and its #FFF7F0 label on a terracotta fill 3.86:1 —
+ * both below the 4.5:1 AA bar for text this size, both above the 3:1 bar for
+ * large text and UI. Darkening --accent to #A9501F clears AA and is a one-line
+ * change, but it is the owner's brand colour and the owner's call, so the file
+ * ships the design's value. --muted #8C8578 (3.40:1) is the design's label grey
+ * and carries no claim the heading beside it does not repeat.
+ *
+ * KNOWN RISK, recorded not fixed: .kick is var(--accent), which the engine
+ * remaps to palette.primary — #800000 on the maroon scheme's #2D0000 paper =
+ * 1.72:1. Every eyebrow in the template is decorative-adjacent (the h2 beneath
+ * always repeats the section's meaning), so a dimmed eyebrow degrades rather
+ * than breaks. The honest fix is a shared-file change to the maroon palette.
  *
  * RENDER ORDER: Header, Hero, Trust, Services (the rooms), Why (the house),
- * Gallery, About (your host), Credentials (the promises), How, Testimonials,
- * Area, Location, Faq, CtaBand, Footer. Rooms lead, because on this vertical
- * the rate and the room are the product. Credentials sits immediately after
- * About on purpose: the design nests the promise cards in the host section's
- * right column, and one content prefix per <section> forbids that — see
- * CredentialsBJ.
+ * Gallery, About (your host, WITH the promise cards nested in its right-hand
+ * column), How, Testimonials, Area, Location, Faq, CtaBand, Footer. Rooms lead,
+ * because on this vertical the rate and the room are the product.
  *
  * INVERTED BANDS: a section that wants the green ground carries BOTH its own
  * name and `band-shade` (e.g. class="closing band-shade"), exactly as PageBI's
@@ -221,25 +213,33 @@ const __fontHref = buildFontHref(__themePairing);
       --paper: #FAF6F0;
       --paper-2: #F3EDE2;
       --card: #FFFFFF;
-      /* ink — the design's DEEP GREEN. Both a text colour and the ground of
-         every inverted band. See PALETTE DEVIATION (a). */
-      --ink: #143F38;
-      --ink-soft: #4C5F57;
+      /* ink — the design's near-black. Headlines and body, never a ground. */
+      --ink: #17140F;
+      --ink-soft: #5C554B;
       --line: #E6DED1;
-      /* warmth — darkened terracotta primary, forest deep, gold decoration */
-      --accent: #A9501F;
-      --accent-deep: #0F2E29;
+      /* warmth — the design's terracotta, and its gold (decoration, and the
+         label colour on a green ground, where gold reads 5.39:1) */
+      --accent: #C4622D;
+      --accent-deep: #A9501F;
       --accent-light: #E0A63A;
-      --muted: #6E6759;
-      /* rgb triplets for token-driven tints (all remapped by buildOverrideCss) */
+      --muted: #8C8578;
+      /* THE GREEN. Its own token, not --ink: it is a band GROUND as well as an
+         accent, and the override engine does not remap it — see the palette
+         note in the frontmatter. */
+      --green: #143F38;
+      --green-deep: #0F2E29;
+      --green-soft: #B9C6BF;
+      --on-green: #F4EFE6;
+      /* rgb triplets for token-driven tints */
       --paper-rgb: 250,246,240;
-      --ink-rgb: 20,63,56;
-      --accent-rgb: 169,80,31;
+      --ink-rgb: 23,20,15;
+      --accent-rgb: 196,98,45;
+      --green-rgb: 20,63,56;
       /* contrast aliases the override engine + inherited rules expect */
       --on-ink: #FAF6F0;
-      --on-paper: #143F38;
-      --on-accent: #FFFFFF;
-      --on-primary: #FFFFFF;
+      --on-paper: #17140F;
+      --on-accent: #FFF7F0;
+      --on-primary: #FFF7F0;
       /* type + metrics */
       --disp: "Instrument Serif", Georgia, "Times New Roman", serif;
       --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
@@ -253,20 +253,17 @@ const __fontHref = buildFontHref(__themePairing);
       --r-sm: 12px;
     }
 
-    /* VERIFIED CONTRAST (sRGB relative luminance, native palette):
-       ink/paper 10.85 · ink/paper-2 10.03 · ink/card 11.68
-       ink-soft/paper 6.33 · /paper-2 5.85 · /card 6.81
-       muted/paper 5.20 · /paper-2 4.81 · /card 5.60
-       accent/paper 5.06 (eyebrows, 10px caps) · accent/card 5.45
-       paper on ink 10.85 · rgba(paper,.86) 8.9 · .78 7.6 · .62 5.1
-       BANNED, recorded as evidence: design terracotta #C4622D/paper 3.83 ·
-       design label grey #8C8578/paper 3.40 · gold #E0A63A as text on cream 1.87 ·
-       engine --accent-deep (#FFFFFF) as a band ground on the dark scheme 1.00 ·
-       engine --accent as text on the maroon scheme's paper 1.72.
-       WORST OF THE 6 SCHEMES THIS FAMILY ALLOWS: ink/paper 9.11 (maroon) ·
-       our paper label on a 16%-darkened ink fill 10.0+ everywhere. Nothing
-       carrying text is below 4.5:1 except the eyebrow under a remap — see the
-       KNOWN RISK note in the frontmatter. */
+    /* VERIFIED CONTRAST (sRGB relative luminance, the design's palette):
+       ink/paper 16.6 · ink/paper-2 15.4 · ink/card 17.9
+       ink-soft/paper 7.72 · /paper-2 7.14 · /card 8.32
+       green/paper 10.85 · green/card 11.68 (wordmark, <em>, proof figures)
+       on-green/green 10.4 · green-soft/green 6.5 (body on the bands)
+       accent-light/green 5.39 (gold eyebrow) · ink on a gold fill 8.48
+       BELOW AA, the design's own choices, accepted rather than silently altered:
+         accent/paper 3.80 (the 10px eyebrows) · on-accent/accent 3.86 (the
+         terracotta pill's label) · muted/paper 3.40 (the 12px labels).
+       See the ACCESSIBILITY NOTE in the frontmatter for the one-line change
+       that clears all three if the owner wants it. */
 
     /* ── reset + document ─────────────────────────────────────────────── */
     html[data-page="BJ"] *,
@@ -288,7 +285,7 @@ const __fontHref = buildFontHref(__themePairing);
     }
     html[data-page="BJ"] img { max-width: 100%; display: block; }
     html[data-page="BJ"] a { color: inherit; text-decoration: none; }
-    html[data-page="BJ"] ::selection { background: var(--ink); color: var(--paper); }
+    html[data-page="BJ"] ::selection { background: var(--green); color: var(--paper); }
     html[data-page="BJ"] :where(h1,h2,h3,h4) {
       margin: 0; font-family: var(--disp); font-weight: 400; color: var(--ink);
       letter-spacing: 0; line-height: 1.06;
@@ -306,12 +303,16 @@ const __fontHref = buildFontHref(__themePairing);
           carries `band-shade` ALONGSIDE its own class name. */
     html[data-page="BJ"] :where(.band-tint) { background-color: var(--paper-2); }
     html[data-page="BJ"] :where(.band-card) { background-color: var(--card); }
-    html[data-page="BJ"] :where(.band-shade) { background-color: var(--ink); color: var(--paper); }
-    html[data-page="BJ"] :where(.band-shade) .h2,
-    html[data-page="BJ"] :where(.band-shade) .fig { color: var(--paper); }
+    html[data-page="BJ"] :where(.band-shade) { background-color: var(--green); color: var(--on-green); }
+    html[data-page="BJ"] :where(.band-shade) .h2 { color: var(--on-green); }
+    /* The <em> tint is the GREEN on a light ground — on the green itself it
+       would delete the emphasised words, so it becomes the gold. */
+    html[data-page="BJ"] :where(.band-shade) .h2 em,
+    html[data-page="BJ"] :where(.band-shade) .h2 .em,
+    html[data-page="BJ"] :where(.band-shade) .fig { color: var(--accent-light); }
     html[data-page="BJ"] :where(.band-shade) .body,
-    html[data-page="BJ"] :where(.band-shade) .lede { color: rgba(var(--paper-rgb),.78); }
-    html[data-page="BJ"] :where(.band-shade) .mono { color: rgba(var(--paper-rgb),.74); }
+    html[data-page="BJ"] :where(.band-shade) .lede { color: var(--green-soft); }
+    html[data-page="BJ"] :where(.band-shade) .mono { color: var(--green-soft); }
     html[data-page="BJ"] :where(.band-shade) .plate { border-color: rgba(var(--paper-rgb),.18); }
 
     /* ── .kick — the eyebrow. 10px caps, wide tracking, terracotta. On an
@@ -321,9 +322,10 @@ const __fontHref = buildFontHref(__themePairing);
     html[data-page="BJ"] :where(.kick) {
       display: inline-block;
       font-family: var(--sans); font-weight: 600; font-size: 10px;
-      letter-spacing: .4em; text-transform: uppercase; color: var(--ink-soft);
+      letter-spacing: .4em; text-transform: uppercase; color: var(--accent);
     }
-    html[data-page="BJ"] :where(.band-shade) .kick { color: rgba(var(--paper-rgb),.82); }
+    /* the design's gold eyebrow, which only ever appears on a green ground */
+    html[data-page="BJ"] :where(.band-shade) .kick { color: var(--accent-light); }
 
     /* ── display headline + the ITALIC SERIF EMPHASIS (the design's signature).
           <em> is ITALIC ONLY and keeps `inherit` — see PALETTE DEVIATION (d).
@@ -334,9 +336,10 @@ const __fontHref = buildFontHref(__themePairing);
       font-size: clamp(30px,4.3vw,56px); line-height: 1.06; letter-spacing: 0;
       margin: 0 0 .3em; color: var(--ink); max-width: 22ch;
     }
+    /* THE SIGNATURE: italic serif in the deep green, on a light ground. */
     html[data-page="BJ"] :where(.h2 em),
     html[data-page="BJ"] :where(.h2 .em),
-    html[data-page="BJ"] :where(.em) { font-style: italic; color: inherit; }
+    html[data-page="BJ"] :where(.em) { font-style: italic; color: var(--green); }
     html[data-page="BJ"] :where(.lede) {
       color: var(--ink-soft); font-size: clamp(15.5px,1.5vw,17.5px); line-height: 1.7;
       max-width: 46ch; margin: 0;
@@ -351,23 +354,20 @@ const __fontHref = buildFontHref(__themePairing);
     }
     /* ── .fig — the serif money/stat figure. tabular-nums survives a font swap. */
     html[data-page="BJ"] :where(.fig) {
-      font-family: var(--disp); font-weight: 400; color: var(--ink);
+      font-family: var(--disp); font-weight: 400; color: var(--green);
       font-variant-numeric: tabular-nums lining-nums; line-height: 1;
     }
 
-    /* ── BUTTONS ───────────────────────────────────────────────────────
-       Proven pairs (native / worst of the 6 schemes this family allows):
-         .btn--fill            paper on ink                 10.85 / 9.11
-         .btn--fill:hover      paper on ink+16% black        12.4 / 10.3
-         .btn--line            ink on card                   11.68 / 9.4
-         .btn--line:hover      paper on ink                  10.85 / 9.11
-         .band-shade .btn--fill  ink on paper                10.85 / 9.11
-         .band-shade .btn--line  paper on ink                10.85 / 9.11
-         .linkc                ink on cream (never changes on hover) 10.85 / 9.11
-       No fill is EVER a mid-tone: every one is the darkest or the lightest
-       token of the pair. The design's terracotta-filled pill is deliberately
-       NOT reproduced — an --accent fill under a --paper label measures 1.72:1
-       on the maroon scheme, where both tokens collapse into the same red. */
+    /* ── BUTTONS ──────────────────────────────────────────────────────
+       Straight from the design's own renderVals():
+         .btn--fill              btnLg/btnNav — terracotta fill, #FFF7F0 label
+         .btn--line              btnCard      — light fill, hairline, green label
+         .band-shade .btn--fill  btnGold      — gold fill, near-black label
+         .band-shade .btn--line  the closing band's outlined secondary
+       Every hover DARKENS the same fill and keeps the same label colour: never
+       lighter, never transparent, never a hue change — that is what stranded
+       the Ironwood label, and the same trap is live here because
+       buildOverrideCss pins some labels with !important. */
     html[data-page="BJ"] :where(.btn) {
       display: inline-flex; align-items: center; justify-content: center; gap: .55em;
       padding: 16px 30px; min-height: 48px;
@@ -378,20 +378,20 @@ const __fontHref = buildFontHref(__themePairing);
       transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease, border-color .18s ease;
     }
     html[data-page="BJ"] :where(.btn--fill) {
-      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+      background-color: var(--accent); color: var(--on-accent); border-color: var(--accent);
     }
     html[data-page="BJ"] :where(.btn--fill:hover) {
-      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
-      box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 4px rgba(var(--accent-rgb),.28);
+      background-color: var(--accent); color: var(--on-accent); border-color: var(--accent);
+      box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 4px rgba(var(--green-rgb),.22);
       transform: translateY(-2px);
     }
     html[data-page="BJ"] :where(.btn--fill:active) { transform: translateY(0); }
-    /* The design's secondary pill: a white card fill inside a hairline. */
+    /* The design's secondary pill: a light fill inside a hairline, green label. */
     html[data-page="BJ"] :where(.btn--line) {
-      background-color: var(--card); color: var(--ink); border-color: var(--line);
+      background-color: var(--card); color: var(--green); border-color: var(--line);
     }
     html[data-page="BJ"] :where(.btn--line:hover) {
-      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+      background-color: var(--green); color: var(--on-green); border-color: var(--green);
       transform: translateY(-2px);
     }
     html[data-page="BJ"] :where(.btn--line:active) { transform: translateY(0); }
@@ -399,17 +399,17 @@ const __fontHref = buildFontHref(__themePairing);
        section has to restate them — and so no section is tempted to invent a
        gold fill, which the engine would turn into maroon-on-ink. */
     html[data-page="BJ"] :where(.band-shade) .btn--fill {
-      background-color: var(--paper); color: var(--ink); border-color: var(--paper);
+      background-color: var(--accent-light); color: var(--ink); border-color: var(--accent-light);
     }
     html[data-page="BJ"] :where(.band-shade) .btn--fill:hover {
-      background-color: var(--paper); color: var(--ink); border-color: var(--paper);
+      background-color: var(--accent-light); color: var(--ink); border-color: var(--accent-light);
       box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 0 0 4px rgba(var(--paper-rgb),.24);
     }
     html[data-page="BJ"] :where(.band-shade) .btn--line {
-      background-color: transparent; color: var(--paper); border-color: rgba(var(--paper-rgb),.45);
+      background-color: transparent; color: var(--on-green); border-color: rgba(var(--paper-rgb),.40);
     }
     html[data-page="BJ"] :where(.band-shade) .btn--line:hover {
-      background-color: rgba(var(--paper-rgb),.14); color: var(--paper); border-color: var(--paper);
+      background-color: rgba(var(--paper-rgb),.14); color: var(--on-green); border-color: var(--on-green);
     }
     @media (prefers-reduced-motion: reduce) {
       html[data-page="BJ"] .btn { transition: none; }
@@ -424,15 +424,15 @@ const __fontHref = buildFontHref(__themePairing);
     html[data-page="BJ"] :where(.linkc) {
       display: inline-flex; align-items: center; gap: .5em; min-height: 44px;
       font-family: var(--sans); font-weight: 600; font-size: 13px;
-      letter-spacing: .04em; color: var(--ink);
+      letter-spacing: .04em; color: var(--green);
       border-bottom: 2px solid var(--accent); padding-bottom: 2px;
       transition: border-bottom-width .18s ease, border-bottom-color .18s ease, transform .18s ease;
     }
     html[data-page="BJ"] :where(.linkc:hover) {
-      color: var(--ink); border-bottom-width: 3px; border-bottom-color: var(--ink);
+      color: var(--green); border-bottom-width: 3px; border-bottom-color: var(--green);
       transform: translateY(-1px);
     }
-    html[data-page="BJ"] :where(.band-shade) .linkc { color: var(--paper); border-bottom-color: var(--accent-light); }
+    html[data-page="BJ"] :where(.band-shade) .linkc { color: var(--on-green); border-bottom-color: var(--accent-light); }
     @media (prefers-reduced-motion: reduce) { html[data-page="BJ"] .linkc { transition: none; } }
 
     /* ── FOCUS · the DUO ring. See load-bearing fact 4. */
@@ -459,15 +459,16 @@ const __fontHref = buildFontHref(__themePairing);
       background-size: cover; background-position: center; background-repeat: no-repeat;
       background-image:
         radial-gradient(78% 64% at 22% 14%, rgba(var(--accent-rgb),.22), transparent 62%),
-        radial-gradient(66% 60% at 84% 90%, rgba(var(--ink-rgb),.22), transparent 60%);
+        radial-gradient(66% 60% at 84% 90%, rgba(var(--green-rgb),.22), transparent 60%);
       transition: transform .5s ease;
     }
-    /* .cap — caption on an OPAQUE ink pill, never a gradient scrim: 10.85 over
-       ANY owner photo, however dark or blown out. */
+    /* .cap — caption on an OPAQUE green pill, never a gradient scrim: 10.4 over
+       ANY owner photo, however dark or blown out. Same treatment as the rooms
+       floor badge, which is the one pill the design draws over a photo. */
     html[data-page="BJ"] :where(.plate) .cap {
       position: absolute; left: 12px; bottom: 12px; z-index: 3;
       max-width: calc(100% - 24px);
-      background-color: var(--ink); color: var(--paper);
+      background-color: var(--green); color: var(--on-green);
       font-family: var(--sans); font-weight: 600; font-size: 9px;
       letter-spacing: .18em; text-transform: uppercase;
       padding: 6px 11px; border-radius: 999px;
@@ -550,12 +551,16 @@ const __fontHref = buildFontHref(__themePairing);
     {visibility.servicesSection !== false && <ServicesBJ content={content} layout={layout} />}
     {visibility.whyUsBlock !== false && <WhyBJ content={content} layout={layout} />}
     {visibility.gallerySection !== false && <GalleryBJ content={content} layout={layout} />}
-    {visibility.aboutSection !== false && <AboutBJ content={content} layout={layout} />}
-    {/* The promise cards sit immediately under the host block, on the same
-        ground and with no top rule, so the two read as one spread — the design
-        nests them in the host section's right column, which one-content-prefix-
-        per-section forbids. */}
-    {visibility.credentialsBlock !== false && <CredentialsBJ content={content} layout={layout} />}
+    {/* THE DESIGN NESTS THE PROMISE CARDS IN THE HOST SECTION'S RIGHT COLUMN,
+        so they are passed in as AboutBJ's children and the two share one
+        <section id="host">, exactly as drawn. Each keeps its own Blocks toggle:
+        aboutSection controls the copy column, credentialsBlock the card column,
+        and the section only disappears when BOTH are off. The gates stay on
+        their own component's line so scripts/check-template-blocks.mjs can still
+        read them. */}
+    {(visibility.aboutSection !== false || visibility.credentialsBlock !== false) && <AboutBJ content={content} layout={layout} showCopy={visibility.aboutSection !== false}>
+      {visibility.credentialsBlock !== false && <CredentialsBJ content={content} layout={layout} />}
+    </AboutBJ>}
     {visibility.howItWorksBlock !== false && <HowBJ content={content} layout={layout} />}
     {visibility.testimonialsBlock !== false && <TestimonialsBJ content={content} layout={layout} />}
     {visibility.serviceAreaBlock !== false && <AreaBJ content={content} layout={layout} />}
