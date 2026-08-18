@@ -32,6 +32,7 @@ import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorR
 import { useEditorDraft } from "./useEditorDraft";
 import { applyImageSlot, isImageField, uploadImage } from "./editorImageSlots";
 import ContentFieldsAuto from "./ContentFieldsAuto";
+import { deriveContentDefaults, getDerivedAt } from "@/lib/derive-content-defaults";
 import ImagePickerModal from "./ImagePickerModal";
 import LinkPopover, { type LinkPopoverData } from "./LinkPopover";
 
@@ -109,7 +110,7 @@ type Panel = "design" | "content" | "media";
 
 export default function SandboxEditorV3(props: SandboxEditorProps) {
     const {
-        businessName, htmlContent, submissionId, photos, enhancedImageUrls,
+        businessName, businessType, htmlContent, submissionId, photos, enhancedImageUrls,
         onSaveContent, websitePublishedUrl,
         websiteGenerated, generatingWebsite, publishingWebsite, republishingWebsite,
         unpublishingWebsite, enhancing, sendingEmail,
@@ -159,6 +160,32 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         submissionId ? { submissionId: submissionId as Id<"submissions"> } : "skip"
     );
     const publishStale = !!websiteRow?.publishedUrl && websiteRow?.status === "draft";
+    // ── Tier-3 read: the defaults the BUILD pipeline applies ──────────────
+    // The sidebar's read chain must match what the iframe renders, or the form
+    // lies about the page. ContentFieldsAuto already does (1) draft and (2) the
+    // schema's own fallbackPaths; this adds (3) the submission-derived defaults,
+    // which is what v1 has always done.
+    //
+    // Without it a derived list reads as EMPTY, and "+ Add" then commits a
+    // one-element array OVER the derived one — shipping a blank <h1> for
+    // hero.headlineLines, a blank copyright row for footer.notes, and an empty
+    // service area. Every section eyebrow and the closing-band CTA also render
+    // as empty boxes on essentially every submission.
+    const derived = useMemo(() => deriveContentDefaults({
+        business_name: (m.draft as any)?.business_name || businessName,
+        business_city: (m.draft as any)?.business_city || (m.draft as any)?.contact?.city,
+        business_type: (m.draft as any)?.business_type || businessType,
+        tagline: (m.draft as any)?.tagline,
+        about: (m.draft as any)?.about,
+        contact: (m.draft as any)?.contact,
+    }, photos), [m.draft, businessName, businessType, photos]);
+
+    const contentGetValue = useCallback((path: string) => {
+        const v = m.getValue(path);
+        if (v !== undefined && v !== null && v !== '') return v;
+        return getDerivedAt(derived, path);
+    }, [m.getValue, derived]);
+
     const curatedSchemes = m.activeFamily ? CURATED[m.activeFamily] : COLOR_SCHEMES.map((c) => c.id).filter((id) => id !== "auto");
 
     // ── Live theme apply ──────────────────────────────────────────────────
@@ -590,7 +617,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         {panel === "content" && (
                             <div className="p-3">
                                 <p className="mb-2 px-1 text-[10px] leading-snug text-neutral-400">Edit any field here, or click text in the preview to jump to it. Lists, links &amp; images add/remove/reorder safely.</p>
-                                <ContentFieldsAuto getValue={m.getValue} setValue={m.setValue} openImagePicker={(path) => setImagePickerField(path)} pushLiveText={pushLiveText} />
+                                <ContentFieldsAuto getValue={contentGetValue} setValue={m.setValue} openImagePicker={(path) => setImagePickerField(path)} pushLiveText={pushLiveText} />
                             </div>
                         )}
 

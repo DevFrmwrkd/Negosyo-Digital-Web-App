@@ -70,10 +70,35 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
         fields: [
             {
                 kind: 'text',
-                label: 'Brand name',
+                label: 'Brand name (nav wordmark)',
                 path: 'footer.brand',
                 fallbackPaths: ['business_name'],
                 placeholder: 'Your business name',
+            },
+            // business_name and tagline drive the DOCUMENT, not the page body:
+            // astro-builder maps them to layout.businessName/tagline, which every
+            // wrapper bakes into <title>, <meta name="description">, og:title and
+            // og:description. Nothing else in the editor writes either one, so
+            // without these two fields a misspelt name in the browser tab or a
+            // wrong Google snippet could only be fixed in the database.
+            //
+            // They are easy to confuse with 'Brand name' above, which is the
+            // on-page wordmark (content.footer.brand) — hence the explicit
+            // labels. And note the trap they close: hero.headline declares
+            // fallbackPaths ['tagline','business_name'], so the Hero group
+            // DISPLAYS the tagline while writing to hero.headline. Correcting it
+            // there changes the on-page H1 and leaves the page title untouched.
+            {
+                kind: 'text',
+                label: 'Business name (browser tab & search)',
+                path: 'business_name',
+                placeholder: 'Your business name',
+            },
+            {
+                kind: 'text',
+                label: 'Tagline (browser tab & search)',
+                path: 'tagline',
+                placeholder: 'What the business does, in a line',
             },
             {
                 kind: 'text',
