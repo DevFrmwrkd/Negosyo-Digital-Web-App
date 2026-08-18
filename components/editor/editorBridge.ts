@@ -176,8 +176,27 @@ export const EDITOR_BRIDGE_SCRIPT = `
             var PREFIX = { hero_section:'hero', about_section:'about', services_section:'services', why_us_block:'why', how_it_works_block:'how', testimonials_block:'testimonials', featured_section:'gallery', faq_block:'faq', service_area_block:'area', credentials_block:'credentials', location_block:'location', cta_band_block:'ctaBand', trust_block:'trust', footer_section:'footer' };
             var pfx = PREFIX[msg.block];
             if (!pfx) return;
-            var anchor = document.querySelector('[data-field^="' + pfx + '."]') || document.querySelector('[data-image-field^="' + pfx + '."]') || document.querySelector('[data-field="' + pfx + '"]');
-            var sec = (anchor && anchor.closest) ? anchor.closest('section,footer,header') : null;
+            // Resolve by WEIGHT, not by document order. Taking the first matching
+            // node and hiding its nearest ancestor was wrong in two ways: a
+            // template whose <header> carries data-field="location.phone" made
+            // "hide LOCATION" blank the whole nav, and 'header' was in the
+            // ancestor list at all, so the site header was a legal target for a
+            // block that is never the header. Now every candidate SECTION is
+            // scored by how many hooks of this prefix it actually contains, and
+            // the richest one wins — the real Location section always holds more
+            // location.* hooks than a header that happens to carry one phone.
+            var sel = '[data-field^="' + pfx + '."],[data-image-field^="' + pfx + '."],[data-field="' + pfx + '"]';
+            var hits = document.querySelectorAll(sel);
+            var hosts = [], counts = [], k;
+            for (var hi = 0; hi < hits.length; hi++) {
+                var host = hits[hi].closest ? hits[hi].closest('section,footer') : null;
+                if (!host) continue;
+                var at = -1;
+                for (k = 0; k < hosts.length; k++) { if (hosts[k] === host) { at = k; break; } }
+                if (at === -1) { hosts.push(host); counts.push(1); } else { counts[at]++; }
+            }
+            var sec = null, bestN = 0;
+            for (k = 0; k < hosts.length; k++) { if (counts[k] > bestN) { bestN = counts[k]; sec = hosts[k]; } }
             if (sec) sec.style.display = msg.visible ? '' : 'none';
             return;
         }
