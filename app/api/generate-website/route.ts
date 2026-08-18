@@ -4,6 +4,7 @@ import { fetchQuery } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { buildAstroSite } from '@/lib/astro-builder'
 import { buildRoleColorCss } from '@/lib/roleColors'
+import { asServiceArray } from '@/lib/services-shape'
 import {
     groqService,
     delimitTranscript,
@@ -1072,7 +1073,7 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
             // Services section
             servicesHeadline: contentWithContact.services_headline,
             servicesSubheadline: contentWithContact.services_subheadline,
-            services: contentWithContact.services?.map((s: any) => ({
+            services: asServiceArray(contentWithContact.services).map((s: any) => ({
                 name: s.name || s.title || '',
                 description: s.description || '',
                 icon: s.icon,
