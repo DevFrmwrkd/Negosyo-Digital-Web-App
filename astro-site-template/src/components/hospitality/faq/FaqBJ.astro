@@ -1,0 +1,137 @@
+---
+/**
+ * hospitality / FaqBJ — "Kubo Stays" OFTEN ASKED: a narrow sticky head on the
+ * left (eyebrow + Instrument Serif headline) beside a hairline-separated stack
+ * of open question-and-answer rows on the right. No accordion: the design shows
+ * every answer, and on a rooms-for-rent page the answers ARE the terms.
+ *
+ * ROLE: in this vertical the FAQ is where booking, payment, whole-house hire and
+ * cancellation actually live — the questions that decide whether a guest
+ * enquires at all.
+ *
+ * Reads content.faq.items ({q, a}); tolerates the legacy bare array at
+ * content.faq. Auto-hides when empty.
+ *
+ * EDITABLE HOOKS (all four are declared in genericContentSchema, group "faq" —
+ * a hook the schema does not own is a dead hook in the v3 sidebar)
+ *   faq.tag              — the eyebrow
+ *   faq.headline         — guarded, set:html. No literal fallback: a headline
+ *                          over nothing is worse than no headline.
+ *   faq.items.${i}.q
+ *   faq.items.${i}.a     — set:html, so an owner can emphasise inside an answer
+ *
+ * ANTI-FABRICATION — the single most dangerous section in a hospitality
+ * template, so the rule is absolute: NOT ONE POLICY IS SHIPPED BY THIS FILE.
+ * No default check-in or check-out time, no cancellation window, no deposit,
+ * damage, pet, party, smoking or quiet-hours rule, no minimum stay, no cleaning
+ * or extra-guest fee, and no example question. Every one of those is a
+ * legally-flavoured claim about a property this template has never seen. If the
+ * owner typed no questions, the section does not exist.
+ *
+ * TRAP (carried over from FaqBI, deliberately NOT repeated): the precedent
+ * closes its intro column with the owner's phone number. That hook was the first
+ * `location.*` reference in the document, and editorBridge resolves a Blocks
+ * toggle to the section carrying the most hooks of that prefix — so the LOCATION
+ * toggle could reach into the FAQ. This head carries faq.* and nothing else, one
+ * content prefix per section, and the phone reaches the page through the closing
+ * band and the footer where it belongs.
+ *
+ * THEMING (R3): light ground, so every colour is a token — --ink for the
+ * headings, --ink-soft for the answers, --accent for the 10px eyebrow (the
+ * palette darkens the design's terracotta to #A9501F precisely so tracked caps
+ * at this size clear AA on paper) and --line for the row rules. This section has
+ * no button and no engine-pinned class name.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const faq = content.faq || {};
+const tag = faq.tag || '';
+const headline = faq.headline || '';
+type Item = { q?: string; a?: string };
+const items: Item[] = Array.isArray(faq.items) ? faq.items : (Array.isArray(faq) ? faq : []);
+/* A row with no question has no honest presentation: the question IS the label,
+   so an answer-only row would print a rule and a floating paragraph. Filter
+   those out but carry the ORIGINAL index, so every data-field still points at
+   the real array slot after a row above it is removed. Gating the section on
+   `rows` rather than `items` also means an all-blank block hides instead of
+   shipping an empty two-column band. */
+const rows = items.map((it, i: number) => ({ ...it, i })).filter((r) => Boolean((r.q || '').trim()));
+/* The head column holds only the eyebrow and the headline. With neither it would
+   spend a whole grid track on nothing, so it is omitted and the grid collapses
+   to one column — the same `.nointro` idiom the family uses elsewhere. */
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="faqs" id="faq">
+    <div class="wrap">
+      <div class:list={['faq-grid', !hasHead && 'nohead']}>
+        {hasHead && (
+          <div class="faq-head reveal">
+            {tag && <span class="eyebrow" data-field="faq.tag">{tag}</span>}
+            {headline && <h2 class="h2" data-field="faq.headline" set:html={headline}></h2>}
+          </div>
+        )}
+        <div class="q-list reveal">
+          {rows.map((row) => (
+            <div class="q-row">
+              <h3 data-field={`faq.items.${row.i}.q`}>{row.q}</h3>
+              {row.a && <p data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .faq-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+    gap: clamp(34px, 4.6vw, 56px);
+    align-items: start;
+  }
+  .faq-grid.nohead { grid-template-columns: 1fr; }
+  /* Sticky only while the two columns exist; released with the grid at 900px so
+     it can never pin a heading over the answers on a phone. The offset clears
+     the sticky header rail. */
+  .faq-head { position: sticky; top: clamp(84px, 11vh, 108px); }
+
+  .eyebrow {
+    display: inline-block;
+    font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--ink-soft); overflow-wrap: anywhere;
+  }
+  .faqs .h2 {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(28px, 3.8vw, 52px); line-height: 1.06; letter-spacing: -0.005em;
+    margin: 0.24em 0 0; color: var(--ink); overflow-wrap: anywhere;
+  }
+  /* Signature emphasis: a real italic, colour inherited. Never an accent colour
+     swap — accent-as-text is sub-AA in most of the schemes this family allows. */
+  .faqs .h2 :global(em),
+  .faqs .h2 :global(.em) { font-style: italic; color: inherit; }
+
+  .q-row { border-bottom: 1px solid var(--line); padding: 22px 0; }
+  .q-row h3 {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(19px, 1.8vw, 22px); line-height: 1.2;
+    margin: 0 0 9px; color: var(--ink); overflow-wrap: anywhere;
+  }
+  .q-row p {
+    margin: 0; font-size: 15px; line-height: 1.75;
+    color: var(--ink-soft); max-width: 64ch; overflow-wrap: anywhere;
+  }
+  .q-row p :global(em) { font-style: italic; color: inherit; }
+
+  @media (max-width: 900px) {
+    .faq-grid { grid-template-columns: 1fr; gap: 26px; }
+    .faq-head { position: static; }
+  }
+  @media (max-width: 520px) {
+    .faqs .h2 { font-size: clamp(26px, 7.6vw, 34px); }
+    .q-row { padding: 18px 0; }
+    .q-row h3 { font-size: 19px; }
+    .q-row p { font-size: 14.5px; max-width: none; }
+  }
+</style>

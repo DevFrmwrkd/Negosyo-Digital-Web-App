@@ -1,0 +1,118 @@
+---
+/**
+ * hospitality / TrustBJ — "Kubo Stays"' proof band: one tinted, hairline-ruled
+ * card sitting between the arrival and the rooms, holding up to four cells of a
+ * serif figure over a tracked caps label — rooms, guest rating, reply time,
+ * booking fees, or whatever the owner actually typed.
+ *
+ * Editable hooks (both declared by components/editor/genericContentSchema.ts's
+ * `trust.cells` list, so they are live in the v3 sidebar with add / remove /
+ * reorder):
+ *   trust.cells.${i}.num (set:html, so "&lt; 1 hr" or an owner's <em> survives) ·
+ *   trust.cells.${i}.label
+ *
+ * R2 — THE HIGHEST-RISK BAND IN THIS DESIGN. The demo shows an average guest
+ * RATING and a typical REPLY TIME: numbers no one but the owner may assert.
+ * content.trust has no derived default (lib/derive-content-defaults.ts carries no
+ * trust key), so this band exists only where an admin filled it in. There is
+ * therefore not one literal cell here, no placeholder figure, no zero and no
+ * dash: with nothing supplied the whole card is omitted rather than printing an
+ * empty strip. astro-builder also forces visibility.trustBlock false when the
+ * cells array is empty; this gate is the belt to that brace, because it also
+ * catches the case astro-builder cannot see — rows that are PRESENT but blank
+ * (the editor's Add button inserts { num: '', label: '' } and the builder gates
+ * on raw array LENGTH). Each cell's num and label are guarded independently, so
+ * a half-filled row prints one line instead of an empty div.
+ *
+ * CLASS-NAME LAW (not inferable, do not "tidy"): this section is .proof and its
+ * cells are .pnum / .plab, NEVER .trust / .num / .lbl. buildOverrideCss pins
+ * `.trust, .trust .num, .trust .lbl { color: <on-ink> !important }` — correct
+ * for PageBI, whose stat rail sits on an INK fill, and catastrophic here, where
+ * the card is the light --paper-2 tint: an on-ink label would be paper-coloured
+ * text on cream. The rename removes the fight instead of trying to win it.
+ *
+ * No id: nothing links to this band.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const trust = content.trust || {};
+const cells: Array<{ num?: string; label?: string }> = Array.isArray(trust.cells) ? trust.cells : (Array.isArray(trust) ? trust : []);
+// Drop blank rows, but carry the ORIGINAL index so every data-field keeps
+// pointing at the real array slot — removing cell 2 in the sidebar must never
+// redirect an edit of cell 3 (the same pattern hero / services / gallery use).
+const rows = cells
+  .map((c, i: number) => ({ ...c, i }))
+  .filter((r) => Boolean(String(r.num ?? '').trim() || String(r.label ?? '').trim()));
+// The column count follows the DATA. A fixed repeat(4,1fr) leaves two inked,
+// empty tracks on a two-cell band, and grid auto-fit would wrap a fourth cell
+// onto a second row at some widths — which puts a stray vertical hairline in the
+// middle of the card. One custom property, read by the grid below, avoids both.
+const cols = String(Math.max(rows.length, 1));
+---
+{rows.length > 0 && (
+  <section class="proof">
+    <div class="wrap">
+      <div class="cells" style={`--cols:${cols}`}>
+        {rows.map((r, k) => (
+          <div class="cell reveal" data-delay={String(k % 3)}>
+            {r.num && <div class="pnum" data-field={`trust.cells.${r.i}.num`} set:html={r.num}></div>}
+            {r.label && <div class="plab" data-field={`trust.cells.${r.i}.label`}>{r.label}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour comes only from the token vocabulary (--paper-2 --line --ink --muted
+     --disp --sans). There is no hex in this file. */
+  .proof { padding: clamp(36px,5vw,64px) 0 0; }
+  .cells {
+    display: grid; grid-template-columns: repeat(var(--cols,1), minmax(0,1fr));
+    background-color: var(--paper-2);
+    border: 1px solid var(--line); border-radius: 18px;
+    /* Clips the interior hairlines against the rounded corners. */
+    overflow: hidden;
+  }
+  .cell {
+    min-width: 0; text-align: center;
+    padding: clamp(22px,2.6vw,30px) clamp(13px,1.8vw,22px);
+    border-left: 1px solid var(--line);
+  }
+  /* The divider is a border-LEFT on every cell but the first, so a three-cell
+     band has two rules and no trailing one against the card edge. */
+  .cell:first-child { border-left: 0; }
+  .pnum {
+    font-family: var(--disp); font-weight: 400; font-size: clamp(26px,3vw,30px);
+    line-height: 1; color: var(--ink);
+    font-variant-numeric: tabular-nums lining-nums; overflow-wrap: anywhere;
+  }
+  /* set:html content: an owner may paste <em>3</em> rooms, so neutralise the
+     italic here — the italic serif is the HEADLINE's signature, not a figure's. */
+  .pnum :global(em) { font-style: normal; }
+  .plab {
+    margin-top: 9px; font-family: var(--sans); font-size: 10px;
+    letter-spacing: .2em; text-transform: uppercase; line-height: 1.5;
+    color: var(--muted); overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 760px) {
+    /* 2 × 2. The vertical rule now belongs to the right-hand cell of each pair,
+       and the second row gains a horizontal one. */
+    .cells { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .cell:nth-child(odd) { border-left: 0; }
+    .cell:nth-child(even) { border-left: 1px solid var(--line); }
+    .cell:nth-child(n+3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 520px) {
+    /* One column at phone width — a 10px label with .2em tracking cannot hold a
+       ~150px half-column without splitting mid-word. Every :nth-child rule above
+       is restated rather than left to lapse: (0,2,0) beats (0,1,0) whatever the
+       source order, so a bare `.cell { border-left: 0 }` would not win. */
+    .cells { grid-template-columns: minmax(0,1fr); }
+    .cell:nth-child(even) { border-left: 0; }
+    .cell:nth-child(n+2) { border-top: 1px solid var(--line); }
+    .pnum { font-size: clamp(24px,7vw,30px); }
+    .plab { font-size: 9.5px; letter-spacing: .16em; }
+  }
+</style>

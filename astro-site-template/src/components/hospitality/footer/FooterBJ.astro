@@ -1,0 +1,342 @@
+---
+/**
+ * hospitality / FooterBJ — THE COLOPHON. Kubo Stays' closing rail on the warm
+ * oatmeal tint under a hairline: an Instrument Serif wordmark with the locality
+ * tag beside it, the standing blurb, one contact action, a page-links column, a
+ * contact column, and the owner's own two-part colophon row. Plus the floating
+ * message pill — drawn ONLY for a chat channel the owner actually gave us.
+ *
+ * Role: the last place a guest looks for the phone and the address before they
+ * give up, so every column is real data or absent.
+ *
+ * Editable hooks:
+ *   footer.brand                                    — the wordmark
+ *   footer.locality                                 — the caps tag beside it
+ *   footer.blurb                                    — the standing line under it
+ *   hero.cta1.text + hero.cta1.href                 — the contact action (twice:
+ *                                                     brand column and column 3)
+ *   footer.social.${i}.platform + .url              — one chip per channel
+ *   footer.explore.title                            — links column heading
+ *   footer.explore.links.${i}.text + .href          — the links column
+ *   footer.visit.title                              — contact column heading
+ *   footer.visit.lines.${i}                         — NAP lines (phone auto-tel:)
+ *   contact.email                                   — the mailto row
+ *   footer.notes.${i}                               — the colophon row
+ *   hero.cta1.text                                  — the message-pill label
+ *
+ * NO DESIGN LITERAL SURVIVES HERE. Both column headings are bound
+ * (FooterBI hardcodes 'Visit' and 'Index'); an empty value removes the heading
+ * rather than printing an empty one. The only glyph the component supplies is
+ * the arrow after the contact link, and it is an aria-hidden <span> OUTSIDE the
+ * data-field element so an inline edit can never write "→" into the content.
+ *
+ * WHY THE SOCIAL CHIPS ARE HERE although the design has no social row: the
+ * sidebar declares footer.social as a live add/remove list, and a schema field
+ * no component renders is a dead control — the same defect as a data-field with
+ * no schema behind it, in the other direction. The row is guarded, so a site
+ * with no channels draws nothing.
+ *
+ * NOT rendered, deliberately: footer.hours. This template's rules and times
+ * live in the LOCATION section's house-rules card (location.rules), and a
+ * second hours ledger in the footer would let one site disagree with itself.
+ *
+ * Never visibility-gated (no PageXX honours a footer toggle). Every column, and
+ * every row inside it, auto-hides when empty. Colour: tokens only.
+ *
+ * KNOWN LIMITATION, recorded not fixed. components/editor/editorBridge.ts
+ * resolves a Blocks toggle to the closest('section,footer') holding the MOST
+ * data-field hooks of that prefix. The contract puts hero.cta1 in both the
+ * brand column and the contact column, so this footer counts 2 hero.* hooks
+ * against HeroBJ's 5 — safe on every real site, because derive-content-defaults
+ * always fills hero.kicker, hero.sub, hero.cta1 and hero.cta2. It would tip the
+ * wrong way only on a site whose hero has a CTA label and NOTHING else (no
+ * kicker, no lede, no second button, no photo), where toggling the Hero block
+ * off would hide this footer instead. The fix is a shared-file change (count
+ * data-href-field too, or exclude <footer> from hero-prefix candidates), which
+ * is out of scope here.
+ *
+ * BUTTON POLICY: this footer is on the LIGHT --paper-2 tint, so it must contain
+ * no element carrying .btn — buildOverrideCss pins `footer .btn{color:<on-ink>
+ * !important}`, which is correct only for a footer on an ink fill and would
+ * strand every label here. The contact actions are .linkc, and the message pill
+ * is a sibling AFTER the closing footer tag with no .btn class at all.
+ */
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+// Anchor guard — byte-identical to HeaderBJ's. The content layer
+// (lib/derive-content-defaults.ts) hard-codes '#visit' for hero.cta1 /
+// navCtaHref / ctaBand.cta, '#services' for hero.cta2 and nav links to
+// '#about' / '#why' / '#work', ids most designs never render. Resolve every
+// in-page href against what PageBJ actually renders: keep it if the id exists,
+// remap it when this design carries the same section under another id,
+// otherwise DROP it (a links column is wayfinding, so a dead entry is worse
+// than a missing one). Off-page hrefs (tel:, mailto:, http) pass through.
+//
+// NOTE: the message pill below deliberately does NOT call onPage() — a chat
+// channel is never an in-page anchor.
+const PAGE_ANCHORS = new Set(['amenities', 'book', 'faq', 'gallery', 'host', 'how', 'location', 'main', 'nearby', 'promises', 'reviews', 'rooms']);
+const ANCHOR_ALIAS: Record<string, string> = { about: 'host', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+const c = (content as any) || {};
+const f = c.footer || {};
+// 'Your Business' was a placeholder name rendering as the customer's wordmark.
+// With no name supplied the mark is omitted instead of inventing one.
+const brand = f.brand || layout.businessName || '';
+// Third consumer of the one locality field (header wordmark, here, map caption).
+const locality = String(f.locality ?? '').trim();
+const blurb = f.blurb || f.brand_blurb || '';
+// The page's single contact action, reused rather than given a fourth CTA field.
+const hero = c.hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = onPage(hero.cta1?.href, '#book');
+const phone = layout.contact?.phone || '';
+const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
+const email = String(layout.contact?.email || '').trim();
+// Column headings. Bound, not hardcoded, and guarded — an owner who clears the
+// box gets a column with no heading, not the word the designer happened to use.
+const visitTitle = String(f.visit?.title ?? '').trim();
+const exploreTitle = String(f.explore?.title ?? '').trim();
+// Contact lines: admin rows first, else the owner's real phone + address in the
+// DESIGN's order (phone above address). Blank rows are dropped so the block
+// never opens a gap it cannot fill. Every row keeps its ORIGINAL index (.i) so
+// the editor's field hooks survive the filter.
+type Row = { v: string; i: number };
+const visitSource: any[] = Array.isArray(f.visit?.lines) && f.visit.lines.length
+  ? f.visit.lines
+  : [phone, layout.contact?.address].filter(Boolean);
+const visitLines: Row[] = visitSource
+  .map((l: any, i: number) => ({ v: String(l ?? '').trim(), i }))
+  .filter((r: Row) => r.v);
+// Links column: admin rows first, else the nav list. The ORIGINAL index rides
+// along so the editor's per-row field hooks stay correct after the filter.
+const exploreLinks: Array<{ text: string; href: string; i: number }> =
+  ((Array.isArray(f.explore?.links) && f.explore.links.length
+    ? f.explore.links
+    : (Array.isArray(layout.navLinks) ? layout.navLinks.map((l: any) => ({ text: l?.label, href: l?.href })) : [])) as any[])
+    .map((l: any, i: number) => ({ text: l?.text || '', href: onPage(l?.href, ''), i }))
+    .filter((l) => l.href && l.text);
+// Social chips: a row needs BOTH a platform label and a url — a chip with only
+// one of them is either a nameless pill or a link to nowhere.
+const social: Array<{ platform: string; url: string; i: number }> =
+  ((Array.isArray(f.social) && f.social.length
+    ? f.social
+    : (Array.isArray(layout.socialLinks) ? layout.socialLinks : [])) as any[])
+    .map((s: any, i: number) => ({ platform: s?.platform || '', url: s?.url || '', i }))
+    .filter((s) => s.platform && s.url);
+// Colophon. derive-content-defaults emits `['© <year> <name>']` and deliberately
+// suppresses a bare '© 2026' with no name, so there is nothing to invent here —
+// no year fallback, no "all rights reserved", and no currency sentence: the
+// design's "Nightly rates in Philippine pesos" is a note the OWNER types.
+const notes: Row[] = (Array.isArray(f.notes) ? f.notes : [])
+  .map((n: any, i: number) => ({ v: String(n ?? '').trim(), i }))
+  .filter((n: Row) => n.v);
+const hasBrandCol = !!(brand || locality || blurb || ctaText || social.length);
+const hasVisitCol = !!(visitTitle || ctaText || visitLines.length || email);
+
+// Floating message pill. TRAP — the GATE is the CHANNEL, not the label. Reusing
+// the hero's primary CTA as the gate is what broke this in the precedent
+// family: lib/derive-content-defaults.ts sets hero.cta1 = { text: 'Get in
+// touch', href: '#visit' } on EVERY site, which onPage() then rewrites to
+// '#location', so the gate was true for every business alive and a chat bubble
+// sat fixed to the corner asserting a message thread that did not exist. The
+// pill may only come off a channel the owner actually typed:
+// layout.contact.whatsapp / .messenger, which astro-builder passes through
+// verbatim. Do NOT re-point this at layout.messaging.whatsapp — that one is
+// DERIVED from contact.phone, so it is non-empty for anyone with a landline and
+// puts the bug straight back. visibility.clickToMessage is not the gate either.
+// A CTA href is never a channel.
+const waDigits = String(layout.contact?.whatsapp || '').replace(/[^0-9]/g, '');
+const messenger = String(layout.contact?.messenger || '').trim();
+const msgHref = waDigits
+  ? `https://wa.me/${waDigits}`
+  : messenger
+    ? (/^https?:/i.test(messenger) ? messenger : `https://m.me/${messenger.replace(/^@/, '')}`)
+    : '';
+// No default label: "Message" asserts a tone the property may not use — and
+// with no channel there is no pill at all, whatever the CTA text says.
+const msgText = msgHref ? ctaText : '';
+---
+<footer class="colo">
+  <div class="wrap">
+    {(hasBrandCol || exploreLinks.length > 0 || hasVisitCol) && (
+      <div class="f-grid">
+        {hasBrandCol && (
+          <div class="f-brand">
+            {(brand || locality) && (
+              <div class="f-wm-lock">
+                {brand && <p class="wm" data-field="footer.brand">{brand}</p>}
+                {locality && <span class="loc" data-field="footer.locality">{locality}</span>}
+              </div>
+            )}
+            {blurb && <p class="f-blurb" data-field="footer.blurb">{blurb}</p>}
+            {ctaText && (
+              <a class="linkc f-cta" href={ctaHref} data-href-field="hero.cta1.href">
+                {/* The label is its own element and the arrow sits OUTSIDE it,
+                    so an inline edit commits the words and never the glyph. */}
+                <span data-field="hero.cta1.text">{ctaText}</span>
+                <span aria-hidden="true">&#8594;</span>
+              </a>
+            )}
+            {social.length > 0 && (
+              <div class="f-soc">
+                {social.map((s) => (
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" class="chip" data-field={`footer.social.${s.i}.platform`} data-href-field={`footer.social.${s.i}.url`}>{s.platform}</a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {exploreLinks.length > 0 && (
+          <div class="f-col">
+            {exploreTitle && <h4 class="f-h" data-field="footer.explore.title">{exploreTitle}</h4>}
+            {exploreLinks.map((l) => (
+              <a href={l.href} data-field={`footer.explore.links.${l.i}.text`} data-href-field={`footer.explore.links.${l.i}.href`}>{l.text}</a>
+            ))}
+          </div>
+        )}
+        {hasVisitCol && (
+          <div class="f-col">
+            {visitTitle && <h4 class="f-h" data-field="footer.visit.title">{visitTitle}</h4>}
+            {ctaText && (
+              <a href={ctaHref} data-href-field="hero.cta1.href">
+                <span data-field="hero.cta1.text">{ctaText}</span>
+              </a>
+            )}
+            {visitLines.length > 0 && (
+              <address>
+                {visitLines.map((line) => (
+                  line.v === phone && phone
+                    ? <a href={`tel:${phoneDigits}`} data-field={`footer.visit.lines.${line.i}`}>{line.v}</a>
+                    : <span data-field={`footer.visit.lines.${line.i}`}>{line.v}<br /></span>
+                ))}
+              </address>
+            )}
+            {/* A tel:/mailto: anchor carries data-field ONLY. Its href is derived
+                from the field's own value, so a data-href-field here would write
+                "mailto:…" back into the email box. */}
+            {email && <a class="f-mail" href={`mailto:${email}`} data-field="contact.email">{email}</a>}
+          </div>
+        )}
+      </div>
+    )}
+    {notes.length > 0 && (
+      <div class="f-foot">
+        {notes.map((n) => (
+          <span data-field={`footer.notes.${n.i}`}>{n.v}</span>
+        ))}
+      </div>
+    )}
+  </div>
+</footer>
+{msgHref && msgText && (
+  <div class="msg-fab">
+    {/* Sibling AFTER the closing footer tag and carrying NO .btn class, so
+        buildOverrideCss's `footer .btn { color: <on-ink> !important }` pin
+        cannot reach it. */}
+    <a href={msgHref} target="_blank" rel="noopener noreferrer" data-field="hero.cta1.text">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4A11 11 0 0 0 4.5 18.5L3 22l3.7-1.4A11 11 0 1 0 20 4Z"/></svg>
+      {msgText}
+    </a>
+  </div>
+)}
+<style>
+  .colo {
+    background-color: var(--paper-2); border-top: 1px solid var(--line);
+    padding: clamp(44px,6vw,58px) 0 38px;
+  }
+  .f-grid {
+    display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 40px;
+    padding-bottom: 38px; border-bottom: 1px solid var(--line);
+  }
+  .f-wm-lock { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .wm {
+    margin: 0; font-family: var(--disp); font-weight: 400;
+    font-size: clamp(21px,2vw,25px); line-height: 1.1; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  .loc {
+    font-family: var(--sans); font-weight: 600; font-size: 9px;
+    letter-spacing: .32em; text-transform: uppercase; color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+  .f-blurb {
+    margin: 0 0 18px; font-size: 14px; line-height: 1.7;
+    color: var(--ink-soft); max-width: 36ch; overflow-wrap: anywhere;
+  }
+  .f-cta { font-size: 13px; }
+  .f-soc { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 18px; }
+  .f-soc .chip { min-height: 36px; }
+  .f-soc .chip:hover { border-color: var(--accent); color: var(--ink); }
+
+  /* Column headings: 10px tracked caps in terracotta, exactly as the design
+     draws them — and bound to content, so an empty value removes the heading
+     instead of printing the designer's word. */
+  .f-h {
+    margin: 0 0 14px; font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: .3em; text-transform: uppercase; color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+  .f-col a { display: block; padding: 4px 0; font-size: 14px; color: var(--ink-soft); border-bottom: 2px solid transparent; overflow-wrap: anywhere; }
+  .f-col a:hover { color: var(--ink); border-bottom-color: var(--accent); }
+  .f-col address { font-style: normal; margin-top: 4px; font-size: 14px; line-height: 1.75; color: var(--ink-soft); overflow-wrap: anywhere; }
+  /* The tel:/mailto: rows sit inside (or beside) the address block and
+     otherwise read exactly like the static lines above them — same token,
+     weight and size — so nothing marks them as links until hover (WCAG 1.4.1).
+     Underline them at rest. text-decoration adds no box, so hover thickening
+     cannot shift the rows. Deliberately NOT applied to the links column: those
+     are nav links in a list, already unambiguous by position. */
+  .f-col address a,
+  .f-col a.f-mail {
+    text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 3px;
+  }
+  .f-col address a:hover,
+  .f-col a.f-mail:hover { text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
+
+  .f-foot {
+    margin-top: 22px; padding-top: 22px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    font-family: var(--sans); font-weight: 500; font-size: 10px;
+    letter-spacing: .24em; text-transform: uppercase; color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  /* The pill's fill is the darkest token and its label the lightest, so it is
+     legible floating over ANY band; the shared DUO focus ring does the rest. */
+  .msg-fab { position: fixed; right: 20px; bottom: 20px; z-index: 100; }
+  .msg-fab a {
+    display: inline-flex; align-items: center; gap: 9px; min-height: 48px;
+    padding: 13px 20px; border-radius: 999px;
+    background-color: var(--ink); color: var(--paper);
+    border: 1px solid rgba(var(--paper-rgb),.30);
+    font-family: var(--sans); font-weight: 600; font-size: 11.5px;
+    letter-spacing: .12em; text-transform: uppercase;
+    box-shadow: 0 12px 30px rgba(0,0,0,.24), 0 0 0 3px rgba(var(--accent-rgb),.28);
+  }
+  /* Hover darkens the SAME fill (inset black) — it never goes light or
+     transparent, so the label can never strand. */
+  .msg-fab a:hover {
+    background-color: var(--ink); color: var(--paper);
+    box-shadow: inset 0 0 0 999px rgba(0,0,0,.16), 0 12px 30px rgba(0,0,0,.24), 0 0 0 5px rgba(var(--accent-rgb),.28);
+  }
+  .msg-fab svg { width: 15px; height: 15px; flex: 0 0 auto; }
+
+  @media (max-width: 760px) {
+    /* Extra bottom padding so the fixed pill never covers a footer link. */
+    .colo { padding-bottom: 76px; }
+    .f-grid { grid-template-columns: 1fr; gap: 26px; padding-bottom: 26px; }
+    .f-foot { margin-top: 18px; }
+  }
+  @media (max-width: 520px) {
+    .wm { font-size: 20px; }
+    .f-blurb { max-width: none; }
+    .f-foot { letter-spacing: .16em; gap: 8px; }
+    .msg-fab { right: 14px; bottom: 14px; }
+    .msg-fab a { padding: 12px 16px; font-size: 11px; max-width: calc(100vw - 28px); }
+  }
+</style>

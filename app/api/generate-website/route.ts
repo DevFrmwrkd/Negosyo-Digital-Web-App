@@ -164,9 +164,15 @@ export async function POST(request: NextRequest) {
         // re-extract so the page fills out properly. Same for sparse 1-2.
         const businessTypeLowerCheck = (submission.business_type || '').toLowerCase()
         const isBeautyCheck = /salon|spa|beauty|barber|nail|hair|lash|brow|aesthetic/.test(businessTypeLowerCheck)
-        const servicesCount = Array.isArray((extractedContent as any)?.services)
-            ? (extractedContent as any).services.length
-            : 0
+        // Count BOTH shapes. `services` is a bare array in the legacy shape and
+        // `{tag, headline, items[]}` in the one Groq emits and every current
+        // template reads — so counting only the array read 0 for real, fully
+        // populated room lists, flipped servicesAreSparse true, and let the AI
+        // overwrite the owner's own rooms.
+        const svc = (extractedContent as any)?.services
+        const servicesCount = Array.isArray(svc)
+            ? svc.length
+            : (Array.isArray(svc?.items) ? svc.items.length : 0)
         const servicesAreSparse =
             (isBeautyCheck && servicesCount < 5) || servicesCount < 3
 

@@ -401,6 +401,12 @@ export default function SandboxEditor(props: SandboxEditorProps) {
         if (!raw || typeof raw !== 'object') return raw ?? {};
         return {
             ...raw,
+            // services is the ROOMS list in the hospitality family. Groq emits it
+            // nested, but the LEGACY shape is a bare array of {name, description}
+            // and astro-builder used to discard that outright. Normalising it here
+            // means an edit writes services.items on a real wrapper instead of
+            // hanging a property on an Array, which JSON.stringify would drop.
+            services: normalizeBlockEditor(raw.services, 'items', { name: 'title', description: 'desc' }),
             why: normalizeBlockEditor(raw.why, 'items', { description: 'body' }),
             how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
             testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
@@ -3304,7 +3310,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                     })()}
 
                     {/* ── CONTENT ──────────────────────────────── */}
-                    {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS|hospitality:BI)$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
+                    {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS|hospitality:(BI|BJ))$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
                         // Derive the same "tier-3" fallback the build pipeline
                         // uses so inputs always show what the iframe shows. The
                         // editor's getValue() chain becomes:

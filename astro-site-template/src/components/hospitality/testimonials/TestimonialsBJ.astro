@@ -1,0 +1,157 @@
+---
+/**
+ * hospitality / TestimonialsBJ — "Kubo Stays" GUESTS: a centred head (eyebrow,
+ * Instrument Serif headline, optional source line) over a row of white quote
+ * cards, each opened by a short decorative accent rule.
+ *
+ * ROLE: the social proof a stay is bought on — which is exactly why this file
+ * prints nothing the owner did not put on record.
+ *
+ * Reads content.testimonials.items ({quote, who}); tolerates the legacy bare
+ * array at content.testimonials and the legacy author/name spellings. Auto-hides
+ * when empty (astro-builder also forces visibility.testimonialsBlock false when
+ * a site has no quotes).
+ *
+ * EDITABLE HOOKS (all four are declared in genericContentSchema, group
+ * "testimonials" — a hook the schema does not own is dead in the v3 sidebar)
+ *   testimonials.tag                 — the eyebrow
+ *   testimonials.headline            — set:html, so an owner can italicise inside it
+ *   testimonials.source              — the ONE honest home for a star or platform
+ *                                      claim; guarded, so a blank value draws
+ *                                      nothing. Rendered even though the design
+ *                                      has no such element: the schema declares
+ *                                      the field, and a live sidebar box that
+ *                                      changes nothing on the page is as broken
+ *                                      as a hook the schema does not own.
+ *   testimonials.items.${i}.quote    — set:html
+ *   testimonials.items.${i}.who      — the attribution line
+ *
+ * DELIBERATELY NOT EMITTED: testimonials.items.${i}.role. TestimonialsBI spells
+ * that hook, but the row schema stops at quote/who, so it focuses nothing in v3.
+ * testimonials.bigQuote is likewise not rendered here (family precedent).
+ *
+ * ANTI-FABRICATION, the hard rule of this section (R2):
+ *   - NO hardcoded star row. The design draws "★★★★★" inside every card; that is
+ *     a five-star rating asserted on the owner's behalf about reviews they never
+ *     scored. It is replaced by a decorative accent rule — the same visual beat,
+ *     carrying no claim. Any real star claim goes in testimonials.source, which
+ *     the owner types.
+ *   - NO review count, NO average score, NO platform name, NO "guest favourite"
+ *     or "superhost" badge. None of it is in the data contract.
+ *   - Quote and attribution are guarded independently, so an unattributed quote
+ *     renders as an unattributed quote rather than an empty caption.
+ *   - A row with no quote is dropped: the card IS the quote, so a name-only row
+ *     would render a bordered box holding an attribution to nothing. The row
+ *     stays in the sidebar and reappears the moment a quote is typed.
+ *
+ * CLASS-NAME NOTE (engine): this section must NOT be class "testi" —
+ * buildOverrideCss pins `.testi, .testi p { color: <on-ink> !important }`, which
+ * is a near-white label on this light card ground. The section is class "voices"
+ * and carries no buttons at all, so no engine label pin can reach it.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const test = content.testimonials || {};
+const tag = test.tag || '';
+const headline = test.headline || '';
+const source = test.source || '';
+type Item = { quote?: string; who?: string; author?: string; name?: string };
+const items: Item[] = Array.isArray(test.items) ? test.items : (Array.isArray(test) ? test : []);
+/* Normalise ONCE, carrying the ORIGINAL array index, then drop rows that cannot
+   render an honest card. Preserving `i` is what keeps every data-field pointing
+   at the real slot after a row above it is removed. Gating the section on `rows`
+   rather than `items` also means a block of blank rows hides instead of shipping
+   an empty grid of bordered boxes. */
+const rows = items
+  .map((it, i: number) => ({ quote: (it.quote || '').trim() ? it.quote as string : '', who: it.who ?? it.author ?? it.name ?? '', i }))
+  .filter((r) => Boolean(r.quote));
+const hasHead = Boolean(tag || headline || source);
+---
+{rows.length > 0 && (
+  <section class="voices" id="reviews">
+    <div class="wrap">
+      {hasHead && (
+        <div class="v-head reveal">
+          {tag && <span class="eyebrow" data-field="testimonials.tag">{tag}</span>}
+          {headline && <h2 class="h2" data-field="testimonials.headline" set:html={headline}></h2>}
+          {source && <p class="v-src" data-field="testimonials.source">{source}</p>}
+        </div>
+      )}
+      <div class="v-grid">
+        {rows.map((row, k) => (
+          <figure class="v-card reveal" data-delay={String(Math.min(k, 3))}>
+            {/* Where the design put a fixed five-star row. Purely decorative, so
+                it is aria-hidden and carries no data-field: it states nothing. */}
+            <span class="v-rule" aria-hidden="true"></span>
+            <blockquote data-field={`testimonials.items.${row.i}.quote`} set:html={row.quote}></blockquote>
+            {row.who && (
+              <figcaption data-field={`testimonials.items.${row.i}.who`}>{row.who}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .v-head { text-align: center; margin-bottom: clamp(30px, 4vw, 46px); }
+  .eyebrow {
+    display: inline-block;
+    font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--ink-soft); overflow-wrap: anywhere;
+  }
+  .voices .h2 {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(30px, 4.3vw, 56px); line-height: 1.06; letter-spacing: -0.005em;
+    margin: 0.24em auto 0; color: var(--ink); max-width: 22ch; overflow-wrap: anywhere;
+  }
+  /* Signature emphasis: a real italic, colour inherited. Never an accent colour
+     swap — accent-as-text is sub-AA in most of the schemes this family allows. */
+  .voices .h2 :global(em),
+  .voices .h2 :global(.em) { font-style: italic; color: inherit; }
+  .v-src {
+    margin: 14px 0 0;
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere;
+  }
+
+  .v-grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(18px, 2.4vw, 26px);
+  }
+  .v-card {
+    margin: 0; background-color: var(--card);
+    border: 1px solid var(--line); border-radius: 18px;
+    padding: clamp(24px, 2.4vw, 30px) clamp(20px, 2.2vw, 28px);
+  }
+  /* the decorative beat that replaces the design's hardcoded star row */
+  .v-card .v-rule {
+    display: block; width: 34px; height: 2px; border-radius: 2px;
+    background-color: var(--accent); margin: 0 0 18px;
+  }
+  .v-card blockquote {
+    margin: 0 0 18px;
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(18px, 1.7vw, 20px); line-height: 1.5;
+    color: var(--ink); overflow-wrap: anywhere;
+  }
+  .v-card blockquote :global(em) { font-style: italic; color: inherit; }
+  .v-card figcaption {
+    font-family: var(--sans); font-size: 11px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--muted); overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 900px) {
+    .v-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .v-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .voices .h2 { font-size: clamp(26px, 7.6vw, 34px); max-width: none; }
+    .v-card { padding: 20px 18px; }
+    .v-card blockquote { font-size: 18px; margin-bottom: 14px; }
+    .v-src { letter-spacing: 0.14em; }
+  }
+</style>

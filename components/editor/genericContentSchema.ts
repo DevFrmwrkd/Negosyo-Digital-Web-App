@@ -75,6 +75,19 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 fallbackPaths: ['business_name'],
                 placeholder: 'Your business name',
             },
+            // A bare place name printed beside the wordmark. One field, three
+            // consumers: the header tag, the footer wordmark and the map
+            // caption — nothing else carries a locality (hero.kicker is a
+            // sentence, contact.address is the whole address, area.places is a
+            // list). Lives in this group because the header is where it first
+            // appears; it is `footer.*` because the footer owns the wordmark.
+            // Optional: a template that never renders it is unaffected.
+            {
+                kind: 'text',
+                label: 'Location tag (beside the brand name)',
+                path: 'footer.locality',
+                placeholder: 'Nasugbu',
+            },
             // business_name and tagline drive the DOCUMENT, not the page body:
             // astro-builder maps them to layout.businessName/tagline, which every
             // wrapper bakes into <title>, <meta name="description">, og:title and
@@ -229,6 +242,16 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 fallbackPaths: ['about_description', 'about'],
             },
             { kind: 'text', label: 'Signature line', path: 'about.signature', placeholder: 'A short closing line' },
+            // The line under the name in an owner / host identity row. ONE piece
+            // of free text, never assembled from parts — "hosting since 2019" is
+            // a claim only the owner may make. Optional, so a template with no
+            // identity row is unaffected.
+            {
+                kind: 'text',
+                label: 'Role line (under the signature)',
+                path: 'about.role',
+                placeholder: 'Owner · lives on site',
+            },
             {
                 kind: 'list',
                 label: 'Body paragraphs',
@@ -266,14 +289,80 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 kind: 'list',
                 label: 'Items',
                 path: 'services.items',
-                newItem: { title: '', desc: '', note: '' },
+                // Every row key below is OPTIONAL and blank on a new row, so a
+                // template that renders none of them is unchanged — an empty
+                // string reads exactly like the missing key it replaces.
+                //
+                // tag / price / duration are not new inventions: ServicesBI (and
+                // other family sections) already EMIT data-field hooks for them
+                // while the schema stopped at title/desc/note/image. That made
+                // them dead hooks — clickable in v3, owned by no input. Declaring
+                // them here fixes that existing gap as well as serving the rooms
+                // ledger the new hospitality template needs.
+                newItem: {
+                    title: '', desc: '', note: '', tag: '', meta: '',
+                    rating: '', price: '', duration: '', features: '', image: '',
+                },
                 itemFields: [
                     { kind: 'text', label: 'Title', path: 'title', placeholder: 'Service name' },
                     { kind: 'textarea', label: 'Description', path: 'desc' },
                     { kind: 'text', label: 'Note / meta', path: 'note', placeholder: 'Optional small print' },
+                    { kind: 'text', label: 'Badge (floor / area / category)', path: 'tag', placeholder: 'Upstairs' },
+                    { kind: 'text', label: 'Small line above the title', path: 'meta', placeholder: 'Private bath' },
+                    {
+                        kind: 'text',
+                        label: 'Rating',
+                        path: 'rating',
+                        placeholder: '4.96',
+                        hint: 'A ★ is drawn only next to a rating you type here.',
+                    },
+                    {
+                        kind: 'text',
+                        label: 'Price',
+                        path: 'price',
+                        placeholder: '₱3,200',
+                        hint: 'Printed exactly as typed — never converted or totalled.',
+                    },
+                    { kind: 'text', label: 'Price unit', path: 'duration', placeholder: '/ night' },
+                    // ONE comma-separated scalar, split at render time. A nested
+                    // list inside a list row is impossible: ContentFieldsAuto's
+                    // itemFields are FieldSpec (scalar) only, so a ListSpec here
+                    // would render nothing and own no path.
+                    {
+                        kind: 'text',
+                        label: 'Feature chips (comma-separated)',
+                        path: 'features',
+                        placeholder: 'Sea view, Queen bed, Own balcony',
+                    },
                     { kind: 'image', label: 'Image (zig-zag templates)', path: 'image' },
                 ],
             } as ListSpec,
+            // The per-card button. Deliberately ONE label + href for the whole
+            // grid rather than a field on every row: a card added with '+ Add'
+            // must arrive with a working button instead of a blank one the owner
+            // has to retype. Templates without a per-card button ignore both.
+            {
+                kind: 'link',
+                label: 'Card button (all cards)',
+                path: 'services.ctaLabel',
+                hrefPath: 'services.ctaHref',
+                placeholder: 'Enquire about this room',
+            },
+            // Optional band under the item grid for a second, whole-of-it offer
+            // (the hospitality templates use it for "the whole house"). Every
+            // field blank by default and the band only renders when one of them
+            // is filled, so no existing template gains an empty slab.
+            { kind: 'text', label: 'Whole-package band · eyebrow', path: 'services.whole.tag', placeholder: 'Whole house' },
+            { kind: 'text', label: 'Whole-package band · headline', path: 'services.whole.headline', placeholder: 'All three rooms — sleeps 7' },
+            { kind: 'textarea', label: 'Whole-package band · body', path: 'services.whole.body' },
+            {
+                kind: 'text',
+                label: 'Whole-package band · price',
+                path: 'services.whole.price',
+                placeholder: '₱7,200',
+                hint: 'Printed exactly as typed — never added up from the items above.',
+            },
+            { kind: 'text', label: 'Whole-package band · price unit', path: 'services.whole.unit', placeholder: '/ night' },
         ],
     },
     {
@@ -281,8 +370,14 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
         title: 'Why us',
         description: 'Reasons to pick this business.',
         fields: [
+            // Both optional. Templates that draw this section as text only leave
+            // them blank and render exactly as before; the templates that use a
+            // photo plate need the image on the why.* prefix, because a section
+            // that mixes two content prefixes gets hidden by either Blocks toggle.
+            { kind: 'image', label: 'Image', path: 'why.image' },
             { kind: 'text', label: 'Eyebrow tag', path: 'why.tag', placeholder: 'Why us' },
             { kind: 'text', label: 'Headline', path: 'why.headline' },
+            { kind: 'textarea', label: 'Lead paragraph', path: 'why.lead' },
             {
                 kind: 'list',
                 label: 'Items',
@@ -430,6 +525,10 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
         fields: [
             { kind: 'text', label: 'Eyebrow tag', path: 'location.tag', placeholder: 'Visit' },
             { kind: 'text', label: 'Headline', path: 'location.headline' },
+            // LocationBI already emits data-field="location.sub" against nothing,
+            // so declaring it converts an existing dead hook into a real input
+            // as well as feeding the new template's "getting here" paragraph.
+            { kind: 'textarea', label: 'Sub-paragraph', path: 'location.sub' },
             {
                 kind: 'textarea',
                 label: 'Address',
@@ -444,6 +543,23 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 fallbackPaths: ['contact.phone'],
             },
             { kind: 'text', label: 'Hours line', path: 'location.hours' },
+            // Key/value policy rows — check in, check out, pets, quiet hours.
+            // A NEW list on purpose: `location.hours` directly above is declared
+            // as a single TEXT field, and re-declaring it as a list would hide
+            // whatever string is already typed there and let the next '+ Add'
+            // destroy it. That is the exact data loss isSchemaEditablePath was
+            // written to stop, so the rows get their own path instead. Empty by
+            // default, and nothing else in the repo reads it yet.
+            {
+                kind: 'list',
+                label: 'Policy / rules rows',
+                path: 'location.rules',
+                newItem: { label: '', value: '' },
+                itemFields: [
+                    { kind: 'text', label: 'Label', path: 'label', placeholder: 'Check in' },
+                    { kind: 'text', label: 'Value', path: 'value', placeholder: 'After 2:00 PM' },
+                ],
+            } as ListSpec,
             { kind: 'text', label: 'Latitude', path: 'location.lat' },
             { kind: 'text', label: 'Longitude', path: 'location.lng' },
             {
@@ -460,6 +576,9 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
         title: 'Closing CTA band',
         description: 'Big closing call-to-action above the footer.',
         fields: [
+            // CtaBandBI already emits data-field="ctaBand.tag" against nothing —
+            // another dead hook this declaration turns into a real input.
+            { kind: 'text', label: 'Eyebrow tag', path: 'ctaBand.tag', placeholder: 'Ready when you are' },
             { kind: 'text', label: 'Headline', path: 'ctaBand.headline', placeholder: 'Your closing call' },
             { kind: 'textarea', label: 'Sub-line', path: 'ctaBand.sub' },
             {
@@ -498,6 +617,17 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 label: 'Address',
                 path: 'contact.address',
             },
+            // Column headings. Most footers hardcode "Visit" / "Index"; binding
+            // them means the words on the page are the owner's, and a blank
+            // value removes the heading rather than printing an empty one.
+            // Optional everywhere — a footer that still hardcodes its heading
+            // simply never reads these.
+            {
+                kind: 'text',
+                label: 'Contact column heading',
+                path: 'footer.visit.title',
+                placeholder: 'Get in touch',
+            },
             {
                 kind: 'list',
                 label: 'Visit column lines',
@@ -505,6 +635,12 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 newItem: '',
                 itemFields: [{ kind: 'text', label: 'Line', path: '' }],
             } as ListSpec,
+            {
+                kind: 'text',
+                label: 'Links column heading',
+                path: 'footer.explore.title',
+                placeholder: 'This page',
+            },
             {
                 kind: 'list',
                 label: 'Explore column links',

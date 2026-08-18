@@ -163,7 +163,16 @@ function normalizeBlock(
             arr = input[opts.altItemsKey]
         }
     }
-    if (!arr) return undefined
+    if (!arr) {
+        // A block may legitimately carry NO list and still have something to
+        // render: WhyBJ draws "The house" from why.image + why.lead alone, with
+        // the amenity rows optional. Returning undefined here threw the whole
+        // wrapper away, so filling only those two fields silently deleted the
+        // section. Keep the wrapper; the caller's own guards decide what shows.
+        // (An input that was never an object still yields undefined, because
+        // `wrapper` stays empty and there is nothing to preserve.)
+        return Object.keys(wrapper).length > 0 ? { ...wrapper } : undefined
+    }
     // Apply field aliases per item. Never overwrite an existing canonical key.
     const mappedItems = arr.map((it: any) => {
         if (!it || typeof it !== 'object') return it
@@ -650,11 +659,23 @@ async function transformToAstroData(
 
             // `content.services` is "array of {name, description}" in the
             // legacy shape, "object with .items[]" in the new shape. Detect.
-            const servicesNested = (
-                typeof c.services === 'object' &&
-                !Array.isArray(c.services) &&
-                c.services !== null
-            ) ? c.services : undefined
+            // A bare ARRAY (the legacy shape) used to fall through to
+            // `derived.services` at the merge below — i.e. the owner's real
+            // service/room list was dropped on the floor and replaced with
+            // placeholders. Lift it into the nested shape instead, aliasing the
+            // legacy field names onto the ones every component reads.
+            const servicesNested = Array.isArray(c.services)
+                ? { items: c.services.map((it: any) => {
+                        if (!it || typeof it !== 'object') return it
+                        const out: Record<string, any> = { ...it }
+                        if (out.name != null && out.title == null) out.title = out.name
+                        if (out.description != null && out.desc == null) out.desc = out.description
+                        return out
+                    }) }
+                : (
+                    typeof c.services === 'object' &&
+                    c.services !== null
+                ) ? c.services : undefined
 
             // Per-section "did admin/AI supply anything?" — if no, use the
             // derived defaults so the section renders coherently. Each leaf

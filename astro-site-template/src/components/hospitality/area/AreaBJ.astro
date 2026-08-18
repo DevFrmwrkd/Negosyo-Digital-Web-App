@@ -1,0 +1,112 @@
+---
+/**
+ * hospitality / AreaBJ — "Kubo Stays"'s what's-nearby strip: eyebrow, headline,
+ * a short paragraph, then the places the owner named as a wrapped row of chips,
+ * borrowed from the room cards' feature-chip language so the page keeps one
+ * vocabulary.
+ *
+ * This section is NOT in the design. It exists because area.* is a live group in
+ * the sidebar schema for every template in the family, and a schema field the
+ * page never renders is as broken as a hook the schema does not own — the owner
+ * types into a box and nothing happens. Everything here is guarded, so on a site
+ * whose owner never touched the group it draws nothing at all.
+ *
+ * NO distances and NO travel times anywhere: we have no such data, and "8 minutes
+ * from the beach" is a claim the owner never made. Each place also stays in ONE
+ * editable node — never split on a dash to right-align a figure, because the
+ * editor patches the text of the element carrying data-field and a split would
+ * collapse on the first edit.
+ *
+ * GATE (do not relax it): lib/derive-content-defaults.ts sets area.places =
+ * [city] and an area.headline for essentially every site we ship, so a
+ * `places.length > 0` test would ship this band on nearly every build with a
+ * single chip echoing the property's own city — the address again, dressed as a
+ * neighbourhood guide. The section renders only when the owner named a SECOND
+ * place, or wrote the paragraph. Either can only have come from a person.
+ *
+ * Editable hooks:
+ *   area.tag · area.headline · area.body · area.places.<original i>
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+// The hook is area.body — the canonical path the sidebar schema owns. area.sub is
+// read only so a site that already stored a paragraph there still shows it; the
+// first edit writes area.body, which then wins, so the two can never disagree on
+// screen. Hooking the legacy path instead would emit a DEAD hook: v3 gates inline
+// editing on isSchemaEditablePath, and the schema does not declare area.sub.
+const body = area.body || area.sub || '';
+const places: any[] = Array.isArray(area.places) ? area.places : (Array.isArray(area.items) ? area.items : []);
+// A blank string would still render a chip: a bordered pill naming nothing. The
+// index MUST stay the original array position or an inline edit writes into the
+// wrong area.places.<n> slot.
+const rows = places
+  .map((p: any, i: number) => ({ v: String(p ?? '').trim(), i }))
+  .filter((r) => r.v.length > 0);
+const show = rows.length >= 2 || Boolean(body);
+---
+{show && (
+  <section class="nearby" id="nearby">
+    <div class="wrap">
+      <div class="n-head reveal">
+        {tag && <span class="eyebrow" data-field="area.tag">{tag}</span>}
+        {headline && <h2 class="h2 n-h2" data-field="area.headline" set:html={headline}></h2>}
+        {body && <p class="body n-body" data-field="area.body">{body}</p>}
+      </div>
+      {rows.length > 0 && (
+        <div class="places reveal">
+          {rows.map((r) => (
+            <span class="place" data-field={`area.places.${r.i}`}>{r.v}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  .n-head { margin: 0 0 clamp(18px,2.4vw,26px); max-width: 62ch; }
+  /* The signature eyebrow: 10px caps at .4em on the darkened terracotta (5.06:1
+     on the cream ground — the reason --accent is darkened from the design's
+     #C4622D, which measured 3.83:1 at this size). */
+  .eyebrow {
+    display: inline-block; font-family: var(--sans); font-weight: 600;
+    font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .n-h2 {
+    font-family: var(--disp); font-weight: 400; font-size: clamp(28px,3.6vw,48px);
+    line-height: 1.06; letter-spacing: -.01em; color: var(--ink);
+    margin: .24em 0 0; max-width: 22ch;
+  }
+  .n-body {
+    margin: .7em 0 0; font-size: 15.5px; line-height: 1.7; color: var(--ink-soft);
+    max-width: 52ch;
+  }
+
+  .places { display: flex; flex-wrap: wrap; gap: 9px; }
+  /* Named .place, not .chip: this pill is styled outright rather than inheriting
+     a family primitive, so nothing it does not ask for (a lozenge marker, an
+     accent tint) can arrive from elsewhere and change what a place name looks
+     like. --ink-soft on the white card holds 6.8:1; --muted would be 3.66:1 here
+     and is never used for text in this template. */
+  .place {
+    display: inline-flex; align-items: center;
+    background-color: var(--card); border: 1px solid var(--line); border-radius: 100px;
+    padding: 8px 14px;
+    font-family: var(--sans); font-weight: 500; font-size: 11px;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft);
+    /* A long place name is the one string here that could push past 360px. */
+    max-width: 100%; overflow-wrap: anywhere;
+  }
+
+  @media (max-width: 760px) {
+    .n-body { font-size: 15px; }
+    .places { gap: 8px; }
+  }
+  @media (max-width: 520px) {
+    .eyebrow { letter-spacing: .3em; }
+    .place { padding: 7px 12px; font-size: 10.5px; letter-spacing: .1em; }
+  }
+</style>

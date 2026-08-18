@@ -1,0 +1,141 @@
+---
+/**
+ * hospitality / CtaBandBJ — "Kubo Stays": the closing call. One inverted slab
+ * floating on the cream ground, centred: eyebrow, the big display line, a
+ * sentence of what to say, and exactly two ways to say it — the owner's own CTA
+ * and the owner's own phone number. Anchors #book, which is where the header
+ * pill, the hero, the room cards and the how-it-works button all resolve to.
+ *
+ * Editable hooks:
+ *   ctaBand.tag       — eyebrow
+ *   ctaBand.headline  — h2 (set:html, so an owner's <em> keeps the design's
+ *                       italic-serif emphasis)
+ *   ctaBand.sub       — the sentence under it
+ *   ctaBand.cta.text + data-href-field ctaBand.cta.href — the one filled action
+ *   contact.phone     — the phone line (data-field ONLY, see below)
+ *
+ * THE PATH IS ctaBand.cta.text, NOT ctaBand.cta1.text. The schema owns
+ * ctaBand.cta.text / .href; CtaBandBI emits cta1/cta2/cta3 hooks that no field
+ * declares, which is why its second and third labels are unreachable from the
+ * admin. This band binds the path the sidebar actually writes, and reads the
+ * legacy cta1 for DISPLAY only so a site edited under an older template still
+ * shows its button.
+ *
+ * THE PHONE ANCHOR CARRIES data-field ONLY — no data-href-field. Its href is
+ * derived from the field's own value, so a data-href-field there would write
+ * "tel:+63…" back into the phone field on the first inline edit; V3 also bails
+ * out of inline editing on tel:/mailto: anchors and on anything carrying
+ * data-href-field. This is the family's single documented exception to "every
+ * anchor gets both".
+ *
+ * BUTTON SAFETY (R4). The class is .closing, never .cta-band: buildOverrideCss
+ * pins `.testi .btn, .cta-band .btn, footer .btn { color: <on-ink> !important }`
+ * for every state, and this band's action is a PAPER fill whose label must stay
+ * ink — the pin would paint that label the on-ink colour and erase it. The slab
+ * carries the wrapper's .band-shade, so the .btn--fill inside it inverts to a
+ * paper ground with an ink label, hovering to the same opaque ground a sixth
+ * darker; and the phone is a .linkc text link carrying no .btn class at all.
+ * NEVER add a .btn--line or any transparent-fill button to this band.
+ *
+ * NEVER FABRICATED (R2): no headline, no sub, no button label and no number is
+ * invented. Every element is guarded from OUTSIDE its tag, so an empty value
+ * removes the element rather than leaving an empty one, and the whole band stays
+ * out of the document unless there is a headline or a real action to show.
+ *
+ * Theming (R3): no baked hex. The slab's ground, its copy colours and both
+ * actions come from PageBJ's .band-shade / .kick / .h2 / .lede / .btn--fill /
+ * .linkc primitives; only --paper-rgb is touched directly here.
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const cta = content.ctaBand || content.closing || {};
+
+// Anchor guard, kept in step with the Header / Hero / Services / Footer copies
+// (this family has no shared import). lib/derive-content-defaults.ts hard-codes
+// ctaBand.cta.href = '#visit' and this design renders no id="visit", so without
+// this the last button on the page would scroll nowhere on every first build.
+// Resolve every in-page href against the ids PageBJ actually mounts; off-page
+// hrefs (http, tel:, mailto:) pass through untouched.
+const PAGE_ANCHORS = new Set(['amenities', 'book', 'faq', 'gallery', 'host', 'how', 'location', 'main', 'nearby', 'promises', 'reviews', 'rooms']);
+const ANCHOR_ALIAS: Record<string, string> = { about: 'host', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const tag = cta.tag || '';
+const headline = cta.headline || '';
+const sub = cta.sub || '';
+// Canonical path first, legacy shape second — the hook is the canonical one in
+// both cases, so typing in the sidebar box always wins from the next keystroke.
+const ctaText = cta.cta?.text || cta.cta1?.text || '';
+const ctaHref = onPage(cta.cta?.href || cta.cta1?.href, '#location');
+// layout.contact.phone is the display-formatted copy the builder derives from
+// content.contact.phone; the hook addresses the field the owner actually types.
+const phone = layout.contact?.phone || content.contact?.phone || '';
+const telHref = phone ? `tel:${String(phone).replace(/[^0-9+]/g, '')}` : '';
+const hasActions = Boolean(ctaText || phone);
+---
+{(headline || hasActions) && (
+  <section class="closing" id="book">
+    <div class="wrap">
+      {/* No .reveal on this slab, deliberately: it is the last ask on the page,
+          and a scroll-reveal that never fires would hide the one thing the page
+          exists to do. */}
+      <div class="c-slab band-shade">
+        {tag && <span class="kick" data-field="ctaBand.tag">{tag}</span>}
+        {headline && <h2 class="h2 c-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="lede c-sub" data-field="ctaBand.sub">{sub}</p>}
+        {hasActions && (
+          <div class="c-acts">
+            {ctaText && (
+              <a class="btn btn--fill c-cta" href={ctaHref} data-field="ctaBand.cta.text" data-href-field="ctaBand.cta.href">{ctaText}</a>
+            )}
+            {phone && <a class="linkc c-tel" href={telHref} data-field="contact.phone">{phone}</a>}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* SPECIFICITY NOTE: PageBJ wraps its primitives in :where(), so a scoped rule
+     here at (0,2,0) beats the global at (0,1,1) — including the global's media
+     queries. The headline size below is therefore restated at both breakpoints,
+     and nothing else that the wrapper tunes per breakpoint is touched at all. */
+
+  /* The band is the last thing before the footer, so it carries its own rhythm
+     rather than the wrapper's default section padding. */
+  .closing { padding: clamp(40px,5vw,72px) 0 clamp(56px,7vw,92px); }
+  /* .band-shade supplies the ink ground and every text colour inside it. */
+  .c-slab { border-radius: 22px; text-align: center;
+    padding: clamp(48px,7vw,72px) clamp(22px,4vw,56px); }
+
+  /* The closing line is the biggest type on the page — the one place the design
+     goes past the shared .h2 ceiling — so it takes its own clamp, and both
+     mobile steps with it. */
+  .c-h { font-size: clamp(32px,4.8vw,64px); line-height: 1.04;
+    max-width: 18ch; margin: .22em auto .34em; overflow-wrap: anywhere; }
+  .c-slab .c-sub { max-width: 44ch; margin: 0 auto 30px; }
+
+  .c-acts { display: flex; gap: 14px; flex-wrap: wrap;
+    align-items: center; justify-content: center; }
+
+  @media (max-width: 760px) {
+    .c-h { font-size: clamp(28px,7.2vw,44px); max-width: none; }
+  }
+
+  /* Stacked, full-width actions. Verified at 360px: the slab's padding clamps to
+     22px, the headline breaks anywhere, and neither action can exceed its
+     column. */
+  @media (max-width: 520px) {
+    .c-slab { border-radius: 18px; }
+    .c-h { font-size: clamp(26px,8vw,34px); }
+    .c-acts { flex-direction: column; gap: 14px; align-items: stretch; }
+    .c-cta { width: 100%; flex: 0 0 auto; }
+    .c-tel { width: 100%; justify-content: center; }
+  }
+</style>

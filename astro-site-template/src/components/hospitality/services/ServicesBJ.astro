@@ -1,0 +1,409 @@
+---
+/**
+ * hospitality / ServicesBJ — "Kubo Stays": THE ROOMS, and the whole-house band
+ * beneath them. The commercial heart of the template and the one section Paul
+ * asked to be add/remove-able, so every decision here is about a LIST an owner
+ * edits: rows arrive blank, leave without renumbering anything, and every hook
+ * points at the row's ORIGINAL array index.
+ *
+ * A room card is: a photo with the floor badge laid over it, a small bath line
+ * paired with a rating, the room name, a blurb, feature chips, a hairline foot
+ * carrying the sleeps note against the nightly rate, and one enquire button.
+ * EVERY one of those is guarded on its own — a room with no rating draws no
+ * star, a room with no price draws no rate cell AND no dangling "/ night", a
+ * room with no chips draws no chip strip, and a card that is nothing but a name
+ * is still a card that looks deliberate.
+ *
+ * Editable hooks (all schema-owned — see genericContentSchema's `services`
+ * group, which carries the row fields tag/meta/rating/price/duration/features
+ * plus services.ctaLabel and services.whole.* precisely so this section has no
+ * dead hooks):
+ *   services.tag                       — eyebrow
+ *   services.headline                  — h2 (set:html, so an owner's <em>
+ *                                        becomes the design's italic emphasis)
+ *   services.sub                       — the head's right-hand paragraph
+ *   services.items.${i}.image (img)    — room photo
+ *   services.items.${i}.tag            — floor / area badge over the photo
+ *   services.items.${i}.meta           — small caps line above the name
+ *   services.items.${i}.rating         — rating (the star is drawn only here)
+ *   services.items.${i}.title          — room name
+ *   services.items.${i}.desc           — blurb
+ *   services.items.${i}.features       — chips, ONE comma-separated scalar
+ *   services.items.${i}.note           — sleeps / capacity line
+ *   services.items.${i}.price          — nightly rate, printed VERBATIM
+ *   services.items.${i}.duration       — rate unit ("/ night")
+ *   services.ctaLabel + data-href-field services.ctaHref  — the card button
+ *   services.whole.tag / .headline / .body / .price / .unit — the band
+ *   hero.cta1.text + data-href-field hero.cta1.href        — the band's button
+ *
+ * WHY THE CHIPS ARE ONE FIELD. ContentFieldsAuto's ListSpec.itemFields are
+ * FieldSpec (scalar) only — a nested list inside a list row renders no input and
+ * owns no path. So `features` is one comma-separated string, split at render
+ * time. The chip STRIP carries the data-field; the individual chips carry none,
+ * which is safe because SandboxEditorV3's SKIP regex excludes
+ * /\.(items|steps|paragraphs)\.\d+/ outright: array rows are only ever edited
+ * from the sidebar, which writes the whole array in one go.
+ *
+ * WHY ONE BUTTON LABEL FOR EVERY CARD. services.ctaLabel/ctaHref are section
+ * scalars, deliberately not row fields: a room added with '+ Add' must arrive
+ * with a working button instead of a blank one the owner has to retype.
+ *
+ * NEVER FABRICATED (R2). No currency is prepended, no rate is totalled, no
+ * "from", no "sleeps N" inferred from anything. The whole-house price is the
+ * owner's own string and is never computed from the room prices — a derived
+ * total would be a price nobody quoted. The star exists only beside a number the
+ * owner typed, and it is aria-hidden decoration sitting OUTSIDE the data-field
+ * span so an inline edit can never write it into the rating.
+ *
+ * Theming (R3): no baked hex. Colour comes from PageBJ's primitives (.kick .h2
+ * .lede .body .chip .fig .plate .btn--line .btn--fill, and .band-shade for the
+ * whole-house slab) or from the tokens --paper --paper-2 --card --ink
+ * --ink-soft --line --accent --muted --paper-rgb --disp --sans.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+const services = content.services || {};
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+
+// Anchor guard, kept in step with the Header / Hero / CtaBand / Footer copies
+// (this family has no shared import). lib/derive-content-defaults.ts hands out
+// hrefs like '#visit' that this design never renders, so every in-page href is
+// resolved against the ids PageBJ actually mounts: keep it when the id exists,
+// remap it when this design carries the same section under another name, else
+// fall back to the closing band. Off-page hrefs (http, tel:, mailto:) pass
+// through untouched — an owner's Messenger link must never be rewritten.
+const PAGE_ANCHORS = new Set(['amenities', 'book', 'faq', 'gallery', 'host', 'how', 'location', 'main', 'nearby', 'promises', 'reviews', 'rooms']);
+const ANCHOR_ALIAS: Record<string, string> = { about: 'host', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+type Item = {
+  title?: string; desc?: string; note?: string; image?: string;
+  tag?: string; meta?: string; rating?: string;
+  price?: string; duration?: string; features?: string;
+};
+// Both shapes: the wrapped `{tag, headline, sub, items[]}` and the legacy bare
+// array at content.services.
+const items: Item[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+// A row the owner added and never filled would otherwise spend a card, a border
+// and 252px of photo well on nothing. Drop the blanks — but carry the ORIGINAL
+// index so every data-field keeps addressing the real array slot. Removing room
+// 2 can therefore never misdirect an edit into room 3. Anything decorative uses
+// the DISPLAY index instead.
+const rows = items
+  .map((it, i: number) => ({ ...it, i }))
+  .filter((r) => Boolean(r.title || r.desc || r.note || r.tag || r.meta || r.rating || r.price || r.duration || r.features || r.image));
+// One decision for the WHOLE grid: with a photo anywhere, every card keeps its
+// photo well so a row of cards stays level (an imageless row shows the designed
+// fallback plate, announced to nobody); with no photo anywhere the well
+// disappears and the grid becomes a clean text ledger — the single-room case a
+// one-listing owner actually hits.
+const anyPhoto = rows.some((r) => Boolean(r.image));
+// String(...) rather than a bare split so an array pasted in through the API
+// behaves exactly like the comma-separated string the sidebar writes.
+const chipsOf = (v?: string): string[] => String(v || '').split(',').map((s) => s.trim()).filter(Boolean);
+
+const heroCta = content.hero?.cta1 || {};
+const heroCtaText = heroCta.text || '';
+const heroCtaHref = onPage(heroCta.href, '#book');
+const cardLabel = services.ctaLabel || '';
+// Display falls back to the page's one contact action so the cards are never
+// pointed at nothing before the owner fills the Card-button field in. The HOOK
+// stays services.ctaHref either way.
+const cardHref = onPage(services.ctaHref, heroCtaHref);
+
+const whole = services.whole || {};
+const wTag = whole.tag || '';
+const wHeadline = whole.headline || '';
+const wBody = whole.body || '';
+const wPrice = whole.price || '';
+const wUnit = whole.unit || '';
+// The eyebrow alone never opens the band: a kicker over nothing is a heading for
+// content that does not exist.
+const hasWhole = Boolean(wHeadline || wPrice || wBody);
+// The section also renders for a whole-house band with no room rows yet. Gating
+// it on rows alone would leave five live sidebar fields that change nothing on
+// the page — the mirror failure this family treats as a bug.
+const hasSection = rows.length > 0 || hasWhole;
+---
+{hasSection && (
+  <section class="rooms" id="rooms">
+    <div class="wrap">
+      {(tag || headline || sub) && (
+        <div class="r-head">
+          {(tag || headline) && (
+            <div class="r-head-l">
+              {tag && <span class="kick" data-field="services.tag">{tag}</span>}
+              {headline && <h2 class="h2 r-h2 reveal" data-field="services.headline" set:html={headline}></h2>}
+            </div>
+          )}
+          {sub && <p class="lede r-lede" data-field="services.sub">{sub}</p>}
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div class="r-grid" data-cards={String(rows.length)}>
+          {rows.map((it, k) => {
+            const chips = chipsOf(it.features);
+            // The unit is not in this test on purpose: "/ night" with no figure
+            // beside it is a price the page never states. A row carrying only a
+            // unit draws no rate cell and no foot rule at all.
+            const hasFoot = Boolean(it.note || it.price);
+            // A real photo is announced under the owner's OWN room name. With a
+            // photo but no name there is no honest label to give it, and with no
+            // photo the plate is the designed fallback — either way it is
+            // decoration, and is hidden rather than announced as a room.
+            const labelled = Boolean(it.image && it.title);
+            return (
+              <article class="room reveal" data-delay={String(k % 3)}>
+                {anyPhoto && (
+                  <div class="plate r-ph">
+                    <div
+                      class="ph"
+                      data-image-field={`services.items.${it.i}.image`}
+                      role={labelled ? 'img' : undefined}
+                      aria-label={labelled ? it.title : undefined}
+                      aria-hidden={labelled ? undefined : 'true'}
+                      style={it.image ? `background-image:url('${it.image}');` : undefined}
+                    ></div>
+                    {it.tag && <span class="floor" data-field={`services.items.${it.i}.tag`}>{it.tag}</span>}
+                  </div>
+                )}
+                <div class="r-body">
+                  {/* With no photo well anywhere in the grid the badge would have
+                      nothing to sit on, so it moves into the card rather than
+                      becoming an unreachable field. */}
+                  {!anyPhoto && it.tag && <span class="floor floor-in" data-field={`services.items.${it.i}.tag`}>{it.tag}</span>}
+                  {(it.meta || it.rating) && (
+                    <div class="r-top">
+                      {it.meta && <span class="r-meta" data-field={`services.items.${it.i}.meta`}>{it.meta}</span>}
+                      {it.rating && (
+                        <span class="r-rate">
+                          <span class="star" aria-hidden="true">&#9733;</span>
+                          <span data-field={`services.items.${it.i}.rating`}>{it.rating}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {it.title && <h3 class="r-name" data-field={`services.items.${it.i}.title`}>{it.title}</h3>}
+                  {it.desc && <p class="r-desc" data-field={`services.items.${it.i}.desc`}>{it.desc}</p>}
+                  {chips.length > 0 && (
+                    <div class="feats" data-field={`services.items.${it.i}.features`}>
+                      {chips.map((f) => <span class="chip">{f}</span>)}
+                    </div>
+                  )}
+                  {(hasFoot || cardLabel) && (
+                    <div class="r-tail">
+                      {hasFoot && (
+                        <div class="r-foot">
+                          {it.note && <span class="f-note" data-field={`services.items.${it.i}.note`}>{it.note}</span>}
+                          {it.price && (
+                            <span class="f-rate">
+                              <span class="f-price" data-field={`services.items.${it.i}.price`}>{it.price}</span>
+                              {it.duration && <span class="f-unit" data-field={`services.items.${it.i}.duration`}>{it.duration}</span>}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {cardLabel && (
+                        <a class="btn btn--line r-cta" href={cardHref} data-field="services.ctaLabel" data-href-field="services.ctaHref">{cardLabel}</a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* band-shade is the wrapper's inverted ground: it repaints the eyebrow,
+          the figure, the body copy, the chips and BOTH button variants in one
+          declaration, so this slab cannot drift out of step with the How band or
+          the closing band — and cannot invent the gold fill the engine would
+          turn into maroon-on-ink. */}
+      {hasWhole && (
+        <div class="whole band-shade reveal">
+          {(wTag || wHeadline || wBody) && (
+            <div class="w-copy">
+              {wTag && <span class="kick" data-field="services.whole.tag">{wTag}</span>}
+              {wHeadline && <h3 class="w-h" data-field="services.whole.headline" set:html={wHeadline}></h3>}
+              {wBody && <p class="body w-body" data-field="services.whole.body">{wBody}</p>}
+            </div>
+          )}
+          {(wPrice || heroCtaText) && (
+            <div class="w-act">
+              {wPrice && (
+                <div class="w-rate">
+                  <span class="fig w-price" data-field="services.whole.price">{wPrice}</span>
+                  {/* The unit only ever renders beside a rate: "/ night" on its
+                      own is a claim about a price that is not on the page. */}
+                  {wUnit && <span class="w-unit" data-field="services.whole.unit">{wUnit}</span>}
+                </div>
+              )}
+              {heroCtaText && (
+                <a class="btn btn--fill w-cta" href={heroCtaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{heroCtaText}</a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* SPECIFICITY NOTE that governs this whole block. PageBJ wraps its primitives
+     in :where(), so a scoped rule here at (0,2,0) beats the global at (0,1,1) —
+     including the global's MEDIA-QUERY and :hover variants. Two consequences,
+     both load-bearing: (1) never restate a property the wrapper already tunes
+     per breakpoint (headline sizes, .kick tracking, .btn padding) or it freezes
+     at desktop; (2) whenever a base-state property IS overridden here, its
+     :hover must be restated too, or the base rule will out-specify the global
+     hover and strand the label. */
+
+  /* ── section head: eyebrow + display h2 on the left, the owner's paragraph on
+        the right. Wraps to a stack the moment the two cannot share a line. */
+  .r-head { display: flex; align-items: flex-end; justify-content: space-between;
+    gap: clamp(20px,3vw,30px); flex-wrap: wrap; margin-bottom: clamp(28px,4vw,42px); }
+  .r-head-l { max-width: 100%; min-width: 0; }
+  /* Margin only — face, size, the italic <em> and both mobile passes all come
+     from the wrapper's .h2. */
+  .r-h2 { margin: .24em 0 0; }
+  .r-head .r-lede { max-width: 38ch; font-size: 15px; }
+
+  /* ── the grid. `auto-fit` with a 320px floor caps the row at THREE cards on a
+        1240px wrap (a fourth track would need 1346px), gives two at ~900 and one
+        at ~640 with no media query at all, and the min() keeps a card from ever
+        being wider than its column at 360px. The two data-cards rules are the
+        "deliberate at any count" pass: one card alone across 1240px reads as a
+        bug, and four cards leave an orphan in a three-track row — so one gets a
+        single column and four fold to a 2x2 block. Three, five and six take the
+        natural 3-up. */
+  .r-grid { display: grid; gap: 22px; align-items: stretch;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+  .r-grid[data-cards="1"] { max-width: 420px; }
+  .r-grid[data-cards="2"],
+  .r-grid[data-cards="4"] { max-width: 862px; }
+
+  /* ── the card */
+  .room { display: flex; flex-direction: column; min-width: 0;
+    background-color: var(--card); border: 1px solid var(--line);
+    border-radius: 18px; overflow: hidden; }
+  /* The plate is flush inside the card's own rounded border, so it drops the
+     frame it wears everywhere else on the page. Its fallback face, its cover
+     sizing and its motion still come from the wrapper. */
+  .r-ph { height: 252px; flex: none; border: 0; border-radius: 0; }
+  .room:hover .r-ph .ph { transform: scale(1.04); }
+  @media (prefers-reduced-motion: reduce) { .room:hover .r-ph .ph { transform: none; } }
+
+  /* The badge sits on an OPAQUE ink pill, never a scrim: it has to stay legible
+     over a blown-out phone photo as well as a dark one. */
+  .floor { position: absolute; left: 12px; top: 12px; z-index: 3;
+    max-width: calc(100% - 24px);
+    background-color: var(--ink); color: var(--paper);
+    font-family: var(--sans); font-size: 9px; font-weight: 600;
+    letter-spacing: .2em; text-transform: uppercase;
+    padding: 6px 11px; border-radius: 100px; }
+  .floor-in { position: static; align-self: flex-start; margin-bottom: 4px; }
+
+  .r-body { display: flex; flex-direction: column; gap: 9px; flex: 1 1 auto;
+    padding: 22px; min-width: 0; }
+  .r-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .r-meta { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  /* Body face, not the display face: the rating is a small fact beside the bath
+     line, and the card's one display voice is the room name. */
+  .r-rate { display: inline-flex; align-items: baseline; gap: 5px;
+    font-size: 13px; color: var(--ink);
+    font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+  /* Decoration, and the only reason it may carry accent: it is aria-hidden, it
+     says nothing, and it exists only next to a number the owner typed. It also
+     sits OUTSIDE the data-field span, so an inline edit cannot swallow it. */
+  .star { color: var(--ink-soft); }
+  .r-name { font-family: var(--disp); font-weight: 400; font-size: 26px;
+    line-height: 1.14; margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+  .r-body .r-desc { margin: 0; font-size: 14px; line-height: 1.7; color: var(--ink-soft); }
+
+  /* Chips are the wrapper's .chip primitive; this is only the strip. */
+  .feats { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 3px; }
+
+  /* One wrapper takes the `margin-top:auto`, so the foot and the button stay
+     locked together at the bottom of a card of any height — with two auto
+     margins the free space would open a gap between them instead. */
+  .r-tail { margin-top: auto; display: flex; flex-direction: column; }
+  .r-foot { display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; padding-top: 18px; border-top: 1px solid var(--line); }
+  .f-note { font-size: 12px; color: var(--muted); }
+  /* margin-left:auto rather than relying on space-between, so a rate with no
+     sleeps note still lands on the right where the eye is looking for it. */
+  .f-rate { margin-left: auto; display: inline-flex; align-items: baseline; gap: 6px; }
+  /* The card rate is set in the BODY face at 600, exactly as the design has it —
+     the display serif is reserved for the room name above it and for the
+     whole-house figure below, so the ledger keeps one voice per level. */
+  .f-price { font-family: var(--sans); font-weight: 600; font-size: 17px; color: var(--ink);
+    font-variant-numeric: tabular-nums lining-nums; }
+  .f-unit { font-size: 12px; color: var(--muted); }
+
+  /* ── the card button (R4). .btn--line already carries the shape and the
+        hover; the one thing it cannot know is that this card's ground is
+        --card, which is exactly .btn--line's own fill — so the pill would go
+        invisible inside its own hairline. It takes the design's cream fill
+        instead, and RESTATES the hover, because a base-state background set
+        here would otherwise out-specify the global's :hover and leave a cream
+        pill wearing a paper label. */
+  .r-cta { margin-top: 14px; width: 100%; flex: 0 0 auto;
+    padding: 13px 18px; min-height: 44px; font-size: 11px; white-space: normal;
+    background-color: var(--paper); }
+  .r-cta:hover { background-color: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  /* ── the whole-house band: one inverted slab under the grid, copy left, rate
+        and action right. Ground, eyebrow, body copy, figure and button colours
+        all come from .band-shade. */
+  .whole { margin-top: 22px; border-radius: 18px;
+    padding: clamp(26px,3.4vw,34px) clamp(24px,3.8vw,38px);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: clamp(22px,3vw,32px); flex-wrap: wrap; }
+  .w-copy { min-width: 0; flex: 1 1 340px; }
+  /* An h3, so it takes neither .h2's size nor its <em> rule: both are restated
+     here at the band's own scale. The emphasis stays `inherit` — terracotta on
+     ink is unreadable, and the italic serif is the signature anyway. */
+  .w-h { font-family: var(--disp); font-weight: 400; font-size: clamp(24px,2.6vw,29px);
+    line-height: 1.1; margin: .24em 0 .3em; color: var(--paper); overflow-wrap: anywhere; }
+  .w-h em { font-style: italic; color: inherit; }
+  .whole .w-body { margin: 0; max-width: 56ch; }
+  .w-act { flex: 0 1 auto; text-align: right; }
+  .w-rate { display: block; }
+  .w-price { font-size: clamp(32px,3.6vw,40px); }
+  .w-unit { font-size: 13px; color: rgba(var(--paper-rgb),.72); margin-left: 4px; }
+  .w-cta { margin-top: 14px; }
+
+  /* ── 760: the band stacks and the rate returns to the left margin so it does
+        not float alone above a full-width button. */
+  @media (max-width: 760px) {
+    .r-head { align-items: flex-start; gap: 16px; }
+    .r-head .r-lede { max-width: none; }
+    .whole { flex-direction: column; align-items: flex-start; }
+    .w-act { text-align: left; width: 100%; }
+    .w-cta { width: 100%; }
+  }
+
+  /* ── 520 (verified against a 360px viewport: nothing here can overflow — every
+        grid track is min(100%,320px), the card body wraps, and the two long
+        strings, the room name and the blurb, break anywhere). */
+  @media (max-width: 520px) {
+    .r-grid { gap: 16px; }
+    .r-ph { height: clamp(190px,54vw,252px); }
+    .r-name { font-size: 23px; }
+    .r-body { padding: 18px; }
+    .r-body .r-desc { overflow-wrap: anywhere; }
+    .r-foot { gap: 8px; }
+    .whole { padding: 24px 20px; }
+    .w-price { font-size: 30px; }
+  }
+</style>

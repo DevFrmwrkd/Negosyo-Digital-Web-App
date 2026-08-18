@@ -1,0 +1,170 @@
+---
+/**
+ * hospitality / GalleryBJ — "Kubo Stays"'s photo mosaic: the design's five-tile
+ * bento (one tall print spanning both rows, four smaller beside it), hung on the
+ * cream page ground with no band of its own so it reads as a breath between the
+ * house block and the host block.
+ *
+ * The design hard-codes exactly five slots. Content does not: an owner may supply
+ * one photo or nine. So the five-up is the TOP of a deterministic tier ladder,
+ * not the only layout — .m-1 … .m-4 restate the track list per count so every
+ * tier fills its rows completely. A span-cycle (every third tile goes tall) opens
+ * a visible hole at exactly the counts the derived layer produces; these tiers
+ * cannot, because each one is drawn for its own count:
+ *   1 → one full-width print, still two rows tall
+ *   2 → two full-height columns, 2fr / 1fr (the design's lopsided rhythm kept)
+ *   3 → tall lead + two stacked beside it, the classic bento trio
+ *   4 → tall lead + two on row 1 + one spanning both narrow tracks on row 2
+ *   5 → the design's own grid
+ *   6+ → the extras flow on into implicit 180px rows rather than being dropped
+ *
+ * Rows are FILTERED to the ones that actually carry an image, with the ORIGINAL
+ * array index carried through as `.i` — the editor writes the data-field path
+ * verbatim into the draft, so a filtered index would patch the wrong row. That
+ * also means a caption-only row can never render an empty frame.
+ *
+ * The design has no eyebrow and no headline over the mosaic. Both render here
+ * anyway, GUARDED: lib/derive-content-defaults.ts always sets gallery.tag and
+ * gallery.headline, so not rendering them would leave two live sidebar fields
+ * that do nothing (a mirror failure — the inverse of a dead hook). An empty
+ * value draws nothing at all.
+ *
+ * Auto-hides when no row carries an image.
+ *
+ * Editable hooks:
+ *   gallery.tag · gallery.headline
+ *   gallery.items.<original i>.caption
+ *   data-image-field gallery.items.<original i>.image
+ */
+interface Props { content: any; layout: any; }
+const { content } = Astro.props;
+const gallery = content.gallery || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+type Tile = { image?: string; caption?: string };
+// The legacy bare-array form lives at content.gallery (NOT the local `gallery`
+// alias — that is deliberate: the alias is the object form's home).
+const raw: Tile[] = Array.isArray(gallery.items) ? gallery.items : (Array.isArray(content.gallery) ? content.gallery : []);
+const tiles: Array<Tile & { i: number }> = raw.map((t, i) => ({ ...t, i })).filter((t) => Boolean(t.image));
+const n = tiles.length;
+---
+{n > 0 && (
+  <section class="frames" id="gallery">
+    <div class="wrap">
+      {(tag || headline) && (
+        <div class="f-head reveal">
+          {tag && <span class="eyebrow" data-field="gallery.tag">{tag}</span>}
+          {headline && <h2 class="h2 f-h2" data-field="gallery.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class:list={['mosaic', 'reveal', n === 1 && 'm-1', n === 2 && 'm-2', n === 3 && 'm-3', n === 4 && 'm-4']}>
+        {tiles.map((t) => (
+          <figure class="plate tile">
+            {/* An uncaptioned photo gets NO accessible name rather than an invented
+                one — "Property photo" announces a claim the owner never typed — so
+                it is marked decorative instead. With a caption, the caption IS the
+                label, in the owner's own words. */}
+            <div
+              class="ph"
+              role={t.caption ? 'img' : undefined}
+              aria-label={t.caption || undefined}
+              aria-hidden={t.caption ? undefined : 'true'}
+              data-image-field={`gallery.items.${t.i}.image`}
+              style={`background-image:url('${t.image}');`}
+            ></div>
+            {t.caption && <figcaption class="cap" data-field={`gallery.items.${t.i}.caption`}>{t.caption}</figcaption>}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  .f-head { margin: 0 0 clamp(20px,2.8vw,32px); }
+  /* The signature eyebrow: 10px caps at .4em on the darkened terracotta. Styled
+     here rather than inherited so the section reads correctly on its own terms;
+     the colour is a token, so the theme engine still recolours it. */
+  .eyebrow {
+    display: inline-block; font-family: var(--sans); font-weight: 600;
+    font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .f-h2 {
+    font-family: var(--disp); font-weight: 400; font-size: clamp(28px,3.6vw,48px);
+    line-height: 1.06; letter-spacing: -.01em; color: var(--ink);
+    margin: .24em 0 0; max-width: 22ch;
+  }
+
+  /* The mosaic is clipped as ONE rounded slab (the design's move): the 12px gaps
+     let the page ground through between tiles, and the four corner tiles take the
+     block's radius. Tiles therefore carry no radius and no frame of their own. */
+  .mosaic {
+    display: grid;
+    grid-template-columns: minmax(0,2fr) minmax(0,1fr) minmax(0,1fr);
+    grid-auto-rows: 180px; gap: 12px;
+    border-radius: 20px; overflow: hidden;
+  }
+  /* minmax(0,…) on every track, never a bare fr: a background-image tile has no
+     intrinsic width, but the caption pill does, and a long caption in a bare 1fr
+     track would push the grid past 360px. */
+  .mosaic .tile {
+    margin: 0; min-height: 0; position: relative; overflow: hidden;
+    border-radius: 0; border: 0;
+  }
+  /* Geometry, not appearance: the photo layer fills its tile, and the tile is
+     sized by the grid row here rather than by the family's usual inline
+     aspect-ratio on .plate. */
+  .mosaic .tile .ph {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+  }
+  .mosaic .tile:first-child { grid-row: span 2; }
+
+  /* ── the count tiers. Each restates the tracks for its own count, so no tier
+        can leave a hole. Two compounds (0,2,0) plus Astro's cid, so they beat the
+        base .mosaic rule and — deliberately — the narrower rules below, wherever
+        the tier is already narrow enough to keep. */
+  .mosaic.m-1 { grid-template-columns: minmax(0,1fr); }
+  .mosaic.m-2, .mosaic.m-3 { grid-template-columns: minmax(0,2fr) minmax(0,1fr); }
+  .mosaic.m-2 .tile { grid-row: span 2; }
+  /* Four tiles: the last one takes both narrow tracks on row 2 instead of leaving
+     the third column empty. */
+  .mosaic.m-4 .tile:nth-child(4) { grid-column: span 2; }
+
+  @media (max-width: 760px) {
+    /* Two columns. The lead keeps its two-row span, which is what makes 3, 4 and
+       5 tiles all land on full rows here (5 → 1 tall + 2 + 2, no hole). */
+    .mosaic { grid-template-columns: minmax(0,1fr) minmax(0,1fr); grid-auto-rows: clamp(132px,20vw,168px); gap: 10px; }
+    /* .m-1 is NOT restated: `.mosaic.m-1` already out-specifies `.mosaic`, so a
+       lone photo keeps the full width instead of becoming a half-width tile
+       beside an empty track. .m-2 / .m-3 keep 2fr/1fr for the same reason — both
+       are already two-column layouts, and the lopsided rhythm survives the drop. */
+    .mosaic.m-4 .tile:nth-child(4) { grid-column: span 2; }
+  }
+  @media (max-width: 520px) {
+    /* One column at phone width: a 157px tile is too small to read as a room
+       photo. Every span is reset so nothing reaches a track that is not there. */
+    .mosaic { grid-template-columns: minmax(0,1fr); grid-auto-rows: clamp(150px,44vw,200px); border-radius: 16px; }
+    .mosaic.m-2, .mosaic.m-3 { grid-template-columns: minmax(0,1fr); }
+    .mosaic .tile:first-child, .mosaic.m-2 .tile { grid-row: auto; }
+    .mosaic.m-4 .tile:nth-child(4) { grid-column: auto; }
+    /* …except the solo photo, which stays a two-row print so it still reads as a
+       lead image rather than a stray thumbnail. Declared after the reset. */
+    .mosaic.m-1 .tile { grid-row: span 2; }
+  }
+
+  /* Caption on an OPAQUE ink pill, never a gradient scrim: paper-on-ink holds
+     ~10.7:1 over ANY owner photo, however dark or blown out. */
+  .tile .cap {
+    position: absolute; left: 12px; bottom: 12px; z-index: 3;
+    max-width: calc(100% - 24px);
+    background-color: var(--ink); color: var(--paper);
+    font-family: var(--sans); font-weight: 600; font-size: 9.5px;
+    letter-spacing: .12em; text-transform: uppercase;
+    padding: 6px 12px; border-radius: 100px;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 520px) {
+    .tile .cap { left: 8px; bottom: 8px; font-size: 9px; padding: 5px 10px; max-width: calc(100% - 16px); }
+  }
+</style>

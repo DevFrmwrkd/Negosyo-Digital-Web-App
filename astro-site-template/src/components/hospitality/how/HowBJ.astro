@@ -1,0 +1,196 @@
+---
+/**
+ * hospitality / HowBJ — "Kubo Stays" HOW IT WORKS: the one inverted band in the
+ * page. Eyebrow, an oversized Instrument Serif headline, then the owner's steps
+ * as an <ol> of gold-ruled cells each opened by a derived italic numeral, and a
+ * single paper-filled action under them.
+ *
+ * ROLE: on a property with no booking engine this is the only place that says
+ * how a stay is actually arranged — the owner's own words for the enquiry, the
+ * confirmation and the arrival. Nothing here is supplied by the template.
+ *
+ * Reads content.how.steps (canonical `body`; tolerates legacy `desc` /
+ * `description`) and falls back to content.how.items, exactly as HowBI does.
+ *
+ * EDITABLE HOOKS (every one is declared in genericContentSchema, group "how" —
+ * a hook the schema does not own is a dead hook in the v3 sidebar)
+ *   how.tag                  — the eyebrow
+ *   how.headline             — guarded: derive-content-defaults supplies NO
+ *                              how.headline, so an unset value must draw nothing
+ *                              rather than a band of empty space
+ *   how.steps.${i}.title
+ *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
+ *                              value arrived as .desc / .description
+ *   hero.cta1.text + hero.cta1.href — the band's action. Deliberately the page's
+ *                              ONE contact action reused, not a fourth CTA field
+ *                              (the schema declares hero.cta1.text as a link
+ *                              FieldSpec, so hrefPath hero.cta1.href is owned too)
+ *
+ * ANTI-FABRICATION (R2): not one step, and no timing, deposit, payment or
+ * confirmation promise, is written by this file. The numerals are DERIVED from
+ * the display index, are aria-hidden and carry no data-field — chrome, not
+ * content, so the design's demo `st.n` never becomes a content key. Blank rows
+ * are dropped and an all-blank list removes the whole band.
+ *
+ * THEMING (R3/R4). The band is painted var(--ink) on var(--paper) rather than
+ * with --accent-deep: the engine remaps --accent-deep to palette.primaryDeep,
+ * which is #FFFFFF under the "dark" scheme and #E5E5E5 under "black" — both
+ * allowed for this family — so a band built on it would go white-on-white. The
+ * ink/paper pair is the only pairing legible in all 13 schemes.
+ * Gold (--accent-light) is remapped to palette.accent (#A0A0A0 in dark,
+ * #A52A2A in maroon), so it is confined to the aria-hidden numerals and the 2px
+ * step rules, where the decorative allowance applies. The eyebrow and every
+ * other string on this band are paper-derived, never gold. The design's gold
+ * CTA becomes a --paper fill with an --ink label for the same reason.
+ *
+ * CLASS-NAME NOTE (engine): this section is class "howto" and its button is
+ * .btn--fill (double dash). buildOverrideCss pins the label colour of
+ * .btn-primary / .btn-yellow / .nav-cta / .nav-right .btn to --on-primary and of
+ * .testi .btn / .cta-band .btn / footer .btn to --on-ink, all with !important —
+ * none of those selectors can reach anything in this file, which is why the
+ * paper-on-ink inversion here survives.
+ */
+interface Props { content: any; }
+const { content } = Astro.props;
+const how = content.how || {};
+const tag = how.tag || '';
+const headline = how.headline || '';
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+const steps: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+const bodyOf = (s: Step) => s.body ?? s.desc ?? s.description ?? '';
+// A step the admin added but never filled would otherwise print a 2px gold rule
+// and an oversized numeral over nothing, and an all-blank list would ship the
+// whole band. Drop blank rows (whitespace counts as blank) but keep the ORIGINAL
+// index, so every data-field still writes to the real array slot even after a
+// row above it is removed.
+const rows = steps
+  .map((s, i: number) => ({ ...s, i }))
+  .filter((r) => Boolean((r.title || '').trim() || bodyOf(r).trim()));
+// Anchor guard. derive-content-defaults hard-codes hero.cta1.href to '#visit',
+// an id no template in this family renders, so the mirrored CTA would scroll
+// nowhere. Resolve in-page hrefs against the ids PageBJ actually renders; keep
+// the alias table in step with the canonical copies in HeaderBJ / HeroBJ /
+// CtaBandBJ / FooterBJ. Off-page hrefs (tel:, mailto:, http) pass through.
+const PAGE_ANCHORS = new Set(['amenities', 'book', 'faq', 'gallery', 'host', 'how', 'location', 'main', 'nearby', 'promises', 'reviews', 'rooms']);
+const ANCHOR_ALIAS: Record<string, string> = { about: 'host', contact: 'location', services: 'rooms', visit: 'location', why: 'amenities', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+const hero = content.hero || {};
+const ctaText = hero.cta1?.text || '';
+const ctaHref = onPage(hero.cta1?.href, '#book');
+---
+{rows.length > 0 && (
+  <section class="howto" id="how">
+    <div class="wrap">
+      {tag && <span class="eyebrow" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="h2 reveal" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="how-grid">
+        {rows.map((step, k) => (
+          <li class="step reveal" data-delay={String(Math.min(k, 3))}>
+            {/* The numeral counts DISPLAYED steps (01/02/03, never a gap) while
+                data-field carries the ORIGINAL index, so dropping a blank row
+                can neither renumber the sequence nor misdirect an edit. */}
+            <span class="sno" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+            {step.title && <h3 data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+            {bodyOf(step) && <p data-field={`how.steps.${step.i}.body`}>{bodyOf(step)}</p>}
+          </li>
+        ))}
+      </ol>
+      {ctaText && (
+        <div class="how-act reveal">
+          <a class="btn btn--fill" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* Full-bleed inverted band. Painted here rather than through a page-level band
+     class so the section is self-contained: the only colours it reads are the
+     ink/paper pair, which the engine guarantees to be a legible pairing. */
+  .howto { background-color: var(--ink); color: var(--paper); }
+
+  .eyebrow {
+    display: inline-block;
+    font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: 0.34em; text-transform: uppercase;
+    /* paper-derived, NOT gold: --accent-light remaps to a mid grey under the
+       dark scheme, which is sub-AA at 10px on this band */
+    color: rgba(var(--paper-rgb), 0.78);
+    overflow-wrap: anywhere;
+  }
+  .howto .h2 {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(30px, 4.3vw, 56px); line-height: 1.06; letter-spacing: -0.005em;
+    margin: 0.24em 0 clamp(30px, 4vw, 50px);
+    color: var(--paper); max-width: 24ch; overflow-wrap: anywhere;
+  }
+  /* The template's signature emphasis: a real Instrument Serif italic, colour
+     inherited. Never an accent colour swap — accent-as-text fails 4.5:1 in most
+     of the allowed schemes, and on this band it would be accent-on-ink. */
+  .howto .h2 :global(em),
+  .howto .h2 :global(.em) { font-style: italic; color: inherit; }
+
+  /* auto-fit so 2, 3, 4 or 5 owner-typed steps all fill the row without a hole */
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: clamp(22px, 3.2vw, 40px);
+    list-style: none; margin: 0; padding: 0;
+  }
+  .step { list-style: none; border-top: 2px solid var(--accent-light); padding-top: 20px; }
+  .sno {
+    display: block;
+    font-family: var(--disp); font-weight: 400; font-style: italic;
+    font-size: clamp(28px, 3vw, 34px); line-height: 1;
+    color: var(--accent-light);
+  }
+  .step h3 {
+    font-family: var(--disp); font-weight: 400;
+    font-size: clamp(21px, 2vw, 26px); line-height: 1.14;
+    margin: 12px 0 10px; color: var(--paper); overflow-wrap: anywhere;
+  }
+  .step p {
+    margin: 0; font-size: 15px; line-height: 1.75;
+    color: rgba(var(--paper-rgb), 0.78); overflow-wrap: anywhere;
+  }
+
+  .how-act { margin-top: clamp(30px, 4vw, 50px); }
+  /* Inverted-band button: opaque --paper fill, --ink label. Shape is declared in
+     full so the pill is identical whether or not the page shell styles .btn. */
+  .howto .btn--fill {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 16px 32px; border-radius: 999px;
+    border: 1px solid var(--paper);
+    background-color: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-weight: 600; font-size: 11.5px;
+    letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  /* R4: hover DARKENS the same opaque fill and keeps the same label colour.
+     Never lighter, never transparent, never a hue change — and never a rule that
+     recolours the label, which buildOverrideCss can pin out from under us. */
+  .howto .btn--fill:hover {
+    background-color: var(--paper); color: var(--ink); border-color: var(--paper);
+    box-shadow: inset 0 0 0 999px rgba(0, 0, 0, 0.16);
+  }
+
+  @media (max-width: 760px) {
+    .how-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 520px) {
+    .how-grid { grid-template-columns: 1fr; gap: 22px; }
+    .howto .h2 { font-size: clamp(26px, 7.6vw, 34px); max-width: none; }
+    .sno { font-size: 28px; }
+    .step { padding-top: 16px; }
+    .step h3 { font-size: 20px; margin: 10px 0 8px; }
+    .step p { font-size: 14.5px; }
+    .howto .btn--fill { width: 100%; padding: 15px 24px; }
+  }
+</style>

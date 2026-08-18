@@ -1,0 +1,289 @@
+---
+/**
+ * hospitality / LocationBJ — "Kubo Stays"'s getting-here band: eyebrow, headline,
+ * the address and the owner's arrival note across the top, then a real map beside
+ * a house-rules card (check-in, check-out, minimum stay, pets…).
+ *
+ * THE HEADLINE / ADDRESS SPLIT. The design prints the address itself as the h2.
+ * Here the h2 is location.headline — which derive-content-defaults always fills —
+ * and the address prints as the line beneath it. That way neither field is dead
+ * and neither is duplicated: an owner who edits the headline changes the headline,
+ * and an owner who edits the address changes the address.
+ *
+ * Map strategy, three tiers, mirroring LocationBI:
+ *   1. build-time lat/lng → window.__hospitalityBJInitMap(lat, lng, label)
+ *   2. else any address   → client-side Nominatim lookup, then the same boot
+ *   3. else               → the drawn map-face + pin fallback from the design
+ * The drawn face lives INSIDE #map until Leaflet mounts (PageBJ's boot clears
+ * #map before drawing tiles, which is what erases it). The literal id="map" and
+ * the exact global name __hospitalityBJInitMap are a contract with PageBJ —
+ * renaming either silently leaves the drawn face on screen under the tiles.
+ *
+ * THE RULES LIST is location.rules[{label,value}] — deliberately NOT
+ * location.hours, which the sidebar schema declares as a single TEXT field: turning
+ * that path into a list would make any string already typed there invisible in the
+ * form and destroyable by the next "+ Add". Nothing here invents a rule, an hour,
+ * a distance or a travel time; every row is a pair the owner typed, printed
+ * verbatim, and the card disappears when they typed none.
+ *
+ * NO PHONE AND NO EMAIL in this section (the closing band and the footer own the
+ * number, and the footer owns the address rows) — so, unlike LocationBI, the
+ * section gate does not count them either: a site with a phone but no address, no
+ * coordinates and no rules would otherwise render an eyebrow and a derived
+ * headline over nothing, which is the empty-shell failure R2 exists to prevent.
+ *
+ * Editable hooks:
+ *   location.tag · location.headline · location.address · location.sub ·
+ *   location.rules.<original i>.label · location.rules.<original i>.value ·
+ *   location.directions.text + data-href-field location.directions.href ·
+ *   footer.brand (map pin bubble) · footer.locality (map caption)
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const loc = content.location || {};
+const tag = loc.tag || '';
+const headline = loc.headline || '';
+const sub = loc.sub || '';
+// Two footer.* hooks in a non-footer section is safe against the editor's
+// visibility bridge, which hides the section carrying the MOST hooks of a prefix:
+// the real footer holds ten-plus footer.* hooks against these two.
+const brand = (content as any).footer?.brand || layout.businessName || '';
+const locality = (content as any).footer?.locality || '';
+const address = loc.address || layout.contact?.address || '';
+const addressLines: string[] = address ? String(address).split('\n') : [];
+// Blank rows are dropped: the editor's "+ Add" inserts { label: '', value: '' },
+// and an empty row would spend a hairline plus 24px of padding saying nothing.
+// Every row keeps its ORIGINAL index so the field hooks survive the filter, and
+// the filter is what makes the section gate below honest — a rules array of
+// nothing but blanks no longer keeps the band alive.
+type RuleRow = { label: string; value: string; i: number };
+const rules: RuleRow[] = (Array.isArray(loc.rules) ? loc.rules : [])
+  .map((r: any, i: number) => ({ label: String(r?.label ?? '').trim(), value: String(r?.value ?? '').trim(), i }))
+  .filter((r: RuleRow) => Boolean(r.label || r.value));
+const dirText = loc.directions?.text || '';
+const dirHref = loc.directions?.href || (address
+  ? `https://maps.google.com/?q=${encodeURIComponent(String(address).replace(/\n/g, ' '))}`
+  : '#');
+// A CLEARED coordinate field leaves an empty string, which passes `!= null` and
+// which Number('') turns into 0 — so a naive test boots Leaflet and pins the
+// property at 0,0 in the Gulf of Guinea with its name on the marker: a map
+// asserting a location the owner never gave (R2). Reject blank/whitespace and
+// out-of-range values so a cleared field falls through to the address lookup
+// instead. `??` rather than `||` so a genuine 0 coordinate survives.
+const num = (v: any, max: number): number | null => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+};
+const lat = num(loc.lat, 90) ?? num(layout.contact?.lat, 90);
+const lng = num(loc.lng, 180) ?? num(layout.contact?.lng, 180);
+const label = layout.businessName || 'Our location';
+const mapAria = `Map showing ${label}`;
+const hasCoords = lat !== null && lng !== null;
+const hasAddress = !!address;
+// The fallback face is a drawn street grid with a pin labelled with the property
+// name — a picture claiming where this property physically is. With neither
+// coordinates nor an address there is nothing real behind that claim, so the map
+// cell is dropped entirely and the grid falls to one column.
+const hasMap = hasCoords || hasAddress;
+const hasLoc = hasMap || rules.length > 0;
+---
+{hasLoc && (
+<section class="getting" id="location">
+  <div class="wrap">
+    <div class="g-head reveal">
+      <div class="g-head-l">
+        {tag && <span class="eyebrow" data-field="location.tag">{tag}</span>}
+        {headline && <h2 class="h2 g-h2" data-field="location.headline" set:html={headline}></h2>}
+        {address && (
+          <p class="g-addr" data-field="location.address">
+            {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+          </p>
+        )}
+      </div>
+      {(sub || (dirText && dirHref !== '#')) && (
+        <div class="g-head-r">
+          {sub && <p class="body g-sub" data-field="location.sub">{sub}</p>}
+          {/* Gated on the TARGET as well as the label: with no address and no
+              explicit link dirHref is '#', and the control would be dead. */}
+          {dirText && dirHref !== '#' && (
+            <a class="linkc g-dir" href={dirHref} target="_blank" rel="noopener noreferrer" data-field="location.directions.text" data-href-field="location.directions.href">{dirText}</a>
+          )}
+        </div>
+      )}
+    </div>
+    <div class:list={['g-grid', 'reveal', !hasMap && 'no-map', rules.length === 0 && 'no-rules']}>
+      {hasMap && (
+        <div class="map-frame">
+          <div id="map" role="img" aria-label={mapAria}>
+            {/* Tier-3 fallback only. PageBJ's boot empties #map before Leaflet
+                draws, so tiles never stack on top of this — and the pin bubble's
+                hook leaves the page together with the string it labels, so it can
+                never become a hook pointing at nothing on screen. */}
+            <div class="map-face" aria-hidden="true">
+              <span class="road road-h"></span>
+              <span class="road road-v"></span>
+            </div>
+            <div class="map-pin">
+              <span class="dot" aria-hidden="true"></span>
+              {brand && <span class="mlbl" data-field="footer.brand">{brand}</span>}
+            </div>
+          </div>
+          {/* OUTSIDE #map on purpose: the caption is real text, not fallback
+              chrome, so it must survive the Leaflet boot that erases the drawn
+              face. The opaque paper pill is what keeps it legible once map tiles
+              are underneath it. */}
+          {locality && <span class="map-cap" data-field="footer.locality">{locality}</span>}
+        </div>
+      )}
+      {rules.length > 0 && (
+        <div class="rules">
+          {/* Both spans always render, even when one is blank: the row is
+              space-between, so dropping an empty span would promote its sibling
+              and drift it to the wrong edge. An empty span is invisible. */}
+          {rules.map((r) => (
+            <div class="rule"><span class="rk" data-field={`location.rules.${r.i}.label`}>{r.label}</span><span class="rv" data-field={`location.rules.${r.i}.value`}>{r.value}</span></div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+)}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, label }}>
+    (function init() {
+      if (window.__hospitalityBJInitMap) window.__hospitalityBJInitMap(lat, lng, label);
+      else setTimeout(init, 80);
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, label }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(lat, lng) {
+        if (window.__hospitalityBJInitMap) { window.__hospitalityBJInitMap(lat, lng, label); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(lat, lng); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var la = parseFloat(results[0].lat);
+            var ln = parseFloat(results[0].lon);
+            if (isNaN(la) || isNaN(ln)) return;
+            tryInit(la, ln);
+          })
+          .catch(function () { /* keep the drawn map-face fallback */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  /* ── the head: address block left, arrival note right, baseline-aligned, both
+        allowed to wrap onto their own line before anything can overflow. */
+  .g-head { display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 22px 30px; flex-wrap: wrap; margin: 0 0 clamp(22px,3vw,34px); }
+  .g-head-l { min-width: 0; }
+  .g-head-r { min-width: 0; max-width: 38ch; }
+  /* The signature eyebrow: 10px caps at .4em on the darkened terracotta. */
+  .eyebrow {
+    display: inline-block; font-family: var(--sans); font-weight: 600;
+    font-size: 10px; letter-spacing: .4em; text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .g-h2 {
+    font-family: var(--disp); font-weight: 400; font-size: clamp(28px,3.8vw,52px);
+    line-height: 1.06; letter-spacing: -.01em; color: var(--ink);
+    margin: .24em 0 0; max-width: 20ch;
+  }
+  /* overflow-wrap on every owner-typed string in this block: a long single-line
+     address is the one thing here that could push the page past 360px. */
+  .g-addr { margin: .6em 0 0; font-size: 15.5px; line-height: 1.7;
+    color: var(--ink-soft); max-width: 40ch; overflow-wrap: anywhere; }
+  .g-sub { margin: 0; font-size: 15px; line-height: 1.7; color: var(--ink-soft); }
+  .g-dir { margin-top: 14px; }
+
+  .g-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr);
+    gap: 26px; align-items: stretch; }
+  /* Either cell can be absent — no coordinates and no address drops the map, no
+     rules drops the card — and the survivor takes the full width rather than
+     leaving a hole beside it. */
+  .g-grid.no-map, .g-grid.no-rules { grid-template-columns: minmax(0,1fr); }
+
+  .map-frame { position: relative; min-height: 340px; overflow: hidden;
+    border-radius: 18px; border: 1px solid var(--line); background-color: var(--card); }
+  #map { position: absolute; inset: 0; z-index: 0; min-height: 340px; }
+  /* The drawn face: a plotted grid with two roads crossing under the pin. Every
+     value is token-derived, so it recolours with the scheme instead of shipping
+     the design's baked greens. */
+  .map-face { position: absolute; inset: 0; background-color: var(--card);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(var(--ink-rgb),.07) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(var(--ink-rgb),.07) 0 1px, transparent 1px 44px); }
+  .road { position: absolute; background-color: rgba(var(--ink-rgb),.20); }
+  .road-h { top: 47%; left: 0; right: 0; height: 5px; }
+  .road-v { top: 0; bottom: 0; left: 43%; width: 4px; }
+  /* max-width sits on the ABSPOS pin, not on the bubble: percentages here resolve
+     against #map, so the bubble can never exceed the frame minus 12px of air each
+     side. width:max-content is required alongside it, or abspos shrink-to-fit
+     would collapse the stack to (containing block − left) on every long name. */
+  .map-pin { position: absolute; top: 47%; left: 43%; transform: translate(-50%,-100%);
+    display: grid; justify-items: center; gap: 8px;
+    width: max-content; max-width: calc(100% - 24px); z-index: 1; }
+  .dot { width: 14px; height: 14px; border-radius: 50%;
+    background-color: var(--accent); border: 3px solid var(--paper); }
+  /* No white-space:nowrap — .map-frame clips overflow, so a long property name
+     would be sliced off at BOTH ends. Wrapping beats truncating on the one
+     element that names the property. */
+  .mlbl { background-color: var(--ink); color: var(--paper);
+    font-family: var(--sans); font-weight: 600; font-size: 9px;
+    letter-spacing: .18em; text-transform: uppercase;
+    padding: 5px 11px; border-radius: 100px; text-align: center; overflow-wrap: anywhere; }
+  .map-cap { position: absolute; left: 16px; bottom: 16px; z-index: 2;
+    background-color: var(--paper); color: var(--ink-soft);
+    font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: .2em; text-transform: uppercase;
+    padding: 5px 10px; border-radius: 100px;
+    max-width: calc(100% - 32px); overflow-wrap: anywhere; }
+
+  .rules { background-color: var(--card); border: 1px solid var(--line);
+    border-radius: 18px; padding: 10px clamp(20px,2.4vw,28px); }
+  .rule { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; }
+  /* Hairlines BETWEEN rows only: a rule under the last row reads as a cell that
+     failed to close inside a bordered card. */
+  .rule + .rule { border-top: 1px solid var(--line); }
+  /* --ink-soft, never --muted: --muted on this white card measures 3.66:1, which
+     is under AA for a 13px label. --ink-soft holds 6.8:1. */
+  .rk { font-size: 13px; line-height: 1.5; color: var(--ink-soft); min-width: 0; overflow-wrap: anywhere; }
+  .rv { font-size: 14px; line-height: 1.5; color: var(--ink); text-align: right; min-width: 0; overflow-wrap: anywhere; }
+
+  @media (max-width: 900px) {
+    /* Address and rules before the picture: the address is what a guest copies. */
+    .g-grid { grid-template-columns: minmax(0,1fr); }
+    .g-head-r { max-width: none; }
+  }
+  @media (max-width: 760px) {
+    .map-frame, #map { min-height: 300px; }
+    .g-addr { font-size: 15px; }
+    .rules { padding: 8px 20px; }
+  }
+  @media (max-width: 520px) {
+    .eyebrow { letter-spacing: .3em; }
+    .map-frame, #map { min-height: 250px; }
+    .map-frame, .rules { border-radius: 14px; }
+    .mlbl { font-size: 8.5px; letter-spacing: .14em; }
+    .map-cap { left: 10px; bottom: 10px; font-size: 9px; letter-spacing: .14em; max-width: calc(100% - 20px); }
+    /* The rows go two-line rather than squeezing a policy value into a 90px
+       column: label above, value below, both left-aligned. */
+    .rule { flex-direction: column; gap: 3px; padding: 11px 0; }
+    .rv { text-align: left; }
+    /* .g-dir is a .linkc, not a .btn, so any shared full-width button rule does
+       not reach it — widen it here so the only action in this band is thumb-sized. */
+    .g-dir { width: 100%; justify-content: center; }
+  }
+</style>
