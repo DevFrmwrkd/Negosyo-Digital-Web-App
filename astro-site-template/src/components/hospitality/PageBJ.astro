@@ -272,7 +272,13 @@ const __fontHref = buildFontHref(__themePairing);
     html[data-page="BJ"] *,
     html[data-page="BJ"] *::before,
     html[data-page="BJ"] *::after { box-sizing: border-box; }
-    html[data-page="BJ"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    html[data-page="BJ"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth;
+      /* The header is sticky and ~73-77px tall, and every in-page anchor this
+         template generates landed with the top of the target section under it.
+         scroll-padding-top on the root beats per-section scroll-margin-top: one
+         declaration, it covers nested targets (FAQ rows, the map node), and it
+         keeps keyboard focus out from under the rail too. */
+      scroll-padding-top: 88px; }
     @media (prefers-reduced-motion: reduce) { html[data-page="BJ"] { scroll-behavior: auto; } }
     html[data-page="BJ"] body {
       margin: 0; padding: 0;

@@ -67,7 +67,7 @@ const n = tiles.length;
             <div
               class="ph"
               role={t.caption ? 'img' : undefined}
-              aria-label={t.caption || undefined}
+              aria-hidden="true"
               aria-hidden={t.caption ? undefined : 'true'}
               data-image-field={`gallery.items.${t.i}.image`}
               style={`background-image:url('${t.image}');`}

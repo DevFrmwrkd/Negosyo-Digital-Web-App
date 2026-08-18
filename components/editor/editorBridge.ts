@@ -205,6 +205,13 @@ export const EDITOR_BRIDGE_SCRIPT = `
             var nodes = document.querySelectorAll('[data-field="' + cssEscape(msg.field) + '"]');
             nodes.forEach(function (n) {
                 var safe = String(msg.value == null ? '' : msg.value).replace(/<\\/?(script|style)[^>]*>/gi, '');
+                // A node may DERIVE its rendering from the stored value — chips
+                // split on commas, an address broken into lines. Replacing its
+                // innerHTML with the raw scalar shows the admin a layout the
+                // published page never has. Such nodes opt out with data-derived
+                // and refresh on the next build; click-to-focus still works,
+                // because the hook itself stays.
+                if (n.getAttribute('data-derived') !== null) return;
                 n.innerHTML = safe;
             });
             return;

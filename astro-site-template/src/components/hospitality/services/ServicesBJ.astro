@@ -169,7 +169,7 @@ const hasSection = rows.length > 0 || hasWhole;
                       class="ph"
                       data-image-field={`services.items.${it.i}.image`}
                       role={labelled ? 'img' : undefined}
-                      aria-label={labelled ? it.title : undefined}
+                      aria-hidden="true"
                       aria-hidden={labelled ? undefined : 'true'}
                       style={it.image ? `background-image:url('${it.image}');` : undefined}
                     ></div>
@@ -195,7 +195,7 @@ const hasSection = rows.length > 0 || hasWhole;
                   {it.title && <h3 class="r-name" data-field={`services.items.${it.i}.title`}>{it.title}</h3>}
                   {it.desc && <p class="r-desc" data-field={`services.items.${it.i}.desc`}>{it.desc}</p>}
                   {chips.length > 0 && (
-                    <div class="feats" data-field={`services.items.${it.i}.features`}>
+                    <div class="feats" data-field={`services.items.${it.i}.features`} data-derived>
                       {chips.map((f) => <span class="chip">{f}</span>)}
                     </div>
                   )}
