@@ -99,7 +99,7 @@ const __fontHref = buildFontHref(__themePairing);
     {visibility.serviceAreaBlock !== false && <AreaF content={content} />}
     {visibility.credentialsBlock !== false && <CredentialsF content={content} />}
     {visibility.locationBlock !== false && <LocationF content={content} layout={layout} />}
-    <MarqueeF content={content} />
+    {visibility.marqueeBlock !== false && <MarqueeF content={content} />}
   </main>
   {visibility.ctaBandBlock !== false && <CtaBandF content={content} layout={layout} />}
   <FooterF layout={layout} content={content} />

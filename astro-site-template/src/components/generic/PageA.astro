@@ -207,7 +207,7 @@ const __fontHref = buildFontHref(__themePairing);
 
   <main id="top">
     {visibility.heroSection !== false && <HeroA content={content} />}
-    <MarqueeA content={content} />
+    {visibility.marqueeBlock !== false && <MarqueeA content={content} />}
     {visibility.trustBlock !== false && <TrustA content={content} />}
     {visibility.aboutSection !== false && <AboutA content={content} />}
     {visibility.servicesSection !== false && <ServicesA content={content} />}

@@ -146,6 +146,97 @@ export const TEMPLATE_FAMILIES: Array<{ family: TemplateFamily; label: string; t
 
 export const ALL_TEMPLATES: TemplateDef[] = TEMPLATE_FAMILIES.flatMap((f) => f.templates);
 
+/* ────────────────────────────────────────────────────────────────────────────
+ * WHICH BLOCKS A TEMPLATE ACTUALLY RENDERS
+ *
+ * Derived by scanning every Page<CODE>.astro for its `visibility.*` gates
+ * (scripts/check-template-blocks.mjs regenerates and verifies this). Across all
+ * 61 wrappers there are only THREE distinct shapes, so this is expressed as a
+ * base list plus two exception sets rather than 61 hand-written arrays:
+ *
+ *   • every template renders the same 14 blocks
+ *   • 11 of them also render a MARQUEE
+ *   • generic A–E have no CREDENTIALS section at all
+ *
+ * The editor filters its block toggles through this so it never offers a switch
+ * that controls nothing, and never hides a section the template really has.
+ * ──────────────────────────────────────────────────────────────────────────── */
+
+/** Blocks present in every template. */
+export const BASE_BLOCKS = [
+    "HERO", "TRUST", "ABOUT", "SERVICES", "WHY-US", "HOW-IT-WORKS", "TESTIMONIALS",
+    "GALLERY", "FAQ", "SERVICE-AREA", "CREDENTIALS", "LOCATION", "CTA-BAND", "FOOTER",
+] as const;
+
+/** Templates that also render the scrolling marquee band. */
+const WITH_MARQUEE = new Set<string>([
+    "generic:A", "generic:B", "generic:C", "generic:D", "generic:E",
+    "barbershop:F", "barbershop:G", "barbershop:H", "barbershop:I", "barbershop:J",
+    "restaurant:U",
+]);
+
+/** Templates with no credentials section (the generic family never had one). */
+const WITHOUT_CREDENTIALS = new Set<string>([
+    "generic:A", "generic:B", "generic:C", "generic:D", "generic:E",
+]);
+
+/**
+ * The block names a given template renders, in ALL_BLOCKS order.
+ *
+ * NOTE: CLICK-TO-MESSAGE and SCROLL-TO-TOP are deliberately absent. No wrapper
+ * gates on either one — the message pill is gated on the owner having supplied a
+ * real WhatsApp/Messenger handle, and nothing renders a scroll-top button — so
+ * offering them as toggles would be offering switches that do nothing.
+ */
+export function blocksForTemplate(code: string | undefined | null): Set<string> {
+    const out = new Set<string>(BASE_BLOCKS);
+    if (!code) return out;
+    if (WITH_MARQUEE.has(code)) out.add("MARQUEE");
+    if (WITHOUT_CREDENTIALS.has(code)) out.delete("CREDENTIALS");
+    return out;
+}
+
+/**
+ * Editor grouping. Tiers describe how much of a site a block carries, so an
+ * admin can see at a glance what is core and what is enrichment.
+ */
+export type BlockTier = "essential" | "enhanced" | "extra";
+
+export const BLOCK_TIER: Record<string, BlockTier> = {
+    "HERO": "essential", "SERVICES": "essential", "LOCATION": "essential", "FOOTER": "essential",
+    "ABOUT": "enhanced", "GALLERY": "enhanced", "TESTIMONIALS": "enhanced",
+    "FAQ": "enhanced", "CTA-BAND": "enhanced",
+    "TRUST": "extra", "WHY-US": "extra", "HOW-IT-WORKS": "extra",
+    "SERVICE-AREA": "extra", "CREDENTIALS": "extra", "MARQUEE": "extra",
+};
+
+export const TIER_META: Array<{ id: BlockTier; label: string; blurb: string }> = [
+    { id: "essential", label: "Essential", blurb: "The page does not work without these." },
+    { id: "enhanced",  label: "Enhanced",  blurb: "What turns a page into a site worth reading." },
+    { id: "extra",     label: "Extra",     blurb: "Enrichment — drop any the owner has no material for." },
+];
+
+/**
+ * Content paths a block reads, so the editor can show whether the owner has
+ * anything to put in it. First non-empty path wins; a block with no entry here
+ * is always treated as having content (HERO, FOOTER — always populated).
+ */
+export const BLOCK_CONTENT_PATHS: Record<string, string[]> = {
+    "TRUST": ["trust.cells", "trust"],
+    "ABOUT": ["about.body", "about.lead", "about.paragraphs", "about"],
+    "SERVICES": ["services.items"],
+    "WHY-US": ["why.items"],
+    "HOW-IT-WORKS": ["how.steps", "how.items"],
+    "TESTIMONIALS": ["testimonials.items", "testimonials"],
+    "GALLERY": ["gallery.items", "gallery.images", "photos"],
+    "FAQ": ["faq.items"],
+    "SERVICE-AREA": ["area.places"],
+    "CREDENTIALS": ["credentials.items", "credentials"],
+    "LOCATION": ["location.address", "contact.address", "location"],
+    "CTA-BAND": ["ctaBand.headline", "ctaBand"],
+    "MARQUEE": ["marquee.items", "marquee"],
+};
+
 /** business_type bucket labels (carried forward on save). */
 export const TEMPLATE_BUCKETS = [
     { id: "barber",     label: "Barber",     business: "Barber Shop",       desc: "Vintage masculine · heritage" },

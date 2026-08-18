@@ -36,6 +36,12 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { injectEditorBridge } from "./editorBridge";
+import {
+    blocksForTemplate,
+    BLOCK_TIER,
+    TIER_META,
+    BLOCK_CONTENT_PATHS,
+} from "./templateCatalog";
 import LinkPopover, { type LinkPopoverData } from "./LinkPopover";
 import ImagePickerModal from "./ImagePickerModal";
 import ContentFieldsAuto from "./ContentFieldsAuto";
@@ -184,6 +190,7 @@ const TEMPLATE_BUCKETS = [
 // ── 15 v01 BLOCKS ─────────────────────────────────────────────────────
 const ALL_BLOCKS: Array<{ name: string; tag: "required" | "recommended"; visKey: string }> = [
     { name: "HERO",             tag: "required",    visKey: "hero_section" },
+    { name: "MARQUEE",          tag: "recommended", visKey: "marquee_block" },
     { name: "TRUST",            tag: "recommended", visKey: "trust_block" },
     { name: "ABOUT",            tag: "recommended", visKey: "about_section" },
     { name: "SERVICES",         tag: "required",    visKey: "services_section" },
@@ -465,6 +472,27 @@ export default function SandboxEditor(props: SandboxEditorProps) {
         const v = draft?.visibility ?? {};
         return v[visKey] !== false;
     };
+    // Does the owner have anything to put in this block? Read the first
+    // non-empty of the block's content paths off the draft. Purely advisory —
+    // it labels the toggle, it never disables it, because an admin may be
+    // switching a section ON in order to go and write it.
+    const blockHasContent = (blockName: string): boolean | null => {
+        const paths = BLOCK_CONTENT_PATHS[blockName];
+        if (!paths) return null; // HERO / FOOTER — always populated
+        const src: any = draft ?? {};
+        for (const path of paths) {
+            let cur: any = src;
+            for (const key of path.split(".")) {
+                if (cur === null || cur === undefined) break;
+                cur = cur[key];
+            }
+            if (Array.isArray(cur) ? cur.length > 0 : typeof cur === "string" ? cur.trim() !== "" : Boolean(cur)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     const toggleBlock = (visKey: string) => {
         const required = ALL_BLOCKS.find((b) => b.visKey === visKey)?.tag === "required";
         if (required) return;
@@ -3854,48 +3882,91 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                         <div className={s.section}>
                             <div className={s.sectionHead}>BLOCKS · TOGGLE OFF TO REMOVE</div>
                             <div className={s.hint} style={{ marginBottom: 16 }}>
-                                Required blocks are locked. Toggle the rest off to drop them
-                                from the published page.
+                                Only the blocks this template actually renders are listed, so a
+                                switch here always changes the published page. Essential blocks
+                                are locked. A block marked no content yet would render empty or
+                                auto-hide until you fill it in.
                             </div>
-                            {ALL_BLOCKS.map((b) => {
-                                const isReq = b.tag === "required";
-                                const enabled = isBlockEnabled(b.visKey);
-                                return (
-                                    <div
-                                        key={b.name}
-                                        className={cx(s.blockItem, isReq && s.blockLocked)}
-                                    >
-                                        <div className={s.blockLeft}>
-                                            <div>
-                                                <div className={s.blockName}>
-                                                    {b.name}
-                                                    <span className={cx(s.badge, isReq && s.badgeReq)}>
-                                                        {isReq && (
-                                                            <Lock
-                                                                style={{
-                                                                    width: 10,
-                                                                    height: 10,
-                                                                    marginRight: 3,
-                                                                }}
-                                                            />
-                                                        )}
-                                                        {b.tag}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <label className={cx(s.toggle, isReq && s.toggleLocked)}>
-                                            <input
-                                                type="checkbox"
-                                                checked={enabled}
-                                                disabled={isReq}
-                                                onChange={() => toggleBlock(b.visKey)}
-                                            />
-                                            <span className={s.slider} />
-                                        </label>
-                                    </div>
+                            {(() => {
+                                // Filter to what THIS template renders, then group by tier.
+                                // Unfiltered, the tab offered dead switches (a MARQUEE toggle
+                                // on the 50 templates with no marquee, a CREDENTIALS toggle on
+                                // generic A-E which have no credentials section) and omitted
+                                // real ones (MARQUEE was missing entirely, so the 11 templates
+                                // that do render one could never drop it).
+                                const allowed = blocksForTemplate(
+                                    String((effectiveCustomizations as any)?.heroStyle ?? ""),
                                 );
-                            })}
+                                const visible = ALL_BLOCKS.filter((b) => allowed.has(b.name));
+                                return TIER_META.map((tier) => {
+                                    const inTier = visible.filter(
+                                        (b) => (BLOCK_TIER[b.name] ?? "extra") === tier.id,
+                                    );
+                                    if (!inTier.length) return null;
+                                    return (
+                                        <div key={tier.id} style={{ marginBottom: 22 }}>
+                                            <div
+                                                className={s.sectionHead}
+                                                style={{ marginBottom: 4, opacity: 0.75 }}
+                                            >
+                                                {tier.label.toUpperCase()}
+                                                <span style={{ opacity: 0.6 }}>
+                                                    {" · "}
+                                                    {inTier.length}
+                                                </span>
+                                            </div>
+                                            <div className={s.hint} style={{ marginBottom: 10 }}>
+                                                {tier.blurb}
+                                            </div>
+                                            {inTier.map((b) => {
+                                                const isReq = tier.id === "essential";
+                                                const enabled = isBlockEnabled(b.visKey);
+                                                const has = blockHasContent(b.name);
+                                                return (
+                                                    <div
+                                                        key={b.name}
+                                                        className={cx(s.blockItem, isReq && s.blockLocked)}
+                                                    >
+                                                        <div className={s.blockLeft}>
+                                                            <div>
+                                                                <div className={s.blockName}>
+                                                                    {b.name}
+                                                                    {isReq && (
+                                                                        <span className={cx(s.badge, s.badgeReq)}>
+                                                                            <Lock
+                                                                                style={{
+                                                                                    width: 10,
+                                                                                    height: 10,
+                                                                                    marginRight: 3,
+                                                                                }}
+                                                                            />
+                                                                            locked
+                                                                        </span>
+                                                                    )}
+                                                                    {has === false && (
+                                                                        <span className={s.badge}>
+                                                                            no content yet
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <label className={cx(s.toggle, isReq && s.toggleLocked)}>
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={enabled}
+                                                                disabled={isReq}
+                                                                onChange={() => toggleBlock(b.visKey)}
+                                                            />
+                                                            <span className={s.slider} />
+                                                        </label>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                });
+                            })()}
                         </div>
                     )}
 

@@ -125,7 +125,7 @@ const __fontHref = buildFontHref(__themePairing);
   <HeaderB layout={layout} content={content} />
   <main id="top">
     {visibility.heroSection !== false && <HeroB content={content} />}
-    <MarqueeB content={content} />
+    {visibility.marqueeBlock !== false && <MarqueeB content={content} />}
     {visibility.trustBlock !== false && <TrustB content={content} />}
     {visibility.aboutSection !== false && <AboutB content={content} />}
     {visibility.servicesSection !== false && <ServicesB content={content} />}
