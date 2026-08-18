@@ -10,6 +10,7 @@ import {
     familyOf,
     templateByCode,
     type TemplateFamily,
+    blocksForTemplate,
 } from "./templateCatalog";
 
 // Compact toolbar button style shared across the action bar.
@@ -404,7 +405,7 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
                 <section className="p-4">
                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Sections</h3>
                     <div className="space-y-0.5">
-                        {ALL_BLOCKS.map((b) => {
+                        {ALL_BLOCKS.filter((b) => blocksForTemplate(currentHeroStyle).has(b.name)).map((b) => {
                             const on = isBlockEnabled(b.visKey);
                             const required = b.tag === "required";
                             return (

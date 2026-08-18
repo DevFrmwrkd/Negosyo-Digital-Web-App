@@ -110,7 +110,7 @@ const __fontHref = buildFontHref(__themePairing);
   <HeaderD layout={layout} content={content} />
   <main id="top">
     {visibility.heroSection !== false && <HeroD content={content} />}
-    <MarqueeD content={content} />
+    {visibility.marqueeBlock !== false && <MarqueeD content={content} />}
     {visibility.trustBlock !== false && <TrustD content={content} />}
     {visibility.aboutSection !== false && <AboutD content={content} />}
     {visibility.servicesSection !== false && <ServicesD content={content} />}

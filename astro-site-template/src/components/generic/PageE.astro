@@ -113,7 +113,7 @@ const __fontHref = buildFontHref(__themePairing);
   <HeaderE layout={layout} content={content} />
   <main id="top">
     {visibility.heroSection !== false && <HeroE content={content} />}
-    <MarqueeE content={content} />
+    {visibility.marqueeBlock !== false && <MarqueeE content={content} />}
     {visibility.trustBlock !== false && <TrustE content={content} />}
     {visibility.aboutSection !== false && <AboutE content={content} />}
     {visibility.servicesSection !== false && <ServicesE content={content} />}

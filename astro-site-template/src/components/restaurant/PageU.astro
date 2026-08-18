@@ -80,7 +80,7 @@ const __fontHref = buildFontHref(__themePairing);
     {visibility.servicesSection !== false && <ServicesU content={content} />}
     {visibility.whyUsBlock !== false && <WhyU content={content} />}
     {visibility.howItWorksBlock !== false && <HowU content={content} />}
-    <MarqueeU content={content} />
+    {visibility.marqueeBlock !== false && <MarqueeU content={content} />}
     {visibility.testimonialsBlock !== false && <TestimonialsU content={content} />}
     {visibility.gallerySection !== false && <GalleryU content={content} layout={layout} />}
     {visibility.faqBlock !== false && <FaqU content={content} />}

@@ -451,6 +451,10 @@ async function transformToAstroData(
                 : (Array.isArray((content as any).gallery?.items) && (content as any).gallery.items.length > 0)
                     || photos.length > 0,
             ctaBandBlock: vis.cta_band_block !== false,
+            // Marquee — the scrolling kicker band. Only 11 templates render one
+            // (generic A-E, barbershop F-J, restaurant U); the rest ignore this
+            // key. Defaults ON so gating it changes nothing for existing sites.
+            marqueeBlock: vis.marquee_block !== false,
         },
         hero: {
             businessName: content.business_name,

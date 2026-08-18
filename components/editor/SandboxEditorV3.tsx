@@ -25,7 +25,7 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { injectEditorBridge } from "./editorBridge";
 import type { SandboxEditorProps } from "./SandboxEditor";
-import { TEMPLATE_FAMILIES, templateByCode } from "./templateCatalog";
+import { TEMPLATE_FAMILIES, templateByCode, blocksForTemplate } from "./templateCatalog";
 import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED } from "./editorConstants";
 import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
 import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorRole, type ColorProp } from "@/lib/roleColors";
@@ -568,7 +568,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                 <section className="p-4">
                                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Sections</h3>
                                     <div className="space-y-0.5">
-                                        {ALL_BLOCKS.map((b) => {
+                                        {ALL_BLOCKS.filter((b) => blocksForTemplate(String((m.effectiveCustomizations as any)?.heroStyle ?? "")).has(b.name)).map((b) => {
                                             const on = m.isBlockEnabled(b.visKey);
                                             const required = b.tag === "required";
                                             return (

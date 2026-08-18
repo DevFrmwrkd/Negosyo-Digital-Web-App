@@ -49,6 +49,7 @@ export const FONT_PAIRINGS = [
 // generate-website route maps to the astro visibility block.
 export const ALL_BLOCKS: Array<{ name: string; tag: "required" | "recommended"; visKey: string }> = [
     { name: "HERO",             tag: "required",    visKey: "hero_section" },
+    { name: "MARQUEE",          tag: "recommended", visKey: "marquee_block" },
     { name: "TRUST",            tag: "recommended", visKey: "trust_block" },
     { name: "ABOUT",            tag: "recommended", visKey: "about_section" },
     { name: "SERVICES",         tag: "required",    visKey: "services_section" },
