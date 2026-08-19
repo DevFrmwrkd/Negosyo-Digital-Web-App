@@ -1,0 +1,367 @@
+---
+/**
+ * hospitality / HeaderBK — THE STICKY RAIL. The design's front gate,
+ * reproduced: a 90%-opaque night bar over a 14px backdrop blur, a hairline
+ * --rule under it, and one flex row at 19px top and bottom holding three
+ * things — the Prata wordmark with its brass region tag on the baseline
+ * beside it, five 13px wayfinding links, and the brass pill.
+ *
+ * ROLE: wayfinding plus the one action this page exists for. The pill is a
+ * SIBLING of the link row, never a child of it: the link row becomes a
+ * display:none drawer at <=900px and the enquiry affordance must not leave
+ * with it.
+ *
+ * EDITABLE HOOKS — every visible string on this rail, and nothing else:
+ *   footer.brand                     — the wordmark (also the footer's; one
+ *                                      field, two places, on purpose)
+ *   footer.locality                  — the brass region tag beside it
+ *   navbar_links.${i}.label          — one nav link's label
+ *   navbar_links.${i}.href           — that link's target (data-href-field)
+ *   navCtaText                       — the brass pill's label
+ *   navCtaHref                       — the pill's target (data-href-field)
+ * All six are declared in components/editor/genericContentSchema.ts under the
+ * `header` group, so each one is a hook a sidebar input actually owns.
+ *
+ * DERIVED, never authored here:
+ *   - the wordmark falls back to layout.businessName when content.footer.brand
+ *     is blank, because that is the same name from the same submission.
+ *   - every in-page href is resolved by onPage() against the ids PageBK really
+ *     renders (see the anchor guard below).
+ *   - `i` is the ORIGINAL, pre-filter index of a nav link, so dropping an
+ *     unreachable row 2 cannot misdirect an edit into row 3.
+ *
+ * NOT RENDERED, deliberately:
+ *   - THE DESIGN'S OWN COPY. "The villa", "Included", "Gallery", "Location",
+ *     "FAQ", "Contact us" and "Villa Marindu · Palawan" are the designer
+ *     filling in their own template. Not one of those words is in this file. A
+ *     site whose owner supplied no nav links gets no nav links.
+ *   - THE WHOLE RAIL, when brand, locality, links and pill are all empty.
+ *     A sticky bar with nothing in it is 84px of dead chrome on every screen.
+ *   - the burger, unless there is a drawer for it to open.
+ *   - the wordmark, with no name. 'Your Business' once shipped as a real
+ *     customer's own wordmark; the region tag then carries the lock alone.
+ *   - a nav link with no label, or whose href reaches no section on this page.
+ *     A 0-width tap target and a link that scrolls nowhere are both broken.
+ *   Every guard sits OUTSIDE its tag, so a blank value removes the ELEMENT.
+ *
+ * DECISIONS A READER MIGHT OTHERWISE READ AS OVERSIGHTS
+ *
+ * 1. WHY THE BACKGROUND IS A PSEUDO-ELEMENT. The design's rail is
+ *    rgba(16,20,19,.9) — that is --night at 90%. The wrapper publishes
+ *    --scrim-rgb and --bone-rgb but no --night-rgb, and rgba(11,14,13,.9) is
+ *    a different colour from the one the design specified. So the tint is
+ *    --night painted flat on .rail::before at opacity .9, and the blur sits on
+ *    .rail itself: same pixels, no literal anywhere, and it degrades to a
+ *    plain 90% night bar where backdrop-filter is unsupported.
+ *
+ * 2. WHY THE PILL HOOKS navCtaText AND NOT hero.cta1.text.
+ *    components/editor/editorBridge.ts resolves a Blocks toggle to a section by
+ *    counting hooks of that prefix, so a header carrying hero.* hooks vanishes
+ *    when the owner toggles the Hero block off. navCtaText/navCtaHref belong to
+ *    the Header group, so this rail answers only to itself. footer.brand is
+ *    safe twice over: the bridge only ever hides `closest('section,footer')`
+ *    and a <header> is neither, and the real footer outweighs this file's two
+ *    footer.* hooks many times over.
+ *    UNLIKE HeaderBJ, the pill does NOT fall back to hero.cta1.text for its
+ *    DISPLAY. Showing a label the Header-CTA box does not contain means the
+ *    sidebar and the page disagree about what the button says; an empty box
+ *    should render an empty rail, not the hero's words.
+ *
+ * 3. WHY THE WORDMARK LOCK HAS NO aria-label. Its accessible name is its own
+ *    text — the owner's name and the owner's region. HeaderBJ appends the
+ *    literal "home"; that is a word this file did not receive and will not
+ *    invent. The two invisible strings that ARE written here, "Primary" on the
+ *    nav landmark and "Menu" on the icon-only burger, are a11y affordances in
+ *    the same class as the wrapper's skip link, never page copy.
+ *
+ * 4. WHY THE REGION TAG IS --accent. The design puts it in brass, as it does
+ *    every eyebrow on the page (6.62:1 on --night). --accent is the one token
+ *    PageBK hands to the theme engine, so an admin who picks a very dark
+ *    scheme dims this tag along with every other eyebrow in the template. That
+ *    is a template-wide axis the wrapper accepted on purpose; re-deriving it
+ *    HERE alone would leave the header brass-less on a page still full of
+ *    brass. The nav-link hover is --accent-light, the design's own #D2B173 —
+ *    and it rides the SAME axis, not around it: buildOverrideCss aliases
+ *    --accent-light to palette.accent, which is lighter than palette.primary in
+ *    most schemes but not all (mono and white map it darker, yellow maps it to
+ *    a red at 3.79:1 on night). It is a hover-only state over a rest colour of
+ *    --grey at 8.30:1, so the honest place to fix it is the wrapper's accent
+ *    handling, never a re-derivation inside this one file.
+ *
+ * 5. WHY flex:none BECAME flex:0 1 auto ON THE LOCK. The design says flex:none,
+ *    which at 360px lets a long single-word property name shove the pill off
+ *    screen. The lock shrinks and the wordmark ellipsises instead; at desktop
+ *    widths the rendering is identical to the design.
+ *
+ * 6. target="_blank" ONLY FOR http(s). The design's CTA opens a messenger in a
+ *    new tab. An owner may point this at #location or a tel: instead, and
+ *    hijacking those would be wrong, so the attribute pair is computed, never
+ *    literal — and it is one conditional, so no duplicated attribute.
+ *
+ * Never visibility-gated: there is no header toggle any PageXX honours.
+ * Buttons here are .btn + .btn--fill from the wrapper. Not .nav-cta, not
+ * .btn-primary, not inside .nav-right — buildOverrideCss pins the label colour
+ * on all three with !important.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const lay = (layout as any) || {};
+const c = (content as any) || {};
+
+// ── ANCHOR GUARD ───────────────────────────────────────────────────────────
+// lib/derive-content-defaults.ts hard-codes nav links to '#about', '#services',
+// '#why', '#work', '#visit' and navCtaHref to '#visit', and lib/astro-builder.ts
+// falls back to '#about', '#services', '#gallery', '#contact' — ids most designs
+// never render, so those links scrolled nowhere. Resolve every in-page href
+// against what PageBK ACTUALLY renders: keep it if the id exists, remap it when
+// this design carries the same section under another name, otherwise fall back
+// (nav links pass '' and are dropped). Off-page hrefs pass through untouched.
+const PAGE_ANCHORS = new Set(['about', 'services', 'gallery', 'location', 'faq', 'main']);
+// This design renames four derived targets: '#services' is what is INCLUDED in
+// the let (rooms/amenities land there too), '#about' is the villa itself (host
+// and why are the same block here), '#work' is the photo mosaic, and '#visit' /
+// '#contact' both mean the location block — address, map and house rules. A
+// booking link has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  amenities: 'services',
+  book: 'main',
+  contact: 'location',
+  host: 'about',
+  rooms: 'services',
+  visit: 'location',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. 'Your Business' was a shipped placeholder that rendered as the
+// customer's own name — with nothing supplied the mark is omitted instead.
+// `||`, never `??`: genericContentSchema gives footer.brand
+// fallbackPaths ['business_name'] and ContentFieldsAuto's readWithFallbacks
+// treats '' as empty, so a CLEARED brand box still shows the business name in
+// the sidebar. With `??` an empty string is a value, and the page would have
+// gone wordmark-less while the sidebar displayed a name — exactly the
+// page/sidebar disagreement decision 2 below refuses for the pill.
+const brand = String(c.footer?.brand || lay.businessName || '').trim();
+// The region tag. One field, three consumers (here, the footer wordmark and the
+// map caption) and nothing derives it, so on a first build it is simply absent
+// rather than guessed out of the address.
+const locality = String(c.footer?.locality ?? '').trim();
+
+// Nav links. `i` is the ORIGINAL index so per-link edits stay aimed at the row
+// the owner clicked even after unreachable rows are dropped.
+const navLinks: Array<{ href: string; label: string; i: number }> =
+  (Array.isArray(lay.navLinks) ? lay.navLinks : [])
+    .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
+    .filter((l: { href: string; label: string }) => l.href && l.label);
+
+// The brass pill. Label and target both come from the Header group; an empty
+// label removes the whole element rather than leaving a brass rectangle.
+const ctaText = String(c.navCtaText ?? '').trim();
+// '#location' is the fallback because that is where this design puts the
+// address, the map and the house rules — the page has no checkout to send a
+// booking link to.
+const ctaHref = onPage(c.navCtaHref, '#location');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// The rail renders only when it carries something. Not a tag, not a headline —
+// there is no derived default that can fake all four of these at once.
+const hasRail = Boolean(brand || locality || navLinks.length > 0 || ctaText);
+---
+{hasRail && (
+  <header class="rail">
+    <div class="wrap rail-in">
+      {(brand || locality) && (
+        <a class="wm-lock" href="#main">
+          {brand && <span class="wm" data-field="footer.brand">{brand}</span>}
+          {locality && <span class="loc" data-field="footer.locality">{locality}</span>}
+        </a>
+      )}
+      {navLinks.length > 0 && (
+        <nav class="rail-nav" id="rail-nav-BK" aria-label="Primary">
+          {navLinks.map((link) => (
+            <a
+              href={link.href}
+              data-field={`navbar_links.${link.i}.label`}
+              data-href-field={`navbar_links.${link.i}.href`}
+            >{link.label}</a>
+          ))}
+        </nav>
+      )}
+      {/* OUTSIDE .rail-nav on purpose: .rail-nav is a display:none drawer at
+          <=900px and the one action this template exists for must survive it. */}
+      {ctaText && (
+        <a
+          href={ctaHref}
+          class="btn btn--fill railcta"
+          target={ctaExternal ? '_blank' : undefined}
+          rel={ctaExternal ? 'noopener noreferrer' : undefined}
+          data-field="navCtaText"
+          data-href-field="navCtaHref"
+        >{ctaText}</a>
+      )}
+      {navLinks.length > 0 && (
+        <button class="rail-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="rail-nav-BK">
+          <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+      )}
+    </div>
+  </header>
+)}
+<script is:inline>
+  (function () {
+    // Null-guarded rather than conditionally rendered: an is:inline script must
+    // stay at the top level, and with no rail (or no drawer) it simply exits.
+    var rail = document.querySelector('header.rail');
+    if (!rail) return;
+    var btn = rail.querySelector('.rail-burger');
+    if (!btn) return;
+    function setOpen(open) {
+      rail.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () { setOpen(!rail.classList.contains('open')); });
+    // '.railcta' is in this selector because the pill lives OUTSIDE the drawer:
+    // tapping it while the drawer is open must still close the drawer.
+    rail.querySelectorAll('.rail-nav a, .railcta').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  /* The design: sticky, 90% night, blur(14px), one hairline under it. The tint
+     is a pseudo-element at opacity .9 because the wrapper publishes no
+     --night-rgb and --scrim-rgb is a different colour (see note 1 above). The
+     blur stays on .rail so opacity and backdrop-filter never share an element.
+     .rail is a stacking context (sticky + z-index), so the -1 cannot escape. */
+  .rail {
+    /* z-index is the design's own 50. Nothing else in this template stacks
+       above 2, and the wrapper's skip link sits at 100, so the rail clears the
+       page and the skip link still clears the rail. */
+    position: sticky; top: 0; z-index: 50;
+    border-bottom: 1px solid var(--rule);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+  .rail::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    background-color: var(--night); opacity: .9;
+  }
+
+  /* The design's row: 19px top and bottom, 24px gap, three parts spread apart.
+     NOT position:relative — the <=900px drawer is absolutely positioned and
+     resolves against .rail so it spans the full rail width, not the wrap.
+     justify-content is flex-end rather than the design's space-between because
+     the auto margins below already reproduce space-between whenever two or more
+     parts are in flow (an auto margin eats the free space before
+     justify-content ever sees it). It only takes effect in the degenerate cases
+     the design never drew: a site with no brand and no locality, where at
+     <=900px the drawer has left the flow and the pill and burger would
+     otherwise sit hard LEFT. */
+  .rail-in { display: flex; align-items: center; justify-content: flex-end; gap: 24px; padding: 19px 0; }
+
+  /* Wordmark + region tag share a baseline, exactly as the design draws them.
+     Both the lock and the link row take an auto right margin: with all three
+     present that reproduces the design's space-between, and with either one
+     missing the pill still sits hard right. */
+  .wm-lock {
+    display: flex; align-items: baseline; gap: 11px;
+    margin-right: auto; flex: 0 1 auto; min-width: 0;
+  }
+  .wm {
+    font-family: var(--disp); font-weight: 400; font-size: 25px;
+    line-height: 1.1; letter-spacing: .02em; color: var(--bone);
+    /* A long single-word property name must not push the pill off a 360px
+       screen; flex items are blockified, so ellipsis applies here. */
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .loc {
+    flex: 0 1 auto; min-width: 0;
+    font-family: var(--sans); font-weight: 600; font-size: 9px;
+    letter-spacing: .36em; text-transform: uppercase; color: var(--accent);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+
+  .rail-nav { display: flex; align-items: center; gap: 29px; margin-right: auto; }
+  .rail-nav a {
+    font-family: var(--sans); font-weight: 400; font-size: 13px;
+    color: var(--grey);
+    transition: color .18s ease;
+  }
+  /* The design's own hover, straight from its stylesheet: #D2B173, which is
+     --accent-light. That token is on the same theme-engine axis as --accent
+     rather than immune to it — see note 4 in the frontmatter. */
+  .rail-nav a:hover { color: var(--accent-light); }
+  @media (prefers-reduced-motion: reduce) { .rail-nav a { transition: none; } }
+
+  /* The design's btnNav is the wrapper's .btn--fill at a smaller size: brass
+     fill, --on-accent label, 2px corner, 12px/.16em caps, 13px/24px padding.
+     Only the metrics are restated — no fill, no label colour, no box-shadow, so
+     the wrapper's hover darkening and its focus ring both stay intact.
+     min-height is the ONE value that is not verbatim: btnNav declares none and
+     lands about 40px tall, under the 44px target size, and the wrapper's .btn
+     would otherwise force 48px. 44px is the closest height to the design that
+     is still a legal tap target. */
+  .railcta { flex: none; padding: 13px 24px; min-height: 44px; }
+
+  .rail-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 46px; height: 44px; padding: 11px 10px; flex-shrink: 0;
+    background-color: transparent; border: 1px solid rgba(var(--bone-rgb),.4);
+    border-radius: var(--r-ctl); cursor: pointer;
+  }
+  .rail-burger span {
+    display: block; width: 100%; height: 2px; background-color: var(--bone);
+    transition: transform .2s ease, opacity .2s ease;
+  }
+  header.rail.open .rail-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.rail.open .rail-burger span:nth-child(2) { opacity: 0; }
+  header.rail.open .rail-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (prefers-reduced-motion: reduce) { .rail-burger span { transition: none; } }
+
+  /* ONE collapse width: the row leaves and the burger arrives together, so
+     there is never a band where neither is on screen. */
+  @media (max-width: 900px) {
+    .rail-burger { display: flex; }
+    .rail-nav {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch; gap: 0;
+      background-color: var(--night-2);
+      border-bottom: 1px solid var(--rule);
+      box-shadow: 0 14px 30px rgba(var(--scrim-rgb),.55);
+      padding: 4px 0 10px; max-height: 78vh; overflow-y: auto;
+    }
+    header.rail.open .rail-nav { display: flex; }
+    .rail-nav a {
+      display: flex; align-items: center; min-height: 48px; padding: 12px 22px;
+      font-size: 14px; border-bottom: 1px solid var(--rule-soft);
+      overflow-wrap: anywhere;
+    }
+  }
+  @media (max-width: 520px) {
+    .rail-in { gap: 10px; padding: 14px 0; }
+    .wm { font-size: 21px; }
+    .loc { letter-spacing: .24em; }
+    /* display:block, not inline-flex, so text-overflow actually applies; 12px
+       padding over a 20px line box still clears a 44px target. */
+    .railcta {
+      display: block; line-height: 20px; padding: 12px 15px;
+      font-size: 10px; letter-spacing: .1em;
+      max-width: 42vw; overflow: hidden; text-overflow: ellipsis;
+    }
+  }
+  /* At 360px the region tag is the first thing to go: the wordmark, the pill
+     and the burger are all load-bearing, the tag is a flourish. */
+  @media (max-width: 400px) {
+    .loc { display: none; }
+    .railcta { max-width: 38vw; padding: 12px 12px; }
+  }
+</style>

@@ -127,6 +127,7 @@ const FILIPINO_TEMPLATES: TemplateDef[] = [
 const HOSPITALITY_TEMPLATES: TemplateDef[] = [
     { letter: "BI", code: "hospitality:BI", label: "Palm Hour",  tagline: "Terracotta & lagoon shade · hotels, villas & short stays", preview: "/template-previews/bi.html" },
     { letter: "BJ", code: "hospitality:BJ", label: "Kubo Stays", tagline: "Cream & deep green · rooms, homestays & guest houses",     preview: "/template-previews/bj.html" },
+    { letter: "BK", code: "hospitality:BK", label: "Villa Marindu", tagline: "Night & brass · private villas and whole-property stays", preview: "/template-previews/bk.html" },
 ];
 
 /** Families in rail-display order, each with a human label. */

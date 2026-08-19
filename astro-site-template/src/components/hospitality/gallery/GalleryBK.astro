@@ -1,0 +1,305 @@
+---
+/**
+ * hospitality / GalleryBK — "Villa Marindu"'s photo bento: a brass eyebrow, one
+ * display headline, and the design's five-slot mosaic — a tall lead print
+ * spanning both rows beside four smaller frames.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * the GALLERY element of "Villa Marindu Landing.dc.html":
+ *
+ *   section padding    96px top, 0 bottom — the design gives EVERY section a
+ *                      bare bottom and lets the NEXT one own the gap it wants
+ *                      (HOW-IT-WORKS margin-top:100px, TESTIMONIALS
+ *                      padding-top:100px). So a zero bottom here is the design,
+ *                      not an omission, and it must stay zero: if this section
+ *                      grew a bottom padding the gap would double wherever the
+ *                      following section is a padding-top one.
+ *   eyebrow            10px / .44em caps in brass                 → .kick
+ *   headline           Prata 400, clamp(31px,4vw,54px), lh 1.1,
+ *                      margin .26em 0 36px, --bone-hi, NO max-width
+ *   grid               minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)
+ *   rows               190px 190px          gap 13px
+ *   tile               --well ground, 3px radius (--r-lg), clipped
+ *   lead tile          grid-row: span 2
+ *
+ * Unlike the sister template's mosaic, this design gives EACH tile its own 3px
+ * radius rather than clipping the block as one slab — so the frames carry the
+ * radius and there is no wrapping clip. That is a real difference in the two
+ * designs, not a port artefact.
+ *
+ * Every colour is a wrapper token. No literal hex appears in this file; the
+ * design's #1A211E is --well, #F4F1EA is --bone-hi, #B99552 is --accent.
+ *
+ * ── EDITABLE HOOKS (each one is DECLARED in genericContentSchema.ts) ─────────
+ *   gallery.tag                          → the brass eyebrow
+ *   gallery.headline                     → the display h2 (set:html)
+ *   gallery.items.<original i>.image     → data-image-field, the bento tiles
+ *   gallery.items.<original i>.caption   → the optional brass caption pill
+ * Nothing else. This section renders no link, no button and no numeral, so it
+ * declares no data-href-field and needs no anchor-remap helper — the onPage()
+ * helper the sibling sections carry would have nothing to remap here.
+ *
+ * ── NOT SUPPLIED BY THIS COMPONENT ──────────────────────────────────────────
+ * Not one visible word. The design's slot placeholders ("Pool at dusk",
+ * "Master bedroom", "Kitchen", "Bathroom", "Sea view") are the DESIGNER filling
+ * their own template — they are captions for photographs nobody has looked at,
+ * so they are not written here and no caption default is invented. An
+ * uncaptioned photo is simply a photo. Likewise the design's headline is not
+ * hard-coded: an owner who typed no headline gets no headline element at all,
+ * because every guard sits OUTSIDE its tag.
+ *
+ * ── THE SECTION GATE ────────────────────────────────────────────────────────
+ * Renders only when at least one row carries an IMAGE. It deliberately does not
+ * count the tag or the headline: lib/derive-content-defaults.ts sets
+ * gallery.tag and gallery.headline on every site, so a gate that counted them
+ * would ship an eyebrow and a headline over an empty grid. The tag and headline
+ * still render (guarded) once photos exist — refusing to render them would
+ * leave two live sidebar inputs wired to nothing.
+ *
+ * ── DERIVED, not authored ───────────────────────────────────────────────────
+ * ROW INDEXES. Rows without an image are dropped, and the ORIGINAL array index
+ * travels with the survivor as `.i`. The editor writes the data-field path
+ * verbatim into the draft, so a re-indexed path would patch a different row —
+ * deleting row 2's photo would send row 3's edits into row 2.
+ *
+ * THE COUNT LADDER. The design hard-codes five slots; content does not — an
+ * owner may upload one photo or eleven. So the design's five-up is the top of a
+ * ladder of layouts, each drawn for its own count so no tier can open a hole:
+ *   1  one full-width print, still two rows tall
+ *   2  two full-height columns on the design's lopsided 2fr / 1fr
+ *   3  the tall lead plus two stacked beside it
+ *   4  the design's three tracks, with the fourth frame taking both narrow ones
+ *   5  the design's own grid, exactly
+ *   6+ the extras flow into implicit 190px rows, and the LAST frame stretches
+ *      across whatever tracks its row left empty (.fill-*) so the mosaic never
+ *      ends on a ragged half-row. The stretch is computed per breakpoint,
+ *      because a three-track row and a two-track row run out at different
+ *      counts; it is reset entirely at one column.
+ *
+ * ── DECISIONS A READER MIGHT THINK WERE OVERSIGHTS ──────────────────────────
+ * · The design's 36px between the head and the mosaic is carried by the HEAD
+ *   BLOCK, not by the h2's own margin-bottom. It renders identically when both
+ *   strings exist — the h2 keeps the design's .26em above it and adds nothing
+ *   below — but an owner who clears the headline and keeps the eyebrow still
+ *   gets the 36px, instead of photos glued to the underside of the eyebrow.
+ * · .h2 max-width is set to none. The wrapper caps every headline at 24ch;
+ *   this design's gallery h2 is the one headline it does NOT cap (its About,
+ *   Why and How headlines all carry an explicit max-width, this one does not).
+ * · min-height is zeroed on the frames. The wrapper's .plate floors at 180px,
+ *   which would fight the design's fixed 190px rows the moment they shrink.
+ * · The brass italic inside the headline comes from the wrapper's global
+ *   `.h2 em` rule, not from this file: set:html builds that <em> after scoping,
+ *   so no scoped selector can reach it. Nothing here needs :global() because
+ *   the wrapper already styles it.
+ * · The hover lift on a photo is the only thing here the static design file
+ *   could not express. The wrapper ships `transition: transform .5s ease` on
+ *   .ph, which is dead weight unless a section moves it, and the photo mosaic
+ *   is where it belongs. It is a 1.04 scale, and reduced-motion cancels it.
+ * · An apostrophe in an upload path would close the url('…') and blank the
+ *   tile, so the path is percent-escaped for CSS only.
+ *
+ * ── ACCESSIBILITY ───────────────────────────────────────────────────────────
+ * A tile is announced only when the owner gave it words. With a caption the
+ * frame is role="img" named by that caption — the owner's own words — and the
+ * caption is also the visible figcaption. With no caption the photo layer is
+ * hidden from the tree rather than announced as "image"; inventing "Property
+ * photo" would publish a description of something nobody described. The two
+ * attributes are mutually exclusive and both conditional, so no literal ever
+ * sits beside a conditional one.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const gallery = (content && content.gallery) || {};
+const tag = gallery.tag || '';
+const headline = gallery.headline || '';
+
+type Tile = { image?: string; caption?: string };
+// The legacy bare-array form lives at content.gallery itself — NOT the `gallery`
+// alias above, which is the object form's home. Both shapes reach production.
+const raw: Tile[] = Array.isArray(gallery.items)
+  ? gallery.items
+  : (Array.isArray(content?.gallery) ? (content.gallery as Tile[]) : []);
+
+const tiles = raw
+  .map((t, i) => ({
+    image: (t && typeof t.image === 'string' ? t.image : '').trim(),
+    caption: (t && typeof t.caption === 'string' ? t.caption : '').trim(),
+    i,
+  }))
+  .filter((t) => Boolean(t.image));
+
+const n = tiles.length;
+
+// CSS-only escape: the value still travels raw into data-image-field.
+const cssUrl = (s: string) => s.replace(/'/g, '%27');
+
+/* Row completion, per breakpoint. Three tracks: the design's five fill rows 1–2
+   exactly, so extras start a fresh three-wide row — a remainder of 1 stretches
+   the last frame across all three, a remainder of 2 across two. Four photos is
+   its own case (the fourth takes both narrow tracks). Two tracks: the lead spans
+   both rows, so tiles 2 and 3 finish the first column pair and the extras run two
+   per row — an odd remainder stretches the last frame across the pair. */
+const rem3 = n > 5 ? (n - 5) % 3 : 0;
+const fillDesk = n === 4 ? 2 : (rem3 === 1 ? 3 : (rem3 === 2 ? 2 : 0));
+const fillMid = n >= 4 && (n - 3) % 2 === 1 ? 2 : 0;
+---
+{n > 0 && (
+  <section class="gal" id="gallery">
+    <div class="wrap">
+      {(tag || headline) && (
+        <div class="gal-head reveal">
+          {tag && <span class="kick" data-field="gallery.tag">{tag}</span>}
+          {headline && <h2 class="h2 gal-h2" data-field="gallery.headline" set:html={headline}></h2>}
+        </div>
+      )}
+
+      <div
+        class:list={['bento', 'reveal', n === 1 && 'g-1', n === 2 && 'g-2', n === 3 && 'g-3']}
+        data-delay="1"
+      >
+        {tiles.map((t, pos) => (
+          <figure
+            class:list={[
+              'plate',
+              'frame',
+              pos === n - 1 && fillDesk === 3 && 'fill-d3',
+              pos === n - 1 && fillDesk === 2 && 'fill-d2',
+              pos === n - 1 && fillMid === 2 && 'fill-m2',
+            ]}
+          >
+            <div
+              class="ph"
+              role={t.caption ? 'img' : undefined}
+              aria-label={t.caption || undefined}
+              aria-hidden={t.caption ? undefined : 'true'}
+              data-image-field={`gallery.items.${t.i}.image`}
+              style={`background-image:url('${cssUrl(t.image)}');`}
+            ></div>
+            {t.caption && (
+              <figcaption class="cap" data-field={`gallery.items.${t.i}.caption`}>{t.caption}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* The design draws this section on the page ground with no band, 96px of air
+     above and none below — the section that follows carries its own top margin.
+     Beats the wrapper's `section` rule on class count. */
+  .gal { padding: clamp(58px, 7.6vw, 96px) 0 0; }
+
+  /* The design's 36px down to the mosaic. It sits on the head BLOCK rather than
+     on the h2 so an eyebrow with no headline still clears the photos; with both
+     present the two are the same 36px (the h2 adds nothing below itself). */
+  .gal-head { margin: 0 0 36px; }
+
+  /* The design's own gallery headline is the one h2 it does not cap, so the
+     wrapper's 24ch is released here. .26em above the headline, per the design. */
+  .gal-h2 {
+    margin: .26em 0 0;
+    max-width: none;
+  }
+
+  /* ── THE MOSAIC ───────────────────────────────────────────────────────────
+     The design's tracks verbatim: 2fr / 1fr / 1fr, two fixed 190px rows, 13px
+     gaps, and the lead print spanning both rows. --row is a single knob so the
+     breakpoints move the row height without restating the grid.
+
+     minmax(0,…) on every track, never a bare fr: a background-image tile has no
+     intrinsic width, but a caption pill does, and one long caption in a bare 1fr
+     track would push the whole page sideways on a phone. */
+  .bento {
+    --row: 190px;
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: var(--row) var(--row);
+    grid-auto-rows: var(--row);
+    gap: 13px;
+  }
+  .bento .frame:first-child { grid-row: span 2; }
+
+  /* Each frame is its own clipped plate at the design's 3px radius — the block
+     is NOT clipped as one slab in this design. Ground, radius and clipping come
+     from the wrapper's .plate; only geometry is set here. The wrapper floors
+     .plate at 180px, which would fight the fixed rows, so it is released. */
+  .frame {
+    margin: 0;
+    min-height: 0;
+    min-width: 0;
+  }
+  .frame .ph {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  /* The one thing a static design file cannot state. See the frontmatter. */
+  .frame:hover .ph { transform: scale(1.04); }
+  @media (prefers-reduced-motion: reduce) {
+    .frame:hover .ph { transform: none; }
+  }
+
+  /* ── THE COUNT LADDER. Each tier restates the tracks for its own count, so no
+        tier can leave a hole. Two compounds plus Astro's scope attribute, so
+        they out-specify the base grid above and the collapse rules below —
+        wherever a tier is already narrow enough to survive the collapse. */
+  .bento.g-1 { grid-template-columns: minmax(0, 1fr); }
+  .bento.g-2,
+  .bento.g-3 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .bento.g-2 .frame { grid-row: span 2; }
+
+  /* Row completion on the trailing frame (see the frontmatter note). */
+  .bento .frame.fill-d3 { grid-column: span 3; }
+  .bento .frame.fill-d2 { grid-column: span 2; }
+
+  /* ── 900px · the three-track bento collapses to two. The lead keeps its
+        two-row span, which is what makes 3, 4 and 5 photos all land on complete
+        rows here. .g-1 is deliberately NOT restated — it already out-specifies
+        the base, so a lone photo keeps the full width instead of becoming a
+        half-width tile beside an empty track — and .g-2 / .g-3 keep the design's
+        lopsided 2fr / 1fr for the same reason. */
+  @media (max-width: 900px) {
+    .bento {
+      --row: clamp(140px, 20vw, 178px);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 11px;
+    }
+    .bento .frame.fill-d3,
+    .bento .frame.fill-d2 { grid-column: auto; }
+    .bento .frame.fill-m2 { grid-column: span 2; }
+    .gal-head { margin-bottom: 30px; }
+  }
+
+  /* ── 520px · one column. A 150px-wide tile is too small to read as a room, so
+        the mosaic becomes a stack and every span is reset so nothing reaches for
+        a track that is not there. Nothing may push the page sideways at this
+        width: the tracks are minmax(0,…), the frames cannot exceed them, and a
+        pasted URL in the eyebrow breaks instead of scrolling the body. */
+  @media (max-width: 520px) {
+    .bento {
+      --row: clamp(150px, 44vw, 200px);
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
+    .bento.g-2,
+    .bento.g-3 { grid-template-columns: minmax(0, 1fr); }
+    .bento .frame,
+    .bento.g-2 .frame,
+    .bento .frame:first-child { grid-row: auto; }
+    .bento .frame.fill-m2 { grid-column: auto; }
+    /* …except the solo photo, which stays a two-row print so it still reads as
+       the lead image it is, and not a stray thumbnail. Declared last. */
+    .bento.g-1 .frame { grid-row: span 2; }
+
+    .gal-head .kick {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .gal-head { margin-bottom: 24px; }
+  }
+</style>

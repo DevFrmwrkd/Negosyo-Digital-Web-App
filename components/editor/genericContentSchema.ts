@@ -290,6 +290,22 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 newItem: '',
                 itemFields: [{ kind: 'textarea', label: 'Paragraph', path: '' }],
             } as ListSpec,
+            // Label / value rows printed beside the story — "Bedrooms · 4
+            // en-suite", "Pool · 18 m salt". They live on about.* rather than a
+            // prefix of their own because the design draws them INSIDE the about
+            // section, and a section mixing two content prefixes gets hidden by
+            // either Blocks toggle. Empty by default: a template that draws no
+            // ledger is unaffected, and an owner who types nothing gets no rows.
+            {
+                kind: 'list',
+                label: 'Spec rows (label · value)',
+                path: 'about.specs',
+                newItem: { label: '', value: '' },
+                itemFields: [
+                    { kind: 'text', label: 'Label', path: 'label', placeholder: 'Bedrooms' },
+                    { kind: 'text', label: 'Value', path: 'value', placeholder: '4 en-suite' },
+                ],
+            } as ListSpec,
         ],
     },
     {
@@ -460,10 +476,22 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 label: 'Quotes',
                 path: 'testimonials.items',
                 fallbackPaths: ['testimonials'],
-                newItem: { quote: '', who: '' },
+                newItem: { quote: '', who: '', rating: '' },
                 itemFields: [
                     { kind: 'textarea', label: 'Quote', path: 'quote' },
                     { kind: 'text', label: 'Attribution', path: 'who' },
+                    // Several designs draw a row of stars over every quote. Five
+                    // stars printed for a guest who never gave a rating is a
+                    // fabricated claim, so the stars are drawn from THIS number
+                    // and a review with none gets the template's plain rule
+                    // instead. Whole numbers 1-5.
+                    {
+                        kind: 'text',
+                        label: 'Rating out of 5',
+                        path: 'rating',
+                        placeholder: '5',
+                        hint: 'Stars are drawn only for a rating you type here. Leave blank for none.',
+                    },
                 ],
             } as ListSpec,
         ],
@@ -532,6 +560,22 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 path: 'area.places',
                 newItem: '',
                 itemFields: [{ kind: 'text', label: 'Place', path: '' }],
+            } as ListSpec,
+            // Place + travel time, for the templates that print "Lio Airport ·
+            // 25 min" rather than a bare chip. A SEPARATE list rather than
+            // reshaping area.places above, which is a list of plain STRINGS that
+            // seven templates already read as strings — turning it into a list of
+            // objects is precisely the two-shape break that cost a sweep to find.
+            // Empty by default; a template reading area.places is untouched.
+            {
+                kind: 'list',
+                label: 'Places with travel time',
+                path: 'area.rows',
+                newItem: { place: '', time: '' },
+                itemFields: [
+                    { kind: 'text', label: 'Place', path: 'place', placeholder: 'Lio Airport' },
+                    { kind: 'text', label: 'Time / distance', path: 'time', placeholder: '25 min' },
+                ],
             } as ListSpec,
         ],
     },
@@ -616,6 +660,10 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
             // CtaBandBI already emits data-field="ctaBand.tag" against nothing —
             // another dead hook this declaration turns into a real input.
             { kind: 'text', label: 'Eyebrow tag', path: 'ctaBand.tag', placeholder: 'Ready when you are' },
+            // Some closing bands are a full-bleed photograph under a scrim rather
+            // than a flat colour. Optional: with no upload the band falls back to
+            // its template's own ground, so nothing gains an empty grey slab.
+            { kind: 'image', label: 'Background photo', path: 'ctaBand.image' },
             { kind: 'text', label: 'Headline', path: 'ctaBand.headline', placeholder: 'Your closing call' },
             { kind: 'textarea', label: 'Sub-line', path: 'ctaBand.sub' },
             {
