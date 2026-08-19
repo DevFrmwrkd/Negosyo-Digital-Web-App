@@ -17,7 +17,11 @@
  *   3. every hand-authored label in templateSectionLabels.ts is keyed to a
  *      template that exists and a block that template actually renders — a label
  *      for a section the page has not got would name a switch that is not there
- *   4. no template is missing from the scan
+ *   4. a wrapper that defines a Leaflet boot also LOADS leaflet.css and
+ *      leaflet.js — defining the boot without them is silent: window.L never
+ *      exists, the boot returns, and the section's drawn fallback map face is
+ *      all any owner ever sees however many coordinates they type
+ *   5. no template is missing from the scan
  *
  * Run: node scripts/check-template-blocks.mjs
  */
@@ -130,6 +134,23 @@ const labelled = {};
 
 const errors = [];
 const codes = Object.keys(scanned).sort();
+
+// ── Leaflet wiring. Cheap, and it catches a failure that is invisible in
+//    every automated check we have: the page builds, the section renders, the
+//    map just never appears.
+for (const fam of fs.readdirSync(COMPONENTS)) {
+    const d = path.join(COMPONENTS, fam);
+    if (!fs.statSync(d).isDirectory()) continue;
+    for (const f of fs.readdirSync(d)) {
+        if (!/^Page[A-Z]+\.astro$/.test(f)) continue;
+        const src = fs.readFileSync(path.join(d, f), "utf8");
+        if (!/InitMap\s*=\s*function/.test(src)) continue;
+        if (!/leaflet@[\d.]+\/dist\/leaflet\.js/.test(src))
+            errors.push(`${fam}/${f}: defines a map boot but never loads leaflet.js — window.L is undefined, so the boot returns and the map never appears`);
+        if (!/leaflet@[\d.]+\/dist\/leaflet\.css/.test(src))
+            errors.push(`${fam}/${f}: defines a map boot but never loads leaflet.css — the tiles render as a stack of unpositioned images`);
+    }
+}
 
 for (const code of codes) {
     const rows = scanned[code];
