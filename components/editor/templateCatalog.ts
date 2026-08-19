@@ -17,6 +17,9 @@ export type TemplateFamily =
     | "trades" | "foodcraft" | "services" | "filipino" | "hospitality"
     | "layouts";
 
+import { TEMPLATE_SECTION_ORDER } from "./templateSectionOrder.generated";
+import { TEMPLATE_SECTION_LABELS, DEFAULT_SECTION_LABELS } from "./templateSectionLabels";
+
 export interface TemplateDef {
     letter: string;
     code: string;
@@ -148,53 +151,78 @@ export const TEMPLATE_FAMILIES: Array<{ family: TemplateFamily; label: string; t
 export const ALL_TEMPLATES: TemplateDef[] = TEMPLATE_FAMILIES.flatMap((f) => f.templates);
 
 /* ────────────────────────────────────────────────────────────────────────────
- * WHICH BLOCKS A TEMPLATE ACTUALLY RENDERS
+ * WHICH SECTIONS A TEMPLATE ACTUALLY RENDERS, AND WHAT IT CALLS THEM
  *
- * Derived by scanning every Page<CODE>.astro for its `visibility.*` gates
- * (scripts/check-template-blocks.mjs regenerates and verifies this). Across all
- * 62 wrappers there are only THREE distinct shapes, so this is expressed as a
- * base list plus two exception sets rather than 62 hand-written arrays:
+ * Membership and ORDER come from templateSectionOrder.generated.ts, which
+ * scripts/gen-template-sections.mjs reads straight out of every
+ * Page<CODE>.astro. It replaced a hand-written "base list plus two exception
+ * sets" that was only ever an approximation: it claimed all 62 wrappers render
+ * the same fourteen blocks in the same order, so the Sections panel showed the
+ * same generic schema whichever template was selected.
  *
- *   • every template renders the same 14 blocks
- *   • 11 of them also render a MARQUEE
- *   • generic A–E have no CREDENTIALS section at all
+ * They do not render in the same order. Kubo Stays leads with the rooms and
+ * puts the promises straight after the host; the generic family opens with a
+ * marquee and never renders credentials at all. Page order is what an admin is
+ * actually looking at, so it is what the panel lists.
  *
- * The editor filters its block toggles through this so it never offers a switch
- * that controls nothing, and never hides a section the template really has.
+ * The NAMES come from templateSectionLabels.ts — what each template calls the
+ * section on the page ("The rooms", "Your host", "Getting here"), because
+ * "SERVICES" and "WHY-US" are our vocabulary, not the owner's.
+ *
+ * NOTE: HEADER, CLICK-TO-MESSAGE and SCROLL-TO-TOP are deliberately absent. No
+ * wrapper gates on any of them — the message pill is gated on the owner having
+ * supplied a real WhatsApp/Messenger handle, and nothing renders a scroll-top
+ * button — so offering them as toggles would be offering switches that do
+ * nothing.
  * ──────────────────────────────────────────────────────────────────────────── */
 
-/** Blocks present in every template. */
-export const BASE_BLOCKS = [
-    "HERO", "TRUST", "ABOUT", "SERVICES", "WHY-US", "HOW-IT-WORKS", "TESTIMONIALS",
-    "GALLERY", "FAQ", "SERVICE-AREA", "CREDENTIALS", "LOCATION", "CTA-BAND", "FOOTER",
-] as const;
-
-/** Templates that also render the scrolling marquee band. */
-const WITH_MARQUEE = new Set<string>([
-    "generic:A", "generic:B", "generic:C", "generic:D", "generic:E",
-    "barbershop:F", "barbershop:G", "barbershop:H", "barbershop:I", "barbershop:J",
-    "restaurant:U",
-]);
-
-/** Templates with no credentials section (the generic family never had one). */
-const WITHOUT_CREDENTIALS = new Set<string>([
-    "generic:A", "generic:B", "generic:C", "generic:D", "generic:E",
-]);
+/** One section as a given template renders it. */
+export interface TemplateSection {
+    /** The ALL_BLOCKS name, which is what the visibility key hangs off. */
+    block: string;
+    /** What THIS template calls it on the page. */
+    label: string;
+    /** What is actually inside it, so an admin knows what a toggle removes. */
+    blurb: string;
+}
 
 /**
- * The block names a given template renders, in ALL_BLOCKS order.
+ * The blocks a given template renders. Unordered by contract — callers that
+ * care about order use sectionsForTemplate().
  *
- * NOTE: CLICK-TO-MESSAGE and SCROLL-TO-TOP are deliberately absent. No wrapper
- * gates on either one — the message pill is gated on the owner having supplied a
- * real WhatsApp/Messenger handle, and nothing renders a scroll-top button — so
- * offering them as toggles would be offering switches that do nothing.
+ * An unknown code falls back to the union of every block, so a newly added
+ * template that has not been regenerated yet over-offers rather than hiding a
+ * section the admin can see on the page.
  */
 export function blocksForTemplate(code: string | undefined | null): Set<string> {
-    const out = new Set<string>(BASE_BLOCKS);
-    if (!code) return out;
-    if (WITH_MARQUEE.has(code)) out.add("MARQUEE");
-    if (WITHOUT_CREDENTIALS.has(code)) out.delete("CREDENTIALS");
-    return out;
+    const order = code ? TEMPLATE_SECTION_ORDER[code] : undefined;
+    if (order) return new Set(order);
+    return new Set(ALL_SECTION_BLOCKS);
+}
+
+/** Every block any template renders — the fallback for an unknown code. */
+const ALL_SECTION_BLOCKS: string[] = (() => {
+    const seen = new Set<string>();
+    for (const list of Object.values(TEMPLATE_SECTION_ORDER)) for (const b of list) seen.add(b);
+    return [...seen];
+})();
+
+/**
+ * The sections a template renders, IN PAGE ORDER, each carrying the template's
+ * own name for it. This is what the editor's Sections panel lists.
+ */
+export function sectionsForTemplate(code: string | undefined | null): TemplateSection[] {
+    const order = (code ? TEMPLATE_SECTION_ORDER[code] : undefined) ?? ALL_SECTION_BLOCKS;
+    const named = (code ? TEMPLATE_SECTION_LABELS[code] : undefined) ?? {};
+    return order.map((block) => {
+        const own = named[block];
+        const fallback = DEFAULT_SECTION_LABELS[block];
+        return {
+            block,
+            label: own?.label ?? fallback?.label ?? block,
+            blurb: own?.blurb ?? fallback?.blurb ?? "",
+        };
+    });
 }
 
 /**

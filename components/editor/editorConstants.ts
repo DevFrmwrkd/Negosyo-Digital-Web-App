@@ -67,6 +67,16 @@ export const ALL_BLOCKS: Array<{ name: string; tag: "required" | "recommended"; 
     { name: "SCROLL-TO-TOP",    tag: "recommended", visKey: "scroll_top_button" },
 ];
 
+/**
+ * Block name -> the visibility key its toggle writes. The Sections panel now
+ * lists sections in the order the TEMPLATE renders them (see
+ * templateCatalog.sectionsForTemplate), not in ALL_BLOCKS declaration order, so
+ * it needs to look the key up by name rather than carry it along in the list.
+ */
+export const VIS_KEY_BY_BLOCK: Record<string, string> = Object.fromEntries(
+    ALL_BLOCKS.map((b) => [b.name, b.visKey]),
+);
+
 // ── Bridge field mapping ──────────────────────────────────────────────────
 // Draft state path → data-field selector inside the preview iframe. The bridge
 // updates any [data-field="<value>"] element on postMessage ed:update.

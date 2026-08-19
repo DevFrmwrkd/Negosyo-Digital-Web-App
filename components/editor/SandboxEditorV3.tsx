@@ -25,8 +25,8 @@ import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { injectEditorBridge } from "./editorBridge";
 import type { SandboxEditorProps } from "./SandboxEditor";
-import { TEMPLATE_FAMILIES, templateByCode, blocksForTemplate, BLOCK_TIER, TIER_META, BLOCK_CONTENT_PATHS } from "./templateCatalog";
-import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED } from "./editorConstants";
+import { TEMPLATE_FAMILIES, templateByCode, sectionsForTemplate, BLOCK_TIER, TIER_META, BLOCK_CONTENT_PATHS } from "./templateCatalog";
+import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED, VIS_KEY_BY_BLOCK } from "./editorConstants";
 import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
 import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorRole, type ColorProp } from "@/lib/roleColors";
 import { useEditorDraft } from "./useEditorDraft";
@@ -732,15 +732,18 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                 <section className="p-4">
                                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Sections</h3>
                                     <div className="space-y-0.5">
-                                        {/* Grouped by tier so an admin can see what is structural and
-                                            what is enrichment. The four essential blocks sit at
-                                            ALL_BLOCKS positions 1, 5, 13 and 16, so in declaration
-                                            order they really were scattered among the optional ones. */}
+                                        {/* THE SELECTED TEMPLATE'S OWN SECTIONS, in the order that
+                                            template renders them and under the names it prints on
+                                            the page — "The rooms", not "SERVICES". Grouped by tier
+                                            so an admin can still see what is structural and what is
+                                            enrichment. sectionsForTemplate() reads membership and
+                                            order from templateSectionOrder.generated.ts, which is
+                                            generated from the wrappers, so this list cannot offer a
+                                            switch the template has no section for. */}
                                         {(() => {
-                                            const allowed = blocksForTemplate(String((m.effectiveCustomizations as any)?.heroStyle ?? ""));
-                                            const visible = ALL_BLOCKS.filter((b) => allowed.has(b.name));
+                                            const sections = sectionsForTemplate(String((m.effectiveCustomizations as any)?.heroStyle ?? ""));
                                             return TIER_META.map((tier) => {
-                                                const inTier = visible.filter((b) => (BLOCK_TIER[b.name] ?? "extra") === tier.id);
+                                                const inTier = sections.filter((sec) => (BLOCK_TIER[sec.block] ?? "extra") === tier.id);
                                                 if (!inTier.length) return null;
                                                 return (
                                                     <div key={tier.id} className="mb-3 last:mb-0">
@@ -748,19 +751,27 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                                             {tier.label}<span className="ml-1 font-normal text-neutral-300">{inTier.length}</span>
                                                         </div>
                                                         <p className="mb-1.5 text-[10px] leading-snug text-neutral-400">{tier.blurb}</p>
-                                                        {inTier.map((b) => {
-                                                            const on = m.isBlockEnabled(b.visKey);
+                                                        {inTier.map((sec) => {
+                                                            const visKey = VIS_KEY_BY_BLOCK[sec.block];
+                                                            if (!visKey) return null;
+                                                            const on = m.isBlockEnabled(visKey);
                                                             const required = tier.id === "essential";
-                                                            const empty = blockHasContent(b.name) === false;
+                                                            const empty = blockHasContent(sec.block) === false;
                                                             return (
-                                                                <button key={b.visKey} type="button" disabled={required} onClick={() => handleToggleBlock(b.visKey)} aria-checked={on} role="switch"
-                                                                    className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${required ? "cursor-not-allowed opacity-60" : "hover:bg-neutral-100"}`}>
-                                                                    <span className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${on ? "bg-emerald-500" : "bg-neutral-300"}`}>
+                                                                <button key={visKey} type="button" disabled={required} onClick={() => handleToggleBlock(visKey)} aria-checked={on} role="switch"
+                                                                    title={sec.blurb}
+                                                                    className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${required ? "cursor-not-allowed opacity-60" : "hover:bg-neutral-100"}`}>
+                                                                    <span className={`relative mt-0.5 h-4 w-7 flex-shrink-0 rounded-full transition-colors ${on ? "bg-emerald-500" : "bg-neutral-300"}`}>
                                                                         <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${on ? "translate-x-3.5" : "translate-x-0.5"}`} />
                                                                     </span>
-                                                                    <span className={`min-w-0 flex-1 truncate text-[11px] font-medium ${on ? "text-neutral-700" : "text-neutral-400"}`}>{b.name}</span>
-                                                                    {empty && <span className="flex-shrink-0 rounded bg-neutral-100 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-neutral-400" title="Nothing to show here yet - the section will render empty or auto-hide.">empty</span>}
-                                                                    {required && <span className="flex-shrink-0 font-mono text-[8px] uppercase text-neutral-400">locked</span>}
+                                                                    <span className="min-w-0 flex-1">
+                                                                        <span className={`flex items-center gap-1 text-[11px] font-medium ${on ? "text-neutral-700" : "text-neutral-400"}`}>
+                                                                            <span className="truncate">{sec.label}</span>
+                                                                            {empty && <span className="flex-shrink-0 rounded bg-neutral-100 px-1 py-0.5 text-[8px] font-semibold uppercase tracking-wide text-neutral-400" title="Nothing to show here yet - the section will render empty or auto-hide.">empty</span>}
+                                                                            {required && <span className="flex-shrink-0 font-mono text-[8px] uppercase text-neutral-400">locked</span>}
+                                                                        </span>
+                                                                        {sec.blurb && <span className="mt-0.5 block text-[10px] leading-snug text-neutral-400">{sec.blurb}</span>}
+                                                                    </span>
                                                                 </button>
                                                             );
                                                         })}

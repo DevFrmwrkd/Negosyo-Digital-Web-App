@@ -10,7 +10,8 @@ import {
     familyOf,
     templateByCode,
     type TemplateFamily,
-    blocksForTemplate,
+    sectionsForTemplate,
+    BLOCK_TIER,
 } from "./templateCatalog";
 
 // Compact toolbar button style shared across the action bar.
@@ -20,6 +21,7 @@ import {
     FONT_PAIRINGS,
     ALL_BLOCKS,
     CURATED,
+    VIS_KEY_BY_BLOCK,
 } from "./editorConstants";
 
 /**
@@ -405,15 +407,20 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
                 <section className="p-4">
                     <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-neutral-400">Sections</h3>
                     <div className="space-y-0.5">
-                        {ALL_BLOCKS.filter((b) => blocksForTemplate(currentHeroStyle).has(b.name)).map((b) => {
-                            const on = isBlockEnabled(b.visKey);
-                            const required = b.tag === "required";
+                        {/* The selected template's own sections, in page order and under the
+                            names that template prints — see templateCatalog.sectionsForTemplate. */}
+                        {sectionsForTemplate(currentHeroStyle).map((sec) => {
+                            const visKey = VIS_KEY_BY_BLOCK[sec.block];
+                            if (!visKey) return null;
+                            const on = isBlockEnabled(visKey);
+                            const required = (BLOCK_TIER[sec.block] ?? "extra") === "essential";
                             return (
                                 <button
-                                    key={b.visKey}
+                                    key={visKey}
                                     type="button"
                                     disabled={required}
-                                    onClick={() => toggleBlock(b.visKey)}
+                                    onClick={() => toggleBlock(visKey)}
+                                    title={sec.blurb}
                                     aria-checked={on}
                                     role="switch"
                                     className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors ${
@@ -423,7 +430,7 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
                                     <span className={`relative h-4 w-7 flex-shrink-0 rounded-full transition-colors ${on ? "bg-emerald-500" : "bg-neutral-300"}`}>
                                         <span className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-transform ${on ? "translate-x-3.5" : "translate-x-0.5"}`} />
                                     </span>
-                                    <span className={`flex-1 text-[11px] font-medium ${on ? "text-neutral-700" : "text-neutral-400"}`}>{b.name}</span>
+                                    <span className={`flex-1 truncate text-[11px] font-medium ${on ? "text-neutral-700" : "text-neutral-400"}`}>{sec.label}</span>
                                     {required && <span className="font-mono text-[8px] uppercase text-neutral-400">req</span>}
                                 </button>
                             );

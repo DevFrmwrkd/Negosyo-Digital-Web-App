@@ -37,7 +37,7 @@ import {
 import { toast } from "sonner";
 import { injectEditorBridge } from "./editorBridge";
 import {
-    blocksForTemplate,
+    sectionsForTemplate,
     BLOCK_TIER,
     TIER_META,
     BLOCK_CONTENT_PATHS,
@@ -207,6 +207,13 @@ const ALL_BLOCKS: Array<{ name: string; tag: "required" | "recommended"; visKey:
     { name: "FOOTER",           tag: "required",    visKey: "footer_section" },
     { name: "SCROLL-TO-TOP",    tag: "recommended", visKey: "scroll_top_button" },
 ];
+
+/** Block name -> its visibility key. The Sections tab lists sections in the
+ *  TEMPLATE's render order now, so it looks the key up by name. Derived from
+ *  the list above rather than imported, so this file stays self-contained. */
+const VIS_KEY_BY_BLOCK: Record<string, string> = Object.fromEntries(
+    ALL_BLOCKS.map((b) => [b.name, b.visKey]),
+);
 
 // ── COLOR SCHEMES + FONT PAIRINGS (mirrors ContentEditor.tsx) ─────────
 const COLOR_SCHEMES = [
@@ -3896,19 +3903,18 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                 auto-hide until you fill it in.
                             </div>
                             {(() => {
-                                // Filter to what THIS template renders, then group by tier.
-                                // Unfiltered, the tab offered dead switches (a MARQUEE toggle
-                                // on the 50 templates with no marquee, a CREDENTIALS toggle on
-                                // generic A-E which have no credentials section) and omitted
-                                // real ones (MARQUEE was missing entirely, so the 11 templates
-                                // that do render one could never drop it).
-                                const allowed = blocksForTemplate(
+                                // THE SELECTED TEMPLATE'S OWN SECTIONS, in the order that
+                                // template renders them and under the names it prints on the
+                                // page — "The rooms", not "SERVICES". Membership and order come
+                                // from templateSectionOrder.generated.ts, which is generated
+                                // from the wrappers, so the tab can neither offer a dead switch
+                                // nor hide a section the admin can see on the page.
+                                const sections = sectionsForTemplate(
                                     String((effectiveCustomizations as any)?.heroStyle ?? ""),
                                 );
-                                const visible = ALL_BLOCKS.filter((b) => allowed.has(b.name));
                                 return TIER_META.map((tier) => {
-                                    const inTier = visible.filter(
-                                        (b) => (BLOCK_TIER[b.name] ?? "extra") === tier.id,
+                                    const inTier = sections.filter(
+                                        (sec) => (BLOCK_TIER[sec.block] ?? "extra") === tier.id,
                                     );
                                     if (!inTier.length) return null;
                                     return (
@@ -3926,19 +3932,21 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                             <div className={s.hint} style={{ marginBottom: 10 }}>
                                                 {tier.blurb}
                                             </div>
-                                            {inTier.map((b) => {
+                                            {inTier.map((sec) => {
+                                                const visKey = VIS_KEY_BY_BLOCK[sec.block];
+                                                if (!visKey) return null;
                                                 const isReq = tier.id === "essential";
-                                                const enabled = isBlockEnabled(b.visKey);
-                                                const has = blockHasContent(b.name);
+                                                const enabled = isBlockEnabled(visKey);
+                                                const has = blockHasContent(sec.block);
                                                 return (
                                                     <div
-                                                        key={b.name}
+                                                        key={sec.block}
                                                         className={cx(s.blockItem, isReq && s.blockLocked)}
                                                     >
                                                         <div className={s.blockLeft}>
                                                             <div>
                                                                 <div className={s.blockName}>
-                                                                    {b.name}
+                                                                    {sec.label}
                                                                     {isReq && (
                                                                         <span className={cx(s.badge, s.badgeReq)}>
                                                                             <Lock
@@ -3957,6 +3965,11 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                                                         </span>
                                                                     )}
                                                                 </div>
+                                                                {sec.blurb && (
+                                                                    <div className={s.hint} style={{ marginTop: 2 }}>
+                                                                        {sec.blurb}
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                         <label className={cx(s.toggle, isReq && s.toggleLocked)}>
@@ -3964,7 +3977,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                                                 type="checkbox"
                                                                 checked={enabled}
                                                                 disabled={isReq}
-                                                                onChange={() => toggleBlock(b.visKey)}
+                                                                onChange={() => toggleBlock(visKey)}
                                                             />
                                                             <span className={s.slider} />
                                                         </label>
