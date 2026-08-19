@@ -1,20 +1,23 @@
 #!/usr/bin/env node
 /**
- * Guards components/editor/templateCatalog.ts `blocksForTemplate()` against the
- * templates it claims to describe.
+ * Guards the editor's Sections panel against the templates it claims to describe.
  *
- * The editor filters its section toggles through blocksForTemplate(code). If that
- * function and the actual Page<CODE>.astro wrappers disagree, the Blocks tab
- * either offers a switch that controls nothing or hides a section the template
- * really renders — both silent, both only visible to whoever opens the editor.
+ * The panel lists whatever templateCatalog.sectionsForTemplate(code) returns. If
+ * that and the actual Page<CODE>.astro wrappers disagree, the panel either offers
+ * a switch that controls nothing or hides a section the template really renders —
+ * both silent, both only visible to whoever opens the editor.
  *
  * This script re-derives the truth by scanning every wrapper for the sections it
- * renders and the `visibility.*` gate on each, then asserts three things:
+ * renders and the `visibility.*` gate on each, then asserts:
  *
  *   1. every rendered section (bar header/footer) IS gated — an ungated section
  *      can never be removed by an admin, whatever the editor shows
- *   2. blocksForTemplate(code) equals the set the wrapper actually renders
- *   3. no template is missing from the scan
+ *   2. the committed templateSectionOrder.generated.ts matches what the wrappers
+ *      render, and in the same order
+ *   3. every hand-authored label in templateSectionLabels.ts is keyed to a
+ *      template that exists and a block that template actually renders — a label
+ *      for a section the page has not got would name a switch that is not there
+ *   4. no template is missing from the scan
  *
  * Run: node scripts/check-template-blocks.mjs
  */
@@ -96,27 +99,34 @@ for (const fam of fs.readdirSync(COMPONENTS)) {
     }
 }
 
-// ── Re-implement blocksForTemplate from the catalog source, so this script
-//    verifies the SHIPPED sets rather than a copy that could drift with it.
-const catalog = fs.readFileSync(path.join(ROOT, "components/editor/templateCatalog.ts"), "utf8");
-const setFrom = (name) => {
-    const block = new RegExp(`const ${name} = new Set<string>\\(\\[([\\s\\S]*?)\\]\\)`).exec(catalog);
-    if (!block) throw new Error(`could not parse ${name} out of templateCatalog.ts`);
-    return new Set([...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]));
-};
-const baseBlocks = (() => {
-    const b = /export const BASE_BLOCKS = \[([\s\S]*?)\] as const;/.exec(catalog);
-    if (!b) throw new Error("could not parse BASE_BLOCKS out of templateCatalog.ts");
-    return [...b[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
-})();
-const withMarquee = setFrom("WITH_MARQUEE");
-const withoutCredentials = setFrom("WITHOUT_CREDENTIALS");
-const declaredFor = (code) => {
-    const out = new Set(baseBlocks);
-    if (withMarquee.has(code)) out.add("MARQUEE");
-    if (withoutCredentials.has(code)) out.delete("CREDENTIALS");
-    return out;
-};
+// ── Read the SHIPPED manifest, so this verifies what the editor actually
+//    imports rather than a copy that could drift from it.
+const generated = fs.readFileSync(
+    path.join(ROOT, "components/editor/templateSectionOrder.generated.ts"), "utf8");
+const declared = {};
+for (const m of generated.matchAll(/"([^"]+)":\s*\[([^\]]*)\]/g)) {
+    declared[m[1]] = [...m[2].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+}
+if (!Object.keys(declared).length)
+    throw new Error("could not parse templateSectionOrder.generated.ts — is it empty?");
+
+// ── Hand-authored labels. These cannot change WHICH sections are offered, only
+//    what they are called, so the only failure they can cause is a label keyed
+//    to a block its template never renders.
+const labelSrc = fs.readFileSync(
+    path.join(ROOT, "components/editor/templateSectionLabels.ts"), "utf8");
+const labelled = {};
+{
+    const body = labelSrc.slice(labelSrc.indexOf("TEMPLATE_SECTION_LABELS"));
+    let code = null;
+    for (const line of body.split("\n")) {
+        const codeM = /^\s{4}"([^"]+)":\s*\{/.exec(line);
+        if (codeM) { code = codeM[1]; labelled[code] = []; continue; }
+        if (/^\s{4}\},/.test(line)) { code = null; continue; }
+        const blockM = /^\s{8}"([A-Z-]+)":/.exec(line);
+        if (code && blockM) labelled[code].push(blockM[1]);
+    }
+}
 
 const errors = [];
 const codes = Object.keys(scanned).sort();
@@ -130,16 +140,30 @@ for (const code of codes) {
         if (!info.gate) errors.push(`${code}: <${info.comp}> renders with no visibility gate — an admin can never remove it`);
     }
 
-    // 2. declared set must equal the rendered set
-    const actual = new Set([...rows.keys()].map((t) => TYPE_TO_BLOCK[t]).filter(Boolean));
-    const declared = declaredFor(code);
-    for (const b of declared) if (!actual.has(b)) errors.push(`${code}: catalog offers a ${b} toggle but the template never renders it`);
-    for (const b of actual) if (!declared.has(b)) errors.push(`${code}: template renders ${b} but the catalog hides its toggle`);
+    // 2. the generated manifest must equal the rendered set, IN ORDER
+    const actual = [...rows.keys()].map((t) => TYPE_TO_BLOCK[t]).filter(Boolean);
+    const decl = declared[code];
+    if (!decl) {
+        errors.push(`${code}: missing from templateSectionOrder.generated.ts — run node scripts/gen-template-sections.mjs`);
+    } else {
+        for (const b of decl) if (!actual.includes(b)) errors.push(`${code}: the editor offers a ${b} toggle but the template never renders it`);
+        for (const b of actual) if (!decl.includes(b)) errors.push(`${code}: template renders ${b} but the editor hides its toggle`);
+        if (decl.join(">") !== actual.join(">") && decl.length === actual.length)
+            errors.push(`${code}: section ORDER is stale — page renders ${actual.join(" > ")}, editor lists ${decl.join(" > ")}`);
+    }
+
+    // 3. every hand-authored label must name a section this template renders
+    for (const b of labelled[code] ?? [])
+        if (!actual.includes(b))
+            errors.push(`${code}: templateSectionLabels names a ${b} section this template does not render`);
 }
+
+for (const code of Object.keys(labelled))
+    if (!scanned[code]) errors.push(`templateSectionLabels: "${code}" is not a real template code`);
 
 console.log(`scanned ${codes.length} template wrappers`);
 if (errors.length) {
     console.error(`\n${errors.length} block-manifest problem(s):\n  ` + errors.join("\n  "));
     process.exit(1);
 }
-console.log("✓ template blocks OK — every rendered section is gated, and the editor's toggles match reality");
+console.log("✓ template blocks OK — every rendered section is gated, the editor's toggles match reality in membership and order, and every label names a section that exists");
