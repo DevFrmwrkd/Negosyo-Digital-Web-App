@@ -62,6 +62,37 @@ export interface GroupSpec {
     fields: Array<FieldSpec | ListSpec>;
 }
 
+/**
+ * Content group -> the page section it edits.
+ *
+ * The Content panel used to list all sixteen groups for every template, so an
+ * admin editing a template with no marquee still got a Marquee group whose
+ * fields reach nothing, and every group was titled in OUR vocabulary
+ * ("Services") rather than the template's ("The rooms"). ContentFieldsAuto now
+ * filters and retitles through this map plus templateCatalog.sectionsForTemplate.
+ *
+ * 'header' has no entry on purpose: no wrapper gates on the header, so it is
+ * never filtered out. Any group missing from this map is likewise always shown —
+ * failing open, because a hidden field the owner needs is worse than a spare one.
+ */
+export const GROUP_BLOCK: Record<string, string> = {
+    hero: 'HERO',
+    marquee: 'MARQUEE',
+    trust: 'TRUST',
+    about: 'ABOUT',
+    services: 'SERVICES',
+    why: 'WHY-US',
+    how: 'HOW-IT-WORKS',
+    testimonials: 'TESTIMONIALS',
+    gallery: 'GALLERY',
+    faq: 'FAQ',
+    area: 'SERVICE-AREA',
+    credentials: 'CREDENTIALS',
+    location: 'LOCATION',
+    ctaBand: 'CTA-BAND',
+    footer: 'FOOTER',
+};
+
 export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
     {
         id: 'header',

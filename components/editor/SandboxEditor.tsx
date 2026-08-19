@@ -3328,6 +3328,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                         }, photos);
                         return (
                             <ContentFieldsAuto
+                                templateCode={String((effectiveCustomizations as any)?.heroStyle ?? "")}
                                 getValue={(path: string) => {
                                     const parts = path.split('.');
                                     let cur: any = draft;

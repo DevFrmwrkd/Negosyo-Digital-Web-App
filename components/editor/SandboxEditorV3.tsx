@@ -787,7 +787,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         {panel === "content" && (
                             <div className="p-3">
                                 <p className="mb-2 px-1 text-[10px] leading-snug text-neutral-400">Edit any field here, or click text in the preview to jump to it. Lists, links &amp; images add/remove/reorder safely.</p>
-                                <ContentFieldsAuto getValue={contentGetValue} setValue={m.setValue} openImagePicker={(path) => setImagePickerField(path)} pushLiveText={pushLiveText} />
+                                <ContentFieldsAuto getValue={contentGetValue} setValue={m.setValue} openImagePicker={(path) => setImagePickerField(path)} pushLiveText={pushLiveText} templateCode={String((m.effectiveCustomizations as any)?.heroStyle ?? "")} />
                             </div>
                         )}
 
