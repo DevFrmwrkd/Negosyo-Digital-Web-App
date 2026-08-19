@@ -26,7 +26,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { injectEditorBridge } from "./editorBridge";
 import type { SandboxEditorProps } from "./SandboxEditor";
 import { TEMPLATE_FAMILIES, templateByCode, sectionsForTemplate, BLOCK_TIER, TIER_META, BLOCK_CONTENT_PATHS } from "./templateCatalog";
-import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, CURATED, VIS_KEY_BY_BLOCK } from "./editorConstants";
+import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, schemesForTemplate, VIS_KEY_BY_BLOCK } from "./editorConstants";
 import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
 import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorRole, type ColorProp } from "@/lib/roleColors";
 import { useEditorDraft } from "./useEditorDraft";
@@ -233,7 +233,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         return getDerivedAt(derived, path);
     }, [m.getValue, derived]);
 
-    const curatedSchemes = m.activeFamily ? CURATED[m.activeFamily] : COLOR_SCHEMES.map((c) => c.id).filter((id) => id !== "auto");
+    const curatedSchemes = schemesForTemplate(m.activeFamily, String((m.effectiveCustomizations as any)?.heroStyle ?? ""));
 
     // ── Live theme apply ──────────────────────────────────────────────────
     // Branded (non-generic) families are lockVariant — their hand-tuned palette

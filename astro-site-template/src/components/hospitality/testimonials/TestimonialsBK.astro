@@ -1,0 +1,324 @@
+---
+/**
+ * hospitality / TestimonialsBK — "Villa Marindu" IN THEIR WORDS: a centred head
+ * (brass eyebrow over a Prata headline) above a three-up row of night-panel
+ * quote cards, each opened by a rating mark, then the quote at Prata 19.5px and
+ * a tracked-caps attribution.
+ *
+ * ROLE: the social proof a whole-villa booking is made on — which is exactly
+ * why this file prints nothing the owner did not put on record.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value here is lifted from the
+ * TESTIMONIALS section of "Villa Marindu Landing.dc.html":
+ *   head            text-align centre, 48px below it
+ *   eyebrow         10px / .44em / caps / brass / 600      → .kick, unchanged
+ *   headline        Prata 400, clamp(31px,4vw,54px)/1.1, margin .26em 0 0
+ *   grid            repeat(3, minmax(0,1fr)), gap 26px
+ *   card            #141A18 ground, 1px #262E2B, radius 3px, padding 32px 30px
+ *   mark            13px, brass, letter-spacing 3px, 18px below it
+ *   quote           Prata 19.5px / 1.55, #F4F1EA, 20px below it
+ *   attribution     11px / .2em / caps / #767C76
+ * Mapped to wrapper tokens with the same value: #141A18 = --night-2,
+ * #262E2B = --rule, 3px = --r-lg, #B99552 = --accent, #F4F1EA = --bone-hi,
+ * #767C76 = --muted. No literal hex appears below.
+ *
+ * READS content.testimonials.items ({quote, who, rating}); tolerates the legacy
+ * bare array at content.testimonials and the legacy author/name spellings for
+ * the attribution. The data-field always names the CANONICAL path, so the first
+ * sidebar edit migrates a legacy row onto the real key.
+ *
+ * COERCED AT EVERY READ. Nothing upstream type-checks a row at runtime, and this
+ * family has already shipped one "x.slice is not a function" page: a quote that
+ * arrives as a number crashes the build on .trim(), and one that arrives as an
+ * object prints "[object Object]" through set:html. str() passes strings and
+ * finite numbers and treats everything else as absent. Blank-after-trim counts
+ * as absent too — a whitespace-only `who` must not draw an empty figcaption and
+ * a whitespace-only tag must not draw an empty brass eyebrow.
+ * astro-builder's normalizeBlock aliases name/author onto `who` only when `who`
+ * is null, so a row carrying who:'' keeps its blank; the fallback chain below is
+ * `||` and not `??` so that row still prints the name the owner did type.
+ *
+ * EDITABLE HOOKS (every one is declared in genericContentSchema, group
+ * "testimonials" — a data-field on a path the schema does not own is a dead
+ * hook that no sidebar input can focus)
+ *   testimonials.tag                  — the brass eyebrow
+ *   testimonials.headline             — set:html, so an owner can place the
+ *                                       template's italic-brass emphasis
+ *                                       anywhere inside their own sentence
+ *   testimonials.items.${i}.quote     — set:html, the Prata blockquote
+ *   testimonials.items.${i}.who       — the tracked-caps figcaption
+ *   testimonials.items.${i}.rating    — read, never printed as text: it is the
+ *                                       ONLY thing that can draw a star (below).
+ *                                       It deliberately carries NO data-field on
+ *                                       the star row, and that is not a missing
+ *                                       hook — the row RENDERS the number, it is
+ *                                       not the number. editorBridge's ed:update
+ *                                       would replace the glyphs with the raw
+ *                                       digit, and VisualEditor (which does not
+ *                                       honour data-derived) makes every
+ *                                       [data-field] contentEditable, so an
+ *                                       admin could type "★★★★★" back into
+ *                                       rating and lose the score. It is edited
+ *                                       in the sidebar's "Rating out of 5" box,
+ *                                       which genericContentSchema declares.
+ *
+ * DERIVED, not authored: the number of stars, and the reveal delay (capped at
+ * 3 so a fourth card is not still hidden a second after it scrolls in).
+ *
+ * ANTI-FABRICATION — the hard rule of this section:
+ *   - THE STAR ROW IS NOT HARDCODED. The design prints "★★★★★" over every quote.
+ *     Five stars for a guest who never gave a score is a claim invented on the
+ *     owner's behalf, so stars are drawn ONLY from a finite numeric
+ *     testimonials.items.${i}.rating. Non-numeric, blank and absent ratings draw
+ *     no stars at all; the card instead opens with the design's brass hairline,
+ *     which occupies the same beat and states nothing. Expect the hairline on
+ *     essentially every real site — that is the correct, honest default, and it
+ *     is not a missing feature.
+ *   - CLAMPING, stated so it is not read as an oversight: a rating is rounded,
+ *     then capped at 5 (a typo of "7" draws five stars, never seven). A value
+ *     that rounds BELOW 1 — 0, -2, 0.4 — is treated as no usable rating and
+ *     draws the hairline. It is never clamped UP to one star, because inventing
+ *     a star out of a zero is the same fabrication as inventing five.
+ *   - The accessible name announces the SAME number that is drawn, so the label
+ *     and the glyphs can never disagree.
+ *   - NO review count, NO average score, NO platform name, NO "guest favourite"
+ *     or "superhost" badge. None of it is in the data contract.
+ *   - Quote and attribution are guarded independently, and every guard sits
+ *     OUTSIDE its tag, so a quote with no name renders as an unattributed quote
+ *     rather than an empty caption with a bottom margin.
+ *   - A row with no quote is DROPPED: the card IS the quote, so a name-only row
+ *     would render a bordered box attributing nothing to somebody. The row stays
+ *     in the sidebar and reappears the instant a quote is typed.
+ *
+ * SECTION GATE: the whole section renders only when at least one row has a real
+ * quote. It deliberately does NOT count tag/headline: a head arrives from the
+ * admin sidebar or the AI extractor with nothing behind it all the time, and
+ * unlike why/how/faq this block is not even handed a derived default by
+ * astro-builder — so a gate that counted a headline would ship a centred heading
+ * over an empty grid, which is the one thing a proof section must never do.
+ *
+ * ORIGINAL INDEXES: `i` is captured before blank rows are dropped, so removing
+ * row 2 cannot misdirect an edit of row 3 into row 4. Nothing here is numbered
+ * on screen, so no display index is needed.
+ *
+ * THE ONE AUTHORED STRING in this file is the stars' aria-label, which is never
+ * visible. It exists because a row of glyphs with no accessible name is
+ * decoration announcing nothing, and a rating an owner typed is information a
+ * screen-reader user is entitled to.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   testimonials.source   — the schema declares it, but this template has an
+ *                           honest home for a star claim (rating), and the
+ *                           design draws no source line under the head.
+ *   testimonials.bigQuote — no pull-quote element in this design (family
+ *                           precedent: BI and BJ do not render it either).
+ *   testimonials.items.${i}.role — the row schema stops at quote/who/rating, so
+ *                           the hook would focus nothing in the v3 sidebar.
+ *
+ * NO ANCHOR HELPER, and that is not an omission: this section emits no <a> at
+ * all (the design's testimonials block contains no link), so there is no href to
+ * remap and no data-href-field to own. It also takes NO id — the page's anchor
+ * set is about / services / gallery / location / faq / main, and the design
+ * gives this section none of them.
+ *
+ * CLASS-NAME NOTE (engine): this section must NOT be class "testi" —
+ * buildOverrideCss pins `.testi, .testi p { color: <on-ink> !important }`, which
+ * would repaint the quotes with a scheme colour the design never chose. It is
+ * class "voices" and carries no buttons at all, so no engine label pin reaches
+ * it.
+ *
+ * CONTRAST: the attribution is --muted on --night-2 = 4.13:1, below AA. That is
+ * the design's own pairing and the wrapper's frontmatter records it as accepted
+ * rather than silently altered; the line carries only a name, and lifting
+ * --muted is the owner's one-line call in the wrapper, not this file's.
+ *
+ * VERTICAL RHYTHM comes from the wrapper's shared `section` padding — the
+ * design's "100px top, 0 bottom" is the same rhythm once every section stacks.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const test = content.testimonials || {};
+
+/* Coerce at EVERY read — see COERCED AT EVERY READ above. A string passes; a
+   finite number passes as its digits; null, undefined, NaN, an array and an
+   object are not content and become ''. Nothing downstream calls a string method
+   on raw input, so no shape from the pipeline can fail the build. */
+const str = (v: unknown): string =>
+  typeof v === 'string' ? v : (typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+
+const tag = str(test.tag).trim();
+const headline = str(test.headline).trim();
+
+type Item = {
+  quote?: unknown;
+  who?: unknown;
+  author?: unknown;
+  name?: unknown;
+  rating?: unknown;
+};
+
+/* Tolerate both shapes at every read: the canonical object with .items, and the
+   legacy bare array parked at content.testimonials. */
+const items: Item[] = Array.isArray(test.items)
+  ? test.items
+  : (Array.isArray(test) ? (test as Item[]) : []);
+
+/* A rating is a CLAIM about a guest. Only a finite number becomes stars; it is
+   rounded, capped at 5, and anything that rounds below 1 yields 0 — which draws
+   the hairline, not a star. Never widen this. */
+const starsOf = (it: Item): number => {
+  const r = Number(it.rating);
+  if (!Number.isFinite(r)) return 0;
+  const n = Math.round(r);
+  return n >= 1 ? Math.min(5, n) : 0;
+};
+
+const STAR = '★';
+
+/* Normalise ONCE, carrying the ORIGINAL array index, then drop rows that cannot
+   render an honest card. Gating on `rows` rather than `items` also means a block
+   of blank rows hides instead of shipping three empty bordered boxes. */
+const rows = items
+  .map((it, i: number) => ({
+    /* the quote keeps its own leading/trailing space — only the GUARD is
+       trimmed, so a blank-looking quote cannot open a bordered card */
+    quote: str(it.quote),
+    who: str(it.who).trim() || str(it.author).trim() || str(it.name).trim(),
+    stars: starsOf(it),
+    i,
+  }))
+  .filter((r) => Boolean(r.quote.trim()));
+
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="voices">
+    <div class="wrap">
+      {hasHead && (
+        <div class="v-head reveal">
+          {tag && <span class="kick" data-field="testimonials.tag">{tag}</span>}
+          {headline && <h2 class="h2" data-field="testimonials.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="v-grid">
+        {rows.map((row, k) => (
+          <figure class="v-card reveal" data-delay={String(Math.min(k, 3))}>
+            {row.stars > 0 ? (
+              /* Drawn from the owner's own number, and named with that same
+                 number so the glyphs are never decoration-only. */
+              <span class="v-stars" role="img" aria-label={`Rated ${row.stars} out of 5`}>
+                <span aria-hidden="true">{STAR.repeat(row.stars)}</span>
+              </span>
+            ) : (
+              /* Where the design hardcodes five stars. A brass hairline on the
+                 same beat: same visual opening, no claim. */
+              <span class="v-rule" aria-hidden="true"></span>
+            )}
+            <blockquote data-field={`testimonials.items.${row.i}.quote`} set:html={row.quote}></blockquote>
+            {row.who && (
+              <figcaption data-field={`testimonials.items.${row.i}.who`}>{row.who}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* ── head · centred, 48px of air under it (design) ───────────────────────── */
+  .v-head { text-align: center; margin-bottom: 48px; }
+  .v-head .kick { overflow-wrap: anywhere; }
+  /* The wrapper's .h2 is left-aligned with a bottom margin; the design's head is
+     centred with the margin on TOP. The 24ch cap from the wrapper is kept (and
+     centred by the auto margins) so a long owner headline cannot run the full
+     1280px of the container. */
+  .voices .h2 {
+    margin: 0.26em auto 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── grid · three up, 26px (design) ──────────────────────────────────────── */
+  .v-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 26px;
+  }
+
+  /* ── card · the design's panel tone, hairline and SHARP 3px corner ───────── */
+  .v-card {
+    margin: 0;
+    min-width: 0;
+    background-color: var(--night-2);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-lg);
+    padding: 32px 30px;
+  }
+
+  /* ── the rating mark. Both variants occupy ~40px so a card with a rating and
+        a card without stay on the same baseline in the same row. ──────────── */
+  .v-stars {
+    display: block;
+    font-size: 13px;
+    line-height: 1.7;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  /* the hairline that replaces the design's hardcoded star row — 72px is the
+     width those five glyphs would have occupied */
+  .v-rule {
+    display: block;
+    width: 72px;
+    max-width: 100%;
+    height: 1px;
+    background-color: var(--accent);
+    margin: 11px 0 28px;
+  }
+
+  /* ── quote · Prata at the design's 19.5px. The UA gives <blockquote> a 40px
+        side margin, so the reset here is load-bearing, not tidying. ────────── */
+  .v-card blockquote {
+    margin: 0 0 20px;
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: 19.5px;
+    line-height: 1.55;
+    color: var(--bone-hi);
+    overflow-wrap: anywhere;
+  }
+  /* set:html output carries no scope class, so an owner's <em> is only reachable
+     through :global(). It stays the quote's own colour: the italic-brass
+     emphasis is the HEADLINE signature, and repainting a guest's words brass
+     would read as the villa talking, not the guest. */
+  .v-card blockquote :global(em),
+  .v-card blockquote :global(.em) { font-style: italic; color: inherit; }
+
+  /* ── attribution · the design's 11px / .2em, not .mono's 10px / .22em / 500 */
+  .v-card figcaption {
+    font-family: var(--sans);
+    font-weight: 400;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── RESPONSIVE · this section owns its own grid; the wrapper owns the shared
+        760 / 520 type pass. ──────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .v-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+  }
+  @media (max-width: 640px) {
+    .v-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .v-head { margin-bottom: 34px; }
+    .voices .h2 { max-width: none; }
+    .v-card { padding: 24px 20px; }
+    .v-card blockquote { font-size: 18px; line-height: 1.5; margin-bottom: 16px; }
+    .v-card figcaption { letter-spacing: 0.16em; }
+    .v-stars { letter-spacing: 2px; }
+  }
+</style>

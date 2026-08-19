@@ -1,0 +1,288 @@
+---
+/**
+ * hospitality / HowBK — "Villa Marindu" HOW IT WORKS (design element
+ * data-component="HOW-IT-WORKS").
+ *
+ * ROLE: the page's one procedural band. On a villa with no booking engine this
+ * is the only place that says how a stay is actually arranged — in the owner's
+ * words, never ours. The design draws it as the panel-toned band between the
+ * gallery and the testimonials: eyebrow, one Prata headline, three equal
+ * columns each opened by a brass-outlined circled numeral, and a single brass
+ * button under them.
+ *
+ * DESIGN VALUES, lifted verbatim from "Villa Marindu Landing.dc.html":
+ *   band     background #141A18 + 1px #262E2B top and bottom  → .band-panel
+ *   padding  92px 0
+ *   eyebrow  10px / .44em caps / #B99552                      → .kick
+ *   h2       Prata 400, clamp(31px,4vw,54px), margin .26em 0 52px, max 24ch
+ *   grid     repeat(3, minmax(0,1fr)), gap 44px
+ *   numeral  42x42, 1px #B99552, 50% radius, Prata 17px #B99552 → .fig
+ *   h3       Prata 400, 25px, margin 18px 0 10px, #F4F1EA
+ *   body     15px / 1.75 / #A9AFA9, margin 0                   → .body
+ *   action   margin-top 52px, btnBrass = brass fill + #101413 label,
+ *            12px / .16em caps, 17px 32px, 2px radius           → .btn.btn--fill
+ * Every one of those colours is a wrapper token (R1); not a hex is written here.
+ * btnBrass is character-for-character the wrapper's .btn--fill, so this file
+ * adds NO button rule at all — only the 100% width and white-space at 520px.
+ *
+ * EDITABLE HOOKS (all declared in components/editor/genericContentSchema.ts,
+ * group "how" — a data-field on any other path is a dead hook)
+ *   how.tag                  — the eyebrow
+ *   how.headline             — set:html, so an owner can place the template's
+ *                              signature italic-brass <em> anywhere inside
+ *                              their own sentence. Guarded: derive-content-
+ *                              defaults supplies NO how.headline, so an unset
+ *                              value must draw nothing, not a gap above the grid
+ *   how.steps.${i}.title
+ *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
+ *                              stored value arrived as .desc / .description, so
+ *                              the first edit heals the row onto the schema key
+ *   hero.cta1.text           — the brass button's label
+ *   hero.cta1.href           — its target. Deliberately the page's ONE contact
+ *                              action reused, not a fourth CTA field: the schema
+ *                              declares hero.cta1.text as a link FieldSpec, so
+ *                              hrefPath hero.cta1.href is owned too
+ *
+ * DERIVED, not content:
+ *   The circled numeral. It counts DISPLAYED steps (01, 02, 03 — never a gap)
+ *   and is aria-hidden with no data-field, so the design's demo `st.n` can never
+ *   become a content key an owner has to maintain. The list is a real <ol>, so
+ *   the ordinal reaches assistive tech through the markup rather than through a
+ *   decorative glyph.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The design's
+ * own steps ("Message me", "I hold the dates", "48 hours") are the DESIGNER
+ * filling in their own template — they are a reply-time and a hold-length
+ * promise made for a business nobody has spoken to, so none of them ships. A
+ * villa that has said nothing about its process gets no process band: blank rows
+ * are dropped and an all-blank list removes the whole <section>.
+ *
+ * SECTION GATE (R5) = rows.length. It counts the BODY content only. It cannot
+ * count how.tag, because derive-content-defaults hard-codes how.tag to 'How it
+ * works' on EVERY site — a gate that counted it would ship an eyebrow and a
+ * band over an empty grid on every site that never filled the steps in.
+ *
+ * LIST INDEXES (R6). data-field carries the ORIGINAL array index, the numeral
+ * carries the DISPLAY index. Dropping a blank row 2 therefore renumbers nothing
+ * and cannot misdirect an edit of row 3 into row 2.
+ *
+ * ARRAY SOURCE. how.steps is canonical, and the hook ALWAYS spells how.steps —
+ * the read-tolerant / write-canonical split every other How section in the repo
+ * uses. A legacy site whose rows live under how.items still RENDERS, but its
+ * hooks are not re-pointed at how.items: genericContentSchema declares no
+ * how.items list and no fallbackPaths for it, so isSchemaEditablePath refuses
+ * `how.items.N.title` outright and a hook spelled that way would be inert in the
+ * v3 sidebar. Spelling how.steps keeps the row editable and heals it onto the
+ * canonical array on the first save.
+ *
+ * NOT RENDERED, deliberately:
+ *   - No id on the section. This page's anchors are about / services / gallery /
+ *     location / faq / main, and the design gives HOW-IT-WORKS no id and no nav
+ *     link. Inventing #how here would add a target nothing in the page points at.
+ *   - No step count is asserted anywhere in the markup or the copy. The grid is
+ *     three tracks because the design is three tracks, but two or five owner-
+ *     typed steps lay out on the same tracks without a hole or a wrap.
+ *
+ * THEMING (R1/R4). --accent is the only token the theme engine may move in this
+ * template, and here it touches the numeral ring, the numeral, the eyebrow and
+ * the button fill — all of which pair with --on-accent or sit on --night-2, so
+ * a re-picked accent stays legible. The section class is "how-band" and the
+ * button is .btn--fill (double dash): buildOverrideCss pins label colours on
+ * .btn-primary / .btn-yellow / .nav-cta / .testi .btn / .cta-band .btn / footer
+ * .btn with !important, and none of those selectors can reach anything here.
+ *
+ * SCOPING (R3). One scoped <style>, no is:global. The headline is fed with
+ * set:html, and scoped rules cannot reach elements a set:html creates — which is
+ * why there is no italic-brass rule in this file: PageBK already styles
+ * `:where(.h2 em)` from its global block, so an owner's <em> is emphasised there
+ * and a scoped duplicate here would be dead CSS.
+ */
+// `layout` is accepted because PageBK passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const how = content.how || {};
+const tag = typeof how.tag === 'string' ? how.tag.trim() : '';
+// Trimmed, and otherwise untouched: this goes out through set:html, so whatever
+// markup the owner typed reaches the wrapper's em rule intact.
+const headline = typeof how.headline === 'string' ? how.headline.trim() : '';
+
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+// Read tolerantly — a legacy site stores its rows under how.items — and write
+// canonically. See ARRAY SOURCE above.
+const source: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+const titleOf = (s: Step): string => String(s?.title ?? '').trim();
+const bodyOf = (s: Step): string => String(s?.body ?? s?.desc ?? s?.description ?? '').trim();
+// A step the admin added but never filled would otherwise print a brass ring
+// around a numeral over nothing, and a title of pure whitespace would ship an
+// empty <h3>. Normalise first, drop the blanks (whitespace counts as blank) and
+// keep the ORIGINAL index on every survivor.
+const rows = source
+  .map((s, i: number) => ({ i, title: titleOf(s), body: bodyOf(s) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// Anchor guard (R7). derive-content-defaults hard-codes hero.cta1.href to
+// '#visit', an id this page does not render, so the mirrored CTA would scroll
+// nowhere. Resolve in-page hrefs against the ids PageBK actually renders and
+// keep this table in step with the copies in HeaderBK / HeroBK / CtaBandBK /
+// FooterBK. Off-page hrefs (tel:, mailto:, http) pass straight through.
+const PAGE_ANCHORS = new Set(['about', 'services', 'gallery', 'location', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  amenities: 'services',
+  book: 'main',
+  contact: 'location',
+  host: 'about',
+  rooms: 'services',
+  visit: 'location',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+const ctaText = hero.cta1?.text || '';
+// #location is where this template puts the address and the way to reach the
+// owner, so it is the honest landing place for an unresolvable contact action.
+const ctaHref = onPage(hero.cta1?.href, '#location');
+---
+{rows.length > 0 && (
+  <section class="how-band band-panel">
+    <div class="wrap">
+      {tag && <span class="kick" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="h2 how-h2 reveal" data-field="how.headline" set:html={headline}></h2>}
+
+      <ol class="how-grid">
+        {rows.map((step, k) => (
+          <li class="how-step reveal" data-delay={String(Math.min(k, 3))}>
+            {/* DERIVED chrome: display index, aria-hidden, no data-field. The
+                <ol> already carries the ordinal for assistive tech. */}
+            <span class="fig how-num" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+            {step.title && <h3 data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+            {step.body && <p class="body" data-field={`how.steps.${step.i}.body`}>{step.body}</p>}
+          </li>
+        ))}
+      </ol>
+
+      {ctaText && (
+        <div class="how-act reveal">
+          <a class="btn btn--fill" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* The band ground, the hairline edges and the panel tone all come from the
+     wrapper's .band-panel. The only thing overridden here is the design's own
+     92px block padding, which is tighter than the shared section rhythm; it
+     scales down on the same curve so it never crushes on a phone.
+
+     margin-top is the design's own `margin-top:100px` on this element. In this
+     design EVERY section is padding-TOP-only with a bare bottom, so the leading
+     gap belongs to the section that wants it — and this band is the one that
+     asks for 100px. It cannot be borrowed from whatever renders above: GALLERY
+     ends at 0 per its own design element, and any section can be switched off,
+     so a band that leaned on a sibling's padding would butt straight into the
+     mosaic. Scaled on the same curve PageBK uses for the design's other 100px.
+     A margin (not padding) so the panel ground still starts below the gap. */
+  .how-band { margin-top: clamp(60px, 8vw, 100px); padding: clamp(60px, 8vw, 92px) 0; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .44em tracking: one
+     unbroken word would otherwise be the widest thing on the page (R8). */
+  .kick { overflow-wrap: anywhere; }
+
+  /* Design: margin .26em 0 52px. The wrapper's .h2 is a :where() rule, so this
+     wins on specificity without !important. */
+  .how-h2 { margin: 0.26em 0 52px; }
+
+  /* derive-content-defaults ships how.tag on every site and NO how.headline, so
+     "eyebrow, then straight into the grid" is the DEFAULT state rather than an
+     edge case — and the h2's own margins are what normally open that gap.
+     Adjacency, so it fires only when the headline is absent. */
+  .kick + .how-grid { margin-top: 34px; }
+
+  /* Design: repeat(3, minmax(0,1fr)) / gap 44px. minmax(0,1fr) rather than 1fr
+     so a long unbroken word in a step cannot widen its track and push the page
+     sideways. */
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 44px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* min-width:0 as well as the minmax() above: a grid item's default min-width
+     is auto, so one unbroken word would still widen its own track. */
+  .how-step { list-style: none; min-width: 0; }
+
+  /* Design: 42x42, 1px brass ring, full circle, Prata 17px brass. The face,
+     colour and tabular figures come from the wrapper's .fig. */
+  .how-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    font-size: 17px;
+  }
+
+  /* Prata ships ONE weight (400), so the weight is pinned rather than inherited
+     from whatever heading rule is in scope — asking for a bolder one only makes
+     the browser synthesise a faux bold. The design states NO line-height here,
+     so its 25px Prata title renders at the face's normal leading (~1.15);
+     PageBK's shared heading rule is 1.1, which would set a two-line title
+     tighter than it was drawn, so the drawn leading is restated. */
+  .how-step h3 {
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: 25px;
+    line-height: 1.14;
+    margin: 18px 0 10px;
+    color: var(--bone-hi);
+    overflow-wrap: anywhere;
+  }
+  /* Qualified with the parent class so it beats the wrapper's bare-element
+     paragraph reset, which is (0,1,1). */
+  .how-step p.body { margin: 0; overflow-wrap: anywhere; }
+
+  .how-act { margin-top: 52px; }
+
+  /* R8 · this section owns its own grid. Three tracks are the design, and they
+     go straight to ONE at 900px rather than through a two-up: at 900 each track
+     is about 246px, a ~30-character measure for a four-line step, and three
+     steps in two tracks strand a lone orphan on the second row. WhyBK — the
+     same three-track / 44px grid two sections up this page — folds at the same
+     point for the same reasons, so the two bands stay in step on a tablet.
+     Stacked, the paragraph takes a measure cap instead: a step should not run
+     to 110 characters just because its column is now the whole page. */
+  @media (max-width: 900px) {
+    .how-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+    .how-h2 { margin-bottom: 40px; }
+    .how-step p.body { max-width: 62ch; }
+  }
+  /* 520 · tighten the stack. Nothing here may push the page sideways: the
+     overflow-wrap rules above and the minmax/min-width tracks cover the text,
+     and the action goes full-bleed below. */
+  @media (max-width: 520px) {
+    .how-grid { gap: 26px; }
+    .how-h2 { margin: 0.26em 0 32px; }
+    .kick + .how-grid { margin-top: 24px; }
+    .how-num { width: 38px; height: 38px; font-size: 16px; }
+    .how-step h3 { font-size: 21px; margin: 15px 0 9px; }
+    .how-act { margin-top: 34px; }
+    /* Full-bleed action: the wrapper pins .btn to white-space: nowrap, which
+       would push the viewport sideways on a long owner-typed label. */
+    .how-act .btn { width: 100%; white-space: normal; }
+  }
+</style>

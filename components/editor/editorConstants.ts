@@ -116,3 +116,43 @@ export const CURATED: Record<TemplateFamily, string[]> = {
     hospitality: ["brown", "green", "maroon", "dark", "red", "black", "pink"],
     layouts:     ["blue", "green", "purple", "orange", "brown", "maroon", "professional", "dark"],
 };
+
+/**
+ * PER-TEMPLATE narrowing of the family list above.
+ *
+ * A family shares one allowlist, which is right until a template inside it is
+ * built on a ground the family's other templates are not. hospitality:BK is a
+ * near-black page whose ONLY coloured token is its brass accent — the engine
+ * remaps that to palette.primary, and on the maroon scheme primary is #800000,
+ * which measures 1.70:1 against the page. Every eyebrow, numeral, rule and
+ * button FILL in the template is that token, so one pick from a menu would make
+ * the page unreadable rather than merely off-brand.
+ *
+ * A template listed here may only NARROW its family's list — schemesForTemplate
+ * intersects, so an entry can never smuggle in a scheme the family disallows,
+ * and a stale entry naming a scheme the family later drops fails closed.
+ */
+export const CURATED_BY_TEMPLATE: Record<string, string[]> = {
+    // Brass on near-black. Dropped: maroon (primary #800000, 1.70:1 on this
+    // ground). Kept: brown, green, red and pink read as a re-tinted metal, and
+    // dark/black leave the brass near-white, which is legible and still the
+    // design's shape.
+    "hospitality:BK": ["brown", "green", "dark", "red", "black", "pink"],
+};
+
+/**
+ * The colour schemes offered for a template: its family's list, narrowed by any
+ * per-template entry. Falls back to the family list, then to every scheme.
+ */
+export function schemesForTemplate(
+    family: TemplateFamily | null | undefined,
+    code: string | null | undefined,
+): string[] {
+    const familyList = family ? CURATED[family] : COLOR_SCHEMES.map((c) => c.id).filter((id) => id !== "auto");
+    const narrow = code ? CURATED_BY_TEMPLATE[code] : undefined;
+    if (!narrow) return familyList;
+    const allowed = new Set(narrow);
+    const kept = familyList.filter((id) => allowed.has(id));
+    // A narrowing that removes everything is a typo, not an intention.
+    return kept.length ? kept : familyList;
+}

@@ -57,6 +57,7 @@
  *
  *   "hospitality:BI" → Palm Hour · hotels, villas & short stays (new family)
  *   "hospitality:BJ" → Kubo Stays · rooms in an owner-hosted house
+ *   "hospitality:BK" → Villa Marindu · a whole private villa, night + brass
  *
  * Each PageX wrapper produces the full document (its own doctype, theme,
  * fonts, leaflet boot) so they do not compose with BaseLayout.
@@ -124,6 +125,7 @@ import PageBG from '../components/filipino/PageBG.astro';
 import PageBH from '../components/filipino/PageBH.astro';
 import PageBI from '../components/hospitality/PageBI.astro';
 import PageBJ from '../components/hospitality/PageBJ.astro';
+import PageBK from '../components/hospitality/PageBK.astro';
 import siteData from '../data/site-data.json';
 
 // Live-editor support: template / colour / font / hidden-sections can be driven
@@ -176,7 +178,7 @@ const layoutsMatch = /^layouts:(A[V-Z]|BA)$/.exec(heroStyle);
 const layoutsLetter = layoutsMatch ? layoutsMatch[1] : null;
 const filipinoMatch = /^filipino:(B[B-H])$/.exec(heroStyle);
 const filipinoLetter = filipinoMatch ? filipinoMatch[1] : null;
-const hospitalityMatch = /^hospitality:(BI|BJ)$/.exec(heroStyle);
+const hospitalityMatch = /^hospitality:(BI|BJ|BK)$/.exec(heroStyle);
 const hospitalityLetter = hospitalityMatch ? hospitalityMatch[1] : null;
 const anyLetter = genericLetter || barbershopLetter || salonspaLetter
   || autoshopLetter || restaurantLetter || shirtstoreLetter
@@ -246,6 +248,7 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {filipinoLetter === 'BH' && <PageBH siteData={data} />}
 {hospitalityLetter === 'BI' && <PageBI siteData={data} />}
 {hospitalityLetter === 'BJ' && <PageBJ siteData={data} />}
+{hospitalityLetter === 'BK' && <PageBK siteData={data} />}
 {!anyLetter && (
   <BaseLayout
     businessName={layout.businessName ?? ''}

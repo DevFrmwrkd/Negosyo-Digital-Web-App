@@ -1,0 +1,361 @@
+---
+/**
+ * hospitality / LocationBK — "Villa Marindu"'s LOCATION band.
+ *
+ * ROLE: the getting-here section. The design draws a two-part head (eyebrow +
+ * the address line set as the display headline on the left, the arrival note on
+ * the right, baseline-aligned and wrapping), then a 1.2fr / .8fr grid: a plotted
+ * map face at 360px beside a bordered house-rules ledger. Reproduced verbatim —
+ * the 46px plot grid, the two brass roads at 48% / 42%, the pin translated to
+ * sit ON the crossing, the 26px gutter, the 28px 30px card padding, the 13px 0
+ * rows on a --rule-soft hairline. Nothing here is re-derived: every colour is a
+ * PageBK token whose value is the design's own hex.
+ *
+ * EDITABLE HOOKS (every one is declared in components/editor/genericContentSchema.ts):
+ *   location.tag                        — the brass eyebrow
+ *   location.headline                   — the h2. set:html, so an owner's <em>
+ *                                         picks up the template's italic-brass
+ *                                         emphasis (styled by PageBK, not here).
+ *   location.address                    — the address line under the h2
+ *   location.sub                        — the arrival note, right of the head
+ *   location.rules.<original i>.label    — ledger row label
+ *   location.rules.<original i>.value    — ledger row value
+ *   location.lat / location.lng          — feed the Leaflet boot; no data-field,
+ *                                         they are coordinates, not copy.
+ *
+ * DERIVED, printed but not editable HERE (the hook for each lives in the field
+ * that owns it, so putting a second one on this section would be a duplicate
+ * input fighting the first):
+ *   layout.businessName  → the pin bubble label
+ *   layout.contact.city  → the map caption (the design's "villaRegion")
+ *   layout.contact.address / .lat / .lng → fallbacks behind the location.* pair
+ *
+ * THE HEADLINE / ADDRESS SPLIT. The design sets the ADDRESS as the h2. Straight
+ * mapping would be a trap: lib/derive-content-defaults.ts fills location.headline
+ * with "Where to find us" on every site, while location.address carries
+ * fallbackPaths: ['contact.address'] and so arrives already holding the real
+ * street address. Printing only the h2 would therefore print "Where to find us"
+ * and drop the address off the page. So the h2 is the headline and the address
+ * prints as the line beneath it — the LocationBJ precedent — and it is SKIPPED
+ * when it is the same string as the headline (compared with tags stripped and
+ * whitespace/case flattened), so an owner who does paste their address into the
+ * headline gets the design's single address line, not the same words twice.
+ *
+ * NOT RENDERED, deliberately:
+ *   location.phone and location.hours. The design's LOCATION prints neither; the
+ *   closing band and the footer own the number. Drawing a tel: row here would be
+ *   a control this design does not have, and this section is not the gate on
+ *   them — see the gate note below.
+ *   location.directions.text/href. Declared in the schema, but the design has no
+ *   directions control in this band and R2 forbids inventing one.
+ *   No onPage() anchor-remap helper. It exists to rewrite in-page hrefs onto this
+ *   page's ids, and this section emits NO href at all — the map is not a link,
+ *   the ledger is not a link. An unused PAGE_ANCHORS set would be dead code.
+ *   LocationBJ omits it for the same reason.
+ *
+ * SECTION GATE. Body content only: the map (which needs real coordinates OR a
+ * real address behind it), the ledger rows, or the arrival paragraph. NOT the
+ * tag and NOT the headline — derive-content-defaults fills both on every site,
+ * so a gate that counted them would ship an eyebrow and a heading over an empty
+ * grid. The grid itself is gated separately, so a site with only a sub keeps its
+ * paragraph and grows no empty two-column hole under it.
+ *
+ * THE MAP, three tiers, mirroring LocationBJ:
+ *   1. build-time lat/lng → window.__hospitalityBKInitMap(lat, lng, label)
+ *   2. else any address   → client-side Nominatim lookup, then the same boot
+ *   3. else               → the drawn plot-grid face, which IS the design
+ * The drawn face lives INSIDE #map until Leaflet mounts; PageBK's boot does
+ * el.innerHTML = '' first, which is what erases it. The literal id="map" and the
+ * exact global name __hospitalityBKInitMap are a contract with PageBK — rename
+ * either and the drawn face silently stays on screen under the tiles.
+ * NOTE FOR THE WRAPPER: PageBK defines __hospitalityBKInitMap but does not load
+ * leaflet.css / leaflet.js (PageBJ does, at its lines 158 and 573). Until those
+ * two tags exist, window.L is undefined, the boot returns immediately and tier 3
+ * is what ships. That is harmless here — tier 3 is the design — but it means the
+ * coordinates an owner types have no visible effect yet.
+ *
+ * A CLEARED coordinate field leaves '', which passes != null and which Number('')
+ * turns into 0 — booting Leaflet and pinning the villa at 0,0 in the Gulf of
+ * Guinea with its name on the marker: a map asserting a location the owner never
+ * gave. num() rejects blank and out-of-range values so a cleared field falls
+ * through to the address lookup instead, and uses ?? rather than || so a genuine
+ * 0 survives.
+ *
+ * ACCESSIBILITY. The map cell carries NO role="img" and NO aria-label. The only
+ * name available would be a sentence I wrote ("Map showing …"), which is exactly
+ * the component-supplied copy R2/R9 forbid, and the cell holds no upload — it is
+ * an illustration of a map. So the whole drawn face, pin and bubble included, is
+ * aria-hidden and the information it pictures is announced as real text beside
+ * it: the address line and the ledger. The caption is the one piece of that
+ * frame that is NOT decoration (it is the owner's city), so it sits OUTSIDE #map
+ * and outside the aria-hidden face, and survives the Leaflet boot.
+ *
+ * TWO DEVIATIONS FROM THE DESIGN, both forced, both small:
+ *   1. The pin bubble drops white-space: nowrap. The frame clips overflow, so a
+ *      long business name would be sliced off at BOTH ends; wrapping beats
+ *      truncating on the element that names the property.
+ *   2. The caption gains an opaque --night backing. In the design it sits on the
+ *      drawn face; the moment Leaflet paints tiles underneath, unbacked 10px
+ *      tracked caps are unreadable. Same colour pair the design already ships
+ *      (--muted on --night, 4.34:1 — the design's own value, see PageBK).
+ */
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+const loc = content.location || {};
+const tag = loc.tag || '';
+const headline = loc.headline || '';
+const sub = loc.sub || '';
+const address = String(loc.address || layout.contact?.address || '').trim();
+const addressLines: string[] = address ? address.split('\n') : [];
+// The headline arrives through set:html, so strip tags before comparing — an
+// owner who wrote their address with an <em> in it still matches.
+const flat = (s: string): string =>
+  String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+const showAddress = !!address && flat(address) !== flat(headline);
+
+// Blank rows are dropped: the editor's "+ Add" inserts { label: '', value: '' },
+// and an empty row would spend a hairline plus 26px of padding saying nothing.
+// Every surviving row keeps its ORIGINAL index, so deleting row 2 cannot
+// misdirect an edit of row 3 — and the filter is what makes the gate honest: a
+// rules array of nothing but blanks no longer keeps the ledger alive.
+type RuleRow = { label: string; value: string; i: number };
+const rules: RuleRow[] = (Array.isArray(loc.rules) ? loc.rules : [])
+  .map((r: any, i: number) => ({ label: String(r?.label ?? '').trim(), value: String(r?.value ?? '').trim(), i }))
+  .filter((r: RuleRow) => Boolean(r.label || r.value));
+
+const num = (v: any, max: number): number | null => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+};
+const lat = num(loc.lat, 90) ?? num(layout.contact?.lat, 90);
+const lng = num(loc.lng, 180) ?? num(layout.contact?.lng, 180);
+const hasCoords = lat !== null && lng !== null;
+const hasAddress = !!address;
+// The drawn face is a picture claiming where this property physically is. With
+// neither coordinates nor an address there is nothing real behind that claim, so
+// the whole cell leaves and the ledger takes the full width.
+const hasMap = hasCoords || hasAddress;
+
+// Marker popup + pin bubble. No placeholder: with no business name the bubble
+// leaves and the pin is a bare dot rather than a label reading "Your Business".
+const brand = String(layout.businessName ?? '').trim();
+// The design's "villaRegion". Nothing derives it, so on a site without a city it
+// is simply absent rather than guessed out of the address.
+const locality = String(layout.contact?.city ?? '').trim();
+
+const hasGrid = hasMap || rules.length > 0;
+const hasLoc = hasGrid || !!sub;
+---
+{hasLoc && (
+<section class="loc" id="location">
+  <div class="wrap">
+    <div class="loc-head reveal">
+      <div class="loc-head-l">
+        {tag && <span class="kick" data-field="location.tag">{tag}</span>}
+        {headline && <h2 class="h2 loc-h2" data-field="location.headline" set:html={headline}></h2>}
+        {showAddress && (
+          <p class="loc-addr" data-field="location.address">
+            {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+          </p>
+        )}
+      </div>
+      {sub && <p class="body loc-sub" data-field="location.sub">{sub}</p>}
+    </div>
+    {hasGrid && (
+      <div class:list={['loc-grid', 'reveal', (!hasMap || rules.length === 0) && 'one-up']} data-delay="1">
+        {hasMap && (
+          <div class="map-frame">
+            <div id="map">
+              {/* Tier-3 only, and entirely decorative: PageBK's boot empties #map
+                  before Leaflet draws, so tiles never stack on top of this. */}
+              <div class="map-face" aria-hidden="true">
+                <span class="road road-h"></span>
+                <span class="road road-v"></span>
+                <span class="pin">
+                  <span class="dot"></span>
+                  {brand && <span class="plabel">{brand}</span>}
+                </span>
+              </div>
+            </div>
+            {/* OUTSIDE #map on purpose: the city is real text, not fallback
+                chrome, so it has to survive the boot that erases the face. */}
+            {locality && <span class="mono map-cap">{locality}</span>}
+          </div>
+        )}
+        {rules.length > 0 && (
+          <div class="rules">
+            {/* Both spans always render, even when one is blank: the row is
+                space-between, so dropping an empty span would promote its
+                sibling to the wrong edge. An empty span draws nothing — the
+                guard that matters ran above, where a wholly blank row was
+                dropped along with its hairline. */}
+            {rules.map((r) => (
+              <div class="rowrule rule">
+                <span class="rk" data-field={`location.rules.${r.i}.label`}>{r.label}</span>
+                <span class="rv" data-field={`location.rules.${r.i}.value`}>{r.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>
+)}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, brand }}>
+    (function () {
+      // Bounded like the geocode branch below: this script is emitted where the
+      // section sits, ABOVE the wrapper's boot, so one retry is the normal case —
+      // but an unbounded loop would spin a timer forever on any page where the
+      // wrapper script never ran.
+      var attempt = 0;
+      (function init() {
+        if (window.__hospitalityBKInitMap) { window.__hospitalityBKInitMap(lat, lng, brand); }
+        else if (attempt++ < 25) { setTimeout(init, 80); }
+      })();
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, brand }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(la, ln) {
+        if (window.__hospitalityBKInitMap) { window.__hospitalityBKInitMap(la, ln, brand); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(la, ln); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var la = parseFloat(results[0].lat);
+            var ln = parseFloat(results[0].lon);
+            if (isNaN(la) || isNaN(ln)) return;
+            tryInit(la, ln);
+          })
+          .catch(function () { /* keep the drawn face: it is the design */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  /* ── THE HEAD · flex, baseline-bottom, space-between, wrapping before either
+        side can overflow. 36px to the grid, straight from the design. */
+  .loc-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap; margin: 0 0 36px;
+  }
+  .loc-head-l { min-width: 0; }
+  /* PageBK's .h2 already carries the design's face, clamp(31px,4vw,54px)/1.1 and
+     --bone-hi. Only the margin differs: the design pushes the h2 .26em BELOW the
+     eyebrow and nothing after it. */
+  .loc-h2 { margin: .26em 0 0; }
+  /* Qualified with the parent class on purpose — PageBK's bare-paragraph reset is
+     (0,1,1) and it sets a bottom margin these two must not inherit. */
+  .loc-head-l .loc-addr {
+    margin: .55em 0 0; font-size: 15px; line-height: 1.75; color: var(--grey);
+    max-width: 42ch; overflow-wrap: anywhere;
+  }
+  .loc-head .loc-sub { margin: 0; min-width: 0; max-width: 36ch; overflow-wrap: anywhere; }
+
+  /* ── THE SPLIT · the design's 1.2fr / .8fr with a 26px gutter. Either cell can
+        be absent — no coordinates and no address drops the map, no rows drop the
+        ledger — and the survivor takes the full width instead of leaving a hole
+        beside itself. */
+  .loc-grid {
+    display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,.8fr);
+    gap: 26px; align-items: stretch;
+  }
+  .loc-grid.one-up { grid-template-columns: minmax(0,1fr); }
+
+  /* ── THE MAP CELL · panel ground inside a hairline, 3px corners, 360px. */
+  .map-frame {
+    position: relative; min-height: 360px; overflow: hidden;
+    border-radius: var(--r-lg); border: 1px solid var(--rule);
+    background-color: var(--night-2);
+  }
+  #map { position: absolute; inset: 0; z-index: 0; }
+  /* The plotted face: a 46px brass grid with two roads crossing under the pin.
+     Token-derived, so an admin accent pick moves the plot lines with the pin. */
+  .map-face {
+    position: absolute; inset: 0; background-color: var(--night-2);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(var(--accent-rgb),.09) 0 1px, transparent 1px 46px),
+      repeating-linear-gradient(90deg, rgba(var(--accent-rgb),.09) 0 1px, transparent 1px 46px);
+  }
+  .road { position: absolute; background-color: rgba(var(--accent-rgb),.24); }
+  .road-h { top: 48%; left: 0; right: 0; height: 5px; }
+  .road-v { top: 0; bottom: 0; left: 42%; width: 4px; }
+  /* max-width sits on the ABSPOS pin, not on the bubble. The stack is CENTRED on
+     the 42% crossing, so it only stays inside the frame when it is capped at twice
+     the smaller side — 84% — less 12px of air each side. calc(100% - 24px) would
+     still let a long property name run past the left edge and be clipped there by
+     the frame, which is the truncation the wrapping bubble exists to avoid.
+     width: max-content is required alongside it, or abspos shrink-to-fit
+     collapses the stack to (containing block - left). */
+  .pin {
+    position: absolute; top: 48%; left: 42%; transform: translate(-50%,-100%);
+    display: grid; justify-items: center; gap: 9px;
+    width: max-content; max-width: calc(84% - 24px); text-align: center; z-index: 1;
+  }
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background-color: var(--accent); border: 3px solid var(--night);
+  }
+  /* Square, not var(--r-ctl): the design's pin bubble is the one label in this
+     template with no radius at all. */
+  .plabel {
+    background-color: var(--accent); color: var(--on-accent);
+    font-family: var(--sans); font-weight: 600; font-size: 9px;
+    letter-spacing: .2em; text-transform: uppercase;
+    padding: 5px 12px; text-align: center; overflow-wrap: anywhere;
+  }
+  /* .mono supplies the design's 10px / .22em / --muted; only the placement and
+     the opaque backing are added here. */
+  .map-cap {
+    position: absolute; left: 18px; bottom: 18px; z-index: 2;
+    background-color: var(--night); padding: 5px 10px; border-radius: var(--r-ctl);
+    max-width: calc(100% - 36px); overflow-wrap: anywhere;
+  }
+
+  /* ── THE LEDGER · panel ground, hairline, 3px, 28px 30px. */
+  .rules {
+    background-color: var(--night-2); border: 1px solid var(--rule);
+    border-radius: var(--r-lg); padding: 28px 30px;
+  }
+  /* .rowrule brings the --rule-soft hairline. The design draws it under EVERY
+     row including the last, which is why there is no `+ .rule` trick here: the
+     closing hairline above the card's 28px of padding is the design. */
+  .rule { justify-content: space-between; gap: 16px; padding: 13px 0; }
+  .rk { font-size: 13px; line-height: 1.5; color: var(--muted); min-width: 0; overflow-wrap: anywhere; }
+  .rv { font-size: 14px; line-height: 1.5; color: var(--bone-hi); text-align: right; min-width: 0; overflow-wrap: anywhere; }
+
+  /* ── RESPONSIVE · the wrapper owns the shared 760 / 520 pass; this is the
+        section's own grid. */
+  @media (max-width: 900px) {
+    /* Ledger under the map: the rules are what a guest reads twice. */
+    .loc-grid { grid-template-columns: minmax(0,1fr); }
+    .loc-head .loc-sub { max-width: none; }
+  }
+  @media (max-width: 760px) {
+    .map-frame { min-height: 300px; }
+    .loc-head { margin-bottom: 28px; }
+    .loc-head-l .loc-addr { max-width: none; }
+    .rules { padding: 22px 24px; }
+  }
+  @media (max-width: 520px) {
+    .map-frame { min-height: 240px; }
+    .rules { padding: 16px 20px; }
+    /* Two lines rather than squeezing a policy value into a 90px column: label
+       above, value below, both left-aligned. */
+    .rule { flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 0; }
+    .rv { text-align: left; }
+    .map-cap { left: 12px; bottom: 12px; font-size: 9px; letter-spacing: .16em; max-width: calc(100% - 24px); }
+    .plabel { font-size: 8.5px; letter-spacing: .14em; padding: 5px 10px; }
+  }
+</style>
