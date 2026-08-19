@@ -77,9 +77,14 @@
  * page is already the dark one — so `band-panel` only lifts a section from
  * --night to --night-2 and gives it hairline edges.
  *
- * Leaflet: this wrapper defines window.__hospitalityBKInitMap (family-unique)
- * and LocationBK calls that exact string. Keep `el.innerHTML = ''` in the boot —
- * it is what erases the drawn fallback map-face — and keep id="map" literal.
+ * Leaflet: this wrapper LOADS leaflet.css + leaflet.js and defines
+ * window.__hospitalityBKInitMap (family-unique, because a preview harness can
+ * render two wrappers in one document and a shared name cross-wires the maps).
+ * LocationBK calls that exact string. Keep `el.innerHTML = ''` in the boot — it
+ * is what erases the drawn fallback map-face — and keep id="map" literal.
+ * The first cut of this file defined the boot but shipped neither tag, so
+ * window.L was never defined and every villa's map silently stayed on the drawn
+ * fallback. check-template-blocks.mjs now fails that combination.
  */
 import HeaderBK from './header/HeaderBK.astro';
 import HeroBK from './hero/HeroBK.astro';
@@ -132,6 +137,13 @@ const __og = layout.ogImage || layout.favicon || '';
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Prata&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet" />
 {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+<!-- Leaflet. BOTH tags are load-bearing: without the stylesheet the tiles
+     render as a stack of unpositioned images, and without the script window.L
+     never exists, the boot below returns immediately, and LocationBK's drawn
+     fallback face is all an owner ever sees however many coordinates they
+     type. scripts/check-template-blocks.mjs now fails a wrapper that defines a
+     map boot without loading both. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
 <style is:global>
     /* ═══════════════════════════════════════════════════════════════════════
@@ -440,6 +452,7 @@ const __og = layout.ogImage || layout.favicon || '';
 </main>
 {visibility.footerSection !== false && <FooterBK content={content} layout={layout} />}
 
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script is:inline>
   (function () {
     var els = document.querySelectorAll('.reveal');
@@ -459,17 +472,48 @@ const __og = layout.ogImage || layout.favicon || '';
 
   // Family-unique name — LocationBK calls this exact string. The innerHTML wipe
   // is what erases the drawn fallback map-face before Leaflet paints.
+  //
+  // The script tag above is in the same document, so window.L is normally there
+  // by the time LocationBK's bounded retry finds this function. The short retry
+  // here covers the other order — a slow or blocked CDN — and gives up rather
+  // than spinning, because the drawn fallback face IS the design and is a
+  // perfectly good thing to be left with.
   window.__hospitalityBKInitMap = function (lat, lng, label) {
-    var el = document.getElementById('map');
-    if (!el || typeof window.L === 'undefined') return;
-    el.innerHTML = '';
-    var map = window.L.map(el, { scrollWheelZoom: false, attributionControl: true }).setView([lat, lng], 15);
-    window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-    }).addTo(map);
-    var marker = window.L.marker([lat, lng]).addTo(map);
-    if (label) marker.bindPopup(label);
+    var tries = 0;
+    (function go() {
+      var el = document.getElementById('map');
+      if (!el) return;
+      if (typeof window.L === 'undefined') {
+        if (tries++ < 25) setTimeout(go, 80);
+        return;
+      }
+      el.innerHTML = '';
+      var map = window.L.map(el, { scrollWheelZoom: false, attributionControl: true }).setView([lat, lng], 15);
+      // dark_all, not dark_nolabels: a guest orienting to a barangay, pier or
+      // highway needs the place names, and the dark basemap is the only one of
+      // the CARTO set that sits inside this design rather than on top of it.
+      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        subdomains: 'abcd',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      }).addTo(map);
+      // The default Leaflet pin is a blue PNG and would be the only thing on the
+      // page that is not night, bone or brass. Colours are READ from the live
+      // tokens rather than baked, so an explicit admin colour pick recolours the
+      // pin too — buildOverrideCss sets them on html:root, which is this element.
+      var cs = window.getComputedStyle(document.documentElement);
+      var accent = (cs.getPropertyValue('--accent') || '').trim() || '#B99552';
+      var night = (cs.getPropertyValue('--night') || '').trim() || '#101413';
+      var icon = window.L.divIcon({
+        className: '',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+        html: '<span style="display:block;width:16px;height:16px;border-radius:50%;background:' +
+              accent + ';border:3px solid ' + night + ';box-shadow:0 0 0 1px ' + accent + '"></span>',
+      });
+      var marker = window.L.marker([lat, lng], { icon: icon }).addTo(map);
+      if (label) marker.bindPopup(label);
+    })();
   };
 </script>
 </body>
