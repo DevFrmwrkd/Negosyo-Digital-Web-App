@@ -714,6 +714,40 @@ async function transformToAstroData(
                 return out as T
             }
 
+            /**
+             * Keep a block's HEADING when its list arrived unwrapped.
+             *
+             * normalizeBlock() accepts either shape — a wrapper
+             * `{tag, headline, items[]}` or the legacy BARE ARRAY — but when the
+             * input is an array there is no wrapper to preserve, so it returns
+             * `{items: [...]}` and nothing else. Combined with
+             * `c.faq ?? derived.faq`, that meant any site whose FAQ (or why /
+             * how / testimonials / credentials) was stored as a bare array
+             * rendered its rows with NO eyebrow and NO headline: the derived
+             * heading existed, and was discarded on the way past.
+             *
+             * This is deliberately NOT mergeShallow. mergeShallow would also
+             * hand back the derived ITEMS whenever the owner's block carries no
+             * list — turning "the owner cleared their rows" into "here are some
+             * rows we made up", which is the one thing the templates must never
+             * do. Only tag and headline are ever filled in, and only when the
+             * owner's own value is genuinely absent.
+             */
+            const keepHead = <T extends { tag?: string; headline?: string }>(
+                block: T | undefined,
+                fallback: any,
+            ): T | undefined => {
+                // No owner content at all still means no section. Never build a
+                // block out of a heading alone.
+                if (!block || !fallback || typeof fallback !== 'object') return block
+                const out: any = { ...block }
+                for (const k of ['tag', 'headline'] as const) {
+                    const own = out[k]
+                    if ((own === undefined || own === null || own === '') && fallback[k]) out[k] = fallback[k]
+                }
+                return out as T
+            }
+
             const heroMerged = mergeShallow<any>(c.hero, derived.hero)
             // Headline backfills: if neither admin nor AI gave a
             // single-line headline, use derived.headline. If neither gave
@@ -856,12 +890,16 @@ async function transformToAstroData(
                 // See docs/changes/TEMPLATES-SALONSPA-PLAN.md for full
                 // context. Also remaps field aliases so components can
                 // read a single canonical name (body / who / role).
-                why:          normalizeBlock(c.why ?? derived.why, 'items', { description: 'body' }),
-                how:          normalizeBlock(c.how ?? derived.how, 'steps', { description: 'body' }, { altItemsKey: 'items' }),
+                // keepHead: a block stored as a BARE ARRAY carries no tag or
+                // headline, so without this its section renders its rows under
+                // no eyebrow and no heading. See the helper above for why this
+                // is not mergeShallow.
+                why:          keepHead(normalizeBlock(c.why ?? derived.why, 'items', { description: 'body' }), derived.why),
+                how:          keepHead(normalizeBlock(c.how ?? derived.how, 'steps', { description: 'body' }, { altItemsKey: 'items' }), derived.how),
                 trust:        c.trust ?? d.trust,
-                testimonials: normalizeBlock(c.testimonials ?? undefined, 'items', { name: 'who', author: 'who', context: 'role' }),
-                faq:          normalizeBlock(c.faq ?? derived.faq, 'items', { question: 'q', answer: 'a' }),
-                credentials:  normalizeBlock(c.credentials ?? undefined, 'items', { description: 'desc', body: 'desc' }),
+                testimonials: keepHead(normalizeBlock(c.testimonials ?? undefined, 'items', { name: 'who', author: 'who', context: 'role' }), (derived as any).testimonials),
+                faq:          keepHead(normalizeBlock(c.faq ?? derived.faq, 'items', { question: 'q', answer: 'a' }), derived.faq),
+                credentials:  keepHead(normalizeBlock(c.credentials ?? undefined, 'items', { description: 'desc', body: 'desc' }), (derived as any).credentials),
                 // Carry over enhancedImages so the image picker modal can
                 // surface them from inside the iframe-rendered Astro output.
                 enhancedImages: c.enhancedImages,
