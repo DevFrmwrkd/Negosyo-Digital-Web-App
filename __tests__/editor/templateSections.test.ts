@@ -18,6 +18,10 @@ import {
     DEFAULT_SECTION_LABELS,
 } from "@/components/editor/templateSectionLabels";
 import { ALL_BLOCKS } from "@/components/editor/editorConstants";
+import {
+    GENERIC_CONTENT_SCHEMA,
+    GROUP_BLOCK,
+} from "@/components/editor/genericContentSchema";
 
 describe("sectionsForTemplate", () => {
     it("returns the template's sections in the order the page renders them", () => {
@@ -100,6 +104,32 @@ describe("sectionsForTemplate", () => {
             const list = sectionsForTemplate(code).map((s) => s.block);
             expect([...set].sort()).toEqual([...list].sort());
         }
+    });
+});
+
+describe("GROUP_BLOCK (the Content panel's group -> section map)", () => {
+    it("maps every content group except the header to a real block", () => {
+        const realBlocks = new Set(ALL_BLOCKS.map((b) => b.name));
+        for (const [groupId, block] of Object.entries(GROUP_BLOCK)) {
+            expect(groupId).not.toBe("header");
+            expect(realBlocks.has(block)).toBe(true);
+        }
+    });
+
+    it("leaves no schema group silently always-shown except the header", () => {
+        // A group with no entry here is never filtered out. That is correct for
+        // the header (no wrapper gates on it) and a bug for anything else — it
+        // would keep offering fields for a section the template does not render.
+        const unmapped = GENERIC_CONTENT_SCHEMA.map((g) => g.id).filter((id) => !GROUP_BLOCK[id]);
+        expect(unmapped).toEqual(["header"]);
+    });
+
+    it("covers every block the templates render, so no section loses its fields", () => {
+        const mapped = new Set(Object.values(GROUP_BLOCK));
+        const rendered = new Set<string>();
+        for (const list of Object.values(TEMPLATE_SECTION_ORDER))
+            for (const b of list) rendered.add(b);
+        for (const b of rendered) expect(mapped.has(b)).toBe(true);
     });
 });
 

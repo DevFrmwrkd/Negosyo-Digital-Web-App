@@ -19,13 +19,15 @@
  * (and the new selection-pulse) still works.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
     GENERIC_CONTENT_SCHEMA,
+    GROUP_BLOCK,
     type GroupSpec,
     type FieldSpec,
     type ListSpec,
 } from "./genericContentSchema";
+import { sectionsForTemplate } from "./templateCatalog";
 
 export interface ContentFieldsAutoProps {
     getValue: (path: string) => any;
@@ -34,6 +36,50 @@ export interface ContentFieldsAutoProps {
     pushLiveText?: (path: string, value: any) => void;
     /** Comma-joined ids of groups that start expanded. Default: hero + first. */
     expandedInitial?: string[];
+    /**
+     * The selected template, e.g. "hospitality:BJ". When given, the group list
+     * is filtered to the sections that template actually renders, ordered the
+     * way the page renders them, and titled with the template's own name for
+     * each section. Omit it and the full generic schema shows, unchanged.
+     */
+    templateCode?: string;
+}
+
+/**
+ * The groups to show for a template: page order, the template's own names, and
+ * nothing for a section it does not render.
+ *
+ * FAILS OPEN. A group with no GROUP_BLOCK entry ('header'), or an unrecognised
+ * template code, keeps the full generic schema — a missing field an owner needs
+ * is a worse failure than a spare one they can ignore.
+ */
+function groupsForTemplate(templateCode: string | undefined): GroupSpec[] {
+    if (!templateCode) return GENERIC_CONTENT_SCHEMA;
+    const sections = sectionsForTemplate(templateCode);
+    if (!sections.length) return GENERIC_CONTENT_SCHEMA;
+
+    const labelByBlock = new Map(sections.map((s) => [s.block, s.label]));
+    const orderByBlock = new Map(sections.map((s, i) => [s.block, i]));
+
+    const kept = GENERIC_CONTENT_SCHEMA.filter((g) => {
+        const block = GROUP_BLOCK[g.id];
+        return !block || labelByBlock.has(block);
+    });
+
+    const rank = (g: GroupSpec) => {
+        const block = GROUP_BLOCK[g.id];
+        // Unmapped groups (the header) sit above the page, so they lead.
+        if (!block) return -1;
+        return orderByBlock.get(block) ?? Number.MAX_SAFE_INTEGER;
+    };
+
+    return kept
+        .slice()
+        .sort((a, b) => rank(a) - rank(b))
+        .map((g) => {
+            const label = labelByBlock.get(GROUP_BLOCK[g.id] ?? "");
+            return label && label !== g.title ? { ...g, title: label } : g;
+        });
 }
 
 const labelStyle: React.CSSProperties = {
@@ -92,7 +138,9 @@ export default function ContentFieldsAuto({
     openImagePicker,
     pushLiveText,
     expandedInitial,
+    templateCode,
 }: ContentFieldsAutoProps) {
+    const groups = useMemo(() => groupsForTemplate(templateCode), [templateCode]);
     const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
         const init: Record<string, boolean> = {};
         const defaults = expandedInitial ?? ['header', 'hero'];
@@ -110,7 +158,7 @@ export default function ContentFieldsAuto({
 
     return (
         <div>
-            {GENERIC_CONTENT_SCHEMA.map((group) => (
+            {groups.map((group) => (
                 <GroupRender
                     key={group.id}
                     group={group}
