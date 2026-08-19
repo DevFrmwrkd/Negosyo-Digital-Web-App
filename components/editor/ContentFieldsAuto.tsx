@@ -28,6 +28,7 @@ import {
     type ListSpec,
 } from "./genericContentSchema";
 import { sectionsForTemplate } from "./templateCatalog";
+import { TEMPLATE_FIELD_PATHS } from "./templateFieldPaths.generated";
 
 export interface ContentFieldsAutoProps {
     getValue: (path: string) => any;
@@ -53,13 +54,72 @@ export interface ContentFieldsAutoProps {
  * template code, keeps the full generic schema — a missing field an owner needs
  * is a worse failure than a spare one they can ignore.
  */
-function groupsForTemplate(templateCode: string | undefined): GroupSpec[] {
+/**
+ * The content paths a template actually binds, or null when we cannot tell.
+ * null means DO NOT FILTER — an unrecognised template shows the whole schema.
+ */
+function boundPathsFor(templateCode: string | undefined): Set<string> | null {
+    const list = templateCode ? TEMPLATE_FIELD_PATHS[templateCode] : undefined;
+    return list && list.length ? new Set(list) : null;
+}
+
+/**
+ * Does this template draw anything for this field?
+ *
+ * TWO WAYS TO SURVIVE, and the second matters as much as the first:
+ *
+ *   1. the template binds the path (or its href companion, or a fallback path)
+ *   2. THE FIELD ALREADY HOLDS A VALUE
+ *
+ * Rule 2 exists because hiding an input does not delete what is behind it. An
+ * owner who typed a price under one template, then switched to a template that
+ * draws no price, would otherwise have that value stranded in storage with no
+ * way to reach or clear it — and it would reappear the moment they switched
+ * back. A field with content in it always stays reachable.
+ */
+function fieldSurvives(
+    f: FieldSpec,
+    bound: Set<string> | null,
+    hasValue: (path: string) => boolean,
+): boolean {
+    if (!bound) return true;
+    if (bound.has(f.path)) return true;
+    if (f.hrefPath && bound.has(f.hrefPath)) return true;
+    if (f.fallbackPaths?.some((p) => bound.has(p))) return true;
+    return hasValue(f.path) || (!!f.hrefPath && hasValue(f.hrefPath));
+}
+
+/**
+ * A list keeps only the row fields the template draws, and disappears entirely
+ * when it draws none of them. Item paths are normalised the way the generator
+ * writes them: services.items.N.title covers every row.
+ */
+function narrowList(
+    l: ListSpec,
+    bound: Set<string> | null,
+    rowHasValue: (listPath: string, key: string) => boolean,
+): ListSpec | null {
+    if (!bound) return l;
+    const compose = (key: string) => (key ? l.path + ".N." + key : l.path + ".N");
+    const itemFields = (l.itemFields ?? []).filter(
+        (f) => bound.has(compose(f.path)) || rowHasValue(l.path, f.path),
+    );
+    if (!itemFields.length) return null;
+    return itemFields.length === (l.itemFields ?? []).length ? l : { ...l, itemFields };
+}
+
+function groupsForTemplate(
+    templateCode: string | undefined,
+    hasValue: (path: string) => boolean,
+    rowHasValue: (listPath: string, key: string) => boolean,
+): GroupSpec[] {
     if (!templateCode) return GENERIC_CONTENT_SCHEMA;
     const sections = sectionsForTemplate(templateCode);
     if (!sections.length) return GENERIC_CONTENT_SCHEMA;
 
     const labelByBlock = new Map(sections.map((s) => [s.block, s.label]));
     const orderByBlock = new Map(sections.map((s, i) => [s.block, i]));
+    const bound = boundPathsFor(templateCode);
 
     const kept = GENERIC_CONTENT_SCHEMA.filter((g) => {
         const block = GROUP_BLOCK[g.id];
@@ -78,8 +138,20 @@ function groupsForTemplate(templateCode: string | undefined): GroupSpec[] {
         .sort((a, b) => rank(a) - rank(b))
         .map((g) => {
             const label = labelByBlock.get(GROUP_BLOCK[g.id] ?? "");
-            return label && label !== g.title ? { ...g, title: label } : g;
-        });
+            const titled = label && label !== g.title ? { ...g, title: label } : g;
+            if (!bound) return titled;
+            const fields = titled.fields
+                .map((f) =>
+                    f.kind === "list"
+                        ? narrowList(f as ListSpec, bound, rowHasValue)
+                        : fieldSurvives(f as FieldSpec, bound, hasValue) ? f : null,
+                )
+                .filter(Boolean) as GroupSpec["fields"];
+            return fields.length === titled.fields.length ? titled : { ...titled, fields };
+        })
+        // A section whose every field this template leaves undrawn has nothing
+        // to edit. Dropping it beats an expandable group that opens on nothing.
+        .filter((g) => g.fields.length > 0);
 }
 
 const labelStyle: React.CSSProperties = {
@@ -140,7 +212,29 @@ export default function ContentFieldsAuto({
     expandedInitial,
     templateCode,
 }: ContentFieldsAutoProps) {
-    const groups = useMemo(() => groupsForTemplate(templateCode), [templateCode]);
+    // getValue is intentionally NOT a dependency: re-narrowing on every
+    // keystroke would make an input vanish the moment its value was cleared.
+    // The set is computed for the template, and a field that held a value when
+    // the panel opened stays reachable for the whole session.
+    const groups = useMemo(
+        () => {
+            const hasValue = (path: string) => {
+                const v = getValue(path);
+                return v !== undefined && v !== null && v !== "";
+            };
+            const rowHasValue = (listPath: string, key: string) => {
+                const rows = getValue(listPath);
+                if (!Array.isArray(rows)) return false;
+                return rows.some((row: any) => {
+                    const v = key ? row?.[key] : row;
+                    return v !== undefined && v !== null && v !== "";
+                });
+            };
+            return groupsForTemplate(templateCode, hasValue, rowHasValue);
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [templateCode],
+    );
     const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
         const init: Record<string, boolean> = {};
         const defaults = expandedInitial ?? ['header', 'hero'];
