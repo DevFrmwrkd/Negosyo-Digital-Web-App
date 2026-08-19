@@ -1,0 +1,375 @@
+---
+/**
+ * hospitality / HeroBK — "Villa Marindu"'s arrival.
+ *
+ * ROLE. The page's opening statement and its only h1. A full-bleed photograph
+ * fills the section, a bottom-weighted gradient scrim sits over it, and the copy
+ * stack — brass eyebrow, Prata headline, lede, two actions — is bottom-aligned
+ * inside it. Lifted verbatim from the HERO element of "Villa Marindu
+ * Landing.dc.html": min-height 92vh, align-items flex-end, 92px of floor,
+ * h1 clamp(46px,6.6vw,96px)/1.02 at 20ch in --bone-hi with an ITALIC BRASS <em>,
+ * lede 18.5px/1.7 in --grey-2 at 50ch, actions 13px apart.
+ *
+ * EDITABLE HOOKS (each path is declared in components/editor/
+ * genericContentSchema.ts, so each is live in the sidebar AND inline):
+ *   hero.image          — data-image-field, the full-bleed background photograph
+ *   hero.kicker         — the eyebrow (.kick)
+ *   hero.headline       — the h1, set:html so an owner <em> takes the brass italic
+ *   hero.headlineLines.${i} — the SAME h1, when hero.headline holds nothing but
+ *                         the derived business name; see THE HEADLINE below
+ *   hero.sub            — the lede
+ *   hero.cta1.text + data-href-field hero.cta1.href — the brass button
+ *   hero.cta2.text + data-href-field hero.cta2.href — the outlined button
+ *
+ * DERIVED, never stored and never editable:
+ *   · the photograph's accessible name — layout.businessName and nothing else
+ *   · both button hrefs, resolved through onPage() against the ids PageBK
+ *     actually renders
+ *   · which of the two headline paths the h1 binds to
+ *   · the flat variant (no photograph ⇒ no 92vh), below
+ *
+ * NOT RENDERED, deliberately:
+ *   · No copy of any kind is written by this file. The design's demo strings
+ *     ("A whole villa, and no one else in it.", "See the villa", "Private villa ·
+ *     El Nido, Palawan") are the DESIGNER filling in their own template. A real
+ *     business gets an arrival that says only what that business said, so every
+ *     guard sits OUTSIDE its tag: no eyebrow over nothing, no empty action row,
+ *     and no scrim painted over a photograph that was never uploaded.
+ *   · hero.meta1 / hero.meta2 / hero.trustLine — schema-owned, but this design
+ *     has no element for them and the TRUST band directly below carries the
+ *     proof figures instead. (meta1 in particular used to default to a
+ *     five-star claim; there is no honest place for it here.)
+ *   · hero.tag / hero.photos.* — not declared by the schema. A data-field on a
+ *     path no sidebar input owns looks editable and focuses nothing.
+ *   · The design's `pointer-events:none` on the copy stack, and `pointer-events:
+ *     auto` on the action row. That pair exists so the DESIGNER can click the
+ *     image-slot lying behind the words. In the admin editor it would make the
+ *     h1, the eyebrow and the lede unclickable — inline editing dead, text
+ *     unselectable — so it is dropped. Nothing sits behind the copy here that a
+ *     visitor needs to reach.
+ *   · .reveal. This section is above the fold; it is painted, not animated in.
+ *   · An aria-label on the <section>. Naming it would turn it into a landmark
+ *     announced with a word I wrote ("Hero"), which is studio jargon; the h1
+ *     already titles the region.
+ *
+ * THE HEADLINE, and why one heading reads two paths. This design's headline is
+ * ONE flowing sentence whose closing phrase falls into brass italic — not a
+ * stack of lines — so the h1 is hero.headline rendered through set:html and the
+ * emphasis is an <em> the OWNER types. Nothing derives the italic: there is no
+ * honest way to choose which phrase of someone else's sentence should turn
+ * brass.
+ * The catch is WHICH FIELD actually holds the owner's headline, because two
+ * layers upstream disagree:
+ *   · lib/derive-content-defaults.ts auto-fills hero.headline with the BARE
+ *     BUSINESS NAME on every named site (`headline: name || undefined`), and
+ *     lib/astro-builder.ts's mergeShallow lets that derived value stand
+ *     wherever the owner left the field unset.
+ *   · lib/services/groq.service.ts — the extraction that writes the copy for a
+ *     real submission — emits hero.headlineLines and NEVER hero.headline.
+ * So "always prefer hero.headline" prints the business name and drops the
+ * authored headline on the floor for exactly the sites that have one. The rule
+ * here is therefore: hero.headline wins whenever it is AUTHORED, meaning
+ * anything other than the business name the derive layer fills in. When it is
+ * that auto-fill (or empty), the surviving headlineLines rows win — flowed
+ * INLINE inside the same h1, because this design's headline is a sentence and
+ * not a stack — each carrying its ORIGINAL array index, so dropping a blank
+ * row 2 cannot misdirect an edit into row 3.
+ * The field a click opens is always the field the visible text came from:
+ * binding hero.headlineLines.0 to text that arrived as hero.headline (or the
+ * reverse) aims an inline edit at a slot the sidebar is not showing. Both paths
+ * are declared by components/editor/genericContentSchema.ts ('Headline (single
+ * line)' and the 'Headline lines' list), so neither is a dead hook.
+ *
+ * SECTION GATE. The arrival renders when it has something to SAY or SHOW: a
+ * headline, a lede, or the photograph. It deliberately does NOT count the
+ * eyebrow (derive-content-defaults builds one from city + trade for sites that
+ * have neither name, tagline nor upload — a 92vh black rectangle carrying one
+ * tracked word is exactly the "heading over an empty section" failure), and it
+ * does NOT count the two buttons (derive sets cta1/cta2 text UNCONDITIONALLY,
+ * so counting either would make the gate a no-op that always passes).
+ * FOR REVIEW: this is the one section in the family whose gate counts the
+ * headline, because here the headline IS the body — it is the document's only
+ * h1, and a hero dropped for having "only" an h1 takes the page's heading with
+ * it and opens the site on the trust band.
+ *
+ * NO PHOTOGRAPH ⇒ NO 92vh. The design's arrival is a photograph with words at
+ * its foot. With no upload, 92vh of empty ground above bottom-aligned copy is a
+ * layout with a hole in it, so the flat variant drops the min-height and pads
+ * top and bottom like an ordinary section. The scrim goes with the photo: it
+ * exists only to hold the copy legible over one.
+ *
+ * COLOUR / CONTRAST (R1 — no literal hex in this file, only PageBK's tokens):
+ *   --bone-hi headline 16.5:1, --grey-2 lede 11.1:1, --accent eyebrow and italic
+ *   6.62:1, all measured on --night. Over the photograph the design's own scrim
+ *   carries them: rgba(--scrim-rgb,.94) at the floor where the copy sits, so the
+ *   text never rides a bare image. The scrim is the design's gradient verbatim.
+ *
+ * CLASS-NAME LAW (not inferable, do not "tidy"): the section is .vm-arrive, NOT
+ * .hero — buildOverrideCss force-paints `.hero .btn-ghost` with !important and
+ * would strand a label here. Buttons are .btn + .btn--fill / .btn--line (double
+ * dash) for the same reason. Never .btn-primary / .btn-ghost / .btn-yellow /
+ * .btn-light / .nav-cta / .trust / .testi / .cta-band in this family.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+// Anchor guard, copied from the BJ sibling and re-pointed at THIS page.
+// lib/derive-content-defaults.ts hard-codes '#visit' for hero.cta1 and
+// '#services' for hero.cta2; '#visit' is an id no page in this family renders,
+// so the primary button scrolled nowhere. Resolve every in-page href against
+// what PageBK actually draws: keep it when the id exists, remap it when this
+// design carries the same block under another id, otherwise fall back to the
+// target the design was built around. Off-page hrefs (tel:, mailto:, http) pass
+// through untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBK — and with the copies
+// in HeaderBK, CtaBandBK and FooterBK. There is no shared import by design (a
+// section component in this repo receives only `content` + `layout`); the copies
+// must stay identical by hand.
+const PAGE_ANCHORS = new Set(['about', 'services', 'gallery', 'location', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  visit: 'location', contact: 'location',
+  rooms: 'services', amenities: 'services',
+  host: 'about', why: 'about',
+  work: 'gallery',
+  book: 'main',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+
+// Display fallbacks only — the HOOK below is always hero.image, the path the
+// sidebar's image picker writes. The quote escape keeps a filename with an
+// apostrophe from closing the url('') early and killing the declaration.
+const heroImage = String(hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '');
+const heroImageCss = heroImage.replace(/'/g, '%27');
+
+const kicker = hero.kicker || '';
+
+// THE HEADLINE — full reasoning in the doc comment. hero.headline is this
+// design's field; the rows take over only when hero.headline is nothing but the
+// business name derive-content-defaults auto-filled (or is empty), which is the
+// shape every AI-written submission arrives in.
+const bizName = String(layout?.businessName ?? '').trim();
+const headline = String(hero.headline ?? '').trim();
+const lineRows: Array<{ text: string; i: number }> = (Array.isArray(hero.headlineLines) ? hero.headlineLines : [])
+  .map((t: any, i: number) => ({ text: String(t ?? ''), i }))
+  .filter((l: { text: string }) => l.text.trim() !== '');
+// …and only when they SAY something hero.headline does not. On the ordinary
+// named site both hold the same one line, and the single-line hook keeps it.
+const useRows =
+  lineRows.length > 0 &&
+  (headline === '' || headline === bizName) &&
+  lineRows.map((l) => l.text.trim()).join(' ') !== headline;
+const hasHeadline = useRows || headline !== '';
+
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = onPage(hero.cta1?.href, '#location');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, '#gallery');
+
+// The photograph's accessible name is the owner's own words or nothing. With no
+// business name there is no honest name for the picture, so it leaves the
+// accessibility tree instead of announcing a phrase I invented. Built as one
+// spread object so a conditional attribute can never end up beside a literal.
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+const hasArrival = !!(hasHeadline || sub || heroImage);
+---
+{hasArrival && (
+<section class={heroImage ? 'vm-arrive' : 'vm-arrive vm-arrive--flat'}>
+  {/* Layer 0 — the photograph. No upload ⇒ no layer at all, rather than a
+      tinted rectangle standing in for a picture nobody supplied. */}
+  {heroImage && (
+    <div class="plate vm-shot">
+      <div
+        class="ph vm-ph"
+        data-image-field="hero.image"
+        style={`background-image:url('${heroImageCss}');`}
+        {...photoA11y}
+      ></div>
+    </div>
+  )}
+  {/* Layer 1 — the design's scrim, verbatim. Purely presentational, and it only
+      exists where there is a photograph to darken. */}
+  {heroImage && <div class="vm-scrim" aria-hidden="true"></div>}
+
+  {/* Layer 2 — the copy stack. */}
+  <div class="wrap vm-copy">
+    {kicker && <span class="kick vm-kick" data-field="hero.kicker">{kicker}</span>}
+    {!useRows && headline !== '' && <h1 class="vm-h1" data-field="hero.headline" set:html={headline}></h1>}
+    {useRows && (
+      <h1 class="vm-h1">
+        {lineRows.map((l, k) => (
+          <span class="vm-ln"><span data-field={`hero.headlineLines.${l.i}`} set:html={l.text}></span>{k === lineRows.length - 1 ? '' : ' '}</span>
+        ))}
+      </h1>
+    )}
+    {sub && <p class="vm-lede" data-field="hero.sub">{sub}</p>}
+    {(cta1Text || cta2Text) && (
+      <div class="vm-ctas">
+        {cta1Text && (
+          <a class="btn btn--fill vm-cta-lg" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>
+        )}
+        {cta2Text && (
+          <a class="btn btn--line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
+        )}
+      </div>
+    )}
+  </div>
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBK's token vocabulary
+     (--night --bone-hi --grey-2 --accent --scrim-rgb --disp --sans) and from its
+     shared primitives (.wrap .kick .plate .ph .btn .btn--fill .btn--line).
+     There is no literal hex in this file.
+     Every rule below is a class selector, which out-specifies the wrapper's
+     `html[data-page="BK"] section` and its :where()-wrapped primitives — that is
+     how the 92vh arrival overrides the shared section padding without
+     !important. */
+
+  /* Design: position:relative; min-height:92vh; display:flex;
+     align-items:flex-end; overflow:hidden; floor 92px. */
+  .vm-arrive {
+    position: relative;
+    min-height: 92vh;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    /* The design's floor is a flat 92px — not a clamp. It sits on the SECTION
+       rather than on the copy block because the copy is the bottom-aligned flex
+       item, which puts the same 92px between the last line and the edge. The
+       narrow reductions live in the 900 query below. */
+    padding: 0 0 92px;
+  }
+  /* No photograph ⇒ no 92vh of empty ground. See the doc comment. */
+  .vm-arrive--flat {
+    min-height: 0;
+    padding: clamp(48px, 6.4vw, 84px) 0 clamp(52px, 6.6vw, 88px);
+  }
+
+  /* The photograph fills the section edge to edge: no radius, no floor height,
+     no reserved minimum — it is a ground, not a framed plate. */
+  .vm-shot {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    min-height: 0;
+    border-radius: 0;
+  }
+  /* Two classes deep on purpose: the wrapper's `:where(.plate) .ph` scores one
+     element more than a single scoped class, so `.vm-ph` alone would lose to it.
+     Restating cover/center here costs nothing and means the photograph cannot
+     letterbox if that primitive is ever narrowed. No colour is restated — that
+     stays in the primitive, where the theme engine keeps control of it. */
+  .vm-shot .vm-ph {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* The design's gradient, unchanged: heavy at the floor where the words sit,
+     open through the middle, a little weight again at the top so the sticky
+     header keeps its edge. rgba(11,14,13,…) is --scrim-rgb. */
+  .vm-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      0deg,
+      rgba(var(--scrim-rgb), .94) 4%,
+      rgba(var(--scrim-rgb), .35) 52%,
+      rgba(var(--scrim-rgb), .55) 100%
+    );
+  }
+
+  /* No width here — .wrap owns the measure, and a width on this class would
+     out-specify it and blow the copy out to the full viewport. */
+  .vm-copy {
+    position: relative;
+    z-index: 2;
+    min-width: 0;
+  }
+  /* Every row here is guarded away when its value is empty, so whichever row
+     ends up last must not leave its own bottom margin sitting on top of the
+     design's 92px floor (a hero with no actions would otherwise stand 126px
+     off the edge). Costs nothing in the full design, where the last child is
+     the action row and carries no margin. */
+  .vm-copy > :last-child { margin-bottom: 0; }
+
+  .vm-h1 {
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: clamp(46px, 6.6vw, 96px);
+    line-height: 1.02;
+    letter-spacing: 0;
+    margin: .22em 0 .3em;
+    color: var(--bone-hi);
+    max-width: 20ch;
+  }
+  /* THE SIGNATURE. Prata ships one weight and no italic, so this synthesises an
+     oblique — which is what the design does too. :global() because Astro cannot
+     scope markup that arrived through set:html. */
+  .vm-h1 :global(em) { font-style: italic; color: var(--accent); }
+  /* Rows path only (hero.headlineLines). They FLOW as one sentence rather than
+     stacking, because this design's h1 is a sentence — the wrap comes from the
+     20ch measure, exactly as it does on the single-line path. The word space
+     between rows is a real text node in the markup, not a faked margin. */
+  .vm-ln { display: inline; }
+
+  .vm-lede {
+    font-size: 18.5px;
+    line-height: 1.7;
+    color: var(--grey-2);
+    max-width: 50ch;
+    margin: 0 0 34px;
+  }
+
+  .vm-ctas {
+    display: flex;
+    gap: 13px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  /* The design's btnLg is the shared button at 34px of side padding rather than
+     32px — the only metric in which the arrival's primary differs from every
+     other brass button on the page. */
+  .vm-cta-lg { padding-left: 34px; padding-right: 34px; }
+
+  @media (max-width: 900px) {
+    .vm-arrive { min-height: 78vh; padding-bottom: clamp(44px, 6vw, 72px); }
+    /* Restated AFTER the rule above, in every query that touches .vm-arrive:
+       the flat variant matches .vm-arrive too, so a later-in-source min-height
+       or padding-bottom would otherwise reach it and undo the whole point of
+       the variant. */
+    .vm-arrive--flat { min-height: 0; padding-bottom: clamp(52px, 6.6vw, 88px); }
+    .vm-h1 { font-size: clamp(38px, 7.4vw, 64px); max-width: 22ch; }
+    .vm-lede { font-size: 17px; max-width: 46ch; margin-bottom: 28px; }
+  }
+
+  @media (max-width: 520px) {
+    /* Nothing may push the page sideways at 360px: long unbroken strings break
+       anywhere, and a long uppercase label wraps inside a full-width button
+       instead of widening the row. */
+    .vm-arrive { min-height: 74vh; }
+    .vm-arrive--flat { min-height: 0; }
+    .vm-kick { max-width: 100%; overflow-wrap: anywhere; }
+    .vm-h1 { font-size: clamp(31px, 9vw, 44px); max-width: none; overflow-wrap: anywhere; }
+    .vm-lede { font-size: 16px; max-width: none; overflow-wrap: anywhere; margin-bottom: 24px; }
+    .vm-ctas { gap: 10px; }
+    .vm-ctas .btn { flex: 1 1 100%; white-space: normal; text-align: center; }
+    /* Re-join the wrapper's 520 padding: without this the class above keeps the
+       primary at 34px while the secondary drops to 24px. */
+    .vm-cta-lg { padding-left: 24px; padding-right: 24px; }
+  }
+</style>

@@ -1,0 +1,213 @@
+---
+/**
+ * hospitality / TrustBK — "Villa Marindu"'s proof band.
+ *
+ * ROLE. The full-bleed panel strip the design draws immediately under the hero:
+ * a four-up grid of centred cells, each a 31px brass Prata figure over a 10px
+ * tracked-caps label, hairline-ruled between the columns and closed by a single
+ * hairline along the bottom. It is the first thing a visitor reads after the
+ * headline, and it is the band most likely to be believed — so nothing in it is
+ * written by this component.
+ *
+ * EDITABLE HOOKS (both are declared by components/editor/genericContentSchema.ts
+ * under the `trust.cells` list spec, so they are live in the sidebar with add /
+ * remove / reorder, maxItems 4):
+ *   trust.cells.${i}.num    — the brass figure. set:html, so an owner's
+ *                             "&lt; 1 hr", "24/7" or "₱—" survives escaping.
+ *   trust.cells.${i}.label  — the tracked-caps label under it.
+ * There is no other hook here. A data-field on any path this schema does not
+ * declare is a dead hook that no sidebar input owns.
+ *
+ * DERIVED (computed, never authored by this file):
+ *   · `rows` — the cells that actually carry text, each carrying its ORIGINAL
+ *     array index `i` so a data-field always addresses the real slot. Dropping a
+ *     blank cell 2 must never redirect an edit of cell 3 into it (R6). The
+ *     stagger delay uses the DISPLAY index instead, because it is decoration.
+ *   · `--cols` — the column count follows the DATA, capped at the design's four.
+ *     A hardcoded repeat(4) would strand two empty tracks on a two-fact band and
+ *     shove the content into the left half of the page.
+ *
+ * NOT RENDERED, and why:
+ *   · NO eyebrow, NO headline, NO lede, NO button. The design's TRUST band has
+ *     none of them, and the schema declares none for `trust`.
+ *   · NO placeholder figure, NO zero, NO em dash, NO "4.97". The demo's numbers
+ *     are the DESIGNER filling their own template; an average guest rating and a
+ *     reply time are claims only the business may make. lib/derive-content-
+ *     defaults.ts carries no `trust` key at all, so this band exists only where a
+ *     human typed into it.
+ *   · NO section at all when nothing was typed (R5). The gate counts BODY
+ *     content — cells with real text — not a tag or a headline, because there is
+ *     no tag or headline to miscount. lib/astro-builder.ts already forces
+ *     visibility.trustBlock false on a zero-length array; this gate is the belt
+ *     to that brace, catching what the builder cannot see: rows that are PRESENT
+ *     but blank, since the editor's Add button inserts { num: '', label: '' } and
+ *     the builder gates on raw array LENGTH.
+ *   · NO onPage() anchor-remap helper. Deliberate, not an oversight: this band
+ *     renders no <a> at all, so PAGE_ANCHORS / ANCHOR_ALIAS would be dead code
+ *     in this file. The remap lives in every BK section that does emit an href.
+ *   · NO role="img" and no plate — there is no image slot in this band, so there
+ *     is nothing to name (R9). The figure and the label are real content and are
+ *     announced normally; nothing here is aria-hidden.
+ *
+ * DECISIONS a reader would otherwise read as a mistake:
+ *   · `band-panel` WITH border-top removed. The shared primitive gives the
+ *     --night-2 ground plus a hairline on both edges; the design draws only the
+ *     bottom one, because the band butts straight against the hero's dark scrim
+ *     and a top rule would print a seam across a photograph.
+ *   · The RIGHT-HAND hairline on the LAST cell is the design's. Its sc-for puts
+ *     border-right on every repeated cell, so the strip closes with a short
+ *     vertical rule at the wrap edge. Reproduced verbatim rather than "tidied"
+ *     into a border-left-except-first, which is a different drawing.
+ *   · An owner's <em> inside `num` is set back upright. The
+ *     italic brass emphasis is this design's HEADLINE signature; Prata ships no
+ *     real italic, so an <em> on a numeral only synthesises an oblique digit.
+ *     The figure is already brass, so the <em> would add nothing but the slant.
+ *     set:html elements are outside scoped CSS, hence :global() (R3).
+ *   · The label's leading is PINNED at 1.3 rather than inherited. The design
+ *     sets no line-height on its caps labels, so in the design document they
+ *     compute to `normal`; PageBK's `body { line-height: 1.7 }` would otherwise
+ *     leak in and print the design's 10px gap under the figure as ~13.5px.
+ *   · At 520 the cells give up 8px of VERTICAL padding and nothing else. Four
+ *     stacked cells spend the design's 36px four times over; the 24px
+ *     horizontal padding and the 31px figure are the design's and are untouched
+ *     (the cell is wider one-up at 520 than two-up at 900).
+ *   · Contrast: --muted on --night-2 is 4.13:1, under AA for the 10px label.
+ *     That is the design's own value and PageBK's frontmatter accepts it
+ *     explicitly rather than silently lifting the palette. Not re-derived here.
+ *
+ * No id: nothing on the page links to this band (the BK anchor set is about,
+ * services, gallery, location, faq, main).
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const trust = content?.trust || {};
+// Tolerate both shapes at every read: the schema's { cells: [...] } and the
+// legacy plain array some older records still store under content.trust.
+const cells: any[] = Array.isArray(trust.cells)
+  ? trust.cells
+  : (Array.isArray(trust) ? trust : []);
+
+const asText = (v: any) => (v === null || v === undefined ? '' : String(v));
+
+// Original index rides along in `i`. Only rows with real text survive, so a
+// half-filled row prints one line and an empty row prints no cell — no rule
+// under a row that is not there.
+const rows = cells
+  .map((c: any, i: number) => ({ num: asText(c?.num), label: asText(c?.label), i }))
+  .filter((r) => Boolean(r.num.trim() || r.label.trim()));
+
+// Follow the data, but never widen past the design's four tracks. Anything
+// beyond four wraps to a second row and picks up a horizontal hairline below.
+const cols = String(Math.min(Math.max(rows.length, 1), 4));
+---
+{rows.length > 0 && (
+  <section class="tally band-panel">
+    <div class="wrap">
+      <div class="tally-grid" style={`--cols:${cols}`}>
+        {rows.map((r, k) => (
+          <div class="tally-cell reveal" data-delay={String(k % 4)}>
+            {r.num.trim() && (
+              <div class="fig tally-fig" data-field={`trust.cells.${r.i}.num`} set:html={r.num}></div>
+            )}
+            {r.label.trim() && (
+              <div class="mono tally-lab" data-field={`trust.cells.${r.i}.label`}>{r.label}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour and type come only from the wrapper's token vocabulary
+     (--night-2 --rule --accent --muted --disp --sans, via .band-panel / .fig /
+     .mono). There is not one literal hex in this file. */
+
+  /* The design's TRUST band carries no vertical padding of its own — the cells
+     do all of it — so the wrapper's shared `section` padding is zeroed here. A
+     scoped class beats that rule on specificity, no !important needed. */
+  .tally { padding: 0; }
+  /* .band-panel supplies the --night-2 ground and BOTH hairlines; the design
+     draws only the lower one. See the frontmatter note. */
+  .tally { border-top: 0; }
+
+  .tally-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+  }
+
+  /* 36px 24px, centred, with the design's hairline on the right of EVERY cell —
+     including the last, which closes the strip at the wrap edge. */
+  .tally-cell {
+    min-width: 0;
+    padding: 36px 24px;
+    text-align: center;
+    border-right: 1px solid var(--rule);
+  }
+  /* Only reachable when an owner's content exceeds the design's four cells. */
+  .tally-cell:nth-child(n + 5) { border-top: 1px solid var(--rule); }
+
+  /* .fig already gives Prata 400, brass, tabular lining numerals, line-height 1.
+     The design's size is a flat 31px. */
+  .tally-fig {
+    font-size: 31px;
+    /* A pasted URL or an unspaced string must not push the page sideways. */
+    overflow-wrap: anywhere;
+  }
+  /* set:html output lives outside this scope — see the frontmatter note. */
+  .tally-fig :global(em),
+  .tally-fig :global(i) { font-style: normal; }
+
+  /* .mono is already 10px / .22em / uppercase / --muted, exactly the design's
+     label treatment. Two things are local:
+       · margin-top: 10px — the design's gap under the figure.
+       · line-height: 1.3 — the design's caps labels set NO leading, so in the
+         design document they compute to `normal` (~1.2 on Figtree). PageBK's
+         `body { line-height: 1.7 }` was leaking in, inflating this 10px line box
+         by ~7px and printing the gap under the figure as ~13.5px instead of the
+         design's 10px, and the whole cell ~5px taller than drawn. 1.3 restores
+         the design's rhythm and still lets an owner's longer label wrap without
+         the two lines' cap-heights touching (same value CredentialsBK pins on
+         its tracked-caps title, for the same reason). */
+  .tally-lab {
+    margin-top: 10px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── This section's OWN responsive pass. The wrapper handles the shared
+        760 / 520 type pass; the grid below is ours. ───────────────────────── */
+  @media (max-width: 900px) {
+    /* Two up. The interior vertical rule is now the odd cell's right border, and
+       the second pair gains a horizontal one. Every rule is restated rather than
+       left to lapse — (0,2,0) beats (0,1,0) whatever the source order. */
+    .tally-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tally-cell:nth-child(n + 3) { border-top: 1px solid var(--rule); }
+  }
+  @media (max-width: 520px) {
+    /* One column. A 10px label at .22em tracking cannot hold a ~150px half
+       column without splitting mid-word. The trailing right hairline is dropped
+       here: at full width it would draw a stray vertical line down the page
+       edge instead of dividing anything.
+
+       ONLY the VERTICAL padding moves off the design's 36px 24px, and only
+       because stacking multiplies it: four cells one above the other spend the
+       design's vertical padding four times over, ~500px of band on a phone. The
+       24px HORIZONTAL padding is the design's and stays — nothing at this width
+       is pressing on it (the wrap is 92vw ≈ 440px of cell).
+
+       The figure stays at the design's flat 31px. It is NOT shrunk here: the
+       cell is actually WIDER one-up at 520 (~440px) than two-up at 900
+       (~365px), where the figure is left alone, so a 520-only reduction would
+       be both a deviation from the design and backwards. Long unbroken strings
+       are already handled by overflow-wrap above. */
+    .tally-grid { grid-template-columns: minmax(0, 1fr); }
+    .tally-cell {
+      padding: 28px 24px;
+      border-right: 0;
+      border-top: 1px solid var(--rule);
+    }
+    .tally-cell:first-child { border-top: 0; }
+  }
+</style>

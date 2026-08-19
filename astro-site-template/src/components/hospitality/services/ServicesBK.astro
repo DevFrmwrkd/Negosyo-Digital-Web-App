@@ -1,0 +1,360 @@
+---
+/**
+ * hospitality / ServicesBK — "Villa Marindu": WHAT THE RATE COVERS.
+ *
+ * ROLE. The design's SERVICES element, verbatim: a split head (eyebrow + display
+ * h2 on the left, one paragraph on the right), then a hairline LEDGER — a
+ * `auto minmax(0,1fr) auto` grid per row: brass serif numeral, the row's name and
+ * blurb, and a tracked-caps tag hard right — closed top and bottom by 1px --rule.
+ * Under it sits the whole-villa panel: a --night-2 card with a --rule hairline,
+ * copy left, the nightly figure and ONE contact button right.
+ *
+ * This is a LEDGER, not a card grid. The previous template in this family was
+ * rebuilt because someone re-derived the design; nothing here is re-derived. The
+ * 3-track row, the 32px gap, the 30px row padding, the 34px rule offset, the
+ * 36px/40px panel padding, the 42px figure and the 28px panel headline are the
+ * design's own numbers, mapped hex-for-token (#B99552 --accent · #F4F1EA
+ * --bone-hi · #A9AFA9 --grey · #767C76 --muted · #262E2B --rule · #141A18
+ * --night-2 · 3px --r-lg). No literal hex appears below (R1).
+ *
+ * EDITABLE HOOKS — every one is declared in components/editor/
+ * genericContentSchema.ts's `services` group, so none is a dead hook:
+ *   services.tag                      — eyebrow (.kick)
+ *   services.headline                 — h2, set:html so an owner's <em> becomes
+ *                                       the design's italic brass emphasis
+ *   services.sub                      — the head's right-hand paragraph
+ *   services.items.${i}.title         — the row h3
+ *   services.items.${i}.desc          — the row paragraph
+ *   services.items.${i}.tag           — the row's right-hand tracked-caps tag
+ *   services.whole.tag                — panel eyebrow
+ *   services.whole.headline           — panel h3
+ *   services.whole.body               — panel paragraph
+ *   services.whole.price              — the figure, printed VERBATIM
+ *   services.whole.unit               — the unit beside it
+ *   hero.cta1.text + data-href-field hero.cta1.href — the panel's ONE button
+ *
+ * DERIVED, AND ONLY THIS. The row numeral ("01", "02", …) is built from the
+ * DISPLAY index, is aria-hidden decoration, and is stored nowhere — the design
+ * computes it the same way (`String(i+1).padStart(2,'0')`). Every other glyph on
+ * this section is a string the owner typed.
+ *
+ * NOTHING IS SUPPLIED BY THIS FILE (R2). The design's demo rows ("Exclusive use
+ * of the villa", "Always", "Included", the ₱24,500 rate) are the DESIGNER filling
+ * their own template. An amenity nobody offered is an invented amenity and a rate
+ * nobody quoted is an invented price, so not one of them is a fallback here. The
+ * price is never converted, prefixed with a currency, or totalled from anything.
+ * Every guard sits OUTSIDE its element, so an empty value removes the ELEMENT:
+ * no empty tag pill, no heading over nothing, no hairline under a row that is
+ * not there, and no unit floating beside a price that does not exist.
+ *
+ * NOT RENDERED, DELIBERATELY:
+ *   · No per-row button. The design gives the section exactly ONE action, on the
+ *     whole-villa panel, so services.ctaLabel / services.ctaHref are left to the
+ *     card templates that draw one. Emitting them here would put a hook on a
+ *     control the design does not have.
+ *   · No row image, price, unit, meta, rating or feature chips. The design's row
+ *     is numeral / copy / tag and nothing else. Those schema fields belong to the
+ *     card templates; a data-field for a thing this section never draws is a
+ *     sidebar input that changes nothing on the page.
+ *   · No star anywhere. This section prints no rating, so it makes no rating
+ *     claim. (The family rule: N stars are drawn only from a numeric
+ *     testimonials.items.N.rating, clamped 1–5, aria-hidden with the number
+ *     itself announced — never five stars over a review that carried none.)
+ *   · services.whole.headline is plain text, NOT set:html. The design prints it
+ *     as plain text; the italic-brass emphasis is the h2's signature, and a
+ *     set:html child could not be reached by this scoped block anyway (R3).
+ *
+ * THE ROW FILTER. A row counts as real when it carries a title, a desc OR a tag —
+ * the three things this section can draw. Deliberately NOT price/note/image: a
+ * row holding only those would spend a numeral, a hairline and 30px of ledger on
+ * nothing visible. The tag IS counted, so a tag the owner typed can never be
+ * silently dropped; the row's text cell is always emitted (it is the grid's
+ * middle track and the tag needs the third) with both its children guarded, so
+ * such a row draws a tag and no heading over nothing.
+ *
+ * INDEXES (R6). Blank rows are dropped, but every data-field carries the row's
+ * ORIGINAL array index, so deleting row 2 cannot misdirect an edit into row 3.
+ * The numeral — decoration — uses the DISPLAY index, so the ledger always reads
+ * 01, 02, 03 with no gaps.
+ *
+ * SECTION GATE (R5). lib/derive-content-defaults.ts fills services.tag,
+ * .headline and .sub on EVERY site, so gating on those would ship a heading over
+ * an empty section. The gate counts BODY content only: at least one real row, or
+ * a whole-villa panel with a headline, a body or a price. The panel's eyebrow
+ * alone never opens it.
+ *
+ * CONTRAST — ONE DECISION WORTH A SECOND OPINION. The row paragraph is --muted
+ * on --night (4.34:1) at 14.5px, exactly as the design has it. That is under AA
+ * for body text, and unlike the sub-AA spots PageBK's frontmatter accepts, this
+ * copy is NOT repeated by the heading beside it. It ships as designed because the
+ * design is the specification and the palette is the owner's call; swapping this
+ * one rule's colour to --grey (8.30:1) is a one-line change if the call goes the
+ * other way. Everything else clears AA: --bone-hi 16.5, --grey 8.30, --accent
+ * 6.62, --on-accent on the brass fill 6.62.
+ *
+ * RESPONSIVE (R8). The wrapper owns the shared 760/520 pass; this section owns
+ * its own grids. At 900 the ledger drops its third track and the tag moves under
+ * the copy; at 760 the head stacks and the whole-villa panel becomes one column.
+ * Because that panel flips to `flex-direction: column`, NO child of it may carry
+ * a flex basis — a main-axis basis in a column is a height, and it would print a
+ * fixed-height copy block with a hole under the text on every phone. The design
+ * gives those children no flex declaration either, so none is written. Every
+ * owner-typed string that can arrive as one unbroken run — the sub, the row
+ * blurb, the row title, the panel headline and body, the rate figure, both
+ * eyebrows and the tag — carries overflow-wrap: anywhere, and the full-width
+ * button at 760 releases white-space, so nothing pushes a 360px viewport.
+ *
+ * SPECIFICITY (R3). PageBK wraps its primitives in :where(), so a scoped rule
+ * here at (0,2,0) beats the global at (0,1,1) — including the global's media
+ * queries. So: never restate a property the wrapper tunes per breakpoint without
+ * restating it at that breakpoint too (that is why .s-w-kick's tracking and
+ * .s-sub's max-width reappear below), and never restate a heading's face, weight
+ * or colour at all — the wrapper's h-rule already owns them.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const services = content.services || {};
+// `services` is a wrapper OR a bare legacy array, so every scalar read has to
+// tolerate both — on an array these are simply undefined, which is what the
+// guards below expect.
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+
+// Anchor guard, kept in step with the Header / Hero / CtaBand / Footer copies
+// (this family has no shared import). lib/derive-content-defaults.ts hands out
+// hrefs like '#visit' that this design never mounts, so every in-page href is
+// resolved against the ids PageBK actually renders: keep it when the id exists,
+// remap it when this design carries the same section under another name, else
+// fall back. Off-page hrefs (http, tel:, mailto:) pass through untouched — an
+// owner's Messenger link must never be rewritten.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'gallery', 'location', 'main', 'services']);
+const ANCHOR_ALIAS: Record<string, string> = { amenities: 'services', book: 'main', contact: 'location', host: 'about', rooms: 'services', visit: 'location', why: 'about', work: 'gallery' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+type Item = { title?: string; desc?: string; tag?: string };
+// Both shapes: the wrapped `{tag, headline, sub, items[]}` and the legacy bare
+// array at content.services (see lib/services-shape.ts).
+const rawItems: any[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+// …and all three VOCABULARIES. lib/astro-builder.ts maps name→title /
+// description→desc when content.services arrives as a bare array, but NOT when
+// it arrives already wrapped — and a wrapped row still carrying the legacy key
+// names is exactly what the editor's brief draft-normalisation window wrote.
+// Without this mapping every row on such a site fails the "did the owner fill
+// anything in?" filter below and the WHOLE SECTION vanishes while the data sits
+// untouched in the record. A bare string row (the oldest shape of all) becomes
+// its own title rather than being spread into character keys and lost.
+const items: Item[] = rawItems.map((it: any) => {
+  if (typeof it === 'string') return { title: it };
+  if (!it || typeof it !== 'object') return {};
+  const out: any = { ...it };
+  if (out.title == null && out.name != null) out.title = out.name;
+  if (out.desc == null && out.description != null) out.desc = out.description;
+  return out;
+});
+// Drop the rows an owner added and never filled — carrying the ORIGINAL index
+// (R6). Only the three fields this section DRAWS count; see THE ROW FILTER above.
+const rows = items
+  .map((it, i: number) => ({ ...it, i }))
+  .filter((r) => Boolean(r.title || r.desc || r.tag));
+
+const whole = services.whole || {};
+const wTag = whole.tag || '';
+const wHeadline = whole.headline || '';
+const wBody = whole.body || '';
+const wPrice = whole.price || '';
+const wUnit = whole.unit || '';
+
+const heroCta = content.hero?.cta1 || {};
+const heroCtaText = heroCta.text || '';
+// '#location' is this page's contact block — the design's own button points at
+// the owner's contact URL, and derive-content-defaults hands out '#visit', which
+// ANCHOR_ALIAS resolves to the same place.
+const heroCtaHref = onPage(heroCta.href, '#location');
+
+// The eyebrow alone never opens the panel: a kicker over nothing is a heading
+// for content that does not exist.
+const hasWhole = Boolean(wHeadline || wBody || wPrice);
+// The section also renders for a panel with no rows yet — gating on rows alone
+// would leave five live sidebar fields that change nothing on the page.
+const hasSection = rows.length > 0 || hasWhole;
+---
+{hasSection && (
+  <section class="svcs" id="services">
+    <div class="wrap">
+      {(tag || headline || sub) && (
+        <div class="s-head">
+          {(tag || headline) && (
+            <div class="s-head-l">
+              {tag && <span class="kick" data-field="services.tag">{tag}</span>}
+              {headline && <h2 class="h2 s-h2 reveal" data-field="services.headline" set:html={headline}></h2>}
+            </div>
+          )}
+          {sub && <p class="lede s-sub" data-field="services.sub">{sub}</p>}
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div class="s-list">
+          {rows.map((it, k) => (
+            <article class="s-row reveal" data-delay={String(k % 3)}>
+              {/* Decoration: the design computes the same numeral from the row's
+                  position, it is stored nowhere, and it is announced to nobody. */}
+              <span class="fig s-num" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+              <div class="s-txt">
+                {it.title && <h3 class="s-t" data-field={`services.items.${it.i}.title`}>{it.title}</h3>}
+                {it.desc && <p class="s-p" data-field={`services.items.${it.i}.desc`}>{it.desc}</p>}
+              </div>
+              {it.tag && <span class="mono s-tag" data-field={`services.items.${it.i}.tag`}>{it.tag}</span>}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {hasWhole && (
+        <div class="s-whole reveal">
+          {(wTag || wHeadline || wBody) && (
+            <div class="s-w-copy">
+              {wTag && <span class="kick s-w-kick" data-field="services.whole.tag">{wTag}</span>}
+              {wHeadline && <h3 class="s-w-h" data-field="services.whole.headline">{wHeadline}</h3>}
+              {wBody && <p class="body s-w-body" data-field="services.whole.body">{wBody}</p>}
+            </div>
+          )}
+          {(wPrice || heroCtaText) && (
+            <div class="s-w-act">
+              {wPrice && (
+                <div class="s-w-rate">
+                  <span class="fig s-w-price" data-field="services.whole.price">{wPrice}</span>
+                  {/* The unit only ever renders beside a figure: "/ night" on its
+                      own states a price this page does not carry. */}
+                  {wUnit && <span class="s-w-unit" data-field="services.whole.unit">{wUnit}</span>}
+                </div>
+              )}
+              {heroCtaText && (
+                <a class="btn btn--fill s-w-cta" href={heroCtaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{heroCtaText}</a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* One scoped block. See the SPECIFICITY note in the frontmatter before adding
+     to it. (Never write a literal end-style-tag inside a comment here — this is
+     a raw-text element and the parser would end the stylesheet on the spot.) */
+
+  /* ── the split head: eyebrow + display h2 left, the owner's paragraph right,
+        baselines aligned on the bottom edge. Wraps to a stack the moment the two
+        cannot share a line. */
+  .s-head { display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap; margin-bottom: 14px; }
+  .s-head-l { min-width: 0; max-width: 100%; }
+  /* Margin and measure only. Size, face, colour, the italic <em> and both mobile
+     passes come from the wrapper's .h2 — and the <em> ARRIVES THROUGH set:html,
+     so it is unreachable from this scoped block by design (R3). The design gives
+     this particular h2 no measure cap, hence max-width:none. */
+  .s-h2 { margin: .26em 0 0; max-width: none; }
+  /* The design's sub is 15px/1.75 over 36ch — smaller and tighter than the
+     wrapper's .lede, which is sized for the hero. Restated here, and released at
+     760 below because this base rule out-specifies the wrapper's own pass. */
+  .s-sub { max-width: 36ch; font-size: 15px; line-height: 1.75;
+    overflow-wrap: anywhere; }
+
+  /* ── THE LEDGER. Closed top by one rule and under every row by another, so it
+        reads as a table of what is included rather than a stack of blocks. */
+  .s-list { border-top: 1px solid var(--rule); margin-top: 34px; }
+  .s-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto;
+    gap: 32px; align-items: baseline; padding: 30px 0;
+    border-bottom: 1px solid var(--rule); }
+  /* .fig supplies the display face, the brass, tabular figures and line-height 1. */
+  .s-num { font-size: 20px; }
+  .s-txt { min-width: 0; }
+  /* Face, weight, colour and line-height come from the wrapper's heading rule;
+     only the size and the break behaviour are this section's. */
+  .s-t { font-size: clamp(21px,2.5vw,29px); overflow-wrap: anywhere; }
+  /* Qualified by its own class so it beats the wrapper's (0,1,1) paragraph
+     reset. --muted is the design's colour — see the CONTRAST note above. */
+  .s-p { margin: .5em 0 0; font-size: 14.5px; line-height: 1.7;
+    color: var(--muted); max-width: 60ch; overflow-wrap: anywhere; }
+  /* .mono is the design's tracked-caps exactly: 10px, .22em, uppercase, --muted. */
+  .s-tag { white-space: nowrap; }
+
+  /* ── the whole-villa panel. A bordered card, NOT the wrapper's .band-panel:
+        that primitive is a full-bleed section ground with edge-to-edge rules,
+        and this is an inset plate with a hairline on all four sides. */
+  .s-whole { margin-top: 30px; padding: 36px 40px;
+    background-color: var(--night-2); border: 1px solid var(--rule);
+    border-radius: var(--r-lg);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 32px; flex-wrap: wrap; }
+  /* NO flex basis here, deliberately. The design's copy block carries no flex
+     declaration at all, so it stays the initial `0 1 auto` — and a basis would
+     be actively wrong at 760, where this container turns `flex-direction:
+     column`: a main-axis basis in a column is a HEIGHT, so `1 1 340px` would
+     force a 340px-tall copy block on every phone with a hole under the text.
+     min-width:0 only removes the automatic minimum so a long string can shrink. */
+  .s-w-copy { min-width: 0; }
+  /* The design tracks this eyebrow tighter than the section eyebrow (.34em vs
+     .44em), so it is restated — and restated again at 520, or the wrapper's own
+     small-screen tracking would never reach it. */
+  .s-w-kick { letter-spacing: .34em; }
+  .s-w-h { font-size: 28px; margin: .26em 0 .3em; overflow-wrap: anywhere; }
+  .s-w-body { margin: 0; max-width: 56ch; font-size: 15px; line-height: 1.7;
+    overflow-wrap: anywhere; }
+  .s-w-act { flex: 0 1 auto; text-align: right; }
+  /* The figure is the largest glyph run on the section (42px), so an owner who
+     types a range rather than one number is the likeliest thing on this page to
+     push the viewport sideways. Inherited by both spans. */
+  .s-w-rate { display: block; overflow-wrap: anywhere; }
+  .s-w-price { font-size: 42px; }
+  .s-w-unit { font-size: 13px; color: var(--muted); margin-left: 4px; }
+  /* R4: the wrapper's .btn--fill owns the brass, the label colour and the hover.
+     This is the design's SMALL variant of it, so only the size travels. */
+  .s-w-cta { margin-top: 15px; font-size: 11px; padding: 13px 24px; }
+
+  /* ── 900: the ledger loses its third track and the tag drops under the copy,
+        still on the copy's left edge rather than adrift under the numeral. */
+  @media (max-width: 900px) {
+    .s-row { grid-template-columns: auto minmax(0,1fr); gap: 12px 28px; }
+    .s-tag { grid-column: 2; justify-self: start;
+      white-space: normal; overflow-wrap: anywhere; }
+  }
+
+  /* ── 760: the head stacks and the panel becomes one column, its figure back on
+        the left margin so it is not floating alone over a full-width button. */
+  @media (max-width: 760px) {
+    .s-head { align-items: flex-start; gap: 16px; }
+    .s-sub { max-width: none; }
+    .s-whole { flex-direction: column; align-items: flex-start; padding: 30px 26px; }
+    .s-w-act { text-align: left; width: 100%; }
+    /* R8: full width, so the label must be allowed to wrap. */
+    .s-w-cta { width: 100%; white-space: normal; }
+  }
+
+  /* ── 520 (checked against a 360px viewport: nothing here can push the page
+        sideways — the ledger's one flexible track is minmax(0,1fr), the title,
+        the blurb and the tag all break anywhere, and the button wraps). */
+  @media (max-width: 520px) {
+    .s-list { margin-top: 26px; }
+    .s-row { padding: 24px 0; gap: 10px 18px; }
+    .s-num { font-size: 17px; }
+    .s-whole { padding: 26px 20px; }
+    /* Both eyebrows are inline-block from the wrapper, so a single long word an
+       owner types as a tag would otherwise sit at its full tracked width. */
+    .s-head-l .kick,
+    .s-w-kick { max-width: 100%; overflow-wrap: anywhere; }
+    .s-w-kick { letter-spacing: .3em; }
+    .s-w-h { font-size: 24px; }
+    .s-w-price { font-size: 32px; }
+    .s-w-cta { padding: 13px 20px; }
+  }
+</style>

@@ -20,7 +20,7 @@ import {
     COLOR_SCHEMES,
     FONT_PAIRINGS,
     ALL_BLOCKS,
-    CURATED,
+    schemesForTemplate,
     VIS_KEY_BY_BLOCK,
 } from "./editorConstants";
 
@@ -301,7 +301,7 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const curatedSchemes = activeFamily ? CURATED[activeFamily] : COLOR_SCHEMES.map((c) => c.id).filter((id) => id !== "auto");
+    const curatedSchemes = schemesForTemplate(activeFamily, currentHeroStyle);
 
     return (
         <div className="flex h-[calc(100vh-8rem)] min-h-[560px] overflow-hidden rounded-xl border border-neutral-200 bg-white">

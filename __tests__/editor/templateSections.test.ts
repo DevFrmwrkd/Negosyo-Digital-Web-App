@@ -17,7 +17,12 @@ import {
     TEMPLATE_SECTION_LABELS,
     DEFAULT_SECTION_LABELS,
 } from "@/components/editor/templateSectionLabels";
-import { ALL_BLOCKS } from "@/components/editor/editorConstants";
+import {
+    ALL_BLOCKS,
+    CURATED,
+    CURATED_BY_TEMPLATE,
+    schemesForTemplate,
+} from "@/components/editor/editorConstants";
 import {
     GENERIC_CONTENT_SCHEMA,
     GROUP_BLOCK,
@@ -55,6 +60,20 @@ describe("sectionsForTemplate", () => {
         expect(byBlock["CREDENTIALS"]).toBe("The promises");
         expect(byBlock["LOCATION"]).toBe("Getting here");
         expect(byBlock["FAQ"]).toBe("Good to know");
+    });
+
+    it("lists Villa Marindu in the order its design draws, under its own names", () => {
+        const rows = sectionsForTemplate("hospitality:BK");
+        expect(rows.map((s) => s.block)).toEqual([
+            "HERO", "TRUST", "ABOUT", "SERVICES", "WHY-US", "GALLERY", "HOW-IT-WORKS",
+            "TESTIMONIALS", "CREDENTIALS", "LOCATION", "SERVICE-AREA", "FAQ",
+            "CTA-BAND", "FOOTER",
+        ]);
+        const byBlock = Object.fromEntries(rows.map((s) => [s.block, s.label]));
+        expect(byBlock["ABOUT"]).toBe("The villa");
+        expect(byBlock["SERVICES"]).toBe("What's included");
+        expect(byBlock["WHY-US"]).toBe("Why book direct");
+        expect(byBlock["SERVICE-AREA"]).toBe("What's nearby");
     });
 
     it("falls back to the generic label for a template with no entry of its own", () => {
@@ -130,6 +149,45 @@ describe("GROUP_BLOCK (the Content panel's group -> section map)", () => {
         for (const list of Object.values(TEMPLATE_SECTION_ORDER))
             for (const b of list) rendered.add(b);
         for (const b of rendered) expect(mapped.has(b)).toBe(true);
+    });
+});
+
+describe("schemesForTemplate (per-template colour narrowing)", () => {
+    it("returns the family list when a template narrows nothing", () => {
+        expect(schemesForTemplate("hospitality", "hospitality:BJ")).toEqual(CURATED.hospitality);
+    });
+
+    it("narrows, and can only ever narrow", () => {
+        const family = CURATED.hospitality;
+        const narrowed = schemesForTemplate("hospitality", "hospitality:BK");
+        expect(narrowed.length).toBeLessThan(family.length);
+        for (const id of narrowed) expect(family).toContain(id);
+        // The point of the entry: brass on near-black cannot survive maroon.
+        expect(narrowed).not.toContain("maroon");
+    });
+
+    it("cannot smuggle in a scheme the family disallows", () => {
+        for (const [code, list] of Object.entries(CURATED_BY_TEMPLATE)) {
+            const family = code.split(":")[0] as keyof typeof CURATED;
+            const out = schemesForTemplate(family, code);
+            for (const id of out) expect(CURATED[family]).toContain(id);
+            expect(list.length).toBeGreaterThan(0);
+        }
+    });
+
+    it("never offers nothing, whatever family a narrowed code is asked against", () => {
+        // The intersection is defensive: a narrowing that empties a family list
+        // is a typo, not an intention, and an empty scheme menu is unusable.
+        for (const family of Object.keys(CURATED) as Array<keyof typeof CURATED>)
+            for (const code of Object.keys(CURATED_BY_TEMPLATE))
+                expect(schemesForTemplate(family, code).length).toBeGreaterThan(0);
+        expect(schemesForTemplate(null, null).length).toBeGreaterThan(0);
+        expect(schemesForTemplate("medical", null)).toEqual(CURATED.medical);
+    });
+
+    it("every narrowed template is a real template code", () => {
+        for (const code of Object.keys(CURATED_BY_TEMPLATE))
+            expect(TEMPLATE_SECTION_ORDER[code]).toBeDefined();
     });
 });
 

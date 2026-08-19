@@ -1,0 +1,463 @@
+---
+/**
+ * hospitality / FooterBK — "Villa Marindu"'s closing rail.
+ *
+ * ROLE. The design's last band, reproduced: the darkest ground on the page
+ * (--night-3) under one hairline, a 1.6fr / 1fr / 1fr grid at 40px gap — the
+ * wordmark lock with its blurb and one quiet brass action, a page-links column,
+ * a contact column — closed by a hairline and then the two-part colophon row in
+ * 10px tracked caps. It is the last place a guest looks for the phone and the
+ * address before they give up, so every column is real owner data or absent.
+ *
+ * EDITABLE HOOKS — every visible string here, and nothing else. All of them are
+ * declared in components/editor/genericContentSchema.ts, so each is a hook a
+ * sidebar input actually owns:
+ *   footer.brand                 — the Prata wordmark (also HeaderBK's; one
+ *                                  field, two places, on purpose)
+ *   footer.locality              — the brass locality tag on its baseline
+ *   footer.blurb                 — the standing line under the lock
+ *   footer.explore.title         — the PAGE-LINKS column heading (see decision 1)
+ *   footer.visit.title           — the CONTACT column heading (see decision 1)
+ *   navbar_links.${i}.label      — one page-column link's label
+ *   navbar_links.${i}.href       — that link's target (data-href-field)
+ *   navCtaText                   — the contact action's label (drawn twice, as
+ *   navCtaHref                     the design draws it — see decision 4)
+ *   location.phone               — the tel: row (data-field only, decision 7)
+ *   location.address             — the address row, and the colophon's identity
+ *   footer.notes.${i}            — the colophon's right-hand note rows
+ *
+ * DERIVED (computed here, never authored here):
+ *   · the wordmark falls back to layout.businessName when content.footer.brand
+ *     is blank — the same name out of the same submission, not an invention.
+ *   · the blurb falls back to footer.brand_blurb, the schema's own alias.
+ *   · phone and address fall back to layout.contact.* exactly as LocationBK
+ *     resolves them, so the two sections can never print different numbers.
+ *   · the tel: href is built from the phone's own digits.
+ *   · every in-page href is resolved by onPage() against the ids PageBK really
+ *     renders (see the anchor guard below).
+ *   · `i` on a page link is the ORIGINAL, pre-filter array index (R6), so
+ *     dropping an unreachable row 2 cannot misdirect an edit into row 3.
+ *   · the colophon's address is FLATTENED to one line (newlines to commas) to
+ *     fit a single row of tracked caps, which is why that node — and only that
+ *     node — carries data-derived: editorBridge's live ed:update would other-
+ *     wise paint the raw multi-line scalar into a caps row. The column's own
+ *     address is NOT derived: it is the stored string verbatim, broken by
+ *     `white-space: pre-line`, so an inline edit stays truthful.
+ *
+ * NOT RENDERED, deliberately:
+ *   · THE DESIGN'S OWN COPY. "Villa Marindu", "Palawan", "This page", "Get in
+ *     touch", "The villa", "What is included", "Gallery", "FAQ", the blurb and
+ *     the address are the DESIGNER filling in their own template. Not one of
+ *     those words is in this file.
+ *   · "RATES IN PHILIPPINE PESOS" — the design's right-hand colophon cell. A
+ *     currency statement is a claim about how this business quotes, and no
+ *     declared field carries it. The cell is fed by footer.notes instead: rows
+ *     the owner typed (lib/derive-content-defaults.ts seeds the © line there
+ *     and deliberately suppresses a bare '© 2026' with no name, so there is
+ *     nothing to invent). No rows, no cell.
+ *   · a column heading with no column under it, a wordmark with no name, a link
+ *     with no label or no reachable target, a colophon row with no notes, and
+ *     the whole grid when all three columns are empty. Every guard sits OUTSIDE
+ *     its tag, so a blank value removes the ELEMENT, not just its text.
+ *   · no social chips: the design draws none, and FooterBJ already gives
+ *     footer.social a surface in this family.
+ *   · no floating message pill: this design has no FAB.
+ *   · no .reveal. The footer is the page terminus; fading in the last thing on
+ *     screen buys nothing and risks a footer that never un-hides.
+ *
+ * DECISIONS a reader would otherwise take for an oversight
+ *
+ * 1. WHICH HEADING FIELD FEEDS WHICH COLUMN. The task brief pairs
+ *    footer.visit.title with "This page" and footer.explore.title with "Get in
+ *    touch". The schema declares the opposite and says so in its own labels:
+ *    footer.explore.title is labelled "Links column heading", placeholder
+ *    "This page"; footer.visit.title is labelled "Contact column heading",
+ *    placeholder "Get in touch" — the design's two words exactly. FooterBJ
+ *    binds them that way too. Honouring the brief's pairing would put the
+ *    sidebar box named "Contact column heading" in charge of the page-links
+ *    column on this one template. The schema's own naming wins; flag if wrong.
+ *
+ * 2. NO nav LANDMARK AND NO aria-label ON THE LINK COLUMN. Naming it costs a
+ *    word this file never received ("Footer", "Secondary"). The links are
+ *    ordinary links in a footer, already announced as such (R9).
+ *
+ * 3. THE ARROW after the brand column's action is CSS generated content, not
+ *    markup. editorBridge writes an inline edit back through innerHTML, so a
+ *    glyph inside the element could end up stored in navCtaText; a pseudo-
+ *    element cannot.
+ *
+ * 4. THE CONTACT ACTION IS DRAWN TWICE — brand column and contact column —
+ *    because the design draws it twice. Both nodes hook the SAME pair
+ *    (navCtaText / navCtaHref), so they cannot disagree, and ed:update
+ *    refreshes both. It hooks the Header group's pair rather than hero.cta1 on
+ *    purpose: components/editor/editorBridge.ts resolves a Blocks toggle by
+ *    counting hooks of that prefix inside closest('section,footer'), so a
+ *    footer carrying hero.* hooks becomes a candidate for "hide the Hero
+ *    block". navCtaText has no entry in that PREFIX map at all, so it is
+ *    toggle-inert. HeaderBK hooks the same pair for the same reason.
+ *
+ * 5. THE TWO location.* HOOKS HERE ARE SAFE for the same weighted resolution:
+ *    this footer holds 2 (phone, address — 3 nodes), LocationBK holds its tag,
+ *    headline, sub, address, phone, hours and rules, so "hide Location" still
+ *    hides the Location section. Recorded, not fixed; it is a shared-file
+ *    concern. The footer's own toggle resolves here easily (5 footer.* hooks
+ *    against HeaderBK's 2).
+ *
+ * 6. NO .btn IN THIS FILE, AT ALL. lib/genericThemeOverrides.ts emits
+ *    `footer .btn { color: <on-ink> !important }` for footers sitting on an ink
+ *    fill; a .btn here would take that pinned label colour whatever the design
+ *    says. The actions are .linkc and plain links, which it never touches.
+ *    None of the forbidden names (.nav-cta, .btn-primary, .testi, .cta-band,
+ *    .trust) appear either.
+ *
+ * 7. THE tel: ANCHOR CARRIES data-field ONLY. Its href is derived from the
+ *    field's own value, so a data-href-field there would write "tel:+63…" back
+ *    into the phone box.
+ *
+ * 8. THE COLOPHON SEPARATOR is an aria-hidden span with no data-field, drawn
+ *    only when both halves exist, so it can never be edited into the content
+ *    and is never announced.
+ *
+ * CONTRAST, the design's palette on this band's ground. --night-3 is DARKER
+ * than --night, so every ratio PageBK verified holds or improves here:
+ * bone-hi 17+, grey 8.57, accent ~6.9. The two the design accepts below AA are
+ * the same two the wrapper records: --muted at 14px (blurb, 4.48:1) and --faint
+ * in the colophon at 10px caps (3.16:1). Both are the owner's palette and the
+ * owner's call; the file ships the design's values rather than re-deriving them.
+ *
+ * Visibility: PageBK gates this file on visibility.footerSection. Colour:
+ * wrapper tokens only, no literal hex anywhere (R1).
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const c = (content as any) || {};
+const lay = (layout as any) || {};
+const f = c.footer || {};
+
+// ── ANCHOR GUARD — byte-identical to HeaderBK's, so the rail and the footer can
+// never send a guest to different places. lib/derive-content-defaults.ts hard-
+// codes nav links to '#about', '#services', '#why', '#work', '#visit' and
+// navCtaHref to '#visit'; lib/astro-builder.ts falls back to '#about',
+// '#services', '#gallery', '#contact'. Most of those ids no design renders.
+// Resolve every in-page href against what PageBK ACTUALLY renders: keep it if
+// the id exists, remap it when this design carries the same material under
+// another name, otherwise fall back — and a links column passes '' as the
+// fallback, because a dead entry in a wayfinding list is worse than a missing
+// one. Off-page hrefs (tel:, mailto:, http) pass through untouched.
+const PAGE_ANCHORS = new Set(['about', 'services', 'gallery', 'location', 'faq', 'main']);
+// '#services' is what is INCLUDED in the let (rooms and amenities land there),
+// '#about' is the villa itself (host and why are one block here), '#work' is the
+// photo mosaic, '#visit' / '#contact' both mean the location block, and a
+// booking link has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  amenities: 'services',
+  book: 'main',
+  contact: 'location',
+  host: 'about',
+  rooms: 'services',
+  visit: 'location',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. 'Your Business' once shipped as a real customer's own mark —
+// with nothing supplied the lock is omitted instead of inventing a name.
+const brand = String(f.brand ?? lay.businessName ?? '').trim();
+// One field, three consumers (the rail, this lock, the map caption). Nothing
+// derives it, so on a first build it is simply absent rather than guessed out
+// of the address.
+const locality = String(f.locality ?? '').trim();
+// footer.brand_blurb is the schema's declared alias for the same box.
+const blurb = String(f.blurb ?? f.brand_blurb ?? '').trim();
+
+// The page's one action, from the Header group (see decision 4). '#location' is
+// the fallback because that is where this design puts the address, the map and
+// the house rules; there is no checkout to send a booking link to.
+const ctaText = String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(c.navCtaHref, '#location');
+// Computed, never literal, and ONE conditional per attribute — an owner may
+// point this at #location or a tel:, and forcing those into a new tab is wrong.
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// Column headings. Bound, not hardcoded, and guarded — an owner who clears the
+// box gets a column with no heading, not the word the designer happened to use.
+const pageTitle = String(f.explore?.title ?? '').trim();
+const contactTitle = String(f.visit?.title ?? '').trim();
+
+// The page column reads layout.navLinks — the same array HeaderBK reads, which
+// lib/astro-builder.ts maps from content.navbar_links — while hooking
+// `navbar_links.${i}.*`, the path the sidebar owns. Reading content directly
+// here would let the rail and the footer disagree after a builder fallback.
+const pageLinks: Array<{ label: string; href: string; i: number }> =
+  (Array.isArray(lay.navLinks) ? lay.navLinks : [])
+    .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
+    .filter((l: { label: string; href: string }) => l.label && l.href);
+
+// Contact rows. Same resolution order LocationBK uses, so one page cannot print
+// two different numbers or two different addresses.
+const phone = String(c.location?.phone ?? lay.contact?.phone ?? '').trim();
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+const address = String(c.location?.address ?? lay.contact?.address ?? '').trim();
+// Colophon identity line: the design prints one line, and location.address is a
+// multi-line textarea. Flattened for THIS row only (hence data-derived on it).
+const addressFlat = address.replace(/\s*\n+\s*/g, ', ');
+
+// Colophon notes — the owner's own rows, dropped when blank, ORIGINAL index
+// carried so an edit lands on the row that was clicked (R6).
+const notes: Array<{ v: string; i: number }> = (Array.isArray(f.notes) ? f.notes : [])
+  .map((n: any, i: number) => ({ v: String(n ?? '').trim(), i }))
+  .filter((n: { v: string }) => n.v);
+
+// GATES — BODY content only. A heading never counts toward its own column, and
+// the section never counts a tag or a headline, because lib/derive-content-
+// defaults.ts fills those on every site.
+const hasBrandCol = Boolean(brand || locality || blurb || ctaText);
+const hasContactCol = Boolean(ctaText || phone || address);
+const hasGrid = hasBrandCol || pageLinks.length > 0 || hasContactCol;
+const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
+---
+{(hasGrid || hasColophon) && (
+<footer class="foot">
+  <div class="wrap">
+    {hasGrid && (
+      <div class="foot-grid">
+        {hasBrandCol && (
+          <div class="foot-brand">
+            {(brand || locality) && (
+              <div class="foot-lock">
+                {brand && <span class="foot-wm" data-field="footer.brand">{brand}</span>}
+                {locality && <span class="foot-loc" data-field="footer.locality">{locality}</span>}
+              </div>
+            )}
+            {blurb && <p class="foot-blurb" data-field="footer.blurb">{blurb}</p>}
+            {/* Both hooks sit on the ANCHOR: the editor's link popover reads
+                data-field from whatever carries data-href-field, so a label on
+                an inner span leaves it editing an empty path. The arrow is
+                generated content (see the stylesheet). */}
+            {ctaText && (
+              <a
+                class="linkc foot-cta"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+          </div>
+        )}
+
+        {pageLinks.length > 0 && (
+          <div class="foot-col">
+            {pageTitle && <h4 class="foot-h" data-field="footer.explore.title">{pageTitle}</h4>}
+            {pageLinks.map((l) => (
+              <a
+                class="foot-link"
+                href={l.href}
+                data-field={`navbar_links.${l.i}.label`}
+                data-href-field={`navbar_links.${l.i}.href`}
+              >{l.label}</a>
+            ))}
+          </div>
+        )}
+
+        {hasContactCol && (
+          <div class="foot-col">
+            {contactTitle && <h4 class="foot-h" data-field="footer.visit.title">{contactTitle}</h4>}
+            {ctaText && (
+              <a
+                class="foot-link"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+            {(phone || address) && (
+              <address class="foot-addr">
+                {phone && (
+                  <a class="foot-link foot-tel" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>
+                )}
+                {/* The stored string verbatim — `white-space: pre-line` draws
+                    the owner's own line breaks, so the DOM text and the field
+                    value stay identical and a live edit cannot lie. */}
+                {address && <span class="foot-addr-l" data-field="location.address">{address}</span>}
+              </address>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
+    {hasColophon && (
+      <div class="foot-colo">
+        {(brand || addressFlat) && (
+          <span class="foot-id">
+            {brand && <span data-field="footer.brand">{brand}</span>}
+            {brand && addressFlat && <span class="foot-sep" aria-hidden="true">·</span>}
+            {addressFlat && <span data-field="location.address" data-derived>{addressFlat}</span>}
+          </span>
+        )}
+        {notes.length > 0 && (
+          <span class="foot-notes">
+            {notes.map((n) => (<span data-field={`footer.notes.${n.i}`}>{n.v}</span>))}
+          </span>
+        )}
+      </div>
+    )}
+  </div>
+</footer>
+)}
+<style>
+  /* The design's closing band: the page's darkest ground under one hairline.
+     62px above the grid and 40px below the colophon, exactly as drawn; the top
+     figure is a clamp so a 360px screen does not open with 62px of nothing,
+     and it tops out at the design's own value. */
+  .foot {
+    background-color: var(--night-3);
+    border-top: 1px solid var(--rule);
+    padding: clamp(42px, 6vw, 62px) 0 40px;
+  }
+
+  /* 1.6fr / 1fr / 1fr at 40px, closed by the hairline the design draws under
+     it. minmax(0,…) on every track so a long unbroken address or link label
+     cannot widen a column past its share and push the page sideways. */
+  .foot-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 40px;
+    padding-bottom: 40px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  /* Wordmark and locality tag share a baseline — the same lock as the rail,
+     one size smaller and in the brighter bone the design specifies here. */
+  .foot-lock {
+    display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap;
+    margin-bottom: 15px; min-width: 0;
+  }
+  .foot-wm {
+    font-family: var(--disp); font-weight: 400; font-size: 24px;
+    line-height: 1.1; color: var(--bone-hi);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  .foot-loc {
+    font-family: var(--sans); font-weight: 600; font-size: 9px;
+    letter-spacing: .34em; text-transform: uppercase; color: var(--accent);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Qualified by the parent class on purpose: the wrapper's paragraph reset is
+     `html[data-page="BK"] :where(p)`, which a bare element rule here would only
+     tie with. */
+  .foot-brand .foot-blurb {
+    margin: 0 0 18px; font-family: var(--sans); font-size: 14px; line-height: 1.75;
+    color: var(--muted); max-width: 38ch; overflow-wrap: anywhere;
+  }
+  /* The design's 13px brass action. .linkc already carries the size, the weight
+     and the colour, so only the arrow is added — as generated content, so the
+     glyph can never be written back into navCtaText through an inline edit.
+     It carries NO margin: .linkc is an inline-flex box, so the pseudo-element
+     is a flex ITEM and the primitive's own `gap: .5em` already spaces it — a
+     margin here stacks on top of that and opens twice the design's gap. */
+  .foot-cta { overflow-wrap: anywhere; }
+  .foot-cta::after { content: '→'; }
+
+  /* Column headings: 10px tracked caps in brass, the design's own treatment for
+     every eyebrow on the page. */
+  .foot-h {
+    margin: 0 0 15px; font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: .3em; text-transform: uppercase; color: var(--accent);
+    line-height: 1.4; overflow-wrap: anywhere;
+  }
+  /* The design's rows are 14px grey on a 28px pitch — its <p> carries a 9px
+     bottom margin over a default line box, and the LAST row carries none, so
+     the column opens no gap above the closing hairline. Blocks rather than
+     inline text so the whole row is the tap target: 3px of padding either side
+     of a 1.6 line box lands on 28.4px, the design's rhythm, with no margin to
+     leave dangling under the last row.
+     This design's links change COLOUR on hover and draw NO rule — its own
+     global a:hover is --accent-light and nothing else — so there is no border
+     here and nothing but colour to transition. */
+  .foot-link {
+    display: block; padding: 3px 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.6;
+    color: var(--grey);
+    transition: color .18s ease;
+    overflow-wrap: anywhere;
+  }
+  /* The design's stated hover is --accent-light, which the theme engine maps to
+     the scheme's LIGHT accent — so unlike a bare --accent it cannot go dark on
+     this ground mid-interaction. */
+  .foot-link:hover { color: var(--accent-light); }
+  @media (prefers-reduced-motion: reduce) { .foot-link { transition: none; } }
+
+  .foot-addr {
+    font-style: normal; margin: 0; min-width: 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.6;
+    color: var(--muted);
+  }
+  /* The address is the stored string, unaltered — pre-line draws the owner's
+     own line breaks without this file generating a single <br>. */
+  .foot-addr-l {
+    display: block; padding: 3px 0;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+  /* A tel: row sits inside the address block and otherwise reads exactly like
+     the static line beside it — same token, size and weight — so nothing marks
+     it as a link until hover (WCAG 1.4.1). Underlined at rest; text-decoration
+     adds no box, so thickening it on hover cannot shift the rows. Deliberately
+     NOT applied to the page column: those are wayfinding links in a list,
+     already unambiguous by position and heading. */
+  .foot-addr .foot-tel {
+    color: var(--grey);
+    text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 3px;
+  }
+  .foot-addr .foot-tel:hover {
+    color: var(--accent-light);
+    text-decoration-color: var(--accent-light); text-decoration-thickness: 2px;
+  }
+
+  /* The colophon: 24px under the hairline, the two cells pushed apart, 10px
+     caps at .24em in the faintest token. Wraps rather than overflows. */
+  .foot-colo {
+    padding-top: 24px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    font-family: var(--sans); font-weight: 500; font-size: 10px;
+    letter-spacing: .24em; text-transform: uppercase; line-height: 1.9;
+    color: var(--faint);
+    overflow-wrap: anywhere;
+  }
+  .foot-id, .foot-notes { min-width: 0; overflow-wrap: anywhere; }
+  .foot-notes { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+  .foot-sep { margin: 0 .45em; }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────────────────
+     The wrapper owns the shared 760 / 520 pass; this file owns its own grid.
+     Three columns cannot hold their type sizes below ~900px, so they stack
+     there — one width, so there is never a band where a column is 90px wide. */
+  @media (max-width: 900px) {
+    .foot-grid { grid-template-columns: 1fr; gap: 30px; padding-bottom: 30px; }
+    /* Stacked, each row is a primary target rather than one of three columns. */
+    .foot-link { min-height: 44px; display: flex; align-items: center; margin-bottom: 2px; }
+    .foot-addr-l { padding: 10px 0; }
+  }
+  @media (max-width: 520px) {
+    .foot { padding-bottom: 32px; }
+    .foot-wm { font-size: 21px; }
+    .foot-loc { letter-spacing: .24em; }
+    .foot-brand .foot-blurb { max-width: none; }
+    /* Wide tracking is what actually pushes a 320px screen sideways here. */
+    .foot-colo { letter-spacing: .14em; gap: 10px; line-height: 1.8; }
+    .foot-notes { gap: 4px 10px; }
+  }
+</style>

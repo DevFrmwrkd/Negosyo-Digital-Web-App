@@ -1,0 +1,268 @@
+---
+/**
+ * hospitality / FaqBK — "Often asked" (Villa Marindu).
+ *
+ * ROLE: the design's FAQ element — a narrow head column (eyebrow + one display
+ * headline) beside a wide stack of hairline-separated question-and-answer rows.
+ * NO ACCORDION: the design draws every answer open, and on a whole-villa page
+ * the answers ARE the terms — minimum stay, what a booking includes, who else
+ * is on the property. A guest should not have to click to find out.
+ *
+ * DESIGN FIDELITY — every value is lifted from the element carrying
+ * data-component="FAQ" in "Villa Marindu Landing.dc.html", mapped hex → token
+ * (R1 — no literal hex anywhere in this file):
+ *   section    id="faq"                              ..... kept verbatim
+ *   grid       minmax(0,.7fr) / minmax(0,1.3fr), gap 56px, align-items:start
+ *   eyebrow    10px / .44em / 600 / #B99552 ......... the wrapper's .kick
+ *   headline   Prata 400 clamp(31px,4vw,54px) / 1.1 / #F4F1EA, margin .26em 0 0
+ *                                                     the wrapper's .h2 + --bone-hi
+ *   row        border-bottom 1px #262E2B, padding 24px 0 ..... var(--rule)
+ *   question   Prata 400 21px / #F4F1EA, margin 0 0 10px ..... var(--bone-hi)
+ *              line-height: the design declares none, so `normal` is restated
+ *              here to hold off the wrapper's heading default of 1.1
+ *   answer     15px / 1.8 / #A9AFA9, margin 0, max-width 64ch  var(--grey)
+ * The accent is the only token an admin colour scheme is allowed to move, so an
+ * admin pick recolours the eyebrow and leaves the night alone.
+ *
+ * EDITABLE HOOKS (all four are declared in genericContentSchema.ts, section id
+ * 'faq' — a data-field on any other path is a dead hook no sidebar input owns):
+ *   faq.tag              — the eyebrow
+ *   faq.headline         — the h2, set:html so an owner can place the design's
+ *                          italic brass <em> anywhere in their own sentence
+ *   faq.items.${i}.q     — the question
+ *   faq.items.${i}.a     — the answer, set:html so an owner can emphasise
+ *                          inside it
+ *
+ * DERIVED, and therefore carrying NO data-field: nothing. This section renders
+ * no counter, no numeral, no icon and no badge. The design gives the FAQ no
+ * ornament at all — the hairline between rows is the only one — so there is
+ * nothing here for a display index to number.
+ *
+ * R2 — NOT ONE WORD IS SUPPLIED BY THIS FILE, and in this section that rule is
+ * load-bearing beyond the usual. An FAQ answer is a legally-flavoured promise
+ * about a property this template has never seen. So: no default check-in or
+ * check-out time, no cancellation window, no deposit, damage, pet, party,
+ * smoking or quiet-hours rule, no minimum stay, no cleaning or extra-guest fee,
+ * no "we reply within…", and no example question. The design's own demo strings
+ * ("Good to know", "Often asked") are the DESIGNER filling in their own
+ * template; they are not this file's to type — note that
+ * lib/derive-content-defaults.ts happens to emit the same 'Good to know' tag,
+ * which is exactly why the gate below never counts it.
+ *
+ * R5 — THE SECTION GATE COUNTS THE ROWS, never the tag or the headline.
+ * derive-content-defaults fills faq.tag and faq.headline on EVERY site
+ * ('Good to know' / 'Questions, answered') while emitting items only when the
+ * submission actually answered something. A gate on tag||headline would
+ * therefore ship a 54px headline over an empty column on any site whose owner
+ * typed no questions. With no filled row the whole <section> is omitted — no
+ * eyebrow, no headline, no grid, no padding.
+ *
+ * R6 — blank rows are dropped but every kept row carries its ORIGINAL index
+ * into data-field, so deleting question 2 can never misdirect an edit into
+ * question 3.
+ *
+ * ROW GUARDS, and a deliberate divergence from FaqBJ: that sibling drops any
+ * row without a question, on the grounds that the question IS the label. This
+ * file keeps a row when EITHER field has content and guards the two tags
+ * independently (the CredentialsBK idiom in this same template), because
+ * silently vanishing an answer an owner typed is a worse failure than printing
+ * a lone paragraph between two hairlines. Each guard sits OUTSIDE its tag, so a
+ * half-filled row prints only what was typed — never an empty <h3> holding open
+ * 10px of margin, and never a rule under a row that is not there.
+ *
+ * DELIBERATELY NOT RENDERED (so none of it reads as an oversight):
+ *   · NO STAR ROW and no rating ornament of any kind. Five stars over a guest
+ *     who gave no rating is a fabricated claim; that treatment belongs to
+ *     TESTIMONIALS, where it is drawn only from a numeric
+ *     testimonials.items.N.rating. An FAQ row has no rating to draw from, so
+ *     there is nothing here to draw — not even the brass rule that stands in
+ *     for a missing one.
+ *   · no <details>/<summary> accordion. The design shows every answer open, and
+ *     collapsing them would hide the terms behind a click.
+ *   · no sticky head column. FaqBJ pins its head while scrolling; the design
+ *     draws a plain `align-items:start` grid and pins nothing, and R-fidelity
+ *     says the design is the specification, so the behaviour is not imported.
+ *   · no onPage() anchor-remap helper and no data-href-field. This section emits
+ *     no href of any kind — PAGE_ANCHORS (about services gallery location faq
+ *     main) is relevant only to a section that links, and a remap helper with no
+ *     href to remap is dead code. The one anchor this file DOES own is its own
+ *     id="faq", which is already in that set and is what HeaderBK links to.
+ *   · no button. The design gives this band no action; the contact button lives
+ *     in SERVICES, the CTA band and the footer.
+ *   · no data-block marker: editorBridge only needs one where two content
+ *     prefixes share a <section>. This section is faq.* alone, so the Blocks
+ *     toggle resolves to it by hook weight already — and keeping one prefix per
+ *     section is what stops a neighbouring toggle reaching in here.
+ *   · no `band-panel`: the design keeps FAQ on the page ground (--night).
+ *
+ * VERTICAL RHYTHM is the wrapper's. The design writes `padding:100px 34px 0` on
+ * this section; PageBK's shared `section { padding: clamp(60px,8vw,100px) 0 }`
+ * is the contract for all 15 sections, so this file adds no section padding of
+ * its own — changing it here alone would desynchronise this band from its
+ * siblings. Likewise the headline measure is the wrapper's `.h2 max-width:24ch`.
+ *
+ * R3 — one scoped <style>, no is:global. Both the headline and the answers are
+ * injected with set:html, so scoped rules cannot reach elements inside them: the
+ * headline's italic brass <em> is styled by PageBK's global :where(.h2 em), and
+ * an <em> inside an answer is reached here through :global().
+ *
+ * CONTRAST on the --night ground (sRGB relative luminance, the design's
+ * palette). Nothing in this section is below AA:
+ *   eyebrow  --accent  6.62:1 · question --bone-hi 16.5:1 · answer --grey 8.30:1
+ */
+// `layout` is accepted because PageBK passes it to every section uniformly.
+// This band reads nothing outside content.*, so it is never destructured.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// The schema declares 'faq.items' with fallbackPaths ['faq'], so the stored
+// value is legitimately EITHER {tag, headline, items:[…]} or a bare array.
+// Both shapes are read.
+const faq = content.faq || {};
+const tag = faq.tag || '';
+const headline = faq.headline || '';
+
+// Legacy submissions spell the pair {question, answer}; the schema (and every
+// current writer) spells {q, a}. Read both, but the data-field hook always
+// spells q / a — that is the path the sidebar input owns.
+type Item = { q?: string; a?: string; question?: string; answer?: string };
+const items: Item[] = Array.isArray(faq.items)
+  ? faq.items
+  : (Array.isArray(faq) ? faq : []);
+// Optional chaining, not a bare read: a stored list can carry a null slot (a row
+// deleted in an older editor left a hole), and reading `.q` off it would throw
+// at BUILD time and take the whole site with it, not just this band.
+const qOf = (it: Item): string => it?.q ?? it?.question ?? '';
+const aOf = (it: Item): string => it?.a ?? it?.answer ?? '';
+
+// R6 — carry the ORIGINAL index past the blank filter. Whitespace counts as
+// blank, so a row the owner added and never filled draws no rule and no padding.
+// Each field is TRIMMED here rather than tested raw, because a field holding
+// only a space is truthy: guarding on the raw value would print the very empty
+// <h3> (10px of margin over a blank line box) this file promises never to ship.
+const rows = items
+  .map((it, i: number) => ({ i, q: qOf(it).trim(), a: aOf(it).trim() }))
+  .filter((r) => Boolean(r.q || r.a));
+
+// With neither eyebrow nor headline the head column would spend a whole grid
+// track on nothing, so it is omitted and the grid collapses to one.
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="vfaq" id="faq">
+    <div class="wrap">
+      <div class:list={['vfaq-grid', !hasHead && 'nohead']}>
+        {hasHead && (
+          <div class="vfaq-head reveal">
+            {tag && <span class="kick" data-field="faq.tag">{tag}</span>}
+            {headline && <h2 class="h2 vfaq-h" data-field="faq.headline" set:html={headline}></h2>}
+          </div>
+        )}
+        <div class="vfaq-list reveal" data-delay="1">
+          {rows.map((row) => (
+            <div class="vfaq-row">
+              {row.q && <h3 class="vfaq-q" data-field={`faq.items.${row.i}.q`}>{row.q}</h3>}
+              {row.a && <p class="vfaq-a" data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* The section keeps PageBK's shared padding and the page ground: the design
+     puts no band under FAQ. min-width:0 so a long unbroken word inside a row
+     can never widen the grid and push the page sideways (R8). */
+  .vfaq { min-width: 0; }
+
+  /* The design's split, verbatim: a narrow head against a wide answer column.
+     minmax(0,…) on both tracks is what lets the rows shrink instead of
+     overflowing. */
+  .vfaq-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr);
+    gap: 56px;
+    align-items: start;
+  }
+  .vfaq-grid.nohead { grid-template-columns: minmax(0, 1fr); }
+
+  .vfaq-head { min-width: 0; }
+  /* R8 — the head column is the narrow track (.7fr), so it is the one that runs
+     out of room first. An owner's one-word tag or headline longer than the track
+     would otherwise sit outside it; the wrapper only breaks the .h2 below 760px,
+     and this grid is still two columns down to 900. */
+  .vfaq-head .kick { max-width: 100%; overflow-wrap: anywhere; }
+  /* The design's headline margin. The wrapper's .h2 ships `0 0 .3em`, which
+     would open a gap under the last line of a head column that has nothing
+     below it. */
+  .vfaq-h { margin: .26em 0 0; overflow-wrap: anywhere; }
+
+  .vfaq-list { min-width: 0; }
+
+  /* Every row carries the hairline, the last one included — that is how the
+     design closes the stack against the CTA band below it. */
+  .vfaq-row {
+    border-bottom: 1px solid var(--rule);
+    padding: 24px 0;
+    min-width: 0;
+  }
+
+  /* PageBK sets :where(h1,h2,h3,h4) to Prata 400 --bone-hi at line-height 1.1.
+     The face, weight and colour are the design's already; only the leading is
+     restated, and it is restated as `normal` because that is literally what the
+     design renders — its h3 carries no line-height and its stylesheet sets none.
+     Guessing a number here would be a divergence, and the wrapper's 1.1 would be
+     a visible one: it matters the moment an owner's question is longer than the
+     designer's and wraps to two lines, where at 1.1 the descenders of the first
+     line touch the caps of the second. */
+  .vfaq-q {
+    font-size: 21px;
+    line-height: normal;
+    margin: 0 0 10px;
+    color: var(--bone-hi);
+    overflow-wrap: anywhere;
+  }
+
+  /* PageBK's `:where(p){margin:0 0 1em}` is (0,1,1); qualifying with the row
+     class puts this above it so the design's zero margin actually lands. */
+  .vfaq-row .vfaq-a {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--grey);
+    max-width: 64ch;
+    overflow-wrap: anywhere;
+  }
+  /* The answer arrives through set:html, so scoped rules cannot reach inside it
+     (R3). An owner's emphasis stays the answer's own colour: brass on a 15px
+     run inside a paragraph reads as a link that does not work. */
+  .vfaq-row .vfaq-a :global(em),
+  .vfaq-row .vfaq-a :global(i) { font-style: italic; color: inherit; }
+  .vfaq-row .vfaq-a :global(strong),
+  .vfaq-row .vfaq-a :global(b) { font-weight: 600; color: var(--grey-2); }
+  /* An owner who pastes a link into an answer gets the brass, underlined on
+     hover only — the same restraint as the wrapper's .linkc. */
+  .vfaq-row .vfaq-a :global(a) {
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    overflow-wrap: anywhere;
+  }
+  .vfaq-row .vfaq-a :global(a:hover) { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── 900 · the head column narrows past legibility before the answers do, so
+        the two tracks fold to one and the headline sits above its own stack. */
+  @media (max-width: 900px) {
+    .vfaq-grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  }
+
+  /* ── 520 · nothing may push the page sideways. The tracks are already
+        minmax(0,…) and every string breaks anywhere; the measure cap comes off
+        so a 64ch answer is not narrower than the phone it is on. */
+  @media (max-width: 520px) {
+    .vfaq-row { padding: 20px 0; }
+    .vfaq-q { font-size: 19px; }
+    .vfaq-row .vfaq-a { font-size: 14.5px; max-width: none; }
+  }
+</style>
