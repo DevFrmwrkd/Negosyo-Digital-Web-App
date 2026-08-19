@@ -22,6 +22,10 @@
  *   navbar_links.${i}.href       — that link's target (data-href-field)
  *   navCtaText                   — the contact action's label (drawn twice, as
  *   navCtaHref                     the design draws it — see decision 4)
+ *   contact.email                        — the mailto row. NOT in the design,
+ *                                          whose demo villa took enquiries on
+ *                                          Messenger — but a business that has
+ *                                          an email had it appear nowhere.
  *   location.phone               — the tel: row (data-field only, decision 7)
  *   location.address             — the address row, and the colophon's identity
  *   footer.notes.${i}            — the colophon's right-hand note rows
@@ -204,6 +208,11 @@ const pageLinks: Array<{ label: string; href: string; i: number }> =
 // Contact rows. Same resolution order LocationBK uses, so one page cannot print
 // two different numbers or two different addresses.
 const phone = String(c.location?.phone ?? lay.contact?.phone ?? '').trim();
+// The design draws no email row — its demo villa took enquiries on Messenger —
+// but contact.email is schema-declared, FooterBJ prints it, and a real business
+// that supplies one had it appear NOWHERE on the page. Same resolution order as
+// the phone above.
+const email = String((c as any).contact?.email ?? lay.contact?.email ?? '').trim();
 const phoneDigits = phone.replace(/[^0-9+]/g, '');
 const address = String(c.location?.address ?? lay.contact?.address ?? '').trim();
 // Colophon identity line: the design prints one line, and location.address is a
@@ -220,7 +229,26 @@ const notes: Array<{ v: string; i: number }> = (Array.isArray(f.notes) ? f.notes
 // the section never counts a tag or a headline, because lib/derive-content-
 // defaults.ts fills those on every site.
 const hasBrandCol = Boolean(brand || locality || blurb || ctaText);
-const hasContactCol = Boolean(ctaText || phone || address);
+// A LABEL PRINTED TWICE IN ONE FOOTER IS A STUTTER, not a design.
+//
+// The design prints its contact label in BOTH the brand column and this one,
+// and that reads correctly there because the two say different things: the
+// designer set contactLabel to "Contact us" and headed this column "Get in
+// touch". On a real site both come from derive-content-defaults, which seeds
+// navCtaText to "Get in touch" — so ONE field printed the same three words
+// twice, six lines apart, and an owner asked why their footer said it twice.
+//
+// The rule: this column shows the action only when the brand column is NOT
+// already showing it, and never when it merely repeats this column's heading.
+// Nothing is lost — the brand column keeps its arrow link and the rail keeps
+// its pill, and what remains here (phone, email, address) are distinct
+// channels. Compared case- and whitespace-insensitively, because "Get In Touch"
+// is the same stutter.
+const norm = (v: string): string => v.replace(/\s+/g, ' ').trim().toLowerCase();
+const brandShowsCta = hasBrandCol && Boolean(ctaText);
+const showContactCta =
+  Boolean(ctaText) && !brandShowsCta && norm(ctaText) !== norm(contactTitle);
+const hasContactCol = Boolean(showContactCta || contactTitle || phone || email || address);
 const hasGrid = hasBrandCol || pageLinks.length > 0 || hasContactCol;
 const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
 ---
@@ -272,7 +300,7 @@ const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
         {hasContactCol && (
           <div class="foot-col">
             {contactTitle && <h4 class="foot-h" data-field="footer.visit.title">{contactTitle}</h4>}
-            {ctaText && (
+            {showContactCta && (
               <a
                 class="foot-link"
                 href={ctaHref}
@@ -282,10 +310,16 @@ const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
                 data-href-field="navCtaHref"
               >{ctaText}</a>
             )}
-            {(phone || address) && (
+            {(phone || email || address) && (
               <address class="foot-addr">
                 {phone && (
                   <a class="foot-link foot-tel" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>
+                )}
+                {/* mailto: is BUILT, never stored — the visible text stays the
+                    plain address so an inline edit can never write "mailto:…"
+                    back into the email box. */}
+                {email && (
+                  <a class="foot-link foot-mail" href={`mailto:${email}`} data-field="contact.email">{email}</a>
                 )}
                 {/* The stored string verbatim — `white-space: pre-line` draws
                     the owner's own line breaks, so the DOM text and the field
@@ -405,6 +439,10 @@ const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
     font-family: var(--sans); font-size: 14px; line-height: 1.6;
     color: var(--muted);
   }
+  /* The address is long and the email is not: the mail row keeps the link
+     underline the tel row has, and breaks anywhere rather than widening the
+     column at 360px. */
+  .foot-mail { display: block; overflow-wrap: anywhere; }
   /* The address is the stored string, unaltered — pre-line draws the owner's
      own line breaks without this file generating a single <br>. */
   .foot-addr-l {
