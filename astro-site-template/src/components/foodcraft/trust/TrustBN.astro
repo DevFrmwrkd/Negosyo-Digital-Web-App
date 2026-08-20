@@ -1,0 +1,313 @@
+---
+/**
+ * foodcraft / TrustBN — "Panday Coffee Works"'s four-up fact strip.
+ *
+ * ROLE. The ruled strip the design sets immediately under the hero, between it
+ * and ABOUT. It is FULL-BLEED: four equal tracks running edge to edge, each
+ * cell padded 26px 24px, each closed on the right by a grey hairline, with the
+ * spine's full-strength ink rule beneath the whole strip. Every cell is one
+ * 34px rust Archivo 800 figure over a 10px tracked-caps mono label. It is the
+ * band most likely to be read as fact, so not one word in it is written here.
+ *
+ * NO RAIL, NO INDEX LABEL — and this is the decision a reader is most likely
+ * to take for an oversight, so: the design draws TRUST with `border-bottom`
+ * ALONE, no `grid-template-columns: minmax(0,52px) minmax(0,1fr)` and no
+ * rotated label, and its index sequence runs HERO "00 / Index" straight into
+ * ABOUT "01 / The works". TRUST is the one section the sequence skips. Giving
+ * this strip an index would therefore not just add a rail the design does not
+ * draw, it would push every later section's number one out of step with the
+ * design and with the sibling components that read their number off it. Hence
+ * `.sec-full` (bottom rule only), which is exactly what the wrapper provides
+ * for the full-bleed cases.
+ *
+ * EDITABLE HOOKS (both declared by components/editor/genericContentSchema.ts
+ * under the `trust.cells` list spec — add / remove / reorder in the sidebar,
+ * maxItems 4):
+ *   trust.cells.${i}.num    — the rust figure. set:html, so an entity-bearing
+ *                             value ("&lt; 1 hr", "R&amp;D", "&#8369;180")
+ *                             prints as the character rather than the source.
+ *   trust.cells.${i}.label  — the tracked-caps label under it. ESCAPED, not
+ *                             set:html: it is a 10px uppercase phrase where an
+ *                             <em> has nothing left to say, and escaping is the
+ *                             safer default for the field that is not a figure.
+ * There is no third hook. A data-field on any path that schema does not declare
+ * is a dead hook no sidebar input owns.
+ *
+ * DERIVED (computed here, never authored here):
+ *   · `rows` — only the cells carrying real text, each still carrying its
+ *     ORIGINAL array index `i`, so dropping a blank cell 2 cannot redirect an
+ *     edit of cell 3 into slot 2 (R6). The reveal stagger uses the DISPLAY
+ *     index instead, because a transition delay is decoration.
+ *   · `--pcw-cols` — the track count follows the DATA, capped at the design's
+ *     four. This matters because the strip is full-bleed: the hairlines are
+ *     drawn per CELL, so a hardcoded repeat(4) would not paint empty ruled
+ *     boxes (an empty track paints nothing), but the section's ink rule spans
+ *     the viewport regardless — two facts would sit squeezed into the left
+ *     quarter of a full-width rule with three quarters of it blank, reading as
+ *     a table whose last rows went missing. Following the data keeps the rules
+ *     framing content.
+ *
+ * NOT RENDERED, and why:
+ *   · NO eyebrow, NO headline, NO lede, NO button, NO photo, NO id. The
+ *     design's TRUST has none of them and the schema declares none for `trust`.
+ *     In particular there is no .kick here — the family's rust mono eyebrow is
+ *     simply absent from this strip, as drawn.
+ *   · NO placeholder figure, no zero, no em dash. "4 / Philippine farms" in the
+ *     design demo is the DESIGNER filling their own template; a farm count is a
+ *     claim only this roastery may make. lib/derive-content-defaults.ts carries
+ *     no `trust` key at all, so this strip exists only where a human typed.
+ *   · NO section when nothing was typed (R5). The gate counts BODY content —
+ *     cells with text — and there is no tag or headline here it could wrongly
+ *     count instead. lib/astro-builder.ts already forces visibility.trustBlock
+ *     false on a zero-LENGTH array; this gate is the belt to that brace and
+ *     catches what a length check cannot see: rows that are PRESENT but blank,
+ *     since the sidebar's Add button inserts { num: '', label: '' }. A blank
+ *     row surviving would print an empty ruled cell.
+ *   · NO onPage() anchor helper, deliberately rather than by omission: this
+ *     strip emits no <a> at all, so PAGE_ANCHORS / ANCHOR_ALIAS (menu, about,
+ *     gallery, visit, faq, main) would be unreachable dead code in this one
+ *     file — which is what a reviewer would flag instead. The remap belongs in
+ *     every BN section that does emit an href. TrustBM and TrustBL made the
+ *     same call for the same reason.
+ *   · NO role="img", NO .plate, NO .cap — there is no image slot in this strip,
+ *     so there is nothing to give an accessible name to (R9). Nothing is
+ *     aria-hidden either: both the figure and the label are real owner content
+ *     and are announced normally, and there is no decorative numeral or icon
+ *     here to suppress. No attribute on any element below is written twice.
+ *   · NO star row and NO rating. This strip carries no review, so R2's rating
+ *     rule has nothing to bind to. If an owner types "4.9" into `num` it is
+ *     printed as the TEXT they typed — never re-read as a score, never redrawn
+ *     as five glyphs.
+ *
+ * DECISIONS a reader would otherwise think were oversights:
+ *
+ *   · The RIGHT-HAND hairline on the LAST cell is the design's. Its sc-for puts
+ *     border-right on every repeated cell, so at full bleed the strip closes
+ *     with a short vertical rule hard against the right edge of the viewport
+ *     while the first cell has none on its left. That asymmetry is drawn, and
+ *     it is reproduced rather than "tidied" into a border-left-except-first,
+ *     which is a different drawing. Nothing clips it: --r is 0 and this strip
+ *     has no overflow to hide.
+ *
+ *   · The figure does NOT use the wrapper's .fig primitive, and that is the
+ *     point. .fig is the MONO figure voice, and it is exactly five
+ *     declarations: var(--mono), weight 500, var(--accent), tabular lining
+ *     numerals, line-height 1. The design's trust number is the DISPLAY voice:
+ *     Archivo 800, 34px, -.03em, line-height 1, in rust. Two of those five
+ *     would have survived — the colour and the line-height. The other THREE
+ *     (family, weight, the tabular numerals) would each have to be overridden,
+ *     and size and tracking added on top, since .fig declares neither. A
+ *     section that overrides three of a primitive's five declarations and adds
+ *     two more is not reusing it. It is written locally, from tokens only.
+ *
+ *   · font-family on the figure is var(--disp), not left to inherit var(--sans)
+ *     from body. In the design both are Archivo and it inherits; here they are
+ *     separate tokens a font pairing could one day split, and an 800-weight
+ *     figure at -.03em belongs with the headlines, not with the body copy.
+ *
+ *   · font-variant-numeric is NOT set. .fig would have brought tabular lining
+ *     figures with it; the design sets none, and these cells are four
+ *     independent numbers, not a column to align. The design is the spec.
+ *
+ *   · The label DOES reuse .mono, which already gives var(--mono), 10px,
+ *     uppercase and var(--muted) — the design's #5A5C60 exactly, as the native
+ *     token value (PageBN notes that the engine remaps --muted to
+ *     palette.inkSoft, so it is the design's colour, not a guarantee). FOUR
+ *     declarations are local, and only four: letter-spacing .14em (the
+ *     design's, against the primitive's .2em — this label is tracked tighter
+ *     than the rail and the kicker on purpose), margin-top 9px (the design's
+ *     gap under the figure), line-height, and the overflow-wrap noted below.
+ *     Only the FIRST overrides the primitive; .mono declares none of the other
+ *     three.
+ *
+ *   · That line-height is PINNED at 1.3. The design sets none on its caps
+ *     labels, so in the design document they compute to `normal` — the FONT's
+ *     own leading, which is nothing like the page's. PageBN's
+ *     `body { line-height: 1.62 }` would otherwise leak in, inflate this 10px
+ *     line box and print the design's 9px gap visibly larger, with the cell
+ *     taller than drawn. 1.3 is a tight leading that keeps the cell close to
+ *     drawn and still lets a two-line label breathe. No number is quoted for
+ *     `normal` here: it is a font metric, not arithmetic this file can do, and
+ *     an earlier draft of this block asserted one.
+ *
+ *   · The label's WEIGHT is the primitive's 500, not the design's own. Worth
+ *     stating plainly: the design declares no font-weight on this label, so in
+ *     the design document it renders at 400 — but the design declares none on
+ *     ~40 of its 41 mono elements either, and PageBN answers that by pinning
+ *     the family's whole mono voice at 500 across .kick, .mono, .fig, .btn and
+ *     .linkc. Restating 400 here would make this the only lighter mono on the
+ *     sheet, which reads as a mistake rather than as fidelity. The wrapper is
+ *     the contract; this one value follows it. Flagged for review.
+ *
+ *   · An owner <em> inside `num` is de-italicised and recoloured to --ink
+ *     rather than left alone. The wrapper is explicit that this template's
+ *     second voice is a COLOUR CHANGE, not an italic, because Archivo has no
+ *     italic worth using — left alone the browser would synthesise an oblique.
+ *     The figure is already rust, so the counter-voice available to it is ink;
+ *     the alternative, killing the italic and giving nothing back, would
+ *     silently swallow the owner's emphasis. Reached through :global() because
+ *     set:html output sits outside scoped CSS (R3). Flagged for review.
+ *
+ *   · The read tolerates both content shapes — the schema's { cells: [...] }
+ *     and the bare array a few older records still store at content.trust —
+ *     while always WRITING the data-field as trust.cells.${i}.*, since that is
+ *     the only path the sidebar owns. Note the builder's own visibility check
+ *     recognises the { cells } shape alone, so a legacy record is already
+ *     hidden before this file runs; the tolerant read is defensive, and costs
+ *     one line to make this component correct wherever it is mounted.
+ *
+ *   · Both values carry overflow-wrap: anywhere. An unspaced string in a 34px
+ *     display face is the one thing in this strip that could push the page
+ *     sideways at 360 (R8). Nothing here uses a clamp at all — every size is
+ *     flat across all three widths — so no floor in the 900 query can outgrow
+ *     a cap in the 520 query.
+ *
+ * Class names are prefixed pcw- for THIS template. They are not a sibling's
+ * names re-used: an audit had to rename a whole set that had been copied
+ * verbatim between two files in this family.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const trust = content?.trust || {};
+// Both shapes are read; only the schema's path is ever written.
+const cells: any[] = Array.isArray(trust.cells)
+  ? trust.cells
+  : (Array.isArray(trust) ? trust : []);
+
+const asText = (v: any) => (v === null || v === undefined ? '' : String(v));
+
+// The ORIGINAL index rides along in `i` (R6). A half-filled row prints the one
+// line it has; a wholly empty row prints no cell, so no hairline divides a
+// column that is not there (R2).
+const rows = cells
+  .map((c: any, i: number) => ({ num: asText(c?.num), label: asText(c?.label), i }))
+  .filter((r) => Boolean(r.num.trim() || r.label.trim()));
+
+// Follow the data, never past the design's four tracks (the schema caps the
+// list at 4 anyway; anything older wraps and picks up a rule above it).
+const cols = String(Math.min(Math.max(rows.length, 1), 4));
+---
+{rows.length > 0 && (
+  <section class="sec-full pcw-strip">
+    <div class="pcw-strip-grid" style={`--pcw-cols:${cols}`}>
+      {rows.map((r, k) => (
+        <div class="pcw-strip-cell reveal" data-delay={String(k % 4)}>
+          {r.num.trim() && (
+            <div class="pcw-strip-num" data-field={`trust.cells.${r.i}.num`} set:html={r.num}></div>
+          )}
+          {r.label.trim() && (
+            <div class="mono pcw-strip-lab" data-field={`trust.cells.${r.i}.label`}>{r.label}</div>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBN's token vocabulary
+     (--line --accent --ink --muted --disp --mono, via .sec-full and .mono).
+     There is not one literal hex in this file (R1).
+
+     Never write a literal end-style-tag inside a comment in here — the parser
+     would end the stylesheet on the spot and silently truncate the file. */
+
+  /* The section itself adds nothing: .sec-full already draws the spine's
+     full-strength ink rule beneath, and the design gives TRUST no padding of
+     its own — the cells do all of it, edge to edge. */
+  .pcw-strip { display: block; }
+
+  /* Four equal tracks in the design; here, as many as were typed, up to four. */
+  .pcw-strip-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--pcw-cols, 1), minmax(0, 1fr));
+  }
+
+  /* 26px 24px with the design's grey hairline on the right of EVERY cell,
+     including the last — see the frontmatter note on that asymmetry. */
+  .pcw-strip-cell {
+    min-width: 0;
+    padding: 26px 24px;
+    border-right: 1px solid var(--line);
+  }
+  /* Only reachable on a record predating the schema's maxItems 4 cap. */
+  .pcw-strip-cell:nth-child(n + 5) { border-top: 1px solid var(--line); }
+
+  /* The figure: the design's display voice, written out rather than borrowed
+     from .fig, which is the mono one. Flat 34px at every width. */
+  .pcw-strip-num {
+    font-family: var(--disp);
+    font-weight: 800;
+    font-size: 34px;
+    line-height: 1;
+    letter-spacing: -.03em;
+    color: var(--accent);
+    /* A pasted URL or an unspaced string must not push the page sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  /* An owner <em> inside the figure: no synthesised oblique, a colour change,
+     which is this template's declared second voice. The figure is rust, so the
+     counter-voice is ink. :global() because set:html output cannot be reached
+     by scoped rules (R3). */
+  .pcw-strip-num :global(em),
+  .pcw-strip-num :global(i) { font-style: normal; color: var(--ink); }
+
+  /* .mono already carries var(--mono), 10px, uppercase and var(--muted) — the
+     design's label treatment, colour included. Four declarations are local, and
+     only one of them overrides the primitive:
+       · letter-spacing .14em — the design's, tighter than the primitive's .2em
+         (the one override; .mono declares none of the three below)
+       · margin-top 9px — the design's gap under the figure
+       · line-height 1.3 — the design's caps labels set no leading and compute
+         to `normal`, the font's own; PageBN's body 1.62 would otherwise leak
+         in, inflate this 10px line box and print that 9px gap visibly larger
+       · overflow-wrap: anywhere — R8, see the figure's note above */
+  .pcw-strip-grid .pcw-strip-lab {
+    letter-spacing: .14em;
+    margin-top: 9px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── This section's OWN responsive pass (R8). PageBN owns the shared 760 and
+        520 type pass; the grid below is ours. Every size in this file is flat —
+        no clamps at all — so nothing can grow as the viewport narrows. ────── */
+  @media (max-width: 900px) {
+    /* Two up. The interior vertical rule is now the odd cell's right border,
+       and every cell past the first pair gains a horizontal one. That rule is
+       restated rather than left to lapse: compiled it reads
+       .pcw-strip-cell[data-astro-cid-…]:nth-child(n+3) — (0,3,0), which beats
+       the base cell's (0,2,0) whatever the source order, but a reader should
+       not have to work that out. */
+    .pcw-strip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pcw-strip-cell:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 520px) {
+    /* One column. A 10px label at .14em tracking cannot hold the half column
+       this breakpoint inherits without splitting mid-word — and because the
+       strip is FULL-BLEED that column is 520/2 - 48px of padding = 212px of
+       text, not the ~180px a sibling template quotes for the same rule (that
+       strip sits inside a 92vw wrap; this one does not).
+       The trailing right hairline goes too: at full width it would draw a
+       stray vertical line down the edge of the page instead of dividing
+       anything, and the horizontal rule between cells takes over the dividing.
+
+       Only the VERTICAL padding moves off the design's 26px 24px, and only
+       because stacking spends it four times over. The 24px HORIZONTAL padding
+       is the design's and stays — the strip is full-bleed, so at 360px the cell
+       is still ~312px wide and nothing is pressing on it.
+
+       The figure stays at the design's flat 34px. It is NOT shrunk: one-up at
+       520 the cell is WIDER than two-up at 900, where the figure is left alone,
+       so a 520-only reduction would be both a deviation and backwards. Long
+       unbroken strings are already handled by overflow-wrap above. */
+    .pcw-strip-grid { grid-template-columns: minmax(0, 1fr); }
+    .pcw-strip-cell {
+      padding: 22px 24px;
+      border-right: 0;
+      border-top: 1px solid var(--line);
+    }
+    .pcw-strip-cell:first-child { border-top: 0; }
+  }
+</style>

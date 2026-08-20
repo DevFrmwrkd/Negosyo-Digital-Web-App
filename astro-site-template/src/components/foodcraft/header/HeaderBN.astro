@@ -1,0 +1,560 @@
+---
+/**
+ * foodcraft / HeaderBN — THE STICKY MASTHEAD. "Panday Coffee Works"'s front
+ * gate, reproduced from the design's own <header>: a 95%-opaque bone bar over a
+ * 12px backdrop blur, ruled beneath in FULL-STRENGTH ink, and split by a
+ * `minmax(0,1fr) auto` grid into a name lock on the left and a run of ruled
+ * mono cells on the right — five 10px wayfinding cells at 0/17px padding, each
+ * opened by a --line hairline, and the rust CTA cell closing the row.
+ *
+ * ROLE: wayfinding, plus the one action this page exists for. Nothing else.
+ *
+ * EDITABLE HOOKS — every visible string on this bar, and nothing else:
+ *   footer.brand                     — the 19px uppercase wordmark
+ *   footer.locality                  — the mono place tag on its right
+ *   navbar_links.${i}.label          — one wayfinding cell's label
+ *   navbar_links.${i}.href           — that cell's target (data-href-field)
+ *   navCtaText                       — the rust cell's label
+ *   navCtaHref                       — the rust cell's target (data-href-field)
+ * All six are declared in components/editor/genericContentSchema.ts under the
+ * `header` group, so each is a hook a sidebar input actually owns. A data-field
+ * on any other path would be a dead hook nothing can edit.
+ *
+ * DERIVED, never authored here:
+ *   - the wordmark falls back to layout.businessName when content.footer.brand
+ *     is blank — the same name from the same submission, and the same fallback
+ *     the schema already declares (footer.brand fallbackPaths ['business_name']),
+ *     so the sidebar and the page cannot disagree about what it says.
+ *   - every in-page href is resolved by onPage() against the ids PageBN really
+ *     renders. Off-page targets (tel:, mailto:, http(s)) pass through untouched.
+ *   - `i` is the ORIGINAL, pre-filter index of a nav row, so dropping an
+ *     unreachable row 2 cannot misdirect an edit into row 3.
+ *   - target/rel on the CTA are COMPUTED from its own href, never literal, and
+ *     each is one conditional, so neither attribute can be emitted twice.
+ *
+ * NOT RENDERED, deliberately:
+ *   - THE DESIGN'S OWN COPY. "Panday Coffee Works", "Roastery & bar — Escolta,
+ *     Manila", "Works", "Prices", "Gallery", "Location", "Notes" and "Contact
+ *     us" are the DESIGNER filling in their own template. Not one of those
+ *     words is in this file. A roastery whose owner supplied no nav rows gets
+ *     no nav rows, not the designer's five.
+ *   - THE PREFIX OF THE DESIGN'S PLACE TAG. Its `shopMeta` is the literal
+ *     string 'Roastery & bar — ' concatenated with the town. Only the TOWN is
+ *     owner data, so only the town is printed: footer.locality, alone, in the
+ *     designer's exact mono metrics. Printing the prefix would put a trade
+ *     description on a business that never claimed it.
+ *   - contact.phone. It is in the `header` schema group, but this design's
+ *     header has no phone cell — the design puts the number in the FOOTER, and
+ *     inventing a sixth cell for it is not this file's call.
+ *   - business_name / tagline. They drive the DOCUMENT (title, description,
+ *     og:*), which PageBN owns. Nothing on this bar reads them except the
+ *     wordmark's fallback above.
+ *   - THE WHOLE BAR, when brand, place tag, nav rows and CTA are ALL empty. A
+ *     sticky bar with nothing in it is ~50px of dead chrome on every screen and
+ *     a rule under nothing. It is BODY content that is counted — never a tag or
+ *     a headline, because lib/derive-content-defaults.ts fills those on every
+ *     site and a gate that counted them would always pass. This bar carries no
+ *     tag and no headline at all, so the gate is simply everything it can draw.
+ *   - the burger, unless there is a drawer for it to open.
+ *   - the wordmark, with no name. 'Your Business' once shipped as a real
+ *     customer's own wordmark; with nothing supplied the place tag carries the
+ *     lock alone, and with neither the lock is gone entirely.
+ *   - a nav row with no label, or whose href reaches no section on this page.
+ *     A 0-width tap target and a link that scrolls nowhere are both broken.
+ *   Every guard sits OUTSIDE its tag, so a blank value removes the ELEMENT and
+ *   not just its text — no empty rust cell, no hairline opening a cell that is
+ *   not there, no lock with nothing in it.
+ *   There is NO star row, rating or numeral anywhere on this bar, so nothing
+ *   here can print a claim the owner did not make. There is no upload either,
+ *   hence no role="img" and no image alt text.
+ *
+ * DECISIONS A READER MIGHT OTHERWISE TAKE FOR AN OVERSIGHT
+ *
+ * 1. NO .rail AND NO ROTATED INDEX LABEL HERE. The spine is the signature of
+ *    this template, but the design does not put the header on it: its <header>
+ *    is a `minmax(0,1fr) auto` bar, not the `minmax(0,52px) minmax(0,1fr)`
+ *    section grid, and it carries no index. So this file emits neither .sec nor
+ *    .rail. What it DOES take from the spine is the rule: its bottom border is
+ *    1px --rule-strong — the same full-strength ink every .sec is ruled with,
+ *    NOT --line — so the sticky bar reads as the first rule of the sheet rather
+ *    than as chrome parked above it. The design says exactly that (#17181A).
+ *
+ * 2. THE NAV IS A ROW OF RULED CELLS, NOT A GAPPED LINK LIST. The design gives
+ *    each link `padding:0 17px` and `border-left:1px solid #C8C7C2` with no
+ *    gap, and stretches every cell to the full bar height. That is what makes
+ *    the masthead read as a technical document; a gap would turn it into an
+ *    ordinary nav. align-items:stretch is therefore load-bearing all the way
+ *    down the chain — grid, .pcbn-right, .pcbn-nav — and the CTA is the last
+ *    cell in the same run, which is why it needs no special height.
+ *
+ * 3. THE CTA IS THE WRAPPER'S .btn .btn--fill, UNMODIFIED. The design's btnNav
+ *    is mono 10px caps at .14em with 15px/24px padding on an accent fill with
+ *    an --on-accent label — every one of those values is the wrapper's .btn +
+ *    .btn--fill. So nothing about the box is restated at desktop: no fill, no
+ *    label colour, no padding, no font size. The wrapper's hover darkening and
+ *    focus ring stay intact for free.
+ *    THREE VALUES THE PRIMITIVE ADDS, none of them restated away:
+ *      - font-weight 500. btnNav declares none, so the DESIGN's CTA renders at
+ *        the inherited 400. The wrapper sets 500 on every .btn, and the design's
+ *        other three buttons (btnSolid/btnOrange/btnCream) declare no weight
+ *        either — so 400 here would make this bar the one button on the page
+ *        that is lighter than the rest. The family primitive wins.
+ *      - min-height 44px, which never binds: the CTA is align-self:stretch in a
+ *        bar the 13/26 lock already drives past 44px.
+ *      - a 1px accent border on all four sides where btnNav draws only
+ *        `border-left:1px solid accent`. Accent on an accent fill, so the
+ *        rendered colour is identical; the box is 1px wider on three sides.
+ *
+ * 4. WHY THE CTA HOOKS navCtaText/navCtaHref AND NOT hero.cta1.*.
+ *    components/editor/editorBridge.ts resolves a Blocks toggle to a section by
+ *    counting hooks of that prefix, so a header carrying hero.* hooks would
+ *    vanish when the owner switched the Hero block off. navCta* belongs to the
+ *    Header group, so this bar answers only to itself. footer.brand is safe
+ *    twice over: the bridge only ever hides `closest('section,footer')` and a
+ *    <header> is neither, and the real footer outweighs this file's two
+ *    footer.* hooks many times over. The CTA does NOT borrow the hero's label
+ *    for its DISPLAY either — showing a string the Header-CTA box does not
+ *    contain means the sidebar and the page disagree about what the button
+ *    says. An empty box renders no cell.
+ *
+ * 5. THE NAV ROWS ARE READ FROM content.navbar_links, NOT layout.navLinks, AND
+ *    THAT IS A DELIBERATE DEPARTURE FROM THE PREVIOUS TEMPLATE IN THIS FAMILY.
+ *    lib/astro-builder.ts fills `content.navbar_links` from the owner's rows or
+ *    else from derive-content-defaults' five, but it builds `layout.navLinks`
+ *    from the RAW `content.navbar_links || [four hard-coded rows]` in the same
+ *    return object — so on a site whose owner supplied no nav links the two
+ *    arrays are DIFFERENT LENGTHS with different labels. The sidebar list edits
+ *    `navbar_links`, so `navbar_links.${i}` is only a live hook when `i` indexes
+ *    THAT array. layout.navLinks is kept as a defensive fallback for a harness
+ *    that renders this component without going through astro-builder.
+ *
+ * 6. WHY THE CELL HOVER IS --accent-deep. It is the design's OWN hover: its
+ *    stylesheet declares a:hover{color:#7C2412}, which is --accent-deep. In the
+ *    demo that rule is shadowed by the inline colour on each nav cell, so the
+ *    designer's page happens to render no hover change — an artefact of inline
+ *    specificity, not a decision. Shipping a five-cell row with no hover state
+ *    would be an interaction regression dressed as fidelity.
+ *
+ * 7. THE BURGER AND DRAWER ARE AN ADDITION, NOT A RE-DERIVATION. The design is
+ *    a desktop artboard and specifies no mobile masthead at all; five mono
+ *    cells plus a CTA need roughly 530px of run and would push a 360px page
+ *    sideways. So the cell row becomes a drawer at ONE width (<=900px) — the
+ *    row leaves and the burger arrives together, so there is never a band where
+ *    neither is on screen — and nothing in the desktop rendering moves. The
+ *    burger is not a new shape: it is another ruled cell, opened by the same
+ *    --line hairline as the wayfinding cells, with no fill and no radius. The
+ *    drawer's ground is OPAQUE --paper rather than the bar's 95%, because it
+ *    hangs over live page content and a translucent panel would print the page
+ *    through the links; it is told apart from the page the way this design
+ *    tells everything apart — by rules and a shadow, never by a fill.
+ *
+ * 8. THE DRAWER REDRAWS THE FOCUS RING INSET, AT <=900px ONLY. The drawer is a
+ *    scroll container (max-height + overflow-y, and `overflow-y:auto` forces
+ *    overflow-x to `auto` too), so it clips its children's OUTSET box-shadow
+ *    and outline at its own padding box — the wrapper's ring is 6px of accent
+ *    outside the border edge, and each drawer row is exactly the drawer's
+ *    width, so on a phone the ring would have been clipped on both sides of
+ *    every row. The same two-colour ring is therefore redrawn with an inset
+ *    shadow and a negative outline-offset, inside the row where nothing can
+ *    clip it. THE ARITHMETIC, because the offset has to be exact for the ring
+ *    to read the same way round:
+ *      wrapper — box-shadow spread 6px accent covers 0..+6px outside the border
+ *      box; the 3px paper outline at offset 0 paints on top of 0..+3px. Read
+ *      outward-in that is 3px accent, then 3px paper against the row.
+ *      drawer  — inset shadow spread 6px accent covers 0..-6px inside; the 3px
+ *      paper outline at offset -6px sits at -6..-3px, i.e. it covers the INNER
+ *      half. Read outward-in: 3px accent, then 3px paper. Same two colours,
+ *      same two widths, same order.
+ *      (offset -3px would have put the paper on the OUTSIDE and mirrored the
+ *      ring; an audit caught exactly that here.)
+ *    Desktop keeps the wrapper's ring untouched. (The height cap is kept rather
+ *    than dropped: a drawer that runs past the fold with no way to reach its
+ *    last link is the worse bug.)
+ *
+ * 9. THE MOBILE CTA WRAPS, IT DOES NOT ELLIPSIS. From 900px down — the same
+ *    width at which the nav leaves the bar and the CTA becomes the only elastic
+ *    thing on it — the CTA takes `flex: 0 1 auto` plus BOTH `white-space:
+ *    normal` AND `overflow-wrap: anywhere`. The pair, never one: a label with no
+ *    spaces escapes its box when only white-space is set. It is set at 900 and
+ *    not at 520 because between those two widths the CTA is otherwise
+ *    `nowrap` and unshrinkable, and the grid's first track is minmax(0,1fr) —
+ *    a long owner label would crush the lock to zero and then run under the
+ *    wrapper's `overflow-x: hidden`, losing its own tail. Below 520 the cap on
+ *    its width lands on top (46vw, then 40vw). Truncating instead would hide
+ *    words the owner wrote; a two-line cell that shows all of them is the
+ *    lesser cost on a bar this short. (The WORDMARK does ellipsis, and that is
+ *    not the same call: a wordmark that wraps stops being a lock and grows a
+ *    sticky bar on every scroll.)
+ *
+ * 10. NO clamp() ANYWHERE IN THIS FILE, AND NO TYPE THAT GROWS AS THE VIEWPORT
+ *     NARROWS. Every type value is a fixed px or em that only ever steps DOWN:
+ *     wordmark 19 -> 17; lock padding 13/26 -> 12/18 -> 12/14; CTA 15/24 ->
+ *     12/14 -> 12/11 and .14em -> .1em; place tag .16em -> .12em -> hidden;
+ *     burger 46px -> 42px. The nav-cell type and the CTA type hold 10px at
+ *     EVERY width — the 48px drawer target is bought with the ROW, never by
+ *     growing type. With no clamps and a ladder monotonic in one direction, the
+ *     floor-under-a-cap inversion two earlier audits found is not expressible.
+ *     THE ONE VALUE THAT STEPS UP, stated so it is not read as that inversion:
+ *     a nav cell's padding goes 0/17 -> 14/26 at <=900 -> 14/18 at <=520. At
+ *     900 the cell stops being a cell in a horizontal run and becomes a
+ *     full-width drawer ROW, and 26px is the lock's own gutter, so the rows
+ *     line up under the wordmark instead of hanging off it. A full-width row
+ *     cannot push sideways whatever its padding — and it carries
+ *     overflow-wrap: anywhere for the label itself.
+ *
+ * 11. THE TWO INVISIBLE AUTHORED STRINGS are "Primary" on the nav landmark and
+ *     "Menu" on the icon-only burger. They are a11y affordances in the same
+ *     class as the wrapper's skip link, never page copy. The burger's three
+ *     bars are decorative and carry a LITERAL aria-hidden; nothing on this bar
+ *     carries a conditional one, so no element can end up with the attribute
+ *     twice. The lock gets no aria-label: its accessible name is its own text,
+ *     the owner's name and the owner's town, and appending a literal like
+ *     "home" would announce a word this file never received.
+ *
+ * CONTRAST, computed for this file against this design's palette (sRGB
+ * relative luminance, WCAG 2.x). Note the bar is 95% --paper over whatever
+ * scrolls beneath it, so the effective ground is very slightly modulated by
+ * the page; the figures are against --paper itself:
+ *   --ink on --paper                15.30  (wordmark)
+ *   --ink-2 on --paper               9.23  (nav cells, rest state)
+ *   --accent-deep on --paper         8.54  (nav cells, hover)
+ *   --ink-soft on --paper            5.77  (the place tag)
+ *   --on-accent on an --accent fill  5.67  (the CTA label)
+ * Every one clears AA for normal text; the tightest is the CTA label at 5.67.
+ * These are this file's own arithmetic, and where they overlap PageBN's table
+ * they REPRODUCE it exactly (ink/paper 15.30, ink-soft/paper 5.77,
+ * accent/paper 5.67). The wrapper's `.plate .cap` comment agrees as well: it
+ * reads 15.30:1 for --on-ink (#EFEEEA) on --ink (#17181A), which is the
+ * ink/paper pair inverted. (An earlier draft of that comment said 14.4; it has
+ * since been corrected at the wrapper, so there is nothing to report here.)
+ *
+ * Never visibility-gated in this file: PageBN owns `visibility.headerSection`.
+ *
+ * CLASS PREFIX: every scoped class is `pcbn-`, unique to this template. An
+ * audit had to rename a whole set of classes copied verbatim from a sibling;
+ * nothing here shares a name with HeaderBM's `tcbm-` or HeaderBL's `hb-`.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const c = (content as any) || {};
+const lay = (layout as any) || {};
+
+// ── ANCHOR GUARD ───────────────────────────────────────────────────────────
+// lib/derive-content-defaults.ts hard-codes nav hrefs to '#about', '#services',
+// '#why', '#work', '#visit' and navCtaHref to '#visit', and lib/astro-builder.ts
+// falls back to '#about', '#services', '#gallery', '#contact' — ids most designs
+// never render, so those links scrolled nowhere. Resolve every in-page href
+// against what PageBN ACTUALLY renders: keep it when the id exists, remap it
+// when this design carries the same section under another name, otherwise fall
+// back (nav rows pass '' and are dropped). Off-page hrefs — tel:, mailto:,
+// http(s) and anything else without a leading '#' — pass through untouched.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+// This design renames five derived targets: the services block IS the price
+// list, so '#services' (and '#rooms') land on '#menu'; the roastery's own story
+// absorbs both '#host' and '#why'; '#work' is the photo wall; '#location' and
+// '#contact' both mean the visit block — address, map and opening hours. A
+// booking link has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. 'Your Business' was a shipped placeholder that rendered as a
+// real customer's own wordmark; with nothing supplied the mark is omitted.
+// `||`, never `??`: genericContentSchema gives footer.brand fallbackPaths
+// ['business_name'] and ContentFieldsAuto's readWithFallbacks treats '' as
+// empty, so a CLEARED brand box still displays the business name in the
+// sidebar. With `??` an empty string would be a value and the page would go
+// wordmark-less while the sidebar showed a name.
+const brand = String(c.footer?.brand || lay.businessName || '').trim();
+// The place tag. One field, several consumers across the page, and nothing
+// derives it — on a first build it is simply absent rather than guessed out of
+// the address.
+const locality = String(c.footer?.locality ?? '').trim();
+
+// Nav rows. See decision 5: content.navbar_links is the array the sidebar list
+// edits, so it is the array `i` must index. `i` is the ORIGINAL index, captured
+// before the filter, so per-row edits stay aimed at the row the owner clicked
+// even after unreachable rows are dropped.
+const navSource: any[] = Array.isArray(c.navbar_links)
+  ? c.navbar_links
+  : (Array.isArray(lay.navLinks) ? lay.navLinks : []);
+const navLinks = navSource
+  .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
+  .filter((l: { href: string; label: string; i: number }) => Boolean(l.href && l.label));
+
+// The rust cell. Label and target both come from the Header group; an empty
+// label removes the whole element rather than leaving a rust rectangle.
+const ctaText = String(c.navCtaText ?? '').trim();
+// '#visit' is the fallback because that is where this design puts the address,
+// the map and the opening hours — the page has no checkout to send a booking
+// link to, and it is the id the derived default already names.
+const ctaHref = onPage(c.navCtaHref, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// The bar renders only when it CARRIES something. All four counted values are
+// body content; there is no tag and no headline on this bar for a derived
+// default to fake the gate with.
+const hasRail = Boolean(brand || locality || navLinks.length > 0 || ctaText);
+---
+{hasRail && (
+  <header class="pcbn-rail">
+    <div class="pcbn-grid">
+      {(brand || locality) && (
+        <a class="pcbn-lock" href="#main">
+          {brand && <span class="pcbn-mark" data-field="footer.brand">{brand}</span>}
+          {locality && <span class="pcbn-meta" data-field="footer.locality">{locality}</span>}
+        </a>
+      )}
+      {(navLinks.length > 0 || ctaText) && (
+        <div class="pcbn-right">
+          {navLinks.length > 0 && (
+            <nav class="pcbn-nav" id="pcbn-nav-BN" aria-label="Primary">
+              {navLinks.map((link) => (
+                <a
+                  href={link.href}
+                  data-field={`navbar_links.${link.i}.label`}
+                  data-href-field={`navbar_links.${link.i}.href`}
+                >{link.label}</a>
+              ))}
+            </nav>
+          )}
+          {/* OUTSIDE .pcbn-nav on purpose: .pcbn-nav becomes a drawer at
+              <=900px and the one action this template exists for must not
+              leave the bar with it. */}
+          {ctaText && (
+            <a
+              href={ctaHref}
+              class="btn btn--fill pcbn-cta"
+              target={ctaExternal ? '_blank' : undefined}
+              rel={ctaExternal ? 'noopener noreferrer' : undefined}
+              data-field="navCtaText"
+              data-href-field="navCtaHref"
+            >{ctaText}</a>
+          )}
+          {navLinks.length > 0 && (
+            <button class="pcbn-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="pcbn-nav-BN">
+              <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  </header>
+)}
+<script is:inline>
+  (function () {
+    // Null-guarded rather than conditionally rendered: an is:inline script must
+    // stay at the top level of the component, and with no bar (or no drawer) it
+    // simply exits. 'pcbn-rail' is template-unique because a preview harness
+    // can render two wrappers into one document and a shared class would
+    // cross-wire the drawers.
+    var rail = document.querySelector('header.pcbn-rail');
+    if (!rail) return;
+    var btn = rail.querySelector('.pcbn-burger');
+    if (!btn) return;
+    function setOpen(open) {
+      rail.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () { setOpen(!rail.classList.contains('is-open')); });
+    // '.pcbn-cta' is in this selector because the CTA lives OUTSIDE the drawer:
+    // tapping it while the drawer is open must still close the drawer.
+    rail.querySelectorAll('.pcbn-nav a, .pcbn-cta').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  /* The design: sticky, 95% bone, blur(12px), ruled beneath in full-strength
+     ink. The tint is a straight rgba() on --paper-rgb, which PageBN publishes
+     and buildOverrideCss remaps with the rest of the palette, so the design's
+     own rgba(239,238,234,.95) is expressible with no literal in it.
+     (Never write a literal end-style tag inside this block, comments included:
+      it is an HTML raw-text element and the parser would end the stylesheet
+      right there, silently truncating the file.) */
+  .pcbn-rail {
+    /* z-index is the design's own 50. The wrapper's skip link sits at 100, so
+       the bar clears the page and the skip link still clears the bar. */
+    position: sticky; top: 0; z-index: 50;
+    background-color: rgba(var(--paper-rgb), .95);
+    /* --rule-strong, NOT --line: see decision 1. */
+    border-bottom: 1px solid var(--rule-strong);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  /* The design's own two-column bar. align-items:stretch is what makes the nav
+     cells full-height; the explicit grid-column on each child keeps the lock
+     left and the cells right even in the degenerate cases the design never drew
+     (a shop with no name, or with no nav and no CTA). */
+  .pcbn-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+
+  /* The name lock: 13px/26px padding at a 14px gap, ink, exactly as drawn. The
+     44px floor only ever binds when the wordmark is absent and the place tag
+     carries the lock alone — with a wordmark the design's own metrics already
+     compute taller than a legal tap target. */
+  .pcbn-lock {
+    grid-column: 1;
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 26px; min-width: 0; min-height: 44px;
+    color: var(--ink);
+  }
+  .pcbn-mark {
+    font-family: var(--disp); font-weight: 800; font-size: 19px;
+    letter-spacing: -.02em; text-transform: uppercase; color: var(--ink);
+    /* line-height is the DESIGN'S value: it states none, so its wordmark
+       renders at `normal`. It is RESTATED rather than left to inherit because
+       the wrapper's body sets 1.62 and 19px of Archivo would sit in a 31px line
+       box, inflating the whole bar. It must not be TIGHTENED either: `normal`
+       is the face's own ascent+descent, and a smaller line box is clipped by
+       the overflow:hidden the ellipsis below requires — shaving the tail off a
+       descender and the tilde off a capital (Niño). */
+    line-height: normal;
+    /* A long single-word shop name must not push the CTA off a 360px screen;
+       flex items are blockified, so ellipsis applies here. */
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  /* NOT the wrapper's .mono primitive: that is 500 weight at .2em in --muted,
+     and the design's tag is 400 at .16em in --ink-soft. Close enough to be
+     mistaken for it, far enough to be visibly wrong if borrowed. */
+  .pcbn-meta {
+    flex: 0 1 auto; min-width: 0;
+    font-family: var(--mono); font-weight: 400; font-size: 10px;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--ink-soft);
+    line-height: normal;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+
+  /* The right-hand run. No gap and no padding of its own: the extra flex level
+     exists only so the wayfinding cells can be a <nav> landmark that the drawer
+     can move without taking the CTA and the burger with it. Desktop pixels are
+     identical to the design's single flex row. */
+  .pcbn-right { grid-column: 2; display: flex; align-items: stretch; min-width: 0; }
+  .pcbn-nav { display: flex; align-items: stretch; min-width: 0; }
+  .pcbn-nav a {
+    display: flex; align-items: center;
+    padding: 0 17px;
+    border-left: 1px solid var(--line);
+    font-family: var(--mono); font-weight: 400; font-size: 10px;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2);
+    white-space: nowrap;
+    transition: color .18s ease;
+  }
+  /* The design's own hover, straight from its stylesheet: #7C2412, which is
+     --accent-deep — see decision 6. Same theme axis as --accent, over a rest
+     colour of --ink-2. */
+  .pcbn-nav a:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .pcbn-nav a { transition: none; } }
+
+  /* The design's btnNav IS .btn + .btn--fill (decision 3), so nothing about the
+     box is restated here. Only its behaviour as the last cell in the run: it
+     stretches to the bar height and never shrinks below its label. */
+  .pcbn-cta { align-self: stretch; flex: 0 0 auto; }
+
+  /* The burger is another ruled cell, not a new shape: no fill, no radius,
+     opened by the same --line hairline as the wayfinding cells. */
+  .pcbn-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 46px; min-height: 44px; padding: 0 12px; flex: 0 0 auto;
+    background-color: transparent;
+    border: 0; border-left: 1px solid var(--line);
+    border-radius: var(--r); cursor: pointer;
+  }
+  .pcbn-burger span {
+    display: block; width: 100%; height: 2px; background-color: var(--ink);
+    transition: transform .2s ease, opacity .2s ease;
+  }
+  header.pcbn-rail.is-open .pcbn-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.pcbn-rail.is-open .pcbn-burger span:nth-child(2) { opacity: 0; }
+  header.pcbn-rail.is-open .pcbn-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (prefers-reduced-motion: reduce) { .pcbn-burger span { transition: none; } }
+
+  /* ── ONE COLLAPSE WIDTH (decision 7). The cell row leaves and the burger
+        arrives together, so there is never a band where neither is on screen.
+        The drawer is OPAQUE --paper: it hangs over live page content and the
+        bar's 95% would print the page through the links. */
+  @media (max-width: 900px) {
+    .pcbn-burger { display: flex; }
+    .pcbn-nav {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch;
+      background-color: var(--paper);
+      border-bottom: 1px solid var(--rule-strong);
+      box-shadow: 0 14px 30px rgba(var(--ink-rgb), .14);
+      max-height: 78vh; overflow-y: auto;
+    }
+    header.pcbn-rail.is-open .pcbn-nav { display: flex; }
+    /* The ROW becomes a 48px target; the TYPE holds the design's 10px. The
+       hairline turns from an opening border-left into a ruled underline, which
+       is how every other list in this template is drawn. */
+    .pcbn-nav a {
+      min-height: 48px; padding: 14px 26px;
+      border-left: 0; border-bottom: 1px solid var(--line);
+      white-space: normal; overflow-wrap: anywhere;
+    }
+    /* The drawer already carries its own closing rule; without this the last
+       row is ruled twice. */
+    .pcbn-nav a:last-child { border-bottom: 0; }
+    /* The inset ring — decision 8. Same colours, same widths, same order
+       reading outward-in as the wrapper's, drawn inside the row so the
+       drawer's own scroll clipping cannot eat it. The offset is -6px, NOT
+       -3px: the 3px paper outline has to land on the INNER half of the 6px
+       accent band, or the ring comes out mirrored. */
+    .pcbn-nav a:focus-visible {
+      outline-offset: -6px;
+      box-shadow: inset 0 0 0 6px var(--accent);
+    }
+    /* The CTA is the only elastic thing left on the bar once the nav is a
+       drawer, and the grid's first track floors at 0 — so it wraps from HERE,
+       not from 520, or a long owner label crushes the lock and then loses its
+       own tail under the wrapper's overflow-x:hidden. BOTH properties, never
+       one: an audit found a label with no spaces escaping its button because
+       only white-space was set (decision 9). */
+    .pcbn-cta {
+      flex: 0 1 auto; text-align: center;
+      white-space: normal; overflow-wrap: anywhere;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .pcbn-lock { padding: 12px 18px; gap: 10px; }
+    .pcbn-mark { font-size: 17px; }
+    .pcbn-meta { letter-spacing: .12em; }
+    .pcbn-nav a { padding: 14px 18px; }
+    /* The wrap pair is already set at 900 (above). What lands here is the WIDTH
+       CAP and the tighter box: the wrapper's own 520 pass drops .btn to
+       14px/18px, so the padding is restated to keep this bar's metric. */
+    .pcbn-cta {
+      max-width: 46vw;
+      padding: 12px 14px; letter-spacing: .1em;
+    }
+    .pcbn-burger { width: 42px; padding: 0 10px; }
+  }
+
+  /* At 360px the place tag is the first thing to go: the wordmark, the CTA and
+     the burger are all load-bearing, the tag is a flourish. */
+  @media (max-width: 400px) {
+    .pcbn-meta { display: none; }
+    .pcbn-lock { padding: 12px 14px; }
+    .pcbn-cta { max-width: 40vw; padding: 12px 11px; }
+  }
+</style>

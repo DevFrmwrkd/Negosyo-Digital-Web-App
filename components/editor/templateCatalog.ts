@@ -110,6 +110,7 @@ const FOODCRAFT_TEMPLATES: TemplateDef[] = [
     { letter: "AL", code: "foodcraft:AL", label: "Pastel Deco Panaderia", tagline: "Cream + terracotta · bakeries", preview: "/template-previews/al.html" },
     { letter: "BL", code: "foodcraft:BL", label: "Kalinaw Coffee", tagline: "Cream + rust · cafés, roasters & brunch", preview: "/template-previews/bl.html" },
     { letter: "BM", code: "foodcraft:BM", label: "Tahanan Cafe", tagline: "White + walnut · ruled, editorial cafés", preview: "/template-previews/bm.html" },
+    { letter: "BN", code: "foodcraft:BN", label: "Panday Coffee Works", tagline: "Bone + rust · roasteries & coffee bars", preview: "/template-previews/bn.html" },
 ];
 
 const SERVICES_TEMPLATES: TemplateDef[] = [

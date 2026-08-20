@@ -1,0 +1,423 @@
+---
+/**
+ * foodcraft / TestimonialsBN — "Panday Coffee Works" ON RECORD.
+ *
+ * ROLE: the social proof a stranger reads before walking in, set as a page of a
+ * technical document rather than as cards. There is no card, no fill, no
+ * avatar and no radius: the reviews are a RULED LEDGER — a strong ink rule
+ * opens the list, and every quote is one three-column row (index · quote ·
+ * attribution) closed by a grey hairline. Which is precisely why this file
+ * prints nothing the owner did not put on record: a ledger that invents a line
+ * is worse than no ledger.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from
+ * the `data-component="TESTIMONIALS"` element of
+ * "Panday Coffee Works Landing.dc.html":
+ *   section       border-bottom 1px #17181A, grid minmax(0,52px) minmax(0,1fr)
+ *                 → the wrapper's .sec primitive, restated NOWHERE here
+ *   rail          border-right 1px #C8C7C2, items end / centred, padding 20px 0
+ *                 → .rail
+ *   rail label    vertical-rl + rotate(180deg), mono 10px / .3em / caps /
+ *                 #A8351B, "06 / On record"                     → .rail-t
+ *   content cell  padding 52px 34px
+ *   h2            800, clamp(28px,3.6vw,50px) / 1 / -.03em / caps,
+ *                 margin 0 0 32px, #17181A
+ *   list          border-top 1px #17181A
+ *   row           <figure>, margin 0, grid
+ *                 minmax(0,64px) minmax(0,1fr) minmax(0,200px), gap 26px,
+ *                 padding 26px 0, border-bottom 1px #C8C7C2,
+ *                 align-items: baseline
+ *   index         mono 11px, #A8351B (no tracking, no caps, weight 400)
+ *   quote         <blockquote>, margin 0, 17.5px / 1.68, #17181A
+ *   attribution   <figcaption>, mono 10px / .14em / caps, #5A5C60
+ * Mapped to the wrapper tokens holding those exact values: #EFEEEA = --paper,
+ * #17181A = --ink and, on the two section rules, --rule-strong; #C8C7C2 =
+ * --line; #A8351B = --accent; #5A5C60 = --ink-soft; 52px = --rail-w; 0 = --r;
+ * Archivo = --sans/--disp; IBM Plex Mono = --mono. NO LITERAL HEX APPEARS
+ * BELOW. Every colour the design uses in this section already had a name.
+ *
+ * CLASS PREFIX `pdw-`, chosen for THIS template (the design's own slot ids are
+ * `pd-*`). It is deliberately NOT the `tah-` set from TestimonialsBM nor the
+ * `rg-` set from TestimonialsBL: an audit had to rename a whole class set that
+ * had been copied verbatim from the sibling before it, and two templates
+ * sharing a scoped class name makes every future diff read as a shared
+ * component that is not one. Only the house STYLE was taken from BM — this doc
+ * block's shape, the coercion helpers, the guard discipline.
+ *
+ * CLASS-NAME NOTE (theme engine, verified in lib/genericThemeOverrides.ts):
+ * the section must NOT be class "testi" — buildOverrideCss emits
+ * `.trust, .trust .num, .trust .lbl, .testi, .testi p { color: … !important }`
+ * and would repaint the quotes with a scheme colour this design never chose.
+ * It is "pdw-record". The file emits no button and no `.hero`/`.cta-band`/
+ * `.nav-cta`/`.nav-right`/`.btn-primary` class, so no other engine label pin
+ * reaches anything here.
+ *
+ * READS content.testimonials.items ({quote, who, rating}); tolerates the legacy
+ * bare array parked at content.testimonials and the legacy author/name
+ * spellings for the attribution. The data-field always names the CANONICAL
+ * path, so the first sidebar edit migrates a legacy row onto the real key.
+ *
+ * COERCED AT EVERY READ — THE ROW FIRST, THEN EVERY FIELD. Nothing upstream
+ * type-checks either one. astro-builder's normalizeBlock passes a non-object
+ * entry straight through, so `items` can hold a null, and reading `.quote` off
+ * that null throws at BUILD time and takes the whole page down. So each row is
+ * normalised to an object before a single field is read, and a bare STRING row
+ * is read as the quote itself — the legacy shape where the row IS the quote —
+ * so owner text is never silently dropped. Then the fields: a quote arriving as
+ * a number crashes the build on .trim(); one arriving as an object prints
+ * "[object Object]" through set:html. str() passes strings and finite numbers
+ * and treats everything else as absent. Blank-after-trim counts as absent too,
+ * so a whitespace-only `who` cannot draw an empty figcaption holding a third of
+ * the row open. normalizeBlock aliases name/author onto `who` only when `who`
+ * is null, so a row carrying who:'' keeps its blank; the fallback chain below
+ * is `||` and not `??` so that row still prints the name the owner did type.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
+ * group "testimonials" — a data-field on a path the schema does not own is a
+ * dead hook that no sidebar input can focus)
+ *   testimonials.headline           — the uppercase Archivo head, set:html so an
+ *                                     owner can place this design's second
+ *                                     voice — a COLOUR change to rust, never an
+ *                                     italic — inside their own sentence
+ *   testimonials.items.${i}.quote   — set:html, the 17.5px blockquote
+ *   testimonials.items.${i}.who     — the tracked mono caps attribution
+ *
+ * DERIVED, not authored, and therefore carrying no data-field:
+ *   the rail label "06 / On record" — the spine's index, and the number the
+ *     design itself prints on this element. The index counts only the
+ *     RAIL-BEARING sections, in render order, starting at the HERO: Hero 00,
+ *     About 01, Services 02, Why 03, Gallery 04, How 05, Testimonials 06 (the
+ *     design continues Credentials 07, Location 08, Area 09, Faq 10, CtaBand
+ *     11). Header, Trust and Footer draw no rail in this design and are not
+ *     counted, which is why 06 is NOT this section's ordinal in PageBN's
+ *     fifteen-import list. It is decoration, never stored, never edited.
+ *   the row numeral 01, 02, 03 — the DISPLAY position after blank rows are
+ *     dropped, zero-padded, so the column always counts 01,02,03 with no hole
+ *     in it. The data-field indexes beside it are the ORIGINAL ones (below).
+ *   the reveal delay, capped at 3 because the wrapper only defines delays 1-3,
+ *     so a fourth row must not wait forever.
+ *
+ * ANTI-FABRICATION — the hard rule of this section:
+ *   - NO STAR ROW, AND THAT IS NOT AN OVERSIGHT. This design draws none: the
+ *     row opens with a mono index numeral, and the only mark it gives a review
+ *     is the hairline that closes it — which is exactly the "plain rule" a
+ *     review with no rating is supposed to get. So testimonials.items.${i}
+ *     .rating is deliberately NOT rendered here rather than being given an
+ *     element the designer never drew. Inventing a star row would be inventing
+ *     a claim on the owner's behalf in a template whose whole grammar is
+ *     hairlines. It is listed under DELIBERATELY NOT RENDERED below so nobody
+ *     reads it as a missing hook; if it is ever wanted, it needs a design
+ *     decision first, not a quiet addition.
+ *   - NO review count, NO average score, NO platform name, NO badge. None of it
+ *     is in the data contract and the design draws none.
+ *   - Quote and attribution are guarded independently and every guard sits
+ *     OUTSIDE its tag, so an unattributed quote renders as a quote rather than
+ *     as an empty caption holding the row's third column open.
+ *   - A row with no quote is DROPPED: the row IS the quote, so a name-only row
+ *     would draw a numbered hairline attributing nothing to somebody. The row
+ *     stays in the sidebar and reappears the instant a quote is typed.
+ *
+ * SECTION GATE: the whole <section> renders only when at least one row has a
+ * real quote. It deliberately does NOT count the headline. A headline can exist
+ * here with no rows at all — the sidebar owns testimonials.headline as its own
+ * input, and AI extraction can fill it — and a gate counting it would ship an
+ * uppercase heading, a strong ink rule and nothing under it, the one thing a
+ * proof section must never do. (Precisely: lib/derive-content-defaults.ts emits
+ * NO testimonials block — its Derived shape carries hero/about/services/why/
+ * how/gallery/faq/area/location/ctaBand and no testimonials — so unlike most
+ * blocks on this page the head here is never machine-filled. The gate is
+ * body-only regardless, because the failure it prevents is a head with no rows,
+ * whoever typed the head.) The list's opening rule and each row's closing
+ * hairline therefore only ever exist because a real row exists.
+ *
+ * ORIGINAL INDEXES: `i` is captured BEFORE blank rows are dropped, so a blank
+ * row 2 cannot misdirect an edit of row 3 into row 2. Worked through: items
+ * [a, blank, c] renders two rows; the second is items[2], and a data-field
+ * built from the DISPLAY position would name items[1] — the blank row that is
+ * still sitting in the sidebar — so typing into c would overwrite it instead.
+ * The visible numeral does use the display position, because it is decoration
+ * and must read 01, 02, 03 rather than 01, 03, 04.
+ *
+ * NO AUTHORED VISIBLE STRING comes from this file except the rail index, which
+ * the spine defines as derived decoration and which is aria-hidden. There is no
+ * star row here, so there is no aria-label either.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   testimonials.tag      — the schema declares an eyebrow, but this design puts
+ *                           NO .kick in this section: the rotated rail index
+ *                           already occupies that beat, and a second small
+ *                           rust-mono label directly above the head would print
+ *                           the same idea twice at the same weight.
+ *   testimonials.source   — a "Reviews on Google" line is a platform claim
+ *                           nothing in the pipeline verifies, and the design
+ *                           draws no source line under the head.
+ *   testimonials.bigQuote — there is no pull-quote element in this design.
+ *   testimonials.items.${i}.rating — see ANTI-FABRICATION above.
+ *   No image: the design's row is type only, with no avatar plate — so there is
+ *   no .plate, no .ph, no .cap, no role="img", and nothing that would need an
+ *   owner-authored accessible name.
+ *
+ * NO ANCHOR HELPER, and that is not an omission. The design's TESTIMONIALS
+ * element contains no <a> at all, so this file emits no href and owns no
+ * data-href-field; copying onPage()/PAGE_ANCHORS/ANCHOR_ALIAS in here would be
+ * an unused function rather than a safeguard. For the same reason there is no
+ * focusable element in this section, so the wrapper's square duo focus ring is
+ * never reached from here. The section also takes NO id: the page's ids are
+ * menu / about / gallery / visit / faq / main and the design gives this section
+ * none of them.
+ *
+ * WHY .h2 IS RESIZED HERE. The wrapper's shared .h2 is clamp(28px,4.4vw,62px);
+ * every section headline in this design, including this one, is
+ * clamp(28px,3.6vw,50px)/1. The size is therefore restated, and ONLY the size,
+ * the leading and the 32px margin — never the family, weight, tracking, caps or
+ * colour, which stay on the primitive. Consequence, stated so it is not read as
+ * a bug: the wrapper's ≤760 step for .h2 (clamp(26px,7.4vw,40px)) is outranked
+ * for font-size by the rule below. That is deliberate. That step RAISES the
+ * headline from 28px at 761px to 40px at 760px, and R8's ladder must not grow
+ * as the viewport narrows; the design's own clamp already floors at 28px, which
+ * is the mobile size. The other two declarations in the wrapper's ≤760 rule,
+ * max-width:none and overflow-wrap:anywhere, are untouched by this file and
+ * still apply, and the 20ch cap the wrapper puts on a desktop headline is left
+ * exactly as the house set it.
+ * NOT A LONE FORK, checked before it was written: AboutBN, ServicesBN,
+ * GalleryBN, HowBN, CredentialsBN and FaqBN each state the same
+ * clamp(28px,3.6vw,50px) once, at base, with no font-size of their own in any
+ * query — so every BN headline holds one curve and this section is in step with
+ * its siblings at every width, not smaller than them. The ≤760 step is a
+ * WRAPPER fault affecting any section that renders a bare .h2; it is raised
+ * against PageBN, where all fifteen would get the fix, rather than patched from
+ * here.
+ *
+ * WHY .fig IS BORROWED FOR THE NUMERAL: it is already mono, rust and
+ * tabular-nums, which is what an index column wants — a "1" and a "0" must
+ * occupy the same width down the page. Only its font-weight is pulled back to
+ * 400, because the design's numeral inherits the body weight and .fig sets 500.
+ *
+ * CONTRAST, computed from this design's native palette (sRGB relative
+ * luminance), not copied:
+ *   quote --ink on --paper 15.30 · numeral --accent on --paper 5.67 ·
+ *   attribution --ink-soft on --paper 5.77.
+ *   All three are NORMAL text — 17.5px regular, 11px, 10px — so 4.5 is the bar
+ *   that applies and none of them may take the 3:1 large-text relaxation. The
+ *   HEADLINE is large text (800 weight, 28-50px), and it is --ink on --paper,
+ *   the same 15.30 as the quote, so it clears either bar with room to spare.
+ *   Cross-checked, not copied: PageBN's own table prints ink/paper 15.30,
+ *   accent/paper 5.67 and ink-soft/paper 5.77 — the same three figures this
+ *   file recomputed independently. They agree.
+ *   --ink-soft and --accent are both repainted by buildOverrideCss, so these
+ *   are native values and not a guarantee under every scheme pick.
+ *
+ * RESPONSIVE: the wrapper owns the shared 760 and 520 pass, including the rail
+ * going horizontal. This file owns only its own row grid: three columns to two
+ * at 900 (the attribution drops under the quote, staying in the quote's column
+ * so it does not sit beneath the index), two to one at 520. Every type size in
+ * this file only ever DECREASES as the viewport narrows, at every breakpoint,
+ * and there is no button here to hold a nowrap label.
+ */
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+const test = content.testimonials || {};
+
+/* Coerce at EVERY read — see COERCED AT EVERY READ above. A string passes; a
+   finite number passes as its digits; null, undefined, NaN, an array and an
+   object are not content and become ''. Nothing downstream calls a string
+   method on raw input, so no shape from the pipeline can fail the build. */
+const str = (v: unknown): string =>
+  typeof v === 'string' ? v : (typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+
+const headline = str(test.headline).trim();
+
+type Item = {
+  quote?: unknown;
+  who?: unknown;
+  author?: unknown;
+  name?: unknown;
+};
+
+/* Tolerate both shapes at every read: the canonical object with .items, and the
+   legacy bare array parked at content.testimonials. */
+const items: Item[] = Array.isArray(test.items)
+  ? test.items
+  : (Array.isArray(test) ? (test as Item[]) : []);
+
+/* Normalise ONCE, carrying the ORIGINAL array index, then drop the rows that
+   cannot render an honest line. Gating on `rows` rather than `items` also means
+   a block of blank rows hides the ledger instead of ruling three empty lines. */
+const rows = items
+  .map((raw, i: number) => {
+    /* THE ROW IS COERCED BEFORE ANY FIELD IS READ. A null row would throw on
+       `.quote` and fail the build; a bare string row is the quote the owner
+       typed and is kept, not dropped. */
+    const it: Item = raw && typeof raw === 'object' ? (raw as Item) : ({ quote: raw } as Item);
+    return {
+      /* the quote keeps its own leading/trailing space — only the GUARD is
+         trimmed, so a blank-looking quote cannot open a numbered row */
+      quote: str(it.quote),
+      who: str(it.who).trim() || str(it.author).trim() || str(it.name).trim(),
+      i,
+    };
+  })
+  .filter((r) => Boolean(r.quote.trim()));
+
+/* The spine's index for this section's place in the render order. Decoration,
+   never stored, never editable — see DERIVED above. */
+const RAIL_INDEX = 'On record';
+
+/* Display position, zero-padded like the design's 01 / 02 / 03. Never the
+   original index: this numeral is decoration and must not count 01, 03, 04. */
+const numeral = (n: number): string => (n < 10 ? '0' + String(n) : String(n));
+---
+{rows.length > 0 && (
+  <section class="sec pdw-record">
+    <div class="rail">
+      <span class="rail-t" aria-hidden="true">{RAIL_INDEX}</span>
+    </div>
+    <div class="sec-body pdw-body">
+      {headline && (
+        <h2 class="h2 pdw-h2 reveal" data-field="testimonials.headline" set:html={headline}></h2>
+      )}
+      <div class="pdw-list">
+        {rows.map((row, k) => (
+          <figure class="pdw-row reveal" data-delay={String(Math.min(k, 3))}>
+            <span class="fig pdw-n" aria-hidden="true">{numeral(k + 1)}</span>
+            <blockquote
+              class="pdw-quote"
+              data-field={`testimonials.items.${row.i}.quote`}
+              set:html={row.quote}
+            ></blockquote>
+            {row.who && (
+              <figcaption class="pdw-who" data-field={`testimonials.items.${row.i}.who`}>{row.who}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* ── the content cell. The wrapper's shared .sec-body pads 44/34/40; the
+        design pads THIS cell 52px 34px, so only the vertical rhythm is
+        restated and the horizontal padding is left on the primitive (its
+        clamp already caps at the design's 34px). One clamp, no breakpoint
+        override, so the ladder cannot invert. */
+  .pdw-body {
+    padding-top: clamp(30px, 4.6vw, 52px);
+    padding-bottom: clamp(30px, 4.6vw, 52px);
+  }
+
+  /* ── the head. Size, leading and margin only — see WHY .h2 IS RESIZED HERE.
+        Family, weight, tracking, uppercase and colour all stay on the shared
+        primitive, and no font-size for this element appears in any media query
+        in this file. */
+  .pdw-record .pdw-h2 {
+    font-size: clamp(28px, 3.6vw, 50px);
+    line-height: 1;
+    margin: 0 0 32px;
+    overflow-wrap: anywhere;
+  }
+  /* set:html output carries no scope attribute, so an owner's <em> inside the
+     headline is only reachable through :global(). This design's second voice is
+     a COLOUR change; Archivo has no italic worth using, so font-style is pinned
+     back to normal in case a browser or an editor paste italicises it. */
+  .pdw-record .pdw-h2 :global(em),
+  .pdw-record .pdw-h2 :global(.em) { font-style: normal; color: var(--accent); }
+
+  /* ── the ledger. The list OPENS on the strong ink rule, the same weight as
+        the rule under the whole section; the interior divisions are grey. That
+        pairing is the design's grammar and the reason --rule-strong exists. */
+  .pdw-list { border-top: 1px solid var(--rule-strong); }
+
+  /* ── one review = one ruled row. <figure> carries a UA side margin, so the
+        reset is load-bearing rather than tidying. Baseline alignment is the
+        design's: the numeral, the first line of the quote and the attribution
+        all sit on one line, which is what makes this read as a document. */
+  .pdw-row {
+    margin: 0;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 64px) minmax(0, 1fr) minmax(0, 200px);
+    gap: 26px;
+    padding: 26px 0;
+    border-bottom: 1px solid var(--line);
+    align-items: baseline;
+  }
+
+  /* ── the index numeral. .fig already supplies mono, rust and tabular-nums;
+        only the weight is pulled back to the design's inherited 400. */
+  .pdw-n {
+    font-size: 11px;
+    font-weight: 400;
+    min-width: 0;
+  }
+
+  /* ── the quote. <blockquote> carries a 40px UA side margin, so this reset is
+        load-bearing too. Archivo at the design's 17.5px — no serif, no italic,
+        no quotation glyphs: this template quotes people the way a report does. */
+  .pdw-quote {
+    margin: 0;
+    min-width: 0;
+    font-family: var(--sans);
+    font-size: 17.5px;
+    line-height: 1.68;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* An owner's <em> inside a quote keeps the quote's own ink. The rust emphasis
+     is the HEADLINE's voice; recolouring a customer's words rust would read as
+     the roastery talking, not the customer. */
+  .pdw-quote :global(em),
+  .pdw-quote :global(.em) { font-style: normal; color: inherit; }
+  /* The wrapper gives every <p> a 1em bottom margin. A quote pasted as one
+     paragraph would then hang an empty line under the last line of the row. */
+  .pdw-quote :global(p) { margin: 0 0 0.6em; }
+  .pdw-quote :global(p:last-child) { margin-bottom: 0; }
+
+  /* ── the attribution. Written scoped rather than borrowed from the shared
+        .mono (10px / .2em / 500 / --muted): the design's figcaption here is
+        10px / .14em / 400 on soft ink, and borrowing would quietly ship a
+        different line than the design specifies. */
+  .pdw-who {
+    min-width: 0;
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── RESPONSIVE. This file owns only its own row grid; the wrapper owns the
+        shared 760 / 520 pass and the rail collapse. Every size below is lower
+        than the one it replaces, at every step, so nothing grows as the
+        viewport narrows. */
+  @media (max-width: 900px) {
+    /* Three columns to two. The attribution moves UNDER the quote rather than
+       under the numeral — grid-column:2 is what puts it there; auto-placement
+       would drop it into the index column and break the ledger's left edge. */
+    .pdw-row {
+      grid-template-columns: minmax(0, 44px) minmax(0, 1fr);
+      column-gap: 18px;
+      row-gap: 10px;
+    }
+    .pdw-who { grid-column: 2; }
+    .pdw-quote { font-size: 16.5px; }
+  }
+  @media (max-width: 520px) {
+    /* Two columns to one. At 360px the row is a stack of three full-width
+       lines, every one of which already carries overflow-wrap:anywhere, so no
+       unbroken string can push the page sideways. */
+    .pdw-record .pdw-h2 { margin-bottom: 24px; }
+    .pdw-row {
+      grid-template-columns: minmax(0, 1fr);
+      padding: 22px 0;
+      row-gap: 8px;
+    }
+    .pdw-who { grid-column: auto; font-size: 9.5px; letter-spacing: 0.12em; }
+    .pdw-quote { font-size: 15.5px; line-height: 1.6; }
+    .pdw-n { font-size: 10.5px; }
+  }
+</style>

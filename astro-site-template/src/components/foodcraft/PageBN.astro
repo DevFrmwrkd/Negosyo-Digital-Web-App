@@ -1,0 +1,496 @@
+---
+/**
+ * foodcraft / PageBN — "Panday Coffee Works" (a working roastery that sells
+ * coffee at the front).
+ *
+ * Bone & rust, set like a technical document: Archivo 800 in tight uppercase
+ * over IBM Plex Mono, on a newsprint-bone ground, with NO radius anywhere and
+ * a 1px ink rule between every section. It is the only template in this family
+ * that is not soft.
+ *
+ * THE SPINE IS THE SIGNATURE. Every section is a two-column grid —
+ * `minmax(0,52px) minmax(0,1fr)` — whose narrow left column is a RAIL carrying
+ * a rotated mono index label ("00 / Index", "01 / About"). The rail is drawn
+ * with a right hairline and the section with a bottom one, so the whole page
+ * reads as one ruled sheet rather than a stack of cards. A section that skips
+ * the rail breaks the spine, which is why .sec and .rail are wrapper
+ * primitives rather than something each section invents.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from
+ * "Panday Coffee Works Landing.dc.html".
+ *
+ * TOKEN NAMING IS CHECKED AGAINST THE ENGINE, NOT ASSUMED. buildOverrideCss
+ * owns a list of colour words and wins each with !important — gold peach amber
+ * lime blue mint yellow teal forest olive brass — plus paper, card, ink,
+ * ink-soft, line, muted, the rgb triplets, and EXACTLY these ten of the
+ * accent/on families and no others:
+ *   --accent --accent-deep --accent-light --accent-soft --accent-rgb
+ *   --on-accent --on-primary --on-ink --on-paper --on-brass
+ * The list is exact on purpose; an earlier draft wrote "accent-any, on-any",
+ * which claims tokens the engine has never heard of are owned. A sibling
+ * template shipped a token
+ * called --amber with a comment claiming the engine did not know it; the engine
+ * rewrites --amber to palette.primary, and every scheme pick would have
+ * repainted a band. --orange, --cream and --blush below were each grepped
+ * against that file before use and are absent from it.
+ *
+ *   OWNED, deliberately: --paper --card --ink --ink-soft --line --muted
+ *   --accent --accent-deep and the rgb triplets. These are the axes a scheme
+ *   SHOULD move, and this design survives them because its structure is rules
+ *   and type, not colour. Note --muted is remapped to palette.inkSoft, so the
+ *   figure below is the native value and not a guarantee.
+ *
+ *   INVISIBLE, verified: --tint --well --ink-2 --ink-3 --orange --cream
+ *   --blush --on-band. The CTA band is the ONE section whose ground is the
+ *   accent itself, so its label colours must not drift with it.
+ *
+ * ROLE OF THIS FILE: emits the WHOLE document (doctype, head, tokens, fonts,
+ * Leaflet, skip link, scroll-reveal). Does NOT compose with BaseLayout. It is
+ * the only file here that touches `siteData`; the 15 sections receive only
+ * `layout` + `content`.
+ *
+ * EDITABLE HOOKS OWNED BY THIS FILE: none. It READS layout.businessName /
+ * layout.tagline (<title>), content.description, layout.favicon and
+ * layout.ogImage || layout.favicon.
+ *
+ * THE ONE HARDCODED VISIBLE STRING is the skip link's "Skip to content".
+ *
+ * VERIFIED CONTRAST — COMPUTED from the hexes declared below (sRGB relative
+ * luminance, WCAG 2.x), not estimated. An earlier draft of this table stated
+ * "ink on an orange fill 8.55" when the palette gives 5.59; a figure that errs
+ * HIGH is the dangerous kind, because it can wave through a pair that is
+ * actually under the bar. Re-run the arithmetic if you touch a hex.
+ *   ink/paper 15.30 · ink/tint 13.71 · ink/well 12.96 · ink/cream 16.57
+ *   ink-soft/paper 5.77 · muted/paper 5.77 (same hex, one value)
+ *   accent/paper 5.67 (mono kickers, the rail label, the headline's second
+ *   voice) · paper on an accent fill 5.67 · ink on an orange fill 5.59
+ *   blush on an accent fill 5.09 — the CTA band's eyebrow, rail label and
+ *   second voice. NOT ink on blush: --blush is never a fill anywhere in this
+ *   template, only a label colour on the one accent ground.
+ *   Nothing in this design sits below AA — the tightest pair is 5.09.
+ *
+ * FORBIDDEN CLASS NAMES here: .btn-primary .btn-ghost .btn-yellow .btn-light
+ * .nav-cta .nav-right .testi .cta-band .trust, and `.hero` on a <section>.
+ * Buttons here are .btn--fill / .btn--ink / .btn--orange / .btn--cream.
+ *
+ * FONT-PAIRING SENTINEL (wrapper-local): astro-builder defaults
+ * layout.fontPairing to the literal 'modern' and resolveTheme's lockVariant
+ * only blanks ''/'auto'/'default', so without this buildOverrideCss force-swaps
+ * Archivo + IBM Plex Mono with !important on ~every real site.
+ *
+ * RENDER ORDER, exactly as the design draws it: Header, Hero, Trust, About,
+ * Services (the menu), Why, Gallery, How, Testimonials, Credentials, Location
+ * (visit), Area, Faq, CtaBand, Footer.
+ *
+ * Leaflet: LOADS leaflet.css + leaflet.js and defines
+ * window.__foodcraftBNInitMap. LocationBN calls that exact string. Keep
+ * `el.innerHTML = ''` in the boot and keep id="map" literal.
+ */
+import HeaderBN from './header/HeaderBN.astro';
+import HeroBN from './hero/HeroBN.astro';
+import TrustBN from './trust/TrustBN.astro';
+import AboutBN from './about/AboutBN.astro';
+import ServicesBN from './services/ServicesBN.astro';
+import WhyBN from './why/WhyBN.astro';
+import GalleryBN from './gallery/GalleryBN.astro';
+import HowBN from './how/HowBN.astro';
+import TestimonialsBN from './testimonials/TestimonialsBN.astro';
+import CredentialsBN from './credentials/CredentialsBN.astro';
+import LocationBN from './location/LocationBN.astro';
+import AreaBN from './area/AreaBN.astro';
+import FaqBN from './faq/FaqBN.astro';
+import CtaBandBN from './ctaBand/CtaBandBN.astro';
+import FooterBN from './footer/FooterBN.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __resolvedPairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __pairing = (layout.fontPairing === 'modern' && !layout.fontPairingExplicit) ? '' : __resolvedPairing;
+const __fontHref = buildFontHref(__pairing);
+const __overrideCss = buildOverrideCss(__themeScheme, __pairing);
+const __desc = (content as any).description || '';
+const __favicon = layout.favicon || '';
+const __og = layout.ogImage || layout.favicon || '';
+
+---
+<!DOCTYPE html>
+<html lang="en-PH" data-page="BN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{title}</title>
+{__desc && <meta name="description" content={__desc} />}
+<meta name="theme-color" content="#EFEEEA" />
+<meta property="og:title" content={title} />
+{__desc && <meta property="og:description" content={__desc} />}
+{__og && <meta property="og:image" content={__og} />}
+{__favicon && <link rel="icon" href={__favicon} />}
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+{__fontHref && <link href={__fontHref} rel="stylesheet" />}
+<!-- Leaflet. BOTH tags are load-bearing: without the stylesheet the tiles
+     render unpositioned, and without the script window.L never exists, the boot
+     returns immediately, and LocationBN's drawn fallback map-face is all an
+     owner ever sees. check-template-blocks.mjs fails that combination. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+<style is:global>
+    /* ═══════════════════════════════════════════════════════════════════════
+       Every selector is prefixed html[data-page="BN"]. An unscoped rule here
+       reaches all 65 templates: two of them once shipped an unscoped
+       h1,h2,h3,h4{text-transform:uppercase} and capitalised every mixed-case
+       design in the catalogue. (Never write a literal end-style-tag inside
+       this block, comments included — it is an HTML raw-text element.)
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    html[data-page="BN"] {
+      --paper: #EFEEEA;
+      --card: #F2F1ED;
+      --tint: #E4E2DC;
+      --well: #DEDCD6;
+      --cream: #FBF6F4;
+      --ink: #17181A;
+      --ink-2: #3C3E42;
+      --ink-3: #33353A;
+      --ink-soft: #5A5C60;
+      --muted: #5A5C60;
+      --line: #C8C7C2;
+      /* The rule BETWEEN sections is ink, not --line: the design draws the
+         spine in full strength and the interior divisions in grey. */
+      --rule-strong: #17181A;
+
+      --accent: #A8351B;
+      --accent-deep: #7C2412;
+      --accent-rgb: 168,53,27;
+      --orange: #E0713F;
+      --blush: #F6DDD6;
+      --on-band: #EFEEEA;
+
+      --ink-rgb: 23,24,26;
+      --paper-rgb: 239,238,234;
+      --on-ink: #EFEEEA;
+      --on-paper: #17181A;
+      --on-accent: #EFEEEA;
+      --on-primary: #EFEEEA;
+
+      --disp: "Archivo", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      --serif: "Archivo", system-ui, Helvetica, Arial, sans-serif;
+      --sans: "Archivo", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      --maxw: 100%;
+      /* NO RADIUS. Not small — none. A rounded corner anywhere in this design
+         reads as a different template. */
+      --r: 0;
+      /* The spine's rail width, referenced by .sec and .rail together so they
+         can never disagree. */
+      --rail-w: 52px;
+    }
+
+    html[data-page="BN"] *,
+    html[data-page="BN"] *::before,
+    html[data-page="BN"] *::after { box-sizing: border-box; }
+    html[data-page="BN"] { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 76px; }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BN"] { scroll-behavior: auto; } }
+    html[data-page="BN"] body {
+      margin: 0; padding: 0;
+      background-color: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 16px; line-height: 1.62;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    html[data-page="BN"] img { max-width: 100%; display: block; }
+    html[data-page="BN"] a { color: inherit; text-decoration: none; }
+    html[data-page="BN"] ::selection { background: var(--accent); color: var(--on-accent); }
+    /* text-transform DECLARED, not defaulted — the headline voice here IS
+       uppercase, and it must be this file that says so rather than a rule
+       leaking in from another template's global block. */
+    html[data-page="BN"] :where(h1,h2,h3,h4) {
+      margin: 0; font-family: var(--disp); font-weight: 800; color: var(--ink);
+      letter-spacing: -.03em; line-height: .98; text-transform: uppercase;
+    }
+    html[data-page="BN"] :where(p) { margin: 0 0 1em; }
+
+    /* ── THE SPINE ─────────────────────────────────────────────────────────
+       Every section is rail + content, ruled beneath. Sections carry .sec; the
+       rail's rotated label is .rail. Both live here so the spine cannot drift
+       section to section. */
+    html[data-page="BN"] :where(.sec) {
+      display: grid; grid-template-columns: minmax(0, var(--rail-w)) minmax(0, 1fr);
+      border-bottom: 1px solid var(--rule-strong);
+      padding: 0;
+    }
+    html[data-page="BN"] :where(.rail) {
+      border-right: 1px solid var(--line);
+      display: flex; align-items: flex-end; justify-content: center;
+      padding: 20px 0; min-width: 0;
+    }
+    /* THE RAIL LABEL, and its NUMERAL.
+       The design numbers the rails 00-11 down the page, and that running index
+       is the most document-like thing about the whole template. The numerals
+       were literals typed into each section, which meant any section that did
+       not render left a hole in the sequence: switch Credentials off, or give a
+       site no credentials to show, and the page counted 06 __ 08. A gap in a
+       sequential index does not read as a choice, it reads as a printing fault.
+
+       A CSS counter increments once per RENDERED .rail-t, so it is right for
+       both causes — the admin's toggle and a section's own empty-content gate —
+       and no section has to know what its neighbours did. The wrapper cannot
+       compute this itself: it can see the visibility flags but not the twelve
+       content gates, and duplicating those here is exactly the kind of second
+       copy that goes stale.
+
+       Counting starts at -1 so the first rendered rail is 00, matching the
+       design. decimal-leading-zero pads to two digits, also the design's.
+       Generated content costs nothing here: every .rail-t is aria-hidden, so
+       the numeral was never going to reach an assistive reader anyway. */
+    html[data-page="BN"] body { counter-reset: rail -1; }
+    html[data-page="BN"] :where(.rail-t) {
+      counter-increment: rail;
+      writing-mode: vertical-rl; transform: rotate(180deg);
+      font-family: var(--mono); font-size: 10px; letter-spacing: .3em;
+      text-transform: uppercase; color: var(--accent); white-space: nowrap;
+    }
+    html[data-page="BN"] :where(.rail-t)::before {
+      content: counter(rail, decimal-leading-zero) " / ";
+    }
+    /* The content cell. The design pads it 44px 34px 40px and never centres a
+       measure — this is a ruled sheet, not a centred column. */
+    html[data-page="BN"] :where(.sec-body) { padding: clamp(28px,4vw,44px) clamp(20px,3vw,34px) clamp(26px,3.6vw,40px); min-width: 0; }
+    /* Some sections are full-bleed (the hero photo, the gallery). They use
+       .sec-full instead of the rail grid and keep only the bottom rule. */
+    html[data-page="BN"] :where(.sec-full) { border-bottom: 1px solid var(--rule-strong); }
+
+    /* ── .kick — mono, 10px, wide, rust. No underline in this design. */
+    html[data-page="BN"] :where(.kick) {
+      /* line-height pinned TIGHT for the same reason as .btn — and here it is
+         load-bearing: the underline is drawn by border-bottom, so a loose line
+         box drops the rule away from the words and softens the one mark this
+         family is recognised by. */
+      line-height: 1.1;
+      display: inline-block;
+      font-family: var(--mono); font-weight: 500; font-size: 10px;
+      letter-spacing: .24em; text-transform: uppercase; color: var(--accent);
+    }
+    html[data-page="BN"] :where(.h2) {
+      font-family: var(--disp); font-weight: 800;
+      font-size: clamp(28px,4.4vw,62px); line-height: .98; letter-spacing: -.03em;
+      text-transform: uppercase; margin: 0 0 .24em; color: var(--ink); max-width: 20ch;
+    }
+    /* The headline's SECOND VOICE is a colour change, not an italic — Archivo
+       has no italic worth using and the design never asks for one. */
+    html[data-page="BN"] :where(.h2 em),
+    html[data-page="BN"] :where(.h2 .em),
+    html[data-page="BN"] :where(.em) { font-style: normal; color: var(--accent); }
+    html[data-page="BN"] :where(.lede) {
+      color: var(--ink-soft); font-size: clamp(15px,1.4vw,16.5px); line-height: 1.62;
+      max-width: 52ch; margin: 0; text-transform: none; letter-spacing: 0;
+    }
+    html[data-page="BN"] :where(.body) {
+      color: var(--ink-soft); font-size: clamp(14px,1.3vw,15px); line-height: 1.62;
+      text-transform: none; letter-spacing: 0;
+    }
+    html[data-page="BN"] :where(.mono) {
+      font-family: var(--mono); font-weight: 500; font-size: 10px;
+      letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+    }
+    html[data-page="BN"] :where(.fig) {
+      font-family: var(--mono); font-weight: 500; color: var(--accent);
+      font-variant-numeric: tabular-nums lining-nums; line-height: 1;
+    }
+
+    /* ── BUTTONS. The design's own four, all mono, all square. */
+    html[data-page="BN"] :where(.btn) {
+      /* line-height is DECLARED. The design sets none on its buttons, so they
+         render at the browser normal; inheriting body line-height instead
+         inflated every control by ~6px and, on the eyebrow below, pushed the
+         underline off the text it belongs to. A label is one line: 1 is what a
+         button wants. */
+      line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center; gap: .55em;
+      padding: 15px 24px; min-height: 44px;
+      border-radius: var(--r); border: 1px solid transparent;
+      font-family: var(--mono); font-weight: 500; font-size: 10px;
+      letter-spacing: .14em; text-transform: uppercase; text-decoration: none;
+      cursor: pointer; white-space: nowrap;
+      transition: background-color .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    html[data-page="BN"] :where(.btn--fill) { background-color: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+    html[data-page="BN"] :where(.btn--fill:hover) { background-color: var(--accent-deep); color: var(--on-accent); border-color: var(--accent-deep); }
+    html[data-page="BN"] :where(.btn--ink) { background-color: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+    html[data-page="BN"] :where(.btn--ink:hover) { background-color: var(--ink); color: var(--on-ink); border-color: var(--ink); box-shadow: inset 0 0 0 999px rgba(255,255,255,.10); }
+    html[data-page="BN"] :where(.btn--orange) { background-color: var(--orange); color: var(--ink); border-color: var(--orange); padding: 15px 28px; }
+    html[data-page="BN"] :where(.btn--orange:hover) { background-color: var(--orange); color: var(--ink); border-color: var(--orange); box-shadow: inset 0 0 0 999px rgba(0,0,0,.12); }
+    html[data-page="BN"] :where(.btn--cream) { background-color: var(--cream); color: var(--accent-deep); border-color: var(--cream); }
+    html[data-page="BN"] :where(.btn--cream:hover) { background-color: var(--cream); color: var(--accent-deep); border-color: var(--cream); box-shadow: inset 0 0 0 999px rgba(0,0,0,.07); }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BN"] .btn { transition: none; } }
+
+    /* ── .linkc — the quiet mono action. */
+    html[data-page="BN"] :where(.linkc) {
+      display: inline-flex; align-items: center; gap: .5em; min-height: 44px;
+      font-family: var(--mono); font-weight: 500; font-size: 11px;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--accent);
+      border-bottom: 1px solid transparent; padding-bottom: 2px;
+      transition: border-bottom-color .18s ease;
+    }
+    html[data-page="BN"] :where(.linkc:hover) { color: var(--accent); border-bottom-color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BN"] .linkc { transition: none; } }
+
+    /* ── FOCUS · a square DUO ring, because nothing here is round. */
+    html[data-page="BN"] :where(a,button,summary,[tabindex]):focus-visible {
+      outline: 3px solid var(--paper); outline-offset: 0;
+      box-shadow: 0 0 0 6px var(--accent); border-radius: 0;
+    }
+
+    /* ── .plate / .ph ─────────────────────────────────────────────────────── */
+    html[data-page="BN"] :where(.plate) {
+      position: relative; overflow: hidden; min-height: 180px;
+      border-radius: var(--r); background-color: var(--well); isolation: isolate;
+    }
+    html[data-page="BN"] :where(.plate) .ph {
+      position: absolute; inset: 0; z-index: 1;
+      background-color: var(--well);
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+      background-image:
+        radial-gradient(78% 64% at 22% 14%, rgba(var(--accent-rgb),.12), transparent 62%),
+        radial-gradient(66% 60% at 84% 90%, rgba(var(--ink-rgb),.07), transparent 60%);
+    }
+    /* Caption on an OPAQUE ink block, never a scrim: --on-ink on --ink holds
+       15.30:1 over ANY owner photo. */
+    html[data-page="BN"] :where(.plate) .cap {
+      position: absolute; left: 0; bottom: 0; z-index: 3;
+      max-width: 100%;
+      background-color: var(--ink); color: var(--on-ink);
+      font-family: var(--mono); font-weight: 500; font-size: 9px;
+      letter-spacing: .2em; text-transform: uppercase;
+      padding: 7px 12px; overflow-wrap: anywhere;
+    }
+
+    /* ── .rowrule — the ruled label/value row, used by three sections. */
+    html[data-page="BN"] :where(.rowrule) {
+      display: flex; align-items: baseline; gap: 12px;
+      padding: 13px 0; border-bottom: 1px solid var(--line); min-width: 0;
+    }
+
+    /* ── scroll reveal ─────────────────────────────────────────────────────── */
+    html[data-page="BN"] :where(.reveal) { opacity: 0; transform: translateY(12px); transition: opacity .5s ease, transform .5s ease; }
+    html[data-page="BN"] :where(.reveal.in) { opacity: 1; transform: none; }
+    html[data-page="BN"] :where(.reveal[data-delay="1"]) { transition-delay: .07s; }
+    html[data-page="BN"] :where(.reveal[data-delay="2"]) { transition-delay: .14s; }
+    html[data-page="BN"] :where(.reveal[data-delay="3"]) { transition-delay: .21s; }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="BN"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    html[data-page="BN"] :where(.skip) {
+      position: absolute; left: -999px; top: 0; z-index: 100;
+      background-color: var(--accent); color: var(--on-accent);
+      padding: 12px 18px;
+      font-family: var(--mono); font-weight: 500; font-size: 11px;
+      letter-spacing: .14em; text-transform: uppercase;
+    }
+    html[data-page="BN"] :where(.skip:focus) { left: 0; top: 0; }
+
+    /* ── SHARED MOBILE PASS. The RAIL is what changes: below 760 the index
+          column would eat a seventh of a 360px screen, so it collapses and the
+          label goes horizontal above the content. The bottom rules stay —
+          they are the design. */
+    @media (max-width: 760px) {
+      /* The MAX is the BASE clamp's own value at 760px (33.44px), not a round
+         number. Anything higher and the headline GROWS as the viewport narrows
+         past 761 — base clamp(28px,4.4vw,62px) yields 33.48px there, so a 40px
+         ceiling here landed ABOVE where the curve arrived from. It is a jump no
+         screenshot at 1440 or 375 can show you: it lives in the one pixel either
+         side of the boundary. The vw term is untouched, so the steeper
+         small-screen curve this breakpoint exists for still happens. */
+      html[data-page="BN"] :where(.h2) { font-size: clamp(26px,7.4vw,33px); max-width: none; overflow-wrap: anywhere; }
+      html[data-page="BN"] :where(.lede) { max-width: none; }
+      html[data-page="BN"] :where(.sec) { grid-template-columns: minmax(0,1fr); }
+      html[data-page="BN"] :where(.rail) {
+        border-right: 0; border-bottom: 1px solid var(--line);
+        justify-content: flex-start; padding: 12px clamp(20px,3vw,34px);
+      }
+      html[data-page="BN"] :where(.rail-t) { writing-mode: horizontal-tb; transform: none; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="BN"] :where(.kick) { font-size: 9.5px; letter-spacing: .18em; }
+      html[data-page="BN"] :where(.btn) { padding: 14px 18px; }
+    }
+</style>
+
+<style is:inline set:html={__overrideCss}></style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+{visibility.headerSection !== false && <HeaderBN content={content} layout={layout} />}
+<main id="main">
+  {visibility.heroSection !== false && <HeroBN content={content} layout={layout} />}
+  {visibility.trustBlock !== false && <TrustBN content={content} layout={layout} />}
+  {visibility.aboutSection !== false && <AboutBN content={content} layout={layout} />}
+  {visibility.servicesSection !== false && <ServicesBN content={content} layout={layout} />}
+  {visibility.whyUsBlock !== false && <WhyBN content={content} layout={layout} />}
+  {visibility.gallerySection !== false && <GalleryBN content={content} layout={layout} />}
+  {visibility.howItWorksBlock !== false && <HowBN content={content} layout={layout} />}
+  {visibility.testimonialsBlock !== false && <TestimonialsBN content={content} layout={layout} />}
+  {visibility.credentialsBlock !== false && <CredentialsBN content={content} layout={layout} />}
+  {visibility.locationBlock !== false && <LocationBN content={content} layout={layout} />}
+  {visibility.serviceAreaBlock !== false && <AreaBN content={content} layout={layout} />}
+  {visibility.faqBlock !== false && <FaqBN content={content} layout={layout} />}
+  {visibility.ctaBandBlock !== false && <CtaBandBN content={content} layout={layout} />}
+</main>
+{visibility.footerSection !== false && <FooterBN content={content} layout={layout} />}
+
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script is:inline>
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    if (!els.length) return;
+    if (!('IntersectionObserver' in window) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      els.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
+  window.__foodcraftBNInitMap = function (lat, lng, label) {
+    var tries = 0;
+    (function go() {
+      var el = document.getElementById('map');
+      if (!el) return;
+      if (typeof window.L === 'undefined') { if (tries++ < 25) setTimeout(go, 80); return; }
+      el.innerHTML = '';
+      var map = window.L.map(el, { scrollWheelZoom: false, attributionControl: true }).setView([lat, lng], 16);
+      // A technical page wants a technical map: the CARTO positron set is the
+      // one that reads as a drawing rather than a photograph.
+      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO',
+      }).addTo(map);
+      var cs = window.getComputedStyle(document.documentElement);
+      var accent = (cs.getPropertyValue('--accent') || '').trim() || '#A8351B';
+      var paper = (cs.getPropertyValue('--paper') || '').trim() || '#EFEEEA';
+      // A SQUARE pin, because nothing in this design is round.
+      var icon = window.L.divIcon({
+        className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+        html: '<span style="display:block;width:14px;height:14px;background:' +
+              accent + ';border:3px solid ' + paper + '"></span>',
+      });
+      var marker = window.L.marker([lat, lng], { icon: icon }).addTo(map);
+      if (label) marker.bindPopup(label);
+    })();
+  };
+</script>
+</body>
+</html>
