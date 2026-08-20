@@ -199,6 +199,23 @@ export function describeWiseStatus(detailedStatus: string): { label: string; des
             isFinal: false,
         }
     }
+    // Wise is waiting for US to pay the money in. Every transfer this app
+    // creates lands here first, because funding is a manual admin step in the
+    // Wise dashboard by design (docs/wise/WISE-PAYMENT-FLOW-MOBILE.md Stage 4).
+    //
+    // Checked BEFORE the generic 'processing' branch below: the detailed state
+    // is `incoming_payment_waiting`, which contains neither 'processing' nor any
+    // other keyword here, so without this it fell through to the catch-all "In
+    // progress". That told a creator their money was on its way while it had not
+    // been sent at all — the one state where the honest answer is "not yet".
+    if (status.includes('incoming_payment_waiting') || status.includes('incoming_payment_initiated')) {
+        return {
+            label: 'Awaiting release',
+            description:
+                "Your withdrawal has been created and is queued for release. We are sending the funds now — you'll get another email the moment they're on their way to your Wise account.",
+            isFinal: false,
+        }
+    }
     if (status.includes('processing')) {
         return {
             label: 'Processing',
