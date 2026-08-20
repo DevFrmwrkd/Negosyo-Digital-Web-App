@@ -151,16 +151,23 @@ const hasLoc = hasGrid || !!sub;
 <section class="loc" id="location">
   <div class="wrap">
     <div class="loc-head reveal">
+      {/* THREE children, not two. The address used to live inside .loc-head-l,
+          which made it part of what the sub is bottom-aligned TO — so a site
+          whose headline is not already its address grew a two-line paragraph
+          under the heading and the sub dropped a row to meet its bottom edge,
+          stranded on the right with nothing beside it. The address is its own
+          grid item now, on a second row under the heading, where it can be any
+          height without moving anything. */}
       <div class="loc-head-l">
         {tag && <span class="kick" data-field="location.tag">{tag}</span>}
         {headline && <h2 class="h2 loc-h2" data-field="location.headline" set:html={headline}></h2>}
-        {showAddress && (
-          <p class="loc-addr" data-field="location.address">
-            {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
-          </p>
-        )}
       </div>
       {sub && <p class="body loc-sub" data-field="location.sub">{sub}</p>}
+      {showAddress && (
+        <p class="loc-addr" data-field="location.address">
+          {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
+        </p>
+      )}
     </div>
     {hasGrid && (
       <div class:list={['loc-grid', 'reveal', (!hasMap || rules.length === 0) && 'one-up']} data-delay="1">
@@ -244,24 +251,39 @@ const hasLoc = hasGrid || !!sub;
   </script>
 )}
 <style>
-  /* ── THE HEAD · flex, baseline-bottom, space-between, wrapping before either
-        side can overflow. 36px to the grid, straight from the design. */
+  /* ── THE HEAD · the design's split: heading left, sub right, both sitting on
+        the same bottom edge, 36px to the grid.
+        A GRID rather than the design's flex row, for one reason: this template
+        can also print an address under the heading, which the design never does
+        because its heading IS the address. In a flex row that paragraph joins
+        the cell the sub is aligned to and pushes the sub down a row. As a grid
+        the heading and the sub share row 1 and the address takes row 1 of its
+        own beneath, so the sub stays level with the heading whether the address
+        is there or not. */
   .loc-head {
-    display: flex; align-items: flex-end; justify-content: space-between;
-    gap: 30px; flex-wrap: wrap; margin: 0 0 36px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 30px;
+    margin: 0 0 36px;
   }
-  .loc-head-l { min-width: 0; }
+  .loc-head-l { grid-column: 1; grid-row: 1; min-width: 0; }
   /* PageBK's .h2 already carries the design's face, clamp(31px,4vw,54px)/1.1 and
      --bone-hi. Only the margin differs: the design pushes the h2 .26em BELOW the
      eyebrow and nothing after it. */
   .loc-h2 { margin: .26em 0 0; }
   /* Qualified with the parent class on purpose — PageBK's bare-paragraph reset is
      (0,1,1) and it sets a bottom margin these two must not inherit. */
-  .loc-head-l .loc-addr {
+  .loc-head .loc-addr {
+    grid-column: 1; grid-row: 2;
     margin: .55em 0 0; font-size: 15px; line-height: 1.75; color: var(--grey);
     max-width: 42ch; overflow-wrap: anywhere;
   }
-  .loc-head .loc-sub { margin: 0; min-width: 0; max-width: 36ch; overflow-wrap: anywhere; }
+  /* Row 1 beside the heading, flush right, exactly as the design draws it. */
+  .loc-head .loc-sub {
+    grid-column: 2; grid-row: 1; justify-self: end;
+    margin: 0; min-width: 0; max-width: 36ch; overflow-wrap: anywhere;
+  }
 
   /* ── THE SPLIT · the design's 1.2fr / .8fr with a 26px gutter. Either cell can
         be absent — no coordinates and no address drops the map, no rows drop the
@@ -340,12 +362,17 @@ const hasLoc = hasGrid || !!sub;
   @media (max-width: 900px) {
     /* Ledger under the map: the rules are what a guest reads twice. */
     .loc-grid { grid-template-columns: minmax(0,1fr); }
-    .loc-head .loc-sub { max-width: none; }
+    /* One column: heading, then address, then sub — reading order, and the sub
+       stops being flush right against nothing. */
+    .loc-head { grid-template-columns: minmax(0,1fr); row-gap: 14px; }
+    .loc-head-l { grid-row: 1; }
+    .loc-head .loc-addr { grid-column: 1; grid-row: 2; }
+    .loc-head .loc-sub { grid-column: 1; grid-row: 3; justify-self: start; max-width: none; }
   }
   @media (max-width: 760px) {
     .map-frame { min-height: 300px; }
     .loc-head { margin-bottom: 28px; }
-    .loc-head-l .loc-addr { max-width: none; }
+    .loc-head .loc-addr { max-width: none; }
     .rules { padding: 22px 24px; }
   }
   @media (max-width: 520px) {
