@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react"
 import { useUser } from "@clerk/nextjs"
-import { useQuery } from "convex/react"
+import { useQuery, useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import { CheckCircle, AlertCircle, Clock, Loader2, Eye, X, Wallet } from "lucide-react"
+import { CheckCircle, AlertCircle, Clock, Loader2, Eye, X, Wallet, RefreshCw } from "lucide-react"
 import AdminLayout from "../components/AdminLayout"
 import { needsFunding, describeStateAge } from "@/lib/payouts/fundingState"
 
@@ -91,6 +91,43 @@ export default function PayoutsPage() {
 
     const [statusFilter, setStatusFilter] = useState<WithdrawalStatus>('all')
     const [selected, setSelected] = useState<WithdrawalRecord | null>(null)
+
+    // On-demand Wise poll. wiseDetailedState is otherwise only written by the
+    // hourly cron, so without this an admin who funds a transfer and comes
+    // straight back sees the same "Fund in Wise" badge and concludes the payment
+    // failed — the one conclusion that ends in paying a creator twice.
+    const refreshFromWise = useAction(api.withdrawals.refreshFromWise)
+    const [refreshing, setRefreshing] = useState(false)
+    const [refreshNote, setRefreshNote] = useState<string | null>(null)
+
+    const handleRefresh = async (rows: WithdrawalRecord[]) => {
+        if (!user || rows.length === 0) return
+        setRefreshing(true)
+        setRefreshNote(null)
+        try {
+            const results = await Promise.all(
+                rows.map((w) =>
+                    refreshFromWise({ withdrawalId: w._id as any, adminId: user.id })
+                        .then((r) => ({ w, r, error: null as string | null }))
+                        .catch((e: any) => ({ w, r: null, error: e?.message || 'Wise lookup failed' })),
+                ),
+            )
+            const failed = results.filter((x) => x.error)
+            const settled = results.filter((x) => x.r?.statusChangedTo)
+            // The reactive useQuery re-renders the rows by itself; this line only
+            // explains what the refresh found, including "nothing changed", which
+            // is the answer an admin most needs to trust the badge.
+            setRefreshNote(
+                failed.length
+                    ? `Checked ${results.length}, but ${failed.length} failed: ${failed[0].error}`
+                    : settled.length
+                      ? `Updated from Wise — ${settled.length} now ${settled[0].r!.statusChangedTo}.`
+                      : `Checked ${results.length} with Wise — no change yet.`,
+            )
+        } finally {
+            setRefreshing(false)
+        }
+    }
 
     // Stats derived locally (no mutation, no extra round-trip)
     const stats = useMemo(() => {
@@ -198,15 +235,29 @@ export default function PayoutsPage() {
                                     </li>
                                 ))}
                             </ul>
-                            <a
-                                href="https://wise.com/transactions"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
-                            >
-                                <Wallet className="h-3.5 w-3.5" />
-                                Open Wise
-                            </a>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <a
+                                    href="https://wise.com/transactions"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
+                                >
+                                    <Wallet className="h-3.5 w-3.5" />
+                                    Open Wise
+                                </a>
+                                <button
+                                    type="button"
+                                    onClick={() => handleRefresh(awaitingFunding)}
+                                    disabled={refreshing}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50"
+                                >
+                                    <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                                    {refreshing ? 'Checking Wise…' : 'Refresh from Wise'}
+                                </button>
+                                {refreshNote && (
+                                    <span className="text-xs font-medium text-orange-800">{refreshNote}</span>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -365,7 +416,14 @@ export default function PayoutsPage() {
             </div>
 
             {/* Read-only detail modal */}
-            {selected && <TransactionDetailModal w={selected} onClose={() => setSelected(null)} />}
+            {selected && (
+                <TransactionDetailModal
+                    w={selected}
+                    onClose={() => setSelected(null)}
+                    onRefresh={handleRefresh}
+                    refreshing={refreshing}
+                />
+            )}
         </AdminLayout>
     )
 }
@@ -395,7 +453,17 @@ function StatCard({
     )
 }
 
-function TransactionDetailModal({ w, onClose }: { w: WithdrawalRecord; onClose: () => void }) {
+function TransactionDetailModal({
+    w,
+    onClose,
+    onRefresh,
+    refreshing,
+}: {
+    w: WithdrawalRecord
+    onClose: () => void
+    onRefresh: (rows: WithdrawalRecord[]) => void
+    refreshing: boolean
+}) {
     const pill = displayPill(w)
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -471,15 +539,26 @@ function TransactionDetailModal({ w, onClose }: { w: WithdrawalRecord; onClose: 
                                     Wise state {describeStateAge(w, Date.now())}. If you already paid this one, confirm
                                     in Wise before sending again — this view refreshes hourly.
                                 </p>
-                                <a
-                                    href="https://wise.com/transactions"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
-                                >
-                                    <Wallet className="h-3.5 w-3.5" />
-                                    Open Wise
-                                </a>
+                                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                                    <a
+                                        href="https://wise.com/transactions"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
+                                    >
+                                        <Wallet className="h-3.5 w-3.5" />
+                                        Open Wise
+                                    </a>
+                                    <button
+                                        type="button"
+                                        onClick={() => onRefresh([w])}
+                                        disabled={refreshing}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50"
+                                    >
+                                        <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                                        {refreshing ? 'Checking…' : 'Refresh from Wise'}
+                                    </button>
+                                </div>
                             </div>
                         </Section>
                     )}
