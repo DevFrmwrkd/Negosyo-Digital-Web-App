@@ -29,6 +29,7 @@ interface WithdrawalRecord {
     reference?: string
     wiseTransferId?: string
     wiseStatus?: string
+    wiseDetailedState?: string
     errorMessage?: string
     failureReason?: string
     transactionRef?: string
@@ -46,6 +47,32 @@ const STATUS_TABS: Array<{ key: WithdrawalStatus; label: string }> = [
     { key: 'failed', label: 'Failed' },
 ]
 
+/**
+ * Wise states that mean the money has LEFT the Creator Payout jar. Anything
+ * else on a 'processing' row is still waiting for an admin to fund it.
+ */
+const FUNDED_STATES = ['funds_converted', 'outgoing_payment_sent', 'paid_out', 'bounced_back', 'charged_back']
+
+/**
+ * Does this row need someone to go to Wise and release the money?
+ *
+ * Every transfer this app creates starts unfunded — funding is a manual step in
+ * the Wise dashboard by design (docs/wise/WISE-PAYMENT-FLOW-MOBILE.md Stage 4).
+ * So a 'processing' row means "waiting for you", NOT "the system is working on
+ * it", which is exactly what the old spinning blue "Processing" badge implied.
+ *
+ * An empty wiseDetailedState counts as needing funding rather than as unknown:
+ * that field is only written by the hourly status cron, so a withdrawal made in
+ * the last hour has none — and it is certainly unfunded, because nothing in the
+ * codebase funds anything.
+ */
+function needsFunding(w: WithdrawalRecord): boolean {
+    if (w.status !== 'processing') return false
+    const state = (w.wiseDetailedState || '').toLowerCase()
+    if (!state) return true
+    return !FUNDED_STATES.some((s) => state.includes(s))
+}
+
 function statusPill(status: WithdrawalRecord['status']) {
     const map: Record<WithdrawalRecord['status'], { bg: string; text: string; Icon: typeof CheckCircle; label: string }> = {
         completed: { bg: 'bg-amber-50', text: 'text-amber-700', Icon: CheckCircle, label: 'Completed' },
@@ -54,6 +81,14 @@ function statusPill(status: WithdrawalRecord['status']) {
         failed: { bg: 'bg-red-50', text: 'text-red-700', Icon: AlertCircle, label: 'Failed' },
     }
     return map[status]
+}
+
+/** The pill a row actually shows — "Fund in Wise" outranks the raw status. */
+function displayPill(w: WithdrawalRecord) {
+    if (needsFunding(w)) {
+        return { bg: 'bg-orange-50', text: 'text-orange-700', Icon: AlertCircle, label: 'Fund in Wise', spin: false }
+    }
+    return { ...statusPill(w.status), spin: w.status === 'processing' }
 }
 
 export default function PayoutsPage() {
@@ -118,6 +153,17 @@ export default function PayoutsPage() {
         return withdrawals.filter((w) => w.status === statusFilter)
     }, [withdrawals, statusFilter])
 
+    // The work queue: every creator whose money is sitting unreleased in Wise.
+    // Oldest first — the person who has waited longest gets paid first.
+    const awaitingFunding = useMemo(
+        () => (withdrawals ?? []).filter(needsFunding).sort((a, b) => a.createdAt - b.createdAt),
+        [withdrawals],
+    )
+    const awaitingFundingTotal = useMemo(
+        () => awaitingFunding.reduce((sum, w) => sum + w.amount, 0),
+        [awaitingFunding],
+    )
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -134,9 +180,48 @@ export default function PayoutsPage() {
             <div className="mb-6 lg:mb-8">
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payout Management</h1>
                 <p className="text-sm text-gray-500 mt-1">
-                    View-only ledger of creator withdrawal transactions. Withdrawals are processed automatically via the Wise pipeline.
+                    Ledger of creator withdrawals. Transfers are created automatically, but each one must be
+                    released by hand in Wise before the creator is paid.
                 </p>
             </div>
+
+            {/* Action queue. The answer to "which creator do I fund?" — without it
+                the only signal was a blue spinner that read as "already handling it". */}
+            {awaitingFunding.length > 0 && (
+                <div className="mb-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
+                        <div className="min-w-0 flex-1">
+                            <p className="text-sm font-bold text-orange-900">
+                                {awaitingFunding.length} payout{awaitingFunding.length === 1 ? '' : 's'} waiting for you
+                                to release in Wise · ₱{awaitingFundingTotal.toLocaleString()}
+                            </p>
+                            <p className="mt-1 text-xs text-orange-800">
+                                Fund each one from the <span className="font-semibold">Creator Payout</span> jar, not the
+                                main PHP balance. Match them in Wise by the reference below.
+                            </p>
+                            <ul className="mt-3 space-y-1.5">
+                                {awaitingFunding.map((w) => (
+                                    <li key={w._id} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs">
+                                        <span className="font-semibold text-orange-900">{w.creatorName || 'Unknown'}</span>
+                                        <span className="font-bold text-orange-900">₱{w.amount.toLocaleString()}</span>
+                                        <span className="font-mono text-orange-700">{w.reference || w.wiseTransferId || '—'}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <a
+                                href="https://wise.com/transactions"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
+                            >
+                                <Wallet className="h-3.5 w-3.5" />
+                                Open Wise
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6 lg:mb-8">
@@ -223,7 +308,7 @@ export default function PayoutsPage() {
                                 </tr>
                             ) : (
                                 filtered.map((w) => {
-                                    const pill = statusPill(w.status)
+                                    const pill = displayPill(w)
                                     return (
                                         <tr key={w._id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                                             <td className="px-6 py-4">
@@ -254,7 +339,7 @@ export default function PayoutsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold ${pill.bg} ${pill.text}`}>
-                                                    <pill.Icon className={`w-3.5 h-3.5 ${w.status === 'processing' ? 'animate-spin' : ''}`} />
+                                                    <pill.Icon className={`w-3.5 h-3.5 ${pill.spin ? "animate-spin" : ""}`} />
                                                     {pill.label}
                                                 </span>
                                             </td>
@@ -322,7 +407,7 @@ function StatCard({
 }
 
 function TransactionDetailModal({ w, onClose }: { w: WithdrawalRecord; onClose: () => void }) {
-    const pill = statusPill(w.status)
+    const pill = displayPill(w)
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
             <div
@@ -360,7 +445,7 @@ function TransactionDetailModal({ w, onClose }: { w: WithdrawalRecord; onClose: 
                             <div className={`p-4 rounded-xl border ${pill.bg} ${pill.text} border-current/30`}>
                                 <p className="text-xs text-gray-600 mb-1">Status</p>
                                 <p className={`text-lg font-semibold ${pill.text} inline-flex items-center gap-1.5`}>
-                                    <pill.Icon className={`w-5 h-5 ${w.status === 'processing' ? 'animate-spin' : ''}`} />
+                                    <pill.Icon className={`w-5 h-5 ${pill.spin ? "animate-spin" : ""}`} />
                                     {pill.label}
                                 </p>
                             </div>
@@ -376,7 +461,33 @@ function TransactionDetailModal({ w, onClose }: { w: WithdrawalRecord; onClose: 
                         <Section title="Wise transfer">
                             {w.wiseTransferId && <Field label="Transfer ID" value={w.wiseTransferId} mono />}
                             {w.wiseStatus && <Field label="Wise status" value={w.wiseStatus} />}
+                            {w.wiseDetailedState && <Field label="Wise detail" value={w.wiseDetailedState} mono />}
                             {w.transactionRef && <Field label="Webhook ref" value={w.transactionRef} mono />}
+                        </Section>
+                    )}
+
+                    {needsFunding(w) && (
+                        <Section title="Action needed">
+                            <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
+                                <p className="text-sm font-semibold text-orange-900">
+                                    This creator has not been paid yet.
+                                </p>
+                                <p className="mt-1 text-xs text-orange-800">
+                                    The transfer exists in Wise but is unfunded. Release it from the{' '}
+                                    <span className="font-semibold">Creator Payout</span> jar — not the main PHP balance
+                                    — matching on{' '}
+                                    <span className="font-mono">{w.reference || w.wiseTransferId || 'the reference'}</span>.
+                                </p>
+                                <a
+                                    href="https://wise.com/transactions"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
+                                >
+                                    <Wallet className="h-3.5 w-3.5" />
+                                    Open Wise
+                                </a>
+                            </div>
                         </Section>
                     )}
 
