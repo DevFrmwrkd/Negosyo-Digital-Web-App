@@ -1,0 +1,412 @@
+---
+/**
+ * foodcraft / HeaderBL — THE STICKY CREAM RAIL. The design's front gate,
+ * reproduced: a 93%-opaque cream bar over a 14px backdrop blur, one --line
+ * hairline under it, and a single flex row at 17px top and bottom carrying
+ * three things — the 26px Fraunces wordmark with its rust town tag on the
+ * baseline beside it, five 13px wayfinding links at a 28px gap, and the rust
+ * pill (the design's btnNav: the same pill as btnLg at 13px/24px instead of
+ * 16px/32px).
+ *
+ * ROLE: wayfinding, plus the one action this page exists for. The pill is a
+ * SIBLING of the link row, never a child of it: the link row becomes a
+ * display:none drawer at <=900px and the contact affordance must not leave
+ * with it.
+ *
+ * EDITABLE HOOKS — every visible string on this rail, and nothing else:
+ *   footer.brand                     — the wordmark (also the footer's; one
+ *                                      field, two places, on purpose)
+ *   footer.locality                  — the rust town tag beside it
+ *   navbar_links.${i}.label          — one nav link's label
+ *   navbar_links.${i}.href           — that link's target (data-href-field)
+ *   navCtaText                       — the rust pill's label
+ *   navCtaHref                       — the pill's target (data-href-field)
+ * All six are declared in components/editor/genericContentSchema.ts under the
+ * `header` group, so every one is a hook a sidebar input actually owns. A
+ * data-field on any other path would be a dead hook nothing can edit.
+ *
+ * DERIVED, never authored here:
+ *   - the wordmark falls back to layout.businessName when content.footer.brand
+ *     is blank, because that is the same name from the same submission.
+ *   - every in-page href is resolved by onPage() against the ids PageBL really
+ *     renders (see the anchor guard below).
+ *   - `i` is the ORIGINAL, pre-filter index of a nav link, so dropping an
+ *     unreachable row 2 cannot misdirect an edit into row 3.
+ *
+ * NOT RENDERED, deliberately:
+ *   - THE DESIGN'S OWN COPY. "Kalinaw Coffee", "Cebu", "Menu", "Our story",
+ *     "Gallery", "Visit", "FAQ" and "Contact us" are the DESIGNER filling in
+ *     their own template. Not one of those words is in this file. A café whose
+ *     owner supplied no nav links gets no nav links, not the designer's five.
+ *   - THE WHOLE RAIL, when brand, locality, links and pill are all empty. A
+ *     sticky bar with nothing in it is ~78px of dead chrome on every screen,
+ *     and it is the BODY content that is counted here — never a tag or a
+ *     headline, because lib/derive-content-defaults.ts fills those on every
+ *     site and a gate that counted them would always pass.
+ *   - the burger, unless there is a drawer for it to open.
+ *   - the wordmark, with no name. 'Your Business' once shipped as a real
+ *     customer's own wordmark; with nothing supplied the town tag carries the
+ *     lock alone, and with neither the lock is gone.
+ *   - a nav link with no label, or whose href reaches no section on this page.
+ *     A 0-width tap target and a link that scrolls nowhere are both broken.
+ *   Every guard sits OUTSIDE its tag, so a blank value removes the ELEMENT and
+ *   not just its text — no empty pill, no lock with nothing in it.
+ *   There is no star row, rating or numeral on this rail, so nothing here can
+ *   print a claim the owner did not make.
+ *
+ * DECISIONS A READER MIGHT OTHERWISE READ AS OVERSIGHTS
+ *
+ * 1. WHY THE TINT IS A PLAIN rgba() AND NOT A PSEUDO-ELEMENT. The design's rail
+ *    is rgba(255,252,246,.93) — that is --paper at 93%. HeaderBK had to paint
+ *    its tint on a ::before because PageBK publishes no --night-rgb; PageBL
+ *    DOES publish --paper-rgb (and buildOverrideCss remaps it with the rest of
+ *    the palette), so the design's exact value is expressible in one token
+ *    declaration. No literal, no extra stacking context, same pixels.
+ *
+ * 2. WHY THE PILL HOOKS navCtaText AND NOT hero.cta1.text.
+ *    components/editor/editorBridge.ts resolves a Blocks toggle to a section by
+ *    counting hooks of that prefix, so a header carrying hero.* hooks vanishes
+ *    when the owner toggles the Hero block off. navCtaText/navCtaHref belong to
+ *    the Header group, so this rail answers only to itself. footer.brand is
+ *    safe twice over: the bridge only ever hides `closest('section,footer')`
+ *    and a <header> is neither, and the real footer outweighs this file's two
+ *    footer.* hooks many times over. The pill does NOT fall back to the hero's
+ *    label for its DISPLAY either — showing a string the Header-CTA box does
+ *    not contain means the sidebar and the page disagree about what the button
+ *    says. An empty box renders an empty rail, not the hero's words.
+ *
+ * 3. WHY THE NAV-LINK HOVER IS --accent-deep. It is the design's OWN hover: its
+ *    stylesheet declares a:hover{color:#8E3F14}, which is --accent-deep. In the
+ *    demo that rule is shadowed by the inline colour on each nav link, so the
+ *    designer's own page happens to render no hover change — an artefact of
+ *    inline-style specificity, not a decision. Shipping a five-link row with no
+ *    hover state at all would be an interaction regression dressed up as
+ *    fidelity, so the design's stated hover colour is honoured (7.15:1 on
+ *    cream, and it rides the same theme axis as every other rust element).
+ *
+ * 4. WHY THE TOWN TAG IS --accent. The design puts it in rust, as it does every
+ *    eyebrow on the page (5.31:1 on cream). --accent is the one token PageBL
+ *    hands to the theme engine — the design's own data-props exposes `accent`
+ *    as a colour picker seeded #B4541F, so that axis is the DESIGNER'S, not an
+ *    invention. Re-deriving it here alone would leave the header rust-less on a
+ *    page still full of rust.
+ *
+ * 5. WHY THE PILL IS 44px AND THE RAIL IS ~78px, NOT THE DESIGN'S ~74px. btnNav
+ *    declares no height and lands about 40px tall — under the 44px target size.
+ *    Left alone it would be worse in the other direction: the wrapper's .btn
+ *    sets min-height:48px and no line-height, so it would inherit body's 1.7,
+ *    compute 48.4px and give an 82px rail. So the pill restates the design's
+ *    13px/24px padding, takes line-height:1.2 (the `normal` the design actually
+ *    renders at) and a 44px floor — the closest height to the design that is
+ *    still a legal tap target. The wrapper's scroll-padding-top:88px clears the
+ *    result, so in-page anchors still land below the rail.
+ *
+ * 6. WHY flex:none BECAME flex:0 1 auto ON THE LOCK. The design says flex:none,
+ *    which at 360px lets a long single-word café name shove the pill off
+ *    screen. The lock shrinks and the wordmark ellipsises instead; at desktop
+ *    widths the rendering is identical to the design.
+ *
+ * 7. THE BURGER AND DRAWER ARE AN ADDITION, NOT A RE-DERIVATION. The design is
+ *    a desktop artboard and specifies no mobile rail at all. Five links at
+ *    380px would push the page sideways, so the row collapses into a drawer at
+ *    one width (<=900px) — the row leaves and the burger arrives together, so
+ *    there is never a band where neither is on screen. Nothing in the desktop
+ *    rendering moves.
+ *
+ * 8. target="_blank" ONLY FOR http(s). The design's CTA opens a messenger in a
+ *    new tab. An owner may point this at #location or a tel: instead, and
+ *    hijacking those would be wrong, so the attribute pair is computed, never
+ *    literal — and it is ONE conditional per attribute, so no attribute is ever
+ *    emitted twice.
+ *
+ * 9. NO aria-label ON THE WORDMARK LOCK. Its accessible name is its own text:
+ *    the owner's name and the owner's town. Appending a literal like "home"
+ *    would announce a word this file never received. The two invisible strings
+ *    that ARE written here — "Primary" on the nav landmark and "Menu" on the
+ *    icon-only burger — are a11y affordances in the same class as the wrapper's
+ *    skip link, never page copy. The burger's three bars are decorative and
+ *    carry a literal aria-hidden; nothing on this rail carries a conditional
+ *    one, so no element can end up with the attribute twice.
+ *
+ * Never visibility-gated in this file: PageBL owns `visibility.headerSection`.
+ * Buttons here are .btn + .btn--fill from the wrapper. Not .nav-cta, not
+ * .btn-primary, not inside .nav-right — buildOverrideCss pins the label colour
+ * on all three with !important, and `footer .btn` too, which is a further
+ * reason this rail is a <header>.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const lay = (layout as any) || {};
+const c = (content as any) || {};
+
+// ── ANCHOR GUARD ───────────────────────────────────────────────────────────
+// lib/derive-content-defaults.ts hard-codes nav links to '#about', '#services',
+// '#why', '#work', '#visit' and navCtaHref to '#visit', and lib/astro-builder.ts
+// falls back to '#about', '#services', '#gallery', '#contact' — ids most designs
+// never render, so those links scrolled nowhere. Resolve every in-page href
+// against what PageBL ACTUALLY renders: keep it if the id exists, remap it when
+// this design carries the same section under another name, otherwise fall back
+// (nav links pass '' and are dropped). Off-page hrefs — tel:, mailto:, http(s)
+// and anything else without a leading '#' — pass through untouched.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'location', 'faq', 'main']);
+// This design renames four derived targets: the services block IS the menu
+// (rooms lands there too), '#about' is the café's own story (host and why are
+// the same block here), '#work' is the photo wall, and '#visit' / '#contact'
+// both mean the location block — address, map and opening hours. A booking link
+// has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'location',
+  host: 'about',
+  rooms: 'menu',
+  services: 'menu',
+  visit: 'location',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. 'Your Business' was a shipped placeholder that rendered as the
+// customer's own name — with nothing supplied the mark is omitted instead.
+// `||`, never `??`: genericContentSchema gives footer.brand
+// fallbackPaths ['business_name'] and ContentFieldsAuto's readWithFallbacks
+// treats '' as empty, so a CLEARED brand box still shows the business name in
+// the sidebar. With `??` an empty string is a value, and the page would have
+// gone wordmark-less while the sidebar displayed a name — exactly the
+// page/sidebar disagreement decision 2 above refuses for the pill.
+const brand = String(c.footer?.brand || lay.businessName || '').trim();
+// The town tag. One field, three consumers (here, the footer wordmark and the
+// map caption) and nothing derives it, so on a first build it is simply absent
+// rather than guessed out of the address.
+const locality = String(c.footer?.locality ?? '').trim();
+
+// Nav links. `i` is the ORIGINAL index so per-link edits stay aimed at the row
+// the owner clicked even after unreachable rows are dropped.
+const navLinks: Array<{ href: string; label: string; i: number }> =
+  (Array.isArray(lay.navLinks) ? lay.navLinks : [])
+    .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
+    .filter((l: { href: string; label: string }) => l.href && l.label);
+
+// The rust pill. Label and target both come from the Header group; an empty
+// label removes the whole element rather than leaving a rust rectangle.
+const ctaText = String(c.navCtaText ?? '').trim();
+// '#location' is the fallback because that is where this design puts the
+// address, the map and the opening hours — the page has no checkout to send a
+// booking link to.
+const ctaHref = onPage(c.navCtaHref, '#location');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// The rail renders only when it CARRIES something — the lock, the links or the
+// pill. There is no derived default that can fake all four of these at once.
+const hasRail = Boolean(brand || locality || navLinks.length > 0 || ctaText);
+---
+{hasRail && (
+  <header class="headbl">
+    <div class="wrap hb-in">
+      {(brand || locality) && (
+        <a class="hb-lock" href="#main">
+          {brand && <span class="hb-mark" data-field="footer.brand">{brand}</span>}
+          {locality && <span class="hb-town" data-field="footer.locality">{locality}</span>}
+        </a>
+      )}
+      {navLinks.length > 0 && (
+        <nav class="hb-nav" id="hb-nav-BL" aria-label="Primary">
+          {navLinks.map((link) => (
+            <a
+              href={link.href}
+              data-field={`navbar_links.${link.i}.label`}
+              data-href-field={`navbar_links.${link.i}.href`}
+            >{link.label}</a>
+          ))}
+        </nav>
+      )}
+      {/* OUTSIDE .hb-nav on purpose: .hb-nav is a display:none drawer at
+          <=900px and the one action this template exists for must survive it. */}
+      {ctaText && (
+        <a
+          href={ctaHref}
+          class="btn btn--fill hb-cta"
+          target={ctaExternal ? '_blank' : undefined}
+          rel={ctaExternal ? 'noopener noreferrer' : undefined}
+          data-field="navCtaText"
+          data-href-field="navCtaHref"
+        >{ctaText}</a>
+      )}
+      {navLinks.length > 0 && (
+        <button class="hb-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="hb-nav-BL">
+          <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+      )}
+    </div>
+  </header>
+)}
+<script is:inline>
+  (function () {
+    // Null-guarded rather than conditionally rendered: an is:inline script must
+    // stay at the top level, and with no rail (or no drawer) it simply exits.
+    // 'headbl' is family-unique because a preview harness can render two
+    // wrappers into one document and a shared class cross-wires the drawers.
+    var rail = document.querySelector('header.headbl');
+    if (!rail) return;
+    var btn = rail.querySelector('.hb-burger');
+    if (!btn) return;
+    function setOpen(open) {
+      rail.classList.toggle('open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () { setOpen(!rail.classList.contains('open')); });
+    // '.hb-cta' is in this selector because the pill lives OUTSIDE the drawer:
+    // tapping it while the drawer is open must still close the drawer.
+    rail.querySelectorAll('.hb-nav a, .hb-cta').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  /* The design: sticky, 93% cream, blur(14px), one hairline under it. The tint
+     is a straight rgba() on --paper-rgb, which PageBL publishes and the theme
+     engine remaps with the rest of the palette (see note 1 above) — so this is
+     the design's own rgba(255,252,246,.93) with no literal in it. */
+  .headbl {
+    /* z-index is the design's own 50. Nothing else in this template stacks
+       above 3, and the wrapper's skip link sits at 100, so the rail clears the
+       page and the skip link still clears the rail. */
+    position: sticky; top: 0; z-index: 50;
+    background-color: rgba(var(--paper-rgb), .93);
+    border-bottom: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  /* The design's row: 17px top and bottom, 24px gap, three parts spread apart.
+     Its 32px side padding is the .wrap's job in this family (min(1240px,92vw)),
+     so only the vertical value is restated here.
+     NOT position:relative — the <=900px drawer is absolutely positioned and
+     resolves against .headbl so it spans the full rail width, not the wrap.
+     justify-content is flex-end rather than the design's space-between because
+     the auto margins below already reproduce space-between whenever two or more
+     parts are in flow (an auto margin eats the free space before
+     justify-content ever sees it). It only takes effect in the degenerate cases
+     the design never drew: a café with no brand and no town tag, where at
+     <=900px the drawer has left the flow and the pill and burger would
+     otherwise sit hard LEFT. */
+  .hb-in { display: flex; align-items: center; justify-content: flex-end; gap: 24px; padding: 17px 0; }
+
+  /* Wordmark + town tag share a baseline, exactly as the design draws them.
+     Both the lock and the link row take an auto right margin: with all three
+     present that reproduces the design's space-between, and with either one
+     missing the pill still sits hard right. */
+  .hb-lock {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-right: auto; flex: 0 1 auto; min-width: 0; color: var(--ink);
+  }
+  .hb-mark {
+    font-family: var(--disp); font-weight: 400; font-size: 26px;
+    letter-spacing: -.01em; color: var(--ink);
+    /* line-height is the DESIGN'S value: it states none, so its wordmark
+       renders at `normal`. It is RESTATED rather than left to inherit because
+       the wrapper's body sets 1.7 and 26px of Fraunces would sit in a 44px
+       line box. It must not be TIGHTENED either: `normal` is the face's own
+       ascent+descent, and any smaller line box is clipped by the
+       overflow:hidden that the ellipsis below requires — shaving the tail off
+       a descender (Bayang, Kape) and the tilde off a capital (Niño). */
+    line-height: normal;
+    /* A long single-word café name must not push the pill off a 360px screen;
+       flex items are blockified, so ellipsis applies here. */
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  .hb-town {
+    flex: 0 1 auto; min-width: 0;
+    font-family: var(--sans); font-weight: 600; font-size: 9px;
+    letter-spacing: .34em; text-transform: uppercase; color: var(--accent);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+
+  .hb-nav { display: flex; align-items: center; gap: 28px; margin-right: auto; }
+  .hb-nav a {
+    font-family: var(--sans); font-weight: 400; font-size: 13px;
+    color: var(--ink-soft);
+    transition: color .18s ease;
+  }
+  /* The design's own hover, straight from its stylesheet: #8E3F14, which is
+     --accent-deep — see note 3 in the frontmatter. Same theme axis as --accent,
+     over a rest colour of --ink-soft at 6.71:1. */
+  .hb-nav a:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .hb-nav a { transition: none; } }
+
+  /* The design's btnNav is the wrapper's .btn--fill at a smaller size: rust
+     fill, --on-accent label, 100px pill, 12px/.15em caps, 13px/24px padding.
+     Only the METRICS are restated — no fill, no label colour, no box-shadow —
+     so the wrapper's hover darkening and its focus ring both stay intact.
+     line-height and min-height are the two values that are not verbatim; note 5
+     in the frontmatter says why 44px is the honest number. */
+  .hb-cta { flex: none; padding: 13px 24px; line-height: 1.2; min-height: 44px; }
+
+  /* The design specifies no mobile rail (note 7). The burger borrows the
+     design's OWN secondary-control treatment — a --card fill inside a
+     --line-btn hairline, which is exactly its outlined button — so the addition
+     stays inside the template's vocabulary. */
+  .hb-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 46px; height: 44px; padding: 11px 10px; flex: none;
+    background-color: var(--card); border: 1px solid var(--line-btn);
+    border-radius: var(--r-pill); cursor: pointer;
+  }
+  .hb-burger span {
+    display: block; width: 100%; height: 2px; background-color: var(--ink);
+    transition: transform .2s ease, opacity .2s ease;
+  }
+  header.headbl.open .hb-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.headbl.open .hb-burger span:nth-child(2) { opacity: 0; }
+  header.headbl.open .hb-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (prefers-reduced-motion: reduce) { .hb-burger span { transition: none; } }
+
+  /* ONE collapse width: the row leaves and the burger arrives together, so
+     there is never a band where neither is on screen. The drawer is OPAQUE
+     --paper-2 rather than the rail's 93% cream: it hangs over live page content
+     and a translucent panel would print the page through the links. */
+  @media (max-width: 900px) {
+    .hb-burger { display: flex; }
+    .hb-nav {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch; gap: 0;
+      background-color: var(--paper-2);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 14px 30px rgba(var(--ink-rgb), .12);
+      padding: 4px 0 10px; max-height: 78vh; overflow-y: auto;
+    }
+    header.headbl.open .hb-nav { display: flex; }
+    .hb-nav a {
+      display: flex; align-items: center; min-height: 48px; padding: 12px 22px;
+      font-size: 14px; border-bottom: 1px solid var(--line-3);
+      overflow-wrap: anywhere;
+    }
+  }
+  @media (max-width: 520px) {
+    .hb-in { gap: 10px; padding: 14px 0; }
+    .hb-mark { font-size: 22px; }
+    .hb-town { letter-spacing: .24em; }
+    /* display:block, not inline-flex, so text-overflow actually applies; a long
+       owner-written label is ellipsised rather than widening the rail past the
+       viewport. 12px padding over a 20px line box still clears a 44px target. */
+    .hb-cta {
+      display: block; line-height: 20px; padding: 12px 15px;
+      font-size: 10px; letter-spacing: .1em;
+      max-width: 42vw; overflow: hidden; text-overflow: ellipsis;
+    }
+  }
+  /* At 360px the town tag is the first thing to go: the wordmark, the pill and
+     the burger are all load-bearing, the tag is a flourish. */
+  @media (max-width: 400px) {
+    .hb-town { display: none; }
+    .hb-cta { max-width: 38vw; padding: 12px 12px; }
+  }
+</style>

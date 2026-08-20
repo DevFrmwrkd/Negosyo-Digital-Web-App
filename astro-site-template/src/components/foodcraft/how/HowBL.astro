@@ -1,0 +1,344 @@
+---
+/**
+ * foodcraft / HowBL — "Kalinaw Coffee" HOW IT WORKS (design element
+ * data-component="HOW-IT-WORKS").
+ *
+ * ROLE: the page's one procedural block, and the FIRST of the template's two
+ * full-bleed ESPRESSO bands. On a café with no ordering system this is the only
+ * place that says how an order is actually placed — in the owner's words, never
+ * ours. The design draws it as espresso ground between the gallery and the
+ * testimonials: amber eyebrow, one Fraunces headline in bone, three equal
+ * columns each opened by a SOLID AMBER 42px disc carrying a two-digit numeral,
+ * and a single amber button under them.
+ *
+ * DESIGN VALUES, lifted verbatim from "Kalinaw Coffee Landing.dc.html":
+ *   band      background #241A12                              → .band-dark
+ *   margin    96px above the band (the gallery above it ends bare)
+ *   padding   88px 0
+ *   eyebrow   10px / .42em caps / #E8A33C 600                  → .kick on a band
+ *   h2        Fraunces 400, clamp(31px,4vw,54px)/1.08,
+ *             margin .26em 0 50px, #FBF6EC, max-width 24ch     → .h2 on a band
+ *   grid      repeat(3, minmax(0,1fr)), gap 42px
+ *   disc      42x42, radius 50%, FILLED #E8A33C, label #241A12,
+ *             Fraunces 17px, flex-centred                      → .fig + .how-num
+ *   h3        Fraunces 400, 25px, margin 18px 0 10px, #FBF6EC
+ *   body      15px / 1.75 / #B8A795, margin 0                  → .body on a band
+ *   action    margin-top 50px, btnAmber = pill + amber fill +
+ *             #241A12 label, 12px caps, 16px 32px              → .btn.btn--band-accent
+ * Every one of those colours is a wrapper token (R1); not one hex is written
+ * here. btnAmber is character-for-character the wrapper's .btn + .btn--band-accent, so
+ * this file adds NO button rule at all — only the full width and the wrapped
+ * label at 520px.
+ *
+ * EDITABLE HOOKS (all declared in components/editor/genericContentSchema.ts,
+ * group "how" — a data-field on any other path is a dead hook no input owns)
+ *   how.tag                  — the amber eyebrow
+ *   how.headline             — set:html, so an owner can place the template's
+ *                              signature italic emphasis anywhere inside their
+ *                              own sentence. Guarded: derive-content-defaults
+ *                              supplies NO how.headline, so an unset value must
+ *                              draw nothing, not a gap above the grid
+ *   how.steps.${i}.title
+ *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
+ *                              stored value arrived as .desc / .description, so
+ *                              the first edit heals the row onto the schema key
+ *   hero.cta1.text           — the amber button's label
+ *   hero.cta1.href           — its target. Deliberately the page's ONE primary
+ *                              action reused, not a fourth CTA field: the schema
+ *                              declares hero.cta1.text as a `link` FieldSpec
+ *                              whose hrefPath is hero.cta1.href, so both halves
+ *                              are owned by a real sidebar input
+ *
+ * DERIVED, not content:
+ *   The amber disc numeral. It counts DISPLAYED steps (01, 02, 03 — never a
+ *   gap), is aria-hidden and carries no data-field, so the design's demo `st.n`
+ *   can never become a content key an owner has to maintain. The list is a real
+ *   <ol>, so the ordinal reaches assistive tech through the markup rather than
+ *   through a decorative glyph.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The design's
+ * own steps ("Send your order", "Mornings before 9am we are quickest to reply",
+ * "your drinks go on the bar to hit your pickup minute") are the DESIGNER
+ * filling in their own template — they are a reply-time promise and a service
+ * guarantee made on behalf of a business nobody has spoken to, so none of them
+ * ships. A café that has said nothing about its process gets no process band:
+ * blank rows are dropped and an all-blank list removes the whole <section>.
+ *
+ * SECTION GATE (R5) = rows.length, the BODY content. It cannot count how.tag,
+ * because derive-content-defaults hard-codes how.tag to 'How it works' on EVERY
+ * site — a gate that counted it would ship an espresso band, an eyebrow and a
+ * button over an empty grid on every site that never filled the steps in. The
+ * CTA is not counted either: a band whose only content is a button is a heading
+ * over nothing.
+ *
+ * LIST INDEXES (R6). data-field carries the ORIGINAL array index; the disc
+ * carries the DISPLAY index. Dropping a blank row 2 therefore renumbers nothing
+ * and cannot misdirect an edit of row 3 into row 2.
+ *
+ * ARRAY SOURCE. how.steps is canonical, and the hook ALWAYS spells how.steps —
+ * the read-tolerant / write-canonical split every other How section in the repo
+ * uses. A legacy site whose rows live under how.items still RENDERS, but its
+ * hooks are not re-pointed at how.items: genericContentSchema declares no
+ * how.items list and no fallbackPaths for it, so a hook spelled that way would
+ * be inert in the sidebar. Spelling how.steps keeps the row editable and heals
+ * it onto the canonical array on the first save.
+ *
+ * THE DISC IS THE ONE PLACE THIS FILE FIGHTS THE WRAPPER, and it is not an
+ * oversight. PageBL's band rule `:where(.band-dark) .fig` paints every figure
+ * BONE, which on the design's filled amber disc is about 1.7:1 — the numeral
+ * would vanish. The design states the disc label as #241A12, so .how-num.fig
+ * restates it as --band. The selector is deliberately two classes because the
+ * band rule scores (0,2,1) and a single scoped class would lose to it.
+ * The h3 has the same shape of problem: PageBL's shared heading reset paints
+ * h1–h4 with --ink and the band rule only covers .h2, so a bare <h3> here would
+ * be espresso ink on an espresso ground. It is restated as --bone, qualified
+ * with the section class so it beats that (0,1,1) reset.
+ *
+ * NOT RENDERED, deliberately:
+ *   - No id on the section. This page's anchors are menu / about / gallery /
+ *     location / faq / main; the design gives HOW-IT-WORKS no id and no nav link
+ *     points at it, so inventing #how would add a target nothing aims for.
+ *   - No target="_blank" on an IN-PAGE action. The design hard-codes one because
+ *     its demo href is an external messaging URL, but here the same button may
+ *     resolve to '#location', and opening an in-page anchor in a new tab is a
+ *     bug. It is emitted for http(s) ONLY — the same conversion HeaderBL,
+ *     CtaBandBL and FooterBL make, and CtaBandBL's amber action is this exact
+ *     button reading this exact field.
+ *   - NOT dropped, though it is the value a reader is most likely to think was
+ *     an oversight in reverse: the design's `margin-top:96px` IS carried. The
+ *     section that renders directly above this band is GalleryBL, and it ships
+ *     the design's bare bottom (`padding: clamp(56px,7.6vw,92px) 0 0`) and says
+ *     in its own frontmatter that the espresso band below it owns the gap — so
+ *     without a margin here the mosaic butts flush against the band's top edge.
+ *     It is scaled on PageBL's own clamp curve. If the gallery is switched off,
+ *     the section that takes its place keeps the shared symmetric `section`
+ *     rhythm and the gap reads generous rather than broken, which is the right
+ *     way round for the trade. The 88px the design asks for INSIDE the band is
+ *     kept as well: a coloured ground must own its own inset.
+ *   - No step count is asserted in the markup or the copy. The grid is three
+ *     tracks because the design is three tracks, but two or five owner-typed
+ *     steps lay out on the same tracks without a hole or a wrap.
+ *
+ * THEMING (R1/R4). --band-accent and the bones are NOT the theme engine's vocabulary
+ * (see PageBL's frontmatter): they exist only on the espresso bands, chosen
+ * against #241A12, so a scheme pick recolours the rust elsewhere and leaves this
+ * band's disc, eyebrow and button legible exactly as drawn. The section class is
+ * "how-band" and the button is .btn--band-accent (double dash): buildOverrideCss pins
+ * label colours on .btn-primary / .btn-yellow / .nav-cta / .cta-band .btn /
+ * .testi .btn with !important, and none of those selectors reaches anything here.
+ *
+ * SCOPING (R3). One scoped style block, no is:global. The headline is fed with
+ * set:html and scoped rules cannot reach elements a set:html creates — which is
+ * why there is no italic-emphasis rule in this file: PageBL already styles
+ * `:where(.band-dark) .h2 em` to amber from its global block, so an owner's <em>
+ * is emphasised there and a scoped duplicate here would be dead CSS.
+ */
+// `layout` is accepted because PageBL passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const how = content.how || {};
+const tag = typeof how.tag === 'string' ? how.tag.trim() : '';
+// Trimmed, and otherwise untouched: this goes out through set:html, so whatever
+// markup the owner typed reaches the wrapper's em rule intact.
+const headline = typeof how.headline === 'string' ? how.headline.trim() : '';
+
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+// Read tolerantly — a legacy site stores its rows under how.items — and write
+// canonically. See ARRAY SOURCE above.
+const source: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+const titleOf = (s: Step): string => String(s?.title ?? '').trim();
+const bodyOf = (s: Step): string => String(s?.body ?? s?.desc ?? s?.description ?? '').trim();
+// A step the admin added but never filled would otherwise print an amber disc
+// over nothing, and a title of pure whitespace would ship an empty <h3>.
+// Normalise first, drop the blanks (whitespace counts as blank) and keep the
+// ORIGINAL index on every survivor.
+const rows = source
+  .map((s, i: number) => ({ i, title: titleOf(s), body: bodyOf(s) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// Anchor guard (R7). derive-content-defaults hard-codes hero.cta1.href to
+// '#visit', an id this page does not render, so the mirrored CTA would scroll
+// nowhere. Resolve in-page hrefs against the ids PageBL actually renders and
+// keep this table in step with the copies in HeaderBL / HeroBL / CtaBandBL /
+// FooterBL. Off-page hrefs (tel:, mailto:, http) pass straight through.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'location', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'location',
+  host: 'about',
+  rooms: 'menu',
+  services: 'menu',
+  visit: 'location',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+const ctaText = typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '';
+// #location is where this template puts the address, the hours and the way to
+// reach the café, so it is the honest landing place for an action that cannot
+// be resolved — the step above it just told the visitor to get in touch.
+const ctaHref = onPage(hero.cta1?.href, '#location');
+// The design hard-codes target="_blank" rel="noopener" on this action because
+// its own href is a Messenger URL. Carried for http(s) ONLY: the same button may
+// now resolve to '#location', and opening an in-page anchor in a new tab is a
+// bug. Same test, same idiom as HeaderBL / CtaBandBL / FooterBL.
+const ctaExternal = /^https?:/i.test(ctaHref);
+---
+{rows.length > 0 && (
+  <section class="how-band band-dark">
+    <div class="wrap">
+      {tag && <span class="kick" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="h2 how-h2 reveal" data-field="how.headline" set:html={headline}></h2>}
+
+      <ol class="how-grid">
+        {rows.map((step, k) => (
+          <li class="how-step reveal" data-delay={String(Math.min(k, 3))}>
+            {/* DERIVED chrome: display index, aria-hidden, no data-field. The
+                <ol> already carries the ordinal for assistive tech. */}
+            <span class="fig how-num" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+            {step.title && <h3 data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+            {step.body && <p class="body" data-field={`how.steps.${step.i}.body`}>{step.body}</p>}
+          </li>
+        ))}
+      </ol>
+
+      {ctaText && (
+        <div class="how-act reveal">
+          <a
+            class="btn btn--band-accent"
+            href={ctaHref}
+            target={ctaExternal ? '_blank' : undefined}
+            rel={ctaExternal ? 'noopener noreferrer' : undefined}
+            data-field="hero.cta1.text"
+            data-href-field="hero.cta1.href"
+          >{ctaText}</a>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* The espresso ground, the amber eyebrow, the bone .h2 and the --bone-soft
+     body copy all arrive from the wrapper's one `band-dark` class; this file
+     must not restate any of them.
+
+     What IS overridden at section level is the block rhythm. The design insets
+     this band by 88px, tighter than the shared section rhythm, and it scales
+     down on the wrapper's own curve so it never crushes on a phone. The rule is
+     (0,2,0) once Astro scopes it, so it out-specifies the wrapper's
+     `html[data-page="BL"] section` at (0,1,2) on class count, without
+     !important.
+
+     The design's own `margin-top:96px` is carried too, on the same curve.
+     GalleryBL renders directly above with the design's bare bottom (its
+     `.gal` is `padding: … 92px 0 0`) and hands the gap to this band by name,
+     so without it the mosaic butts flush against the espresso edge. A margin
+     rather than padding, so the coloured ground still starts below the gap. */
+  .how-band { margin-top: clamp(56px, 7.6vw, 96px); padding: clamp(56px, 7.6vw, 88px) 0; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .42em tracking: one
+     unbroken word would otherwise be the widest thing on the page (R8). */
+  .kick { overflow-wrap: anywhere; }
+
+  /* Design: margin .26em 0 50px. The wrapper's .h2 is a :where() rule, so this
+     wins on specificity without !important. */
+  .how-h2 { margin: 0.26em 0 50px; }
+
+  /* derive-content-defaults ships how.tag on every site and NO how.headline, so
+     "eyebrow, then straight into the grid" is the DEFAULT state rather than an
+     edge case — and the h2's own margins are what normally open that gap.
+     Adjacency, so it fires only when the headline is absent. */
+  .kick + .how-grid { margin-top: 34px; }
+
+  /* Design: repeat(3, minmax(0,1fr)) / gap 42px. minmax(0,1fr) rather than 1fr
+     so a long unbroken word in a step cannot widen its track and push the page
+     sideways. */
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 42px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* min-width:0 as well as the minmax() above: a grid item's default min-width
+     is auto, so one unbroken word would still widen its own track. */
+  .how-step { list-style: none; min-width: 0; }
+
+  /* Design: 42x42, full circle, FILLED amber, #241A12 numeral, Fraunces 17px.
+     The face and the tabular figures come from the wrapper's .fig; the colour
+     is restated because the band rule would paint it bone on amber. Two classes
+     deliberately — see the note in the frontmatter. */
+  .how-num.fig {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background-color: var(--band-accent);
+    color: var(--band);
+    font-size: 17px;
+  }
+
+  /* Design: Fraunces 400, 25px, margin 18px 0 10px, bone. The colour is not
+     optional — the wrapper's shared h1-h4 reset paints --ink, which on this
+     ground is invisible. The design states NO line-height anywhere above this
+     h3, so in the design document it computes to `normal`; PageBL's shared
+     heading rule is 1.08, which would set a two-line title tighter than it was
+     drawn. `normal` is therefore restated verbatim rather than a number of our
+     own — FaqBL does exactly this for its own untouched h3. Qualified with the
+     section class to beat that reset. */
+  .how-band .how-step h3 {
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: 25px;
+    line-height: normal;
+    margin: 18px 0 10px;
+    color: var(--bone);
+    overflow-wrap: anywhere;
+  }
+  /* Qualified with the parent class so it beats the wrapper's bare-element
+     paragraph reset, which is (0,1,1). Size, leading and the --bone-soft colour
+     are already exactly the design's, via .body on a band. */
+  .how-band .how-step p.body { margin: 0; overflow-wrap: anywhere; }
+
+  .how-act { margin-top: 50px; }
+
+  /* R8 · this section owns its own grid. Three tracks are the design, and they
+     go straight to ONE at 900px rather than through a two-up: at 900 each track
+     is about 245px, a ~30-character measure for a four-line step, and three
+     steps in two tracks strand a lone orphan on the second row. Stacked, the
+     paragraph takes a measure cap instead: a step should not run to 110
+     characters just because its column is now the whole page. */
+  @media (max-width: 900px) {
+    .how-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+    .how-h2 { margin-bottom: 40px; }
+    .how-band .how-step p.body { max-width: 62ch; }
+  }
+  /* 520 · tighten the stack. Nothing here may push the page sideways: the
+     overflow-wrap rules above and the minmax/min-width tracks cover the text,
+     and the action goes full-bleed below. */
+  @media (max-width: 520px) {
+    .how-grid { gap: 26px; }
+    .how-h2 { margin: 0.26em 0 32px; }
+    .kick + .how-grid { margin-top: 24px; }
+    .how-num.fig { width: 38px; height: 38px; font-size: 16px; }
+    .how-band .how-step h3 { font-size: 21px; margin: 15px 0 9px; }
+    .how-act { margin-top: 34px; }
+    /* Full-bleed action: the wrapper pins .btn to white-space: nowrap, which
+       would push the viewport sideways on a long owner-typed label. */
+    .how-act .btn { width: 100%; white-space: normal; }
+  }
+</style>

@@ -43,6 +43,7 @@
  *   "education:AJ"  → Notebook Modern (v03)
  *   "trades:AK"     → Blueprint Cyanotype (v03)
  *   "foodcraft:AL"  → Pastel Deco Panadería (v03)
+ *   "foodcraft:BL"  → Kalinaw Coffee · cream + rust, a café that roasts its own
  *
  *   — v4 hero batch (one flagship per bucket) —
  *   "restaurant:AM" → Kalan · Mercado Nocturne
@@ -102,6 +103,7 @@ import PageAI from '../components/fitness/PageAI.astro';
 import PageAJ from '../components/education/PageAJ.astro';
 import PageAK from '../components/trades/PageAK.astro';
 import PageAL from '../components/foodcraft/PageAL.astro';
+import PageBL from '../components/foodcraft/PageBL.astro';
 import PageAN from '../components/salonspa/PageAN.astro';
 import PageAO from '../components/retail/PageAO.astro';
 import PageAP from '../components/autoshop/PageAP.astro';
@@ -170,7 +172,7 @@ const educationMatch = /^education:(AJ|AT)$/.exec(heroStyle);
 const educationLetter = educationMatch ? educationMatch[1] : null;
 const tradesMatch = /^trades:(AK|AU)$/.exec(heroStyle);
 const tradesLetter = tradesMatch ? tradesMatch[1] : null;
-const foodcraftMatch = /^foodcraft:(AL)$/.exec(heroStyle);
+const foodcraftMatch = /^foodcraft:(AL|BL)$/.exec(heroStyle);
 const foodcraftLetter = foodcraftMatch ? foodcraftMatch[1] : null;
 const servicesMatch = /^services:(AS)$/.exec(heroStyle);
 const servicesLetter = servicesMatch ? servicesMatch[1] : null;
@@ -225,6 +227,7 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {educationLetter === 'AJ' && <PageAJ siteData={data} />}
 {tradesLetter === 'AK' && <PageAK siteData={data} />}
 {foodcraftLetter === 'AL' && <PageAL siteData={data} />}
+{foodcraftLetter === 'BL' && <PageBL siteData={data} />}
 {salonspaLetter === 'AN' && <PageAN siteData={data} />}
 {retailLetter === 'AO' && <PageAO siteData={data} />}
 {autoshopLetter === 'AP' && <PageAP siteData={data} />}

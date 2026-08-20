@@ -1,0 +1,269 @@
+---
+/**
+ * foodcraft / WhyBL — "WHY-US" (Kalinaw Coffee / BL).
+ *
+ * ROLE: the argument block. An eyebrow, one Fraunces headline, and beneath it a
+ * three-track row of RUST-TOPPED COLUMNS — each a 2px rust rule, an ITALIC rust
+ * numeral, the reason's title and the owner's paragraph. It is the only section
+ * in the template that argues rather than describes or lists, which is why the
+ * design gives it no photograph, no price ledger and no button: eyebrow,
+ * headline, three short columns of reasoning, exactly as
+ * "Kalinaw Coffee Landing.dc.html" draws it.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * that file's data-component="WHY-US":
+ *   grid repeat(3, minmax(0,1fr)) / gap 42px
+ *   column  border-top:2px solid #B4541F; padding-top:22px
+ *   numeral Fraunces ITALIC 30px #B4541F line-height 1
+ *   title   Fraunces 400 24px, margin 14px 0 10px, #241A12
+ *   body    15px / 1.75, #6B5C4E, margin 0
+ *   h2      margin .26em 0 46px, max-width 26ch
+ * Nothing is re-derived to survive an admin colour scheme (R1). The colours are
+ * the wrapper's tokens whose VALUES are those hexes — --accent (#B4541F), --ink
+ * (#241A12), --ink-soft (#6B5C4E) — and no literal hex appears in this file.
+ *
+ * THE ITALIC NUMERAL is this template's own note, and the one place WhyBL parts
+ * from its BK sibling's otherwise identical construct: Kalinaw draws the numeral
+ * in italic Fraunces, the same face as the headline's rust emphasis, where
+ * Villa Marindu drew an upright one. It is kept italic, and it is the reason the
+ * numeral does not simply ride .fig unmodified.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts
+ * under the "Why us" group, so the sidebar owns a real input for each — a
+ * data-field on an undeclared path is a dead hook that focuses nothing):
+ *   why.tag                — the eyebrow, the wrapper's .kick primitive
+ *   why.headline           — the h2, rendered with set:html so an owner's own
+ *                            <em> picks up PageBL's ITALIC RUST EMPHASIS (the
+ *                            template's signature). That rule is GLOBAL in the
+ *                            wrapper on purpose: scoped styles cannot reach
+ *                            elements created by set:html (R3), so an italic
+ *                            rule written in this file would never apply to it.
+ *   why.items.${i}.title   — the reason (h3)
+ *   why.items.${i}.body    — the reason's paragraph. CANONICAL key: the value
+ *                            can arrive as .description through astro-builder's
+ *                            normalizeBlock alias map (and as .desc from older
+ *                            payloads), so the READ tolerates all three while
+ *                            the data-field always spells the key the schema
+ *                            declares — otherwise the sidebar never receives
+ *                            the edit.
+ *
+ * R2 — NOTHING IS SUPPLIED BY THIS FILE. Not one visible string is written here.
+ * The design's demo copy ("Why here", "Three reasons the regulars stay all
+ * morning.") is the DESIGNER filling in their own template; a real café gets a
+ * page that says only what that café said. Every guard sits OUTSIDE its tag, so
+ * an empty value removes the ELEMENT and not just its text: no eyebrow over
+ * nothing, no heading over an empty grid, no empty paragraph, and — because the
+ * 2px rust rule belongs to the COLUMN — no rust hairline floating above a row
+ * that is not there.
+ *
+ * DERIVED, not authored:
+ *   · THE NUMERAL. The design's demo data carries an `n` field ('01','02','03');
+ *     our schema declares no numeral input, so it is computed from the DISPLAY
+ *     index, zero-padded to two digits, and marked aria-hidden — it is ordinal
+ *     decoration and a screen reader already gets the order from the document.
+ *     It is the ONE thing keyed to the display index rather than the original
+ *     one (R6): after a blank row is dropped the printed sequence must read
+ *     01·02·03, never 01·03. Everything an EDIT touches uses the ORIGINAL index,
+ *     so deleting reason 2 can never misdirect a write into reason 3.
+ *   · The rust top rule and the column frame. Decorative, no data-field.
+ *
+ * DELIBERATELY NOT RENDERED (so none of it reads as an oversight):
+ *   · why.image and why.lead. Both are schema-declared and both are used by
+ *     sibling templates, but this design's WHY-US has neither a plate nor a lead
+ *     paragraph — it is eyebrow, headline, three columns. Adding either would be
+ *     building a different section than the one that was handed over.
+ *   · NO STAR ROW (R2). This section carries no rating field and no review; the
+ *     design draws none here either. Stars belong to TESTIMONIALS, and only ever
+ *     from a real numeric rating.
+ *   · NO id ON THE SECTION. The design gives WHY-US none, and PageBL's
+ *     ANCHOR_ALIAS deliberately remaps the derived '#why' nav href onto
+ *     '#about'. An id here would create a target the navigation never points at
+ *     and a second landing place for the same link.
+ *   · NO onPage() ANCHOR HELPER (R7), and this is a decision, not an omission.
+ *     The design's WHY-US renders no href of any kind — no button, no link — so
+ *     there is nothing to remap and a copied helper would ship as dead code. If
+ *     a link is ever added here, copy the helper in from a BL sibling with
+ *     PAGE_ANCHORS = menu/about/gallery/location/faq/main and ANCHOR_ALIAS
+ *     mapping visit,contact→location · services,rooms→menu · host,why→about ·
+ *     work→gallery · book→main, passing tel:/mailto:/http through untouched.
+ *   · NO PER-REASON ICON. A drawn pictogram claims WHAT the reason is about; the
+ *     owner's words are the only signal this section is allowed to carry.
+ *
+ * TRACK COUNT vs ITEM COUNT: the grid is fixed at three tracks because the
+ * design fixes three tracks (hint-placeholder-count="3"). An owner who adds a
+ * fourth reason gets a second row, not four squeezed columns — the design's
+ * proportions survive and no owner content is refused.
+ *
+ * SECTION PADDING is the wrapper's, not this file's. The design writes
+ * `max-width:1240px;margin:0 auto;padding:96px 32px 0`: the 1240/gutter half is
+ * the shared `.wrap`, and the 96px top is html[data-page="BL"] section's
+ * clamp(56px,7.6vw,96px), which caps at exactly that. The design's bottom-0 is a
+ * WHOLE-PAGE rhythm decision (every unbanded section in it pads top only) and it
+ * belongs in the wrapper's shared rule; one section zeroing its own bottom while
+ * its fourteen siblings keep theirs is the kind of local re-derivation that put
+ * an earlier template out of step with its design. Flagged, not done here.
+ */
+// `layout` is accepted because PageBL passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const why = content.why || {};
+const tag = typeof why.tag === 'string' ? why.tag.trim() : '';
+// Nothing beyond trim() is done to the headline: it goes out through set:html so
+// whatever markup the owner typed reaches the wrapper's italic-rust em rule.
+const headline = typeof why.headline === 'string' ? why.headline.trim() : '';
+
+type Item = { title?: string; body?: string; desc?: string; description?: string };
+const items: Item[] = Array.isArray(why.items) ? why.items : [];
+const titleOf = (it: Item): string => String(it?.title ?? '').trim();
+const bodyOf = (it: Item): string => String(it?.body ?? it?.desc ?? it?.description ?? '').trim();
+
+// A reason the owner added but never filled would otherwise spend a rust rule,
+// 22px of padding and a numeral on nothing. Drop the blanks (whitespace counts
+// as blank) but carry the ORIGINAL index `i` so every data-field still writes
+// into the real array slot.
+const rows = items
+  .map((it, i: number) => ({ i, title: titleOf(it), body: bodyOf(it) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// SECTION GATE (R5). Counts the COLUMNS only. lib/derive-content-defaults.ts
+// emits why.tag ('Why us') and why.headline ('Why choose X') for every site
+// while shipping items: [] — so a gate that counted the tag or the headline
+// would be always-true and would ship an eyebrow and a headline over an empty
+// three-track grid on every first build.
+const hasReasons = rows.length > 0;
+---
+{hasReasons && (
+  <section class="why">
+    <div class="wrap">
+      {tag && <span class="kick" data-field="why.tag">{tag}</span>}
+      {headline && <h2 class="h2 why-h reveal" data-field="why.headline" set:html={headline}></h2>}
+      <div class="why-grid">
+        {rows.map((r, d: number) => (
+          /* `d` is the DISPLAY index and `r.i` is the ORIGINAL one. The numeral
+             is the only thing keyed to `d`, so the printed sequence stays
+             unbroken after a blank row is dropped; it is aria-hidden because the
+             order is already carried by the document. The stagger tops out at
+             the wrapper's last declared delay, so a fourth reason simply reveals
+             with the third. */
+          <div class="why-col reveal" data-delay={d > 0 ? String(Math.min(d, 3)) : undefined}>
+            <div class="fig why-n" aria-hidden="true">{String(d + 1).padStart(2, '0')}</div>
+            {r.title && <h3 class="why-t" data-field={`why.items.${r.i}.title`}>{r.title}</h3>}
+            {r.body && <p class="why-p" data-field={`why.items.${r.i}.body`}>{r.body}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* The eyebrow is owner-typed and set in 10px caps at .42em tracking, so a
+     single unbroken word is unusually wide for its character count — and the
+     wrapper's 520 pass only re-sizes .kick, it does not let it break (R8). */
+  .kick { overflow-wrap: anywhere; }
+
+  /* ── the headline. The wrapper's .h2 primitive already carries the design's
+        face, clamp(31px,4vw,54px), line-height 1.08 and --ink; only the two
+        values this section states differently are restated — the design's
+        `margin:.26em 0 46px` and its 26ch measure (the shared primitive caps at
+        24ch). PageBL's primitives are :where()-wrapped, so a scoped class here
+        out-specifies them without an !important. */
+  .why-h { margin: .26em 0 46px; max-width: 26ch; }
+
+  /* An owner who clears the headline is a real case, and then the eyebrow would
+     sit flush on the first rust rule — the h2's own margins are what normally
+     open that gap. Adjacency, so it fires ONLY in that case. */
+  .kick + .why-grid { margin-top: 34px; }
+
+  /* ── the three rust-topped columns. Tracks and gap exactly as drawn. */
+  .why-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 42px;
+  }
+  /* min-width:0 as well as the minmax() above: a grid item's default min-width
+     is auto, so one unbroken word in a title would otherwise widen its track and
+     push the whole page sideways (R8). */
+  .why-col {
+    min-width: 0;
+    border-top: 2px solid var(--accent);
+    padding-top: 22px;
+  }
+
+  /* ── the ITALIC numeral. It rides the wrapper's .fig primitive for the face,
+        tabular lining figures and line-height 1, and states the three things
+        this design draws differently: 30px, italic, rust. The weight is pinned
+        at 500 because that is the ONE italic weight PageBL loads from Fraunces
+        (ital,opsz,wght@1,9..144,500) — leaving it at .fig's 400 asks the browser
+        for an italic face that was never fetched. Visually identical, but it
+        rules out a synthesised slant on a first paint. */
+  .why-n {
+    font-size: 30px;
+    font-style: italic;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  /* Fraunces at 400 is the design's weight for this title; it is pinned rather
+     than inherited so no heading rule elsewhere can push it onto a face this
+     wrapper does not load. LEADING: the design's WHY-US title carries no
+     line-height and the design's own stylesheet sets none, so `normal` is
+     literally what it draws — restated here because PageBL's shared h1-h4 rule
+     is 1.08, which is the h2's display leading and sets a 24px title tighter
+     than it was drawn the moment an owner's reason is longer than the
+     designer's and wraps to two lines. Guessing a number would be a divergence
+     of its own; FaqBL answers the identical case the same way. */
+  .why-t {
+    font-family: var(--disp); font-weight: 400; font-size: 24px;
+    line-height: normal;
+    margin: 14px 0 10px; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* PageBL's `:where(p){margin:0 0 1em}` sits at (0,1,1), so this paragraph rule
+     is qualified with its parent class to out-specify it — the design's
+     paragraph has no bottom margin at all. */
+  .why-col .why-p {
+    margin: 0; font-size: 15px; line-height: 1.75; color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── 900 · the collapse this family gives a three-track row of TEXT: two
+        tracks here, one at 560. Two-up leaves each column ~400px — still a
+        column — and it is what SERVICES, TESTIMONIALS and DELIVERY do at this
+        width, so the page reflows on one rhythm. HOW-IT-WORKS is the one
+        deliberate exception (it goes straight to a single track, for the
+        four-line steps its own file argues); this section's reasons are two or
+        three lines, so it keeps the family step. */
+  @media (max-width: 900px) {
+    .why-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; }
+    .why-h { margin-bottom: 36px; }
+  }
+
+  /* ── 760 · the wrapper's shared pass releases :where(.h2)'s measure here. The
+        26ch above is a scoped class and out-specifies it, so it has to be
+        released on the same line or this headline keeps a 26ch strip on every
+        phone while its siblings run the full width. */
+  @media (max-width: 760px) {
+    .why-h { max-width: none; }
+  }
+
+  /* ── 560 · one column. minmax(0,…) rather than 1fr: a single track still
+        defaults to an auto minimum. The paragraph takes a measure cap here,
+        where it is the full width of the wrap rather than a column. */
+  @media (max-width: 560px) {
+    .why-grid { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+    .why-col .why-p { max-width: 62ch; }
+  }
+
+  /* ── 520 · tighten the stack. Nothing here may push the page sideways, which
+        the overflow-wrap above and the minmax/min-width tracks already cover;
+        there is no button in this section to give white-space:normal to. */
+  @media (max-width: 520px) {
+    .why-grid { gap: 26px; }
+    .why-h { margin-bottom: 28px; }
+    .kick + .why-grid { margin-top: 24px; }
+    .why-n { font-size: 26px; }
+    .why-t { font-size: 21px; }
+  }
+</style>

@@ -1,0 +1,355 @@
+---
+/**
+ * foodcraft / TestimonialsBL — "Kalinaw Coffee" IN THEIR WORDS: a CENTRED head
+ * (rust eyebrow over a Fraunces headline) above a three-up row of white quote
+ * cards on the cream ground, each opened by a rating mark, then the quote set in
+ * Fraunces at 19.5px and a tracked-caps attribution.
+ *
+ * ROLE: the social proof a stranger decides on before walking in — which is
+ * exactly why this file prints nothing the owner did not put on record.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from the
+ * TESTIMONIALS section of "Kalinaw Coffee Landing.dc.html":
+ *   head            text-align centre, 46px below it
+ *   eyebrow         10px / .42em / caps / #B4541F / 600      → .kick, unchanged
+ *   headline        Fraunces 400, clamp(31px,4vw,54px)/1.08, margin .26em 0 0
+ *   grid            repeat(3, minmax(0,1fr)), gap 24px
+ *   card            #FFFFFF ground, 1px #E9DFCF hairline, radius 16px,
+ *                   padding 30px 28px
+ *   mark            13px, #B4541F, letter-spacing 3px, 17px below it
+ *   quote           Fraunces 19.5px / 1.55, #241A12, 18px below it
+ *   attribution     11px / .2em / caps / #948373
+ * Mapped to the wrapper tokens that carry those same values: #FFFFFF = --card,
+ * #E9DFCF = --line, 16px = --r-lg, #B4541F = --accent, #241A12 = --ink,
+ * #948373 = --muted, Fraunces = --disp. NO LITERAL HEX APPEARS BELOW. Nothing is
+ * re-derived to "survive" a scheme: this is the cream card the designer drew.
+ *
+ * NOT A BAND. The design leaves this section on the cream ground — the espresso
+ * bands in this template are Trust and How. So this file carries no `band-dark`,
+ * and the amber/bone tokens (which exist only for those bands) are untouched
+ * here. Adding the band class would be a second design, not this one.
+ *
+ * READS content.testimonials.items ({quote, who, rating}); tolerates the legacy
+ * bare array parked at content.testimonials and the legacy author/name spellings
+ * for the attribution. The data-field always names the CANONICAL path, so the
+ * first sidebar edit migrates a legacy row onto the real key.
+ *
+ * COERCED AT EVERY READ — THE ROW FIRST, THEN EVERY FIELD. Nothing upstream type
+ * checks either one. astro-builder's normalizeBlock passes a non-object entry
+ * straight through (`if (!it || typeof it !== 'object') return it`), so
+ * `items` can hold a null, and reading `.quote` off that null throws at BUILD
+ * time and takes the whole page down with it. So each row is normalised to an
+ * object before a single field is read; a bare STRING row is read as the quote
+ * itself — the legacy shape where the row IS the quote — exactly the way AreaBL
+ * reads a bare `place`, so owner text is never silently dropped instead.
+ * Then the fields: a quote that arrives as a number crashes the build on
+ * .trim(), and one that arrives as an object prints "[object Object]" through
+ * set:html. str() passes strings and finite numbers and treats everything else
+ * as absent. Blank-after-trim counts as absent too — a whitespace-only `who`
+ * must not draw an empty figcaption, and a whitespace-only tag must not draw an
+ * empty rust eyebrow.
+ * astro-builder's normalizeBlock aliases name/author onto `who` only when `who`
+ * is null, so a row carrying who:'' keeps its blank; the fallback chain below is
+ * `||` and not `??` so that row still prints the name the owner did type.
+ *
+ * EDITABLE HOOKS (every one is declared in genericContentSchema, group
+ * "testimonials" — a data-field on a path the schema does not own is a dead hook
+ * that no sidebar input can focus)
+ *   testimonials.tag                  — the rust eyebrow
+ *   testimonials.headline             — set:html, so an owner can place this
+ *                                       template's signature ITALIC RUST
+ *                                       EMPHASIS anywhere inside their own
+ *                                       sentence (the wrapper styles .h2 em)
+ *   testimonials.items.${i}.quote     — set:html, the Fraunces blockquote
+ *   testimonials.items.${i}.who       — the tracked-caps figcaption
+ *   testimonials.items.${i}.rating    — read, never printed as text: it is the
+ *                                       ONLY thing that can draw a star (below).
+ *                                       It deliberately carries NO data-field on
+ *                                       the star row, and that is not a missing
+ *                                       hook — the row RENDERS the number, it is
+ *                                       not the number. editorBridge's ed:update
+ *                                       would replace the glyphs with the raw
+ *                                       digit, and VisualEditor (which does not
+ *                                       honour data-derived) makes every
+ *                                       [data-field] contentEditable, so an
+ *                                       admin could type "★★★★★" back into
+ *                                       rating and lose the score. It is edited
+ *                                       in the sidebar's "Rating out of 5" box,
+ *                                       which genericContentSchema declares.
+ *
+ * DERIVED, not authored: the number of stars, and the reveal delay (capped at 3
+ * so a fourth card is not still hidden a second after it scrolls in).
+ *
+ * ANTI-FABRICATION — the hard rule of this section:
+ *   - THE STAR ROW IS NOT HARDCODED. The design prints "★★★★★" over every quote,
+ *     because the designer was filling their own template. Five stars for a
+ *     customer who never gave a score is a claim invented on the owner's behalf,
+ *     so stars are drawn ONLY from a finite numeric
+ *     testimonials.items.${i}.rating. Non-numeric, blank and absent ratings draw
+ *     no stars at all; the card instead opens with a rust hairline that occupies
+ *     the same beat and states nothing. Expect the hairline on essentially every
+ *     real site — that is the correct, honest default, not a missing feature.
+ *   - CLAMPING, stated so it is not read as an oversight: a rating is rounded,
+ *     then capped at 5 (a typo of "7" draws five stars, never seven). A value
+ *     that rounds BELOW 1 — 0, -2, 0.4 — is treated as no usable rating and
+ *     draws the hairline. It is never clamped UP to one star, because inventing
+ *     a star out of a zero is the same fabrication as inventing five.
+ *   - The accessible name announces the SAME number that is drawn, so the label
+ *     and the glyphs can never disagree.
+ *   - NO review count, NO average score, NO platform name, NO "regulars' choice"
+ *     badge. None of it is in the data contract, and the design draws none.
+ *   - Quote and attribution are guarded independently, and every guard sits
+ *     OUTSIDE its tag, so a quote with no name renders as an unattributed quote
+ *     rather than an empty caption holding a bottom margin open.
+ *   - A row with no quote is DROPPED: the card IS the quote, so a name-only row
+ *     would render a bordered white box attributing nothing to somebody. The row
+ *     stays in the sidebar and reappears the instant a quote is typed.
+ *
+ * SECTION GATE: the whole <section> renders only when at least one row has a
+ * real quote. It deliberately does NOT count tag/headline. Those two arrive from
+ * the admin sidebar or the AI extractor with nothing behind them all the time,
+ * and lib/derive-content-defaults.ts fills heads across the site, so a gate that
+ * counted a headline would ship a centred heading over an empty grid — the one
+ * thing a proof section must never do.
+ *
+ * ORIGINAL INDEXES: `i` is captured BEFORE blank rows are dropped, so deleting
+ * row 2 cannot misdirect an edit of row 3 into row 4. Nothing here is numbered
+ * on screen, so no display index is needed.
+ *
+ * THE ONE AUTHORED STRING in this file is the stars' aria-label, which is never
+ * visible. It exists because a row of glyphs with no accessible name is
+ * decoration announcing nothing, and a rating an owner typed is information a
+ * screen-reader user is entitled to. No visible word on this page comes from
+ * this file.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   testimonials.source   — the schema declares it, but this template has an
+ *                           honest home for a star claim (rating), and the
+ *                           design draws no source line under the head. A
+ *                           "★ Reviews on Google" line would also be a platform
+ *                           claim nothing in the pipeline verifies.
+ *   testimonials.bigQuote — there is no pull-quote element in this design.
+ *   testimonials.items.${i}.role — the row schema stops at quote/who/rating, so
+ *                           the hook would focus nothing in the v3 sidebar.
+ *                           (normalizeBlock aliases `context` onto `role`, but
+ *                           no sidebar input owns it here.)
+ *   No image: the design's card is type only, with no avatar plate — so there is
+ *   no .plate, no role="img", and nothing to give an accessible name to.
+ *
+ * NO ANCHOR HELPER, and that is not an omission: this section emits no <a> at
+ * all (the design's testimonials block contains no link), so there is no href to
+ * remap onto the page's anchor set and no data-href-field to own. Copying
+ * onPage()/PAGE_ANCHORS in here would be an unused function, not a safeguard. It
+ * also takes NO id — the page's ids are menu / about / gallery / location / faq
+ * / main, and the design gives this section none of them.
+ *
+ * CLASS-NAME NOTE (engine): this section must NOT be class "testi" —
+ * buildOverrideCss pins `.testi, .testi p { color: <on-ink> !important }`, which
+ * would repaint the quotes with a scheme colour the design never chose. It is
+ * class "regulars" and carries no buttons at all, so no engine label pin reaches
+ * it.
+ *
+ * CONTRAST: the attribution is --muted on --card, ~3.7:1 — below AA. That is the
+ * design's own pairing (the wrapper's frontmatter records --muted as accepted
+ * rather than silently darkened) and on the pure-white card it is marginally
+ * tighter than the wrapper's on-paper figure. The line carries only a name that
+ * the quote above it does not depend on, and lifting --muted is a one-line
+ * change in the wrapper — the owner's call, not this file's. The stars are
+ * --accent on --card, ~5:1, comfortably AA. The quote is --ink on --card, ~15:1.
+ *
+ * VERTICAL RHYTHM comes from the wrapper's shared `section` padding — the
+ * design's "96px top, 0 bottom" is the same rhythm once every section stacks.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const test = content.testimonials || {};
+
+/* Coerce at EVERY read — see COERCED AT EVERY READ above. A string passes; a
+   finite number passes as its digits; null, undefined, NaN, an array and an
+   object are not content and become ''. Nothing downstream calls a string method
+   on raw input, so no shape from the pipeline can fail the build. */
+const str = (v: unknown): string =>
+  typeof v === 'string' ? v : (typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+
+const tag = str(test.tag).trim();
+const headline = str(test.headline).trim();
+
+type Item = {
+  quote?: unknown;
+  who?: unknown;
+  author?: unknown;
+  name?: unknown;
+  rating?: unknown;
+};
+
+/* Tolerate both shapes at every read: the canonical object with .items, and the
+   legacy bare array parked at content.testimonials. */
+const items: Item[] = Array.isArray(test.items)
+  ? test.items
+  : (Array.isArray(test) ? (test as Item[]) : []);
+
+/* A rating is a CLAIM about a customer. Only a finite number becomes stars; it
+   is rounded, capped at 5, and anything that rounds below 1 yields 0 — which
+   draws the hairline, not a star. Never widen this. */
+const starsOf = (it: Item): number => {
+  const r = Number(it.rating);
+  if (!Number.isFinite(r)) return 0;
+  const n = Math.round(r);
+  return n >= 1 ? Math.min(5, n) : 0;
+};
+
+const STAR = '★';
+
+/* Normalise ONCE, carrying the ORIGINAL array index, then drop the rows that
+   cannot render an honest card. Gating on `rows` rather than `items` also means
+   a block of blank rows hides instead of shipping three empty white boxes. */
+const rows = items
+  .map((raw, i: number) => {
+    /* THE ROW IS COERCED BEFORE ANY FIELD IS READ — see COERCED AT EVERY READ
+       above. A null row would throw on `.quote` and fail the build; a bare
+       string row is the quote the owner typed and is kept, not dropped. */
+    const it: Item = raw && typeof raw === 'object' ? (raw as Item) : ({ quote: raw } as Item);
+    return {
+      /* the quote keeps its own leading/trailing space — only the GUARD is
+         trimmed, so a blank-looking quote cannot open a bordered card */
+      quote: str(it.quote),
+      who: str(it.who).trim() || str(it.author).trim() || str(it.name).trim(),
+      stars: starsOf(it),
+      i,
+    };
+  })
+  .filter((r) => Boolean(r.quote.trim()));
+
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="regulars">
+    <div class="wrap">
+      {hasHead && (
+        <div class="rg-head reveal">
+          {tag && <span class="kick" data-field="testimonials.tag">{tag}</span>}
+          {headline && <h2 class="h2" data-field="testimonials.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="rg-grid">
+        {rows.map((row, k) => (
+          <figure class="rg-card reveal" data-delay={String(Math.min(k, 3))}>
+            {row.stars > 0 ? (
+              /* Drawn from the owner's own number, and named with that same
+                 number so the glyphs are never decoration-only. */
+              <span class="rg-stars" role="img" aria-label={`Rated ${row.stars} out of 5`}>
+                <span aria-hidden="true">{STAR.repeat(row.stars)}</span>
+              </span>
+            ) : (
+              /* Where the design hardcodes five stars. A rust hairline on the
+                 same beat: same visual opening, no claim. */
+              <span class="rg-rule" aria-hidden="true"></span>
+            )}
+            <blockquote data-field={`testimonials.items.${row.i}.quote`} set:html={row.quote}></blockquote>
+            {row.who && (
+              <figcaption data-field={`testimonials.items.${row.i}.who`}>{row.who}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* ── head · centred, 46px of air under it (design) ───────────────────────── */
+  .rg-head { text-align: center; margin-bottom: 46px; }
+  .rg-head .kick { overflow-wrap: anywhere; }
+  /* The wrapper's .h2 is left-aligned with a bottom margin; the design's head is
+     centred with the margin on TOP. The 24ch cap from the wrapper is kept (and
+     centred by the auto margins) so a long owner headline cannot run the full
+     1240px of the container. */
+  .regulars .h2 {
+    margin: 0.26em auto 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── grid · three up, 24px (design) ──────────────────────────────────────── */
+  .rg-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  /* ── card · the design's white panel inside a warm hairline, 16px corner ─── */
+  .rg-card {
+    margin: 0;
+    min-width: 0;
+    background-color: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 30px 28px;
+  }
+
+  /* ── the rating mark. Both variants occupy ~39px so a card WITH a rating and a
+        card without stay on the same baseline in the same row. ────────────── */
+  .rg-stars {
+    display: block;
+    font-size: 13px;
+    line-height: 1.7;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin: 0 0 17px;
+  }
+  /* the hairline that replaces the design's hardcoded star row — 76px is roughly
+     the width those five glyphs occupy at 13px on 3px tracking */
+  .rg-rule {
+    display: block;
+    width: 76px;
+    max-width: 100%;
+    height: 1px;
+    background-color: var(--accent);
+    margin: 11px 0 27px;
+  }
+
+  /* ── quote · Fraunces at the design's 19.5px. The UA gives <blockquote> a 40px
+        side margin, so the reset here is load-bearing, not tidying. ────────── */
+  .rg-card blockquote {
+    margin: 0 0 18px;
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: 19.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* set:html output carries no scope attribute, so an owner's <em> is only
+     reachable through :global(). It stays the quote's own ink: the italic RUST
+     emphasis is the HEADLINE signature, and repainting a customer's words rust
+     would read as the café talking, not the customer. */
+  .rg-card blockquote :global(em),
+  .rg-card blockquote :global(.em) { font-style: italic; color: inherit; }
+
+  /* ── attribution · the design's 11px / .2em, not .mono's 10px / .2em / 500 ── */
+  .rg-card figcaption {
+    font-family: var(--sans);
+    font-weight: 400;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── RESPONSIVE · this section owns its own grid; the wrapper owns the shared
+        760 / 520 type pass. Nothing here may push the page sideways. ──────── */
+  @media (max-width: 900px) {
+    .rg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  }
+  @media (max-width: 640px) {
+    .rg-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .rg-head { margin-bottom: 34px; }
+    .regulars .h2 { max-width: none; }
+    .rg-card { padding: 24px 20px; }
+    .rg-card blockquote { font-size: 18px; line-height: 1.5; margin-bottom: 16px; }
+    .rg-card figcaption { letter-spacing: 0.16em; }
+    .rg-stars { letter-spacing: 2px; }
+  }
+</style>
