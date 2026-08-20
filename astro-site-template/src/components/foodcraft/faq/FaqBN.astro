@@ -1,0 +1,433 @@
+---
+/**
+ * foodcraft / FaqBN — "FAQ" (Panday Coffee Works / BN).
+ *
+ * ROLE: the design's FAQ element — one uppercase Archivo headline over a RULED
+ * TWO-UP TABLE of question-and-answer cells, hung on the page spine at index 10.
+ * NO ACCORDION: the design draws every answer open. On a six-seat coffee bar the
+ * answers ARE the practicalities, and someone deciding whether to make the trip
+ * should not have to click to find out.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from the
+ * element carrying data-component="FAQ" in "Panday Coffee Works Landing.dc.html",
+ * mapped hex → wrapper token (R1 — not one literal hex appears in this file):
+ *   section    id="faq", border-bottom 1px #17181A, grid minmax(0,52px)
+ *              minmax(0,1fr) ......... the wrapper's .sec, used and NOT rebuilt
+ *   rail       border-right 1px #C8C7C2, flex-end/centre, padding 20px 0 ..
+ *              .rail; its rotated 10px/.3em mono label in #A8351B .... .rail-t
+ *   body cell  padding 48px 34px ......... .sec-body, with only the VERTICAL
+ *              48px restated (the wrapper's clamp caps at 44px) — see the style
+ *              block. The 34px sides stay the wrapper's clamp so this section's
+ *              text edge is flush with its neighbours'.
+ *   headline   800 clamp(28px,3.6vw,50px) / line-height 1 / -.03em / uppercase,
+ *              margin 0 0 30px, #17181A ..................... .h2 + var(--ink)
+ *   table      grid repeat(2,minmax(0,1fr)), border-top 1px #17181A
+ *              (--rule-strong, the page's full-strength rule) and border-left
+ *              1px #C8C7C2 (--line, the interior grey). The two weights are the
+ *              design's own distinction and are NOT collapsed to one.
+ *   cell       padding 24px 26px, border-right + border-bottom 1px #C8C7C2
+ *   numeral    mono 10px / .14em / #A8351B, margin-bottom 10px ...... --accent
+ *   question   700 18px / -.01em, margin 0 0 8px, #17181A ........... --ink
+ *   answer     14.5px / 1.8, margin 0, #3C3E42 ..................... --ink-2
+ *              (#3C3E42 IS --ink-2 exactly; it is not --ink-soft #5A5C60, and
+ *              rounding the two together would lighten the design's body copy.)
+ *
+ * EDITABLE HOOKS — declared in components/editor/genericContentSchema.ts under
+ * section id 'faq'. A data-field on any other path is a dead hook no sidebar
+ * input owns, so nothing outside this list is bound:
+ *   faq.headline         — the h2, fed with set:html so an owner can place this
+ *                          template's SECOND VOICE anywhere inside their own
+ *                          sentence. That voice is a COLOUR CHANGE to rust, not
+ *                          an italic — Archivo has no italic worth using and the
+ *                          design never asks for one. The rule that paints it,
+ *                          :where(.h2 em), is GLOBAL in PageBN and is therefore
+ *                          NOT restated here: a scoped rule cannot reach markup
+ *                          made by set:html (R3), and the wrapper's colour is
+ *                          already correct on this paper ground.
+ *   faq.items.${i}.q     — the question
+ *   faq.items.${i}.a     — the answer, also set:html so an owner can emphasise,
+ *                          bold or link inside their own sentence
+ *
+ * DERIVED, and therefore carrying no data-field and never stored:
+ *   · the rail label "10 / Notes" — the spine's index for this section's place
+ *     in PageBN's render order (Hero 00, About 01, Services 02, Why 03,
+ *     Gallery 04, How 05, Testimonials 06, Credentials 07, Location 08,
+ *     Area 09, FAQ 10, CtaBand 11 — the design's own numbering, unchanged).
+ *     Decoration, aria-hidden.
+ *   · the cell numeral "N01", "N02" … — the design's index glyph for this
+ *     table, "N" for the Notes the rail names. Built from the DISPLAY position
+ *     (R6), never the original index, so dropping a blank row cannot print
+ *     N01, N03, N04. Decoration, aria-hidden.
+ *   · the reveal wrappers and their data-delay step.
+ *
+ * R2 — NOT ONE WORD IS SUPPLIED BY THIS FILE, and on an FAQ that rule is
+ * load-bearing beyond the usual: an answer is a promise about a business this
+ * template has never visited. So there is no opening or closing time, no
+ * reservation policy, no wifi or power-outlet claim, no delivery promise, no
+ * card-versus-cash line, no "we reply within…", and no example question. The
+ * design's own demo strings ("Asked at the bar" and its six sample rows, right
+ * down to "six seats and no power outlets") are the DESIGNER filling in their
+ * own template; they are not this file's to type.
+ *
+ * R5 — THE SECTION GATE COUNTS THE ROWS, never the tag and never the headline.
+ * lib/derive-content-defaults.ts fills faq.tag and faq.headline on EVERY site
+ * while emitting items only when the submission actually answered something. A
+ * gate on headline would ship a 50px headline standing over an empty ruled
+ * table on any shop whose owner typed no questions. With no filled row the whole
+ * <section> is omitted — no rail, no headline, no table, no padding and no rule.
+ *
+ * R6 — blank rows are dropped, but every kept row carries its ORIGINAL index
+ * into data-field, so deleting question 2 can never misdirect an edit into
+ * question 3. The numeral is the one thing keyed to the display position,
+ * because it is decoration rather than a hook.
+ *
+ * ROW GUARDS: a cell is kept when EITHER field has content, and the two content
+ * tags are guarded independently. Silently vanishing an answer an owner typed is
+ * a worse failure than printing a lone paragraph in a ruled cell. Every guard
+ * sits OUTSIDE its tag, so a half-filled row prints only what was actually
+ * typed — never an empty <h3> holding open 8px of margin over a blank line box.
+ * Fields are TRIMMED before they are tested, because a value holding only a
+ * space is truthy and would print exactly that empty element.
+ *
+ * DELIBERATELY NOT RENDERED, so none of it reads as an oversight:
+ *   · faq.tag. The design gives this section NO eyebrow — the headline sits
+ *     straight on the ruled table, and .kick appears nowhere in the element.
+ *     derive-content-defaults emits a tag on every site, so rendering it would
+ *     print a mark the design does not have on essentially every build. The hook
+ *     is left to the templates whose design draws one.
+ *   · NO STAR ROW and no rating ornament of any kind. Five stars printed over a
+ *     customer who gave no rating is a fabricated claim; that treatment belongs
+ *     to TESTIMONIALS, where it is drawn only from a numeric
+ *     testimonials.items.N.rating, clamped 1–5, aria-hidden, with the number
+ *     itself in the accessible label. An FAQ row carries no rating field to draw
+ *     from, so there is nothing here to draw — not even the plain rule that
+ *     stands in for a missing one.
+ *   · no <details>/<summary> accordion. The design shows every answer open.
+ *   · no button and no link of any kind. The design gives the FAQ no action; the
+ *     contact routes live in the header, the CTA band and the footer.
+ *   · NO onPage() ANCHOR-REMAP HELPER, and that is a decision rather than an
+ *     omission (R7). The helper exists to rewrite an owner's href onto the ids
+ *     this page really has — for BN that set is `menu about gallery visit faq
+ *     main`, with location/contact → visit, services/rooms → menu, host/why →
+ *     about, work → gallery, book → main, and tel: / mailto: / http passing
+ *     through untouched. This section emits NO href at all: no button, no link,
+ *     no data-href-field. A remap helper with nothing to remap is dead code a
+ *     later reader would have to prove unused, so it is not carried. The one
+ *     anchor this file owns is its own id="faq" — already in that set, and in
+ *     the PAGE_ANCHORS both HeaderBN and FooterBN declare, so an owner's own
+ *     link to it passes their remap untouched.
+ *   · no .plate, no role="img", no image. There is no upload behind this band,
+ *     so there is nothing to name and nothing to hide (R9). Nothing in this file
+ *     emits a conditional accessibility attribute, so there is no way for a
+ *     literal aria-hidden to be duplicated beside a conditional one.
+ *   · no data-block marker: editorBridge only needs one where two content
+ *     prefixes share a <section>. This band is faq.* alone, so the Blocks toggle
+ *     resolves to it by hook weight already.
+ *   · NO FILLER CELL when the row count is ODD. The table's rules are drawn by
+ *     the cells themselves, so five questions leave the second half of the last
+ *     row open. That is honest: a phantom sixth cell would rule a hairline under
+ *     a row that is not there, which is exactly what R2 forbids.
+ *
+ * THE QUESTION IS NOT UPPERCASED, and that is deliberate. PageBN sets
+ * `text-transform: uppercase` on :where(h1,h2,h3,h4) because the DISPLAY voice
+ * of this template is caps; the design's FAQ h3 declares no text-transform and
+ * the design's own stylesheet sets none, so a question renders in the case the
+ * owner typed it. `text-transform: none` is restated below to hold the design,
+ * not to fight the wrapper.
+ *
+ * VERIFIED CONTRAST on the paper ground — COMPUTED (sRGB relative luminance,
+ * WCAG 2.x) from the hexes PageBN declares, not estimated:
+ *   question --ink #17181A on --paper #EFEEEA .......... 15.30
+ *   answer   --ink-2 #3C3E42 on --paper ................. 9.23
+ *   numeral  --accent #A8351B on --paper ................ 5.67
+ *   an owner's link inside an answer, --accent on --paper  5.67
+ * Nothing in this section is below AA; the tightest pair is 5.67. The hairlines
+ * (--line, 1.46 on paper) are non-text structure and are not held to that bar,
+ * which is why the design also rules the table's TOP in --rule-strong.
+ *
+ * R3 — one scoped <style> block, no is:global. Both the headline and the answers
+ * arrive through set:html, so scoped rules cannot reach inside them: the
+ * headline's rust second voice is painted by PageBN's global :where(.h2 em), and
+ * an <em>, <strong> or <a> inside an answer is reached from here via :global().
+ */
+// `layout` is accepted because PageBN passes it to every section uniformly.
+// This band reads nothing outside content.*, so it is never destructured.
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+/* Coerce at EVERY read. A string passes; a finite number passes as its digits;
+   null, undefined, NaN, an array and an object are not content and become ''.
+   Nothing downstream calls a string method on raw input, so no shape from the
+   pipeline can fail the BUILD — and an object reaching set:html would otherwise
+   print the literal "[object Object]" onto a customer's page. */
+const str = (v: unknown): string =>
+  typeof v === 'string' ? v : (typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+
+const faq = content.faq || {};
+const headline = str(faq.headline).trim();
+
+/* The schema declares 'faq.items' with fallbackPaths ['faq'], so the stored
+   value is legitimately EITHER {tag, headline, items:[…]} or a bare array.
+   Both shapes are read. */
+type Item = { q?: unknown; a?: unknown; question?: unknown; answer?: unknown };
+const items: Item[] = Array.isArray(faq.items)
+  ? faq.items
+  : (Array.isArray(faq) ? (faq as Item[]) : []);
+
+/* Normalise ONCE, carrying the ORIGINAL array index (R6), then drop the rows
+   that cannot render an honest cell. The row itself is coerced before any field
+   is read: a stored list can carry a null slot left by an older editor, and a
+   bare string row is the question the owner typed rather than a row to discard.
+   Legacy submissions spell the pair {question, answer}; the schema and every
+   current writer spell {q, a}. Both are read, but the data-field hook always
+   spells q / a — that is the path the sidebar input owns. */
+const rows = items
+  .map((raw, i: number) => {
+    const it: Item = raw && typeof raw === 'object' ? (raw as Item) : ({ q: raw } as Item);
+    return {
+      i,
+      q: (str(it.q) || str(it.question)).trim(),
+      a: (str(it.a) || str(it.answer)).trim(),
+    };
+  })
+  .filter((r) => Boolean(r.q || r.a));
+
+/* The spine's index for this section's place in the render order. Decoration,
+   never stored, never editable — see DERIVED above. */
+const RAIL_INDEX = 'Notes';
+
+/* The design's cell glyph: "N" for Notes, then a zero-padded DISPLAY position.
+   Never the original index — this numeral is decoration and must not count
+   N01, N03, N04 after a blank row is dropped. */
+const numeral = (n: number): string => 'N' + (n < 10 ? '0' + String(n) : String(n));
+---
+{rows.length > 0 && (
+  <section class="sec pcwq" id="faq">
+    {/* THE SPINE. .sec, .rail and .rail-t are PageBN's primitives, worn rather
+        than rebuilt, so this section cannot drift from its neighbours. */}
+    <div class="rail">
+      <span class="rail-t" aria-hidden="true">{RAIL_INDEX}</span>
+    </div>
+    <div class="sec-body pcwq-body">
+      {headline && <h2 class="h2 pcwq-h2 reveal" data-field="faq.headline" set:html={headline}></h2>}
+
+      <div class="pcwq-grid">
+        {rows.map((row, d: number) => (
+          /* `d` is the DISPLAY position and `row.i` is the ORIGINAL one. Only
+             the numeral and the reveal step are keyed to `d`. */
+          <div class="pcwq-cell reveal" data-delay={d > 0 ? String(Math.min(d, 3)) : undefined}>
+            <div class="pcwq-n" aria-hidden="true">{numeral(d + 1)}</div>
+            {row.q && <h3 class="pcwq-q" data-field={`faq.items.${row.i}.q`}>{row.q}</h3>}
+            {row.a && <p class="pcwq-a" data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* ── THE CONTENT CELL. The wrapper's .sec-body already supplies min-width:0
+        and the horizontal clamp(20px,3vw,34px) that keeps every section's text
+        edge on the same line; only the VERTICAL padding is this file's, because
+        the design writes 48px here against the primitive's 44px/40px.
+
+        LADDER, traced across breakpoints so it can only ever SHRINK as the
+        viewport narrows (R8):
+          1091px+ .. 48px (cap)  ·  900px .. 39.6px  ·  760px .. 33.4px
+          682px and below .. 30px (floor), flat from there
+        No media query in this file restates it, so that ramp is the whole of
+        it. */
+  .pcwq-body {
+    padding-top: clamp(30px, 4.4vw, 48px);
+    padding-bottom: clamp(30px, 4.4vw, 48px);
+  }
+
+  /* ── THE HEADLINE. Face, weight, tracking, caps and colour are already the
+        .h2 primitive's; only the three divergences are written. The design
+        states NO max-width on this h2 and the wrapper caps .h2 at 20ch, so the
+        cap is removed rather than silently halving the design's measure — this
+        headline sits over a full-width table, not beside a column.
+
+        THE CLAMP LADDER. Astro scopes this rule to `.pcwq-h2[data-astro-cid-…]`
+        — (0,2,0) — against the wrapper's `html[data-page="BN"] :where(.h2)` at
+        (0,1,1), so it wins at EVERY width, its 760px pass included, and the
+        whole ramp is this file's to keep monotonic:
+          1389px+ .. 50px (cap)  ·  1160px .. 41.8px  ·  900px .. 32.4px
+          778px and below .. 28px (floor), flat from there
+        Nothing below re-states the size — see the note in the 520 block — so
+        the type only ever DECREASES as the viewport narrows and never goes under
+        the design's own floor. */
+  .pcwq-h2 {
+    font-size: clamp(28px, 3.6vw, 50px);
+    line-height: 1;
+    margin: 0 0 30px;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE RULED TABLE, drawn with BORDERS rather than gaps. The design rules
+        the TOP in full-strength ink and the LEFT in interior grey — two
+        different weights, deliberately, because the top rule belongs to the
+        page's spine and the left one to the table's own interior. Collapsing
+        them to one would flatten that distinction.
+        minmax(0,1fr) rather than 1fr so one long unbroken word in an answer
+        cannot widen its own track and push the page sideways. */
+  .pcwq-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--rule-strong);
+    border-left: 1px solid var(--line);
+    min-width: 0;
+  }
+
+  /* Design: padding 24px 26px, border-right + border-bottom. min-width:0 as
+        well as the minmax() above — a grid item's default min-width is auto, so
+        one unbroken word would still widen its track. */
+  .pcwq-cell {
+    min-width: 0;
+    padding: 24px 26px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* ── THE INDEX GLYPH. Design: mono 10px / .14em / rust, margin-bottom 10px,
+        and NO font-weight and NO line-height declared. The design's own body
+        sets neither, so both compute from the initial value; PageBN's body sets
+        line-height 1.62, which grows this 10px glyph's line box by ~3px (16.2px
+        against the ~13px IBM Plex Mono renders at `normal`) and drops half of
+        that — ~1.6px — under the glyph, on top of the 10px margin the design
+        draws there. `normal` is restated to hold the drawn gap. The weight
+        is stated as 400 for the same reason: the wrapper's .mono primitive is
+        500 at .2em in --muted and is deliberately NOT worn here, because none of
+        its three values is the one the design asks for.
+        No overflow-wrap: the content is a derived three-character glyph. */
+  .pcwq-n {
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 10px;
+    line-height: normal;
+    letter-spacing: .14em;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  /* ── THE QUESTION. The face, the colour (--ink) and the margin reset are the
+        wrapper's shared h1–h4 rule already. Restated here are the four values
+        that DIVERGE from it: the WEIGHT (800 there), the TRACKING (-.03em
+        there), the LEADING (.98 there, but the design states none on this h3 and
+        its stylesheet sets none, so it renders `normal` — guessing a number
+        would be a divergence, and .98 is a VISIBLE one the moment an owner's
+        question runs longer than the designer's and wraps), and the CASE. On
+        the case, see the note in the frontmatter: the display voice of this
+        template is uppercase, this h3 is not. */
+  .pcwq-q {
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -.01em;
+    line-height: normal;
+    text-transform: none;
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE ANSWER. Qualified with the cell class so it beats the wrapper's
+        bare-element paragraph reset, `:where(p){margin:0 0 1em}`, and the
+        design's zero margin actually lands. Deliberately NOT the .body
+        primitive: .body is a clamped 14–15px at 1.62, and the design pins this
+        run at a flat 14.5px at 1.8. */
+  .pcwq-cell p.pcwq-a {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.8;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  /* The answer arrives through set:html, so scoped rules cannot reach inside it
+     (R3). An owner's emphasis takes this template's SECOND VOICE — a colour
+     change to rust, font-style explicitly normal, because Archivo has no italic
+     worth using and the design never asks for one. --accent is 5.67:1 on paper,
+     which clears AA for this size. */
+  .pcwq-cell .pcwq-a :global(em),
+  .pcwq-cell .pcwq-a :global(i) {
+    font-style: normal;
+    color: var(--accent);
+  }
+  .pcwq-cell .pcwq-a :global(strong),
+  .pcwq-cell .pcwq-a :global(b) {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  /* An owner's link keeps a PERMANENT rule under it, unlike the wrapper's .linkc
+     which underlines on hover only. That is not a style choice: an <em> in this
+     band is already rust, so colour alone could not tell a link from emphasis,
+     and the design's own global anchor rule paints links rust with no underline
+     at all. The rest state is a .45 alpha off --accent-rgb so the rule reads as
+     an underline rather than a border; hover takes it to full strength. The text
+     colour does not move, so it cannot fail a contrast check halfway through an
+     interaction. */
+  .pcwq-cell .pcwq-a :global(a) {
+    color: var(--accent);
+    border-bottom: 1px solid rgba(var(--accent-rgb), .45);
+    overflow-wrap: anywhere;
+  }
+  .pcwq-cell .pcwq-a :global(a:hover) {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── 900 · this section's OWN grid, which is the part R8 leaves to this file.
+        Two tracks are the design. Measured at the 900px edge where this query
+        engages: 900 less the 52px rail is 848, less the body's 2×27px (3vw at
+        900) is 794, less the grid's 1px left rule is 793 — so each track is
+        ~396px, and once the cell's 26+26px padding and its 1px right rule come
+        off, ~343px of text. At 18px that is roughly a 38-character measure for a
+        question and ~42 for the answer under it, which wraps an ordinary
+        question to two or three lines — so the table folds to a single column.
+        Stacked, every cell keeps BOTH vertical rules: the grid's left and the
+        cell's right together close the box, which is the design's treatment for
+        this table.
+        The answer takes a measure cap in exchange: at one column that same 793px
+        track leaves ~740px of text — roughly 90 characters at 14.5px — just
+        because its cell is now the whole band. Nothing else is touched here —
+        in particular no font-size, because the base clamps are already handing
+        over 32.4px and 39.6px at this width and any cap written below those
+        numbers would make the headline and the padding JUMP as the viewport
+        crossed 900px. */
+  @media (max-width: 900px) {
+    .pcwq-grid { grid-template-columns: minmax(0, 1fr); }
+    .pcwq-cell p.pcwq-a { max-width: 68ch; }
+  }
+
+  /* ── 520 · nothing may push the page sideways. The single track left by the
+        900 query is minmax(0,1fr), every cell is min-width:0 and every string in
+        here breaks anywhere, so the remaining work is scale. EVERY value in
+        this block is strictly BELOW the value it replaces, so nothing grows as
+        the viewport narrows:
+          cell padding   20px 18px  <  24px 26px
+          question       17px       <  18px
+          answer         14px       <  14.5px, and the 68ch cap comes off so an
+                         answer is not set narrower than the phone reading it —
+                         at 14px, 68ch is ~530px, while a 320px phone leaves only
+                         ~242px of text here (320 less the body's 2×20px, less
+                         the grid's 1px left rule, less the cell's 18+18px and
+                         its 1px right rule; ~282px at 360px). The cap was never
+                         the constraint at these widths, so releasing it widens
+                         nothing.
+        THE HEADLINE IS NOT RE-CLAMPED HERE, and neither is the body padding.
+        Both reach their design floors at 778px and 682px and hold flat from
+        there; those floors are the design's own answer for a narrow viewport,
+        and going under them would be a divergence with nothing asking for it.
+        Re-stating a clamp inside a max-width query is also the exact construct
+        that shipped type which GREW as the viewport narrowed on two earlier
+        audits. The numeral is left at 10px: it is the design's smallest type
+        already. */
+  @media (max-width: 520px) {
+    .pcwq-cell { padding: 20px 18px; }
+    .pcwq-q { font-size: 17px; }
+    .pcwq-cell p.pcwq-a { font-size: 14px; max-width: none; }
+  }
+</style>

@@ -1,0 +1,512 @@
+---
+/**
+ * foodcraft / HowBN — "Panday Coffee Works" HOW IT WORKS (design element
+ * data-component="HOW-IT-WORKS", "Panday Coffee Works Landing.dc.html" line 166).
+ *
+ * ROLE: the page's one procedural block — how an order is actually placed at a
+ * roastery whose counter is a roller door. It renders EIGHTH in PageBN's order
+ * (Header, Hero, Trust, About, Services, Why, Gallery, HOW, …), between the
+ * gallery and the reviews, and it is THE ONE INK SECTION on the page: the
+ * design paints its ground --ink and runs the spine straight through it. The
+ * only other section this sheet does not draw on bone is the CTA band, which
+ * the design paints rust. That inversion is the whole point of the
+ * block — the procedure is the one thing the visitor is meant to stop and read —
+ * and it is why almost every colour in this file is restated rather than
+ * inherited: the wrapper's primitives are all tuned for a PAPER ground.
+ *
+ * DESIGN VALUES, lifted verbatim from the design element:
+ *   section    border-bottom 1px #17181A, grid minmax(0,52px) minmax(0,1fr),
+ *              background #17181A                            → .sec + --ink
+ *   rail       border-right 1px #33353A, flex-end/centre,
+ *              padding 20px 0                                → .rail + --ink-3
+ *   rail label rotated mono 10px / .3em caps, #E0713F        → .rail-t + --orange
+ *   body cell  padding 52px 34px                             → .sec-body override
+ *   h2         800, clamp(28px,3.6vw,50px)/1, -.03em, caps,
+ *              margin 0 0 38px, #F2F1ED                      → .h2 + .hbn-h2
+ *   grid       repeat(3, minmax(0,1fr)),
+ *              border-top + border-LEFT 1px #33353A          → .hbn-grid
+ *   cell       padding 30px 26px,
+ *              border-right + border-bottom 1px #33353A      → .hbn-cell
+ *   badge      mono 10px / .14em caps, background #E0713F,
+ *              colour #17181A, padding 4px 10px              → .hbn-n
+ *   h3         700, 22px, -.02em, caps, margin 17px 0 9px,
+ *              #F2F1ED                                       → .hbn-t
+ *   body copy  15px / 1.78, #B4B6BA, margin 0                → .hbn-p
+ *   action     margin-top 34px, btnOrange = the wrapper's own
+ *              .btn base + background --orange / colour --ink
+ *              / border --orange / padding 15px 28px         → .btn.btn--orange
+ * Not one hex is written in this file (R1). btnOrange (design line 413) is
+ * character-for-character the wrapper's `.btn.btn--orange`, so this file adds NO
+ * button rule at all beyond the full-width wrapping label at 520px.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
+ * group id "how" and group id "hero" — a data-field on any other path is a dead
+ * hook that no sidebar input owns)
+ *   how.headline             — fed with set:html so an owner can place this
+ *                              design's second voice inside their OWN sentence.
+ *                              Guarded: lib/derive-content-defaults.ts supplies
+ *                              no how.headline, so an unset value must draw
+ *                              nothing rather than open a 38px gap above the grid
+ *   how.steps.${i}.title     — ORIGINAL index, see LIST INDEXES
+ *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
+ *                              stored value arrived as .desc / .description, so
+ *                              the first save heals the row onto the schema key
+ *   hero.cta1.text           — the orange button's label
+ *   hero.cta1.href           — its target. Deliberately the page's ONE primary
+ *                              action reused rather than a new field: the schema
+ *                              declares hero.cta1.text as a `link` FieldSpec
+ *                              whose hrefPath is hero.cta1.href, so both halves
+ *                              are owned by a real sidebar input. The design
+ *                              reuses its own contactUrl/contactLabel in exactly
+ *                              this slot
+ *
+ * DERIVED, not content:
+ *   THE RAIL LABEL "05 / Procedure". The spine's index is decorative and derived
+ *   per the wrapper contract — never an editable hook, never stored. 05 is this
+ *   section's position among the railed sections, and it is the number the
+ *   design itself prints here. It is aria-hidden: it is a string this FILE
+ *   wrote, not the owner's, so it belongs to the drawing and not to the document
+ *   outline.
+ *
+ *   THE STEP NUMERAL, and this is the decision a reader is most likely to think
+ *   is an oversight. The design prints "Step 01" / "Step 02" / "Step 03" in the
+ *   orange chip. The numerals are the designer's own zero-padded index and are
+ *   reproduced exactly; THE WORD "Step" IS NOT, because it is a word of visible
+ *   copy this component would be writing onto a business's page (R2). What the
+ *   design SPECIFIES is the treatment — a filled orange chip, mono 10px at .14em
+ *   caps, 4px 10px — and that is reproduced character for character. The chip is
+ *   aria-hidden and carries no data-field, so it can never become a content key
+ *   an owner has to maintain; the list is a real <ol>, so the ordinal reaches
+ *   assistive tech through the markup instead.
+ *
+ *   THE TRACK COUNT. `--cols` follows the DATA, capped at the design's three.
+ *   This grid is drawn with BORDERS — top and LEFT on the row, right and bottom
+ *   on every cell — so hardcoding three tracks under two filled steps would leave
+ *   the top hairline running on across a third of the band with no cell beneath
+ *   it and the bottom rule stopping short. At three steps or more the computed
+ *   value is character-for-character the design's repeat(3, minmax(0,1fr)).
+ *
+ *   THE LIST ROLE. The <ol> carries role="list", because `list-style: none` is
+ *   exactly what makes Safari/VoiceOver drop list semantics — and the ordinal
+ *   reaching assistive tech through the markup is the entire reason the visible
+ *   chip is aria-hidden.
+ *
+ * COLOUR ON AN INK GROUND — the three token choices worth reading:
+ *   1. TEXT IS --on-ink, NOT --card. The design writes #F2F1ED for both the h2
+ *      and the h3, and #F2F1ED is --card by value. --card is NOT used, because
+ *      genericThemeOverrides.ts assigns --card from palette.card (an independent
+ *      SURFACE value) while it computes --on-ink with pickOn(palette.ink) — i.e.
+ *      --on-ink is derived FROM the very token painting this ground and stays
+ *      paired with it under every scheme, and --card does not. On the native
+ *      palette the two differ by at most 3/255 per channel (--on-ink #EFEEEA on
+ *      --ink = 15.30:1; --card #F2F1ED would be 15.72:1), so the drawing is
+ *      unchanged and the band cannot be repainted into illegibility.
+ *   2. THE RAIL LABEL AND THE EMPHASIS ARE --orange, NOT --accent. The rail
+ *      label is the DESIGN's own switch: every other rail on this sheet is
+ *      #A8351B and this one is #E0713F (design line 168). The EMPHASIS has no
+ *      design precedent either way — the design's own headline in this element
+ *      carries no second voice at all — so its colour is this file's decision,
+ *      and the arithmetic is what forces it: --accent #A8351B on --ink #17181A
+ *      is 2.70:1, below AA at any size, while --orange #E0713F on --ink is
+ *      5.59:1 — and --orange is the mark the design has already put on this
+ *      band. The wrapper paints `:where(.h2 em)` --accent from its global
+ *      block, so an owner's emphasis inside their own headline would land at
+ *      2.70:1 on this one band unless this file overrides it — which it does,
+ *      through :global() (R3), since a scoped rule cannot reach an element
+ *      set:html created.
+ *   3. THE STEP BODY HAS NO TOKEN. The design's #B4B6BA is the one colour in
+ *      this element that no wrapper token holds; per R1 this file says so rather
+ *      than inventing a hex, and composes the value from a token instead:
+ *      rgba(var(--paper-rgb), .72) resolves over --ink to #B3B2B0, which is
+ *      8.39:1 against the ground (the design's own #B4B6BA is 8.75:1). Composing
+ *      it rather than freezing it is also the more robust choice — both ends of
+ *      the mix are engine-owned, so the softened body colour keeps its
+ *      relationship to the band under any scheme.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The design's
+ * own steps — "Drinks are pulled to hit your minute", "Beans are ground to
+ * order, never in advance", "Pay on collection, card or GCash fine" — are a
+ * punctuality guarantee, a freshness claim and a list of accepted payment
+ * methods made on behalf of a business nobody has spoken to, so none of them
+ * ships. A shop that has said nothing about its process gets no process section
+ * at all: blank rows are dropped and an all-blank list removes the whole
+ * <section>.
+ *
+ * SECTION GATE (R5) = rows.length, the BODY content. It cannot count how.tag,
+ * because derive-content-defaults hard-codes how.tag to 'How it works' on EVERY
+ * site; it does not count how.headline either, for the same class of reason — a
+ * gate on a headline ships a heading over an empty band. The CTA is not counted:
+ * a section whose only content is a button is a heading over nothing. When the
+ * gate fails the whole ink band goes, and the gallery above meets the reviews
+ * below on their shared bone ground with the spine unbroken.
+ *
+ * LIST INDEXES (R6). data-field carries the ORIGINAL array index; the orange
+ * chip carries the DISPLAY index. Dropping a blank row 2 therefore renumbers the
+ * visible chips 01/02 but cannot misdirect an edit of row 3 into row 2.
+ *
+ * ARRAY SOURCE. how.steps is canonical, and the hook ALWAYS spells how.steps —
+ * the read-tolerant / write-canonical split every other How section in the repo
+ * uses. A legacy site whose rows live under how.items still RENDERS, but its
+ * hooks are not re-pointed at how.items: genericContentSchema declares no
+ * how.items list and no fallbackPaths for it, so a hook spelled that way would
+ * be inert in the sidebar.
+ *
+ * NOT RENDERED, deliberately:
+ *   - how.tag. THE DESIGN GIVES THIS SECTION NO EYEBROW — the h2 sits alone at
+ *     the top of the cell, and the rail's "05 / Procedure" is this design's
+ *     label slot. Rendering the eyebrow anyway would put a .kick above the
+ *     headline that appears nowhere in the drawing, and derive-content-defaults
+ *     ships how.tag on every site, so it would appear on every site. The field
+ *     stays in the sidebar and is simply unused by this template.
+ *   - No id on the <section>. This page's anchors are menu / about / gallery /
+ *     visit / faq / main; the design gives HOW-IT-WORKS no id and no nav link
+ *     points at it, so inventing #how would add a target nothing aims for.
+ *   - No .body primitive on the step copy. Its colour, its size and its leading
+ *     are all wrong on this ground — it is --ink-soft (a paper-ground colour),
+ *     clamp(14px,1.3vw,15px) and line-height 1.62, against the design's flat
+ *     15px / 1.78 on a light-on-dark mix. Opting in and then overriding every
+ *     declaration would be more code, not less.
+ *   - No .fig primitive on the numeral. .fig is --accent on paper; this numeral
+ *     is --ink on a filled --orange chip.
+ *   - No focus-ring override. The wrapper's ring is `outline: 3px solid
+ *     var(--paper)` with an --accent halo outside it; the inner paper ring is
+ *     15.30:1 against this ink ground, which is the strongest it is anywhere on
+ *     the page, so the dark band needs no special case.
+ *   - No `target="_blank"` on an IN-PAGE action. The design hard-codes one
+ *     because its own href is an external contact URL, but the same button may
+ *     now resolve to '#visit', and opening an in-page anchor in a new tab is a
+ *     bug. Emitted for http(s) only.
+ *   - No star row, no rating, no plate, no role="img": this section has none in
+ *     the design and there is no upload behind it.
+ *   - No max-width on the headline. The design states none on this h2; the
+ *     wrapper's .h2 caps itself at 20ch, so the cap is removed here rather than
+ *     silently halving the design's measure.
+ *
+ * SCOPING (R3). One scoped <style> block, no is:global. The section class is
+ * "hbn" and every scoped class is prefixed hbn- for THIS template: an audit had
+ * to rename a set of classes copied verbatim from a sibling, so nothing here
+ * reuses HowBM's hbm-* or HowBL's how-band / how-grid / how-step / how-num
+ * names. Button classes are .btn / .btn--orange only — buildOverrideCss pins
+ * label colours on .btn-primary / .btn-ghost / .nav-cta / .cta-band .btn /
+ * .testi .btn with !important, and none of those selectors reaches anything here
+ * (R4). Astro 5 scopes by APPENDING [data-astro-cid-…], an attribute selector
+ * worth (0,1,0), to this file's own class selectors — so the cheapest rule below
+ * is `.hbn-h2[data-astro-cid-…]` at (0,2,0), and it is (0,2,0) that outruns the
+ * wrapper's `html[data-page="BN"] :where(…)` primitives at (0,1,1). The scope
+ * attribute on its own would not: it is the class it lands on that wins. No
+ * !important appears anywhere in the file.
+ */
+// `layout` is accepted because PageBN passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+const how = content.how || {};
+// Trimmed, and otherwise untouched: this goes out through set:html, so whatever
+// markup the owner typed reaches the em rule below intact.
+const headline = typeof how.headline === 'string' ? how.headline.trim() : '';
+
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+// Read tolerantly — a legacy site stores its rows under how.items — and write
+// canonically. See ARRAY SOURCE above.
+const source: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+const titleOf = (s: Step): string => String(s?.title ?? '').trim();
+const bodyOf = (s: Step): string => String(s?.body ?? s?.desc ?? s?.description ?? '').trim();
+// A step the admin added but never filled would otherwise print an orange chip
+// over nothing inside a fully ruled cell, and a title of pure whitespace would
+// ship an empty <h3>. Normalise first, drop the blanks (whitespace counts as
+// blank) and keep the ORIGINAL index on every survivor.
+const rows = source
+  .map((s, i: number) => ({ i, title: titleOf(s), body: bodyOf(s) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// Track count follows the DATA, capped at the design's three — see THE TRACK
+// COUNT above. Three or more filled steps compute exactly the design's
+// repeat(3, minmax(0,1fr)).
+const cols = String(Math.min(Math.max(rows.length, 1), 3));
+
+// Anchor guard (R7). Resolve in-page hrefs against the ids PageBN actually
+// renders — menu, about, gallery, visit, faq, main — and map what
+// derive-content-defaults emits onto them. Off-page hrefs (tel:, mailto:, http)
+// pass straight through untouched. Keep this table in step with the copies in
+// the other BN sections.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+const ctaText = typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '';
+// #visit is where this template puts the address, the hours and the way to reach
+// the shop, so it is the honest landing place for an action that cannot be
+// resolved — the last step has just told the visitor where to collect.
+const ctaHref = onPage(hero.cta1?.href, '#visit');
+// Carried for http(s) ONLY — see NOT RENDERED above.
+const ctaExternal = /^https?:/i.test(ctaHref);
+---
+{rows.length > 0 && (
+  <section class="sec hbn">
+    <div class="rail">
+      {/* DERIVED chrome: the spine's index. No data-field, never stored. */}
+      <span class="rail-t" aria-hidden="true">Procedure</span>
+    </div>
+    <div class="sec-body">
+      {headline && <h2 class="h2 hbn-h2 reveal" data-field="how.headline" set:html={headline}></h2>}
+
+      <ol class="hbn-grid" role="list" style={`--cols:${cols}`}>
+        {rows.map((step, k) => (
+          <li class="hbn-cell reveal" data-delay={String(Math.min(k, 3))}>
+            {/* DERIVED chrome: display index, aria-hidden, no data-field. The
+                <ol> already carries the ordinal for assistive tech. */}
+            <span class="hbn-n" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+            {step.title && <h3 class="hbn-t" data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+            {step.body && <p class="hbn-p" data-field={`how.steps.${step.i}.body`}>{step.body}</p>}
+          </li>
+        ))}
+      </ol>
+
+      {ctaText && (
+        <div class="hbn-act reveal">
+          <a
+            class="btn btn--orange"
+            href={ctaHref}
+            target={ctaExternal ? '_blank' : undefined}
+            rel={ctaExternal ? 'noopener noreferrer' : undefined}
+            data-field="hero.cta1.text"
+            data-href-field="hero.cta1.href"
+          >{ctaText}</a>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* The spine (.sec / .rail / .rail-t / .sec-body), the display face, the caps,
+     the tracking and both halves of the orange button all arrive from the
+     wrapper's primitives. What this file owns is THE INVERSION: the ink ground,
+     the hairline colour that goes with it, and every text colour that has to
+     change because of it. Nothing else is restated.
+
+     No literal end-of-style token appears anywhere in these comments. */
+
+  /* THE ONE INVERTED SECTION. The design paints this section's ground --ink and
+     leaves the spine's bottom rule (--rule-strong, the same value) in place, so
+     the band's lower edge is drawn by the BONE section beneath it rather than by
+     a visible line. `color` is set on the section as well as on every child: a
+     colour that leaked in from the wrapper would be --ink text on an --ink
+     ground. */
+  .hbn {
+    background-color: var(--ink);
+    color: var(--on-ink);
+  }
+
+  /* The rail's hairlines. The wrapper draws them in --line (#C8C7C2), which is a
+     PAPER-ground hairline and would read as a bright stripe down a dark band;
+     the design uses #33353A here, which is --ink-3. Both edges are set in one
+     rule because the wrapper's shared 760 pass swaps border-right for
+     border-bottom — above 760 the bottom border is 0-width and its colour is
+     inert, so this needs no media query of its own. */
+  .hbn .rail {
+    border-right-color: var(--ink-3);
+    border-bottom-color: var(--ink-3);
+  }
+
+  /* --orange, not --accent: 5.59:1 on this ground against --accent's 2.70:1.
+     See COLOUR ON AN INK GROUND in the frontmatter. */
+  .hbn .rail-t { color: var(--orange); }
+
+  /* Design: padding 52px 34px — symmetric, where the wrapper's shared cell is
+     44/34/40. Only the VERTICAL value is this section's; the horizontal clamp is
+     the wrapper's own, character for character, so the ink band's text edge
+     lines up with the bone sections above and below it. Any other value here
+     would put a visible jog in the left margin of the sheet. */
+  .hbn .sec-body {
+    padding: clamp(34px, 4.6vw, 52px) clamp(20px, 3vw, 34px);
+  }
+
+  /* Design: clamp(28px,3.6vw,50px)/1, margin 0 0 38px, #F2F1ED, no measure cap.
+     The wrapper's .h2 is clamp(28px,4.4vw,62px)/.98 in --ink at 20ch, and its
+     shared 760 pass also carries `max-width:none` and `overflow-wrap:anywhere`.
+     This rule outruns BOTH (see SCOPING), so those two safety declarations are
+     restated here unconditionally rather than lost — they cost nothing at any
+     width and they are what stops a long unbroken owner word at 360px. */
+  .hbn-h2 {
+    font-size: clamp(28px, 3.6vw, 50px);
+    line-height: 1;
+    margin: 0 0 38px;
+    color: var(--on-ink);
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* The headline's SECOND VOICE. The wrapper paints `:where(.h2 em)` --accent
+     from its global block, which is 2.70:1 on this ground; --orange — the mark
+     the design itself puts on this band — is 5.59:1. :global() because the headline
+     is fed with set:html and a scoped rule cannot reach an element set:html
+     created (R3). font-style is restated so the rule stands on its own if the
+     .h2 class is ever dropped — Archivo has no italic worth using and the design
+     never asks for one. */
+  .hbn-h2 :global(em),
+  .hbn-h2 :global(.em) {
+    font-style: normal;
+    color: var(--orange);
+  }
+
+  /* THE GRID IS DRAWN WITH BORDERS, NOT GAPS, and unlike the paper sections of
+     this family it is FULLY BOXED: the design rules the top AND THE LEFT of the
+     row, then the right and bottom of every cell, so the three steps read as a
+     ruled table cut into the dark band. That left rule is drawn, not inherited —
+     it is what separates a table on a dark ground from text floating on one.
+     minmax(0,1fr) rather than 1fr so a long unbroken word in a step cannot widen
+     its own track and push the page sideways. The inline custom property sets no
+     grid-template-columns of its own, so the 900px rule below still wins on
+     source order. */
+  .hbn-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+    border-top: 1px solid var(--ink-3);
+    border-left: 1px solid var(--ink-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Design: padding 30px 26px, border-right + border-bottom.
+     min-width:0 as well as the minmax() above: a grid item's default min-width
+     is auto, so one unbroken word would still widen its track.
+     LEADING IS RESET TO `normal`, which is the value the design's own cell
+     inherits — its body declares none, while this repo's body declares 1.62.
+     The h3 and the paragraph below both state their own line-height, so the
+     only line this reaches is the chip's, where the wrapper's 1.62 strut would
+     open leading under the chip that the design does not draw and push the
+     title further from it than the design's 17px margin. */
+  .hbn-cell {
+    min-width: 0;
+    padding: 30px 26px;
+    border-right: 1px solid var(--ink-3);
+    border-bottom: 1px solid var(--ink-3);
+    list-style: none;
+    line-height: normal;
+  }
+
+  /* THE FILLED CHIP. Design: mono, 10px, .14em caps, background #E0713F, colour
+     #17181A, padding 4px 10px — the same orange/ink pairing the wrapper gives
+     .btn--orange, deliberately taken from there so the chip and the button below
+     it can never drift apart under a scheme. --ink on --orange is 5.59:1.
+     display:inline-block because vertical padding on a pure INLINE box does not
+     grow its line box, so the design's own `display` would let the filled chip
+     ride up over whatever sits above it on a font whose metrics differ from the
+     one the design was drawn in.
+     NO line-height is stated, because the design states none: the chip inherits
+     the `normal` reset on the cell above, which is what gives an inline-block
+     the same drawn height as the design's inline background box. Pinning it to
+     1 would make the chip SHORTER than the design draws it, since an
+     inline-block's content height is its line-height rather than its font's
+     content area. The design states no font-weight either, so none is stated
+     here — it inherits the 400 the design inherits.
+     No overflow-wrap: the content is a derived two-digit numeral. */
+  .hbn-n {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    background-color: var(--orange);
+    color: var(--ink);
+    padding: 4px 10px;
+  }
+
+  /* Design: 700, 22px, -.02em, caps, margin 17px 0 9px, #F2F1ED. The face, the
+     caps and the margin reset come from the wrapper's shared h1-h4 rule; the
+     WEIGHT (800 there), the TRACKING (-.03em there), the LEADING (.98 there, but
+     the design states none on this h3, so it computes to `normal`) and the
+     COLOUR (--ink there, unreadable on this ground) are all this section's. */
+  .hbn-t {
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -.02em;
+    line-height: normal;
+    margin: 17px 0 9px;
+    color: var(--on-ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 15px / 1.78, #B4B6BA, margin 0. The .body primitive is not used —
+     see NOT RENDERED. #B4B6BA has no token; rgba(var(--paper-rgb),.72) resolves
+     over --ink to #B3B2B0 at 8.39:1, against the design's own 8.75:1. Qualified
+     with the cell class so it beats the wrapper's bare-element paragraph reset
+     (`:where(p){margin:0 0 1em}`). */
+  .hbn-cell p.hbn-p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.78;
+    color: rgba(var(--paper-rgb), .72);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: margin-top 34px, left-aligned like everything on this sheet. */
+  .hbn-act { margin-top: 34px; }
+
+  /* R8 · this section owns its own grid. Three tracks are the design, and they
+     go straight to ONE at 900px rather than through a two-up: at 900 a 52px
+     rail and 27px of body padding a side leave 793px for the tracks, so each of
+     three is ~264px and 52px of cell padding leaves it ~210px of text, and
+     three steps in two tracks leave a half-ruled orphan cell that reads as a
+     broken table rather than an editorial one — which matters more here than on
+     the paper sections, because this grid is boxed on all four sides.
+     Stacked, the cell keeps BOTH vertical rules: the grid's left and the cell's
+     right together close the box, which is the design's treatment for this band.
+     The paragraph takes a measure cap instead: uncapped, one step would run the
+     band's full ~740px at 900px, far past the design's own column. */
+  @media (max-width: 900px) {
+    .hbn-grid { grid-template-columns: minmax(0, 1fr); }
+    .hbn-h2 { margin-bottom: 30px; }
+    .hbn-cell p.hbn-p { max-width: 62ch; }
+  }
+
+  /* 520 · tighten the stack. EVERY value in this block is strictly BELOW the
+     value it replaces, so nothing grows as the viewport narrows:
+       h2 font-size   flat 26px  <  clamp(28,3.6vw,50), which floors at 28px
+       h2 margin      24px       <  30px (900) < 38px (base)
+       cell padding   26px 18px  <  30px 26px
+       body cell pad  30px 18px  <  the clamps' floors, 34px and 20px
+       h3 font-size   20px       <  22px  · h3 margin 14px 0 8px < 17px 0 9px
+       body copy      14.5px     <  15px
+       action margin  26px       <  34px
+     The chip is left at 10px: it is already the smallest type this element
+     draws, and the wrapper's shared 520 pass does not touch it either. */
+  @media (max-width: 520px) {
+    .hbn .sec-body { padding: 30px 18px; }
+    .hbn-h2 { font-size: 26px; margin-bottom: 24px; }
+    .hbn-cell { padding: 26px 18px; }
+    .hbn-t { font-size: 20px; margin: 14px 0 8px; }
+    .hbn-cell p.hbn-p { font-size: 14.5px; }
+    .hbn-act { margin-top: 26px; }
+    /* Full-bleed action. The wrapper pins .btn to white-space: nowrap, which
+       would push the viewport sideways on a long owner-typed label; BOTH
+       declarations are needed, because normal white-space alone still cannot
+       break a label that contains no spaces at all. */
+    .hbn-act .btn {
+      width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+</style>

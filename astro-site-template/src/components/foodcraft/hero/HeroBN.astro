@@ -1,0 +1,575 @@
+---
+/**
+ * foodcraft / HeroBN — "Panday Coffee Works" arrival.
+ *
+ * ROLE. The page's opening statement and its only h1. A FULL-BLEED photograph
+ * band across the top, ruled beneath in ink, and under it the first panel of
+ * the spine: rail "00 / Index" + a content cell holding a 1.35fr / .65fr grid —
+ * eyebrow and the uppercase Archivo headline on the left, the lede and the two
+ * joined actions on the right, both halves aligned to their BOTTOM edge.
+ * Lifted from the element carrying data-component="HERO" in
+ * "Panday Coffee Works Landing.dc.html": photo band height:56vh /
+ * min-height:380px on #DEDCD6 with a 1px #17181A rule beneath, rail grid
+ * minmax(0,52px) minmax(0,1fr), body padding 44px 34px 40px, inner grid
+ * minmax(0,1.35fr) minmax(0,.65fr) at 44px with align-items:end, h1
+ * clamp(40px,6.2vw,92px)/.96 at -.03em with margin .14em 0 .24em and its last
+ * line in #A8351B, lede 16.5px/1.72 in #3C3E42 with 24px beneath, and a button
+ * row at gap:0 whose second control drops its left border so the pair shares
+ * one edge.
+ *
+ * EDITABLE HOOKS (every path is declared in components/editor/
+ * genericContentSchema.ts, so each is live in the sidebar AND inline):
+ *   hero.image              — data-image-field, the full-bleed photograph
+ *   hero.kicker             — the eyebrow (.kick)
+ *   hero.headline           — the h1, set:html so an owner <em> takes the rust
+ *   hero.headlineLines.${i} — the SAME h1, when hero.headline holds nothing but
+ *                             the derived business name; see THE HEADLINE below
+ *   hero.sub                — the lede
+ *   hero.cta1.text + data-href-field hero.cta1.href — the ink-filled primary
+ *   hero.cta2.text + data-href-field hero.cta2.href — the outlined secondary
+ *
+ * DERIVED, never stored and never editable:
+ *   · the rail's "00 / Index" — the design's own literal for this element and
+ *     the FIRST railed label in its spine. It is NOT the section's ordinal in
+ *     PageBN's render order: the header renders first and carries no rail, and
+ *     TRUST takes no index either, so the spine's count and the render count
+ *     are different numbers (CredentialsBN records the same rule for 07). It is
+ *     the wrapper's spine label, not content: no data-field, and aria-hidden so
+ *     a screen reader is not read a page number nobody wrote. It is the ONE
+ *     authored string in this file and the wrapper contract is what authorises
+ *     it.
+ *   · the photograph's accessible name — layout.businessName and nothing else
+ *   · both button hrefs, resolved through onPage() against the ids PageBN
+ *     actually renders
+ *   · which of the two headline paths the h1 binds to
+ *   · the rust tail, when the owner has not marked one (see THE SIGNATURE)
+ *   · which columns exist at all, and therefore how many grid tracks there are
+ *
+ * NOT RENDERED, deliberately:
+ *   · No copy of any kind is written by this file. The design's demo strings
+ *     ("Roasted on the premises.", "Contact us", "Price list") are the DESIGNER
+ *     filling in their own template. A real roastery gets an arrival that says
+ *     only what that roastery said, so every guard sits OUTSIDE its tag: no
+ *     eyebrow over nothing, no empty action row, no 380px well-grey slab
+ *     standing in for a photograph nobody uploaded, and — see THE RULES THAT
+ *     ARE NOT DRAWN — no hairline under a band that is the last thing here.
+ *   · NO META ROW. hero.meta1, hero.meta2 and hero.trustLine are declared by
+ *     the schema and other families print them as chips under the actions.
+ *     THIS design draws no such row; inventing one to use up a declared field
+ *     would be a layout the designer did not draw. The fields stay editable in
+ *     the sidebar and simply have no element here.
+ *   · NO STAR ROW. The design has none, and a star drawn from anything other
+ *     than a numeric rating field is a fabricated claim (R2). The schema's
+ *     placeholder on hero.meta1 is literally '★★★★★ rated on Google'; a
+ *     placeholder is not a default, lib/derive-content-defaults.ts emits no
+ *     meta1 for exactly that reason, and this file prints no star glyph at all.
+ *   · hero.tag / hero.photos.* — not declared by the schema. hero.photos and
+ *     content.photos are READ as display fallbacks for the picture, but the
+ *     HOOK is always hero.image: a data-field on a path no sidebar input owns
+ *     looks editable and focuses nothing.
+ *   · .reveal. This section is above the fold; it is painted, not animated in.
+ *   · An aria-label on the <section>. Naming it would make it a landmark
+ *     announced with a word I wrote ("Hero"); the h1 already titles the region.
+ *   · target="_blank". The design's demo markup carries it because its primary
+ *     is hard-wired to a Messenger URL; here the href is the owner's and may be
+ *     an in-page anchor, so navigation is left alone (the family idiom).
+ *   · A caption plate (.cap). The design's hero photograph carries none.
+ *   · An id on the <section>. The design gives HERO none, and the page's skip
+ *     link already targets the wrapper's <main id="main">.
+ *
+ * THE HEADLINE, and why one heading reads two paths. This design's headline is
+ * a STACK of uppercase lines whose last line turns rust — so the emphasis is a
+ * COLOUR CHANGE and never an italic (Archivo has no italic worth using and the
+ * design never asks for one).
+ * WHICH FIELD holds the owner's headline is the catch, because two layers
+ * upstream disagree:
+ *   · lib/derive-content-defaults.ts auto-fills hero.headline with the BARE
+ *     BUSINESS NAME on every named site (`headline: name || undefined`), and
+ *     lib/astro-builder.ts's mergeShallow lets that derived value stand
+ *     wherever the owner left the field unset.
+ *   · lib/services/groq.service.ts — the extraction that writes the copy for a
+ *     real submission — emits hero.headlineLines and NEVER hero.headline.
+ * So "always prefer hero.headline" prints the business name and drops the
+ * authored headline on the floor for exactly the sites that have one. The rule
+ * is therefore: hero.headline wins whenever it is AUTHORED, meaning anything
+ * other than the business name the derive layer fills in. When it is that
+ * auto-fill (or empty), the surviving headlineLines rows win — STACKED, each
+ * row its own line, because that is what this design draws.
+ * Each row carries its ORIGINAL array index in data-field, so dropping a blank
+ * row 2 cannot misdirect an edit into row 3 (R6). The rust falls on the last
+ * SURVIVING row by DISPLAY position, which is R6's other half: the colour is
+ * decoration and belongs to where the line is drawn, not to where it was
+ * stored.
+ * The field a click opens is always the field the visible text came from:
+ * binding hero.headlineLines.0 to text that arrived as hero.headline (or the
+ * reverse) aims an inline edit at a slot the sidebar is not showing.
+ *
+ * THE SIGNATURE, MADE REACHABLE. The design's h1 is two-tone because the
+ * DESIGNER typed a coloured span into their own markup. No owner is going to
+ * type a tag into a text box, so without a fallback the headline renders one
+ * flat colour on every real site and the thing this template is recognised by
+ * never ships. When the owner has NOT marked emphasis, the tail is derived from
+ * THEIR OWN sentence and adds not one word — it only decides where the sentence
+ * turns:
+ *   • more than one line                  -> the last line
+ *   • a comma, dash, colon or semicolon   -> everything after the LAST one
+ *   • anything else                       -> nothing at all
+ * That last case is deliberate. A single clause is a single clause, and
+ * splitting inside one would lean on a word the owner never leaned on. An
+ * explicit <em> always wins; this fills a silence.
+ *
+ * SECTION GATE (R5). The arrival renders when it has something to SAY or SHOW:
+ * a headline, a lede, or the photograph. It deliberately does NOT count the
+ * eyebrow (derive-content-defaults builds one from city + trade for sites with
+ * neither name, tagline nor upload) and does NOT count the two buttons (derive
+ * sets cta1/cta2 text UNCONDITIONALLY, so counting either makes the gate a
+ * no-op that always passes).
+ * FOR REVIEW: this is the one section in the family whose gate counts a
+ * headline, which R5 otherwise forbids. Here the headline IS the body — it is
+ * the document's only h1, and a hero dropped for having "only" an h1 takes the
+ * page's heading with it and opens the site on the trust row. The gate is still
+ * not a no-op: with no name, no tagline, no descriptor and no upload, derive
+ * emits no headline, no headlineLines and no sub, and the section does not
+ * render.
+ *
+ * THE RULES THAT ARE NOT DRAWN. Three bottom hairlines could stack here and the
+ * design draws exactly one at each place:
+ *   · the inner rail panel carries .sec for its tracks but NOT .sec's bottom
+ *     rule — the section's own .sec-full rule is the one the design draws, and
+ *     leaving both would print 2px where the design prints 1px.
+ *   · the photograph's rule exists only because something follows it. With no
+ *     headline, no lede and no actions the panel below is not rendered at all,
+ *     and the band drops its rule rather than hairlining a row that is not
+ *     there.
+ *   · a column that has nothing in it is not an empty cell — it is one track
+ *     fewer, so the surviving half takes the full width instead of sitting
+ *     beside a hole.
+ *
+ * NO PHOTOGRAPH ⇒ NO BAND. The picture is a full-bleed band, not a background.
+ * Rendering it with no upload leaves a 380px slab of --well above the fold; the
+ * band is dropped whole and the panel becomes the top of the page.
+ *
+ * THE JOINED EDGE. The design's two actions sit at gap:0 with the second one's
+ * left border removed, so they read as one control split in two. That is done
+ * with an ADJACENT-SIBLING rule rather than a class on the second button, so a
+ * secondary that renders alone (owner cleared the primary's label) keeps all
+ * four of its borders instead of hanging open on the left.
+ *
+ * COLOUR (R1 — no literal hex in this file, only PageBN's tokens):
+ *   photo band --well · its rule and the section's --rule-strong · eyebrow and
+ *   headline tail --accent · headline --ink (from the wrapper's h1 rule) ·
+ *   lede --ink-2 · primary .btn--ink (--ink on --on-ink) · secondary --ink on
+ *   --paper inside a 1px --ink border, inverting to --ink/--on-ink on hover.
+ *   --ink-2 IS the design's lede colour (#3C3E42) and R1 says map the hex to
+ *   the token holding that value. Note the consequence, since it is a choice
+ *   and not an oversight: buildOverrideCss repaints --paper but not --ink-2, so
+ *   a scheme that darkens the ground moves the lede's background without moving
+ *   the lede. --ink-soft would track the ground but is a different colour from
+ *   the one the design specifies.
+ *
+ * CONTRAST, computed here over PageBN's own hex values by the WCAG 2.x sRGB
+ * relative-luminance formula rather than copied from anywhere:
+ *   --ink on --paper          15.30   (headline, secondary label)
+ *   --ink-2 on --paper         9.23   (lede)
+ *   --accent on --paper        5.67   (eyebrow at 10px, headline tail)
+ *   --on-ink on --ink         15.30   (primary label, and the secondary's
+ *                                      hover state)
+ *   --accent on --well         4.80   (nothing here uses it; listed because the
+ *                                      photo band is the one --well ground)
+ * These agree with PageBN's own VERIFIED CONTRAST table, which states 15.30 for
+ * ink/paper, 5.67 for accent/paper and 5.77 for ink-soft/paper. Every pair above
+ * clears AA for its size; the tightest one drawn here is the 10px rust eyebrow,
+ * at 5.67 against AA's 4.5.
+ *
+ * CLASS-NAME LAW (not inferable, do not "tidy"): the section is .pd-arrival,
+ * NOT .hero — lib/genericThemeOverrides.ts force-paints `.hero .btn-ghost` and
+ * `.hero .btn-primary:hover` with !important and would strand a label here.
+ * Never .btn-primary / .btn-ghost / .btn-yellow / .btn-light / .nav-cta /
+ * .nav-right / .trust / .testi / .cta-band in this family. The `pd-` prefix is
+ * THIS template's (Panday) and is deliberately not the BM sibling's `tc-` nor
+ * the BL sibling's `kc-`: an audit had to rename a whole set of classes that
+ * were copied verbatim from the template before them.
+ */
+interface Props { content: any; layout?: any;
+}
+const { content, layout } = Astro.props;
+
+
+// Anchor guard, copied from the BM sibling and re-pointed at THIS page.
+// lib/derive-content-defaults.ts hard-codes '#visit' for hero.cta1 and
+// '#services' for hero.cta2; PageBN renders `visit` but not `services`, so one
+// is kept and the other is remapped. Resolve every in-page href against what
+// PageBN actually draws: keep it when the id exists, remap it when this design
+// carries the same block under another id, otherwise fall back to the target
+// the design was built around. Off-page hrefs (tel:, mailto:, http) pass
+// through untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBN — and with the copies
+// in HeaderBN, CtaBandBN and FooterBN. There is no shared import by design (a
+// section component in this repo receives only `content` + `layout`); the
+// copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  location: 'visit', contact: 'visit',
+  services: 'menu', rooms: 'menu',
+  host: 'about', why: 'about',
+  work: 'gallery',
+  book: 'main',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+
+// Display fallbacks only — the HOOK below is always hero.image, the path the
+// sidebar's image picker writes. The quote escape keeps a filename with an
+// apostrophe from closing the url('') early and killing the declaration.
+const heroImage = String(hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '');
+const heroImageCss = heroImage.replace(/'/g, '%27');
+
+const kicker = hero.kicker || '';
+
+// THE HEADLINE — full reasoning in the doc comment. hero.headline is this
+// design's field; the rows take over only when hero.headline is nothing but the
+// business name derive-content-defaults auto-filled (or is empty), which is the
+// shape every AI-written submission arrives in.
+const bizName = String(layout?.businessName ?? '').trim();
+const headline = String(hero.headline ?? '').trim();
+const lineRows: Array<{ text: string; i: number }> = (Array.isArray(hero.headlineLines) ? hero.headlineLines : [])
+  .map((t: any, i: number) => ({ text: String(t ?? ''), i }))
+  .filter((l: { text: string }) => l.text.trim() !== '');
+// …and only when they SAY something hero.headline does not. On the ordinary
+// named site both hold the same one line, and the single-line hook keeps it.
+const useRows =
+  lineRows.length > 0 &&
+  (headline === '' || headline === bizName) &&
+  lineRows.map((l) => l.text.trim()).join(' ') !== headline;
+const hasHeadline = useRows || headline !== '';
+
+// ── THE SIGNATURE, MADE REACHABLE ────────────────────────────────────────
+// The lines are JOINED WITH <br> rather than a space: this design's h1 is a
+// stack, not a flowing sentence, and an owner who typed two lines meant two.
+const hasOwnEm = (v: string): boolean => /<em[\s>]/i.test(v);
+const emphasise = (raw: string): string => {
+  if (!raw || hasOwnEm(raw)) return raw;
+  const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const tail = lines.pop() as string;
+    return lines.join('<br>') + '<br><em>' + tail + '</em>';
+  }
+  // The LAST break wins, so a sentence with two commas emphasises its close
+  // rather than its middle. The lookahead keeps a trailing comma from matching.
+  const re = /[,;:—–]\s+(?=\S)/g;
+  let cut = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) cut = m.index + m[0].length;
+  if (cut <= 0 || cut >= raw.length) return raw;
+  return raw.slice(0, cut) + '<em>' + raw.slice(cut) + '</em>';
+};
+const headlineHtml = emphasise(headline);
+// The rows path marks its LAST SURVIVING row instead, and only when no row is
+// already carrying the owner's own <em>.
+const rowsOwnEm = lineRows.some((l) => hasOwnEm(l.text));
+
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+// The design's primary is its contact action and its secondary points at the
+// price list; those are the two fallbacks when an owner's href resolves to
+// nothing this page draws.
+const cta1Href = onPage(hero.cta1?.href, '#visit');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, '#menu');
+
+// The photograph's accessible name is the owner's own words or nothing. With no
+// business name there is no honest name for the picture, so it leaves the
+// accessibility tree instead of announcing a phrase I invented. Built as ONE
+// spread object so a conditional attribute can never end up beside a literal
+// (R9 — two components in an earlier family shipped exactly that duplication,
+// and the literal aria-hidden won).
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+// The two halves of the panel, and the panel itself. Each disappears rather
+// than rendering as an empty cell under a rule.
+const hasSay = !!(kicker || hasHeadline);
+const hasAct = !!(sub || cta1Text || cta2Text);
+const hasPanel = hasSay || hasAct;
+const hasArrival = !!(hasHeadline || sub || heroImage);
+---
+{hasArrival && (
+<section class:list={['sec-full', 'pd-arrival', !hasPanel && 'pd-arrival--bare']}>
+  {/* The full-bleed band. No upload ⇒ no band at all, rather than 380px of
+      --well standing in for a picture nobody supplied. */}
+  {heroImage && (
+    <div class="plate pd-ar-band">
+      <div
+        class="ph pd-ar-ph"
+        data-image-field="hero.image"
+        style={`background-image:url('${heroImageCss}');`}
+        {...photoA11y}
+      ></div>
+    </div>
+  )}
+
+  {hasPanel && (
+    <div class="sec pd-ar-panel">
+      <div class="rail">
+        {/* DERIVED and decorative: the spine's index for section 00. Never a
+            hook, never stored, and hidden from the accessibility tree. */}
+        <span class="rail-t" aria-hidden="true">Index</span>
+      </div>
+      <div class="sec-body">
+        <div class:list={['pd-ar-grid', !(hasSay && hasAct) && 'pd-ar-grid--one']}>
+          {hasSay && (
+            <div class="pd-ar-say">
+              {kicker && <span class="kick pd-ar-kick" data-field="hero.kicker">{kicker}</span>}
+              {!useRows && headline !== '' && <h1 class="pd-ar-h1" data-field="hero.headline" set:html={headlineHtml}></h1>}
+              {useRows && (
+                <h1 class="pd-ar-h1">
+                  {lineRows.map((l, k) => (
+                    <span
+                      class:list={['pd-ar-ln', !rowsOwnEm && k === lineRows.length - 1 && 'pd-ar-ln--em']}
+                      data-field={`hero.headlineLines.${l.i}`}
+                      set:html={l.text}
+                    ></span>
+                  ))}
+                </h1>
+              )}
+            </div>
+          )}
+
+          {hasAct && (
+            <div class="pd-ar-act">
+              {sub && <p class="lede pd-ar-lede" data-field="hero.sub">{sub}</p>}
+              {(cta1Text || cta2Text) && (
+                <div class="pd-ar-acts">
+                  {cta1Text && (
+                    <a class="btn btn--ink pd-ar-b1" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>
+                  )}
+                  {cta2Text && (
+                    <a class="btn pd-ar-b2" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBN's token vocabulary
+     (--paper --well --ink --ink-2 --on-ink --accent --rule-strong --mono --r)
+     and from its shared primitives (.sec .sec-full .rail .rail-t .sec-body
+     .kick .lede .btn .btn--ink .plate .ph). There is no literal hex in this
+     file, and no radius either: this design's --r is 0 and .plate already
+     carries it.
+
+     HOW THESE RULES WIN. Astro scopes a style block with the project's
+     `scopedStyleStrategy`, and astro.config.mjs sets none, so it takes the
+     default 'attribute' — `.pd-ar-band` ships as
+     `.pd-ar-band[data-astro-cid-…]`, specificity (0,2,0). The wrapper's
+     primitives are `html[data-page="BN"] :where(.plate)`, specificity (0,1,1),
+     because :where() contributes nothing. Two classes beat one class plus one
+     element, which is how the band's height replaces .plate's 180px floor, the
+     panel drops .sec's bottom rule, the h1 keeps its .14em margins against the
+     shared `margin:0`, and the lede takes the design's colour — none of it with
+     !important.
+     Setting scopedStyleStrategy:'where' in astro.config.mjs would collapse
+     every one of those to (0,1,0) and silently hand the wrapper the win. Two-
+     class rules survive that; the single-class ones do not. */
+
+  /* ── THE PHOTOGRAPH BAND. Design: height:56vh; min-height:380px;
+     background:#DEDCD6 (which is --well, already on .plate); border-bottom:1px
+     solid #17181A (which is --rule-strong). .plate reserves a 180px minimum for
+     short plates; this band states its own, so that floor is released. */
+  .pd-ar-band {
+    height: 56vh;
+    min-height: 380px;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  /* The rule under the band exists because a panel follows it. When there is no
+     panel the band is the last thing in the section, and the section's own
+     .sec-full rule is already drawing that line — two would print 2px. */
+  .pd-arrival--bare .pd-ar-band { border-bottom: 0; }
+  /* Two classes deep on purpose: the wrapper's `:where(.plate) .ph` scores one
+     element more than a single scoped class would, so `.pd-ar-ph` alone would
+     lose to it. Restating cover/center costs nothing and means the photograph
+     cannot letterbox if that primitive is ever narrowed. No colour is restated —
+     that stays in the primitive, where the theme engine keeps control of it. */
+  .pd-ar-band .pd-ar-ph {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* ── THE PANEL. .sec supplies the 52px rail track and the content cell; only
+     its bottom rule is dropped, because the <section> carries .sec-full and the
+     design draws ONE line at the foot of the arrival, not two. */
+  .pd-ar-panel { border-bottom: 0; }
+
+  /* ── THE INNER GRID. Design: grid-template-columns:minmax(0,1.35fr)
+     minmax(0,.65fr); gap:44px; align-items:end. The bottom alignment is the
+     point: the headline's baseline and the button row settle on the same line,
+     which is what makes the panel read as a ruled document rather than two
+     stacked blocks. */
+  .pd-ar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr);
+    gap: 44px;
+    align-items: end;
+  }
+  /* One half missing ⇒ one track. The survivor takes the width instead of
+     sitting beside a 44px gap and an empty cell. */
+  .pd-ar-grid--one { grid-template-columns: minmax(0, 1fr); }
+  /* min-width:0 lets a long word wrap inside its track instead of widening it
+     and pushing the page sideways. */
+  .pd-ar-say,
+  .pd-ar-act { min-width: 0; }
+
+  /* THE EYEBROW IS NOT RESTATED. Its 10px mono, its .24em tracking and its rust
+     live on the shared .kick. Only a wrap safety is added, and in two places:
+     max-width here, overflow-wrap at 520. */
+  .pd-ar-kick { max-width: 100%; }
+
+  /* Design: font-size:clamp(40px,6.2vw,92px); line-height:.96;
+     margin:.14em 0 .24em. Larger and one notch tighter than the shared .h2,
+     which is why this is an h1 rule of its own and not that primitive. The
+     weight (800), the -.03em tracking, the uppercase and the --ink all come
+     from the wrapper's own h1 rule and are deliberately not restated. The
+     design sets NO max-width — its column is the measure — so none is invented
+     here; the narrow query below adds one only once the columns collapse. */
+  .pd-ar-h1 {
+    font-size: clamp(40px, 6.2vw, 92px);
+    line-height: .96;
+    margin: .14em 0 .24em;
+  }
+  /* THE SIGNATURE is a COLOUR CHANGE, not an italic — font-style is pinned
+     normal so a browser's default <em> italic cannot creep into a face that has
+     no italic worth using. :global() because Astro cannot scope markup that
+     arrived through set:html (R3), which covers both the owner's own <em> and
+     the derived tail on either path. */
+  .pd-ar-h1 :global(em) { font-style: normal; color: var(--accent); }
+  /* Rows path only (hero.headlineLines). They STACK — one line each — because
+     that is what this design draws. */
+  .pd-ar-ln { display: block; }
+  .pd-ar-ln--em { color: var(--accent); }
+
+  /* Design: font-size:16.5px; line-height:1.72; color:#3C3E42; margin:0 0 24px.
+     The size is the shared .lede verbatim (its clamp tops out at exactly
+     16.5px); the line-height, the colour and the 24px are this design's and are
+     stated here. max-width is released because the .65fr column is the measure
+     the designer drew, not a 52ch text block. */
+  .pd-ar-lede {
+    color: var(--ink-2);
+    line-height: 1.72;
+    max-width: none;
+    margin: 0 0 24px;
+  }
+
+  /* Design: display:flex; flex-wrap:wrap; gap:0 — the two controls SHARE AN
+     EDGE. */
+  .pd-ar-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+  /* The outlined secondary. PageBN ships four button fills and no outline, and
+     this is the one control in the design that is drawn as a hairline box:
+     transparent ground, 1px --ink, --ink label, 22px of side padding instead of
+     .btn's 24px. Nothing here is a new colour — it is --ink on --paper. */
+  .pd-ar-b2 {
+    background-color: transparent;
+    color: var(--ink);
+    border-color: var(--ink);
+    padding-left: 22px;
+    padding-right: 22px;
+    /* .btn EASES background-color, which is right for a fill that only deepens
+       and wrong for the inverting hover below: the label colour swaps at once
+       while the ground is still most of the way to --paper. --on-ink and
+       --paper are the SAME hex, so such a fade OPENS at 1:1 — the label is its
+       own background — and only reaches this pair's 15.30 once the ground has
+       finished travelling to --ink. The blends in between are not palette
+       colours and carry no verified ratio, but the opening frames are plainly
+       unreadable. Dropping background-color from the animated set makes ground
+       and label change on the same frame. box-shadow stays so the wrapper's
+       focus ring keeps its fade, and border-color is kept because .btn's
+       duration and timing lists are positional. */
+    transition-property: box-shadow, border-color;
+  }
+  /* The design gives its outlined control no hover; a control with none reads
+     as dead. Inverting to the filled state is the smallest honest affordance
+     and reuses the pair already on .btn--ink — 15.30:1, and now reached in one
+     step rather than through a fade that opens with the label sitting on its
+     own colour. */
+  .pd-ar-b2:hover {
+    background-color: var(--ink);
+    color: var(--on-ink);
+    border-color: var(--ink);
+  }
+  /* THE JOINED EDGE, done as an adjacent sibling rather than a class on the
+     button: a secondary rendering ALONE (owner cleared the primary's label)
+     must keep all four borders instead of hanging open on the left. */
+  .pd-ar-b1 + .pd-ar-b2 { border-left: 0; }
+
+  /* ── R8 · this section's OWN grid. The wrapper owns the shared 760 pass (the
+     rail goes horizontal) and the shared 520 pass (.kick and .btn shrink); the
+     two content columns are this file's problem and collapse here.
+
+     THE CLAMP LADDER, traced across every breakpoint because two audits found
+     type that GREW as the viewport narrowed:
+       h1  base clamp(40px,6.2vw,92px): 92 at 1484px+, 55.8 at 900, and already
+           at its 40px FLOOR from 645px down. Nothing to re-scale at 900, so no
+           rule is written there — a cap written at 900 would have to sit above
+           55.8px to avoid a jump anyway. The 520 query then caps at exactly
+           40px, which is what the base hands over at that width, and descends
+           from there: 92 → 55.8 → 40 → 40 → 32.4 at 360 → 30 floor. Monotonic.
+       band 56vh/380px min above 520, 44vh/240px min below it. Both terms fall,
+           so the photograph can never get taller on a smaller screen.
+       b2   22px of side padding above 520, 18px below — which is also the
+           wrapper's own 520 padding, so the pair does not end up mismatched
+           (the primary drops to 18px there and this rule would otherwise hold
+           the secondary at 22px). */
+  @media (max-width: 900px) {
+    .pd-ar-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+      align-items: start;
+    }
+    /* Full width now, so the headline takes a measure instead of a column.
+       15ch is the measure the design's own left column gives it at its drawn
+       size, not a number invented for the phone. */
+    .pd-ar-h1 { max-width: 15ch; }
+    .pd-ar-lede { margin-bottom: 20px; }
+  }
+
+  @media (max-width: 520px) {
+    /* Nothing may push the page sideways at 360px: long unbroken strings break
+       anywhere, and a long uppercase label wraps inside a full-width button
+       instead of widening the row. */
+    .pd-ar-band { height: 44vh; min-height: 240px; }
+    .pd-ar-grid { gap: 26px; }
+    .pd-ar-kick { overflow-wrap: anywhere; }
+    .pd-ar-h1 { font-size: clamp(30px, 9vw, 40px); max-width: none; overflow-wrap: anywhere; }
+    .pd-ar-lede { overflow-wrap: anywhere; margin-bottom: 18px; }
+    /* white-space:normal lets a label wrap at its spaces; overflow-wrap covers
+       the label that HAS none. Without the second declaration one long unbroken
+       word runs straight out of the button box at 360px — the wrapper's
+       overflow-x:hidden suppresses the scrollbar and the label is clipped
+       instead, which is the same bug wearing a different coat. */
+    .pd-ar-acts .btn { flex: 1 1 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+    /* Re-join the wrapper's 520 button padding — see the ladder note above. */
+    .pd-ar-b2 { padding-left: 18px; padding-right: 18px; }
+    /* Stacked, the pair no longer shares a VERTICAL edge, so the left border
+       comes back and the top one goes instead: two 1px --ink borders meeting
+       would print 2px between the controls. */
+    .pd-ar-b1 + .pd-ar-b2 { border-left: 1px solid var(--ink); border-top: 0; }
+  }
+</style>

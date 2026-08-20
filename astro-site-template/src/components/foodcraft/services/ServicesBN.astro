@@ -1,0 +1,503 @@
+---
+/**
+ * foodcraft / ServicesBN — "Panday Coffee Works": THE PRICE LIST.
+ *
+ * ROLE. The design's SERVICES element (id="menu"), reproduced down to the
+ * number — with two departures, each stated in full below and nowhere else: the
+ * rail's noun, and the column-header row. The spine's rail
+ * ("02 / Menu") beside a padded body holding a SPLIT HEAD — display h2 hard
+ * left, one narrow paragraph baseline-aligned hard right, wrapping under it
+ * when there is no room — over a RULED LEDGER. The ledger opens on a full-ink
+ * rule and every entry is one five-cell grid row —
+ * `minmax(0,48px) minmax(0,1.5fr) minmax(0,1fr) minmax(0,1.2fr) minmax(0,90px)`
+ * at a 20px gutter, 17px of vertical padding, baseline-aligned, closed by a
+ * grey hairline — carrying a mono rust index, the item name in Archivo 700, a
+ * tracked mono category, the description, and the price hard right. There is no
+ * card, no plate, no photograph and no border anywhere but those two rules:
+ * this section is a document, not a grid of tiles.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every number here is lifted from
+ * "Panday Coffee Works Landing.dc.html" and none is re-derived: the 52px/34px
+ * body pad, the 26px head gap and its 30px bottom margin, the h2's
+ * clamp(28px,3.6vw,50px), the 14.5px/1.7 head paragraph over 34ch, the ledger's
+ * five tracks and 20px gutter, the 17px row pad, the 11px index, the 17.5px/
+ * -.01em name, the 11.5px/.04em uppercase category, the 14px/1.6 description
+ * and the 17px price. The five colours the design paints in this section each
+ * already have a token of the SAME value, so no literal hex appears below
+ * (R1): #17181A --ink (h2, name, price) and, as the ledger's opening rule,
+ * --rule-strong · #3C3E42 --ink-2 (head paragraph, description) · #5A5C60
+ * --muted (the category) · #A8351B --accent (the index numeral, and the rail
+ * label the wrapper paints) · #C8C7C2 --line (the row hairline).
+ *
+ * CLASS NAMES ARE THIS TEMPLATE'S OWN (`.pcwm-*` — Panday Coffee Works, menu),
+ * in step with the rest of the BN family's per-template prefixes: pcw-ab-,
+ * pcw-ar-, pcw-vis-, pcw-strip-, pcwq-, pdcr-, pdw-, pdend-, pd-ar-, hbn-,
+ * pcbn-. An earlier draft of this file used a bare `.svc-*`, which is distinct
+ * to nothing: `.svc-head` and `.svc-price` appear verbatim in
+ * foodcraft/services/ServicesAL.astro, `.svc-note` and `.svc-row` in
+ * filipino/services/ServicesBB.astro. Astro scopes every rule here, so no page
+ * was rendering wrong — but a grep for one of this section's classes has to land
+ * on ONE template, and an audit in this family already had to rename a whole set
+ * of classes that had been copied verbatim from a sibling. Nothing is inherited
+ * from the BM menu but the shape of this comment and its guard discipline; BM's
+ * `.mnu-*` describes a photo card this section does not have.
+ *
+ * THE RAIL SAYS "02 / MENU"; THE DESIGN'S RAIL SAYS "02 / PRICE LIST", and that
+ * is a stated deviation rather than a transcription slip. The NUMBER is the
+ * design's own, and it indexes the RAILS rather than the render order — Hero 00,
+ * About 01, Services 02 — because Header, Trust (full-bleed) and Footer carry no
+ * rail index, which is why "02" sits on the FIFTH component PageBN renders. The
+ * noun is the family's generic one, because the rail label is a string this FILE
+ * derives rather than one the owner typed — the single sanctioned exception to
+ * R2 in this template — so it has to read on whatever business lands here, and
+ * it is the one visible word tying the spine to the id="menu" that the header
+ * and footer link at. Three siblings genericise the same way: AboutBN prints
+ * "01 / About" for the design's "01 / The works", GalleryBN "04 / Gallery" for
+ * "04 / Plates", AreaBN "09 / Area" for "09 / Dispatch".
+ *
+ * EDITABLE HOOKS — every path is DECLARED in components/editor/
+ * genericContentSchema.ts's `services` group, so none is a dead hook:
+ *   services.headline               — the h2, set:html so an owner's own <em>
+ *                                     lands where THEY put it in THEIR sentence
+ *   services.sub                    — the head's right-hand paragraph
+ *   services.items.${i}.title       — the item name (schema: "Title")
+ *   services.items.${i}.tag         — the tracked mono category cell
+ *                                     (schema: "Badge (floor / area / category)")
+ *   services.items.${i}.desc        — the description cell (schema: "Description")
+ *   services.items.${i}.price       — the price, hard right (schema: "Price")
+ *
+ * WHY `tag` AND NOT `meta` FOR THE THIRD COLUMN, since both are free text and a
+ * reader will wonder: the design draws that cell as tracked uppercase mono
+ * BESIDE the name — a category, which is what the schema's `tag` is labelled
+ * ("Badge (floor / area / category)"). `meta` is labelled "Small line ABOVE the
+ * title", so an owner filling it would be typing into a position this section
+ * does not draw.
+ *
+ * DERIVED — exactly one thing: the row index ("01", "02", …). It is computed
+ * from the row's DISPLAY position (R6), zero-padded to two digits, and it is
+ * aria-hidden. It is never stored, never an editable hook, and it renumbers
+ * when a blank row is dropped, which is the point: a printed ledger counts the
+ * lines it prints. The price is NOT derived — it is printed exactly as typed,
+ * never converted, never given a currency symbol this file chose, never totalled
+ * and never compared against another row.
+ *
+ * NOTHING IS SUPPLIED BY THIS FILE (R2). The design's seven demo drinks are the
+ * DESIGNER filling their own template; a drink nobody sells is an invented
+ * drink and a price nobody quoted is an invented price, so not one of them is a
+ * fallback. Every guard sits OUTSIDE its element, so an empty value removes the
+ * ELEMENT — and where a whole COLUMN is empty across every row, the TRACK goes
+ * with it (see THE LEDGER'S COLUMNS below), because a cell held open by an
+ * empty span is the same fabrication with the text deleted.
+ *
+ * NOT RENDERED, DELIBERATELY:
+ *   · THE COLUMN-HEADER ROW. The design prints "Ref · Drink · Origin · Tasting
+ *     notes · Price" above the first entry, and those five words are the
+ *     DESIGNER describing their own coffee bar. No schema path owns them, so
+ *     rendering them would mean this file writing visible copy (R2) — and
+ *     "Origin / Tasting notes" printed over a barber's service list is a claim
+ *     about what those columns contain that the owner never made. The ledger's
+ *     full-ink top rule is kept, so the block still OPENS like a table; only
+ *     the row of labels is gone.
+ *   · services.tag, the eyebrow. This design moved the eyebrow onto the SPINE:
+ *     the rail's rotated "02 / Menu" is this section's index label, and every
+ *     ruled section in the design draws its head as h2-plus-paragraph with no
+ *     .kick above it. Rendering services.tag here would print a second eyebrow
+ *     two centimetres from the first. derive-content-defaults fills it on every
+ *     site, so this is a deliberate omission and not a missed hook.
+ *   · services.ctaLabel / services.ctaHref. The design's price list carries no
+ *     button; the page's actions live in the header, the hero, the procedure
+ *     block and the closing band. Emitting the pair here would put a live
+ *     sidebar input on a control this section does not draw.
+ *   · NO onPage() ANCHOR-REMAP HELPER (R7), for that same reason: this section
+ *     emits no href at all and declares no data-href-field, so a helper here
+ *     would be dead code, and inventing a button to give it a job is exactly the
+ *     trade this family forbids. The section's own id="menu" IS one of the
+ *     page's anchors and is what the header and footer link at. If a link is
+ *     ever added here, copy onPage() from a sibling with
+ *       PAGE_ANCHORS = {menu, about, gallery, visit, faq, main}
+ *       ANCHOR_ALIAS = {location→visit, contact→visit, services→menu,
+ *                       rooms→menu, host→about, why→about, work→gallery,
+ *                       book→main}
+ *     and pass tel: / mailto: / http(s): through untouched.
+ *   · NO RATING AND NO STAR ROW. The design prints none, so this section makes
+ *     no rating claim. (Family rule: N stars are drawn only from a numeric
+ *     rating field, clamped 1–5, aria-hidden, with the number itself in the
+ *     accessible name — five stars over a row that carried no rating is a
+ *     fabricated claim.) services.items[].rating is read by the templates that
+ *     draw one; here it would be a hook on nothing.
+ *   · services.items[].note, .meta, .duration, .features, .image and the whole
+ *     services.whole.* band. The design's row has five cells and no sixth. In
+ *     particular .duration (the schema's "Price unit") is NOT appended to the
+ *     price: the design draws one price span, and hanging a unit off it would be
+ *     this file inventing layout. A row that holds ONLY fields from this list is
+ *     dropped rather than printed as a bare numeral (see THE ROW FILTER).
+ *   · No image, therefore no .plate and no role="img" anywhere in this file.
+ *   · The item name is a <span>, not an <h3>. The design draws a ledger cell in
+ *     mixed case at 700, and the wrapper's global heading rule would repaint any
+ *     h3 as Archivo 800 UPPERCASE at -.03em — i.e. a heading here would have to
+ *     fight four declarations to look like the design. The rows are marked up as
+ *     a list instead (ul/li with role="list", which keeps the list semantics
+ *     that `list-style:none` strips in some screen readers), so the entries are
+ *     still announced as a countable set.
+ *
+ * THE ROW FILTER. A row counts as real when it carries a title, a category, a
+ * description OR a price — the four things this row can DRAW. All four count on
+ * purpose: each is a live sidebar input, so dropping a row that holds only a
+ * price, or only a description, would silently delete an owner's work. A row
+ * holding none of them is an unfilled "+ Add" row and would print as an index
+ * numeral over four empty cells.
+ *
+ * THE LEDGER'S COLUMNS ARE COMPUTED, and this is the one decision most likely
+ * to be read as a deviation from the design. The demo fills all five columns;
+ * a real site very often fills only name + description + price, because
+ * `tag` is optional on every row. Keeping a dead `minmax(0,1fr)` track for a
+ * category nobody typed would spend a fifth of the row on nothing and crush the
+ * description beside it — and the only way to make that track look intentional
+ * is to put an empty span in it, which R2 forbids. So the track list and each
+ * cell's column index are computed once in the frontmatter, passed to the
+ * single scoped rule as CSS custom properties on the ledger element, and the
+ * cells are placed EXPLICITLY rather than auto-flowed — auto-placement would
+ * slide a description into the category's column on any row that omitted one.
+ * The inline style attribute carries custom properties only: no colour, no
+ * size, no rule (R3).
+ *
+ * SECTION GATE (R5). Read out of lib/derive-content-defaults.ts rather than
+ * assumed: it fills services.tag and services.headline on every site, and
+ * services.sub on every site that has a business name (it derives the sentence
+ * from the name), while leaving services.items at []. So a gate that counted the
+ * headline would ship a 50px "Services we provide" — that literal default — over
+ * a ledger with no lines, on every site that listed nothing. The gate counts
+ * BODY content only: at least one real row. There is no photograph or panel in this section to
+ * count alongside them.
+ *
+ * DATA SHAPES. content.services arrives as the wrapper {tag, headline, sub,
+ * items[]} OR as a bare legacy array (see lib/services-shape.ts), and a wrapped
+ * row may still carry the legacy key names title→name / desc→description that
+ * the editor's brief draft-normalisation window wrote. All three are read here:
+ * without that mapping every row on such a site fails the filter above and the
+ * WHOLE PRICE LIST vanishes while the data sits untouched in the record. A bare
+ * string row (the oldest shape) becomes its own title rather than being spread
+ * into character keys and lost.
+ *
+ * ACCESSIBILITY (R9). The rail's "02 / Menu" and each row's index numeral are
+ * decorative strings this file derived, so both are aria-hidden — each with ONE
+ * literal attribute and no conditional twin beside it. Nothing here is
+ * announced that an owner did not type.
+ *
+ * CONTRAST, on this design's native palette (WCAG 2.x, sRGB relative
+ * luminance). Every figure is READ OFF the family's checked BN ratio table for
+ * the hexes PageBN declares, not recomputed by hand here — hand arithmetic is
+ * what put three earlier audits in this family at odds over the same pair.
+ * The four pairs this section actually paints:
+ *   --ink   #17181A on --paper #EFEEEA = 15.30:1  (h2, item name, price)
+ *   --ink-2 #3C3E42 on --paper          =  9.23:1  (head paragraph, description)
+ *   --muted #5A5C60 on --paper          =  5.77:1  (the 11.5px category)
+ *   --accent #A8351B on --paper         =  5.67:1  (the 11px index numeral)
+ * The tightest pair here is 5.67 at 11px, i.e. normal text needing 4.5, so
+ * nothing in this section is below AA.
+ *   AND THE WRAPPER AGREES WHERE THE TWO OVERLAP. PageBN's header table carries
+ *   three of these four — muted/paper 5.77, accent/paper 5.67, ink/paper 15.30 —
+ *   and each is the checked table's value; the 9.23 ink-2 pair is this section's
+ *   alone and the wrapper does not list it. The wrapper's `.plate .cap` comment
+ *   reads 15.30:1 for --on-ink on --ink, which is the ink/paper pair inverted
+ *   (--on-ink is the same #EFEEEA as --paper) and is likewise right. Nothing at
+ *   the wrapper is outstanding from here, and this section draws no .cap in any
+ *   case; the rest of PageBN's table covers pairs this file never paints and is
+ *   the wrapper's to maintain.
+ *   SCHEME CAVEAT — every figure above is NATIVE ONLY, because the GROUND
+ *   moves too. genericThemeOverrides.ts's buildOverrideCss writes --paper,
+ *   --ink, --ink-soft, --muted and --accent with !important on any scheme
+ *   pick, so at least one end of all four pairs is repainted. --ink-2 is one
+ *   of the tokens PageBN lists as invisible to the engine, which pins that END
+ *   of the 9.23 pair — but not the --paper under it, so 9.23 is no more
+ *   scheme-proof than the other three.
+ *
+ * RESPONSIVE (R8). The wrapper owns the shared 760/520 pass and the whole
+ * spine — the rail going horizontal, the .sec grid collapsing to one column.
+ * This file owns its OWN grid: the five-track ledger becomes THREE tracks at
+ * 900px (index | name | price on the first line, category and description
+ * spanning beneath), because below that a 1.2fr description cell inside a 20px
+ * gutter has less measure than the design ever gave it. Every track is
+ * minmax(0,…) and every owner-typed string breaks anywhere, so at 360px nothing
+ * can push the page sideways; an unspaced price and a one-word category typed in
+ * caps are the two likeliest strings here to arrive unbreakable. There is no
+ * button in this section, so the full-width-button rule has nothing to bite on.
+ * CLAMPS ARE MONOTONIC ACROSS BREAKPOINTS — traced, not assumed:
+ *   · .pcwm-h2 states clamp(28px,3.6vw,50px) ONCE, at base, and is never
+ *     restated in a media query. Because this file's scoped rule is (0,2,0) and
+ *     the wrapper's is (0,1,1), it also wins INSIDE the wrapper's 760 query, so
+ *     the headline does NOT pick up the wrapper's clamp(26px,7.4vw,40px) there.
+ *     That is deliberate: 3.6vw is already at its 28px floor by 778px while
+ *     7.4vw is still pinned to its 40px cap until 541px, so inheriting the
+ *     wrapper's mobile clamp would make this headline STEP UP 28px → 40px as
+ *     the viewport crossed 760. Holding one clamp gives 50px → 28px → flat.
+ *     (The step is a WRAPPER fault affecting every section that uses a bare
+ *     .h2; it is reported there rather than papered over from here.)
+ *   · The body's vertical pad states clamp(28px,4.6vw,52px) once, at base, and
+ *     is likewise never restated.
+ *   · Every fixed size in the 520 query is SMALLER than its base value
+ *     (name 17.5→16.5, price 17→16, description 14→13.5, category 11.5→11,
+ *     index 11→10.5, head paragraph 14.5→14), so nothing on this section can
+ *     grow as the screen narrows.
+ *
+ * SPECIFICITY (R3). PageBN wraps its primitives in :where(), so a scoped rule
+ * here at (0,2,0) beats the global at (0,1,1) — media queries included. So
+ * never restate a property the wrapper tunes per breakpoint without restating it
+ * at that breakpoint too (that is why .pcwm-note releases its own 34ch measure at
+ * 760, where the wrapper's release reaches .lede and .h2 but not this class).
+ * The owner's <em> inside the headline arrives through set:html AFTER scoping
+ * and is unreachable from this block by design — the wrapper's global `.h2 em`
+ * rule paints it rust, which is why nothing here needs :global().
+ */
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+const services = (content && content.services) || {};
+
+const str = (v: any) => (typeof v === 'string' ? v.trim() : '');
+
+// `services` is a wrapper OR a bare legacy array, so every scalar read has to
+// tolerate both — on an array these are simply undefined, which is what the
+// guards below expect.
+const headline = str(services.headline);
+const sub = str(services.sub);
+
+type Row = { title: string; origin: string; notes: string; price: string };
+
+const rawItems: any[] = Array.isArray(services.items)
+  ? services.items
+  : (Array.isArray(content?.services) ? content.services : []);
+
+// All three vocabularies — see DATA SHAPES in the block above.
+const items: Row[] = rawItems.map((it: any) => {
+  if (typeof it === 'string') return { title: it.trim(), origin: '', notes: '', price: '' };
+  if (!it || typeof it !== 'object') return { title: '', origin: '', notes: '', price: '' };
+  return {
+    title: str(it.title) || str(it.name),
+    origin: str(it.tag),
+    notes: str(it.desc) || str(it.description),
+    price: str(it.price),
+  };
+});
+
+// Drop the rows an owner added and never filled — carrying the ORIGINAL index
+// (R6), so deleting row 2 cannot misdirect an edit into row 3. Only the four
+// fields this row DRAWS count; see THE ROW FILTER above.
+const rows = items
+  .map((r, i: number) => ({ ...r, i }))
+  .filter((r) => Boolean(r.title || r.origin || r.notes || r.price));
+
+// A column exists only if some row fills it — see THE LEDGER'S COLUMNS above.
+const hasName = rows.some((r) => Boolean(r.title));
+const hasOrigin = rows.some((r) => Boolean(r.origin));
+const hasNotes = rows.some((r) => Boolean(r.notes));
+const hasPrice = rows.some((r) => Boolean(r.price));
+
+// The design's five tracks, minus the ones nothing fills. The index track is
+// unconditional because the numeral is drawn for every row.
+const tracks = [
+  'minmax(0,48px)',
+  hasName ? 'minmax(0,1.5fr)' : '',
+  hasOrigin ? 'minmax(0,1fr)' : '',
+  hasNotes ? 'minmax(0,1.2fr)' : '',
+  hasPrice ? 'minmax(0,90px)' : '',
+].filter(Boolean).join(' ');
+
+// …and the column each cell is pinned to, counted over the surviving tracks
+// only. A cell whose column is absent is never rendered, so its 0 is unused.
+let __col = 1;
+const cName = hasName ? ++__col : 0;
+const cOrigin = hasOrigin ? ++__col : 0;
+const cNotes = hasNotes ? ++__col : 0;
+const cPrice = hasPrice ? ++__col : 0;
+
+// Custom properties ONLY. No colour, no size, no rule travels inline (R3).
+const ledgerVars =
+  `--pcwm-tracks:${tracks};--pcwm-c-name:${cName};--pcwm-c-origin:${cOrigin};` +
+  `--pcwm-c-notes:${cNotes};--pcwm-c-price:${cPrice};`;
+
+// R5: body content only. The headline is derived on every site, the sub on
+// every site with a business name; neither can gate this section.
+const hasSection = rows.length > 0;
+---
+{hasSection && (
+  <section class="sec pcwm" id="menu">
+    {/* The rail is the spine's index label — derived, decorative, never stored. */}
+    <div class="rail" aria-hidden="true"><span class="rail-t">Menu</span></div>
+    <div class="sec-body pcwm-body">
+      {(headline || sub) && (
+        <div class="pcwm-head reveal">
+          {headline && <h2 class="h2 pcwm-h2" data-field="services.headline" set:html={headline}></h2>}
+          {sub && <p class="pcwm-note" data-field="services.sub">{sub}</p>}
+        </div>
+      )}
+
+      <ul class="pcwm-ledger reveal" role="list" style={ledgerVars}>
+        {rows.map((r, k) => (
+          <li class="pcwm-row">
+            {/* DISPLAY position (R6), not the stored index: a printed ledger
+                counts the lines it prints. */}
+            <span class="pcwm-ref" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+            {r.title && <span class="pcwm-name" data-field={`services.items.${r.i}.title`}>{r.title}</span>}
+            {r.origin && <span class="pcwm-origin" data-field={`services.items.${r.i}.tag`}>{r.origin}</span>}
+            {r.notes && <span class="pcwm-notes" data-field={`services.items.${r.i}.desc`}>{r.notes}</span>}
+            {/* Printed exactly as typed — never converted, never totalled. */}
+            {r.price && <span class="pcwm-price" data-field={`services.items.${r.i}.price`}>{r.price}</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+)}
+<style>
+  /* One scoped block. Read the SPECIFICITY note in the frontmatter before adding
+     to it. (Never write a literal end-of-stylesheet tag inside a comment here,
+     not even as an example — this is a raw-text element and the parser would end
+     the stylesheet on the spot, silently truncating the rest of the file.)
+
+     `.pcwm` itself carries NO rule, on purpose and not by omission: the whole of
+     this section's frame — the two-column spine, the rail hairline and the ink
+     rule beneath — belongs to the wrapper's .sec / .rail primitives, and the
+     class is here only so the section is nameable from a devtools inspection. */
+
+  /* The design pads this body 52px 34px, where the wrapper's shared .sec-body
+     tops out at 44px. The horizontal clamp already caps at the design's 34px, so
+     only the vertical pad is restated — once, at base, with a positive slope, so
+     it is monotonic by construction. */
+  .pcwm-body { padding-top: clamp(28px, 4.6vw, 52px); padding-bottom: clamp(28px, 4.6vw, 52px); }
+
+  /* ── THE SPLIT HEAD. h2 hard left, paragraph hard right, sharing a baseline
+        at the bottom and wrapping to two lines when the pair runs out of room —
+        which is exactly what the design's flex-wrap is for, and why the h2's
+        measure is released below rather than capped. */
+  .pcwm-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 26px; flex-wrap: wrap; margin-bottom: 30px;
+  }
+
+  /* Face, weight, colour, tracking, uppercase and the rust <em> all stay with
+     the wrapper's .h2. Only the size, the LEADING, the margin and the measure
+     are this section's: the design gives this headline no measure cap and no
+     bottom margin, because the head's own 30px does that job — and it states
+     line-height 1, where the shared .h2 states .98, which is neither of the two
+     figures the design uses (.96 on the hero h1, 1 on every section h2). At the
+     50px cap the difference is 1px, but it is the design's number, all six other
+     BN sections that resize an .h2 restate it beside the clamp, and a headline
+     that leads differently from its neighbours is the drift the spine exists to
+     prevent.
+     Declared ONCE, with the size, and never restated in a query. */
+  .pcwm-h2 {
+    margin: 0; max-width: none; min-width: 0;
+    font-size: clamp(28px, 3.6vw, 50px);
+    line-height: 1;
+    overflow-wrap: anywhere;
+  }
+
+  /* The design's head paragraph is 14.5px/1.7 over 34ch in --ink-2 — smaller,
+     tighter and darker than the wrapper's .lede, which is sized for the hero, so
+     it is its own rule rather than a .lede override. Qualified by its class so
+     it beats the wrapper's (0,1,1) paragraph reset and its 1em bottom margin. */
+  .pcwm-note {
+    margin: 0; max-width: 34ch; min-width: 0;
+    font-size: 14.5px; line-height: 1.7; color: var(--ink-2);
+    text-transform: none; letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE LEDGER. It opens on the FULL-INK rule (--rule-strong, the same weight
+        as the rule between sections) and closes each entry on the grey hairline;
+        those two rules are the only borders in this section. role="list" on the
+        element keeps the list semantics that list-style:none strips. */
+  .pcwm-ledger {
+    list-style: none; margin: 0; padding: 0;
+    border-top: 1px solid var(--rule-strong);
+  }
+
+  /* Tracks come from the frontmatter (THE LEDGER'S COLUMNS) so a column nobody
+     filled costs no width. */
+  .pcwm-row {
+    display: grid; grid-template-columns: var(--pcwm-tracks);
+    gap: 20px; padding: 17px 0; align-items: baseline;
+    border-bottom: 1px solid var(--line); min-width: 0;
+  }
+
+  /* Every cell is pinned EXPLICITLY: auto-placement would slide a description
+     into the category's column on any row that omitted one. */
+
+  /* Line-height 1.25 on the four cells the design leaves unset: the design's own
+     page declares none, so they render at the browser normal there, while this
+     wrapper sets body line-height 1.62 — inheriting it would set a ledger in
+     body-copy leading. The description keeps the 1.6 the design states. */
+  .pcwm-ref {
+    grid-column: 1; min-width: 0;
+    font-family: var(--mono); font-size: 11px; line-height: 1.25;
+    color: var(--accent);
+  }
+  .pcwm-name {
+    grid-column: var(--pcwm-c-name); min-width: 0;
+    font-weight: 700; font-size: 17.5px; line-height: 1.25; letter-spacing: -.01em;
+    color: var(--ink); overflow-wrap: anywhere;
+  }
+  .pcwm-origin {
+    grid-column: var(--pcwm-c-origin); min-width: 0;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.25;
+    letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .pcwm-notes {
+    grid-column: var(--pcwm-c-notes); min-width: 0;
+    font-size: 14px; line-height: 1.6; color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+  .pcwm-price {
+    grid-column: var(--pcwm-c-price); min-width: 0;
+    font-weight: 700; font-size: 17px; line-height: 1.25;
+    color: var(--ink); text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── 900: five tracks become three. The index, the name and the price hold the
+        first line; the category and the description each span the two content
+        columns beneath it. All three of that first line are pinned to grid-row 1;
+        the category and the description are pinned to no row at all, so each
+        drops onto the first line that will hold a two-column span and a row
+        missing a category leaves no empty band behind it. */
+  @media (max-width: 900px) {
+    .pcwm-head { gap: 16px; }
+    .pcwm-row {
+      grid-template-columns: minmax(0, 34px) minmax(0, 1fr) minmax(0, auto);
+      gap: 6px 14px;
+    }
+    .pcwm-ref { grid-column: 1; grid-row: 1; }
+    .pcwm-name { grid-column: 2; grid-row: 1; }
+    .pcwm-price { grid-column: 3; grid-row: 1; }
+    .pcwm-origin { grid-column: 2 / -1; }
+    .pcwm-notes { grid-column: 2 / -1; }
+  }
+
+  /* ── 760: the head paragraph gives up the 34ch measure THIS file set — the
+        wrapper's own release reaches .lede and .h2, not a (0,2,0) class here. */
+  @media (max-width: 760px) {
+    .pcwm-note { max-width: none; }
+  }
+
+  /* ── 520 (checked against a 360px viewport: every track is minmax(0,…), there
+        is no image and no button, and every owner-typed string breaks anywhere,
+        so nothing here can push the page sideways). Every size below is SMALLER
+        than its base value, so the ledger cannot grow as the screen narrows. */
+  @media (max-width: 520px) {
+    .pcwm-head { gap: 14px; margin-bottom: 22px; }
+    .pcwm-note { font-size: 14px; }
+    .pcwm-row {
+      grid-template-columns: minmax(0, 30px) minmax(0, 1fr) minmax(0, auto);
+      gap: 5px 12px; padding: 15px 0;
+    }
+    .pcwm-ref { font-size: 10.5px; }
+    .pcwm-name { font-size: 16.5px; }
+    .pcwm-origin { font-size: 11px; letter-spacing: .03em; }
+    .pcwm-notes { font-size: 13.5px; }
+    .pcwm-price { font-size: 16px; }
+  }
+</style>

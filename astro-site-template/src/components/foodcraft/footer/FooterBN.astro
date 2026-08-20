@@ -1,0 +1,780 @@
+---
+/**
+ * foodcraft / FooterBN — "Panday Coffee Works" · THE COLOPHON.
+ *
+ * ROLE: the last place a visitor looks for the name, the number, the address
+ * and the way back into the page before they give up. So every cell here is
+ * real owner data or the cell is absent.
+ *
+ * WHAT THE DESIGN DRAWS — reproduced value for value from the element carrying
+ * data-component="FOOTER" in "Panday Coffee Works Landing.dc.html", nothing
+ * re-derived:
+ *   footer          display:grid, minmax(0,52px) minmax(0,1fr), NO bottom rule
+ *                                                    → the wrapper's .sec
+ *   left column     border-right 1px #C8C7C2, and NOTHING inside it
+ *                                                    → the wrapper's .rail
+ *   right column    no padding of its own; carries two blocks:
+ *     grid          minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr), NO gap,
+ *                   border-bottom 1px #C8C7C2, cells 1 and 2 opened by a
+ *                   border-right 1px #C8C7C2
+ *       cell 1      padding 40px 34px · name 800/22px/-.02em/uppercase #17181A
+ *                   · meta mono 10px/.16em/uppercase #A8351B margin 7px 0 15px
+ *                   · blurb 14px/1.8 #3C3E42 margin 0 0 16px max-width 36ch
+ *                   · action mono 10.5px/.14em/uppercase #A8351B with a "→"
+ *       cell 2      padding 40px 30px · heading mono 10px/.2em/uppercase
+ *                   #5A5C60 margin-bottom 14px · four 14px #3C3E42 rows on a
+ *                   9px inter-row margin
+ *       cell 3      padding 40px 30px · same heading · three 14px #3C3E42 rows
+ *     colophon      padding 20px 34px, flex space-between, gap 16px, wrap,
+ *                   mono 9.5px/.18em/uppercase #5A5C60, two cells
+ *
+ * EDITABLE HOOKS — every visible string in this file, and nothing else. Each is
+ * declared in components/editor/genericContentSchema.ts, so each is a hook a
+ * sidebar input actually owns (a data-field on any other path is a dead hook
+ * no input can reach):
+ *   footer.brand                     — the 22px wordmark, and the colophon's
+ *                                      identity half (HeaderBN's wordmark too:
+ *                                      one field, three places)
+ *   footer.locality                  — the rust mono place tag under it
+ *   footer.blurb                     — the 36ch standing line
+ *   navCtaText                       — the one action's label (see D3)
+ *   navCtaHref                       — its target (data-href-field)
+ *   footer.explore.title             — the links column heading
+ *   footer.explore.links.${i}.text   — a links-column row, when the owner
+ *   footer.explore.links.${i}.href     filled the footer's own list
+ *   navbar_links.${i}.label          — a links-column row, when the column is
+ *   navbar_links.${i}.href             mirroring the masthead instead (D2)
+ *   footer.visit.title               — the contact column heading
+ *   location.phone                   — the tel: row (data-field only, D6)
+ *   contact.email                    — the mailto: row (D7)
+ *   location.address                 — the address line, and the colophon's
+ *                                      other half
+ *   footer.notes.${i}                — the colophon's RIGHT cell (D1)
+ *
+ * DERIVED here, never authored here:
+ *   · the wordmark falls back to layout.businessName when footer.brand is
+ *     blank — the same name out of the same submission, not an invention, and
+ *     the same fallback the schema itself declares.
+ *   · the blurb falls back to footer.brand_blurb, the schema's own alias.
+ *   · phone, email and address fall back to layout.contact.* — which IS
+ *     content.contact (lib/astro-builder.ts passes it straight through with a
+ *     display-formatted phone), so an owner who filled the footer group's own
+ *     "Email" / "Address" boxes still gets those rows, and no two sections on
+ *     this page can print different numbers or different addresses.
+ *   · the tel: href is built from the phone's own digits and the mailto: href
+ *     from the email. Neither prefix is ever stored.
+ *   · every in-page href is resolved by onPage() against the ids PageBN really
+ *     renders. PAGE_ANCHORS, ANCHOR_ALIAS and the helper are byte-identical to
+ *     HeaderBN's, so the masthead and the colophon can never send a visitor to
+ *     two different places.
+ *   · `i` on every list row is the ORIGINAL, pre-filter index (R6), so dropping
+ *     an unreachable row 2 cannot misdirect an edit into row 3. Nothing in this
+ *     footer is numbered on screen, so no display index is needed here.
+ *   · the colophon's address is FLATTENED to one line (newlines to commas) to
+ *     fit a single row of tracked caps — which is why that node, and only that
+ *     node, carries data-derived: components/editor/editorBridge.ts skips
+ *     data-derived nodes when it paints a live edit back, and would otherwise
+ *     write the raw multi-line scalar into a caps row. The COLUMN's address is
+ *     NOT derived: it is the stored string verbatim, broken by
+ *     `white-space: pre-line`, so an inline edit there stays truthful.
+ *
+ * NOT RENDERED, deliberately:
+ *   · THE DESIGN'S OWN COPY. "Panday Coffee Works", "Roastery & bar — Escolta,
+ *     Manila", the blurb, "Sections", "Price list", "The works", "Gallery",
+ *     "Notes", "Contact", "Contact us", "+63 917 555 0108", "4 Escolta St,
+ *     Binondo, Manila" and "Prices in Philippine pesos" are the DESIGNER
+ *     filling in their own template. Not one of those words is in this file. A
+ *     roastery that supplied no links gets no links column, not the designer's
+ *     four.
+ *   · THE PREFIX OF THE DESIGN'S PLACE TAG. Its `shopMeta` is the literal
+ *     'Roastery & bar — ' concatenated with the town. Only the TOWN is owner
+ *     data, so only the town is printed — footer.locality, alone, in the
+ *     designer's exact mono metrics. HeaderBN drops the same prefix for the
+ *     same reason. Printing it would put a trade description on a business that
+ *     never claimed one.
+ *   · a column heading with no column under it, a lock with no name, a blurb
+ *     with no text, a link with no label or no reachable target, an action with
+ *     no label, a colophon with nothing in it, and the whole footer when all of
+ *     the above are empty. EVERY guard sits OUTSIDE its tag, so a blank value
+ *     removes the ELEMENT and not just its text — no empty rule, no heading
+ *     over nothing, no hairline under a row that is not there.
+ *   · THE GRID'S CLOSING HAIRLINE when nothing follows it (see D5).
+ *   · footer.hours and footer.social. Both are declared in this schema group,
+ *     and the design's footer draws neither an hours block nor a social run —
+ *     LocationBN owns the hours. Inventing two blocks the design never drew is
+ *     not this file's call.
+ *   · .reveal. The footer is the page terminus; fading in the last thing on
+ *     screen buys nothing and risks a footer that never un-hides.
+ *   · any star row, rating or numeral. R2's star rule has nothing to bite on
+ *     here: there is not one node in this footer that could print a claim the
+ *     owner did not make. There is no upload either, hence no role="img", no
+ *     .plate and no image alt text.
+ *
+ * DECISIONS A READER WOULD OTHERWISE TAKE FOR AN OVERSIGHT
+ *
+ * D1. THE RAIL IS EMPTY, AND THAT IS THE DESIGN. Every railed section on this
+ *     page carries a rotated index — the design numbers twelve of them, 00 to
+ *     11, ending at "11 / Contact" on the CTA band. The FOOTER's rail is drawn
+ *     with its hairline and nothing in it. That is deliberate rather than an
+ *     omission: the spine runs to the bottom of the sheet, but the colophon is
+ *     not a numbered section OF the document — it is the imprint under it, and
+ *     a technical document does not index its own colophon. So this file emits
+ *     .rail with no .rail-t, and prints no thirteenth index. FLAG FOR REVIEW:
+ *     the section brief asks for the number matching this file's position in
+ *     the render order ("12 / …"). The design is the specification and the
+ *     design leaves it blank, so blank is what shipped — say the word and the
+ *     label goes in, but the WORD beside the numeral would then be one this
+ *     file authored, which is the second reason it is absent.
+ *     Consequence handled: the wrapper's 760 pass turns .rail from a vertical
+ *     column into a horizontal bar with 12px of padding and a --line rule under
+ *     it. An EMPTY one would be a blank ruled strip above the footer on every
+ *     phone — a hairline under a row that is not there. So the rail is hidden
+ *     at exactly 760px, where the wrapper flips it, and not one pixel earlier:
+ *     from 761px up it is still the vertical spine and it stays.
+ *
+ * D2. THE LINKS COLUMN HAS TWO SOURCES AND TWO HOOK SHAPES.
+ *     footer.explore.links is the schema's own list for this column, so it wins
+ *     when the owner filled it. Otherwise the column mirrors the masthead,
+ *     reading content.navbar_links — and note it is CONTENT, not
+ *     layout.navLinks, for the reason HeaderBN states at length: lib/astro-
+ *     builder.ts fills content.navbar_links from the owner's rows or from
+ *     derive-content-defaults' five, but builds layout.navLinks from the RAW
+ *     content.navbar_links || its own four, so on a site whose owner supplied
+ *     none the two arrays differ in length and in labels. `navbar_links.${i}`
+ *     is only a live hook when `i` indexes THAT array. layout.navLinks is kept
+ *     as a defensive fallback for a harness that renders this component without
+ *     going through astro-builder — the same fallback, in the same order, as
+ *     HeaderBN's, so the two link lists cannot disagree.
+ *
+ * D3. THE ACTION IS DRAWN ONCE, NOT TWICE. The design draws contactLabel in
+ *     BOTH the brand column and the contact column, and that reads correctly
+ *     there because the designer set contactLabel to "Contact us" and headed
+ *     the column "Contact". On a real site both come from
+ *     lib/derive-content-defaults.ts, which seeds navCtaText to "Get in touch"
+ *     — so ONE field would print the same three words twice, six lines apart.
+ *     The rule here:
+ *       · the action rides the BRAND column whenever that column exists on its
+ *         own merits (a wordmark, a place tag or a blurb);
+ *       · it falls to the CONTACT column only when the brand column does not
+ *         render at all — which is where the design also draws it;
+ *       · and never in the contact column when it merely restates that
+ *         column's heading, compared case- and whitespace-insensitively,
+ *         because "Get In Touch" is the same stutter.
+ *     The brand gate counts only the lock and the blurb, NOT ctaText, so the
+ *     fallback branch stays reachable (folding ctaText into that gate is what
+ *     made the equivalent branch dead code in an earlier family).
+ *     The pair hooked is navCtaText / navCtaHref, from the Header group, not
+ *     hero.cta1: components/editor/editorBridge.ts resolves a Blocks toggle by
+ *     counting hooks of a given prefix inside closest('section,footer'), so a
+ *     footer carrying hero.* hooks becomes a candidate for "hide the Hero
+ *     block". navCtaText has no entry in that prefix map at all, so it is
+ *     toggle-inert. HeaderBN hooks the same pair for the same reason.
+ *
+ * D4. NO .btn IN THIS FILE, AT ALL (R4). lib/genericThemeOverrides.ts emits
+ *     `.testi .btn, .cta-band .btn, footer .btn { color: <on-ink> !important }`
+ *     — so a .btn anywhere under this <footer> would take a label colour picked
+ *     for an INK ground and could vanish on this bone one. The design's footer
+ *     has no button anyway (one 10.5px text action and 14px rows), so the
+ *     action is the wrapper's .linkc and the rows are plain anchors, neither of
+ *     which the engine touches. None of the forbidden names (.btn-primary,
+ *     .btn-ghost, .nav-cta, .cta-band, .trust, .testi) appears either, and
+ *     .linkc's own font-size is restated to the design's 10.5px — its 11px is
+ *     the only value of the primitive this file changes, and the 44px tap
+ *     floor it brings is kept.
+ *
+ * D5. THE CLOSING HAIRLINE RIDES A MODIFIER. The design draws that rule
+ *     BETWEEN the grid and the colophon, so .pcbn-fgrid--ruled is added only
+ *     when a colophon follows. Left unconditional it becomes an empty rule at
+ *     the bottom of the page whenever brand, address and notes are all blank
+ *     while a column still renders. The cells' vertical hairlines are drawn
+ *     with :not(:last-child) for the same reason: with one column rendering,
+ *     an unconditional border-right would rule off nothing.
+ *
+ * D6. THE tel: ANCHOR CARRIES data-field ONLY, no data-href-field. Its href is
+ *     derived from the field's own value, so a href hook there would write
+ *     "tel:+63…" straight back into the phone box. Same for the mailto: row.
+ *
+ * D7. THE EMAIL ROW IS AN ADDITION. The design draws none — its demo roastery
+ *     took orders on Messenger — but contact.email is schema-declared in the
+ *     very group this footer belongs to, and no other BN section binds it, so a
+ *     business that supplies one had it appear NOWHERE on the page. It takes
+ *     the design's own 14px row treatment, so nothing new is invented visually.
+ *
+ * D8. PHONE AND EMAIL ARE UNDERLINED, THE ADDRESS IS NOT. The design draws all
+ *     three at 14px --ink-2 inside one column, so the two that are LINKS and
+ *     the one that is not would be identical in family, size, weight and
+ *     colour — nothing at all would mark the tappable rows, which is worse
+ *     than the colour-only cue WCAG 1.4.1 already rules out. The underline is
+ *     the distinction. text-decoration adds no box, so thickening it on hover
+ *     cannot shift the rows. Deliberately NOT applied to the links column:
+ *     those are wayfinding links in a list, unambiguous by position and by
+ *     heading, and the design draws them bare.
+ *
+ * D9. NO TOP HAIRLINE, AND NO BOTTOM ONE. Every other seam on this page is a
+ *     rule, so both absences look like omissions. Neither is: the CtaBand above
+ *     already closes itself with `border-bottom:1px #17181A`, so the band edge
+ *     IS the divider and a second rule would double it; and the design's footer
+ *     declares no bottom border at all, because there is nothing under it to
+ *     divide from. The wrapper's .sec primitive adds one, so this file turns it
+ *     off — the ONE thing it overrides on .sec, and it does not touch
+ *     grid-template-columns, which would otherwise beat the wrapper's own 760
+ *     collapse from outside a media query.
+ *
+ * D10. THE ROWS ARE BLOCKS, NOT THE DESIGN'S <p>. The design uses
+ *      `<p style="margin:0 0 9px">` per row, last row margin:0, over a body
+ *      with no declared line-height — 14px at Archivo's `normal` line box plus
+ *      the 9px margin, so a pitch a shade under 26px. Here each row is a block
+ *      anchor at 14px/1.5 with 3px of padding either side: 21 + 3 + 3 = 27px,
+ *      one pixel proud of the design rather than equal to it. In exchange the
+ *      whole row is the tap target and no trailing margin dangles above the
+ *      closing hairline.
+ *
+ * D11. THE LEADING CELL IS ALWAYS PADDED 34px ON THE LEFT. The design gives the
+ *      brand cell 34px and the other two 30px, which puts the brand cell's text
+ *      on the same left edge as the colophon's. With no brand column that
+ *      alignment would break by 4px, so the padding-left follows the FIRST
+ *      RENDERED cell rather than the brand class. When all three render this is
+ *      the design's own value on the design's own cell — identical pixels.
+ *
+ * D12. THE COLOPHON'S RIGHT CELL IS footer.notes, NOT THE CURRENCY SENTENCE.
+ *      The design draws `Prices in {{ currencyName }}` there. That is a claim
+ *      about how this business quotes, and no field carries it, so the sentence
+ *      is gone — but the CELL is not, because footer.notes is declared in this
+ *      very group, labelled "Footer notes (copyright row)", and
+ *      lib/derive-content-defaults.ts seeds it to `© <year> <name>` from the
+ *      owner's own submitted name (and deliberately suppresses a bare "© 2026"
+ *      with no name). So the design's two-cell row survives with the owner's
+ *      own small print in it. A note that repeats the left cell VERBATIM is
+ *      dropped — an exact-match test only, because "© 2026 Panday" is different
+ *      information from "Panday · 4 Escolta St" and both belong on the row.
+ *
+ * D13. LINE-HEIGHT IS RESTATED EVERYWHERE, AND NOT AT THE DESIGN'S FIGURE. The
+ *      design's body declares no line-height at all, so every string in its
+ *      footer renders at `normal` — the wordmark, the place tag, both column
+ *      headings, every row and the colophon. The blurb's 1.8 is the ONE value
+ *      it writes down, and that one is reproduced verbatim. Inheriting is not
+ *      an option for the rest: the wrapper's body sets 1.62, so a value has to
+ *      be stated either way, and `normal` would not be the design's intent so
+ *      much as the design's silence. What is stated is a readable line box for
+ *      a string whose length this file does not control — 1.15 wordmark, 1.5
+ *      place tag, 1.4 heading, 1.5 row and address line, 1.9 colophon. In the
+ *      design each of those is a single demo line and the value never shows;
+ *      on a real site any of them can wrap, and `normal` under 9.5px caps at
+ *      .18em puts two tracked lines almost on top of each other.
+ *
+ * COLOUR — wrapper tokens only, no literal hex anywhere (R1). Every colour the
+ * design's footer uses already has a token holding the same value:
+ *   #EFEEEA --paper (the ground, inherited from body) · #C8C7C2 --line (every
+ *   hairline: the rail's, the cells', the closing one) · #17181A --ink (the
+ *   wordmark) · #A8351B --accent (the place tag and the action) · #3C3E42
+ *   --ink-2 (the blurb, every link row AND the address line — the design does
+ *   not grey that line off) · #5A5C60 --muted (the two column headings and the
+ *   colophon caps, and nothing else) · #7C2412 --accent-deep
+ *   (the design's OWN hover: its stylesheet declares a:hover{color:#7C2412},
+ *   shadowed in the demo only by the inline colour on each footer link, so
+ *   shipping no hover would be an interaction regression dressed as fidelity)
+ *   · 0 --r, because nothing here is round. Nothing needed re-deriving and
+ *   nothing was invented.
+ *
+ * CONTRAST — COMPUTED for this file from the hexes PageBN declares (sRGB
+ * relative luminance, WCAG 2.x), not estimated, and not copied from the
+ * wrapper's table:
+ *   --ink on --paper           15.30  (wordmark)
+ *   --ink-2 on --paper          9.23  (blurb, link rows, address line)
+ *   --accent-deep on --paper    8.54  (row hover)
+ *   --muted on --paper          5.77  (column headings, colophon)
+ *   --accent on --paper         5.67  (place tag, the action)
+ * The smallest type on this band is the 9.5px colophon at 5.77 — WCAG's 3:1
+ * large-text allowance does not apply at that size, and 5.77 clears the 4.5:1
+ * normal-text bar without needing it. Every run here is AA or better.
+ *
+ * RESPONSIVE — this file owns its OWN grid; the wrapper owns the shared 760 and
+ * 520 pass. There is NO clamp() anywhere in it, so the floor-under-a-cap
+ * inversion two earlier audits found is not expressible here. Every value is a
+ * fixed px or em, and here is the whole ladder traced across both queries
+ * (base → 900 → 520):
+ *   cell padding        40/30 → 32/26 → 26/18   (leading cell 34 → 26 → 18 left,
+ *                                                brand cell the same on the right)
+ *   wordmark            22 → 22 → 19
+ *   colophon padding    20/34 → 20/26 → 16/18
+ *   colophon tracking   .18em → .18em → .13em
+ *   colophon leading    1.9 → 1.9 → 1.8
+ *   colophon gap        16 → 16 → 10   ·   separator .45em → .45em → .3em
+ * Not one type size, tracking, leading or padding GROWS as the viewport
+ * narrows. Exactly two values deliberately do, and these are they: at 900 a
+ * stacked link row takes min-height 44px and the address line 10px of vertical
+ * padding, because a row that was one of three columns has become a primary tap
+ * target. The blurb's 36ch cap is dropped at 520 — a MEASURE, not a type size:
+ * it lets the standing line fill the column instead of leaving a ragged strip
+ * beside it, and a max-width cannot push a page sideways.
+ * Nothing may push sideways at 360px: every text node that can hold a long
+ * unbroken string (a wordmark, an email, an address, a link label, a note)
+ * carries overflow-wrap: anywhere — the `anywhere` value and not `break-word`,
+ * because only `anywhere` also shrinks the min-content size a grid track and a
+ * flex item resolve against, which is what the 900 query's flex rows need.
+ * There is no full-width button in this file to need the white-space pair.
+ *
+ * CLASS NAMES are `pcbn-f*` — this template's own prefix, the one HeaderBN
+ * already uses. An audit had to rename a whole set of classes copied verbatim
+ * from a sibling: nothing in this file shares a name with FooterBM's `tcbm-f*`
+ * or FooterBL's `fb-*`.
+ *
+ * Visibility: PageBN gates this file on visibility.footerSection — never here.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const c = (content as any) || {};
+const lay = (layout as any) || {};
+const f = c.footer || {};
+
+// ── ANCHOR GUARD — byte-identical to HeaderBN's, so the masthead and the
+// colophon can never send a visitor to different places.
+// lib/derive-content-defaults.ts hard-codes nav hrefs to '#about', '#services',
+// '#why', '#work', '#visit' and navCtaHref to '#visit'; lib/astro-builder.ts
+// falls back to '#about', '#services', '#gallery', '#contact'. Most of those
+// ids no design renders. Resolve every in-page href against what PageBN
+// ACTUALLY renders: keep it when the id exists, remap it when this design
+// carries the same material under another name, otherwise fall back — and the
+// links column passes '' as its fallback, because a dead entry in a wayfinding
+// list is worse than a missing one. Off-page hrefs (tel:, mailto:, http(s) and
+// anything else without a leading '#') pass through untouched.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+// This design renames five derived targets: the services block IS the price
+// list, so '#services' (and '#rooms') land on '#menu'; the roastery's own story
+// absorbs both '#host' and '#why'; '#work' is the photo wall; '#location' and
+// '#contact' both mean the visit block — address, map and opening hours. A
+// booking link has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. `||`, never `??`, and identical to HeaderBN's resolution:
+// genericContentSchema gives footer.brand fallbackPaths ['business_name'] and
+// ContentFieldsAuto's readWithFallbacks treats '' as empty, so a CLEARED brand
+// box still shows the business name in the sidebar. With `??` an empty string
+// would be a value and the page would go wordmark-less while the sidebar
+// displayed a name. 'Your Business' once shipped as a real customer's own mark;
+// with nothing supplied the lock is omitted instead of inventing a name.
+const brand = String(f.brand || lay.businessName || '').trim();
+// One field, three consumers (the masthead tag, this tag, the map caption).
+// Nothing derives it, so on a first build it is simply absent rather than
+// guessed out of the address.
+const locality = String(f.locality ?? '').trim();
+// footer.brand_blurb is the schema's declared alias for the same box.
+const blurb = String(f.blurb || f.brand_blurb || '').trim();
+
+// The page's one action, from the Header group (D3). '#visit' is the fallback
+// because that is where this design puts the address, the map and the opening
+// hours, and it is the id the derived default already names.
+const ctaText = String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(c.navCtaHref, '#visit');
+// Computed, never literal, and ONE conditional per attribute — an owner may
+// point this at #visit or at a tel:, and forcing those into a new tab is wrong.
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// Column headings — bound, not hardcoded, and guarded, so an owner who clears
+// the box gets a column with no heading rather than the designer's word. The
+// schema's own owner-facing labels decide which feeds which: footer.explore.title
+// is "Links column heading" and footer.visit.title "Contact column heading",
+// which are this design's two footer headings.
+const linksTitle = String(f.explore?.title ?? '').trim();
+const contactTitle = String(f.visit?.title ?? '').trim();
+
+// ── THE LINKS COLUMN (D2). Two sources, two hook shapes, one index rule.
+const exploreFromAdmin = Array.isArray(f.explore?.links) && f.explore.links.length > 0;
+const navSource: any[] = Array.isArray(c.navbar_links)
+  ? c.navbar_links
+  : (Array.isArray(lay.navLinks) ? lay.navLinks : []);
+type LinkRow = { label: string; href: string; i: number; labelHook: string; hrefHook: string };
+const columnLinks: LinkRow[] = (exploreFromAdmin
+  ? f.explore.links.map((l: any) => ({ label: l?.text, href: l?.href }))
+  : navSource
+).map((l: any, i: number): LinkRow => ({
+  label: String(l?.label ?? '').trim(),
+  href: onPage(l?.href, ''),
+  i,
+  labelHook: exploreFromAdmin ? `footer.explore.links.${i}.text` : `navbar_links.${i}.label`,
+  hrefHook: exploreFromAdmin ? `footer.explore.links.${i}.href` : `navbar_links.${i}.href`,
+})).filter((l: LinkRow) => Boolean(l.label && l.href));
+
+// Contact rows. layout.contact IS content.contact (astro-builder passes it
+// through with a display-formatted phone), so these fallbacks also pick up the
+// footer group's own "Email" / "Address" boxes, and no two sections on this
+// page can print different numbers or different addresses.
+const phone = String(c.location?.phone || lay.contact?.phone || c.contact?.phone || '').trim();
+const email = String(c.contact?.email || lay.contact?.email || '').trim();
+const address = String(c.location?.address || lay.contact?.address || c.contact?.address || '').trim();
+// Built, never stored (D6).
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+// Colophon identity line: the design prints one line, and location.address is a
+// multi-line textarea. Flattened for THIS row only, hence data-derived on it.
+const addressFlat = address.replace(/\s*\n+\s*/g, ', ');
+
+const norm = (v: string): string => v.replace(/\s+/g, ' ').trim().toLowerCase();
+
+// Colophon right cell (D12). Empty rows go, and so does a note that is an EXACT
+// repeat of what the left cell already prints — nothing cleverer, because a ©
+// line that happens to contain the name is different information from the
+// name-and-address line beside it. The ORIGINAL index travels with the survivor.
+type NoteRow = { v: string; i: number };
+const notes: NoteRow[] = (Array.isArray(f.notes) ? f.notes : [])
+  .map((n: any, i: number): NoteRow => ({ v: String(n ?? '').trim(), i }))
+  .filter((n: NoteRow) => Boolean(n.v) && norm(n.v) !== norm(brand) && norm(n.v) !== norm(addressFlat));
+
+// ── GATES — BODY content only (R5). The two column headings never count: a
+// heading is not a column, and one printed over nothing is the exact failure
+// that rule exists for. footer.brand / footer.blurb / navbar_links / navCtaText
+// / footer.notes ARE seeded by derive-content-defaults, but from the owner's own
+// submitted name, city and business type — that is their data, not an invented
+// headline, and none of them is a tag or a display heading.
+const hasBrandCol = Boolean(brand || locality || blurb);
+// D3: one action, and never a stutter against the heading beside it.
+const brandShowsCta = Boolean(ctaText) && hasBrandCol;
+const showContactCta =
+  Boolean(ctaText) && !brandShowsCta && norm(ctaText) !== norm(contactTitle);
+const hasLinksCol = columnLinks.length > 0;
+const hasContactCol = Boolean(showContactCta || phone || email || address);
+const colCount = [hasBrandCol, hasLinksCol, hasContactCol].filter(Boolean).length;
+const hasGrid = colCount > 0;
+const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
+// ONE modifier, never a compound selector — the 900px collapse has to out-rank
+// whichever of these is on the element, and a `.a.b` pair would need a `.a.b.c`
+// rule there to beat it.
+const gridMod =
+  colCount === 3 ? 'pcbn-fgrid--wide3'
+  : colCount === 2 ? (hasBrandCol ? 'pcbn-fgrid--wide2' : 'pcbn-fgrid--even2')
+  : 'pcbn-fgrid--one';
+---
+{(hasGrid || hasColophon) && (
+<footer class="sec pcbn-foot">
+  {/* THE SPINE. .sec and .rail are PageBN's primitives, used rather than
+      rebuilt. The rail is EMPTY because the design draws it empty — the
+      hairline runs to the bottom of the sheet, but the colophon carries no
+      index (D1). It is hidden at 760px, where the wrapper turns it horizontal
+      and an empty one would rule off nothing. */}
+  <div class="rail pcbn-fspine"></div>
+  <div class="pcbn-fmain">
+    {hasGrid && (
+      <div class:list={['pcbn-fgrid', gridMod, hasColophon && 'pcbn-fgrid--ruled']}>
+        {hasBrandCol && (
+          <div class="pcbn-fcell pcbn-fbrand">
+            {brand && <span class="pcbn-fmark" data-field="footer.brand">{brand}</span>}
+            {/* Only the TOWN — the design's 'Roastery & bar — ' prefix is a
+                trade description no field carries. */}
+            {locality && <span class="pcbn-fmeta" data-field="footer.locality">{locality}</span>}
+            {blurb && <p class="pcbn-fblurb" data-field="footer.blurb">{blurb}</p>}
+            {/* Both hooks sit on the ANCHOR: the editor's link popover reads
+                data-field from whatever carries data-href-field, so a label on
+                an inner span would leave it editing an empty path. The arrow is
+                generated content — editorBridge writes an inline edit back
+                through innerHTML, so a glyph inside the element could end up
+                stored in navCtaText; a pseudo-element cannot. */}
+            {brandShowsCta && (
+              <a
+                class="linkc pcbn-fcta"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+          </div>
+        )}
+
+        {hasLinksCol && (
+          <div class="pcbn-fcell">
+            {linksTitle && <h4 class="pcbn-fh" data-field="footer.explore.title">{linksTitle}</h4>}
+            {columnLinks.map((l) => (
+              <a class="pcbn-frow" href={l.href} data-field={l.labelHook} data-href-field={l.hrefHook}>{l.label}</a>
+            ))}
+          </div>
+        )}
+
+        {hasContactCol && (
+          <div class="pcbn-fcell">
+            {contactTitle && <h4 class="pcbn-fh" data-field="footer.visit.title">{contactTitle}</h4>}
+            {showContactCta && (
+              <a
+                class="pcbn-frow"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+            {(phone || email || address) && (
+              <address class="pcbn-faddr">
+                {phone && (
+                  <a class="pcbn-frow pcbn-fchan" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>
+                )}
+                {/* mailto: is BUILT, never stored — the visible text stays the
+                    plain address so an inline edit can never write "mailto:…"
+                    back into the email box. */}
+                {email && (
+                  <a class="pcbn-frow pcbn-fchan" href={`mailto:${email}`} data-field="contact.email">{email}</a>
+                )}
+                {/* The stored string verbatim — `white-space: pre-line` draws
+                    the owner's own line breaks, so the DOM text and the field
+                    value stay identical and a live edit cannot lie. */}
+                {address && <span class="pcbn-fline" data-field="location.address">{address}</span>}
+              </address>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
+    {hasColophon && (
+      <div class="mono pcbn-fcolo">
+        {(brand || addressFlat) && (
+          <span class="pcbn-fid">
+            {brand && <span data-field="footer.brand">{brand}</span>}
+            {brand && addressFlat && <span class="pcbn-fsep" aria-hidden="true">—</span>}
+            {addressFlat && <span data-field="location.address" data-derived>{addressFlat}</span>}
+          </span>
+        )}
+        {notes.length > 0 && (
+          <span class="pcbn-fnotes">
+            {notes.map((n, d) => (
+              <>
+                {d > 0 && <span class="pcbn-fsep" aria-hidden="true">·</span>}
+                <span data-field={`footer.notes.${n.i}`}>{n.v}</span>
+              </>
+            ))}
+          </span>
+        )}
+      </div>
+    )}
+  </div>
+</footer>
+)}
+<style>
+  /* Scoped, single block, no is:global. The design's colophon: the page's own
+     bone ground, the spine continuing down the left, and structure drawn with
+     RULES rather than gaps.
+     (Never write a literal end-style tag inside this block, comments included:
+      it is an HTML raw-text element and the parser would end the stylesheet
+      right there, silently truncating the file.) */
+
+  /* .sec supplies the grid and the rail width. The ONE thing overridden is its
+     bottom rule: the design's footer declares none, because there is nothing
+     under it to divide from (D9). grid-template-columns is deliberately NOT
+     restated — a scoped rule outside a media query would out-rank the wrapper's
+     own 760 collapse and freeze the rail column open on phones. */
+  .pcbn-foot { border-bottom: 0; background-color: var(--paper); }
+
+  /* .pcbn-fspine IS THE RAIL, drawn empty exactly as the design draws it (D1),
+     and it has no base rule at all — deliberately. The wrapper's .rail already
+     supplies the --line right hairline and the full-height stretch, so the
+     class exists only to be switched off in the 760 query at the bottom of this
+     block, where the wrapper flips the rail horizontal and an empty one would
+     rule off nothing.
+
+     .pcbn-fmain is the design's right column: a bare div with no padding of its
+     own. min-width:0 is the whole rule — without it a long unbroken address or
+     link label sets the grid item's automatic minimum to its own min-content
+     width and pushes the page sideways. */
+  .pcbn-fmain { min-width: 0; }
+
+  /* The design's 1.6fr / 1fr / 1fr, at NO gap: the cells are told apart by
+     their hairlines, which is what makes this read as a ruled sheet. minmax(0,…)
+     on every track — the design's own value — so a long unbroken address or
+     link label cannot widen a column past its share and push the page sideways.
+     One modifier per rendered-column count, so a two-column footer does not
+     leave a third of the sheet blank (D5). */
+  .pcbn-fgrid { display: grid; }
+  .pcbn-fgrid--wide3 { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .pcbn-fgrid--wide2 { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .pcbn-fgrid--even2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .pcbn-fgrid--one { grid-template-columns: minmax(0, 1fr); }
+  /* The rule the design draws between the grid and the colophon — carried by a
+     modifier so it can never close a page that has no colophon under it. */
+  .pcbn-fgrid--ruled { border-bottom: 1px solid var(--line); }
+
+  /* The design's cells: 40px 30px, opened by a hairline on every one but the
+     last. The leading cell always takes the design's 34px so its text sits on
+     the same left edge as the colophon (D11). */
+  .pcbn-fcell { padding: 40px 30px; min-width: 0; }
+  .pcbn-fcell:first-child { padding-left: 34px; }
+  .pcbn-fcell:not(:last-child) { border-right: 1px solid var(--line); }
+  .pcbn-fbrand { padding-right: 34px; }
+
+  /* 800 at 22px, -.02em, uppercase — the design's own footer wordmark. It is
+     three pixels LARGER than the masthead's 19px lock and identical to it in
+     tracking: the design writes -.02em on both, so size is the only thing that
+     separates them. It is a <span>, so the wrapper's heading reset never
+     touches it and every value is stated here. A footer wordmark may WRAP (the
+     masthead ellipses instead, because that bar is one row tall); overflow-wrap
+     keeps a single unbroken word inside the cell, and the line-height is stated
+     for the reason D13 gives. */
+  .pcbn-fmark {
+    display: block;
+    font-family: var(--disp); font-weight: 800; font-size: 22px;
+    line-height: 1.15; letter-spacing: -.02em; text-transform: uppercase;
+    color: var(--ink); min-width: 0; overflow-wrap: anywhere;
+  }
+  /* NOT the wrapper's .mono primitive: that is 500 weight at .2em in --muted,
+     and the design's tag is 400 at .16em in --accent. Close enough to be
+     mistaken for it, far enough to be visibly wrong if borrowed. */
+  .pcbn-fmeta {
+    display: block; margin: 7px 0 15px;
+    font-family: var(--mono); font-weight: 400; font-size: 10px;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--accent);
+    line-height: 1.5; min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Qualified by the parent class on purpose. The wrapper's paragraph reset is
+     `html[data-page="BN"] :where(p)` — one type selector plus one attribute, so
+     (0,1,1); the :where() contributes nothing. astro.config.mjs leaves
+     scopedStyleStrategy at the Astro 5 default of 'attribute', so an unqualified
+     scoped class here would compile to `.pcbn-fblurb[data-astro-cid-…]` at
+     (0,2,0) and would in fact clear the reset on its own. The parent class is
+     kept anyway: it costs nothing and it does not depend on that config staying
+     put, where 'where' scoping would drop the same rule to (0,1,0) and lose the
+     margin. 36ch, 14px/1.8 and the 16px bottom margin are the design's own. */
+  .pcbn-fbrand .pcbn-fblurb {
+    margin: 0 0 16px;
+    font-family: var(--sans); font-size: 14px; line-height: 1.8;
+    color: var(--ink-2); max-width: 36ch; overflow-wrap: anywhere;
+  }
+  /* .linkc already carries the family, the tracking, the uppercasing, the rust
+     and the 44px tap floor. Only the design's 10.5px and the arrow are added —
+     the arrow as generated content, with no margin: .linkc is an inline-flex
+     box, so the pseudo-element is a flex ITEM and the primitive's own
+     `gap: .5em` already spaces it. A margin would stack on top of that gap. */
+  .pcbn-fcta { font-size: 10.5px; overflow-wrap: anywhere; }
+  .pcbn-fcta::after { content: '\2192'; }
+
+  /* Column headings: mono 10px caps at .2em in --muted, the design's own
+     treatment. They are <h4> because two real headings give the columns a
+     structure a screen-reader user can navigate, where the design's plain <div>
+     does not — which means every declaration has to be restated, because
+     `html[data-page="BN"] :where(h1,h2,h3,h4)` scores (0,1,1) — a type selector
+     plus an attribute, the :where() adding nothing — and pins family, weight,
+     colour, tracking, line-height, transform and margin. The rule below lands at
+     (0,2,0) under the project's 'attribute' scoping and clears it. It is NOT the
+     .kick eyebrow: that primitive is rust at .24em and belongs to the sections;
+     the design's footer headings are grey at .2em and nothing more. */
+  .pcbn-fh {
+    margin: 0 0 14px;
+    font-family: var(--mono); font-weight: 400; font-size: 10px;
+    line-height: 1.4; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--muted); overflow-wrap: anywhere;
+  }
+
+  /* The design's rows: 14px --ink-2 on a ~27px pitch. Blocks rather than the
+     design's paragraphs, so the whole row is the tap target and the last row
+     leaves no margin dangling above the closing hairline (D10). --accent-deep
+     is the design's own stated hover. */
+  .pcbn-frow {
+    display: block; padding: 3px 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    color: var(--ink-2); overflow-wrap: anywhere;
+    transition: color .18s ease;
+  }
+  .pcbn-frow:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .pcbn-frow { transition: none; } }
+
+  /* The address block. The design gives its address line the SAME 14px
+     --ink-2 as the link rows above it — it is not greyed off — so the block
+     simply carries that colour and the two channel rows inside it inherit it
+     through .pcbn-frow. <address> for the semantics; font-style reset because
+     the UA italicises it and this design has no italic. */
+  .pcbn-faddr {
+    font-style: normal; margin: 0; min-width: 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    color: var(--ink-2);
+  }
+  /* The stored string, unaltered — pre-line draws the owner's own line breaks
+     without this file generating a single line-break tag. */
+  .pcbn-fline { display: block; padding: 3px 0; white-space: pre-line; overflow-wrap: anywhere; }
+  /* Phone and email are underlined; the address beside them is not (D8).
+     text-decoration adds no box, so thickening it on hover cannot shift rows. */
+  .pcbn-faddr .pcbn-fchan {
+    text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 3px;
+  }
+  .pcbn-faddr .pcbn-fchan:hover {
+    text-decoration-color: var(--accent-deep); text-decoration-thickness: 2px;
+  }
+
+  /* The colophon: 20px 34px, two cells, space-between, wrapping rather than
+     overflowing. .mono supplies the family, the uppercasing and --muted; the
+     design's 9.5px, its .18em tracking and its 400 weight are restated, because
+     the primitive is 10px/.2em/500 and would quietly thicken the row. The
+     leading is the one figure here that is NOT the design's — see D13. With one
+     cell absent the remaining cell simply sits left. */
+  .pcbn-fcolo {
+    padding: 20px 34px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    font-weight: 400; font-size: 9.5px; letter-spacing: .18em; line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  .pcbn-fid, .pcbn-fnotes { min-width: 0; overflow-wrap: anywhere; }
+  .pcbn-fsep { margin: 0 .45em; }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────────────────
+     The wrapper owns the shared 760 / 520 pass; this file owns its own grid.
+     Three columns cannot hold 14px rows and a 36ch blurb below ~900px, so they
+     stack at ONE width — there is never a band where a column is 90px wide. */
+  @media (max-width: 900px) {
+    /* Every count modifier is listed so the collapse out-ranks whichever one is
+       on the element; each compiles at the same specificity and later in source
+       order. */
+    .pcbn-fgrid,
+    .pcbn-fgrid--wide3,
+    .pcbn-fgrid--wide2,
+    .pcbn-fgrid--even2,
+    .pcbn-fgrid--one { grid-template-columns: minmax(0, 1fr); }
+    /* The hairline turns from an opening border-right into a ruled underline,
+       which is how every other stacked list in this template is drawn — and it
+       is still :not(:last-child), so the final cell is not ruled twice against
+       the grid's own closing rule. */
+    .pcbn-fcell { padding: 32px 26px; }
+    .pcbn-fcell:first-child { padding-left: 26px; }
+    .pcbn-fbrand { padding-right: 26px; }
+    .pcbn-fcell:not(:last-child) {
+      border-right: 0; border-bottom: 1px solid var(--line);
+    }
+    /* Stacked, each row is a primary target rather than one of three columns. */
+    .pcbn-frow { min-height: 44px; display: flex; align-items: center; }
+    .pcbn-fline { padding: 10px 0; }
+    .pcbn-fcolo { padding: 20px 26px; }
+  }
+
+  /* 760 is where the WRAPPER flips .rail from a vertical column to a horizontal
+     bar with a rule under it. This rail is empty, so at that exact width it
+     becomes a blank ruled strip — it goes instead (D1). Above 760 it is still
+     the spine and it stays. */
+  @media (max-width: 760px) {
+    .pcbn-fspine { display: none; }
+  }
+
+  @media (max-width: 520px) {
+    .pcbn-fcell { padding: 26px 18px; }
+    .pcbn-fcell:first-child { padding-left: 18px; }
+    .pcbn-fbrand { padding-right: 18px; }
+    .pcbn-fmark { font-size: 19px; }
+    .pcbn-fbrand .pcbn-fblurb { max-width: none; }
+    /* Wide tracking on a full-width caps row is what actually pushes a 360px
+       screen sideways here, so the tracking comes in rather than the type. */
+    .pcbn-fcolo { padding: 16px 18px; letter-spacing: .13em; gap: 10px; line-height: 1.8; }
+    .pcbn-fsep { margin: 0 .3em; }
+  }
+</style>

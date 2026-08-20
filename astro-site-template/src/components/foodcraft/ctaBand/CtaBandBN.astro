@@ -1,0 +1,622 @@
+---
+/**
+ * foodcraft / CtaBandBN — "Panday Coffee Works" CLOSING CTA BAND
+ * (design element data-component="CTA-BAND", "Panday Coffee Works Landing.dc.html"
+ * line 294).
+ *
+ * ROLE: the page's last ask, and the ONE section on this bone sheet whose ground
+ * is the rust itself. It renders FOURTEENTH in PageBN's order (…, Location,
+ * Area, Faq, CTA-BAND, Footer), and it is the only place the spine's rail runs
+ * over a coloured ground rather than over paper. Two cells: the shout on the
+ * left (eyebrow + the biggest display line after the h1) and the ask on the
+ * right (one sentence and two butted actions).
+ *
+ * DESIGN VALUES, lifted verbatim from the design element:
+ *   section     border-bottom 1px #17181A, background #A8351B
+ *                                                    → .sec + --accent
+ *               (the design nests its rail grid in an inner div; .sec puts the
+ *               same grid on the <section> itself — identical rendering, and it
+ *               is what keeps this band inside the wrapper's shared 760 rail
+ *               pass instead of re-implementing it)
+ *   rail        border-right 1px rgba(239,238,234,.3), flex-end / centre,
+ *               padding 20px 0                       → .rail + rgba(--paper-rgb,.3)
+ *   rail label  rotated mono 10px / .3em caps, #F6DDD6
+ *                                                    → .rail-t + --blush
+ *   body cell   padding 72px 34px                    → .sec-body override
+ *   grid        minmax(0,1.2fr) minmax(0,.8fr), gap 40px, align-items center
+ *   eyebrow     mono 10px / .24em caps, #F6DDD6      → .kick + --blush
+ *   h2          800, clamp(34px,5vw,76px), lh .96, -.03em, caps,
+ *               margin .14em 0 0, #FBF6F4            → .h2 + --cream
+ *   sub         16.5px / 1.76, #F6DDD6, margin 0 0 26px
+ *                                                    → --blush
+ *   actions     flex, wrap, gap 0 — the two controls BUTT, which is why the
+ *               second drops its left border and shares the first's edge
+ *   primary     btnCream (design line 414) = mono 10px/.14em caps, 15px 24px,
+ *               background #FBF6F4, colour #7C2412, border 1px #FBF6F4
+ *                                                    → .btn.btn--cream,
+ *               declaration for declaration, so this file adds NO rule for it
+ *   secondary   mono 10px/.14em caps, 15px 22px, colour #FBF6F4,
+ *               border 1px rgba(251,246,244,.6), border-left none
+ *                                                    → .btn + .pdend-tel
+ *
+ * NO LITERAL HEX IN THIS FILE (R1). #A8351B is --accent, #FBF6F4 is --cream,
+ * #F6DDD6 is --blush, #17181A is --rule-strong (the .sec bottom rule) and
+ * rgba(239,238,234,.3) is rgba(var(--paper-rgb),.3) exactly.
+ *
+ * THE ONE COLOUR WITH NO RGB TRIPLET — reached exactly anyway. The secondary's
+ * border is rgba(251,246,244,.6), CREAM at 60%, and the wrapper declares no
+ * --cream-rgb. `color-mix(in srgb, var(--cream) 60%, transparent)` composites to
+ * that value EXACTLY out of the token itself, so the design's own hairline is
+ * what gets drawn and no hex is invented. It is preceded by an
+ * rgba(var(--paper-rgb),.6) FALLBACK declaration for engines without color-mix,
+ * which composites to #D3A497 against the design's #DAA99D — 7/5/6 per channel
+ * at a 1px hairline. An earlier draft shipped only that approximation, and it is
+ * not a neutral one: it lands on the far side of the 3:1 a UI boundary wants
+ * (see CONTRAST below), which is why the exact mix is the value that wins.
+ *
+ * ── EDITABLE HOOKS (every one DECLARED in
+ *    components/editor/genericContentSchema.ts — group "ctaBand", plus one
+ *    field from group "location" — so each data-field below is a hook a real
+ *    sidebar input owns and focuses) ─────────────────────────────────────────
+ *   ctaBand.tag        — the blush eyebrow (.kick)
+ *   ctaBand.headline   — the display line, bound with set:html so an owner's own
+ *                        <em> takes this design's second voice anywhere inside
+ *                        THEIR sentence (see THE SECOND VOICE below)
+ *   ctaBand.sub        — the one sentence in the right cell
+ *   ctaBand.cta.text + data-href-field ctaBand.cta.href — the cream action
+ *   location.phone     — the outlined action (data-field ONLY, see THE PHONE)
+ * Nothing else. A data-field on any other path is a dead hook that no sidebar
+ * input owns and that focuses nothing, so no other path is written here.
+ *
+ * ── DERIVED, never stored and never editable ────────────────────────────────
+ *   · THE RAIL LABEL "11 / Contact". The spine's index is decorative and derived
+ *     per the wrapper contract — never a hook, never stored. 11 is this
+ *     section's position among the RAILED sections (the design's own sequence
+ *     starts at Hero = "00 / Index" and skips the railless Header, Trust strip
+ *     and Footer), and it is the number the design itself prints here. It is
+ *     aria-hidden: it is a string this FILE wrote, not the owner's, so it
+ *     belongs to the drawing and not to the document outline.
+ *   · the CTA's href, resolved through onPage() against the ids PageBN actually
+ *     mounts, and its target/rel pair — one conditional per attribute, so
+ *     neither is ever emitted twice
+ *   · the tel: href, built from the phone's OWN digits
+ *   · whether the band is two cells or one — see THE EMPTY CELL
+ *
+ * ── NOT SUPPLIED BY THIS COMPONENT (R2) ─────────────────────────────────────
+ * NOT ONE VISIBLE WORD. The design's demo strings — "Bar is open", "Send the
+ * order ahead.", "Message us the drinks and a pickup time and it will be on the
+ * bar when you get here. Beans too, ground to your brewer." — are the DESIGNER
+ * filling in their own template, and the last of them is a service promise made
+ * on behalf of a business nobody has spoken to. A real shop gets a closing band
+ * that says only what that shop said, so every guard sits OUTSIDE its tag: no
+ * eyebrow over nothing, no display line above an empty cell, no action row with
+ * no actions in it, and no <br> where the designer hand-broke their own
+ * headline (an owner's sentence breaks where their measure breaks it).
+ *
+ * ── NOT RENDERED, deliberately ──────────────────────────────────────────────
+ *   · ctaBand.image. THE DESIGN GIVES THIS BAND NO PHOTOGRAPH — it is a flat
+ *     rust ground, two text cells, nothing else. The schema declares the field
+ *     because other templates' bands are full-bleed photographs; here it stays
+ *     in the sidebar and is simply unused, which is the honest outcome. Drawing
+ *     a .plate nobody asked for would put a grey slab in the middle of the one
+ *     section of this sheet that is pure colour.
+ *   · No id on the <section>. This page's anchors are menu / about / gallery /
+ *     visit / faq / main; the design gives CTA-BAND none of them and no nav link
+ *     points at it, so inventing one would add a target nothing aims for. A
+ *     derived '#book' resolves to '#main' through ANCHOR_ALIAS below.
+ *   · No aria-label on the <section>. Naming it would make it a landmark
+ *     announced with a word I wrote; the h2 already titles the region.
+ *   · No star row, no rating, no count, no figure of any kind. Nothing in this
+ *     band is a claim, and the ctaBand group declares no numeric field to draw
+ *     one from honestly, so there is nothing here to fabricate.
+ *   · No role="img" and no .plate anywhere — there is no upload in this section.
+ *   · No target="_blank" on the cream action unless the href is really off-site.
+ *     The design hard-codes one because its demo href is an external messaging
+ *     URL, but the same button resolves to '#visit' on a stock build and opening
+ *     an in-page anchor in a new tab is a bug. Emitted for http(s) ONLY.
+ *   · No .lede / .body primitive on the sub-line. Both are --ink-soft, a
+ *     paper-ground colour that is 1.02:1 against this rust and unreadable on it;
+ *     opting in and then overriding colour, size, leading and measure would be
+ *     more code, not less.
+ *
+ * ── SECTION GATE (R5) ───────────────────────────────────────────────────────
+ * The band renders when it has BODY content: an ACTION (the CTA label or a
+ * phone number) or the SENTENCE. It deliberately does NOT count the eyebrow or
+ * the headline — lib/derive-content-defaults.ts fills ctaBand.headline with
+ * "Ready when you are." on EVERY site, so a gate that counted it would be a
+ * no-op that ships a display line over an empty rust slab. derive also fills
+ * ctaBand.cta.text ('Get in touch') unconditionally, which is why the band does
+ * in practice render on a stock build — but that is a real, working action
+ * pointed at a real id on this page, not a decoration, and an owner who clears
+ * it and supplies no phone and no sentence drops the whole <section> from the
+ * document. (derive fills neither ctaBand.tag nor ctaBand.sub, so both are
+ * genuinely absent until an owner types them.)
+ *
+ * ── THE EMPTY CELL ──────────────────────────────────────────────────────────
+ * The design is two cells because the designer filled both. The LEFT one is
+ * pure display — eyebrow and headline — and an owner can clear both, so the
+ * grid drops to a single 1fr track whenever the left cell is empty. Without
+ * that, the sentence and the buttons would sit in the right-hand .8fr track
+ * with 1.2fr of bare rust beside them, which reads as a rendering failure
+ * rather than as a deliberate surface. The right cell cannot be empty and still
+ * reach the DOM — it IS the section gate.
+ *
+ * ── THE SECOND VOICE, and this is the decision most worth reviewing ─────────
+ * This family's headline emphasis is a COLOUR CHANGE, and PageBN paints
+ * `:where(.h2 em)` --accent from its global block. On this ONE band --accent is
+ * the GROUND, so an owner's emphasised words would disappear into it entirely.
+ * The em is therefore remapped, through :global() because a scoped rule cannot
+ * reach an element set:html created (R3), to --blush — the band's own quiet
+ * colour, already carrying the eyebrow, the sub-line and the rail label.
+ * BE HONEST ABOUT WHAT THAT BUYS: computed from the wrapper's hexes, --blush on
+ * --accent is 5.09:1 (readable, above AA) but --blush against the --cream
+ * headline around it is only 1.21:1 — a hue shift from warm white to pink, not
+ * a strong tonal break. That is the ceiling this ground has: every token light
+ * enough to read on rust is a near-white, and the two that are not (--orange
+ * 2.07:1, --ink 2.70:1 on --accent) are both below AA as text here. The design
+ * never draws an em on this band, so there is no drawn answer to copy. Keeping
+ * the words READABLE beat making them louder.
+ *
+ * ── THE PHONE ───────────────────────────────────────────────────────────────
+ * THE PHONE ANCHOR CARRIES data-field ONLY — no data-href-field. Its href is
+ * DERIVED from the field's own value, so a data-href-field there would write
+ * "tel:+63…" back into the phone field on the first inline edit; V3 also bails
+ * out of inline editing on tel:/mailto: anchors and on anything carrying
+ * data-href-field. This is the family's single documented exception to "every
+ * anchor gets both".
+ *
+ * ITS READ CHAIN is content.location.phone || content.contact.phone, which is
+ * exactly what the sidebar's Location → Phone input reads (the schema declares
+ * location.phone with fallbackPaths ['contact.phone'] and writes back to the
+ * primary), so the rendered number and the field this hook opens are always the
+ * same value. layout.contact.phone — the display-formatted mirror the builder
+ * derives — is deliberately NOT preferred: astro-builder formats
+ * content.contact.phone and ignores location.phone entirely, so on a site whose
+ * owner typed a number into Location it would render a DIFFERENT number from
+ * the one the hook edits.
+ *
+ * WHY A location.* HOOK IS SAFE HERE. editorBridge scores every candidate
+ * <section> by how many location.* hooks it actually contains, hides the
+ * richest, and keeps the FIRST host to reach that count (`counts[k] > bestN`,
+ * over hosts collected in document order). COUNTED against the siblings rather
+ * than assumed: LocationBN emits location.headline, location.sub and
+ * location.hours, plus TWO more per hours row (location.rules.<i>.label and
+ * .value); FooterBN emits three (location.phone once, location.address twice);
+ * this band emits ONE. So "hide LOCATION" resolves to LocationBN whenever it
+ * renders — on count, and on document order if the count ever ties — never here.
+ * (LocationBN prints no hook at all for address, lat or lng: it READS them for
+ * the geocode and leaves each to its own sidebar input, so the census is three
+ * plus the rows, not the whole group.)
+ * THE ONE RESIDUAL CASE, stated rather than waved through: LocationBN drops out
+ * of the document entirely when an owner has no arrival note, no hours line, no
+ * hours rows and neither address nor coordinates. On such a site, if the footer
+ * also carries no address, its lone phone hook ties this band's at 1 — and this
+ * band renders first, so the toggle would hide the closing band. That is a site
+ * with no location block for the toggle to hide in the first place.
+ *
+ * ── ACCESSIBILITY (R9) ──────────────────────────────────────────────────────
+ * The rail index is aria-hidden — a decorative numeral this file wrote. The
+ * tel: link's accessible name is the owner's own number and nothing else, with
+ * no "Call …" prefix I invented; the cream action's name is the owner's own
+ * label. No element in this file carries both a literal and a conditional
+ * aria-*, so nothing here can emit a duplicated attribute.
+ * FOCUS is left to the wrapper and NOT overridden, which is a choice rather
+ * than an omission: its ring is a 3px --paper outline inside a 6px --accent
+ * halo, and on this band the halo IS the ground and vanishes. What remains — a
+ * 3px paper line — is 5.67:1 against the rust, comfortably past the 3:1 a focus
+ * indicator needs. The alternatives lose here, though not all of them on ground
+ * contrast: an --ink halo is 2.70:1 on --accent, below the bar, but --cream
+ * measures 6.14:1 on this rust — HIGHER than paper's 5.67 — and --blush 5.09:1.
+ * Those two are ruled out by the RING, not by the ground: against the --paper
+ * outline they would surround they are 1.08:1 and 1.11:1, a merge rather than a
+ * duo. So 5.67 is not this ground's ceiling — it is the strongest indicator that
+ * survives here WITHOUT overriding the wrapper's ring, which is the choice made.
+ *
+ * ── CONTRAST, COMPUTED (sRGB relative luminance, WCAG 2.x) from the hexes
+ *    PageBN declares — not estimated, and re-derived here rather than copied,
+ *    with --paper on --accent landing on the wrapper's own published 5.67 as a
+ *    check on the arithmetic ─────────────────────────────────────────────────
+ *   --cream headline / outlined label on --accent      6.14:1
+ *   --paper (the focus ring) on --accent               5.67:1
+ *   --blush eyebrow / sub-line / rail label / em       5.09:1
+ *   --accent-deep label on the --cream fill            9.25:1 (the label sits on
+ *                                                     cream, not on the band)
+ * Every text pair on this band is above AA at any size; the tightest is 5.09.
+ * The secondary's 1px border is the design's own rgba(251,246,244,.6), which
+ * composites over this ground to #DAA99D and measures 3.18:1 — past the 3:1 a
+ * UI boundary wants. Only the pre-color-mix FALLBACK composites to #D3A497 at
+ * 2.99:1, just under it, and even there the control is identified by its --cream
+ * label at 6.14:1 rather than by the hairline. (Those last two are COMPOSITED
+ * colours, not declared tokens, so they are the only figures on this page that
+ * cannot be looked up in the wrapper's token-pair table.)
+ * SCHEME CAVEAT, stated because the figures above are only true of the native
+ * palette: --accent is engine-owned and a scheme CAN move this band's ground,
+ * while --cream and --blush are invisible to buildOverrideCss and cannot follow
+ * it. That is PageBN's deliberate arrangement ("its label colours must not drift
+ * with it"), not this file's, and it is why the labels here are --cream/--blush
+ * rather than --on-accent.
+ *
+ * ── CLASS-NAME LAW (R4, not inferable, do not "tidy") ───────────────────────
+ * The section is .pdend, NEVER .cta-band: buildOverrideCss emits
+ * `.cta-band .btn { color: <on-ink> !important }` for every state and would
+ * strand both labels here. Never .btn-primary / .btn-ghost / .btn-yellow /
+ * .btn-light / .nav-cta / .nav-right / .trust / .testi in this family, and never
+ * `.hero` on a <section>. The prefix is `pdend-`, this template's own and shared
+ * with nothing: CtaBandBM's `tcend-` names were NOT carried over — copying a
+ * sibling's class names verbatim is the exact mistake an audit had to unpick on
+ * the template before this one — and it collides with none of the BN siblings
+ * already shipped (pcw-, pcwg-, pcwm-, pcwq-, pdcr-, pd-ar-, pdw-, hbn-,
+ * pcbn-).
+ *
+ * ── R3 / SCOPING ────────────────────────────────────────────────────────────
+ * One scoped <style> block, no is:global. Astro 5 scopes with
+ * [data-astro-cid-…], an attribute selector worth (0,1,0), so a single-class
+ * rule below scores (0,2,0) and outruns the wrapper's `html[data-page="BN"]
+ * :where(…)` primitives at (0,1,1) — EVEN INSIDE the wrapper's own media
+ * queries, which is why the shared 760 h2 safeties and the shared 520 button
+ * padding are restated below rather than left to land on their own. No
+ * !important appears anywhere in this file.
+ */
+// `layout` is accepted because PageBN passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+// ── ANCHOR GUARD (R7) ──────────────────────────────────────────────────────
+// Resolve in-page hrefs against the ids PageBN ACTUALLY renders: keep one when
+// the id exists, remap it when this design carries the same block under another
+// name, otherwise fall back to the target the design was built around. Off-page
+// hrefs — tel:, mailto:, http(s) and anything else without a leading '#' — pass
+// through untouched. lib/derive-content-defaults.ts hard-codes
+// ctaBand.cta.href = '#visit' and this page DOES draw '#visit', so on a stock
+// build the fallback never fires — but an owner (or a future derive) can type
+// any of the aliases below.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBN and with the copies in
+// the other BN sections. There is no shared import by design (a section
+// component in this repo receives only `content` + `layout`); the copies must
+// stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+// This design renames six derived targets: the services block IS the menu
+// (rooms lands there too), '#about' is the roastery's own story (host and why
+// are the same block here), '#work' is the photo wall, and '#location' /
+// '#contact' both mean the visit block — address, map and opening hours. A
+// booking link has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const c = (content as any) || {};
+const cta = c.ctaBand || {};
+
+// `||`, never `??`: an owner who CLEARS a box leaves '' behind, and the sidebar
+// treats '' as empty too. With `??` the empty string would count as a value and
+// the element would render blank instead of being dropped.
+const tag = String(cta.tag || '').trim();
+// Trimmed and otherwise untouched: this goes out through set:html, so whatever
+// markup the owner typed reaches the em rule intact.
+const headline = String(cta.headline || '').trim();
+const sub = String(cta.sub || '').trim();
+
+const ctaText = String(cta.cta?.text || '').trim();
+// '#visit' is the fallback because that is where this design puts the address,
+// the map and the hours — the thing a closing ask points at.
+const ctaHref = onPage(cta.cta?.href, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// See THE PHONE'S READ CHAIN in the doc comment.
+const phone = String(c.location?.phone || c.contact?.phone || '').trim();
+const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : '';
+
+const hasActions = Boolean(ctaText || phone);
+// The left cell is pure display; the right cell is the ask.
+const hasLead = Boolean(tag || headline);
+const hasAsk = Boolean(sub || hasActions);
+// SECTION GATE (R5) — body content only: an action or the sentence. Neither the
+// eyebrow nor the headline counts; see the doc comment.
+const hasBand = hasAsk;
+// One track whenever the display cell is empty; see THE EMPTY CELL.
+const solo = !hasLead;
+---
+{hasBand && (
+<section class="sec pdend">
+  <div class="rail pdend-rail">
+    {/* DERIVED chrome: the spine's index. No data-field, never stored. */}
+    <span class="rail-t pdend-railt" aria-hidden="true">Contact</span>
+  </div>
+  <div class="sec-body pdend-body">
+    <div class:list={['pdend-grid', solo && 'pdend-grid--solo']}>
+      {hasLead && (
+        <div class="pdend-lead reveal">
+          {/* .kick ALONE for size, tracking and face — only the colour changes,
+              because --accent is this band's ground. */}
+          {tag && <span class="kick pdend-kick" data-field="ctaBand.tag">{tag}</span>}
+          {/* set:html so the owner's own <em> lands where THEY put it in THEIR
+              sentence; the blush second voice is the :global() rule below (R3). */}
+          {headline && <h2 class="h2 pdend-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="pdend-ask reveal" data-delay="1">
+        {sub && <p class="pdend-sub" data-field="ctaBand.sub">{sub}</p>}
+        {hasActions && (
+          <div class="pdend-acts">
+            {ctaText && (
+              <a
+                class="btn btn--cream"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="ctaBand.cta.text"
+                data-href-field="ctaBand.cta.href"
+              >{ctaText}</a>
+            )}
+            {/* data-field ONLY — no data-href-field. See THE PHONE. */}
+            {phone && (
+              <a class="btn pdend-tel" href={telHref} data-field="location.phone">{phone}</a>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</section>
+)}
+<style>
+  /* The spine (.sec / .rail / .rail-t / .sec-body), the display face, the caps,
+     the tracking and the whole cream button all arrive from PageBN's
+     primitives. What this file owns is THE COLOURED GROUND: the rust fill, the
+     hairline that has to change because of it, and every text colour that has
+     to change because of it. Nothing else is restated.
+
+     No literal end-of-style token appears anywhere in these comments — this is
+     a raw-text element, and one inside a comment would end the stylesheet here
+     and silently truncate the rest of the file. */
+
+  /* THE ONE COLOURED SECTION. The design paints this ground #A8351B and leaves
+     the spine's bottom rule (--rule-strong) in place, so the band's lower edge
+     is drawn against the footer beneath it. `color` is set on the section as
+     well as on every child: a colour leaking in from the wrapper would be --ink
+     text on a rust ground at 2.70:1. */
+  .pdend {
+    background-color: var(--accent);
+    color: var(--cream);
+  }
+
+  /* The rail's hairlines. The wrapper draws them in --line (#C8C7C2), a
+     PAPER-ground grey that reads as a bright stripe across rust; the design uses
+     rgba(239,238,234,.3), which is --paper-rgb at 30% exactly. Both edges are
+     set in one rule because the wrapper's shared 760 pass swaps border-right for
+     border-bottom — above 760 the bottom border is 0-width and its colour is
+     inert, so this needs no media query of its own. */
+  .pdend-rail {
+    border-right-color: rgba(var(--paper-rgb), .3);
+    border-bottom-color: rgba(var(--paper-rgb), .3);
+  }
+
+  /* --blush, not --accent: the wrapper's rail label is the accent, which IS this
+     ground. 5.09:1 here. */
+  .pdend-railt { color: var(--blush); }
+
+  /* Design: padding 72px 34px — symmetric, where the wrapper's shared cell is
+     44/34/40. Only the VERTICAL value is this section's; the horizontal clamp is
+     the wrapper's own, character for character, so the rust band's text edge
+     lines up with the bone sections above it. Any other value here would put a
+     visible jog in the left margin of the sheet. */
+  .pdend-body {
+    padding: clamp(44px, 6.2vw, 72px) clamp(20px, 3vw, 34px);
+  }
+
+  /* Design: minmax(0,1.2fr) minmax(0,.8fr), gap 40px, align-items center.
+     minmax(0,…) on both tracks so a long unbroken owner word — a headline, a
+     phone number — cannot widen its own track and push the page sideways (R8). */
+  .pdend-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+    gap: 40px;
+    align-items: center;
+  }
+  /* No display cell ⇒ one track. See THE EMPTY CELL in the frontmatter. */
+  .pdend-grid--solo { grid-template-columns: minmax(0, 1fr); }
+
+  /* A grid item's default min-width is auto, which the minmax() above cannot
+     override on its own. */
+  .pdend-lead,
+  .pdend-ask { min-width: 0; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .24em tracking: one
+     unbroken word would otherwise be the widest thing in its cell (R8). Only
+     the COLOUR is this file's — size, face and tracking are .kick's. */
+  .pdend-kick {
+    color: var(--blush);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: clamp(34px,5vw,76px) / .96, margin .14em 0 0, #FBF6F4, no measure
+     cap. The wrapper's .h2 is clamp(28px,4.4vw,62px)/.98 in --ink at 20ch, and
+     its shared 760 pass also carries `max-width:none` and
+     `overflow-wrap:anywhere`. This rule outruns BOTH (see SCOPING), so those two
+     safeties are restated here unconditionally rather than lost — they cost
+     nothing at any width and they are what stops a long unbroken owner word at
+     360px. */
+  .pdend-h {
+    font-size: clamp(34px, 5vw, 76px);
+    line-height: .96;
+    margin: .14em 0 0;
+    color: var(--cream);
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+  /* The design's .14em top margin exists to open the gap under the eyebrow. With
+     no eyebrow typed the headline is the cell's first child and that margin
+     would push it off the grid's centre line for no reason. */
+  .pdend-h:first-child { margin-top: 0; }
+
+  /* THE SECOND VOICE — see the frontmatter. :global() because the headline is
+     fed with set:html and a scoped rule cannot reach an element set:html
+     created (R3). font-style is restated so the rule stands on its own if the
+     .h2 class is ever dropped: Archivo has no italic worth using and the design
+     never asks for one. */
+  .pdend-h :global(em),
+  .pdend-h :global(.em) {
+    font-style: normal;
+    color: var(--blush);
+  }
+
+  /* Design: 16.5px / 1.76, #F6DDD6, margin 0 0 26px. Written out rather than
+     borrowing .lede or .body — see NOT RENDERED. Qualified with its own class so
+     it beats the wrapper's bare-element paragraph reset
+     (`:where(p){margin:0 0 1em}`). */
+  .pdend-sub {
+    margin: 0 0 26px;
+    font-size: 16.5px;
+    line-height: 1.76;
+    color: var(--blush);
+    overflow-wrap: anywhere;
+  }
+  /* A case the design never draws: with no display cell the sentence has the
+     whole band to run across, which at a wide viewport is a 140-character
+     measure. 52ch is the wrapper's own .lede measure, borrowed rather than
+     invented. */
+  .pdend-grid--solo .pdend-sub { max-width: 52ch; }
+
+  /* Design: flex, wrap, gap 0 — the two controls BUTT against each other, which
+     is the whole reason the second drops its left border. align-items:stretch
+     (the flex default) is what makes the outlined control match the cream one's
+     height, so it is not restated. */
+  .pdend-acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  /* THE SECONDARY. Not one of the wrapper's four fills — the design draws an
+     OUTLINE here, and there is no outline variant in PageBN's button set, so the
+     shared .btn carries the face, the size, the tracking, the caps, the 44px
+     target and the square corner, and this rule adds only the treatment. Its
+     background stays the .btn base's transparent, so the rust shows through.
+     The border colour is composed from a token two ways; see THE ONE COLOUR
+     WITH NO RGB TRIPLET. The left edge is zeroed with border-left-WIDTH, not
+     with the `border-left` shorthand: the shorthand would also reset that
+     edge's style to `none` and its colour to currentcolor, and the 520 stack
+     below would then put a 1px width back on a border with no style and draw
+     nothing at all. */
+  .pdend-tel {
+    padding: 15px 22px;
+    color: var(--cream);
+    /* FALLBACK FIRST, then the exact value. The design's border is
+       rgba(251,246,244,.6) = --cream at 60%, and no --cream-rgb triplet exists,
+       so it is mixed out of the token instead of approximated; an engine without
+       color-mix drops the second declaration and keeps the --paper-rgb version.
+       The second declaration is border-COLOR, not the shorthand, so the 1px and
+       the `solid` that the 520 stack needs to put a left edge back both survive. */
+    border: 1px solid rgba(var(--paper-rgb), .6);
+    border-color: color-mix(in srgb, var(--cream) 60%, transparent);
+    border-left-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── R8 · this section's OWN grid ──────────────────────────────────────────
+     The two cells collapse at 900px, where .8fr of the body cell has run out of
+     measure for a sentence and two controls side by side. DOM order is kept
+     (display, then ask) so reading order and visual order stay the same — no
+     `order` juggling.
+
+     CLAMP CONTINUITY, checked at each boundary rather than assumed — a value
+     FLOORED in one query while the next query's CAP sits above that floor is how
+     type and inset GROW as the viewport narrows. Both clamps are traced at both
+     boundaries:
+
+       headline
+         at 900px  base gives min(max(34, 45), 76) = 45px;
+                   this query is min(max(30, 45), 46) = 45px. Equal.
+         at 520px  this query gives min(max(30, 26), 46) = 30px;
+                   the 520 query's cap is 30px, and 7.4vw = 38.5px there, so the
+                   cap lands: 30px. Equal.
+         at 360px  the 520 query gives min(max(26, 26.6), 30) = 26.6px. Smaller.
+       body cell's block padding
+         at 900px  base gives min(max(44, 55.8), 72) = 55.8px;
+                   this query is min(max(40, 54), 56) = 54px. Steps DOWN.
+         at 520px  this query is already on its FLOOR — 6vw = 31.2px, so
+                   min(max(40, 31.2), 56) = 40px — which is why the 520 query is
+                   capped at 40px and not at the 48px a fresh reading of "smaller
+                   than 56" would suggest. 8vw = 41.6px there, so the cap lands:
+                   40px. Equal.
+         at 360px  the 520 query gives min(max(32, 28.8), 40) = 32px. Smaller.
+     Every step is continuous and every step below them shrinks. */
+  @media (max-width: 900px) {
+    .pdend-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 32px;
+    }
+    .pdend-body { padding: clamp(40px, 6vw, 56px) clamp(20px, 3vw, 34px); }
+    .pdend-h { font-size: clamp(30px, 5vw, 46px); }
+    /* Stacked, the sentence has the whole band whether or not the display cell
+       exists, so the measure cap applies to both cases. */
+    .pdend-sub { max-width: 52ch; }
+  }
+
+  /* Nothing may push the page sideways at 360px: long unbroken strings break
+     anywhere, and a long uppercase label wraps inside a full-width control
+     instead of widening the row. */
+  @media (max-width: 520px) {
+    /* Capped at 40px, NOT 48px: the 900 query is already sitting on its 40px
+       floor by the time the viewport reaches 520px, so a higher cap here would
+       make the inset GROW as the phone got narrower. See CLAMP CONTINUITY. */
+    .pdend-body { padding: clamp(32px, 8vw, 40px) clamp(20px, 3vw, 34px); }
+    .pdend-grid { gap: 26px; }
+    .pdend-h { font-size: clamp(26px, 7.4vw, 30px); }
+    .pdend-sub {
+      font-size: 15.5px;
+      margin-bottom: 22px;
+      max-width: none;
+    }
+    /* Restated, not inherited: `.pdend-grid--solo .pdend-sub` is one class
+       heavier than the rule above it, so without this a display-less band on a
+       phone would keep the 52ch cap and set its sentence to a visibly narrower
+       measure than the same band with a headline. */
+    .pdend-grid--solo .pdend-sub { max-width: none; }
+    /* The butted pair becomes a stack: two full-width controls with a hairline
+       between them rather than two half-width ones that wrap unevenly. */
+    .pdend-acts {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .pdend-acts .btn {
+      width: 100%;
+      text-align: center;
+      /* Both halves, deliberately: `white-space: normal` only lets a label wrap
+         BETWEEN words, so one long unbroken word still needs a break of its own
+         or it spills past a 100%-wide control on a 360px screen (R8 pairs the
+         two). */
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    /* Re-join the wrapper's own 520 button pass — a scoped rule here scores
+       (0,2,0) against its (0,1,1) EVEN INSIDE its media query, so without this
+       the outlined control would keep 22px sides while the cream one dropped to
+       the shared 18px. The left border comes BACK because the two controls no
+       longer butt: stacked, a missing left edge is an open box, not a join. */
+    .pdend-tel {
+      padding: 14px 18px;
+      border-left-width: 1px;
+    }
+  }
+</style>

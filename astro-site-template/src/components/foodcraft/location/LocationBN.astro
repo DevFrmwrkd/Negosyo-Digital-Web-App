@@ -1,0 +1,735 @@
+---
+/**
+ * foodcraft / LocationBN — "Panday Coffee Works" (BN), the LOCATION section.
+ *
+ * ROLE: where the roastery physically is, and when its door is open. The design
+ * draws the spine's rail ("08 / Location") and then splits the content cell into
+ * two EQUAL halves with NO gap: on the LEFT, behind a 1px hairline, the address
+ * as the headline, an arrival note, a ruled stack of opening-hours rows and a
+ * closing mono line; on the RIGHT, full-bleed to the sheet's edge, the map. The
+ * division between the halves is a BORDER, never a gutter — that is the whole
+ * template — and nothing in this section has a corner.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from the
+ * element carrying data-component="LOCATION" (id="visit") in
+ * "Panday Coffee Works Landing.dc.html":
+ *   section    border-bottom 1px #17181A · grid minmax(0,52px) minmax(0,1fr)
+ *              → the wrapper's .sec, whose --rail-w IS that 52px
+ *   rail       border-right 1px #C8C7C2 · flex end/centre · padding 20px 0 ·
+ *              label vertical-rl + rotate(180deg) · mono 10px/.3em/#A8351B
+ *              → the wrapper's .rail + .rail-t, used and NOT rebuilt
+ *   split      grid minmax(0,1fr) minmax(0,1fr), no gap
+ *   info cell  padding 48px 36px · border-right 1px #C8C7C2
+ *   headline   800 clamp(24px,3vw,40px) / 1.04 / -.03em / uppercase /
+ *              margin 0 0 .3em / #17181A / no max-width
+ *   sub        15px / 1.78 / #3C3E42 / margin 0 0 24px / max-width 40ch
+ *   hours box  border-top 1px #17181A  (FULL strength, not the grey hairline)
+ *   hours row  flex · space-between · gap 16px · padding 12px 0 ·
+ *              border-bottom 1px #C8C7C2
+ *   day cell   mono 10.5px / .12em / uppercase / #5A5C60
+ *   time cell  600 14.5px #17181A
+ *   note       mono 10px / .1em / uppercase / #5A5C60 / margin 16px 0 0 / 1.9
+ *   map cell   position relative · min-height 460px · ground #E4E2DC ·
+ *              overflow hidden
+ *   plot       repeating-linear-gradient 0deg + 90deg, rgba(23,24,26,.09),
+ *              1px line every 40px
+ *   roads      top 48% h:5px · left 44% w:4px · rgba(168,53,27,.35)
+ *   pin        top 48% left 44% translate(-50%,-100%), centred
+ *   dot        13px #A8351B ringed 3px #EFEEEA — SQUARE, like everything here
+ *   flag       8px under the dot · mono 9px/.14em caps · #17181A / #EFEEEA ·
+ *              padding 5px 10px
+ *   caption    left 16px bottom 16px · mono 10px/.16em caps · #5A5C60
+ * The map stays on the RIGHT, the split keeps both tracks above 900px, and no
+ * division has been converted from a border into a gap. That last habit is what
+ * would turn this template back into the soft one it deliberately is not.
+ *
+ * CLASS NAMES ARE THIS TEMPLATE'S OWN. An audit had to rename a whole set of
+ * classes a previous template copied verbatim from a sibling, so nothing here
+ * reuses LocationBM's `.tah-visit-*`: every scoped class is prefixed `.pcw-vis-`
+ * for Panday Coffee Works. Only the HOUSE STYLE crossed over from LocationBM —
+ * this doc block's shape, the tolerant reads, the three-tier map, and the
+ * guard-outside-the-tag discipline.
+ *
+ * R1 · NO LITERAL HEX. Every hex the design writes in this element already has a
+ * name in PageBN and is reached only through it:
+ *   #17181A --ink (and --rule-strong, see below) · #3C3E42 --ink-2
+ *   #5A5C60 --muted · #C8C7C2 --line · #E4E2DC --tint · #A8351B --accent
+ *   #EFEEEA --paper (the pin's ring) and --on-ink (the flag's label)
+ *   rgba(23,24,26,.09) → rgba(var(--ink-rgb),.09)
+ *   rgba(168,53,27,.35) → rgba(var(--accent-rgb),.35)
+ * No colour in this element lacked a token; nothing was invented.
+ *
+ * WHY THE HOURS BOX OPENS ON --rule-strong AND THE ROWS CLOSE ON --line. The
+ * design writes #17181A for the box's top rule and #C8C7C2 for each row's, so
+ * they are two different marks and must stay two different tokens. --rule-strong
+ * was chosen over --ink for the strong one because they are the same hex here
+ * but not the same behaviour: buildOverrideCss emits `--ink: palette.ink` and
+ * `--line: palette.line` (grepped, both present), and emits nothing for
+ * --rule-strong (grepped, absent). Writing --ink would let an admin scheme move
+ * this interior rule while the section rules .sec draws above and below it stay
+ * put — one rule out of step with the two it is meant to echo.
+ *
+ * WHY THE PIN FLAG IS --ink / --on-ink AND NOT --ink / --paper. The design's flag
+ * is #EFEEEA on #17181A, which both pairs describe natively. Only the first pair
+ * is recomputed TOGETHER by the engine (--ink and --on-ink are both emitted;
+ * --on-ink is derived against the scheme's ink), so only the first pair stays
+ * legible if a scheme moves --ink.
+ *
+ * EDITABLE HOOKS (every one DECLARED in components/editor/genericContentSchema.ts
+ * under the `location` group, so each data-field below is a hook a real sidebar
+ * input owns — a data-field on any other path is dead):
+ *   location.headline                 — the h2, AND THE ADDRESS LINE. Emitted
+ *                                       with set:html so an owner's own <em>
+ *                                       picks up the design's second voice.
+ *   location.sub                      — the arrival note under the headline
+ *   location.rules.<original i>.label — the DAY cell of an hours row
+ *   location.rules.<original i>.value — the TIME cell of an hours row
+ *   location.hours                    — the closing mono line
+ *
+ * READ BUT NOT PRINTED (each already owns its own sidebar input; a second hook
+ * here would be two inputs fighting over one value):
+ *   location.address, falling back to layout.contact.address — feeds the
+ *     client-side geocode, which is how this section finds its own pin
+ *   location.lat / location.lng, falling back to layout.contact.lat / .lng —
+ *     coordinates, not copy: they are numbers the sidebar edits as numbers, and
+ *     a data-field would offer to typo them into the page
+ *
+ * WHY location.rules AND NOT location.hours FOR THE DAY/TIME ROWS. The schema
+ * declares `location.hours` as a single kind:'text' field ("Hours line") and
+ * `location.rules` as the kind:'list' of {label,value} pairs. The design's stack
+ * is a REPEATING two-cell row, so it needs the list. Emitting
+ * `location.hours.<i>.day` instead is not a style choice — it is the exact data
+ * loss the schema's own comment at that field warns about: the deep writer would
+ * convert the existing `location.hours` STRING into an array and take the
+ * owner's hours line with it. So the rows are location.rules.*, and
+ * location.hours keeps its own scalar slot beneath them, which is also where the
+ * design puts its closing line.
+ *
+ * DERIVED (computed here, never invented, never an editable hook):
+ *   · the rail label "08 / Location". It is an index of RENDER POSITION, not
+ *     content: PageBN's order is Hero 00, About 01, Services 02, Why 03,
+ *     Gallery 04, How 05, Testimonials 06, Credentials 07, LOCATION 08 — which
+ *     is the number the design's own rail carries here. It is decorative,
+ *     derived and never stored.
+ *   · layout.businessName → the pin flag and the Leaflet marker's popup label.
+ *     No placeholder: with no business name the flag simply leaves and the pin
+ *     is a bare square, rather than a real street labelled "Your Business".
+ *   · layout.contact.city → the map caption (the design's `shopTown`). Nothing
+ *     derives it, so on a site without a city it is absent rather than guessed
+ *     out of the address string.
+ *   · rows drop blank entries but carry the ORIGINAL array index into data-field
+ *     (R6), so deleting row 2 cannot misdirect an edit into row 3. Nothing in
+ *     this section is numbered on screen, so no display index is needed — the
+ *     rail label is the section's index, not a row's.
+ *   · a row survives on EITHER cell: a day the owner has typed but not yet
+ *     answered is still their line. Only a wholly blank row goes, and it takes
+ *     its hairline with it, so no rule is ever drawn under a row that is absent.
+ *   · location.rules is read tolerantly (a bare string inside is treated as a
+ *     label with no value). Draft content has arrived in both shapes before, and
+ *     a `.map is not a function` costs the whole page rather than one row.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   · location.tag. The design's LOCATION draws NO eyebrow — the rail label is
+ *     what names this section, and it is derived. Printing location.tag as a
+ *     .kick would be adding a mark the handed-over design does not have.
+ *   · location.phone. This section prints no number; the closing band and the
+ *     footer own it. A tel: row here would be a control this design lacks (R2).
+ *   · location.directions.text / .href. Schema-declared and used by siblings,
+ *     but the design's LOCATION has no directions button. Adding one would be
+ *     building a different section than the one that was handed over — and it is
+ *     also why there is no button anywhere below, so R8's full-width-button pair
+ *     (white-space: normal AND overflow-wrap: anywhere) has nothing to apply to.
+ *   · NO SECOND ADDRESS PARAGRAPH. The design's info cell is h2 + note + rows +
+ *     line, and its h2 IS the address line. location.address is not lost by
+ *     being left out of the markup: it feeds the geocode below and FooterBN
+ *     prints it, so it keeps a live sidebar input either way.
+ *   · NO .plate / .ph / role="img" (R9). The map cell holds no upload — it is a
+ *     DRAWING of a map, then real tiles — so it gets neither the wrapper's image
+ *     frame nor an image role. The only accessible name available for it would
+ *     be a sentence I wrote ("Map showing …"), which is exactly the
+ *     component-supplied copy R2 and R9 forbid. The drawn face, its roads, its
+ *     pin and its flag are therefore hidden from the tree by ONE aria-hidden, on
+ *     the face and nowhere inside it — a literal aria-hidden beside a
+ *     conditional one is the duplicated-attribute bug two earlier components
+ *     shipped. Everything the drawing pictures is announced as real text beside
+ *     it: the address headline, the caption and the hours rows. The rail carries
+ *     the section's other aria-hidden, once, on the rail itself.
+ *   · NO STAR ROW (R2). This section carries no rating field and no review.
+ *     Stars belong to TESTIMONIALS and only ever drawn from a numeric rating;
+ *     five stars for a customer who gave no number is a fabricated claim.
+ *   · NO .reveal ON THE MAP CELL. Every other block here fades in. The map does
+ *     not, because an opacity/transform transition running on the ancestor of a
+ *     Leaflet container while that container is initialising is a needless
+ *     interaction with a third-party widget, and the cell fades nothing the
+ *     owner wrote — its one piece of owner text, the caption, is beside it.
+ *   · NO onPage() ANCHOR-REMAP HELPER (R7), and this is a decision, not an
+ *     omission. The helper exists to rewrite in-page hrefs onto this page's ids,
+ *     and this section emits NO href at all — no button, no directions link, no
+ *     phone number — so a copied helper would ship as dead code. The part of R7
+ *     that DOES apply is honoured: id="visit", exactly as the design writes it
+ *     and exactly the anchor PageBN's nav and closing CTA target. If a link is
+ *     ever added here, copy the helper from a BN sibling with
+ *     PAGE_ANCHORS = menu · about · gallery · visit · faq · main and
+ *     ANCHOR_ALIAS mapping location,contact -> visit · services,rooms -> menu ·
+ *     host,why -> about · work -> gallery · book -> main, passing tel: / mailto:
+ *     / http through untouched.
+ *
+ * SECTION GATE (R5). BODY content only: a real map (coordinates OR an address
+ * behind it), an hours row, the closing line, or the arrival note. NOT the tag
+ * and NOT the headline — derive-content-defaults.ts emits `location.tag: 'Visit'`
+ * and `location.headline: 'Where to find us'` for EVERY site, so a gate counting
+ * either would be always-true and would ship a heading over an empty ruled cell
+ * on every first build. The two HALVES are gated again on their own, so a site
+ * with only an arrival note keeps its paragraph and grows no empty 460px hole
+ * beside it, and the survivor takes the full width AND loses the hairline —
+ * because a rule down the middle of a half-empty sheet divides something from
+ * nothing.
+ *
+ * .sec-body IS NOT USED, on purpose. It is the wrapper's PADDED content cell,
+ * and this design's LOCATION cell has no padding of its own: the 48px 36px
+ * belongs to the LEFT half only, so that the map can run full-bleed to the edge
+ * of the sheet and the hours rules can run the full width of their half. Wearing
+ * .sec-body and then cancelling its one declaration would name a primitive for
+ * none of its effect. The cell keeps that primitive's other job — min-width: 0 —
+ * as its own rule. .sec, .rail and .rail-t, the three that draw the SPINE, ARE
+ * used exactly as the wrapper defines them and are rebuilt nowhere below.
+ *
+ * PRIMITIVES USED, AND THE ONE NOT USED. .h2 supplies the family, the 800, the
+ * -.03em, the uppercase and the --ink; .rowrule supplies the flex row, the
+ * baseline alignment and the --line hairline; .mono supplies the tracked 10px
+ * caps in --muted. The arrival note takes NONE of them: .lede and .body both
+ * paint --ink-soft, where this design's note is #3C3E42 = --ink-2, a full step
+ * darker, and both clamp a size the design states flat — borrowing either would
+ * be taking a primitive in order to disagree with four of its declarations. The
+ * rust second voice inside the headline is PageBN's own `:where(.h2 em)` global
+ * rule; a scoped rule could not reach markup made by set:html anyway (R3), and
+ * this file therefore writes no :global() rule at all.
+ *
+ * TWO FORCED DEVIATIONS, both because the design draws a static picture where
+ * ours can become a live tile map:
+ *   1. The pin flag DROPS white-space: nowrap. The map cell clips overflow, so a
+ *      long business name would be sliced off at both ends; wrapping beats
+ *      truncating on the element that names the shop. The stack is CENTRED on
+ *      the 44% crossing, so it is capped at twice the smaller side — 88% — less
+ *      12px of air each side, and width: max-content is required alongside that
+ *      or absolute shrink-to-fit collapses it to (containing block − left).
+ *   2. The caption gains an OPAQUE --tint backing. In the design it sits on the
+ *      drawn tint face; the moment Leaflet paints CARTO tiles underneath it,
+ *      10px tracked caps over street labels are unreadable. The backing keeps
+ *      the design's exact colour pair (--muted on --tint) rather than swapping
+ *      in the wrapper's ink .cap pill, which would change the palette to solve a
+ *      legibility problem. The padding insets the words ~10px/5px from the
+ *      design's 16px corner; that is the whole cost.
+ * No radius is added anywhere to compensate, because --r is 0 and a rounded
+ * corner is the one thing this template cannot have.
+ *
+ * THE MAP, three tiers, the pattern the family shares:
+ *   1. build-time lat/lng → window.__foodcraftBNInitMap(lat, lng, label)
+ *   2. else any address   → client-side Nominatim lookup, then the same boot
+ *   3. else               → the drawn plot-grid face, which IS the design
+ * The drawn face lives INSIDE #map until Leaflet mounts; PageBN's boot runs
+ * el.innerHTML = '' first, and that is what erases it. The literal id="map" and
+ * the exact global name __foodcraftBNInitMap are a contract with PageBN — rename
+ * either and the drawn face silently stays on screen underneath the tiles. The
+ * caption is deliberately OUTSIDE #map: it is the owner's real text, not
+ * fallback chrome, so it has to survive that erase and stay in the tree.
+ *
+ * A CLEARED coordinate field leaves '', which passes != null and which Number('')
+ * turns into 0 — booting Leaflet and pinning the shop at 0,0 in the Gulf of
+ * Guinea with its own name on the marker: a map asserting a location the owner
+ * never gave. num() rejects blank and out-of-range values so a cleared field
+ * falls through to the address lookup instead, and it uses ?? rather than || so
+ * a genuine 0 survives.
+ *
+ * R8 · RESPONSIVE, and the clamp ladder TRACED rather than assumed — every
+ * figure below is the arithmetic run out, not an estimate. The wrapper owns the
+ * shared 760 and 520 pass; this file owns its own split, which collapses to one
+ * column at 900px. Every TYPE size here is a single clamp declared ONCE at base
+ * and touched by no media query in this file, so no floor in one query can sit
+ * above a cap in another:
+ *   headline  clamp(24px,3vw,40px)   → 40 (cap) at ≥1334px · 27 at 900 ·
+ *                                      24 (floor) at ≤800px and every width below
+ *   cell pad  clamp(26px,3.6vw,48px) → 48 (cap) at ≥1334px · 32 at 900 ·
+ *                                      26 (floor) at ≤722px
+ *             clamp(20px,2.8vw,36px) → 36 (cap) at ≥1286px · 25 at 900 ·
+ *                                      20 (floor) at ≤714px
+ * The ONE size a query moves is the map cell's min-height, and it moves DOWN,
+ * once: the design's flat 460px holds for the whole two-column state, and the
+ * 900 collapse hands it to clamp(240px,32vw,460px) — 288 at 900, 243 at 760,
+ * 240 (floor) at ≤750px. 460 → 288 across that boundary, so the ladder is still
+ * monotonic. An earlier draft put that clamp at BASE, which quietly shrank the
+ * design's 460px cell to 410px at 1280 and 288px at 901 — inside the widths the
+ * design actually specifies.
+ * The headline's scoped rule — .pcw-vis-info .pcw-vis-h, (0,4,0) once Astro has
+ * scoped both halves — out-specifies the wrapper's html[data-page] :where(.h2)
+ * at (0,1,1), so it wins ALL FIVE of its declarations, the shared 760 pass
+ * included. That is why max-width: none and overflow-wrap: anywhere are RESTATED
+ * on it rather than left to that pass: left to it, they would not have landed.
+ * Confining the clamp to a min-width query instead is what WOULD have produced
+ * an inversion — the shared pass is clamp(26px,7.4vw,40px), capped at 40 from
+ * 541px up, so the headline would have JUMPED from 24px to 40px crossing
+ * 761px → 760px. Nothing else changes size in a query below; only tracking,
+ * padding and the row's direction. At 360px nothing pushes sideways: every grid
+ * track is minmax(0,…), every cell is min-width: 0, and every owner string
+ * breaks anywhere.
+ *
+ * VERIFIED CONTRAST — COMPUTED for this section's own pairs (sRGB relative
+ * luminance, WCAG 2.x, against PageBN's declared hexes), not estimated:
+ *   ink/paper       15.30  the headline and the time cell
+ *   ink-2/paper      9.23  the arrival note
+ *   muted/paper      5.77  the day cell and the closing line
+ *   muted/tint       5.17  the map caption, on its opaque backing
+ *   accent/paper     5.67  the rail label
+ *   on-ink/ink      15.30  the pin flag (--on-ink and --paper share a hex)
+ * Nothing in this section is below AA; the tightest pair is 5.17.
+ */
+interface Props { content: any; layout?: any;
+}
+const { content, layout } = Astro.props;
+
+const lay = layout || {};
+
+const loc = content.location || {};
+// Nothing beyond trim(): the headline goes out through set:html so whatever
+// markup the owner typed reaches PageBN's rust <em> rule.
+const headline = typeof loc.headline === 'string' ? loc.headline.trim() : '';
+const sub = typeof loc.sub === 'string' ? loc.sub.trim() : '';
+// The schema's single "Hours line" text field — the design's closing mono line.
+const hoursNote = typeof loc.hours === 'string' ? loc.hours.trim() : '';
+
+// READ, NOT PRINTED. The design's info cell is headline + note + rows + line and
+// its h2 IS the address; there is no second address paragraph. This value feeds
+// tier 2 of the map below, and FooterBN prints it.
+const address = String(loc.address ?? lay.contact?.address ?? '').trim();
+
+// A row the owner added but never filled would spend a hairline and 24px of
+// padding saying nothing. Drop the blanks (whitespace counts as blank), carry
+// the ORIGINAL index (R6) — and note this filter is what makes the gate honest:
+// an array of nothing but blank rows no longer keeps the section alive.
+type HourRow = { i: number; day: string; time: string };
+const rows: HourRow[] = (Array.isArray(loc.rules) ? loc.rules : [])
+  .map((row: any, i: number) => {
+    // An item may legitimately be {label,value} (what the schema's newItem
+    // creates) or, from an older draft, a bare string — treated as a label with
+    // no value rather than dropped.
+    const item = row && typeof row === 'object' ? row : { label: row, value: '' };
+    return {
+      i,
+      day: String(item.label ?? '').trim(),
+      time: String(item.value ?? '').trim(),
+    };
+  })
+  .filter((r: HourRow) => Boolean(r.day || r.time));
+
+const num = (v: any, max: number): number | null => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+};
+const lat = num(loc.lat, 90) ?? num(lay.contact?.lat, 90);
+const lng = num(loc.lng, 180) ?? num(lay.contact?.lng, 180);
+const hasCoords = lat !== null && lng !== null;
+const hasAddress = Boolean(address);
+// The drawn face is a picture claiming where this shop physically is. With
+// neither coordinates nor an address there is nothing real behind that claim, so
+// the whole cell leaves and the info half takes the full width.
+const hasMap = hasCoords || hasAddress;
+
+const brand = String(lay.businessName ?? '').trim();
+const locality = String(lay.contact?.city ?? '').trim();
+
+// The INFO half may keep a bare headline once the section is alive for another
+// reason — a headline over a real map is not a heading over nothing.
+const hasInfo = Boolean(headline || sub || hoursNote) || rows.length > 0;
+// R5 — BODY content only. Headline and tag are excluded: both are derived onto
+// every site, so counting either would make this gate always-true.
+const hasSection = Boolean(sub || hoursNote) || rows.length > 0 || hasMap;
+const solo = !(hasInfo && hasMap);
+---
+{hasSection && (
+  <section class="sec pcw-vis" id="visit">
+    {/* THE SPINE. .sec, .rail and .rail-t are PageBN's primitives, used as they
+        are: the 52px track, the right hairline and the rotated mono index. The
+        label is decorative and derived, so the whole rail is hidden from the
+        accessibility tree — once, here, and nowhere inside it. */}
+    <div class="rail" aria-hidden="true">
+      <span class="rail-t">Location</span>
+    </div>
+    <div class:list={['pcw-vis-body', solo && 'pcw-vis-body--solo']}>
+      {hasInfo && (
+        <div class="pcw-vis-info">
+          {headline && (
+            <h2 class="h2 pcw-vis-h reveal" data-field="location.headline" set:html={headline}></h2>
+          )}
+          {/* location.sub is a plain textarea in the schema, so it is bound as
+              TEXT. The headline above is the one place markup is invited. */}
+          {sub && (
+            <p class="pcw-vis-sub reveal" data-delay="1" data-field="location.sub">{sub}</p>
+          )}
+          {rows.length > 0 && (
+            <div class="pcw-vis-hours reveal" data-delay="2">
+              {rows.map((r) => (
+                /* Each cell is guarded on its own, so a half-filled row prints
+                   one cell rather than one cell plus an empty span. The row
+                   itself was already dropped above if BOTH were blank, which is
+                   what keeps the hairline honest. */
+                <div class="rowrule pcw-vis-row">
+                  {r.day && (
+                    <span class="mono pcw-vis-d" data-field={`location.rules.${r.i}.label`}>{r.day}</span>
+                  )}
+                  {r.time && (
+                    <span class="pcw-vis-t" data-field={`location.rules.${r.i}.value`}>{r.time}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          {hoursNote && (
+            <p class="mono pcw-vis-note reveal" data-delay="3" data-field="location.hours">{hoursNote}</p>
+          )}
+        </div>
+      )}
+      {hasMap && (
+        <div class="pcw-vis-map">
+          <div id="map">
+            {/* Tier-3 only, and entirely decorative: PageBN's boot empties #map
+                before Leaflet draws, so tiles never stack on top of this. ONE
+                aria-hidden, here and nowhere else in the subtree. */}
+            <div class="pcw-vis-face" aria-hidden="true">
+              <span class="pcw-vis-road pcw-vis-road-h"></span>
+              <span class="pcw-vis-road pcw-vis-road-v"></span>
+              <span class="pcw-vis-pin">
+                <span class="pcw-vis-dot"></span>
+                {brand && <span class="pcw-vis-flag">{brand}</span>}
+              </span>
+            </div>
+          </div>
+          {/* OUTSIDE #map on purpose: the city is the owner's real text, not
+              fallback chrome, so it has to survive the boot that erases the face
+              — and it stays in the accessibility tree. */}
+          {locality && <span class="mono pcw-vis-cap">{locality}</span>}
+        </div>
+      )}
+    </div>
+  </section>
+)}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, brand }}>
+    (function () {
+      // Bounded on purpose: this script is emitted where the section sits, ABOVE
+      // the wrapper's boot, so one retry is the normal case — but an unbounded
+      // loop would spin a timer forever on any page where that boot never ran.
+      var attempt = 0;
+      (function init() {
+        if (window.__foodcraftBNInitMap) { window.__foodcraftBNInitMap(lat, lng, brand); }
+        else if (attempt++ < 25) { setTimeout(init, 80); }
+      })();
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, brand }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(la, ln) {
+        if (window.__foodcraftBNInitMap) { window.__foodcraftBNInitMap(la, ln, brand); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(la, ln); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var la = parseFloat(results[0].lat);
+            var ln = parseFloat(results[0].lon);
+            if (isNaN(la) || isNaN(ln)) return;
+            tryInit(la, ln);
+          })
+          .catch(function () { /* keep the drawn face: it is the design */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  /* THE CONTENT CELL IS UNPADDED ON PURPOSE — see the frontmatter. The padding
+     in this section belongs to the LEFT half, so the map can run full-bleed to
+     the edge of the sheet. min-width:0 because it is a grid child of .sec and it
+     must be allowed to shrink rather than widen the document. */
+  .pcw-vis-body {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* One half survives its own guard: the other track goes rather than standing
+     empty at 460px. */
+  .pcw-vis-body--solo { grid-template-columns: minmax(0, 1fr); }
+
+  /* THE INFO HALF. The design writes `padding:48px 36px`; those two numbers are
+     the CAPS of the clamps below, so a desktop renders the design's value and
+     the only movement is downward as the viewport narrows (R8). The border-right
+     is the design's interior hairline — the quiet --line, never the
+     --rule-strong that .sec draws to close the whole section. */
+  .pcw-vis-info {
+    min-width: 0;
+    padding: clamp(26px, 3.6vw, 48px) clamp(20px, 2.8vw, 36px);
+    border-right: 1px solid var(--line);
+  }
+  /* A half-empty sheet gets no rule down its middle: with no map there is
+     nothing on the other side of it to divide from. */
+  .pcw-vis-body--solo .pcw-vis-info { border-right: 0; }
+
+  /* THE HEADLINE, which is the ADDRESS. .h2 supplies the family, the 800, the
+     -.03em, the uppercase and the --ink; the four metrics this section states
+     differently are set here. max-width is released rather than inherited: .h2
+     caps at 20ch and the design writes no cap at all, and this heading already
+     sits in a half-width cell — 20ch would break a street line two words earlier
+     than the design does. Declared ONCE, with no query of its own, which is what
+     keeps the ladder monotonic across 760 and 520 (traced in the frontmatter). */
+  .pcw-vis-info .pcw-vis-h {
+    font-size: clamp(24px, 3vw, 40px);
+    line-height: 1.04;
+    margin: 0 0 .3em;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* THE ARRIVAL NOTE. Deliberately NOT .lede and NOT .body: both paint
+     --ink-soft, and this design's note is the darker --ink-2; both clamp a size
+     the design states flat at 15px. Borrowing either would mean overriding four
+     of its declarations. The parent-class qualifier puts this rule above
+     PageBN's `:where(p){margin:0 0 1em}`, which is (0,1,1), whatever order the
+     sheets land in. */
+  .pcw-vis-info .pcw-vis-sub {
+    font-size: 15px;
+    line-height: 1.78;
+    color: var(--ink-2);
+    max-width: 40ch;
+    margin: 0 0 24px;
+    overflow-wrap: anywhere;
+  }
+  /* The design's 24px is the gap to the hours box. With no rows and no closing
+     line it would be dead space above the cell's own bottom padding. */
+  .pcw-vis-info .pcw-vis-sub:last-child { margin-bottom: 0; }
+
+  /* THE HOURS BOX opens on the FULL-STRENGTH rule, which is the design's own
+     distinction: the ink weight above the stack, the grey hairline under each
+     row. --rule-strong rather than --ink so this interior rule cannot drift away
+     from the section rules it echoes — see the frontmatter for the grep behind
+     that. */
+  .pcw-vis-hours { border-top: 1px solid var(--rule-strong); }
+
+  /* .rowrule brings the flex row, the baseline alignment and the --line hairline
+     under every row INCLUDING the last — that closing rule above the cell's
+     bottom padding is the design, which is why there is no ":not(:last-child)"
+     trick here. Three things are restated: the design pushes the cells apart,
+     opens the gutter to 16px, and uses 12px of vertical padding where the
+     primitive uses 13px.
+     A FOURTH difference is deliberately NOT restated. This row's inline style
+     writes no align-items, so the design renders it at the flex default of
+     stretch — which top-aligns a 10.5px mono day against a 14.5px time and
+     leaves their baselines about 3px apart. .rowrule's baseline is kept
+     instead, because the design's OWN other label/value row (the ABOUT spec
+     grid) writes align-items:baseline for exactly this pairing, and because
+     this row is a shared primitive three sections are meant to draw alike. */
+  .pcw-vis-row {
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+  }
+  /* The DAY cell is .mono — the tracked caps in --muted — with the three
+     properties the design sets differently: 10.5px rather than 10px, .12em of
+     tracking rather than .2em, and the body's regular weight rather than .mono's
+     500. line-height: normal because the design sets no leading on this span and
+     `normal` is literally what it draws; PageBN's body 1.62 otherwise leaks in
+     and inflates the drawn ~43px row toward ~48px. `normal` rather than a
+     number, because guessing a number would be a divergence of its own. */
+  .pcw-vis-row .pcw-vis-d {
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: .12em;
+    line-height: normal;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  /* The TIME cell: the design's 600 at 14.5px in --ink, in the sans it inherits
+     from the body. NOT the wrapper's .fig — that primitive paints --accent, and
+     an opening time here is drawn in ink. `margin-left:auto` and
+     `text-align:right` are the two properties the design does not write, and
+     both are no-ops in the state it draws: space-between already puts a two-cell
+     row's value hard against the right edge. They take effect only when the DAY
+     is missing (one child, which space-between would leave at the left) and when
+     a long time WRAPS, where a ragged-left second line under a right-aligned
+     first is not what the design's row looks like. */
+  .pcw-vis-row .pcw-vis-t {
+    margin-left: auto;
+    text-align: right;
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: normal;
+    color: var(--ink);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* THE CLOSING LINE is .mono again — same family, same 10px, same caps, same
+     --muted — restating only the design's tighter .1em, its regular weight, its
+     generous 1.9 leading and its 16px lead-in. */
+  .pcw-vis-info .pcw-vis-note {
+    font-weight: 400;
+    letter-spacing: .1em;
+    line-height: 1.9;
+    margin: 16px 0 0;
+    overflow-wrap: anywhere;
+  }
+  /* An owner with a closing line and no rows is a real case, and then the
+     design's 16px lead-in would push it off the cell's own top padding. */
+  .pcw-vis-info .pcw-vis-note:first-child { margin-top: 0; }
+
+  /* THE MAP HALF. Not the wrapper's .plate: that frame is for an UPLOAD and
+     carries its own --well ground and min-height, where the design draws this
+     cell flat on --tint, full-bleed, with no border and no corner of its own.
+     min-height is the design's own flat 460px and stays flat for the whole of
+     the two-column state; it is the 900 query below — where the cell stops
+     being a half and becomes the full sheet — that puts it on a curve.
+     overflow:hidden is the design's, and it is also what clips a live tile map
+     to the cell. */
+  .pcw-vis-map {
+    position: relative;
+    min-width: 0;
+    min-height: 460px;
+    background-color: var(--tint);
+    overflow: hidden;
+  }
+  /* The literal id is a contract with PageBN's boot — see the frontmatter. */
+  #map { position: absolute; inset: 0; z-index: 0; }
+  /* The plotted face: a 40px ink grid, drawn from --ink-rgb so an admin scheme
+     moves the plot lines with the ink everywhere else on the sheet. No
+     background-color of its own — the cell's --tint is the ground, exactly as
+     the design layers it. */
+  .pcw-vis-face {
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(0deg, rgba(var(--ink-rgb), .09) 0 1px, transparent 1px 40px),
+      repeating-linear-gradient(90deg, rgba(var(--ink-rgb), .09) 0 1px, transparent 1px 40px);
+  }
+  .pcw-vis-road { position: absolute; background-color: rgba(var(--accent-rgb), .35); }
+  .pcw-vis-road-h { top: 48%; left: 0; right: 0; height: 5px; }
+  .pcw-vis-road-v { top: 0; bottom: 0; left: 44%; width: 4px; }
+  /* The cap sits on the ABSPOS pin, not on the flag. The stack is CENTRED on the
+     44% crossing, so it only stays inside the cell when it is capped at twice
+     the smaller side — 88% — less 12px of air each side. calc(100% - 24px) would
+     still let a long shop name run past the left edge and be clipped there by
+     overflow:hidden, which is the truncation the wrapping flag exists to avoid.
+     width: max-content is required alongside it, or absolute shrink-to-fit
+     collapses the stack to (containing block − left). */
+  .pcw-vis-pin {
+    position: absolute;
+    top: 48%;
+    left: 44%;
+    transform: translate(-50%, -100%);
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(88% - 24px);
+    text-align: center;
+    z-index: 1;
+  }
+  /* SQUARE, because nothing in this design is round: no border-radius is set
+     here and none is inherited. 13px is the border-box, which is what the
+     design's own `*{box-sizing:border-box}` gives it too. */
+  .pcw-vis-dot {
+    width: 13px;
+    height: 13px;
+    background-color: var(--accent);
+    border: 3px solid var(--paper);
+  }
+  /* Ink flag, paper label — the design's own pair. line-height: normal and
+     weight 400 because the design states neither and both are what it draws;
+     nowrap is dropped and replaced by the wrap pair, explained in the
+     frontmatter. */
+  .pcw-vis-flag {
+    background-color: var(--ink);
+    color: var(--on-ink);
+    font-family: var(--mono);
+    font-weight: 400;
+    font-size: 9px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    line-height: normal;
+    padding: 5px 10px;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  /* .mono supplies the design's 10px caps in --muted. Local: the design's .16em
+     tracking, its regular weight, `line-height: normal` because it sets no
+     leading, and the opaque backing that keeps this legible once real tiles are
+     underneath it — the design's own colour pair, not the wrapper's ink .cap
+     pill, so the palette is unchanged. */
+  .pcw-vis-map .pcw-vis-cap {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    z-index: 2;
+    font-weight: 400;
+    letter-spacing: .16em;
+    line-height: normal;
+    background-color: var(--tint);
+    padding: 5px 10px;
+    max-width: calc(100% - 32px);
+    overflow-wrap: anywhere;
+  }
+
+  /* R8 · ONE COLUMN BEFORE EITHER HALF IS SQUEEZED. At 900px each half is under
+     425px: the address headline starts breaking mid-street and the map is too
+     narrow to place a pin usefully. The info half's rule turns from a right
+     hairline into a bottom one, so the sheet stays ruled in one column, and it
+     stays absent when there is only one half. Nothing here changes a font-size —
+     the three clamps above are declared once at base and are not touched by this
+     query or the next, so no floor here can sit above a cap there. */
+  @media (max-width: 900px) {
+    .pcw-vis-body { grid-template-columns: minmax(0, 1fr); }
+    .pcw-vis-info {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .pcw-vis-body--solo .pcw-vis-info { border-bottom: 0; }
+    /* Released: once the cell is the full sheet, a 40ch cap strands the note in
+       a wide empty gutter. */
+    .pcw-vis-info .pcw-vis-sub { max-width: none; }
+    /* The design's 460px is a TWO-COLUMN figure — the height of a cell sitting
+       BESIDE the hours — so it is kept verbatim for exactly as long as that is
+       what the cell is. Stacked, the same 460px is half a phone screen of empty
+       tint above the fold, so the height goes to a curve HERE and nowhere else:
+       288 at 900, 243 at 760, 240 (floor) at ≤750. 460 → 288 across this
+       boundary, so it only ever falls. The cap is inert inside a max-width
+       query, where 32vw can never exceed 288px; it is written so the
+       declaration names the value it came down from. AboutBN's plate and
+       HeroBN's band are stepped the same way. */
+    .pcw-vis-map { min-height: clamp(240px, 32vw, 460px); }
+  }
+  /* 520 · nothing may push the page sideways at 360px. The rail has already
+     collapsed by here (PageBN's shared 760 pass). At 360px the info cell is 320px
+     wide inside its 20px padding floors, and a full day label beside a full
+     opening range is more than that holds — the time wraps to a ragged second
+     line under a right-aligned first. The row stacks instead: day above, time
+     below, both left. Only tracking and position move — no size is touched. */
+  @media (max-width: 520px) {
+    .pcw-vis-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+    .pcw-vis-row .pcw-vis-t { margin-left: 0; text-align: left; }
+    .pcw-vis-flag { letter-spacing: .12em; padding: 5px 8px; }
+    .pcw-vis-map .pcw-vis-cap {
+      left: 12px;
+      bottom: 12px;
+      letter-spacing: .14em;
+      max-width: calc(100% - 24px);
+    }
+  }
+</style>

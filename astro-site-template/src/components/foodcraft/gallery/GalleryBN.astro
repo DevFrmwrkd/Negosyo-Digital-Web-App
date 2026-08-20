@@ -1,0 +1,408 @@
+---
+/**
+ * foodcraft / GalleryBN — "Panday Coffee Works", the floor as a contact sheet.
+ *
+ * ROLE. The one section on the page that is nothing but the owner's own
+ * photographs. It is FULL-BLEED: a ruled head on the spine (rail + one display
+ * headline) and then, edge to edge with no side padding at all, a row of square
+ * plates divided by hairlines — a contact sheet, not a mosaic. Nothing here is
+ * rounded, nothing is gapped, and nothing floats: the tiles touch, and the
+ * only thing between two photographs is a 1px rule.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * the element carrying data-component="GALLERY" in
+ * "Panday Coffee Works Landing.dc.html":
+ *
+ *   section          border-bottom 1px #17181A, NO rail grid of its own
+ *                                                            → .sec-full
+ *   head             minmax(0,52px) minmax(0,1fr)            → .sec
+ *   rail             right hairline #C8C7C2, label bottom-aligned
+ *                                                            → .rail / .rail-t
+ *   head cell        padding 44px 34px 30px  (the 30px BOTTOM is this
+ *                    section's own — .sec-body caps at 40)
+ *   headline         Archivo 800, clamp(28px,3.6vw,50px), line-height 1,
+ *                    letter-spacing -.03em, uppercase, margin 0, #17181A
+ *   tile grid        repeat(6, minmax(0,1fr)), border-top 1px #C8C7C2
+ *   tile             aspect-ratio 1/1, ground #DEDCD6, border-right 1px #C8C7C2
+ *   caption          IBM Plex Mono 9px / .14em caps, padding 5px 9px,
+ *                    on an opaque #17181A block, #EFEEEA           → .cap
+ *
+ * NO LITERAL HEX APPEARS IN THIS FILE. Every colour the design names already
+ * has a wrapper token holding the same value — #C8C7C2 is --line, #17181A is
+ * --ink (and --rule-strong for the section rule), #DEDCD6 is --well, #EFEEEA is
+ * --on-ink, #A8351B is --accent — and every one of them arrives on a shared
+ * primitive (.sec-full, .rail-t, .plate, .cap, .h2). This file states GEOMETRY
+ * only. No colour, not one, is chosen here.
+ *
+ * ── EDITABLE HOOKS (every one DECLARED in components/editor/genericContentSchema.ts,
+ *    group id 'gallery' — that group declares these four fields and nothing
+ *    else) ─────────────────────────────────────────────────────────────────────
+ *   gallery.tag                        → the rust mono eyebrow (.kick)
+ *   gallery.headline                   → the display h2, set:html
+ *   gallery.items.<original i>.image   → data-image-field, one per plate
+ *   gallery.items.<original i>.caption → the optional opaque ink caption block
+ * That is the whole list. A data-field on any other path is a dead hook no
+ * sidebar input owns, so no other path is written here.
+ *
+ * ── NOT SUPPLIED BY THIS COMPONENT ──────────────────────────────────────────
+ * NOT ONE VISIBLE WORD, with the single stated exception of the rail index
+ * below. The design's "The floor, documented" and its six slot placeholders are
+ * the DESIGNER filling their own template; a real roastery gets a page that
+ * says only what that roastery said. Every guard sits OUTSIDE its tag, so an
+ * empty value removes the ELEMENT: no eyebrow over nothing, no empty caption
+ * block on a photo, no head cell with nothing in it, and — see the rule note
+ * below — no hairline under a head that is not there.
+ *
+ * ── DERIVED, not authored ───────────────────────────────────────────────────
+ * THE RAIL INDEX "04 / Gallery" is the one string this file prints. It is
+ * DECORATIVE and DERIVED, never an editable hook and never stored: the numeral
+ * is this section's position in PageBN's render order (Hero 00, About 01,
+ * Services 02, Why 03, Gallery 04 — Trust and Header carry no rail in the
+ * design), and the word is the section's ROLE. The design's own flavour word
+ * there is "Plates", which is a coffee-bar joke belonging to the demo; a rail
+ * label cannot be edited, so it must not assert anything about a business —
+ * "Gallery" is what this section IS on every site.
+ *
+ * ROW INDEXES. Rows with no image are dropped, and the ORIGINAL array index
+ * travels with the survivor as `.i`. The editor writes the data-field path
+ * verbatim into the draft, so a re-indexed path would patch a different row:
+ * clearing row 2's photo would misdirect row 3's caption edits into row 2.
+ * Nothing in this section is numbered on screen, so no display index is needed
+ * — the rail index is the section's, not a row's.
+ *
+ * THE COUNT LADDER. The design hard-codes six slots; content does not.
+ * derive-content-defaults hands over up to six photos and an owner may upload
+ * one or eleven, so the design's six-up is the TOP of a ladder rather than the
+ * only case. Below six the track count IS the photo count, so a short row can
+ * never leave the sheet ragged; at six the grid is the design's, verbatim; above
+ * six the extras flow into implicit rows and the LAST plate stretches over
+ * whatever tracks its row left empty. The stretch is computed PER BREAKPOINT —
+ * a six-track row, a three-track row and a two-track row run out at different
+ * counts — and it is carried as three custom properties on that one figure
+ * rather than as a dozen classes.
+ *
+ * ── THE SECTION GATE ────────────────────────────────────────────────────────
+ * The section renders only when at least one row carries an IMAGE — the BODY
+ * content, never the tag or the headline. lib/derive-content-defaults.ts sets
+ * gallery.tag and gallery.headline on EVERY site, so a gate counting those
+ * would ship a rail, an eyebrow and a display headline over an empty sheet.
+ * Once photos exist the tag and headline render (still individually guarded) —
+ * refusing them would strand two live sidebar inputs.
+ *
+ * ── DECISIONS A READER MIGHT OTHERWISE THINK WERE OVERSIGHTS ────────────────
+ * · THE HAIRLINE BELONGS TO THE HEAD, not to the grid. The design draws it as
+ *   `border-top` on the tile grid; here it is the head block's border-bottom,
+ *   recoloured from --rule-strong to --line. With both present the rendering is
+ *   identical (one --line hairline between head and photographs). With the head
+ *   gone — no tag, no headline — the design's version would print a grey
+ *   hairline immediately beneath the previous section's full-strength ink rule,
+ *   a doubled edge under nothing. This way the sheet simply starts.
+ * · THE HEAD BLOCK, RAIL INCLUDED, IS GUARDED as one unit. The rail is the
+ *   page's spine and no section should drop it lightly — but this is a
+ *   .sec-full section whose spine lives inside its head, and a rail is a ruled
+ *   column with a label: rendering it beside an empty cell would be a rule and
+ *   a label over nothing, which is exactly what the guard discipline forbids.
+ *   In practice derive-content-defaults fills the tag on every site, so the
+ *   head — and the spine — is there.
+ * · THE EYEBROW IS NOT IN THE DESIGN ELEMENT, and that is not a liberty. The
+ *   GALLERY head draws the h2 alone. But genericContentSchema declares
+ *   `gallery.tag` as a live sidebar input and derive-content-defaults writes it
+ *   on every site, so leaving it unrendered would wire a visible editor field to
+ *   nothing. It is rendered on the shared .kick primitive — the design's own
+ *   10px / .24em rust mono, the same mark the hero kicker uses — and it is
+ *   guarded, so a site that clears it gets the design's bare headline back.
+ * · THE 13px BETWEEN EYEBROW AND HEADLINE is applied only when the eyebrow is
+ *   actually there (`.kick + .pcwg-h2`), so with no eyebrow the h2 keeps the
+ *   design's `margin: 0` exactly. 13px is the hero's own kicker-to-headline
+ *   step (.14em at its 92px display size) expressed at a fixed size, because
+ *   an em here would scale with a headline that is half that size.
+ * · THE HEADLINE KEEPS THE WRAPPER'S 20ch MEASURE. The GALLERY element states
+ *   no max-width, but it does not need one: its demo string is 21 characters.
+ *   An owner's headline is arbitrary, and this page has no container cap
+ *   (--maxw is 100%), so releasing the measure would let one line of Archivo
+ *   800 run the full width of a 1400px sheet — something the design never
+ *   shows. The design's headline voice is explicitly STACKED (the hero breaks
+ *   three lines, the about head breaks three), and the wrapper's 20ch is that
+ *   voice as a rule. The measure is therefore inherited, not restated, and the
+ *   wrapper's own ≤760 release of it still applies.
+ * · NO GAP. The family signature elsewhere is gapped tiles; this design rules
+ *   them instead — `border-right` on each plate and nothing between. A gap here
+ *   would break the contact sheet into cards, which is the one thing this
+ *   template is not. The right-most hairline lands on the page edge, as in the
+ *   design.
+ * · NO HOVER LIFT. PageBN ships no transition on .ph — unlike its siblings —
+ *   and the design specifies no hover treatment for a plate. A photograph that
+ *   leaps under the cursor is a soft-template gesture, and this template is a
+ *   technical document. Omitted deliberately, not forgotten.
+ * · THE 440px CEILING on a plate's height is the one number here that the
+ *   design could not state, because the design only ever draws six-across. A
+ *   1/1 plate takes its height from its track, so at one or two photos a square
+ *   would print a two-metre block down the page. 440px is the design's own
+ *   tallest fixed plate: the design holds exactly three image slots, and their
+ *   grounds are 380px (hero, under a 56vh height), 440px (about) and this 1/1
+ *   grid. The one larger fixed height in the file — the LOCATION panel's 460px
+ *   — is the drawn map face, which holds no photograph. So no gallery plate can
+ *   ever exceed a plate the design itself draws. At the design's six-up the
+ *   ceiling is inert until the viewport passes ~2640px, where a track is 440px
+ *   wide (2640 / 6); below that width nothing is clipped and the tiles are
+ *   exactly the squares the design specifies.
+ * · min-height is zeroed on the plates. The wrapper floors .plate at 180px,
+ *   which is EXACTLY a two-up track on a 360px screen (360 / 2, borders
+ *   included) and taller than a track on anything narrower: a 320px phone gives
+ *   160px tracks, where the floor would print a 160 x 180 upright rectangle in
+ *   place of the square the design draws. The floor is released rather than
+ *   lowered because every narrower device would otherwise need its own number.
+ * · NO onPage() ANCHOR-REMAP HELPER. This section renders no link, no button
+ *   and no numeral, and the 'gallery' schema group declares no href field at
+ *   all — so PAGE_ANCHORS / ANCHOR_ALIAS would have nothing to remap and would
+ *   ship as dead frontmatter. Omitted rather than carried unused. The section's
+ *   own id="gallery" IS one of the page's anchors, and is the target the header
+ *   and footer link AT.
+ * · THE CAPTION RESTATES TWO NUMBERS. .cap already carries this design's
+ *   caption exactly — opaque ink block, mono, 9px, bottom-left, breaking a long
+ *   string — but the GALLERY element sets .14em of tracking and 5px 9px of
+ *   padding where the shared primitive sets .2em and 7px 12px. Those two values
+ *   are restated and nothing else is; colour, position and family stay with the
+ *   primitive.
+ * · An apostrophe in an upload path would close the `url('…')` and blank the
+ *   plate, so the path is percent-escaped FOR CSS ONLY. The raw value still
+ *   travels into data-image-field, which is what the editor reads back.
+ *
+ * ── RESPONSIVE, and the clamp ladder traced ─────────────────────────────────
+ * The wrapper owns the shared 760 and 520 pass (the rail goes horizontal, .h2
+ * releases its measure). This section owns its own grid: SIX tracks collapse to
+ * THREE at 900 and to TWO at 520. It stays two-up rather than one-up on a phone
+ * because a contact sheet of squares is what this section is; a single 360px
+ * column would turn six photographs into six screens of scrolling.
+ *   headline  base clamp(28px,3.6vw,50px): 50px at ≥1389px, 32.4px at 900px,
+ *             and it reaches its 28px floor at 778px, holding 28px from there
+ *             down. The ≤520 rule is clamp(23px,6.4vw,28px): at exactly 520px
+ *             it is capped to 28px — the same value the base holds there, so
+ *             nothing jumps across the boundary — and from ~437px down it
+ *             falls to a 23px floor. The ladder only ever descends.
+ *   plate     440px ceiling, stated once and never restated, so no breakpoint
+ *             can raise it. Track counts only ever decrease as the viewport
+ *             narrows, so a plate's width never grows on a smaller screen.
+ * At 360px nothing may push sideways: every track is minmax(0,…), the eyebrow
+ * and the headline both break anywhere (stated at EVERY width, because the
+ * wrapper's `body { overflow-x: hidden }` would CLIP an overrun rather than let
+ * it scroll), and the caption's break rule arrives with .cap. This section
+ * renders no button, so the button-label rule has nothing to apply to.
+ *
+ * ── ACCESSIBILITY ───────────────────────────────────────────────────────────
+ * A plate is announced only when the owner gave it words. With a caption the
+ * photo layer is role="img" named by THAT CAPTION — the owner's own words — and
+ * the caption is also the visible block. With no caption the layer is HIDDEN
+ * from the tree rather than announced as "image"; inventing "Roastery photo"
+ * would publish a description of something nobody described. The two attributes
+ * are mutually exclusive and BOTH conditional, so no literal aria-hidden ever
+ * sits beside a conditional one.
+ * The rail is aria-hidden as a whole: its rotated index is decoration derived
+ * from render order, and the heading beneath it is the real announcement.
+ */
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+const gallery = (content && content.gallery) || {};
+const tag = typeof gallery.tag === 'string' ? gallery.tag.trim() : '';
+const headline = typeof gallery.headline === 'string' ? gallery.headline.trim() : '';
+
+type Tile = { image?: string; caption?: string };
+// The legacy bare-array form lives at content.gallery ITSELF — not the
+// `gallery` alias above, which is the object form's home. Both shapes reach
+// production, so both are read.
+const raw: Tile[] = Array.isArray(gallery.items)
+  ? gallery.items
+  : (Array.isArray(content?.gallery) ? (content.gallery as Tile[]) : []);
+
+const tiles = raw
+  .map((t, i) => ({
+    image: (t && typeof t.image === 'string' ? t.image : '').trim(),
+    caption: (t && typeof t.caption === 'string' ? t.caption : '').trim(),
+    i,
+  }))
+  .filter((t) => Boolean(t.image));
+
+const n = tiles.length;
+
+// CSS-only escape; the raw value still goes into data-image-field.
+const cssUrl = (s: string) => s.replace(/'/g, '%27');
+
+/* Row completion, computed once per breakpoint (see THE COUNT LADDER above).
+   Below the track count the grid narrows to the photo count, so the remainder
+   is zero and nothing stretches; at or above it, the trailing plate takes its
+   own track plus every track its row left empty. */
+const rowFill = (cols: number) => {
+  const c = Math.min(n, cols);
+  if (c < 1) return 1;
+  const rem = n % c;
+  return rem === 0 ? 1 : c - rem + 1;
+};
+const spanD = rowFill(6);
+const spanM = rowFill(3);
+const spanS = rowFill(2);
+const stretches = spanD > 1 || spanM > 1 || spanS > 1;
+const spanVars = `--sd:${spanD};--sm:${spanM};--ss:${spanS};`;
+---
+{n > 0 && (
+  <section class="sec-full pcwg" id="gallery">
+    {(tag || headline) && (
+      <div class="sec pcwg-head">
+        <div class="rail" aria-hidden="true"><span class="rail-t">Gallery</span></div>
+        <div class="sec-body pcwg-head-body reveal">
+          {tag && <span class="kick pcwg-kick" data-field="gallery.tag">{tag}</span>}
+          {headline && <h2 class="h2 pcwg-h2" data-field="gallery.headline" set:html={headline}></h2>}
+        </div>
+      </div>
+    )}
+
+    <div
+      class:list={['pcwg-grid', 'reveal', n < 6 && `pcwg-x${n}`]}
+      data-delay="1"
+    >
+      {tiles.map((t, pos) => {
+        const last = pos === n - 1 && stretches;
+        return (
+          <figure class:list={['plate', 'pcwg-frame', last && 'pcwg-last']} style={last ? spanVars : undefined}>
+            <div
+              class="ph"
+              role={t.caption ? 'img' : undefined}
+              aria-label={t.caption || undefined}
+              aria-hidden={t.caption ? undefined : 'true'}
+              data-image-field={`gallery.items.${t.i}.image`}
+              style={`background-image:url('${cssUrl(t.image)}');`}
+            ></div>
+            {t.caption && (
+              <figcaption class="cap pcwg-cap" data-field={`gallery.items.${t.i}.caption`}>{t.caption}</figcaption>
+            )}
+          </figure>
+        );
+      })}
+    </div>
+  </section>
+)}
+
+<style>
+  /* .pcwg carries NO declaration on purpose. .sec-full already states the
+     design's full-bleed section and its 1px ink rule beneath, and this section
+     has no side padding at all — the sheet runs edge to edge. The class stays
+     as this section's root hook. */
+
+  /* THE HEAD sits on the shared spine primitive (.sec + .rail + .sec-body), so
+     the rail width, the rotated label and the collapse below 760 are the
+     wrapper's, not this file's. Only two things are this section's own:
+     the rule beneath the head is the design's GREY hairline rather than the
+     spine's full-strength ink (the design draws it as the tile grid's
+     border-top — see the frontmatter for why it lives here instead), and the
+     head cell closes at 30px rather than .sec-body's 40px. */
+  .pcwg-head { border-bottom-color: var(--line); }
+  .pcwg-head-body { padding-bottom: clamp(20px, 2.6vw, 30px); }
+
+  /* Owner-typed, 10px caps on wide tracking: a single unbroken word (a pasted
+     URL) is far wider than its character count suggests, and the wrapper's
+     `body { overflow-x: hidden }` would CLIP the tail rather than scroll to it.
+     Stated at EVERY width. Only the wrapping is touched — restating .kick's
+     size would cancel the wrapper's 520 pass, and restating its colour or
+     tracking would drift the one mark this family is recognised by. */
+  .pcwg-kick {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* The design's headline verbatim: its own smaller clamp, line-height 1 and
+     margin 0. Weight, family, tracking, colour and the uppercase all arrive
+     with .h2, and so does the 20ch measure — deliberately inherited, see the
+     frontmatter. The step below the eyebrow applies ONLY when an eyebrow is
+     there, so a bare head keeps the design's `margin: 0` exactly. */
+  .pcwg-h2 {
+    font-size: clamp(28px, 3.6vw, 50px);
+    line-height: 1;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .pcwg-kick + .pcwg-h2 { margin-top: 13px; }
+
+  /* THE CONTACT SHEET. The design's six equal tracks, ruled rather than gapped.
+     minmax(0,…) on every track, never a bare fr: a background-image plate has
+     no intrinsic width, but a caption does, and one long caption in a bare 1fr
+     track would push the whole page sideways on a phone. */
+  .pcwg-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  /* THE COUNT LADDER. Below six the tracks ARE the photos, so the sheet can
+     never end on a hole. Each tier is a compound so it out-specifies the base
+     above and survives into the breakpoints where it is already narrow enough. */
+  .pcwg-grid.pcwg-x1 { grid-template-columns: minmax(0, 1fr); }
+  .pcwg-grid.pcwg-x2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pcwg-grid.pcwg-x3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pcwg-grid.pcwg-x4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pcwg-grid.pcwg-x5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+  /* The plate. Ground, clip and the square (zero) corner all arrive with
+     .plate; the design's 1/1 and its dividing hairline are stated here. The
+     wrapper's 180px floor is released because it would break the square on a
+     narrow two-up row, and the ceiling is the design's own tallest plate — see
+     the frontmatter before changing either. */
+  .pcwg-frame {
+    margin: 0;
+    min-height: 0;
+    min-width: 0;
+    aspect-ratio: 1 / 1;
+    max-height: 440px;
+    border-right: 1px solid var(--line);
+  }
+
+  /* The trailing plate closes a short last row. The three spans are carried as
+     custom properties on that one figure so the breakpoints can each pick their
+     own without a class per count; the `, 1` fallback means a property that
+     never arrives computes to `span 1`, a single track — the same thing every
+     other plate does. */
+  .pcwg-grid .pcwg-last { grid-column: span var(--sd, 1); }
+
+  /* The caption's two section-specific numbers. Everything else — the opaque
+     ink block, the mono face, 9px, the bottom-left anchor, the break rule —
+     is .cap's. Written as a DESCENDANT of the plate, not as the bare class:
+     the wrapper states these on `html[data-page="BN"] :where(.plate) .cap`,
+     which scores one attribute plus one class plus a type selector. A lone
+     `.pcwg-cap` — one class plus the scope attribute Astro appends — matches
+     that on the class/attribute count and then LOSES on the type selector, at
+     every source order. The descendant form clears it outright. */
+  .pcwg-frame .pcwg-cap {
+    letter-spacing: .14em;
+    padding: 5px 9px;
+  }
+
+  /* 900px · six tracks would print 150px thumbnails, so the sheet halves to
+     three. The one- and two-photo tiers are NOT restated: they already
+     out-specify this rule, so a lone photograph keeps the full width instead of
+     shrinking into a third of a row beside two empty tracks. */
+  @media (max-width: 900px) {
+    .pcwg-grid,
+    .pcwg-grid.pcwg-x3,
+    .pcwg-grid.pcwg-x4,
+    .pcwg-grid.pcwg-x5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .pcwg-grid .pcwg-last { grid-column: span var(--sm, 1); }
+  }
+
+  /* 520px · two tracks. Still a sheet, not a stack: squares two-up are 180px
+     on a 360px screen, which reads as a contact sheet, where one column would
+     turn six photographs into six screens of scrolling. The headline takes its
+     own floor here because this file's clamp out-specifies the wrapper's
+     shared 760 pass, which is where the wrapper re-sizes .h2 (its 520 pass
+     touches only .kick and .btn); it meets the base value exactly at 520px and
+     only descends from there. Nothing may push sideways at this width: the tracks
+     are minmax(0,…), the plates cannot exceed them, and both the eyebrow and
+     the headline break anywhere at every width above. */
+  @media (max-width: 520px) {
+    .pcwg-grid,
+    .pcwg-grid.pcwg-x3,
+    .pcwg-grid.pcwg-x4,
+    .pcwg-grid.pcwg-x5 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pcwg-grid .pcwg-last { grid-column: span var(--ss, 1); }
+    .pcwg-h2 { font-size: clamp(23px, 6.4vw, 28px); }
+  }
+</style>

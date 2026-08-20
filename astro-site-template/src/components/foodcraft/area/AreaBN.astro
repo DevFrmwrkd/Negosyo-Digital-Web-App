@@ -1,0 +1,425 @@
+---
+/**
+ * foodcraft / AreaBN — "Panday Coffee Works" DELIVERY COVERAGE
+ * (design element data-component="SERVICE-AREA", the design's "09 / Dispatch").
+ *
+ * ROLE: the page's one coverage panel — the places this roastery runs beans and
+ * batches out to, and, where the owner gave one, how long each run takes. In
+ * THIS design it is not a card and not a tint: it is a ruled MATRIX. Three
+ * tracks, every cell boxed by hairlines, drawn on the sheet itself. The whole
+ * section is a normal spine section — rail + padded content cell, ruled beneath
+ * — so it reads as one more page of the same technical document.
+ *
+ * DESIGN VALUES, lifted verbatim from "Panday Coffee Works Landing.dc.html"
+ * (lines 256-273). Not one hex is written in this file (R1); each is named by
+ * the token PageBN declares at exactly that value.
+ *   section  border-bottom 1px #17181A · grid minmax(0,52px) minmax(0,1fr)
+ *            → the wrapper's .sec, used and NOT rebuilt
+ *   rail     border-right 1px #C8C7C2 · flex-end · centred · padding 20px 0
+ *            → the wrapper's .rail (--line)
+ *   rail-t   vertical-rl · rotate(180deg) · 10px mono · .3em · caps · #A8351B
+ *            → the wrapper's .rail-t (--accent)
+ *   body     padding 44px 34px → the wrapper's .sec-body, worn AS IS and never
+ *            re-declared. The design's matrix sits INSIDE the cell's padding
+ *            (its hairlines stop short of the sheet edge, unlike About's
+ *            ledger), so the padded primitive is the right one here. Its top
+ *            and sides ARE the design's 44/34 at full width; its BOTTOM is the
+ *            spine's shared clamp(26px,3.6vw,40px), 4px under this section's
+ *            own 44px — taken deliberately, because the gap above the section
+ *            rule is the spine's to keep identical on every page of the
+ *            document, not this section's to set.
+ *   head     flex · align-items flex-end · space-between · gap 26px ·
+ *            flex-wrap wrap · margin-bottom 26px
+ *   h2       800 · clamp(24px,3vw,40px) · 1.02 · -.03em · caps · margin 0 ·
+ *            #17181A · NO measure cap        → .h2 + .pcw-ar-h / --ink
+ *   note     14.5px · 1.7 · #3C3E42 · max-width 34ch · margin 0 → --ink-2
+ *   matrix   repeat(3,minmax(0,1fr)) · border-top 1px #C8C7C2 ·
+ *            border-left 1px #C8C7C2        → --line
+ *   cell     padding 14px 20px · border-right + border-bottom 1px #C8C7C2 ·
+ *            flex · space-between · gap 12px · align-items baseline
+ *   place    14.5px · #17181A               → --ink
+ *   time     IBM Plex Mono · 11px · #A8351B · nowrap → --mono / --accent
+ * Every colour above had a token holding the same value; none had to be
+ * invented. No hex is DECLARED anywhere in this file — the ones written above
+ * and in the style comments are citations, naming the design value each token
+ * stands in for, so a later reader can re-check the mapping without opening the
+ * design file.
+ *
+ * THE MATRIX IS DRAWN WITH BORDERS, NOT GAPS. The container owns the top and
+ * left rules and each cell owns its right and bottom, so the four edges close
+ * without doubling and there is no row gap to open a space between a rule and
+ * the row beneath it. A count that does not divide by three NOTCHES the frame:
+ * the last row's unfilled tracks draw nothing, so the outline's right and
+ * bottom edges stop at the final cell. Nothing is drawn under or beside a row
+ * that is not there (R2) — auto-placement fills column one first, so the
+ * container's left rule always runs beside a real cell, and the notch is
+ * exactly what the design's own CSS does at any count other than its nine.
+ *
+ * NOT --mono, deliberately: the wrapper's .mono primitive is 10px/500/.2em/caps
+ * in --muted, and the design's delivery time is 11px/400/no-tracking/mixed-case
+ * in --accent. Only the family comes from the token; the metrics are stated
+ * here because they are this section's, not the primitive's.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
+ * group "area" — a data-field on any other path is a dead hook no sidebar input
+ * owns)
+ *   area.headline           — the head's left half. Fed with set:html so an
+ *                             owner can put this design's second voice (a
+ *                             COLOUR change, never an italic) inside their OWN
+ *                             sentence.
+ *   area.body               — the note beside the headline
+ *   area.rows.${i}.place    — PRIMARY list: place + delivery time
+ *   area.rows.${i}.time
+ *   area.places.${i}        — FALLBACK list, plain STRINGS. Read only when
+ *                             area.rows yields no usable row; rendered
+ *                             place-only, with no time element emitted at all
+ *                             rather than an empty rust slot.
+ *
+ * DERIVED, not authored:
+ *   · THE RAIL LABEL, "09 / Area". Decorative page furniture — never an
+ *     editable hook, never stored, and hidden from the accessibility tree. 09
+ *     is this section's position among the RAILED sections, counted in render
+ *     order: Hero 00, About 01, Services 02, Why 03, Gallery 04, How 05,
+ *     Testimonials 06, Credentials 07, Location 08, Area 09, Faq 10, CtaBand
+ *     11. It is NOT the raw index in PageBN's render order — the Header and the
+ *     Trust strip carry no rail and are not counted, and the Footer's rail is
+ *     deliberately empty — which is why this reads 09 and not 10. It is the
+ *     same number the design prints. The WORD is the wrapper's own name for this slot, NOT the
+ *     design's "Dispatch": a dispatch run is what the designer's roastery does,
+ *     and an owner who only lists the barangays they serve should not have the
+ *     page assert a delivery operation in the margin. The About and Why
+ *     siblings make the same substitution for the same reason.
+ *
+ * READ BUT NOT HOOKED: area.sub. area.body is the canonical path the schema
+ * owns and the only one hooked. area.sub is read as a fallback so a site that
+ * stored a paragraph there before the schema settled still shows it; the first
+ * edit writes area.body, which then wins, so the two can never disagree on
+ * screen. Hooking area.sub would emit a dead hook — v3 gates inline editing on
+ * isSchemaEditablePath and the schema does not declare it.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The
+ * design's "Beans & batches, delivered", its delivery note and its nine
+ * placeholder places are the DESIGNER filling in their own template; a delivery
+ * promise and a run time are operational commitments for a business nobody has
+ * spoken to, so none of it ships. A row carrying a TIME but no PLACE is dropped
+ * whole — a lone rust "20 min" asserts a delivery to nowhere. A row with a
+ * place and no time renders the place alone and the time element is not emitted
+ * at all. Every guard sits OUTSIDE its tag, so an empty value removes the
+ * ELEMENT: the head only exists when there is a headline or a note (else its
+ * 26px bottom margin opens a hole above the matrix), and the matrix only exists
+ * when there is at least one real row (else its border-top and border-left draw
+ * an empty two-sided box).
+ *
+ * SECTION GATE (R5). lib/derive-content-defaults.ts hard-codes area.tag to
+ * 'Service area' and, for any site with a city, area.headline to `Serving
+ * ${city}` AND area.places to `[city]` — that is essentially every site we
+ * ship. So the gate counts BODY content only, and discounts that one derived
+ * entry:
+ *   · any usable area.rows row (the schema ships area.rows EMPTY, so a filled
+ *     one can only have come from a person), OR
+ *   · TWO OR MORE area.places entries (the owner named a second place), OR
+ *   · an owner-written area.body.
+ * Gating on the tag or the headline would print this matrix on nearly every
+ * build as a single cell echoing the shop's own city — the address again,
+ * dressed up as a delivery zone.
+ *
+ * KNOWN EDGE, flagged rather than hidden: when the gate opens on area.body
+ * alone and area.places is still the derived `[city]`, that one city cell is
+ * printed. It is true (it is where the shop is) and it matches the shipped
+ * behaviour of the rest of the catalogue, so consistency wins — but it is the
+ * one place a derived value reaches this section, and requiring two places
+ * before the matrix draws at all is a one-line change.
+ *
+ * LIST INDEXES (R6). data-field always carries the ORIGINAL array index, so
+ * dropping a blank row 2 cannot misdirect an edit of row 3 into row 2. This
+ * section has no decorative numeral and no ordinal, so no display index is
+ * needed anywhere.
+ *
+ * SHAPE TOLERANCE. area.rows is a list of objects; a row that arrived as a
+ * plain string is read as its place and still hooked at area.rows.${i}.place,
+ * so the first edit heals the row onto the schema key instead of writing a
+ * second shape.
+ *
+ * NOT RENDERED, deliberately — read these before filing an oversight:
+ *   - NO EYEBROW, so area.tag is not bound here. The design gives SERVICE-AREA
+ *     no kicker at all: its head is the headline and the note, full stop.
+ *     Adding one would both break the design and print derived copy, since
+ *     derive-content-defaults sets area.tag to the literal 'Service area' on
+ *     every site. The field still edits the Area section of every OTHER
+ *     template in the catalogue; it simply has no slot in this one.
+ *   - NO ANCHOR-REMAP HELPER AND NO PAGE_ANCHORS SET (R7). The design gives
+ *     SERVICE-AREA no id and no href of any kind, and nothing in this file
+ *     emits a link, so an onPage() helper here would be dead code with no call
+ *     site — the same omission the BL and BM siblings make for the same reason.
+ *     The page's ids (menu / about / gallery / visit / faq / main) are owned by
+ *     the sections that actually link to them; if a button is ever added to
+ *     this panel, the helper has to come with it.
+ *   - No button. The design puts no action in this panel, and inventing an
+ *     "Order delivery" would be fabricated copy (R2) and a label this business
+ *     never wrote.
+ *   - No star row. There is no rating anywhere in this section's data, and R2
+ *     stands: stars are drawn only from a numeric rating field.
+ *   - No row COUNT asserted in markup or copy, and no "and nearby". Three
+ *     tracks because the design is three tracks; four or eleven owner-typed
+ *     places lay out on the same tracks.
+ *   - No map, no radius, no distance unit, no delivery fee, no minimum order.
+ *     We have no such data and every one of them is a commercial claim.
+ *
+ * ACCESSIBILITY (R9). No image and no .plate here, so no role="img" anywhere
+ * and nothing needs an accessible name. The only decoration is the rail index,
+ * and its aria-hidden sits on the rail wrapper ONCE — no element in this file
+ * carries a literal aria-hidden beside a conditional one. The place and the
+ * time are both content and both announced. The matrix is a real <ul> AND
+ * carries role="list": `list-style: none` is exactly what makes Safari/VoiceOver
+ * drop list semantics, so without the role the count never reaches assistive
+ * tech. That also means the STRUCTURE of this panel is carried by markup, not
+ * by the drawn rules — which matters for the hairline note below.
+ *
+ * CONTRAST (WCAG 2.x, sRGB relative luminance, COMPUTED from PageBN's declared
+ * hexes rather than copied — the wrapper's own table warns that a figure erring
+ * high is the dangerous kind):
+ *   --ink on --paper       15.30  (the headline, every place name)
+ *   --ink-2 on --paper      9.23  (the note. Not in the wrapper's table; this
+ *                                  one is measured here, #3C3E42 on #EFEEEA)
+ *   --accent on --paper     5.67  (the delivery time, the rail label)
+ * The smallest text in this section is the 11px time at 5.67 — above AA for
+ * normal text with room to spare. Nothing here is below AA at any size.
+ * THE HAIRLINE IS NOT A TEXT PAIR AND IS NOT CLAIMED AS ONE: --line on --paper
+ * measures 1.46, well under the 3.0 that 1.4.11 asks of a graphical object
+ * REQUIRED to understand content. It is not required here — the list is a
+ * semantic <ul role="list"> and each cell is its own line of text, so a reader
+ * who cannot resolve the rules still gets the rows and their count. The weight
+ * is the design's own and is kept rather than darkened, which would turn the
+ * matrix's interior ruling into the same full-strength ink the wrapper reserves
+ * for the spine's section rules.
+ *
+ * SCOPING (R3). One scoped style block, no is:global. Scoped rules cannot reach
+ * elements that set:html creates, which is why there is no rule here for the
+ * headline's <em>: PageBN styles :where(.h2 em) globally to --accent, so an
+ * owner's emphasis is already the design's colour change and a scoped duplicate
+ * would be dead CSS. Astro 5 defaults scopedStyleStrategy to 'attribute', so
+ * every class below carries a real class-weight unit and beats the wrapper's
+ * html[data-page="BN"] :where(...) rules at (0,2,0) vs (0,1,1) — no !important
+ * is used or needed anywhere in this file.
+ *
+ * CLASS PREFIX. `pcw-ar-` (Panday Coffee Works / area), parallel to About's
+ * `pcw-ab-` and deliberately NOT the `dz-` set the BM sibling uses — copying a
+ * class set verbatim between templates is what an earlier audit had to unpick.
+ */
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+const area = content.area || {};
+const headline = area.headline || '';
+// area.body is the hooked path; area.sub is the legacy read. See READ BUT NOT
+// HOOKED above.
+const note = area.body || area.sub || '';
+
+type Row = { place: string; time: string; placeField: string; timeField: string };
+
+// PRIMARY: area.rows — place + delivery time. An object row is canonical; a
+// string row is tolerated and still hooked at .place so the first edit heals it.
+const rawRows: any[] = Array.isArray(area.rows) ? area.rows : [];
+const timedRows: Row[] = rawRows
+  .map((r: any, i: number): Row => {
+    const o = r && typeof r === 'object' ? r : { place: r };
+    return {
+      place: String(o.place ?? '').trim(),
+      time: String(o.time ?? '').trim(),
+      placeField: `area.rows.${i}.place`,
+      timeField: `area.rows.${i}.time`,
+    };
+  })
+  // A time with no place is a delivery to nowhere — drop the whole row (R2).
+  .filter((r) => r.place.length > 0);
+
+// FALLBACK: area.places — plain STRINGS, which is how the schema ships them and
+// how every other template reads them. Place-only cells; no time element.
+const rawPlaces: any[] = Array.isArray(area.places) ? area.places : [];
+const placeRows: Row[] = rawPlaces
+  .map((p: any, i: number): Row => ({
+    place: String(p ?? '').trim(),
+    time: '',
+    placeField: `area.places.${i}`,
+    timeField: '',
+  }))
+  .filter((r) => r.place.length > 0);
+
+const rows: Row[] = timedRows.length > 0 ? timedRows : placeRows;
+// See SECTION GATE in the block above. Never `rows.length > 0`, and never the
+// headline — derive-content-defaults writes that onto every named site.
+const show = timedRows.length > 0 || placeRows.length >= 2 || Boolean(note);
+---
+{show && (
+  <section class="sec">
+    {/* THE SPINE. .sec, .rail and .rail-t are PageBN's primitives, used as they
+        are: the 52px track, the right hairline and the rotated mono index. The
+        label is decorative and derived — see DERIVED above — so the whole rail
+        is hidden from the accessibility tree and the h2 announces the section. */}
+    <div class="rail" aria-hidden="true"><span class="rail-t">Area</span></div>
+    <div class="sec-body">
+      {(headline || note) && (
+        <div class="pcw-ar-head reveal">
+          {headline && (
+            <h2 class="h2 pcw-ar-h" data-field="area.headline" set:html={headline}></h2>
+          )}
+          {note && <p class="pcw-ar-note" data-field="area.body">{note}</p>}
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <ul class="pcw-ar-grid reveal" role="list" data-delay="1">
+          {rows.map((r) => (
+            <li class="pcw-ar-cell">
+              <span class="pcw-ar-place" data-field={r.placeField}>{r.place}</span>
+              {r.time && <span class="pcw-ar-time" data-field={r.timeField}>{r.time}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* Design: flex · align-items flex-end · space-between · gap 26px · wrap ·
+     margin-bottom 26px. The headline and the note are DIRECT flex children,
+     exactly as the design has them — no title wrapper, because with only one of
+     the two present an extra empty flex item under space-between would shove
+     the survivor to the far edge of the cell. */
+  .pcw-ar-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 26px;
+    flex-wrap: wrap;
+    margin-bottom: 26px;
+  }
+
+  /* Design: 800 · clamp(24px,3vw,40px) · 1.02 · -.03em · caps · margin 0 · NO
+     measure cap. Deliberately smaller and tighter-margined than the wrapper's
+     .h2 (clamp(28px,4.4vw,62px), margin 0 0 .24em, max-width 20ch): this is a
+     panel head that shares a line with the note, not a full section head, and
+     the 20ch cap would break it off the note beside it. Releasing the cap
+     cannot widen the section, because this is a flex item at min-width:0 and it
+     carries overflow-wrap (R8).
+     CLAMP TRACE: this is the ONLY font-size this file states for the h2 — no
+     query below restates it — so it falls monotonically from 40px and reaches
+     its 24px floor at ~800px, then holds. It cannot grow as the viewport
+     narrows. The wrapper's 760px bump of :where(.h2) to clamp(26px,7.4vw,40px)
+     is (0,1,1) and loses to this rule at (0,2,0), which is the intent: a panel
+     head must not overtake the section heads around it on a phone. */
+  .pcw-ar-h {
+    font-size: clamp(24px, 3vw, 40px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    margin: 0;
+    max-width: none;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 14.5px · 1.7 · #3C3E42 · 34ch · margin 0. --ink-2, not --ink-soft:
+     the design uses the darker of the two greys for this note and the softer one
+     elsewhere, and PageBN declares #3C3E42 as --ink-2 exactly. text-transform
+     and letter-spacing are reset because this paragraph sits in a section whose
+     display voice is tight uppercase and nothing must inherit that. */
+  .pcw-ar-note {
+    margin: 0;
+    min-width: 0;
+    max-width: 34ch;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--ink-2);
+    text-transform: none;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: repeat(3,minmax(0,1fr)) · border-top + border-left 1px #C8C7C2 and
+     NO gap. The rules ARE the separation; a gap would float each hairline off
+     the row it belongs to. minmax(0,1fr) rather than 1fr so a long place name
+     cannot widen its own track and push the document sideways. */
+  .pcw-ar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+    border-left: 1px solid var(--line);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Design: padding 14px 20px · border-right + border-bottom 1px #C8C7C2 · flex
+     · space-between · gap 12px · baseline. Each cell closes its own right and
+     bottom edge, so the container only has to draw the two it cannot.
+     list-style is restated on the item as well as the list because that is what
+     actually suppresses the marker in every engine. */
+  .pcw-ar-cell {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 14px 20px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    list-style: none;
+  }
+
+  /* Design: 14.5px · #17181A. Body face, not the display face — the matrix is a
+     data table, and the design sets only the headline in Archivo 800. */
+  .pcw-ar-place {
+    font-size: 14.5px;
+    color: var(--ink);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: IBM Plex Mono · 11px · #A8351B · nowrap. NOT the .mono primitive —
+     see NOT --mono in the frontmatter. No weight is stated because the design
+     states none, and no tabular-nums because the design does not ask for it and
+     an owner's "same day" is not a numeral.
+     NO min-width:0 here, and that is the one place in this file it is left off:
+     with white-space:nowrap the automatic minimum IS the whole string, which is
+     what makes the PLACE — which carries overflow-wrap — absorb the shrinking,
+     instead of a long owner-typed time being squeezed to nothing and spilling
+     across the cell's right hairline. Below 520 the nowrap is released and
+     overflow-wrap:anywhere pulls that automatic minimum back down to a
+     character, so the item shrinks freely again exactly where it must. */
+  .pcw-ar-time {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* R8 · this section owns its own grid. Three tracks are the design, and they
+     must not survive past 900px: below that a place name and its delivery time
+     start fighting over the same 12px gap.
+     LADDER TRACE, every value, across 900 / 620 / 520: no font-size is restated
+     in any query at all — the h2's clamp(24px,3vw,40px), the note's 14.5px, the
+     place's 14.5px and the time's 11px each hold their single declaration all
+     the way down — the head's gap goes 26 → 18 and its bottom margin 26 → 22,
+     the cell's padding goes 14/20 → 13/16, and the tracks only ever go 3 → 2 →
+     1. The ONE value that goes up is the note's measure cap, released at 620
+     (34ch → none): that widens the MEASURE, never the type, and is the same
+     release the wrapper performs on .lede at 760. Nothing in this section
+     renders larger as the viewport narrows. */
+  @media (max-width: 900px) {
+    .pcw-ar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 620px) {
+    .pcw-ar-grid { grid-template-columns: minmax(0, 1fr); }
+    .pcw-ar-head { gap: 18px; margin-bottom: 22px; }
+    .pcw-ar-note { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    .pcw-ar-cell { padding: 13px 16px; }
+    /* Release the design's nowrap at the one width where a long owner-typed
+       time ("about 25 minutes on a good day") would push the viewport sideways
+       at 360px. Above 520px the tracks are wide enough for it to hold a line. */
+    .pcw-ar-time { white-space: normal; overflow-wrap: anywhere; text-align: right; }
+  }
+</style>

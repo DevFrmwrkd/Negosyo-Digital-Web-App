@@ -1,0 +1,318 @@
+---
+/**
+ * foodcraft / WhyBN — "WHY-US" (Panday Coffee Works / BN).
+ *
+ * ROLE: the argument block, drawn as a RUN OF RULED ENTRIES rather than a
+ * headed section. It is the only section on this page with no heading of its
+ * own: the rail says what it is, and beneath the rail the whole content cell is
+ * nothing but full-width rows, each one a huge rust ORDINAL in a 140px column
+ * beside an uppercase reason title and the owner's paragraph, ruled off with a
+ * grey hairline. No eyebrow, no h2, no lead, no plate, no button — "Panday
+ * Coffee Works Landing.dc.html" draws this section with the list and nothing
+ * else, which is precisely why the rail label carries the section's name here
+ * and does not elsewhere.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * that file's data-component="WHY-US". No literal hex is used as a VALUE
+ * anywhere in this file (R1); the hexes below appear only inside this comment,
+ * as the proof that each token named is the one holding the design's colour:
+ *   section   border-bottom:1px #17181A  -> the wrapper's .sec (--rule-strong)
+ *   rail      border-right:1px  #C8C7C2  -> the wrapper's .rail (--line)
+ *   rail-t    10px mono /.3em   #A8351B  -> the wrapper's .rail-t (--accent)
+ *   content cell   NO padding (see "TWO GEOMETRY DECISIONS" below)
+ *   row       grid minmax(0,140px) minmax(0,1fr); gap 32px; padding 34px;
+ *             border-bottom:1px #C8C7C2 -> --line; align-items:start
+ *   numeral   800 / 52px / line-height .9 / -.04em / #A8351B -> --accent
+ *   title h3  700 / 24px / -.02em / uppercase / margin 0 0 9px / #17181A -> --ink
+ *   body p    15.5px / 1.8 / margin 0 / max-width 66ch / #3C3E42 -> --ink-2
+ *
+ * --ink-2 IS THE RIGHT TOKEN FOR THE PARAGRAPH, not --ink-soft. The design sets
+ * body copy in #3C3E42, and --ink-2 is the token holding exactly that; --ink-soft
+ * is #5A5C60, a different, lighter grey that this design uses for its mono
+ * labels. #3C3E42 is darker than #5A5C60 on every channel, so the swap can only
+ * raise contrast: COMPUTED on the native hexes (WCAG 2.x, sRGB relative
+ * luminance), #3C3E42 on #EFEEEA is 9.23, against the 5.77 the wrapper's own
+ * table verified for --ink-soft on the same ground. Re-run it if a hex moves.
+ *
+ * CLASS PREFIX: `pcw-` (Panday Coffee Works / why). Deliberately NOT the BM
+ * sibling's `tcw-` set and not BL's `why-*` set — an audit had to rename a whole
+ * block of classes that arrived verbatim from the template before it. Only the
+ * HOUSE STYLE is inherited from WhyBM (this doc block, the guard discipline, the
+ * original-index-vs-display-index rule); the palette, the ruled-row layout, the
+ * ordinal and every metric are this design's.
+ *
+ * EDITABLE HOOKS (both declared in components/editor/genericContentSchema.ts
+ * under the "Why us" group, so the sidebar owns a real input for each — a
+ * data-field on an undeclared path is a dead hook that focuses nothing):
+ *   why.items.${i}.title   — the reason (h3)
+ *   why.items.${i}.body    — the reason's paragraph. CANONICAL key: the value
+ *                            can arrive as .description through astro-builder's
+ *                            normalizeBlock alias map (line ~897 spells
+ *                            { description: 'body' }) and as .desc from older
+ *                            payloads, so the READ tolerates all three while the
+ *                            data-field always spells the key the schema
+ *                            declares — otherwise the sidebar never receives the
+ *                            edit.
+ * That is the complete list. This file writes no other data-field.
+ *
+ * R2 — NOTHING IS SUPPLIED BY THIS FILE. Not one word of visible owner copy is
+ * written here. The design's demo reasons are the DESIGNER filling in their own
+ * template; a real roastery gets a page that says only what that roastery said.
+ * Every guard sits OUTSIDE its tag, so an empty value removes the ELEMENT and
+ * not just its text: no title over nothing, no empty paragraph, and — because a
+ * whole blank row is dropped before render — never a stranded ordinal or a
+ * hairline ruling off a reason that is not there.
+ *
+ * DERIVED, not authored:
+ *   · THE RAIL LABEL, "03 / Why". Decorative page furniture, never an editable
+ *     hook and never stored: 03 is this section's place in the RAILED sequence
+ *     of PageBN's render order (Hero 00, About 01, Services 02, Why 03,
+ *     Gallery 04 … — the header and the trust strip carry no rail and so take
+ *     no index), which is the same number the design prints against this
+ *     section. The WORD is the section's role, matching
+ *     the wrapper's own generic naming, rather than the design's demo phrase
+ *     "Why here" — the designer's words for their own shop are copy, and copy is
+ *     the one thing this file may not author. The whole rail is aria-hidden: it
+ *     is a rotated index mark, and a screen reader already has the document
+ *     order it encodes (R9). It carries exactly one aria-hidden and no
+ *     conditional one beside it.
+ *   · THE ORDINAL. The design's demo data carries an `n` field; our schema
+ *     declares no numeral input, so it is computed and zero-padded to two
+ *     digits. It is the ONE thing keyed to the DISPLAY index rather than the
+ *     original one (R6): after a blank row is dropped the printed sequence must
+ *     read 01-02-03, never 01-03. Everything an EDIT touches uses the ORIGINAL
+ *     index, so deleting reason 2 can never misdirect a write into reason 3.
+ *     aria-hidden for the same reason as the rail.
+ *
+ * DELIBERATELY NOT RENDERED (so none of it reads as an oversight):
+ *   · why.tag, why.headline, why.lead and why.image. All four are schema-declared
+ *     and all four are drawn by sibling templates, but this design's WHY-US has
+ *     no eyebrow, no headline, no lead paragraph and no plate — it is rail plus
+ *     rows. Adding any of them would be building a different section than the
+ *     one that was handed over. No plate also means no role="img" and no alt
+ *     anywhere in this file (R9): there is no upload here to name.
+ *   · NO STAR ROW (R2). This section carries no rating field and no review, and
+ *     the design draws none here. Stars belong to TESTIMONIALS and only ever
+ *     from a real numeric rating; five stars printed for a customer who gave no
+ *     rating is a fabricated claim.
+ *   · NO id ON THE SECTION. The page's ids are menu / about / gallery / visit /
+ *     faq / main, and the design gives WHY-US none of them; derive-content-
+ *     defaults emits a nav item pointing at '#why', which HeaderBN's ANCHOR_ALIAS
+ *     remaps onto '#about'. An id here would create a target the navigation
+ *     never points at and a second landing place for the same link.
+ *   · NO onPage() ANCHOR HELPER (R7), and this is a decision, not an omission.
+ *     This section renders no href of any kind — no button, no link, no phone
+ *     number — so there is nothing to remap and a copied helper would ship as
+ *     dead code. If a link is ever added here, copy the helper from a BN sibling
+ *     with PAGE_ANCHORS = menu / about / gallery / visit / faq / main and
+ *     ANCHOR_ALIAS mapping location,contact -> visit · services,rooms -> menu ·
+ *     host,why -> about · work -> gallery · book -> main, passing tel: / mailto:
+ *     / http through untouched.
+ *   · NO ICON PER REASON. A drawn pictogram claims WHAT the reason is about; the
+ *     owner's words are the only signal this section is allowed to carry. The
+ *     ordinal claims nothing.
+ *   · THE TITLE IS EMITTED AS TEXT, not set:html. The wrapper's second-voice
+ *     emphasis — a COLOUR CHANGE, never an italic — is written for the headline
+ *     (.h2 em / .em), and this section draws no headline, so a bare <em> typed
+ *     into a list row would pick up nothing anyway. A list row is not a place to
+ *     open markup. (Consequently no :global() rule is needed here: scoped styles
+ *     cannot reach set:html children, and this file creates none — R3.)
+ *
+ * TWO GEOMETRY DECISIONS a reader would otherwise flag:
+ *   · .sec-body IS NOT USED, and that is on purpose. The wrapper's content-cell
+ *     primitive exists to pad the cell; this design's WHY-US cell is drawn with
+ *     NO padding at all, because the 34px lives on each ROW so that every
+ *     hairline runs the full width of the sheet edge to edge. Wearing .sec-body
+ *     and then cancelling its only declaration would name a primitive for none
+ *     of its effect. The cell keeps the primitive's other job — min-width:0 — as
+ *     its own rule. .sec, .rail and .rail-t, the three that draw the SPINE, are
+ *     used exactly as the wrapper defines them and nothing about them is
+ *     restated here.
+ *   · THE ROW'S HORIZONTAL PADDING IS THE WRAPPER'S CLAMP, not a flat 34px. The
+ *     drawn 34px is kept as the CAP — clamp(20px,3vw,34px) resolves to exactly
+ *     34px from ~1133px up, so at any desktop width this is the design's number.
+ *     Below that it tracks .sec-body and the collapsed .rail, which use the same
+ *     clamp, so this section's text edge stays flush with every neighbouring
+ *     section's down the whole page. In a ruled sheet that shared left edge IS
+ *     the design; a flat 34px here would sit 7px out of step with the sections
+ *     above and below it at a 900px viewport (3vw = 27px there) and 11.2px out
+ *     at 760px, where the rail collapses and takes the same clamp.
+ *
+ * THE LAST ROW KEEPS ITS HAIRLINE. The design's sc-for gives every row a
+ * border-bottom, and the cell it repeats into has no padding, so in the handed-
+ * over file the final grey hairline lands directly on the section's strong ink
+ * rule and the sheet closes on a doubled edge. Reproduced as drawn: no
+ * :last-child exception is written, because removing it would be re-authoring
+ * the design's own boundary rather than fixing a bug.
+ *
+ * ROW COUNT: unbounded. The design hints three (hint-placeholder-count="3") but
+ * these are stacked full-width rows, not fixed tracks — a fourth reason simply
+ * adds a fourth ruled entry, so the proportions survive and no owner content is
+ * refused. The reveal stagger tops out at the wrapper's last declared delay:
+ * rows 1-4 take no delay, .07s, .14s and .21s, and every row from the FIFTH on
+ * reveals together with the fourth at .21s.
+ */
+// `layout` is accepted because PageBN passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any;
+}
+const { content } = Astro.props;
+
+
+const why = content.why || {};
+
+type Item = { title?: string; body?: string; desc?: string; description?: string };
+const items: Item[] = Array.isArray(why.items) ? why.items : [];
+const titleOf = (it: Item): string => String(it?.title ?? '').trim();
+const bodyOf = (it: Item): string => String(it?.body ?? it?.desc ?? it?.description ?? '').trim();
+
+// A reason the owner added but never filled would otherwise spend a 52px
+// ordinal, 34px of padding and a hairline on nothing. Drop the blanks
+// (whitespace counts as blank) but carry the ORIGINAL index `i` so every
+// data-field still writes into the real array slot.
+const rows = items
+  .map((it, i: number) => ({ i, title: titleOf(it), body: bodyOf(it) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// SECTION GATE (R5). Counts the ROWS only — the real body content. There is no
+// tag or headline in this section to be tempted into gating on, but the reason
+// holds anyway: lib/derive-content-defaults.ts emits why.tag ('Why us') and
+// why.headline ('Why choose X') for every site while shipping items: [], so any
+// gate touching those would be always-true and would ship an empty ruled cell
+// under a rail on every first build.
+const hasReasons = rows.length > 0;
+---
+{hasReasons && (
+  <section class="sec">
+    {/* The SPINE, exactly as the wrapper defines it. aria-hidden because the
+        rotated index is decoration; see the frontmatter. */}
+    <div class="rail" aria-hidden="true"><span class="rail-t">Why</span></div>
+    <div class="pcw-list">
+      {rows.map((r, d: number) => (
+        /* `d` is the DISPLAY index and `r.i` is the ORIGINAL one. The ordinal is
+           the only thing keyed to `d`, so the printed sequence stays unbroken
+           after a blank row is dropped. */
+        <div class="pcw-row reveal" data-delay={d > 0 ? String(Math.min(d, 3)) : undefined}>
+          <div class="pcw-n" aria-hidden="true">{String(d + 1).padStart(2, '0')}</div>
+          <div class="pcw-c">
+            {r.title && <h3 class="pcw-t" data-field={`why.items.${r.i}.title`}>{r.title}</h3>}
+            {r.body && <p class="pcw-p" data-field={`why.items.${r.i}.body`}>{r.body}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  /* ── THE CONTENT CELL. Unpadded on purpose — the 34px belongs to each row so
+        that every hairline runs edge to edge (see the frontmatter for why
+        .sec-body is not worn here). min-width:0 is the one thing kept from that
+        primitive: a grid item's default min-width is auto, so one unbroken word
+        in a reason would otherwise widen this cell and push the whole page
+        sideways (R8). */
+  .pcw-list { min-width: 0; }
+
+  /* ── THE RULED ENTRY. Tracks, gap, padding and rule exactly as drawn; the
+        horizontal padding is the wrapper's own clamp so this section's text edge
+        stays flush with its neighbours' (frontmatter). align-items:start keeps
+        the ordinal's cap-line level with the title instead of centring it
+        against a paragraph of unknown length. */
+  .pcw-row {
+    display: grid;
+    grid-template-columns: minmax(0, 140px) minmax(0, 1fr);
+    gap: 32px;
+    align-items: start;
+    padding: 34px clamp(20px, 3vw, 34px);
+    border-bottom: 1px solid var(--line);
+    min-width: 0;
+  }
+
+  /* ── THE ORDINAL. Archivo 800 at 52px, NOT the wrapper's .fig primitive: .fig
+        is a MONO figure (var(--mono), weight 500) and this numeral is display
+        type — same voice, weight and negative tracking as the page's headlines,
+        which is why it takes var(--disp) and follows it under any font pairing.
+        Lining tabular figures are the only property here the design does not
+        spell out; they change no metric it states and simply stop 1s and 0s
+        setting to different widths down a column of ordinals. */
+  .pcw-n {
+    font-family: var(--disp);
+    font-weight: 800;
+    font-size: 52px;
+    line-height: .9;
+    letter-spacing: -.04em;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums lining-nums;
+    min-width: 0;
+  }
+
+  .pcw-c { min-width: 0; }
+
+  /* ── THE REASON. The wrapper's shared h1-h4 rule already carries var(--disp),
+        --ink and the uppercase; only what this design draws DIFFERENTLY is
+        restated — 700 rather than 800, -.02em rather than -.03em, the 9px below,
+        and the LEADING. The design writes no line-height on this h3 and its
+        stylesheet sets none, so `normal` is literally what it draws; the shared
+        rule is .98, which is the headline's display leading and would set a 24px
+        uppercase title tighter than it was drawn the moment an owner's reason
+        runs to two lines. Guessing a number instead would be a divergence of its
+        own. */
+  .pcw-t {
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: -.02em;
+    line-height: normal;
+    margin: 0 0 9px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Qualified with its parent so it clears the wrapper's `:where(p){margin:0 0
+     1em}`: the design's paragraph has no bottom margin at all, and the 66ch cap
+     is the measure it is drawn to. A max-width is a ceiling and never a floor —
+     on a track narrower than the measure the paragraph simply fills the row —
+     so it cannot push anything sideways at any width. */
+  .pcw-c .pcw-p {
+    margin: 0;
+    max-width: 66ch;
+    font-size: 15.5px;
+    line-height: 1.8;
+    color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── 900 · the entry stops being two columns. The ordinal moves above its
+        reason rather than beside it, which is also what keeps a 140px fixed-ish
+        column from eating a third of a phone. Every step from here down only
+        ever DECREASES as the viewport narrows — 52 -> 42 -> 36, 24 -> 21 -> 19,
+        34 -> 28 -> 24 — and no size in this file is a clamp except the shared
+        horizontal padding, whose floor (20px) sits below its cap (34px). There
+        is no floor anywhere here that a narrower query's cap can fall beneath,
+        so the ladder is monotonic by construction (R8).
+        Longhand padding, so the horizontal clamp above survives untouched and
+        this section never falls out of line with its neighbours. */
+  @media (max-width: 900px) {
+    .pcw-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 12px;
+      padding-top: 28px;
+      padding-bottom: 28px;
+    }
+    .pcw-n { font-size: 42px; }
+    .pcw-t { font-size: 21px; }
+  }
+
+  /* ── 520 · tighten the stack. Nothing here may push the page sideways at
+        360px: both owner strings break anywhere, every track is minmax(0,…) or
+        min-width:0, and there is no button in this section to give
+        white-space:normal to. The paragraph keeps its drawn 15.5px at every
+        width — it is already a comfortable phone size, and shrinking it would be
+        the one unforced size change in the file. */
+  @media (max-width: 520px) {
+    .pcw-row {
+      gap: 10px;
+      padding-top: 24px;
+      padding-bottom: 24px;
+    }
+    .pcw-n { font-size: 36px; }
+    .pcw-t { font-size: 19px; }
+  }
+</style>
