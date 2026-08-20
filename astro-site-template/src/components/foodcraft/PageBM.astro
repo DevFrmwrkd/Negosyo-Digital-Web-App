@@ -467,7 +467,14 @@ const __og = layout.ogImage || layout.favicon || '';
 
     /* ── SHARED MOBILE PASS · 760 / 520 ────────────────────────────────────── */
     @media (max-width: 760px) {
-      html[data-page="BM"] :where(.h2) { font-size: clamp(26px,7vw,38px); max-width: none; overflow-wrap: anywhere; }
+      /* The MAX is the BASE clamp's own value at 760px (29.00px), not a round
+         number. Anything higher and the headline GROWS as the viewport narrows
+         past 761 — base clamp(29px,3.8vw,50px) has already bottomed out on its
+         29px floor by then, so a 38px ceiling here landed ABOVE where the curve
+         arrived from. It is a jump no screenshot at 1440 or 375 can show you:
+         it lives in the one pixel either side of the boundary. The vw term is
+         untouched, so the steeper small-screen curve still happens. */
+      html[data-page="BM"] :where(.h2) { font-size: clamp(26px,7vw,29px); max-width: none; overflow-wrap: anywhere; }
       html[data-page="BM"] :where(.lede) { max-width: none; }
     }
     @media (max-width: 520px) {
