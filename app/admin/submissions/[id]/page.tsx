@@ -1217,6 +1217,17 @@ export default function SubmissionDetailPage() {
                                     onApprove: () => handleStatusUpdate("approved"),
                                     onReject: () => handleStatusUpdate("rejected"),
                                     submissionStatus: submission.status,
+                                    // Promo. Opens the same confirmation modal the
+                                    // TopActionBar button does, so the cost is stated
+                                    // once and identically wherever it is triggered.
+                                    // Only v3 renders a button for these; v1/v2 ignore
+                                    // them (see SandboxEditorProps).
+                                    onGiveFree: () => setShowGiveFreeModal(true),
+                                    markingComped,
+                                    isCustomDomainTier:
+                                        (submissionData as any)?.submissionType === "with_custom_domain" ||
+                                        !!(submissionData as any)?.requestedDomain,
+                                    isComped: isComped(submissionData as any),
                                     onToggleDetails: () => {
                                         setSidebarManuallyToggled(true);
                                         setSidebarOpen(!sidebarOpen);
