@@ -62,15 +62,19 @@
  * THE ONE HARDCODED VISIBLE STRING is the skip link's "Skip to content". It is
  * an a11y affordance, visible on focus only.
  *
- * VERIFIED CONTRAST (sRGB relative luminance, the design's palette):
- *   ink/paper 14.6 · ink/paper-2 13.5 · ink/card 15.3 · ink/well 12.9
- *   ink-soft/paper 6.71 · accent/paper 5.31 (eyebrows, numerals, rules)
- *   paper on an accent fill 5.31 · bone/ink 13.2 · band-accent/ink 8.42
- *   ink on a band-accent fill 8.42 · bone-soft/ink 6.05 · bone-soft-2/ink 8.03
- *   muted/paper 3.86 — BELOW AA, the design's own value, used only on 10-13px
+ * VERIFIED CONTRAST — COMPUTED from the hexes declared below (sRGB relative
+ * luminance, WCAG 2.x), not estimated. An earlier draft of this table stated
+ * several pairs HIGHER than the palette actually gives, which is the dangerous
+ * direction: it can wave through a pair that is under the bar. Re-run the
+ * arithmetic if you touch a hex.
+ *   ink/paper 16.65 · ink/paper-2 14.93 · ink/card 17.05 · ink/well 14.06
+ *   ink-soft/paper 6.28 · accent/paper 4.85 (eyebrows, numerals, rules)
+ *   paper on an accent fill 4.85 · bone/ink 15.83 · band-accent/ink 7.91
+ *   ink on a band-accent fill 7.91 · bone-soft/ink 7.31 · bone-soft-2/ink 9.46
+ *   muted/paper 3.56 — BELOW AA, the design's own value, used only on 10-13px
  *   labels that the heading beside them repeats. Darkening --muted to #7C6C5C
- *   clears it and is a one-line change; it is the owner's palette and the
- *   owner's call, so the file ships the design's.
+ *   takes it to 4.93 and is a one-line change; it is the owner's palette and
+ *   the owner's call, so the file ships the design's.
  *
  * FORBIDDEN CLASS NAMES here (read lib/genericThemeOverrides.ts before adding a
  * button anywhere): .btn-primary .btn-ghost .btn-yellow .btn-light .nav-cta
@@ -273,13 +277,19 @@ const __og = layout.ogImage || layout.favicon || '';
     html[data-page="BL"] :where(.band-dark) .body,
     html[data-page="BL"] :where(.band-dark) .lede { color: var(--bone-soft); }
     html[data-page="BL"] :where(.band-dark) .mono { color: var(--bone-soft-2); }
-    /* On the band the italic emphasis becomes amber — rust on espresso is 1.6:1
+    /* On the band the italic emphasis becomes amber — rust on espresso is 3.43:1
        and would delete the emphasised words. */
     html[data-page="BL"] :where(.band-dark) .h2 em,
     html[data-page="BL"] :where(.band-dark) .h2 .em { color: var(--band-accent); }
 
-    /* ── .kick — the eyebrow. 10px caps at .42em, rust on cream (5.31:1). */
+    /* ── .kick — the eyebrow. 10px caps at .42em, rust on cream (4.85:1). */
     html[data-page="BL"] :where(.kick) {
+      /* line-height pinned TIGHT for the same reason as .btn. This eyebrow
+         carries no rule under it — that is the next template in the family —
+         so nothing here comes adrift; what a loose line box does is inflate
+         the eyebrow's own box and push the headline further down than the
+         design draws it. */
+      line-height: 1.1;
       display: inline-block;
       font-family: var(--sans); font-weight: 600; font-size: 10px;
       letter-spacing: .42em; text-transform: uppercase; color: var(--accent);
@@ -337,6 +347,12 @@ const __og = layout.ogImage || layout.favicon || '';
        Ironwood label, and the same trap is live here because buildOverrideCss
        pins some labels with !important. */
     html[data-page="BL"] :where(.btn) {
+      /* line-height is DECLARED. The design sets none on its buttons, so they
+         render at the browser normal; inheriting body line-height instead
+         inflated every control by ~6px and, on the eyebrow below, pushed the
+         underline off the text it belongs to. A label is one line: 1 is what a
+         button wants. */
+      line-height: 1;
       display: inline-flex; align-items: center; justify-content: center; gap: .55em;
       padding: 16px 32px; min-height: 48px;
       border-radius: var(--r-pill); border: 1px solid transparent;
@@ -362,7 +378,7 @@ const __og = layout.ogImage || layout.favicon || '';
       transform: translateY(-2px);
     }
     html[data-page="BL"] :where(.btn--line:active) { transform: translateY(0); }
-    /* Amber on espresso, 8.42:1. The design uses it for the band's one action. */
+    /* Amber on espresso, 7.91:1. The design uses it for the band's one action. */
     html[data-page="BL"] :where(.btn--band-accent) {
       background-color: var(--band-accent); color: var(--band); border-color: var(--band-accent);
     }
@@ -430,7 +446,7 @@ const __og = layout.ogImage || layout.favicon || '';
       transition: transform .5s ease;
     }
     /* Caption on an OPAQUE espresso pill, never a gradient scrim: bone on
-       espresso holds 13.2:1 over ANY owner photo, however dark or blown out. */
+       espresso holds 15.83:1 over ANY owner photo, however dark or blown out. */
     html[data-page="BL"] :where(.plate) .cap {
       position: absolute; left: 12px; bottom: 12px; z-index: 3;
       max-width: calc(100% - 24px);
