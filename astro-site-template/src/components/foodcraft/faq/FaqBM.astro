@@ -1,0 +1,358 @@
+---
+/**
+ * foodcraft / FaqBM — "FAQ" (Tahanan Cafe / BM).
+ *
+ * ROLE: the design's FAQ element — a narrow head column (the underlined eyebrow
+ * plus one Libre Caslon Text headline) beside a wide stack of hairline-separated
+ * question-and-answer rows, on the page's plain WHITE ground. NO ACCORDION: the
+ * design draws every answer open, and on a café page the answers ARE the
+ * practicalities. Someone standing on the pavement deciding whether to come in
+ * should not have to click to find out.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from the
+ * element carrying data-component="FAQ" in "Tahanan Cafe Landing.dc.html",
+ * mapped hex → wrapper token (R1 — not one literal hex appears in this file):
+ *   section   id="faq" ............................... kept verbatim
+ *   grid      minmax(0,.68fr) / minmax(0,1.32fr), gap 52px, align-items:start
+ *   eyebrow   10px / .34em / 700 / #7A4E2D on a 1px #E0D3C6 underline with 9px
+ *             of padding ......... THE SIGNATURE, and it is the shared .kick.
+ *             It is NOT restated here — see the note under EDITABLE HOOKS.
+ *   headline  Libre Caslon Text 400 clamp(27px,3.5vw,46px) / 1.14,
+ *             margin .26em 0 0, #241B14 .............. var(--ink)
+ *   row       padding 22px 0, border-bottom 1px #EDE6DF ....... var(--line)
+ *   question  Libre Caslon Text 400 20px, margin 0 0 9px, #241B14 . var(--ink)
+ *             The design declares NO line-height on this h3 and its stylesheet
+ *             sets none, so `normal` is what it actually renders; it is restated
+ *             below to hold off PageBM's heading default of 1.14.
+ *   answer    15px / 1.82 / #5C5147, margin 0, max-width 62ch ... --ink-soft
+ * The walnut --accent is the one token the design itself exposes as configurable
+ * (its own data-props seeds a colour picker at #7A4E2D), so an admin colour pick
+ * recolours the eyebrow and leaves the white, the ink and the hairlines alone.
+ *
+ * EDITABLE HOOKS — all four are declared in components/editor/genericContentSchema.ts
+ * under section id 'faq'. A data-field on any other path is a dead hook that no
+ * sidebar input owns, so nothing outside this list is bound:
+ *   faq.tag              — the eyebrow. Rendered as a BARE .kick with no extra
+ *                          typographic declarations: the underline that is this
+ *                          template's single most recognisable mark lives on the
+ *                          primitive, and a font-size or border restated here
+ *                          would drop it.
+ *   faq.headline         — the h2, rendered with set:html so an owner can place
+ *                          the template's ITALIC WALNUT EMPHASIS anywhere inside
+ *                          their own sentence. That <em> rule is GLOBAL in
+ *                          PageBM on purpose: scoped styles cannot reach markup
+ *                          created by set:html (R3), so an italic rule written
+ *                          in this file would never apply to it.
+ *   faq.items.${i}.q     — the question
+ *   faq.items.${i}.a     — the answer, also set:html so an owner can emphasise,
+ *                          bold or link inside their own sentence
+ *
+ * DERIVED, and therefore carrying no data-field: only the reveal wrappers and
+ * the single data-delay step on the answer column.
+ * This section renders no counter, no numeral, no icon, no badge, no chip and no
+ * price. The design gives the FAQ no ornament at all — the hairline between rows
+ * is the only mark on it — so there is no display index to print and R6's
+ * decorative-numeral half has nothing here to apply to. R6's other half DOES
+ * apply, below.
+ *
+ * R2 — NOT ONE WORD IS SUPPLIED BY THIS FILE, and on an FAQ that rule is
+ * load-bearing beyond the usual: an answer is a promise about a business this
+ * template has never visited. So there is no opening or closing time, no "the
+ * kitchen stops half an hour before close", no wifi claim, no power-outlet
+ * claim, no parking, no pet / laptop / large-group policy, no minimum spend, no
+ * card-versus-cash line, no "we reply within…", and no example question. The
+ * design's own demo strings ("Good to know", "Often asked" and its six sample
+ * rows) are the DESIGNER filling in their own template; they are not this file's
+ * to type. Note that lib/derive-content-defaults.ts happens to emit that exact
+ * 'Good to know' tag on every site — which is precisely why the gate below never
+ * counts it.
+ *
+ * R5 — THE SECTION GATE COUNTS THE ROWS, never the tag and never the headline.
+ * derive-content-defaults fills faq.tag ('Good to know') and faq.headline
+ * ('Questions, answered') on EVERY site while emitting items only when the
+ * submission actually answered something. A gate on tag||headline would ship a
+ * 46px headline standing over an empty column on any café whose owner typed no
+ * questions. With no filled row the whole <section> is omitted — no eyebrow, no
+ * headline, no grid, no padding and no hairline.
+ *
+ * R6 — blank rows are dropped, but every kept row carries its ORIGINAL index
+ * into data-field, so deleting question 2 can never misdirect an edit into
+ * question 3.
+ *
+ * ROW GUARDS: a row is kept when EITHER field has content, and the two tags are
+ * guarded independently. Silently vanishing an answer an owner typed is a worse
+ * failure than printing a lone paragraph between two hairlines. Every guard sits
+ * OUTSIDE its tag, so a half-filled row prints only what was actually typed —
+ * never an empty <h3> holding open 9px of margin over a blank line box, and
+ * never a hairline under a row that is not there. Fields are TRIMMED before they
+ * are tested, because a value holding only a space is truthy and would print
+ * exactly that empty element.
+ *
+ * DELIBERATELY NOT RENDERED, so none of it reads as an oversight:
+ *   · NO STAR ROW and no rating ornament of any kind. Five stars printed over a
+ *     customer who gave no rating is a fabricated claim; that treatment belongs
+ *     to TESTIMONIALS, where it is drawn only from a numeric
+ *     testimonials.items.N.rating, clamped 1–5, aria-hidden, with the number
+ *     itself in the accessible label. An FAQ row carries no rating field to draw
+ *     from, so there is nothing here to draw — not even the plain rule that
+ *     stands in for a missing one.
+ *   · no <details>/<summary> accordion. The design shows every answer open, and
+ *     collapsing them would hide the practicalities behind a click.
+ *   · no sticky head column. The design draws a plain `align-items:start` grid
+ *     and pins nothing.
+ *   · NO onPage() ANCHOR-REMAP HELPER, and that is a decision rather than an
+ *     omission (R7). The helper exists to rewrite an owner's href onto the ids
+ *     this page really has — for BM that set is `menu about gallery visit faq
+ *     main`, with location/contact → visit, services/rooms → menu, host/why →
+ *     about, work → gallery, book → main, and tel: / mailto: / http passing
+ *     through untouched. This section emits NO href of any kind: no button, no
+ *     link, no data-href-field, because the design gives the FAQ no action. A
+ *     remap helper with nothing to remap is dead code a later reader would have
+ *     to prove unused, so it is not carried. The one anchor this file owns is
+ *     its own id="faq" — already in that set, and what HeaderBM's nav links to.
+ *   · no button. The contact action lives in the header, the CTA band and the
+ *     footer, exactly as the design places it.
+ *   · no `band-dark`. The design keeps the FAQ on the white ground; the ONLY
+ *     dark ground in this template is the closing CTA band, and a second one
+ *     here would change the page's rhythm, not just this section's colour.
+ *   · no data-block marker: editorBridge only needs one where two content
+ *     prefixes share a <section>. This band is faq.* alone, so the Blocks toggle
+ *     resolves to it by hook weight already — and one prefix per section is what
+ *     stops a neighbouring toggle reaching in here.
+ *   · no role="img" and no aria-hidden anywhere (R9). This band renders no
+ *     image, no .plate and no decorative glyph, so there is no element to name
+ *     and none to hide. Nothing in this file emits a conditional accessibility
+ *     attribute, so there is no way for a literal one to be duplicated beside a
+ *     conditional one.
+ *
+ * VERTICAL RHYTHM is the wrapper's, deliberately. The design writes
+ * `padding:84px 30px 0` here — a BARE BOTTOM — and then opens the CTA band with
+ * `margin-top:84px`, so 84px of white sits between the last hairline and the
+ * espresso edge. PageBM's shared `section { padding: clamp(52px,7vw,84px) 0 }`
+ * puts that same 84px on THIS section's bottom instead, which is why the CTA
+ * band drops the design's `margin-top`. The dependency runs both ways: a
+ * `padding-bottom:0` here would close the gap to nothing, and a margin there on
+ * top of this padding would open it to ~168px. Neither file may move alone.
+ *
+ * THE HEADLINE MEASURE is left to the wrapper's `.h2 max-width:24ch`. The design
+ * sets none, and at desktop 24ch is never the constraint anyway: the .68fr track
+ * is ~377px inside the 1160px wrap, far narrower than 24 characters of 46px
+ * Libre Caslon Text. Once the grid folds at 900px the column goes full width and
+ * the wrapper's own 760px pass releases the measure, which is the behaviour a
+ * long owner headline wants. The one .h2 declaration this file DOES override is
+ * the size — see the clamp ladder in the style block.
+ *
+ * R3 — one scoped <style>, no is:global. Both the headline and the answers are
+ * injected with set:html, so scoped rules cannot reach inside them: the
+ * headline's italic walnut <em> is styled by PageBM's global :where(.h2 em), and
+ * an <em>, <strong> or <a> inside an answer is reached from here via :global().
+ *
+ * VERIFIED CONTRAST on the white ground (the design's own palette, as measured
+ * in PageBM). Nothing in this section is below AA:
+ *   eyebrow --accent/--paper 7.06 · question --ink/--paper 14.9
+ *   answer --ink-soft/--paper 7.29 · an owner's link --accent/--paper 7.06
+ * The weakest token in the palette, --muted at 5.71, is not used here at all.
+ */
+// `layout` is accepted because PageBM passes it to every section uniformly.
+// This band reads nothing outside content.*, so it is never destructured.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// The schema declares 'faq.items' with fallbackPaths ['faq'], so the stored
+// value is legitimately EITHER {tag, headline, items:[…]} or a bare array.
+// Both shapes are read.
+const faq = content.faq || {};
+const tag = (faq.tag || '').trim();
+const headline = (faq.headline || '').trim();
+
+// Legacy submissions spell the pair {question, answer}; the schema (and every
+// current writer) spells {q, a}. Read both, but the data-field hook always
+// spells q / a — that is the path the sidebar input owns.
+type Item = { q?: string; a?: string; question?: string; answer?: string };
+const items: Item[] = Array.isArray(faq.items)
+  ? faq.items
+  : (Array.isArray(faq) ? faq : []);
+// Optional chaining, not a bare read: a stored list can carry a null slot (a row
+// deleted by an older editor left a hole), and reading `.q` off it would throw
+// at BUILD time and take the whole site down, not just this band.
+const qOf = (it: Item): string => it?.q ?? it?.question ?? '';
+const aOf = (it: Item): string => it?.a ?? it?.answer ?? '';
+
+// R6 — carry the ORIGINAL index past the blank filter, so removing row 2 cannot
+// misdirect an edit into row 3.
+const rows = items
+  .map((it, i: number) => ({ i, q: qOf(it).trim(), a: aOf(it).trim() }))
+  .filter((r) => Boolean(r.q || r.a));
+
+// With neither eyebrow nor headline the head column would spend a whole grid
+// track on nothing, so it is omitted and the grid collapses to a single column.
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="tc-faq" id="faq">
+    <div class="wrap">
+      <div class:list={['tc-faq-grid', !hasHead && 'tc-faq-grid--solo']}>
+        {hasHead && (
+          <div class="tc-faq-head reveal">
+            {tag && <span class="kick tc-faq-kick" data-field="faq.tag">{tag}</span>}
+            {headline && <h2 class="h2 tc-faq-h" data-field="faq.headline" set:html={headline}></h2>}
+          </div>
+        )}
+        <div class="tc-faq-list reveal" data-delay="1">
+          {rows.map((row) => (
+            <div class="tc-faq-row">
+              {row.q && <h3 class="tc-faq-q" data-field={`faq.items.${row.i}.q`}>{row.q}</h3>}
+              {row.a && <p class="tc-faq-a" data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* The section keeps PageBM's shared padding and the page's white ground: the
+     design puts no band under the FAQ. min-width:0 so a long unbroken word
+     inside a row can never widen the grid and push the page sideways (R8). */
+  .tc-faq { min-width: 0; }
+
+  /* The design's split, verbatim: a narrow head against a wide answer column.
+     minmax(0,…) on BOTH tracks is what lets a row shrink instead of overflowing
+     its track — an `auto` minimum would let one long word set the column width. */
+  .tc-faq-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .68fr) minmax(0, 1.32fr);
+    gap: 52px;
+    align-items: start;
+  }
+  /* Head suppressed: one track, so the rows take the full wrap rather than
+     leaving a .68fr column of white beside them. */
+  .tc-faq-grid--solo { grid-template-columns: minmax(0, 1fr); }
+
+  .tc-faq-head { min-width: 0; }
+  /* The eyebrow's type, colour, border-bottom and 9px of padding are the shared
+     .kick and are NOT restated — the underline is this design's single most
+     recognisable mark and a redeclaration here would drop it. Only the wrapping
+     behaviour is touched, because the head is the NARROW track (.68fr) and runs
+     out of room first: a derived tag longer than ~377px would otherwise sit
+     outside its column, and the wrapper only relaxes strings below 760px while
+     this grid is still two columns down to 900px. */
+  .tc-faq-kick { max-width: 100%; overflow-wrap: anywhere; }
+
+  /* Design: clamp(27px,3.5vw,46px) / 1.14 / margin .26em 0 0 — a step smaller
+     than the shared .h2's clamp(29px,3.8vw,50px), and the margin runs ABOVE the
+     headline rather than below it, because nothing sits under it in this column.
+     Line-height, face, weight and colour are already the .h2 primitive's, so
+     only the two divergences are written.
+
+     THE CLAMP LADDER, checked ACROSS BREAKPOINTS because an audit on the
+     previous template found a headline that GREW as the viewport narrowed. This
+     rule outranks the wrapper's :where(.h2) at every width, its 760px pass
+     included, so the whole ramp is this file's to keep monotonic:
+       1314px+ .. 46px (cap)   ·   1160px .. 40.6px   ·   900px .. 31.5px
+       771px and below .. 27px (floor), and it holds flat from there
+     No media query in this file touches this size — see the note in the 520
+     block — so that ramp is the whole of it: font-size here only ever
+     DECREASES as the viewport narrows, and it never goes under the design's
+     own floor. */
+  .tc-faq-h {
+    font-size: clamp(27px, 3.5vw, 46px);
+    margin: .26em 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  .tc-faq-list { min-width: 0; }
+
+  /* Every row carries the hairline, the last one included — that is how the
+     design closes the stack against the espresso CTA band beneath it. */
+  .tc-faq-row {
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+    min-width: 0;
+  }
+
+  /* PageBM sets :where(h1,h2,h3,h4) to Libre Caslon Text 400 --ink at
+     line-height 1.14. The face, weight and colour are the design's already; only
+     the leading is restated, and it is restated as `normal` because that is
+     literally what the design renders — its h3 carries no line-height and its
+     stylesheet sets none. Guessing a number would be a divergence, and the
+     wrapper's 1.14 would be a VISIBLE one the moment an owner's question runs
+     longer than the designer's and wraps: at 1.14 the descenders of the first
+     line crowd the caps of the second. */
+  .tc-faq-q {
+    font-size: 20px;
+    line-height: normal;
+    margin: 0 0 9px;
+    overflow-wrap: anywhere;
+  }
+
+  /* PageBM's `:where(p){margin:0 0 1em}` is (0,1,1); qualifying with the row
+     class puts this comfortably above it so the design's zero margin actually
+     lands. The answer is deliberately NOT the wrapper's .body primitive — .body
+     is a clamped 14.5–15px at 1.8, and the design pins this run at a flat 15px
+     at 1.82. */
+  .tc-faq-row .tc-faq-a {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.82;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    overflow-wrap: anywhere;
+  }
+  /* The answer arrives through set:html, so scoped rules cannot reach inside it
+     (R3). An owner's emphasis keeps the answer's own colour: walnut on a 15px
+     run inside a paragraph reads as a link that does not work — this template's
+     italic walnut is the HEADLINE's signature and stays there. */
+  .tc-faq-row .tc-faq-a :global(em),
+  .tc-faq-row .tc-faq-a :global(i) { font-style: italic; color: inherit; }
+  .tc-faq-row .tc-faq-a :global(strong),
+  .tc-faq-row .tc-faq-a :global(b) { font-weight: 700; color: var(--ink); }
+  /* An owner who pastes a link into an answer gets the walnut, underlined on
+     hover only — the same restraint as the wrapper's .linkc and the same reason:
+     a colour that does not move mid-interaction cannot fail a contrast check
+     halfway through one. */
+  .tc-faq-row .tc-faq-a :global(a) {
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    overflow-wrap: anywhere;
+  }
+  .tc-faq-row .tc-faq-a :global(a:hover) {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── 900 · this section's OWN grid, which is the part R8 leaves to this file.
+        The head column narrows past legibility well before the answers do, so
+        the two tracks fold to one and the headline sits above its own stack.
+        No font-size is touched here: the base clamp is already handing over
+        31.5px at this width and any cap written below that number would make
+        the headline JUMP as the viewport crossed 900px. */
+  @media (max-width: 900px) {
+    .tc-faq-grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  }
+
+  /* ── 520 · nothing may push the page sideways. Both tracks are already
+        minmax(0,…) and every string in here breaks anywhere, so the remaining
+        work is measure and scale. The 62ch cap comes off so an answer is not
+        set narrower than the phone it is being read on.
+
+        THE HEADLINE IS NOT RE-CLAMPED HERE. Its own clamp reaches the design's
+        27px FLOOR at 771px and holds it flat from there down — that floor is
+        the design's own answer for a narrow viewport, and going under it would
+        be a divergence with nothing asking for it. Re-stating a clamp inside a
+        max-width query is also the exact construct that shipped a headline
+        which GREW as the viewport narrowed on the previous template, which is
+        why CredentialsBM and LocationBM record the same decision for their own
+        smaller-clamp headlines. Nothing here needs the extra step: 27px of
+        Libre Caslon sets "Questions, answered" in ~241px, inside the 294px wrap
+        of a 320px phone, and overflow-wrap:anywhere covers a longer owner
+        headline. The measure is handled too — the wrapper's 760 pass already
+        supplies .h2 max-width:none and this file overrides no max-width, so a
+        restatement here would only be dead weight. */
+  @media (max-width: 520px) {
+    .tc-faq-row { padding: 20px 0; }
+    .tc-faq-q { font-size: 19px; }
+    .tc-faq-row .tc-faq-a { font-size: 14.5px; max-width: none; }
+  }
+</style>

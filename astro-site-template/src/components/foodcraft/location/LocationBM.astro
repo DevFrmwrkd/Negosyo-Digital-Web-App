@@ -1,0 +1,609 @@
+---
+/**
+ * foodcraft / LocationBM — "VISIT US" (Tahanan Cafe / BM).
+ *
+ * ROLE: the getting-here section. The design draws a two-part head — the
+ * underlined eyebrow plus the ADDRESS set as the Libre Caslon Text headline on
+ * the left, an arrival note on the right, both sitting on ONE bottom edge and
+ * wrapping before either can overflow — and under it a single hairline-bordered
+ * FRAME split 1.2fr / .8fr with gap:0: a drawn map face beside an opening-hours
+ * column. The frame is the template's signature move: the grid is drawn with
+ * BORDERS, not gaps, so the two cells share one 1px rule down the middle rather
+ * than sitting apart as two cards.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * "Tahanan Cafe Landing.dc.html", data-component="LOCATION" (id="visit"):
+ *   head    flex · align-items:flex-end · space-between · gap 28px · wrap
+ *           margin-bottom 32px; h2 margin .26em 0 0 and its OWN smaller display
+ *           clamp(26px,3.3vw,44px)/1.14; sub 15px/1.78 · max-width 34ch · margin 0
+ *   frame   grid minmax(0,1.2fr) minmax(0,.8fr) · GAP 0 · 1px #EDE6DF
+ *           border-radius 2px · overflow hidden
+ *   map     min-height 380px · ground #FAF7F3
+ *           plot grid 44px at rgba(122,78,45,.08)
+ *           roads  top 47% h:5px · left 44% w:4px · rgba(122,78,45,.22)
+ *           pin    translate(-50%,-100%) off that crossing
+ *           dot    13px #7A4E2D ringed 3px #FFFFFF
+ *           flag   8px under the dot · #241B14 / #FFFFFF · 9px/.2em caps · 5px 11px
+ *           caption left 18px bottom 18px · 10px/.2em caps 600 · #6B6057
+ *   card    padding 30px 30px · border-left 1px #EDE6DF (the frame's spine)
+ *   row     flex · space-between · gap 14px · padding 12px 0 · 1px #F2ECE5
+ *           day 13px 600 #6B6057 · time Libre Caslon Text 16px #241B14, right
+ *   note    13px/1.75 #6B6057 · margin 15px 0 0
+ * NO LITERAL HEX APPEARS IN THIS FILE (R1). Every one of those values is written
+ * as the PageBM token that already holds it: --tint --tint-2 --line --card
+ * --ink --on-ink --ink-soft --muted --accent --accent-rgb --paper --disp --sans
+ * --r. Nothing is re-derived to survive an admin colour scheme — that
+ * re-derivation is what shipped an earlier template in this catalogue looking
+ * like a different design, and PageBM's frontmatter already names --accent as
+ * the one axis the theme engine is welcome to move.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts
+ * under the "Location" group, so the sidebar owns a real input for each — a
+ * data-field on an undeclared path is a dead hook that focuses nothing):
+ *   location.tag                      — the walnut eyebrow (the wrapper's .kick)
+ *   location.headline                 — the h2, AND THE ADDRESS. Rendered with
+ *                                       set:html so an owner's own <em> picks up
+ *                                       the design's ITALIC WALNUT EMPHASIS.
+ *   location.sub                      — the arrival note, right of the head
+ *   location.rules.<original i>.label — the DAY cell of an hours row
+ *   location.rules.<original i>.value — the TIME cell of an hours row
+ *   location.hours                    — the card's closing hours note
+ *   location.lat / location.lng       — feed the Leaflet boot. No data-field:
+ *                                       they are coordinates, not copy, and the
+ *                                       sidebar edits them as their own inputs.
+ *
+ * WHY location.rules AND NOT location.hours FOR THE DAY/TIME ROWS. The schema
+ * declares `location.hours` as a single kind:'text' field ("Hours line") and
+ * `location.rules` as the kind:'list' of {label,value} pairs. The design's card
+ * is a REPEATING two-cell row, so it needs the list. Emitting
+ * `location.hours.<i>.day` instead is not a style choice, it is the exact data
+ * loss the schema's own comment at that field warns about and that
+ * isSchemaEditablePath was written to stop: LocationBI shipped that path, the
+ * deep writer converted the existing `location.hours` STRING into an array, and
+ * every other hours row vanished on the next rebuild. So the rows are
+ * location.rules.*, and location.hours keeps its own scalar slot below them.
+ *
+ * WHERE location.hours LANDS, and why not in the card's eyebrow. The design's
+ * card opens with a literal "Opening hours" label and closes with a literal
+ * caveat paragraph. Both are the DESIGNER filling in their own template (R2), so
+ * neither ships as written and only one of the two slots has a hook behind it.
+ * location.hours takes the CLOSING PARAGRAPH, not the label, for one concrete
+ * reason: an owner who types only an hours line and adds no rows then gets a
+ * card that still states their hours. Put the same string in the eyebrow and
+ * that owner gets a tracked-caps label with nothing underneath it — a heading
+ * over nothing, which is the thing R2 exists to prevent — and the card would
+ * have to be gated on rows alone, dropping their hours off the page entirely.
+ *
+ * THE CARD THEREFORE HAS NO EYEBROW. That is a decision, not an oversight. No
+ * schema path owns a title for it, and location.tag is already spent on the
+ * section eyebrow above — a second data-field on that path would be two sidebar
+ * inputs fighting over one value. (Note the design's card label is NOT the .kick
+ * primitive either: it is 10px at .24em with no underline, a different mark from
+ * the section eyebrow, so it could not have been borrowed from the head.)
+ *
+ * DERIVED, printed but NOT editable here (each already owns an input in the
+ * field that holds it, so a second hook on this section would be a duplicate
+ * input fighting the first):
+ *   layout.businessName   → the pin flag (the design's "cafeName")
+ *   layout.contact.city   → the map caption (the design's "cafeTown")
+ *   layout.contact.address / .lat / .lng → fallbacks behind the location.* pair
+ *
+ * THE HEADLINE IS THE ADDRESS, AND THERE IS NO SECOND ADDRESS PARAGRAPH. The
+ * design's head is eyebrow + h2 + sub — three elements, with the h2 set to
+ * `{{ addressLine }}`. There is no fourth. An earlier sibling grew an address
+ * paragraph under its h2 on the reasoning that derive-content-defaults.ts fills
+ * location.headline on every site while the real street line sits in
+ * location.address, and it had to be taken out again: the head is a flex row
+ * whose two cells share a bottom edge, so a two-line paragraph in the left cell
+ * drags the sub down a row and strands it on the right beside nothing. That
+ * paragraph is not built here. The address is not lost by leaving it out — it
+ * feeds the geocode below (tier 2 of the map, which is how this section finds
+ * its own pin) and FooterBM prints it, so location.address keeps a live sidebar
+ * input either way.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   · location.phone. The design's LOCATION prints no number; the closing band
+ *     and the footer own it. A tel: row here would be a control this design does
+ *     not have (R2).
+ *   · location.directions.text/href. Schema-declared and used by siblings, but
+ *     this design's LOCATION has no directions button. Adding one would be
+ *     building a different section than the one that was handed over.
+ *   · NO .plate / .ph / role="img" (R9). The map cell holds no upload — it is a
+ *     DRAWING of a map — so it gets neither the wrapper's image frame nor an
+ *     image role. The only accessible name available for it would be a sentence
+ *     I wrote ("Map showing …"), which is exactly the component-supplied copy R2
+ *     and R9 forbid. The whole drawn face, roads, pin and flag included, is
+ *     therefore aria-hidden ONCE, on the face itself and nowhere else — a
+ *     literal aria-hidden beside a conditional one is the duplicated-attribute
+ *     bug two earlier components shipped — and everything it pictures is
+ *     announced as real text beside it: the address headline, the caption and
+ *     the hours rows.
+ *   · NO STAR ROW (R2). This section carries no rating field and no review. Five
+ *     stars printed for a customer who gave no rating is a fabricated claim;
+ *     stars belong to TESTIMONIALS and only ever from a numeric rating.
+ *   · NO onPage() ANCHOR-REMAP HELPER (R7), and this too is a decision. The
+ *     helper exists to rewrite in-page hrefs onto this page's ids, and this
+ *     section emits NO href at all — the map is not a link, the card is not a
+ *     link, and the design draws no button here, so a copied helper would ship
+ *     as dead code. The SECTION ID is the part of R7 that does apply and it is
+ *     honoured: id="visit", exactly as the design writes it and exactly the
+ *     anchor PageBM's nav targets. If a link is ever added here, copy the helper
+ *     from a BM sibling with PAGE_ANCHORS = menu · about · gallery · visit · faq
+ *     · main and ANCHOR_ALIAS mapping location,contact → visit · services,rooms
+ *     → menu · host,why → about · work → gallery · book → main, passing tel: /
+ *     mailto: / http through untouched.
+ *
+ * SECTION GATE (R5). Body content only: the map (which needs real coordinates OR
+ * a real address behind it), the hours rows, the hours note, or the arrival
+ * paragraph. NOT the tag and NOT the headline — derive-content-defaults.ts emits
+ * location.tag and location.headline for EVERY site, so a gate that counted them
+ * would be always-true and would ship an eyebrow and a heading over an empty
+ * bordered hole on every first build. The frame is gated again on its own, so a
+ * site with only a sub keeps its paragraph and grows no empty box under it, and
+ * either cell can leave on its own with the survivor taking the full width — and
+ * losing the spine, because a hairline down the left of a full-width card is a
+ * grid line for a column that is not there.
+ *
+ * THE MAP, three tiers, the pattern the family shares:
+ *   1. build-time lat/lng → window.__foodcraftBMInitMap(lat, lng, label)
+ *   2. else any address   → client-side Nominatim lookup, then the same boot
+ *   3. else               → the drawn plot-grid face, which IS the design
+ * The drawn face lives INSIDE #map until Leaflet mounts; PageBM's boot runs
+ * el.innerHTML = '' first, and that is what erases it. The literal id="map" and
+ * the exact global name __foodcraftBMInitMap are a contract with PageBM — rename
+ * either and the drawn face silently stays on screen underneath the tiles. The
+ * name is family-unique because a preview harness can render two wrappers in one
+ * document and a shared name cross-wires the maps.
+ *
+ * A CLEARED coordinate field leaves '', which passes != null and which Number('')
+ * turns into 0 — booting Leaflet and pinning the café at 0,0 in the Gulf of
+ * Guinea with its own name on the marker: a map asserting a location the owner
+ * never gave. num() rejects blank and out-of-range values so a cleared field
+ * falls through to the address lookup instead, and it uses ?? rather than || so
+ * a genuine 0 survives.
+ *
+ * THE HEADLINE IS THE ONE PLACE THIS FILE RESTATES A FONT-SIZE, and it is the
+ * design's own: LOCATION is set at clamp(26px,3.3vw,44px) where the wrapper's
+ * shared .h2 is clamp(29px,3.8vw,50px). Four of the design's fourteen headlines
+ * step down like this and LOCATION is one of them, so the primitive is not the
+ * spec here. R8's clamp trap was checked at every boundary rather than assumed:
+ * the restated clamp is declared ONCE, at base, and is touched by no media query
+ * in this file, so it evaluates 44px ≥ 1334px, 38.3px at 1160, 29.7px at 900 and
+ * its 26px floor at every width below ~788px — monotonic, never growing as the
+ * viewport narrows. Confining it to a min-width query instead, to let the
+ * wrapper's 760 pass own mobile, is what WOULD have produced the inversion: the
+ * shared pass is clamp(26px,7vw,38px), so the headline would have JUMPED from
+ * 26px to 38px the moment the viewport crossed from 761px to 760px. A scoped
+ * class out-specifies the wrapper's :where(.h2), so this rule knowingly takes
+ * the 760 pass's font-size off this one heading; the same pass's `max-width:
+ * none` and `overflow-wrap: anywhere` are NOT restated and still land.
+ *
+ * TWO OTHER VALUES RESTATED OFF A WRAPPER PRIMITIVE. Neither is a new choice:
+ * each puts back a number the design states and the primitive rounds off.
+ *   · The arrival note is a FLAT 15px at 1.78. .body is clamp(14.5px,1.3vw,15px)
+ *     at 1.8, which reaches the design's size only above a ~1150px viewport and
+ *     prints 14.5px on every laptop below it.
+ *   · The row cells, the flag and the caption take `line-height: normal`. The
+ *     design sets no leading on any of them, so `normal` is literally what it
+ *     draws, where PageBM's body leading of 1.78 leaks in and inflates an hours
+ *     row from the drawn ~43px to ~52px. `normal` rather than a number, because
+ *     WhyBM already made this call for the same reason: guessing a number would
+ *     be a divergence of its own.
+ *
+ * TWO FORCED DEVIATIONS, both small, both for the same reason — the design draws
+ * this cell as a static picture and ours can turn into a live tile map:
+ *   1. The pin flag DROPS white-space: nowrap. The frame clips overflow, so a
+ *      long business name would be sliced off at both ends; wrapping beats
+ *      truncating on the element that names the café. The stack is centred on
+ *      the 44% crossing, so it is capped at twice the smaller side — 88% — less
+ *      12px of air each side, and width: max-content is required alongside that
+ *      or absolute shrink-to-fit collapses it to (containing block − left).
+ *   2. The caption gains an OPAQUE --tint backing. In the design it sits on the
+ *      drawn tint face; the moment Leaflet paints CARTO tiles underneath,
+ *      unbacked 10px tracked caps are unreadable over street labels. The backing
+ *      keeps the design's exact colour pair (--muted on --tint) rather than
+ *      swapping in the wrapper's ink .cap pill, which would have changed the
+ *      design's palette to solve a legibility problem.
+ * A THIRD, smaller: the flag and the caption backing take border-radius var(--r)
+ * where the design gives those two surfaces no radius at all. 2px is this
+ * template's universal corner — the frame, the buttons and the .cap primitive
+ * all carry it — and 0 would leave the only square corners on the page sitting
+ * on the two smallest surfaces in it. The difference is a fraction of a pixel of
+ * shape; the inconsistency would not be.
+ *
+ * COLOUR PAIRING ON THE FLAG. The design's flag is #241B14 on #FFFFFF, which is
+ * --ink on white. It is written --ink / --on-ink rather than --ink / --on-band:
+ * both are #FFFFFF natively so the design renders identically either way, but
+ * buildOverrideCss recomputes --on-ink against a scheme's ink while --on-band is
+ * pinned to the closing band's fixed espresso, so only the first pair stays
+ * legible if an admin scheme moves --ink.
+ *
+ * VERIFIED CONTRAST, this section's own pairs (sRGB, the design's palette):
+ *   ink-soft/paper 7.29 (the arrival note) · accent/paper 7.06 (the eyebrow)
+ *   ink/paper 14.9 (the headline, the time cell) · on-ink/ink 14.9 (the flag)
+ *   muted/card 5.71 (the day cell, the closing note)
+ *   muted/tint 5.35 (the map caption, on its backing)
+ * Nothing in this section is below AA — unlike the previous template in this
+ * family, whose day cell and caption shipped at ~3.6:1, this design's own
+ * small-print colour already clears the bar and nothing had to be recoloured.
+ *
+ * SECTION PADDING is the wrapper's, not this file's. The design writes
+ * `max-width:1160px;margin:0 auto;padding:84px 30px 0`: the 1160/gutter half is
+ * the shared .wrap, and the 84px top is html[data-page="BM"] section's
+ * clamp(52px,7vw,84px), which caps at exactly that.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const lay = layout || {};
+
+const loc = content.location || {};
+const tag = typeof loc.tag === 'string' ? loc.tag.trim() : '';
+// Nothing beyond trim(): the headline goes out through set:html so whatever
+// markup the owner typed reaches the wrapper's italic-walnut <em> rule.
+const headline = typeof loc.headline === 'string' ? loc.headline.trim() : '';
+const sub = typeof loc.sub === 'string' ? loc.sub.trim() : '';
+// The card's closing note. The schema's single "Hours line" text field — see the
+// frontmatter for why it lands here and not in the card's eyebrow.
+const hoursNote = typeof loc.hours === 'string' ? loc.hours.trim() : '';
+
+// READ, NOT PRINTED. The design's head is eyebrow + h2 + sub and its h2 IS the
+// address; there is no second address paragraph anywhere in that section. This
+// value feeds the geocode below (tier 2 of the map) and FooterBM prints it.
+const address = String(loc.address ?? lay.contact?.address ?? '').trim();
+
+// A row the owner added but never filled would spend a hairline and 24px of
+// padding saying nothing. Drop the blanks (whitespace counts as blank) but carry
+// the ORIGINAL index so deleting row 2 cannot misdirect an edit into row 3 (R6),
+// and note that this filter is what makes the gate honest: a rules array of
+// nothing but blanks no longer keeps the card alive.
+type HourRow = { i: number; day: string; time: string };
+const rows: HourRow[] = (Array.isArray(loc.rules) ? loc.rules : [])
+  .map((r: any, i: number) => ({
+    i,
+    day: String(r?.label ?? '').trim(),
+    time: String(r?.value ?? '').trim(),
+  }))
+  .filter((r: HourRow) => Boolean(r.day || r.time));
+
+const num = (v: any, max: number): number | null => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+};
+const lat = num(loc.lat, 90) ?? num(lay.contact?.lat, 90);
+const lng = num(loc.lng, 180) ?? num(lay.contact?.lng, 180);
+const hasCoords = lat !== null && lng !== null;
+const hasAddress = !!address;
+// The drawn face is a picture claiming where this café physically is. With
+// neither coordinates nor an address there is nothing real behind that claim, so
+// the whole cell leaves and the card takes the full width.
+const hasMap = hasCoords || hasAddress;
+
+// The pin flag and the marker popup. No placeholder: with no business name the
+// flag leaves and the pin is a bare dot, rather than a label reading "Your
+// Business" over a real street.
+const brand = String(lay.businessName ?? '').trim();
+// The design's "cafeTown". Nothing derives it, so on a site without a city it is
+// simply absent rather than guessed out of the address.
+const locality = String(lay.contact?.city ?? '').trim();
+
+const hasCard = rows.length > 0 || !!hoursNote;
+const hasFrame = hasMap || hasCard;
+const hasVisit = hasFrame || !!sub;
+---
+{hasVisit && (
+<section class="tah-visit" id="visit">
+  <div class="wrap">
+    {/* TWO children, exactly as the design draws it: the heading block and the
+        arrival note beside it. No address paragraph — see the frontmatter. */}
+    <div class="tah-visit-head reveal">
+      <div class="tah-visit-head-l">
+        {tag && <span class="kick" data-field="location.tag">{tag}</span>}
+        {headline && <h2 class="h2 tah-visit-h2" data-field="location.headline" set:html={headline}></h2>}
+      </div>
+      {sub && <p class="body tah-visit-sub" data-field="location.sub">{sub}</p>}
+    </div>
+    {hasFrame && (
+      /* ONE bordered frame, gap:0 — the two cells share the spine rather than
+         standing apart. `is-one` collapses it to a single track and takes the
+         spine off when only one cell survives the guards. */
+      <div class:list={['tah-visit-frame', 'reveal', (!hasMap || !hasCard) && 'is-one']} data-delay="1">
+        {hasMap && (
+          <div class="tah-visit-map">
+            <div id="map">
+              {/* Tier-3 only, and entirely decorative: PageBM's boot empties #map
+                  before Leaflet draws, so tiles never stack on top of this. One
+                  aria-hidden, here and nowhere else in the subtree. */}
+              <div class="tah-visit-face" aria-hidden="true">
+                <span class="tah-visit-road tah-visit-road-h"></span>
+                <span class="tah-visit-road tah-visit-road-v"></span>
+                <span class="tah-visit-pin">
+                  <span class="tah-visit-dot"></span>
+                  {brand && <span class="tah-visit-flag">{brand}</span>}
+                </span>
+              </div>
+            </div>
+            {/* OUTSIDE #map on purpose: the city is the owner's real text, not
+                fallback chrome, so it has to survive the boot that erases the
+                face — and it stays in the accessibility tree. */}
+            {locality && <span class="mono tah-visit-cap">{locality}</span>}
+          </div>
+        )}
+        {hasCard && (
+          <div class="tah-visit-card">
+            {rows.map((r) => (
+              /* Both cells always render, even when one is blank: the row is
+                 space-between, so dropping an empty cell would promote its
+                 sibling to the wrong edge. An empty span draws nothing — the
+                 guard that matters ran above, where a wholly blank row was
+                 dropped along with its hairline. */
+              <div class="rowrule tah-visit-row">
+                <span class="tah-visit-d" data-field={`location.rules.${r.i}.label`}>{r.day}</span>
+                <span class="tah-visit-t" data-field={`location.rules.${r.i}.value`}>{r.time}</span>
+              </div>
+            ))}
+            {hoursNote && <p class="tah-visit-note" data-field="location.hours">{hoursNote}</p>}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>
+)}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, brand }}>
+    (function () {
+      // Bounded like the geocode branch below: this script is emitted where the
+      // section sits, ABOVE the wrapper's boot, so one retry is the normal case —
+      // but an unbounded loop would spin a timer forever on any page where the
+      // wrapper script never ran at all.
+      var attempt = 0;
+      (function init() {
+        if (window.__foodcraftBMInitMap) { window.__foodcraftBMInitMap(lat, lng, brand); }
+        else if (attempt++ < 25) { setTimeout(init, 80); }
+      })();
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, brand }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(la, ln) {
+        if (window.__foodcraftBMInitMap) { window.__foodcraftBMInitMap(la, ln, brand); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(la, ln); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var la = parseFloat(results[0].lat);
+            var ln = parseFloat(results[0].lon);
+            if (isNaN(la) || isNaN(ln)) return;
+            tryInit(la, ln);
+          })
+          .catch(function () { /* keep the drawn face: it is the design */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  /* ── THE HEAD · flex, bottom-aligned, space-between, wrapping before either
+        side can overflow. 32px to the frame, straight from the design.
+        TWO children only. A third — an address paragraph under the h2 — is what
+        dragged the sub down a row in an earlier sibling, because in this row a
+        taller left cell moves everything aligned to its bottom edge. */
+  .tah-visit-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 28px; flex-wrap: wrap; margin: 0 0 32px;
+  }
+  /* min-width:0 so a long unbroken address cannot widen the cell past the row
+     and push the page sideways (R8). */
+  .tah-visit-head-l { min-width: 0; }
+  /* The eyebrow is NOT restated here — only wrapped. Restating .kick's font or
+     colour would drop the border-bottom that IS this design's signature, and
+     restating its font-size would silently cancel the wrapper's 520 pass. */
+  .tah-visit-head .kick { overflow-wrap: anywhere; }
+  /* The design's OWN display step for this section: clamp(26px,3.3vw,44px),
+     smaller than the shared .h2's clamp(29px,3.8vw,50px). Declared once, at
+     base, and touched by no media query in this file — see the frontmatter for
+     the boundary-by-boundary check and for why a min-width query would have
+     re-created the inversion an audit found on the previous template.
+     line-height 1.14 and --ink come from the primitive; the wrapper's 24ch
+     measure is kept deliberately, because the design sets no max-width here but
+     the head is a two-cell flex row and an uncapped address line would eat the
+     cell the arrival note sits in. 24ch is generous for a street line. */
+  .tah-visit-h2 {
+    margin: .26em 0 0;
+    font-size: clamp(26px, 3.3vw, 44px);
+    overflow-wrap: anywhere;
+  }
+  /* set:html output carries no scope attribute, so an owner's <em> inside the
+     headline is only reachable through :global() (R3). PageBM already paints
+     .h2 em and .h2 .em italic walnut globally; this pair restates the wrapper's
+     own values so the signature survives even if that global rule is ever
+     narrowed, and invents nothing. */
+  .tah-visit-h2 :global(em),
+  .tah-visit-h2 :global(.em) { font-style: italic; color: var(--accent); }
+  /* Qualified with the parent class on purpose: the wrapper's bare-paragraph
+     reset is (0,1,1) and it sets a bottom margin this must not inherit.
+     .body supplies the design's --ink-soft, but not its size or its leading:
+     .body is clamp(14.5px,1.3vw,15px) at 1.8, where the design states a flat
+     15px at 1.78 and prints it at every width. */
+  .tah-visit-head .tah-visit-sub {
+    margin: 0; min-width: 0; max-width: 34ch;
+    font-size: 15px; line-height: 1.78;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE FRAME · the design's 1.2fr / .8fr, GAP 0, one hairline around the
+        pair and one down the middle. This is the template's grid-drawn-with-
+        borders signature, so the gutter is not "tightened", it is absent.
+        Either cell can be absent too — no coordinates and no address drops the
+        map, no rows and no note drops the card — and then `is-one` gives the
+        survivor the full width AND removes the spine, because a hairline down
+        the left of a full-width card is a grid line for a column that is not
+        there. */
+  .tah-visit-frame {
+    display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+    gap: 0; align-items: stretch;
+    border: 1px solid var(--line); border-radius: var(--r);
+    overflow: hidden;
+  }
+  .tah-visit-frame.is-one { grid-template-columns: minmax(0, 1fr); }
+
+  /* ── THE MAP CELL. Not the wrapper's .plate: that frame is for an upload and
+        carries its own --well ground, a radius and a min-height, where the
+        design draws this cell flat on --tint inside the shared frame with no
+        border and no corner of its own. */
+  .tah-visit-map {
+    position: relative; min-height: 380px; min-width: 0;
+    background-color: var(--tint);
+  }
+  #map { position: absolute; inset: 0; z-index: 0; }
+  /* The plotted face: a 44px walnut grid with two roads crossing under the pin.
+     Token-derived, so an admin accent pick moves the plot lines with the pin. */
+  .tah-visit-face {
+    position: absolute; inset: 0; background-color: var(--tint);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(var(--accent-rgb), .08) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(var(--accent-rgb), .08) 0 1px, transparent 1px 44px);
+  }
+  .tah-visit-road { position: absolute; background-color: rgba(var(--accent-rgb), .22); }
+  .tah-visit-road-h { top: 47%; left: 0; right: 0; height: 5px; }
+  .tah-visit-road-v { top: 0; bottom: 0; left: 44%; width: 4px; }
+  /* The cap sits on the ABSPOS pin, not on the flag. The stack is CENTRED on the
+     44% crossing, so it only stays inside the frame when it is capped at twice
+     the smaller side — 88% — less 12px of air each side. calc(100% - 24px) would
+     still let a long café name run past the left edge and be clipped there by
+     the frame's overflow:hidden, which is the truncation the wrapping flag
+     exists to avoid. width: max-content is required alongside it, or absolute
+     shrink-to-fit collapses the stack to (containing block − left). */
+  .tah-visit-pin {
+    position: absolute; top: 47%; left: 44%; transform: translate(-50%, -100%);
+    display: grid; justify-items: center; gap: 8px;
+    width: max-content; max-width: calc(88% - 24px);
+    text-align: center; z-index: 1;
+  }
+  .tah-visit-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    background-color: var(--accent); border: 3px solid var(--paper);
+  }
+  /* Ink flag, white label — the design's own values, 14.9:1 whatever the tiles
+     underneath it look like. Weight 400 because the design sets none on this one
+     element and it inherits the body's regular; nowrap is dropped and the radius
+     is added, both explained in the frontmatter. */
+  .tah-visit-flag {
+    background-color: var(--ink); color: var(--on-ink);
+    font-family: var(--sans); font-weight: 400; font-size: 9px;
+    letter-spacing: .2em; text-transform: uppercase; line-height: normal;
+    padding: 5px 11px; border-radius: var(--r);
+    text-align: center; overflow-wrap: anywhere;
+  }
+  /* .mono supplies the design's 10px caps at .2em, --sans and --muted. Three
+     things are local and only the last is an addition:
+       · font-weight 600 — the design's caption states 600 where .mono carries
+         the wrapper's tracked-caps 700.
+       · line-height normal — the design's caption sets no leading, so `normal`
+         is what it draws; PageBM's body 1.78 otherwise leaks in and inflates the
+         backing below from ~22px to ~30px around 10px of text.
+       · the opaque backing — see the frontmatter. It keeps the design's own
+         colour pair (--muted on --tint) rather than swapping in the wrapper's
+         ink .cap pill, which would have changed the palette to solve a
+         legibility problem. */
+  .tah-visit-cap {
+    position: absolute; left: 18px; bottom: 18px; z-index: 2;
+    font-weight: 600; line-height: normal;
+    background-color: var(--tint); padding: 5px 10px; border-radius: var(--r);
+    max-width: calc(100% - 36px); overflow-wrap: anywhere;
+  }
+
+  /* ── THE OPENING HOURS CELL · the design's 30px of padding on all four sides,
+        and the spine: one hairline on its LEFT edge, which together with the
+        frame's own border is the whole grid. No background of its own beyond the
+        --card white the design shows, and no radius — the frame owns the corner
+        and clips it. */
+  .tah-visit-card {
+    background-color: var(--card);
+    border-left: 1px solid var(--line);
+    padding: 30px 30px;
+    min-width: 0;
+  }
+  .tah-visit-frame.is-one .tah-visit-card { border-left: 0; }
+  /* .rowrule brings the flex row, the baseline alignment and the design's
+     12px 0. Three things differ and only those three are restated: the design
+     pushes the two cells apart, opens the gutter to 14px, and draws its hairline
+     in --tint-2 where the shared primitive uses --line.
+     The rule sits under EVERY row including the last, which is why there is no
+     "+ .tah-visit-row" trick here: that closing hairline above the cell's 30px
+     of bottom padding is the design. */
+  .tah-visit-row {
+    justify-content: space-between; gap: 14px;
+    border-bottom-color: var(--tint-2);
+  }
+  /* line-height: normal on both cells, not the body's 1.78. The design's row
+     spans set no leading at all, so `normal` is literally what it draws and the
+     row measures 24px of padding around an ~19px line box — the ~43px the design
+     draws, where 1.78 inflates it to ~52px. A number would be a guess; `normal`
+     is the value. A long day or a two-part time that wraps still clears its own
+     height, and overflow-wrap is what lets it wrap at all. */
+  .tah-visit-d {
+    font-size: 13px; font-weight: 600; line-height: normal; color: var(--muted);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* The serif figure, right-aligned: the design sets the time in Libre Caslon
+     Text at 16px. Not the wrapper's .fig — that primitive paints --accent, and
+     an opening time here is drawn in --ink. */
+  .tah-visit-t {
+    font-family: var(--disp); font-size: 16px; line-height: normal;
+    color: var(--ink); text-align: right;
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Qualified with the parent class: the wrapper's bare-paragraph reset is
+     (0,1,1) and it sets a bottom margin this must not inherit. */
+  .tah-visit-card .tah-visit-note {
+    font-size: 13px; line-height: 1.75; color: var(--muted);
+    margin: 15px 0 0; overflow-wrap: anywhere;
+  }
+  /* An owner with an hours line and no rows is a real case, and then the
+     design's 15px lead-in would push the note off the cell's own top padding. */
+  .tah-visit-card .tah-visit-note:first-child { margin-top: 0; }
+
+  /* ── RESPONSIVE · the wrapper owns the shared 760 / 520 pass; this is the
+        section's own grid (R8). Every value below only ever gets SMALLER as the
+        viewport narrows — map 380 → 300 → 240, cell padding 30 → 24 → 20, head
+        margin 32 → 26 — and no font-size is touched at any breakpoint, so there
+        is no floor here that can sit above a cap there. */
+  @media (max-width: 900px) {
+    /* The card goes under the map: the hours are what a customer reads twice.
+       The spine rotates with the grid — left edge becomes top edge — and stays
+       absent when there is only one cell. */
+    .tah-visit-frame { grid-template-columns: minmax(0, 1fr); }
+    .tah-visit-card { border-left: 0; border-top: 1px solid var(--line); }
+    .tah-visit-frame.is-one .tah-visit-card { border-top: 0; }
+    /* Released: once the head starts wrapping, a 34ch cap strands the note in a
+       wide empty gutter. */
+    .tah-visit-head .tah-visit-sub { max-width: none; }
+  }
+  @media (max-width: 760px) {
+    .tah-visit-map { min-height: 300px; }
+    .tah-visit-head { margin-bottom: 26px; }
+    .tah-visit-card { padding: 24px 24px; }
+  }
+  @media (max-width: 520px) {
+    .tah-visit-map { min-height: 240px; }
+    .tah-visit-card { padding: 20px 20px; }
+    /* Two lines rather than squeezing an opening time into a 90px column: day
+       above, time below, both left-aligned. */
+    .tah-visit-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .tah-visit-t { text-align: left; }
+    .tah-visit-cap {
+      left: 12px; bottom: 12px; font-size: 9px; letter-spacing: .16em;
+      max-width: calc(100% - 24px);
+    }
+    .tah-visit-flag { font-size: 8.5px; letter-spacing: .14em; padding: 5px 10px; }
+  }
+</style>

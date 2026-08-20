@@ -1,0 +1,625 @@
+---
+/**
+ * foodcraft / FooterBM — "Tahanan Cafe" · THE WHITE CLOSING PAGE.
+ *
+ * ROLE: the last place a visitor looks for the name, the phone, the email and
+ * the address before they give up. So every cell here is real owner data or the
+ * cell is absent.
+ *
+ * WHAT THE DESIGN DRAWS (reproduced value for value from the FOOTER element of
+ * "Tahanan Cafe Landing.dc.html", nothing re-derived):
+ *   a PLAIN WHITE ground — no band, no tint — 56px of air, then a
+ *   minmax(0,1.6fr) / minmax(0,1fr) / minmax(0,1fr) grid at a 38px gap:
+ *   the wordmark lock with its 9px walnut town tag, a 36ch blurb and one 13px
+ *   walnut action; a page-links column; a contact column. The grid is CLOSED by
+ *   a hairline 36px under it — this design draws its structure with borders,
+ *   not gaps — and under that, 20px down, a two-cell colophon of 10px caps at
+ *   .22em, space-between.
+ *
+ * EDITABLE HOOKS — every visible string in this file, and nothing else. Each is
+ * declared in components/editor/genericContentSchema.ts, so each is a hook a
+ * sidebar input actually owns (a data-field on any other path is a dead hook):
+ *   footer.brand                     — the 24px Libre Caslon wordmark, and the
+ *                                      colophon's identity half (HeaderBM's
+ *                                      wordmark too: one field, three places)
+ *   footer.locality                  — the 9px walnut town tag on its baseline
+ *   footer.blurb                     — the standing line under the lock
+ *   footer.explore.title             — the LINKS column heading
+ *   footer.visit.title               — the CONTACT column heading
+ *   footer.explore.links.${i}.text   — a links-column label, when the owner
+ *   footer.explore.links.${i}.href     filled the footer's own links list
+ *   navbar_links.${i}.label          — a links-column label, when the column is
+ *   navbar_links.${i}.href             falling back to the nav array (see D2)
+ *   navCtaText                       — the walnut action's label (see D3)
+ *   navCtaHref                       — its target (data-href-field)
+ *   location.phone                   — the tel: row (data-field only, D6)
+ *   contact.email                    — the mailto: row (D7)
+ *   location.address                 — the address line, and the colophon's
+ *                                      other half
+ *   footer.notes.${i}                — the colophon's RIGHT cell (see D1)
+ *
+ * DERIVED here, never authored here:
+ *   · the wordmark falls back to layout.businessName when footer.brand is
+ *     blank — the same name out of the same submission, not an invention.
+ *   · the blurb falls back to footer.brand_blurb, the schema's own alias.
+ *   · phone, email and address fall back to layout.contact.* — which IS
+ *     content.contact, so an owner who filled the footer group's own
+ *     "Email"/"Address" boxes still gets those rows, and no two sections on
+ *     this page can print different numbers or different addresses.
+ *   · the tel: href is built from the phone's own digits; the mailto: href is
+ *     built from the email. Neither prefix is ever stored.
+ *   · every in-page href is resolved by onPage() against the ids PageBM really
+ *     renders. The helper, PAGE_ANCHORS and ANCHOR_ALIAS are byte-identical to
+ *     HeaderBM's, so the rail and the footer can never send a visitor to two
+ *     different places.
+ *   · `i` on every list row is the ORIGINAL, pre-filter index (R6), so dropping
+ *     an unreachable row 2 cannot misdirect an edit into row 3.
+ *   · the colophon's address is FLATTENED to one line (newlines to commas) to
+ *     fit a single row of tracked caps — which is why that node, and only that
+ *     node, carries data-derived: editorBridge's live ed:update would otherwise
+ *     paint the raw multi-line scalar into a caps row. The COLUMN's address is
+ *     NOT derived: it is the stored string verbatim, broken by
+ *     `white-space: pre-line`, so an inline edit there stays truthful.
+ *
+ * NOT RENDERED, deliberately:
+ *   · THE DESIGN'S OWN COPY. "Tahanan", "San Juan", "This page", "Get in
+ *     touch", "The menu", "Our story", "Gallery", "FAQ", "Contact us", the
+ *     blurb, "9 Pinaglabanan St, San Juan" and "Prices in Philippine Pesos" are
+ *     the DESIGNER filling in their own template. Not one of those words is in
+ *     this file. A café that supplied no nav links gets no links column, not
+ *     the designer's four.
+ *   · a column heading with no column under it, a lock with no name, a blurb
+ *     with no text, a link with no label or no reachable target, an action with
+ *     no label, a colophon with nothing in it, and the whole footer when all of
+ *     the above are empty. EVERY guard sits outside its tag, so a blank value
+ *     removes the ELEMENT and not just its text — no heading over nothing, no
+ *     hairline under a row that is not there.
+ *   · THE GRID'S CLOSING HAIRLINE when nothing follows it. The design draws
+ *     that rule BETWEEN the grid and the colophon, so it rides a modifier
+ *     (.tcbm-fgrid--ruled) the markup adds only when the colophon renders. A
+ *     site with a phone but no name and no address would otherwise close on a
+ *     cream hairline floating 38px above the bottom of the page.
+ *   · social chips: the design's footer draws none.
+ *   · an hours block: the design's footer has none; LocationBM owns the hours.
+ *   · .reveal. The footer is the page terminus; fading in the last thing on
+ *     screen buys nothing and risks a footer that never un-hides.
+ *   · any star row, rating or numeral — R2's star rule has nothing to bite on
+ *     here: there is not one node on this band that could print a claim the
+ *     owner did not make.
+ *
+ * DECISIONS a reader would otherwise take for an oversight
+ *
+ * D1. THE COLOPHON'S RIGHT CELL IS footer.notes, NOT THE CURRENCY SENTENCE.
+ *     The design draws `Prices in {{ currencyName }}` there. That is a claim
+ *     about how this business quotes and no field carries it, so the sentence
+ *     is gone — but the CELL is not, because footer.notes is declared in this
+ *     very group, labelled "Footer notes (copyright row)", and
+ *     lib/derive-content-defaults.ts seeds it to `© <year> <name>` from the
+ *     owner's own submitted name (and deliberately suppresses a bare "© 2026"
+ *     with no name). So the design's two-cell row survives with the owner's own
+ *     small print in it. A note that merely repeats the left cell VERBATIM
+ *     (same string as the wordmark, or as the flattened address) is dropped —
+ *     an exact-match test only, because "© 2026 Tahanan" is different
+ *     information from "Tahanan · 9 Pinaglabanan St" and both belong on the
+ *     row. FLAG FOR REVIEW: FooterBL dropped this cell outright rather than
+ *     binding footer.notes; if that precedent is the house rule, delete the
+ *     notes block and the row falls back to one left-aligned cell.
+ *
+ * D2. THE LINKS COLUMN HAS THREE POSSIBLE SOURCES AND ONLY TWO HOOK SHAPES.
+ *     footer.explore.links is the schema's own list for this column, so it wins
+ *     when the owner filled it. Otherwise the column mirrors the rail, reading
+ *     layout.navLinks — the same array HeaderBM reads, so the two can never
+ *     disagree after a builder fallback — and hooks `navbar_links.${i}.*`,
+ *     which is the path the sidebar owns for that array. The third case is the
+ *     one to notice: lib/astro-builder.ts substitutes its OWN four links
+ *     ("About / Services / Gallery / Contact") when content.navbar_links is
+ *     absent entirely. Those labels are nobody's words, so in that case the
+ *     rows render with NO hook rather than pointing an editor at a path that
+ *     holds nothing. Astro omits an undefined attribute, so this costs no
+ *     markup.
+ *
+ * D3. THE ACTION IS DRAWN ONCE, NOT TWICE. The design draws contactLabel in
+ *     BOTH the brand column and the contact column, and that reads correctly
+ *     there because the designer set contactLabel to "Contact us" and headed
+ *     the column "Get in touch". On a real site both come from
+ *     derive-content-defaults, which seeds navCtaText to "Get in touch" — so
+ *     ONE field would print the same three words twice, six lines apart. The
+ *     rule here:
+ *       · the action rides the BRAND column whenever that column exists on its
+ *         own merits (a wordmark, a town tag or a blurb);
+ *       · it falls to the CONTACT column only when the brand column does not
+ *         render at all — which is where the design also draws it;
+ *       · and never in the contact column when it merely restates that
+ *         column's heading, compared case- and whitespace-insensitively,
+ *         because "Get In Touch" is the same stutter.
+ *     The brand gate counts only the lock and the blurb, NOT ctaText, so the
+ *     fallback branch stays reachable (folding ctaText into that gate is what
+ *     made the equivalent branch dead code in an earlier family).
+ *     The pair hooked is navCtaText / navCtaHref, from the Header group, not
+ *     hero.cta1: components/editor/editorBridge.ts resolves a Blocks toggle by
+ *     counting hooks of a given prefix inside closest('section,footer'), so a
+ *     footer carrying hero.* hooks becomes a candidate for "hide the Hero
+ *     block". navCtaText has no entry in that PREFIX map at all, so it is
+ *     toggle-inert. HeaderBM hooks the same pair for the same reason.
+ *
+ * D4. THE COLUMN HEADINGS ARE NOT .kick, AND THAT IS THE DESIGN, NOT A LAPSE.
+ *     The underlined eyebrow is one of this template's two signatures, and the
+ *     rule for it lives on the shared primitive precisely so no section can
+ *     lose it. But the design's FOOTER headings carry no rule at all: they are
+ *     10px walnut caps at .26em and nothing more. Restating them here is
+ *     therefore reproducing the design, not restating the eyebrow. (Even if
+ *     they wanted it, .kick could not reach them: every .kick declaration in
+ *     PageBM sits inside :where() at zero specificity, while
+ *     `html[data-page="BM"] :where(h1,h2,h3,h4)` scores (0,1,0) and pins
+ *     family, weight, colour, tracking, line-height, text-transform and margin.
+ *     A scoped class compiles with the data-astro-cid attribute and wins.)
+ *     They stay <h4> because two real headings give the columns a structure a
+ *     screen-reader user can navigate; the design's plain <div> does not.
+ *
+ * D5. NO .btn IN THIS FILE, AT ALL (R4). lib/genericThemeOverrides.ts emits
+ *     `.testi .btn, .cta-band .btn, footer .btn { color: <on-ink> !important }`
+ *     — so a .btn anywhere under this <footer> would take a label colour picked
+ *     for an INK ground and vanish on this white one. The design's footer has
+ *     no button anyway (a 13px text action and 14px rows), so the action is
+ *     .linkc and the rows are plain anchors, neither of which the engine
+ *     touches. None of the forbidden labels (.btn-primary, .btn-ghost,
+ *     .nav-cta, .cta-band, .trust, .testi) appears either.
+ *
+ * D6. THE tel: ANCHOR CARRIES data-field ONLY, no data-href-field. Its href is
+ *     derived from the field's own value, so a href hook there would write
+ *     "tel:+63…" straight back into the phone box. Same for the mailto: row.
+ *
+ * D7. THE EMAIL ROW IS AN ADDITION. The design draws none — its demo café took
+ *     enquiries on Messenger — but contact.email is schema-declared in the very
+ *     group this footer belongs to, and a real business that supplies one had
+ *     it appear NOWHERE on the page. It takes the design's own 14px row
+ *     treatment, so nothing new is invented visually.
+ *
+ * D8. PHONE AND EMAIL ARE UNDERLINED, THE ADDRESS IS NOT. They sit directly
+ *     above a static address line of the same family, size and weight that
+ *     differs only in colour, and colour alone does not distinguish a link
+ *     (WCAG 1.4.1). text-decoration adds no box, so thickening it on hover
+ *     cannot shift the rows. Deliberately NOT applied to the links column:
+ *     those are wayfinding links in a list, unambiguous by position and
+ *     heading, and the design draws them bare.
+ *
+ * D9. NO TOP HAIRLINE. Every other seam in this design is a rule, so its
+ *     absence here looks like an omission. It is not: the design's footer is a
+ *     white block sitting directly under the dark CtaBand, and the band edge IS
+ *     the divider. Adding a --line rule would draw a cream hairline across the
+ *     top of a page that never had one.
+ *
+ * D10. THE ROWS ARE BLOCKS, NOT THE DESIGN'S <p>. The design uses
+ *      `<p style="margin:0 0 9px">` per row, last row margin:0, over a body
+ *      with no declared line-height — about a 26px pitch. Here each row is a
+ *      block anchor at 14px/1.5 with 3px of padding either side: the same ~27px
+ *      pitch, the whole row is the tap target, and no trailing margin dangles
+ *      above the closing hairline.
+ *
+ * D11. THE ACTION SITS ~11px LOWER THAN DRAWN. The blurb keeps the design's
+ *      16px bottom margin verbatim, and .linkc's own min-height:44px — the
+ *      wrapper's tap-target floor — adds roughly 11px of optical space under
+ *      it. Trimming the margin to compensate would make this file disagree with
+ *      the design in order to correct something that moves the moment .linkc
+ *      does, so the design's value ships and the accessibility floor stands.
+ *
+ * COLOUR — wrapper tokens only, no literal hex anywhere (R1). Every colour in
+ * this design's footer has a token with the SAME value:
+ *   #FFFFFF --paper (the ground) · #EDE6DF --line (the closing hairline)
+ *   #241B14 --ink (wordmark) · #7A4E2D --accent (town tag, headings, action)
+ *   #5C5147 --ink-soft (blurb, every link row) · #6B6057 --muted (the address
+ *   line and the colophon caps) · #573418 --accent-deep (the design's own
+ *   stated hover: its stylesheet declares a:hover{color:#573418}, shadowed in
+ *   the demo only by the inline colour on each footer link).
+ * Nothing needed re-deriving and nothing was.
+ *
+ * CONTRAST on this white ground, from PageBM's verified table: ink 14.9 ·
+ * ink-soft 7.29 · accent 7.06 · muted 5.71. Every run on this band clears AA,
+ * including the 10px colophon.
+ *
+ * CLASS NAMES are `tcbm-f*`, this template's own prefix (HeaderBM uses `tcbm-`;
+ * FooterBL's `fb-` set appears nowhere here). An audit had to rename a whole
+ * set copied verbatim between templates in this family — nothing in this file
+ * shares a name with another template's stylesheet.
+ *
+ * Visibility: PageBM gates this file on visibility.footerSection — never here.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const c = (content as any) || {};
+const lay = (layout as any) || {};
+const f = c.footer || {};
+
+// ── ANCHOR GUARD — byte-identical to HeaderBM's, so the rail and the footer can
+// never send a visitor to different places. lib/derive-content-defaults.ts
+// hard-codes nav links to '#about', '#services', '#why', '#work', '#visit' and
+// navCtaHref to '#visit'; lib/astro-builder.ts falls back to '#about',
+// '#services', '#gallery', '#contact'. Most of those ids no design renders.
+// Resolve every in-page href against what PageBM ACTUALLY renders: keep it if
+// the id exists, remap it when this design carries the same material under
+// another name, otherwise fall back — and the links column passes '' as the
+// fallback, because a dead entry in a wayfinding list is worse than a missing
+// one. Off-page hrefs (tel:, mailto:, http(s), anything without a leading '#')
+// pass through untouched.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+// This design renames four derived targets: the services block IS the menu
+// (rooms lands there too), '#about' is the café's own story (host and why are
+// the same block here), '#work' is the photo wall, and '#location' / '#contact'
+// both mean the visit block — address, map and opening hours. A booking link
+// has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. `||`, never `??`, and identical to HeaderBM's resolution:
+// genericContentSchema gives footer.brand fallbackPaths ['business_name'] and
+// ContentFieldsAuto's readWithFallbacks treats '' as empty, so a CLEARED brand
+// box still shows the business name in the sidebar. With `??` an empty string
+// would be a value and the page would go wordmark-less while the sidebar
+// displayed a name. 'Your Business' once shipped as a real customer's own mark;
+// with nothing supplied the lock is omitted instead of inventing a name.
+const brand = String(f.brand || lay.businessName || '').trim();
+// One field, three consumers (the rail, this lock, the map caption). Nothing
+// derives it, so on a first build it is simply absent rather than guessed out
+// of the address.
+const locality = String(f.locality ?? '').trim();
+// footer.brand_blurb is the schema's declared alias for the same box.
+const blurb = String(f.blurb || f.brand_blurb || '').trim();
+
+// The page's one action, from the Header group (see D3). '#visit' is the
+// fallback because that is where this design puts the address, the map and the
+// opening hours, and it is the id the derived default already names.
+const ctaText = String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(c.navCtaHref, '#visit');
+// Computed, never literal, and ONE conditional per attribute — an owner may
+// point this at #visit or a tel:, and forcing those into a new tab is wrong.
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// Column headings — bound, not hardcoded, and guarded, so an owner who clears
+// the box gets a column with no heading rather than the designer's word. The
+// schema's own owner-facing labels decide which feeds which: footer.explore.title
+// is labelled "Links column heading" (placeholder "This page") and
+// footer.visit.title "Contact column heading" (placeholder "Get in touch") —
+// which are this design's two headings verbatim.
+const linksTitle = String(f.explore?.title ?? '').trim();
+const contactTitle = String(f.visit?.title ?? '').trim();
+
+// ── THE LINKS COLUMN (D2). Three sources, two hook shapes, one index rule.
+const exploreFromAdmin = Array.isArray(f.explore?.links) && f.explore.links.length > 0;
+// content.navbar_links is what the sidebar owns; lay.navLinks is that same array
+// passed through by the builder, or the builder's OWN four links when content
+// carries none. Reading lay.navLinks keeps the rail and the footer identical;
+// testing content tells us whether a hook would land on anything.
+const navFromContent = Array.isArray(c.navbar_links) && c.navbar_links.length > 0;
+type LinkRow = { label: string; href: string; i: number; labelHook?: string; hrefHook?: string };
+const columnLinks: LinkRow[] = ((exploreFromAdmin
+  ? f.explore.links.map((l: any) => ({ label: l?.text, href: l?.href }))
+  : (Array.isArray(lay.navLinks) ? lay.navLinks : [])) as any[])
+  .map((l: any, i: number): LinkRow => ({
+    label: String(l?.label ?? '').trim(),
+    href: onPage(l?.href, ''),
+    i,
+    // undefined when nothing owns the path — Astro omits an undefined
+    // attribute, so those rows simply carry no hook.
+    labelHook: exploreFromAdmin
+      ? `footer.explore.links.${i}.text`
+      : (navFromContent ? `navbar_links.${i}.label` : undefined),
+    hrefHook: exploreFromAdmin
+      ? `footer.explore.links.${i}.href`
+      : (navFromContent ? `navbar_links.${i}.href` : undefined),
+  }))
+  .filter((l: LinkRow) => Boolean(l.label && l.href));
+
+// Contact rows. layout.contact IS content.contact (astro-builder passes it
+// through with a display-formatted phone), so these fallbacks also pick up the
+// footer group's own "Email" / "Address" boxes, and no two sections on this
+// page can print different numbers or different addresses.
+const phone = String(c.location?.phone || lay.contact?.phone || '').trim();
+const email = String(c.contact?.email || lay.contact?.email || '').trim();
+const address = String(c.location?.address || lay.contact?.address || '').trim();
+// Built, never stored (D6).
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+// Colophon identity line: the design prints one line, and location.address is a
+// multi-line textarea. Flattened for THIS row only (hence data-derived on it).
+const addressFlat = address.replace(/\s*\n+\s*/g, ', ');
+
+const norm = (v: string): string => v.replace(/\s+/g, ' ').trim().toLowerCase();
+
+// Colophon right cell (D1). Empty rows go, and so does a note that is an EXACT
+// repeat of what the left cell already prints — nothing cleverer, because a ©
+// line that happens to contain the name is different information from the
+// name-and-address line beside it.
+type NoteRow = { v: string; i: number };
+const notes: NoteRow[] = (Array.isArray(f.notes) ? f.notes : [])
+  .map((n: any, i: number): NoteRow => ({ v: String(n ?? '').trim(), i }))
+  .filter((n: NoteRow) => Boolean(n.v) && norm(n.v) !== norm(brand) && norm(n.v) !== norm(addressFlat));
+
+// ── GATES — BODY content only (R5). The two column headings never count: a
+// heading is not a column, and one printed over nothing is the exact failure
+// the rule exists for. footer.brand / footer.blurb / navbar_links / navCtaText /
+// footer.notes ARE seeded by derive-content-defaults, but from the owner's own
+// submitted name, city and business type — that is their data, not an invented
+// headline.
+const hasBrandCol = Boolean(brand || locality || blurb);
+// D3: one action, and never a stutter against the heading beside it.
+const brandShowsCta = Boolean(ctaText) && hasBrandCol;
+const showContactCta =
+  Boolean(ctaText) && !brandShowsCta && norm(ctaText) !== norm(contactTitle);
+const hasContactCol = Boolean(showContactCta || phone || email || address);
+const hasGrid = hasBrandCol || columnLinks.length > 0 || hasContactCol;
+const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
+---
+{(hasGrid || hasColophon) && (
+<footer class="tcbm-foot">
+  <div class="wrap">
+    {hasGrid && (
+      <div class:list={['tcbm-fgrid', hasColophon && 'tcbm-fgrid--ruled']}>
+        {hasBrandCol && (
+          <div class="tcbm-fbrand">
+            {(brand || locality) && (
+              <div class="tcbm-flock">
+                {brand && <span class="tcbm-fmark" data-field="footer.brand">{brand}</span>}
+                {locality && <span class="tcbm-ftown" data-field="footer.locality">{locality}</span>}
+              </div>
+            )}
+            {blurb && <p class="tcbm-fblurb" data-field="footer.blurb">{blurb}</p>}
+            {/* Both hooks sit on the ANCHOR: the editor's link popover reads
+                data-field from whatever carries data-href-field, so a label on
+                an inner span would leave it editing an empty path. The arrow is
+                generated content — editorBridge writes an inline edit back
+                through innerHTML, so a glyph inside the element could end up
+                stored in navCtaText; a pseudo-element cannot. */}
+            {brandShowsCta && (
+              <a
+                class="linkc tcbm-fcta"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+          </div>
+        )}
+
+        {columnLinks.length > 0 && (
+          <div class="tcbm-fcol">
+            {linksTitle && <h4 class="tcbm-fh" data-field="footer.explore.title">{linksTitle}</h4>}
+            {columnLinks.map((l) => (
+              <a
+                class="tcbm-frow"
+                href={l.href}
+                data-field={l.labelHook}
+                data-href-field={l.hrefHook}
+              >{l.label}</a>
+            ))}
+          </div>
+        )}
+
+        {hasContactCol && (
+          <div class="tcbm-fcol">
+            {contactTitle && <h4 class="tcbm-fh" data-field="footer.visit.title">{contactTitle}</h4>}
+            {showContactCta && (
+              <a
+                class="tcbm-frow"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+            {(phone || email || address) && (
+              <address class="tcbm-faddr">
+                {phone && (
+                  <a class="tcbm-frow tcbm-fchan" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>
+                )}
+                {/* mailto: is BUILT, never stored — the visible text stays the
+                    plain address so an inline edit can never write "mailto:…"
+                    back into the email box. */}
+                {email && (
+                  <a class="tcbm-frow tcbm-fchan" href={`mailto:${email}`} data-field="contact.email">{email}</a>
+                )}
+                {/* The stored string verbatim — `white-space: pre-line` draws
+                    the owner's own line breaks, so the DOM text and the field
+                    value stay identical and a live edit cannot lie. */}
+                {address && <span class="tcbm-fline" data-field="location.address">{address}</span>}
+              </address>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
+    {hasColophon && (
+      <div class="mono tcbm-fcolo">
+        {(brand || addressFlat) && (
+          <span class="tcbm-fid">
+            {brand && <span data-field="footer.brand">{brand}</span>}
+            {brand && addressFlat && <span class="tcbm-fsep" aria-hidden="true">·</span>}
+            {addressFlat && <span data-field="location.address" data-derived>{addressFlat}</span>}
+          </span>
+        )}
+        {notes.length > 0 && (
+          <span class="tcbm-fnotes">
+            {notes.map((n, d) => (
+              <>
+                {d > 0 && <span class="tcbm-fsep" aria-hidden="true">·</span>}
+                <span data-field={`footer.notes.${n.i}`}>{n.v}</span>
+              </>
+            ))}
+          </span>
+        )}
+      </div>
+    )}
+  </div>
+</footer>
+)}
+<style>
+  /* The design's closing page: a plain --paper ground, 56px of air above the
+     grid, 38px below the colophon, and NO top rule (see D9 in the frontmatter —
+     the dark CtaBand above is the divider). The wrapper's `section` padding
+     rule targets <section> only, so all of this padding is this file's. */
+  .tcbm-foot {
+    background-color: var(--paper);
+    padding: 56px 0 38px;
+  }
+
+  /* 1.6fr / 1fr / 1fr at a 38px gap. minmax(0,…) on every track — the design's
+     own value — so a long unbroken address or link label cannot widen a column
+     past its share and push the page sideways. */
+  .tcbm-fgrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 38px;
+  }
+  /* The hairline the design draws 36px under the grid. This design draws its
+     structure with BORDERS, not gaps, and that rule is the structure here — but
+     it is the rule BETWEEN the grid and the colophon, so it is carried by a
+     modifier the markup adds only when a colophon follows. Left unconditional
+     it becomes an empty rule 38px above the bottom of the page whenever brand,
+     address and notes are all blank while a column still renders (R2: no
+     hairline under a row that is not there). */
+  .tcbm-fgrid--ruled {
+    padding-bottom: 36px;
+    border-bottom: 1px solid var(--line);
+  }
+  .tcbm-fbrand, .tcbm-fcol { min-width: 0; }
+
+  /* Wordmark and town tag share a baseline — the same lock as the rail, one
+     size down (24px against the header's 25px). */
+  .tcbm-flock {
+    display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap;
+    margin-bottom: 14px; min-width: 0;
+  }
+  .tcbm-fmark {
+    font-family: var(--disp); font-weight: 400; font-size: 24px;
+    line-height: 1.1; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  .tcbm-ftown {
+    font-family: var(--sans); font-weight: 700; font-size: 9px;
+    letter-spacing: .32em; text-transform: uppercase; color: var(--accent);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+
+  /* Qualified by the parent class on purpose: the wrapper's paragraph reset is
+     `html[data-page="BM"] :where(p)` at (0,1,0), and leaving this rule to win on
+     the scoping attribute alone is a margin this file would rather not gamble
+     on. 36ch and the 16px bottom margin are the design's own (D11). */
+  .tcbm-fbrand .tcbm-fblurb {
+    margin: 0 0 16px;
+    font-family: var(--sans); font-size: 14px; line-height: 1.8;
+    color: var(--ink-soft); max-width: 36ch; overflow-wrap: anywhere;
+  }
+  /* The design's 13px walnut action. .linkc already carries the size, the weight
+     and the colour, so only the arrow is added — as generated content, and with
+     no margin: .linkc is an inline-flex box, so the pseudo-element is a flex
+     ITEM and the primitive's own `gap: .5em` already spaces it. A margin would
+     stack on top and open twice the design's gap. */
+  .tcbm-fcta { overflow-wrap: anywhere; }
+  .tcbm-fcta::after { content: '\2192'; }
+
+  /* Column headings: 10px walnut caps at .26em, the design's own treatment —
+     and note it carries NO underline. The signature eyebrow rule belongs to
+     .kick and to the sections; the design's footer headings are bare, so every
+     declaration is restated here rather than borrowed (D4). */
+  .tcbm-fh {
+    margin: 0 0 14px;
+    font-family: var(--sans); font-weight: 700; font-size: 10px;
+    letter-spacing: .26em; text-transform: uppercase; color: var(--accent);
+    line-height: 1.4; overflow-wrap: anywhere;
+  }
+
+  /* The design's rows: 14px --ink-soft on a ~27px pitch. Blocks rather than the
+     design's paragraphs, so the whole row is the tap target and the last row
+     leaves no margin dangling above the hairline (D10). --accent-deep is the
+     design's own stated hover. */
+  .tcbm-frow {
+    display: block; padding: 3px 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    color: var(--ink-soft);
+    transition: color .18s ease;
+    overflow-wrap: anywhere;
+  }
+  .tcbm-frow:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .tcbm-frow { transition: none; } }
+
+  /* The address block. Its own colour is --muted, the design's value for that
+     line; the two channel rows inside it carry .tcbm-frow and keep --ink-soft. */
+  .tcbm-faddr {
+    font-style: normal; margin: 0; min-width: 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    color: var(--muted);
+  }
+  /* The stored string, unaltered — pre-line draws the owner's own line breaks
+     without this file generating a single line-break tag. */
+  .tcbm-fline {
+    display: block; padding: 3px 0;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+  /* Phone and email are underlined; the address beside them is not (D8).
+     text-decoration adds no box, so thickening it on hover cannot shift rows. */
+  .tcbm-faddr .tcbm-fchan {
+    text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 3px;
+  }
+  .tcbm-faddr .tcbm-fchan:hover {
+    text-decoration-color: var(--accent-deep); text-decoration-thickness: 2px;
+  }
+
+  /* The colophon: 20px under the hairline, two cells, space-between. .mono
+     supplies the family, the size, the uppercasing and --muted; the design's
+     wider .22em tracking and its LIGHTER 600 weight are added — .mono's 700
+     would quietly thicken the row, and 600 is what the design states. With one
+     cell absent the remaining cell simply sits left. Wraps rather than
+     overflows. */
+  .tcbm-fcolo {
+    padding-top: 20px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    font-weight: 600; letter-spacing: .22em; line-height: 1.9;
+    overflow-wrap: anywhere;
+  }
+  .tcbm-fid, .tcbm-fnotes { min-width: 0; overflow-wrap: anywhere; }
+  .tcbm-fsep { margin: 0 .45em; }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────────────────
+     The wrapper owns the shared 760 / 520 pass; this file owns its own grid.
+     Three columns cannot hold 14px rows and a 36ch blurb below ~900px, so they
+     stack there — at ONE width, so there is never a band where a column is
+     90px wide. Every value below only ever SHRINKS as the viewport narrows:
+     56px padding to 40, 24px wordmark to 21, .32em to .24em, .22em to .14em.
+     Nothing has a floor in one query sitting above a cap in the next. */
+  @media (max-width: 900px) {
+    .tcbm-fgrid { grid-template-columns: 1fr; gap: 30px; }
+    .tcbm-fgrid--ruled { padding-bottom: 30px; }
+    /* Stacked, each row is a primary target rather than one of three columns. */
+    .tcbm-frow { min-height: 44px; display: flex; align-items: center; }
+    .tcbm-fline { padding: 10px 0; }
+  }
+  @media (max-width: 520px) {
+    .tcbm-foot { padding: 40px 0 30px; }
+    .tcbm-fmark { font-size: 21px; }
+    .tcbm-ftown { letter-spacing: .24em; }
+    .tcbm-fbrand .tcbm-fblurb { max-width: none; }
+    /* Wide tracking on a full-width caps row is what actually pushes a 320px
+       screen sideways here, so the tracking comes in rather than the type. */
+    .tcbm-fcolo { letter-spacing: .14em; gap: 10px; line-height: 1.8; }
+    .tcbm-fsep { margin: 0 .3em; }
+  }
+</style>
