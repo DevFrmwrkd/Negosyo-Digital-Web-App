@@ -117,7 +117,17 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         unpublishingWebsite, enhancing, sendingEmail,
         onSendToClient, onEnhanceImages, onRegenerate, onPublish, onRepublish,
         onUnpublish, onDelete, onApprove, onReject, onToggleDetails, submissionStatus,
+        onGiveFree, markingComped, isCustomDomainTier, isComped,
     } = props;
+
+    // Promo eligibility — same rule TopActionBar applies, so the button appears
+    // and disappears identically whichever surface the admin is looking at.
+    const canGiveFree =
+        !!onGiveFree &&
+        !isComped &&
+        !isCustomDomainTier &&
+        websiteGenerated &&
+        ["approved", "website_generated", "deployed", "pending_payment"].includes(submissionStatus ?? "");
 
     const m = useEditorDraft(props);
 
@@ -938,6 +948,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                 <button type="button" onClick={onPublish} disabled={publishingWebsite || !websiteGenerated} className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-neutral-700 disabled:opacity-40">{publishingWebsite ? "Publishing…" : "Publish"}</button>
                             )}
                             <button type="button" onClick={onSendToClient} disabled={sendingEmail} className={TB}>{sendingEmail ? "Sending…" : "Send to client"}</button>
+                            {canGiveFree && <button type="button" onClick={onGiveFree} disabled={markingComped} className={TB} title="Give this website to the owner for free — the creator is still paid.">{markingComped ? "Giving…" : "Give free"}</button>}
                             {onToggleDetails && <button type="button" onClick={onToggleDetails} className={TB}>Details</button>}
                             <button type="button" onClick={onDelete} className={`${TB} !text-red-600`}>Delete</button>
                         </div>

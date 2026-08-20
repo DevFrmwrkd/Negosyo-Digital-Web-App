@@ -304,6 +304,28 @@ export interface SandboxEditorProps {
     onReject?: () => void;
     submissionStatus?: string;
 
+    /**
+     * PROMO — give the site to the owner for free; the creator is still paid.
+     *
+     * Needed on an editor toolbar as well as TopActionBar because the page hides
+     * TopActionBar entirely while the editor is open on a generated site
+     * (app/admin/submissions/[id]/page.tsx). Without it the action is
+     * unreachable from where the admin actually finishes a website — and worse,
+     * "Send to client", which bills the owner, is the only settlement button in
+     * view.
+     *
+     * RENDERED BY V3 ONLY, by decision. These props live on the shared type
+     * because all three editors take it, but v1 and v2 deliberately ignore
+     * them: the promo runs out of v3, and adding a money action to two older
+     * surfaces means three places to keep the eligibility rule in sync.
+     */
+    onGiveFree?: () => void;
+    markingComped?: boolean;
+    /** ₱1,499 tier — comping it would charge us a registrar fee, so the button hides. */
+    isCustomDomainTier?: boolean;
+    /** Already given away; one giveaway per site. */
+    isComped?: boolean;
+
     onToggleDetails?: () => void;
     detailsOpen?: boolean;
 }
