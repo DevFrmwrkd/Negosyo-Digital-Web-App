@@ -348,10 +348,11 @@ const __og = layout.ogImage || layout.favicon || '';
        pins some labels with !important. */
     html[data-page="BL"] :where(.btn) {
       /* line-height is DECLARED. The design sets none on its buttons, so they
-         render at the browser normal; inheriting body line-height instead
-         inflated every control by ~6px and, on the eyebrow below, pushed the
-         underline off the text it belongs to. A label is one line: 1 is what a
-         button wants. */
+         render at the browser normal; inheriting body-'s 1.7 instead inflated
+         every control by ~6px. (An earlier draft added "and pushed the eyebrow's
+         underline off its text" — that is the NEXT template in this family. This
+         eyebrow has no rule under it; see the note on .kick above.) A label is
+         one line: 1 is what a button wants. */
       line-height: 1;
       display: inline-flex; align-items: center; justify-content: center; gap: .55em;
       padding: 16px 32px; min-height: 48px;
@@ -491,7 +492,14 @@ const __og = layout.ogImage || layout.favicon || '';
 
     /* ── SHARED MOBILE PASS · 760 / 520 ────────────────────────────────────── */
     @media (max-width: 760px) {
-      html[data-page="BL"] :where(.h2) { font-size: clamp(27px,7.2vw,40px); max-width: none; overflow-wrap: anywhere; }
+      /* The MAX is the BASE clamp's own value at 760px (31.00px), not a round
+         number. Anything higher and the headline GROWS as the viewport narrows
+         past 761 — base clamp(31px,4vw,54px) bottoms out around there, so a max of 38-42
+         was landing ABOVE where the curve arrived from. It is a jump no
+         screenshot at 1440 or 375 can show you: it lives in the one pixel
+         either side of the boundary. The vw term is untouched, so the steeper
+         small-screen curve this breakpoint exists for still happens. */
+      html[data-page="BL"] :where(.h2) { font-size: clamp(27px,7.2vw,31px); max-width: none; overflow-wrap: anywhere; }
       html[data-page="BL"] :where(.lede) { max-width: none; }
     }
     @media (max-width: 520px) {
