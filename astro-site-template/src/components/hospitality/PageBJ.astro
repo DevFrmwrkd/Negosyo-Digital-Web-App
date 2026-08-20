@@ -526,7 +526,14 @@ const __fontHref = buildFontHref(__themePairing);
     @media (max-width: 760px) {
       html[data-page="BJ"] section { padding: clamp(48px,10vw,72px) 0; }
       html[data-page="BJ"] :where(.wrap) { width: min(var(--maxw), 90vw); }
-      html[data-page="BJ"] :where(.h2) { font-size: clamp(27px,7.2vw,42px); max-width: none; overflow-wrap: anywhere; }
+      /* The MAX is the BASE clamp's own value at 760px (32.68px), not a round
+         number. Anything higher and the headline GROWS as the viewport narrows
+         past 761 — base clamp(30px,4.3vw,56px) bottoms out around there, so a max of 38-42
+         was landing ABOVE where the curve arrived from. It is a jump no
+         screenshot at 1440 or 375 can show you: it lives in the one pixel
+         either side of the boundary. The vw term is untouched, so the steeper
+         small-screen curve this breakpoint exists for still happens. */
+      html[data-page="BJ"] :where(.h2) { font-size: clamp(27px,7.2vw,32px); max-width: none; overflow-wrap: anywhere; }
       html[data-page="BJ"] :where(.lede) { max-width: none; }
       html[data-page="BJ"] :where(.plate) { border-radius: var(--r-md); }
     }
