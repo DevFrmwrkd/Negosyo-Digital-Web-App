@@ -965,6 +965,23 @@ ${isYmyl ? '- This is a YMYL business (medical/dental/aesthetic). Be precise; no
                 ? { marquee: (extractedContent as any).marquee } : {}),
             navCtaText: (extractedContent as any)?.navCtaText,
             navCtaHref: (extractedContent as any)?.navCtaHref,
+            // The browser-tab icon and the social-card image. Both are admin
+            // uploads that live at the TOP LEVEL of the draft, and neither was
+            // in this whitelist — so transformToAstroData read content.favicon
+            // as undefined, layout.favicon came out empty, and every template
+            // rendered neither its <link rel="icon"> nor its og:image, both of
+            // which are guarded on it. An admin set a favicon, watched it save
+            // with a thumbnail in the Media card, published, and got the
+            // browser default globe. Verified on a live workers.dev page: the
+            // deployed head carried title, description and og:title/description
+            // and neither of these two.
+            //
+            // THIS OBJECT IS A WHITELIST, not a spread. Anything an editor can
+            // write that is not named here is dropped silently between save and
+            // build — the save succeeds, the toast is green, and the field never
+            // reaches the page.
+            favicon: (extractedContent as any)?.favicon,
+            ogImage: (extractedContent as any)?.ogImage,
         }
 
         let generatedHtml = await buildAstroSite(contentWithContact, finalCustomizations, photos)
