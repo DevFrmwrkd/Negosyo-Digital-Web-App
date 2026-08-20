@@ -101,7 +101,13 @@ export default function PayoutsPage() {
     const [refreshNote, setRefreshNote] = useState<string | null>(null)
 
     const handleRefresh = async (rows: WithdrawalRecord[]) => {
-        if (!user || rows.length === 0) return
+        if (!user) return
+        if (rows.length === 0) {
+            // Say so rather than doing nothing. A button that appears to ignore
+            // the click is indistinguishable from one that is broken.
+            setRefreshNote('Nothing in flight to check — every transfer is settled.')
+            return
+        }
         setRefreshing(true)
         setRefreshNote(null)
         try {
@@ -181,6 +187,17 @@ export default function PayoutsPage() {
         [awaitingFunding],
     )
 
+    // Everything Wise can still tell us something new about: a transfer exists,
+    // and it has not reached a terminal state. Deliberately wider than
+    // awaitingFunding — a funded, in-flight transfer is exactly the row an admin
+    // wants to re-check, and the first version of this button could not touch it.
+    // Completed and failed rows are excluded: terminal, and refreshFromWise
+    // refuses to re-apply their transition anyway.
+    const syncable = useMemo(
+        () => (withdrawals ?? []).filter((w) => w.status === 'processing' && !!w.wiseTransferId),
+        [withdrawals],
+    )
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -193,13 +210,39 @@ export default function PayoutsPage() {
 
     return (
         <AdminLayout>
-            {/* Page Title */}
-            <div className="mb-6 lg:mb-8">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payout Management</h1>
-                <p className="text-sm text-gray-500 mt-1">
-                    Ledger of creator withdrawals. Transfers are created automatically, but each one must be
-                    released by hand in Wise before the creator is paid.
-                </p>
+            {/* Page Title + the always-available Wise sync.
+                Lives here rather than in the funding banner: the banner only
+                renders while something needs funding, so the button vanished the
+                moment the queue emptied — and it could only ever refresh rows
+                that needed funding, never an in-flight transfer an admin wants to
+                check for completion. Reconciling with Wise is a thing you do at
+                any time, so it is always on screen. */}
+            <div className="mb-6 lg:mb-8 flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Payout Management</h1>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Ledger of creator withdrawals. Transfers are created automatically, but each one must be
+                        released by hand in Wise before the creator is paid.
+                    </p>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => handleRefresh(syncable)}
+                        disabled={refreshing}
+                        className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 disabled:opacity-50"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                        {refreshing ? 'Checking Wise…' : 'Sync with Wise'}
+                    </button>
+                    <span className="text-xs text-gray-500">
+                        {refreshNote
+                            ? refreshNote
+                            : syncable.length > 0
+                              ? `${syncable.length} in-flight transfer${syncable.length === 1 ? '' : 's'} to check`
+                              : 'Nothing in flight'}
+                    </span>
+                </div>
             </div>
 
             {/* Action queue. The answer to "which creator do I fund?" — without it
@@ -520,6 +563,25 @@ function TransactionDetailModal({
                             {w.wiseStatus && <Field label="Wise status" value={w.wiseStatus} />}
                             {w.wiseDetailedState && <Field label="Wise detail" value={w.wiseDetailedState} mono />}
                             {w.transactionRef && <Field label="Webhook ref" value={w.transactionRef} mono />}
+                            {/* Available for ANY row with a transfer, not just ones
+                                needing funding — checking whether an in-flight
+                                payout has landed is the other half of the job. */}
+                            {w.wiseTransferId && (
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => onRefresh([w])}
+                                        disabled={refreshing}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800 disabled:opacity-50"
+                                    >
+                                        <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                                        {refreshing ? 'Checking…' : 'Sync this one with Wise'}
+                                    </button>
+                                    <p className="mt-1.5 text-[11px] text-gray-500">
+                                        Wise state {describeStateAge(w, Date.now())}. Otherwise refreshed hourly.
+                                    </p>
+                                </div>
+                            )}
                         </Section>
                     )}
 
@@ -549,15 +611,6 @@ function TransactionDetailModal({
                                         <Wallet className="h-3.5 w-3.5" />
                                         Open Wise
                                     </a>
-                                    <button
-                                        type="button"
-                                        onClick={() => onRefresh([w])}
-                                        disabled={refreshing}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-bold text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50"
-                                    >
-                                        <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-                                        {refreshing ? 'Checking…' : 'Refresh from Wise'}
-                                    </button>
                                 </div>
                             </div>
                         </Section>
