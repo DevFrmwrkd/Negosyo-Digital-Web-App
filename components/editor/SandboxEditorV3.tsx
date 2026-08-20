@@ -857,8 +857,18 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                                             aria-label="Remove this photo"
                                                             className="absolute right-1 top-1 hidden h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[11px] font-bold text-white group-hover:flex"
                                                         >×</button>
+                                                        {/* The badge used to read "uploaded · unsaved" for as long as the
+                                                            photo existed. `uploaded` only means "this url is not one of
+                                                            the submission's ORIGINAL photos" — and saving persists the draft,
+                                                            not submissions.photos, so that stayed true after a successful
+                                                            save and the label went on calling a saved photo unsaved. An
+                                                            admin uploads, saves, still reads "unsaved", and re-uploads.
+                                                            The upload half is a fact about the photo; the unsaved half is a
+                                                            fact about the DRAFT, so it now tracks the real dirty state. */}
                                                         {uploaded && (
-                                                            <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1 py-0.5 text-[8px] font-semibold text-white">uploaded · unsaved</span>
+                                                            <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1 py-0.5 text-[8px] font-semibold text-white">
+                                                                {m.dirty ? "uploaded · unsaved" : "uploaded"}
+                                                            </span>
                                                         )}
                                                     </div>
                                                 );
