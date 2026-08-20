@@ -242,8 +242,17 @@ const hasArrival = !!(hasHeadline || sub || heroImage);
       exists where there is a photograph to darken. */}
   {heroImage && <div class="vm-scrim" aria-hidden="true"></div>}
 
-  {/* Layer 2 — the copy stack. */}
-  <div class="wrap vm-copy">
+  {/* Layer 2 — the copy stack.
+
+      TWO ELEMENTS, NOT ONE. .wrap is the page's centring container
+      (width: min(1280px, 92vw); margin-inline: auto) and .vm-copy is the panel.
+      Putting a max-width on the same element that carries margin-inline:auto
+      centres the PANEL in the viewport instead of seating it at the wrap's left
+      edge — the panel drifted to the middle of the page and stopped lining up
+      with the wordmark above it. The container centres; the panel sits left
+      inside it. */}
+  <div class="wrap vm-copy-wrap">
+  <div class="vm-copy">
     {kicker && <span class="kick vm-kick" data-field="hero.kicker">{kicker}</span>}
     {!useRows && headline !== '' && <h1 class="vm-h1" data-field="hero.headline" set:html={headlineHtml}></h1>}
     {useRows && (
@@ -264,6 +273,7 @@ const hasArrival = !!(hasHeadline || sub || heroImage);
         )}
       </div>
     )}
+  </div>
   </div>
 </section>
 )}
@@ -353,8 +363,15 @@ const hasArrival = !!(hasHeadline || sub || heroImage);
      corner. The width is the copy measure it already had plus the padding,
      so the panel wraps the text rather than the text being re-flowed to fit
      a new box. */
+  /* The container only carries the measure and the centring, both from the
+     shared .wrap primitive. It must NOT be given a width of its own. */
+  .vm-copy-wrap { min-width: 0; }
+
   .vm-copy {
     max-width: min(760px, 100%);
+    /* Explicit: the panel seats at the container's left edge, never centred.
+       margin-inline:auto on an ancestor is what put it in the middle. */
+    margin-inline: 0 auto;
     background-color: rgba(var(--scrim-rgb), .92);
     border: 1px solid var(--rule);
     border-radius: var(--r-lg);
