@@ -188,7 +188,14 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 path: 'hero.headline',
                 fallbackPaths: ['tagline', 'business_name'],
                 placeholder: 'Your one-line pitch',
-                hint: 'The H1 / hero title. Multi-line H1s use the list below.',
+                // Several templates print the closing phrase of the headline in
+                // their accent colour — it is the most recognisable thing about
+                // them. They derive it from the sentence itself (the last line,
+                // or whatever follows the last comma), so most headlines get it
+                // for free; this line is here so an owner who wants to choose
+                // the phrase knows they can, instead of the feature being
+                // reachable only by someone who guesses at HTML.
+                hint: 'The H1 / hero title. Multi-line H1s use the list below. Wrap a phrase in <em>…</em> to print it in the accent colour.',
             },
             {
                 kind: 'list',
