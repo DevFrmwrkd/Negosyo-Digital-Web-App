@@ -16,8 +16,39 @@
  *   services.list.N.image → services[N].image
  *   gallery.tile.N        → featured_images[N]
  *   favicon               → favicon
- *   (anything else / null) → appended to images[]
+ *   null                  → appended to images[] (the library)
+ *   anything else         → written AT THAT PATH
+ *
+ * The named cases above are LEGACY STORAGE KEYS that the older templates read.
+ * Everything else is a real dotted content path — gallery.items.2.image,
+ * services.items.0.image, ctaBand.image, why.image — and the newer templates
+ * read it exactly where it is written. This used to append those to images[]
+ * instead, which put the photo back in the library and left the slot empty: the
+ * admin picked a photo for a gallery tile and nothing changed on the page.
  */
+
+/**
+ * Immutable dotted-path write. Clones every object it passes through, so the
+ * caller's draft is never mutated, and creates an ARRAY where the next segment
+ * is a number — 'gallery.items.2.image' must build items as a list, not as an
+ * object with a "2" key, or nothing downstream will iterate it.
+ */
+function setAtPath(root: any, path: string, value: unknown): void {
+    const parts = path.split(".");
+    let node: any = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+        const key = parts[i];
+        const nextIsIndex = /^\d+$/.test(parts[i + 1]);
+        const existing = node[key];
+        node[key] = Array.isArray(existing)
+            ? existing.slice()
+            : (existing && typeof existing === "object")
+                ? { ...existing }
+                : (nextIsIndex ? [] : {});
+        node = node[key];
+    }
+    node[parts[parts.length - 1]] = value;
+}
 export function applyImageSlot(draft: any, slot: string | null, url: string): any {
     const next = { ...(draft ?? {}) };
     const images = ((next.images as string[]) ?? []).slice();
@@ -52,7 +83,8 @@ export function applyImageSlot(draft: any, slot: string | null, url: string): an
         featured[idx] = url;
         next.featured_images = featured;
     } else {
-        next.images = [...images, url];
+        // A real content path. See the note above the function.
+        setAtPath(next, slot, url);
     }
     return next;
 }
