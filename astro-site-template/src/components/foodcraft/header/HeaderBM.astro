@@ -32,9 +32,19 @@
  *     renders (see the anchor guard below).
  *   - `i` is the ORIGINAL, pre-filter index of a nav link, so dropping an
  *     unreachable row 2 cannot misdirect an edit into row 3.
- *   - lib/astro-builder.ts normalises content.navbar_links to the derived five
- *     rows and then copies that same array onto layout.navLinks, so the index
- *     this file writes into data-field is the index the sidebar list edits.
+ *   - the nav rows are read from content.navbar_links, NOT layout.navLinks.
+ *     An earlier draft of this file asserted that lib/astro-builder.ts "copies
+ *     that same array onto layout.navLinks". It does not, and the claim was
+ *     load-bearing: astro-builder.ts:880 resolves content.navbar_links to the
+ *     owner's rows or else derive-content-defaults' FIVE, while :348 builds
+ *     layout.navLinks from the RAW content.navbar_links or else FOUR hard-coded
+ *     rows. On a site whose owner never touched the nav the two arrays are
+ *     different lengths with different labels — so indexing layout.navLinks and
+ *     writing navbar_links.${i} aimed the owner's edit at the wrong row
+ *     (clicking the third cell, "Gallery", opened the input holding "Why us").
+ *     The sidebar list edits navbar_links, so navbar_links.${i} is a live hook
+ *     only when i indexes THAT array. layout.navLinks stays as a defensive
+ *     fallback for a harness that renders this component without astro-builder.
  *
  * NOT RENDERED, deliberately:
  *   - THE DESIGN'S OWN COPY. "Tahanan", "San Juan", "Menu", "Our story",
@@ -102,8 +112,8 @@
  * 5. WHY THE BUTTON IS 44px AND THE RAIL IS ~80px, NOT THE DESIGN'S ~76px.
  *    btnNav declares no height and lands about 40px tall — under the 44px
  *    target size. Left alone it would be worse in the other direction: the
- *    wrapper's .btn sets min-height:48px and no line-height, so it would
- *    inherit body's 1.78, compute 50.25px and give an 86px rail. So the
+ *    wrapper's .btn carries min-height:48px and its own line-height:1, so the
+ *    button would floor at 48px and give an 84px rail. So the
  *    button restates the design's 13px/24px padding, takes line-height:1.2
  *    (the `normal` the design actually renders at) and a 44px floor — the
  *    closest height to the design that is still a legal tap target. The
@@ -214,12 +224,17 @@ const brand = String(c.footer?.brand || lay.businessName || '').trim();
 // rather than guessed out of the address.
 const locality = String(c.footer?.locality ?? '').trim();
 
-// Nav links. `i` is the ORIGINAL index so per-link edits stay aimed at the row
-// the owner clicked even after unreachable rows are dropped.
-const navLinks: Array<{ href: string; label: string; i: number }> =
-  (Array.isArray(lay.navLinks) ? lay.navLinks : [])
-    .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
-    .filter((l: { href: string; label: string }) => l.href && l.label);
+// Nav links. content.navbar_links is the array the sidebar list edits, so it is
+// the array `i` must index — see the note above about layout.navLinks holding a
+// DIFFERENT list on a site whose owner supplied no rows. `i` is the ORIGINAL
+// index so per-link edits stay aimed at the row the owner clicked even after
+// unreachable rows are dropped.
+const navSource: any[] = Array.isArray(c.navbar_links)
+  ? c.navbar_links
+  : (Array.isArray(lay.navLinks) ? lay.navLinks : []);
+const navLinks: Array<{ href: string; label: string; i: number }> = navSource
+  .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
+  .filter((l: { href: string; label: string }) => l.href && l.label);
 
 // The walnut button. Label and target both come from the Header group; an empty
 // label removes the whole element rather than leaving a walnut rectangle.

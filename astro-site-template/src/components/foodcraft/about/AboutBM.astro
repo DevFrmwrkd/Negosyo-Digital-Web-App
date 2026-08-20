@@ -189,11 +189,12 @@
  * fourteen, which is precisely the local re-derivation this family keeps being
  * burned by.
  *
- * CONTRAST, recomputed from PageBM's own token values rather than copied from
- * its table. That table understates nearly every pair (it reads 14.9 for a
- * ratio that is 16.9) and overstates one (band-kick on --band at 7.62 against a
- * true 7.37); none of it changes a pass or a fail, but the figures below are
- * the ones that survive being checked: label --ink on --paper 16.91:1,
+ * CONTRAST, read off the one computed table rather than worked out by hand.
+ * It agrees with PageBM's VERIFIED CONTRAST block figure for figure — an
+ * earlier draft of this comment claimed that block understated nearly every
+ * pair and overstated --band-kick on --band, and it does neither; that
+ * disagreement was hand arithmetic done here, not a defect in the wrapper.
+ * The pairs this section renders: label --ink on --paper 16.91:1,
  * paragraphs --ink-soft on --paper 7.71:1, eyebrow --accent on --paper 7.11:1,
  * and the ledger's VALUE cell --muted on --paper 6.11:1. Nothing in this
  * section is below AA on the native palette — unlike the two templates before
@@ -427,9 +428,10 @@ const hasSection = Boolean(lead || image) || paraRows.length > 0 || specRows.len
      clip; the design's fixed 500px is the one thing it does not. */
   .tah-about-plate { height: 500px; }
 
-  /* R8 · ONE COLUMN BEFORE THE COPY MEASURE IS SQUEEZED. At 900px the .94fr
-     track is ~397px, which is about where a 500px photograph stops earning its
-     width and the 50ch paragraph starts breaking badly. */
+  /* R8 · ONE COLUMN BEFORE THE COPY MEASURE IS SQUEEZED. At a 900px viewport
+     the .wrap is 828px (92vw, not the 1160px cap), so the .94fr track is
+     ~363px — about where a 500px photograph stops earning its width and the
+     50ch paragraph starts breaking badly. */
   @media (max-width: 900px) {
     .tah-about-grid {
       grid-template-columns: minmax(0, 1fr);
