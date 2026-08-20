@@ -147,6 +147,25 @@ export default defineSchema({
         payoutRequestedAt: v.optional(v.number()), // Timestamp
         creatorPaidAt: v.optional(v.number()), // Timestamp
 
+        // ==================== PROMO / COMPED SITES ====================
+        // A comped submission is one the business owner never paid for: the
+        // creator gave the website away under the promo and still earns their
+        // commission. The ONLY thing that distinguishes it from a real sale is
+        // this field — `amount` still holds the list price (what the site was
+        // worth) and `creatorPayout` still holds the ₱500, because the creator
+        // genuinely earned it and every payout query must keep paying it.
+        //
+        // v.string() rather than a union, matching `status` above: the mobile
+        // app shares this schema and a union here would break its deploy the
+        // moment either side adds a mode. Valid values: 'paid' | 'comped'.
+        // ABSENT MEANS PAID — every row written before the promo existed, and
+        // every ordinary sale after it, leaves this unset. Readers must treat
+        // `undefined` as 'paid' and never as "unknown".
+        pricingMode: v.optional(v.string()),
+        compedBy: v.optional(v.string()),      // Admin Clerk ID who gave it away
+        compedAt: v.optional(v.number()),      // Timestamp
+        compedReason: v.optional(v.string()),  // Free-text note, admin-supplied
+
         // Airtable sync
         airtableRecordId: v.optional(v.string()),
         airtableSyncStatus: v.optional(v.string()),

@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
 import { internal } from './_generated/api';
-import { PRICE_CEILING, UNLOCK_THRESHOLD } from '../lib/pricing';
+import { PRICE_CEILING, UNLOCK_THRESHOLD, PRICING_MODE_COMPED, isComped } from '../lib/pricing';
 
 // Submission statuses that count as "approved or beyond" for the price-tier
 // unlock — i.e. the creator proved out a real, accepted submission.
@@ -470,6 +470,113 @@ export const markPaid = mutation({
         });
 
         return args.submissionId;
+    },
+});
+
+/**
+ * PROMO — give the website to the business owner for free, pay the creator anyway.
+ *
+ * The creator keeps their full commission (`creatorPayout`, ₱500 at the base
+ * price); the owner is charged nothing. This is a marketing cost, not a sale,
+ * and it is recorded as one: `pricingMode: 'comped'` is what every downstream
+ * reader keys off to keep the promo out of revenue.
+ *
+ * Same admin resolve as markPaid, for the same reason — this mutation is public
+ * (the Next routes reach it via fetchMutation, which forwards no Clerk token)
+ * and it moves money onto a creator's withdrawable balance.
+ *
+ * Two things it deliberately will not do:
+ *
+ *   1. The custom-domain tier is REFUSED, not silently downgraded. Registering
+ *      a domain is a real charge on a saved card; a free ₱1,499 site would cost
+ *      the registrar fee on top of the ₱500 payout. The admin must move the
+ *      submission to the standard tier first — a decision with a price attached
+ *      should be made by a person, not inferred here.
+ *   2. It does not require `status === 'pending_payment'`. That status only
+ *      exists because a payment email went out, and a promo site should never
+ *      have been sent one. Comping is allowed from the moment the site is
+ *      publishable.
+ */
+export const markComped = mutation({
+    args: {
+        submissionId: v.id('submissions'),
+        adminId: v.string(),
+        reason: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const actor = await ctx.db
+            .query('creators')
+            .withIndex('by_clerk_id', (q) => q.eq('clerkId', args.adminId))
+            .first();
+        if (!actor || actor.role !== 'admin') throw new Error('Forbidden: admin access required');
+
+        const submission = await ctx.db.get(args.submissionId);
+        if (!submission) throw new Error('Submission not found');
+
+        // Same double-pay guard creditCreatorForPayment applies, surfaced here
+        // so the admin gets a real message instead of a silent no-op.
+        if (submission.status === 'completed' || submission.creatorPaidAt) {
+            throw new Error('This submission has already been settled — the creator was paid for it.');
+        }
+
+        const subm = submission as any;
+        if (subm.submissionType === 'with_custom_domain' || subm.requestedDomain) {
+            throw new Error(
+                'Custom-domain submissions cannot be given away for free — registering the domain is a real cost. ' +
+                'Switch this submission to the standard tier first, or mark it paid once the owner pays the ₱1,499.'
+            );
+        }
+
+        // A promo site the owner can never see is not a gift. Publishing stays
+        // the admin's job (nothing here touches Cloudflare), but comping before
+        // the website even exists would credit ₱500 for nothing deliverable.
+        const website = await ctx.db
+            .query('generatedWebsites')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+        if (!website) {
+            throw new Error('Generate the website before giving it away — there is nothing to hand over yet.');
+        }
+
+        // Written BEFORE the credit is scheduled, so creditCreatorForPayment
+        // reads 'comped' off the row itself and cannot mistake this for a sale
+        // even if the flag it is passed were ever dropped.
+        await ctx.db.patch(args.submissionId, {
+            pricingMode: PRICING_MODE_COMPED,
+            compedBy: args.adminId,
+            compedAt: Date.now(),
+            compedReason: args.reason?.trim() || undefined,
+        } as any);
+
+        await ctx.scheduler.runAfter(0, internal.payments.creditCreatorForPayment, {
+            submissionId: args.submissionId,
+            triggeredBy: `admin:${args.adminId}`,
+            comped: true,
+        });
+
+        return args.submissionId;
+    },
+});
+
+/**
+ * What the promo has cost so far: the payouts booked against websites nobody
+ * paid for. Read by the admin dashboard so free sites are visible as spend
+ * rather than quietly inflating the earnings tile.
+ */
+export const getPromoStats = query({
+    args: {},
+    handler: async (ctx) => {
+        const all = await ctx.db.query('submissions').collect();
+        const comped = all.filter((s) => isComped(s as any));
+
+        return {
+            compedCount: comped.length,
+            // Real money owed to (or already withdrawn by) creators for free sites.
+            compedPayoutTotal: comped.reduce((sum, s) => sum + (s.creatorPayout ?? 0), 0),
+            // What those owners would have been charged — the promo's headline
+            // "value given away", not a receivable. Never add this to revenue.
+            compedListValue: comped.reduce((sum, s) => sum + (s.amount ?? 0), 0),
+        };
     },
 });
 

@@ -3,7 +3,7 @@ import { internalAction, internalMutation } from './_generated/server'
 import { internal } from './_generated/api'
 import { extractReferenceFromText } from '../lib/payments/referenceCode'
 import { determinePaymentStatus } from '../lib/payments/webhookParser'
-import { REFERRAL_BONUS } from '../lib/pricing'
+import { REFERRAL_BONUS, PRICING_MODE_COMPED, isComped, ownerChargeFor } from '../lib/pricing'
 
 // ==================== SHARED CREDIT LOGIC ====================
 // Used by both admin.markPaid (manual) and auto-payment (webhook)
@@ -12,12 +12,20 @@ import { REFERRAL_BONUS } from '../lib/pricing'
  * Credit a creator for a paid submission.
  * Shared logic: updates submission, credits balance, creates earnings,
  * sends notification, logs audit, checks referral qualification.
+ *
+ * `comped: true` is the promo path (admin.markComped): the owner paid nothing,
+ * the creator is still owed their commission. Everything about the CREDIT is
+ * identical — same balance, same earnings row, same analytics — because the
+ * creator's money is real either way. What changes is everything that assumes
+ * cash arrived: no registrar purchase, no referral bonus, and an audit trail
+ * that says which it was. See the numbered notes below.
  */
 export const creditCreatorForPayment = internalMutation({
     args: {
         submissionId: v.id('submissions'),
         triggeredBy: v.string(), // 'admin:<clerkId>' or 'system:auto-payment'
         paymentRefCode: v.optional(v.string()),
+        comped: v.optional(v.boolean()),
     },
     handler: async (ctx, args) => {
         const submission = await ctx.db.get(args.submissionId)
@@ -28,6 +36,12 @@ export const creditCreatorForPayment = internalMutation({
             console.log(`[PAYMENTS] Submission ${args.submissionId} already paid, skipping`)
             return
         }
+
+        // Trust the row over the caller. admin.markComped patches pricingMode
+        // BEFORE scheduling this, so a comped submission stays comped even if
+        // some future call site forgets the flag — and the Wise webhook can
+        // never accidentally re-classify one as a real sale.
+        const comped = args.comped === true || isComped(submission as any)
 
         const payoutAmount = submission.creatorPayout ?? 0
 
@@ -55,11 +69,15 @@ export const creditCreatorForPayment = internalMutation({
         })
 
         // 4. Audit log
+        // A comped site must never look like a collected payment in the log —
+        // that log is the only place the two can be told apart after the fact.
         const isAuto = args.triggeredBy.startsWith('system:')
         await ctx.scheduler.runAfter(0, internal.auditLogs.log, {
             adminId: args.triggeredBy,
-            action: isAuto ? 'payment_auto_matched' as any : 'payment_sent',
-            targetType: isAuto ? 'payment' as any : 'submission',
+            action: comped
+                ? 'submission_comped' as any
+                : (isAuto ? 'payment_auto_matched' as any : 'payment_sent'),
+            targetType: comped ? 'submission' : (isAuto ? 'payment' as any : 'submission'),
             targetId: args.submissionId,
             metadata: {
                 businessName: submission.businessName,
@@ -67,6 +85,13 @@ export const creditCreatorForPayment = internalMutation({
                 creatorId: submission.creatorId,
                 paymentRefCode: args.paymentRefCode,
                 automated: isAuto,
+                comped,
+                // What the owner was actually charged (₱0 on the promo) against
+                // what the site was listed at, so the giveaway's cost is
+                // auditable without re-deriving it from pricing constants.
+                ownerCharged: comped ? 0 : ownerChargeFor(submission as any),
+                listPrice: submission.amount ?? 0,
+                compedReason: comped ? (submission as any).compedReason : undefined,
             },
         })
 
@@ -74,9 +99,11 @@ export const creditCreatorForPayment = internalMutation({
         await ctx.scheduler.runAfter(0, internal.notifications.createAndSend, {
             creatorId: submission.creatorId,
             type: 'payout_sent',
-            title: 'Payment Received!',
-            body: `You received ₱${payoutAmount} for "${submission.businessName}".`,
-            data: { submissionId: args.submissionId, amount: payoutAmount },
+            title: comped ? 'Promo Website Credited!' : 'Payment Received!',
+            body: comped
+                ? `You earned ₱${payoutAmount} for "${submission.businessName}" — given free under the promo.`
+                : `You received ₱${payoutAmount} for "${submission.businessName}".`,
+            data: { submissionId: args.submissionId, amount: payoutAmount, comped },
         })
 
         // 6. Analytics
@@ -98,33 +125,55 @@ export const creditCreatorForPayment = internalMutation({
         })
 
         // 7. Referral qualification check
-        const referral = await ctx.db
-            .query('referrals')
-            .withIndex('by_referred', (q) => q.eq('referredId', submission.creatorId))
-            .filter((q) => q.eq(q.field('status'), 'pending'))
-            .first()
+        //
+        // REFERRAL_BONUS is ₱1,000 and its rule is "on a referred creator's
+        // first PAID submission" (lib/pricing.ts:41). A comped site is not a
+        // paid one, so it cannot be the trigger — otherwise refer-a-friend plus
+        // one promo site mints ₱1,500 against ₱0 of revenue, with nobody having
+        // sold anything. Comped rows are excluded on BOTH sides: they never fire
+        // the bonus, and they never count toward "is this the first", so the
+        // referred creator's first REAL sale still qualifies later.
+        if (!comped) {
+            const referral = await ctx.db
+                .query('referrals')
+                .withIndex('by_referred', (q) => q.eq('referredId', submission.creatorId))
+                .filter((q) => q.eq(q.field('status'), 'pending'))
+                .first()
 
-        if (referral) {
-            const paidSubmissions = await ctx.db
-                .query('submissions')
-                .withIndex('by_creator_id', (q) => q.eq('creatorId', submission.creatorId))
-                .filter((q) => q.eq(q.field('status'), 'completed'))
-                .collect()
+            if (referral) {
+                const completed = await ctx.db
+                    .query('submissions')
+                    .withIndex('by_creator_id', (q) => q.eq('creatorId', submission.creatorId))
+                    .filter((q) => q.eq(q.field('status'), 'completed'))
+                    .collect()
 
-            if (paidSubmissions.length <= 1) {
-                await ctx.scheduler.runAfter(0, internal.referrals.qualifyByCreator, {
-                    referredId: submission.creatorId,
-                    bonusAmount: REFERRAL_BONUS,
-                })
+                const paidSubmissions = completed.filter((s) => !isComped(s as any))
+
+                if (paidSubmissions.length <= 1) {
+                    await ctx.scheduler.runAfter(0, internal.referrals.qualifyByCreator, {
+                        referredId: submission.creatorId,
+                        bonusAmount: REFERRAL_BONUS,
+                    })
+                }
             }
         }
 
-        console.log(`[PAYMENTS] Credited ₱${payoutAmount} to creator ${submission.creatorId} for submission ${args.submissionId} (triggered by ${args.triggeredBy})`)
+        console.log(
+            `[PAYMENTS] Credited ₱${payoutAmount} to creator ${submission.creatorId} for submission ${args.submissionId} ` +
+            `(triggered by ${args.triggeredBy}${comped ? ', COMPED — owner paid ₱0' : ''})`
+        )
 
         // 8. Custom domain auto-setup
-        // If this submission has a requested custom domain, kick off the registration pipeline
+        // If this submission has a requested custom domain, kick off the registration pipeline.
+        //
+        // NEVER on the comped path. setupForSubmission buys a real domain on a
+        // saved card, so a comped custom-domain site would cost the platform the
+        // registrar fee AND the ₱500 payout while collecting nothing.
+        // admin.markComped already refuses the custom-domain tier up front; this
+        // is the second lock, because this mutation is also reachable from the
+        // Wise webhook and from any future caller.
         const subm = submission as any
-        if (subm.requestedDomain && subm.submissionType === 'with_custom_domain') {
+        if (!comped && subm.requestedDomain && subm.submissionType === 'with_custom_domain') {
             console.log(`[PAYMENTS] Scheduling domain setup for ${subm.requestedDomain}`)
             await ctx.scheduler.runAfter(0, internal.domains.setupForSubmission, {
                 submissionId: args.submissionId,

@@ -6,7 +6,7 @@ import { Id } from '@/convex/_generated/dataModel'
 
 /**
  * Preview the email that was (or would be) sent to the client.
- * GET /api/preview-email?submissionId=xxx&type=approval|payment_confirmation
+ * GET /api/preview-email?submissionId=xxx&type=approval|payment_confirmation|promo_free
  */
 export async function GET(request: NextRequest) {
     try {
@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
             getDomainLiveEmailHtml,
             getDomainSetupInProgressEmailHtml,
             getDomainRenewalReminderEmailHtml,
+            getPromoWebsiteLiveEmailHtml,
         } = await import('@/lib/email/templates')
 
         let html: string
@@ -87,6 +88,29 @@ export async function GET(request: NextRequest) {
                 platformEmail: process.env.WISE_EMAIL,
                 customDomain,
                 domainCostPHP: (submission as any).domainCostPHP || undefined,
+            })
+        } else if (type === 'promo_free') {
+            // The gift notice sent by /api/mark-comped. Resolve the creator the
+            // same way that route does, so the preview shows the real name the
+            // owner would read rather than the generic fallback.
+            let creatorName = ''
+            try {
+                const withCreator = await fetchQuery(api.submissions.getByIdWithCreator, {
+                    id: submissionId as Id<'submissions'>,
+                })
+                creatorName = [withCreator?.creator?.firstName, withCreator?.creator?.lastName]
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim()
+            } catch {
+                // Preview-only — the unnamed variant is a legitimate render.
+            }
+            html = getPromoWebsiteLiveEmailHtml({
+                businessName: submission.businessName,
+                businessOwnerName: submission.ownerName,
+                websiteUrl: publishedUrl || '#',
+                creatorName: creatorName || undefined,
+                platformEmail: process.env.WISE_EMAIL,
             })
         } else if (type === 'domain_setup_progress') {
             const submissionAny = submission as any

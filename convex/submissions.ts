@@ -3,7 +3,7 @@ import { query, mutation, internalQuery, internalMutation, internalAction } from
 import type { MutationCtx } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { internal } from './_generated/api';
-import { BASE_PRICE, STANDARD_PRICE, UNLOCK_THRESHOLD, COMMISSION_RATE, CUSTOM_DOMAIN_ADDON, commissionFor, ownerTotal, domainAddOnFor } from '../lib/pricing';
+import { BASE_PRICE, STANDARD_PRICE, UNLOCK_THRESHOLD, COMMISSION_RATE, CUSTOM_DOMAIN_ADDON, commissionFor, ownerTotal, domainAddOnFor, isComped, ownerChargeFor } from '../lib/pricing';
 
 // ==================== QUERIES ====================
 
@@ -241,6 +241,12 @@ export const getCreatorPricingSummary = query({
                 const discountPct = sellPrice > 0
                     ? Math.max(0, Math.round((1 - sellPrice / 4999) * 100))
                     : 0;
+                // Promo site: the owner was charged nothing. `sellPrice` stays
+                // at the list value (it is what the site was worth, and the
+                // creator's ₱500 is half of it), but ownerTotal must be the ₱0
+                // that actually changed hands — this row feeds a view whose
+                // whole subject is what creators charge businesses.
+                const comped = isComped(s as any);
                 return {
                     submissionId: s._id,
                     businessName: s.businessName,
@@ -248,7 +254,9 @@ export const getCreatorPricingSummary = query({
                     domainAddOn,
                     discountPct,
                     creatorPayout: s.creatorPayout ?? commissionFor(sellPrice),
-                    ownerTotal: amount,
+                    ownerTotal: ownerChargeFor(s as any),
+                    listPrice: amount,
+                    isComped: comped,
                     status: s.status,
                     createdAt: s._creationTime,
                 };
@@ -256,11 +264,16 @@ export const getCreatorPricingSummary = query({
             .sort((a, b) => b.createdAt - a.createdAt);
 
         const paidRows = rows.filter((r) => paidStatuses.includes(r.status));
-        const sellPrices = rows.map((r) => r.sellPrice).filter((n) => n > 0);
+        // Comped rows are excluded from the price spread: a giveaway is not
+        // evidence of what this creator charges, and leaving them in would drag
+        // the average toward a price nobody was ever quoted. They stay in
+        // lifetimeEarned — the creator earned that money for real.
+        const sellPrices = rows.filter((r) => !r.isComped).map((r) => r.sellPrice).filter((n) => n > 0);
         const avgSellPrice = sellPrices.length
             ? Math.round(sellPrices.reduce((a, b) => a + b, 0) / sellPrices.length)
             : 0;
         const lifetimeEarned = paidRows.reduce((a, r) => a + r.creatorPayout, 0);
+        const compedRows = rows.filter((r) => r.isComped);
 
         return {
             rows,
@@ -269,6 +282,8 @@ export const getCreatorPricingSummary = query({
             maxSellPrice: sellPrices.length ? Math.max(...sellPrices) : 0,
             lifetimeEarned,
             paidCount: paidRows.length,
+            compedCount: compedRows.length,
+            compedPayoutTotal: compedRows.reduce((a, r) => a + r.creatorPayout, 0),
             totalCount: rows.length,
         };
     },

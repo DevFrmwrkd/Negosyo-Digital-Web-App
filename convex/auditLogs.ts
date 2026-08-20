@@ -25,7 +25,11 @@ export const log = internalMutation({
             v.literal('payout_admin_override'),
             v.literal('payment_auto_matched'),
             v.literal('payment_partial'),
-            v.literal('payment_unmatched')
+            v.literal('payment_unmatched'),
+            // Promo: website given to the owner for free, creator still paid.
+            // Deliberately NOT one of the payment_* actions — no money came in,
+            // and the audit log is the only durable record of that difference.
+            v.literal('submission_comped')
         ),
         targetType: v.union(
             v.literal('submission'),
