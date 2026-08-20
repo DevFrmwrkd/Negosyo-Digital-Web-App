@@ -283,13 +283,15 @@ const hasArrival = !!(hasHeadline || sub || heroImage);
     position: relative;
     min-height: 92vh;
     display: flex;
-    align-items: flex-end;
+    /* The panel sits high, under the rail, with the photograph carrying the
+       space beneath it. */
+    align-items: flex-start;
     overflow: hidden;
     /* The design's floor is a flat 92px — not a clamp. It sits on the SECTION
        rather than on the copy block because the copy is the bottom-aligned flex
        item, which puts the same 92px between the last line and the edge. The
        narrow reductions live in the 900 query below. */
-    padding: 0 0 92px;
+    padding: clamp(40px, 5vw, 72px) 0 92px;
   }
   /* No photograph ⇒ no 92vh of empty ground. See the doc comment. */
   .vm-arrive--flat {
@@ -335,6 +337,29 @@ const hasArrival = !!(hasHeadline || sub || heroImage);
 
   /* No width here — .wrap owns the measure, and a width on this class would
      out-specify it and blow the copy out to the full viewport. */
+  /* ── THE READABILITY PANEL ────────────────────────────────────────────
+     Copy that sits on a photograph gets a ground. Every other section in
+     this template is type on a flat colour and needs nothing; the two
+     photo-backed ones — this and the closing band — put their copy in a
+     bordered near-black panel, which is how the design renders and the only
+     way a 96px serif stays readable over a picture the owner chose and we
+     have never seen.
+
+     The scrim stays: it grades the whole photograph so the panel is not a
+     bright rectangle floating on an unrelated image. The panel then carries
+     the text.
+
+     Values: the design's own scrim colour at .92, its hairline, its 3px
+     corner. The width is the copy measure it already had plus the padding,
+     so the panel wraps the text rather than the text being re-flowed to fit
+     a new box. */
+  .vm-copy {
+    max-width: min(760px, 100%);
+    background-color: rgba(var(--scrim-rgb), .92);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-lg);
+    padding: clamp(30px, 4.2vw, 56px);
+  }
   .vm-copy {
     position: relative;
     z-index: 2;
