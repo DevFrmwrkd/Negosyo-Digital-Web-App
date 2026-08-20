@@ -1,0 +1,609 @@
+---
+/**
+ * foodcraft / CtaBandBO — "Sipsip Tea Bar" CLOSING CTA BAND
+ * (design element data-component="CTA-BAND").
+ *
+ * ROLE. The last ask on the page. One centred ultraviolet slab — a 36px-radius
+ * panel filled with --accent — carrying a BLUSH PILL eyebrow, the largest
+ * Baloo 2 line after the h1, one sentence, and exactly two ways to act: the
+ * owner's own CTA as the cream pill and the owner's own phone number as the
+ * paper-outlined pill beside it. It is the same slab the hero opens on, closing
+ * the page on the colour it opened with, and it is a CARD on the blush-cream
+ * ground rather than a full-bleed band — which is why it opts into none of the
+ * wrapper's .band-* classes (see THE GROUND below).
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * the element carrying data-component="CTA-BAND" in
+ * "Sipsip Tea Bar Landing.dc.html":
+ *
+ *   section    max-width 1200px, centred, padding 76px 28px 0   → .wrap + a
+ *              76px top and a ZERO floor (see THE FLOOR)
+ *   panel      background #7B4FA8 → --accent; border-radius 36px;
+ *              padding 64px 52px; text-align center;
+ *              position relative; overflow hidden
+ *   eyebrow    #F2C6DA ground → --pink, #5C2A45 label → --plum, 11px / 700 /
+ *              .14em caps, padding 8px 16px, radius 100px → --r-pill
+ *   h2         Baloo 2 700, clamp(32px,4.6vw,64px), lh 1.06,
+ *              margin .24em auto .26em, #FFF7F2 → --on-accent, max-width 20ch
+ *   sub        17px / 1.75, #EFE4F6 → --lilac, margin 0 auto 30px,
+ *              max-width 42ch
+ *   actions    flex, gap 11px, wrap, align-items center, justify-content center
+ *   primary    btnCream — which the design's own renderVals() spells
+ *              `inline-flex; center; 13px; 700; padding 16px 30px;
+ *              border-radius 100px; background #FFF7F2; color #4A2A6B` — i.e.
+ *              .btn.btn--cream character for character, with ZERO extra
+ *              declarations in this file
+ *   secondary  2px solid rgba(255,247,242,.55), #FFF7F2 label, 13px / 700,
+ *              padding 15px 28px, radius 100px  → .btn.btn--line re-pointed at
+ *              the panel's own on-colour (see THE OUTLINED ACTION)
+ *
+ * NO LITERAL HEX APPEARS IN THIS FILE (R1). Every colour the design names
+ * already has a wrapper token holding the same value: #7B4FA8 is --accent,
+ * #FFF7F2 is --on-accent (and --paper on the cream fill), #F2C6DA is --pink,
+ * #5C2A45 is --plum, #4A2A6B is --on-cream, rgba(255,247,242,.55) is
+ * rgba(var(--paper-rgb),.55), 100px is --r-pill. The sub-line's #EFE4F6 is the
+ * one value with no exact token: it is sRGB 239,228,246 against --lilac's
+ * 238,226,245 — one step apart on red and blue, two on green — so it maps to
+ * --lilac and no new colour is invented for the difference. What this panel
+ * actually renders is --lilac on --accent, which measures 4.77:1 and is clear
+ * of the 4.5 floor; #EFE4F6 is never drawn here, so no ratio is quoted for it.
+ * HeroBO makes the same mapping for the same pale lilac on the same purple.
+ *
+ * ── EDITABLE HOOKS (every one DECLARED in
+ *    components/editor/genericContentSchema.ts, so each data-field below is a
+ *    hook a real sidebar input owns and focuses) ────────────────────────────
+ *   ctaBand.tag       — the blush pill eyebrow (group 'ctaBand', "Eyebrow tag")
+ *   ctaBand.headline  — the h2, bound with set:html so an owner's own <em>
+ *                       takes this template's colour emphasis wherever THEY put
+ *                       it in THEIR sentence
+ *   ctaBand.sub       — the one sentence under it
+ *   ctaBand.cta.text  — the cream action's label
+ *     + data-href-field ctaBand.cta.href — its destination
+ *   location.phone    — the outlined action (data-field ONLY, see THE PHONE)
+ * Nothing else. A data-field on any other path is a dead hook that no sidebar
+ * input owns and that focuses nothing, so no other path is written here.
+ *
+ * ── DERIVED, never stored and never editable ────────────────────────────────
+ *   · the CTA's href, resolved through onPage() against the ids PageBO actually
+ *     mounts, and its target/rel pair — one conditional per attribute, so
+ *     neither is ever emitted twice
+ *   · the tel: href, built from the phone field's OWN digits
+ *
+ * ── NOT SUPPLIED BY THIS COMPONENT (R2) ─────────────────────────────────────
+ * NOT ONE VISIBLE WORD. The design's demo strings — "Thirsty yet?", "Send your
+ * order, skip the line." and "Message us your drinks and a pickup time…" — are
+ * the DESIGNER filling in their own template. A real shop gets a closing band
+ * that says only what that shop said, so every guard sits OUTSIDE its tag: no
+ * blush pill over nothing, no display line above an empty panel, and no action
+ * row with no actions in it.
+ *
+ * ── NOT RENDERED, deliberately ──────────────────────────────────────────────
+ *   · ctaBand.image. THE DESIGN GIVES THIS BAND NO PHOTOGRAPH — it is a flat
+ *     ultraviolet slab, four centred elements, nothing else. The schema declares
+ *     the field because other templates' closing bands are full-bleed pictures;
+ *     here it stays in the sidebar and is simply unused, which is the honest
+ *     outcome. Drawing a .plate nobody asked for would put a grey slab in the
+ *     middle of the one section of this sheet that is pure colour, and every
+ *     contrast figure below is measured against the flat --accent, which an
+ *     arbitrary upload underneath would make unmeasurable. HeroBO and GalleryBO
+ *     already give an owner's photographs a home on this page.
+ *   · No DERIVED emphasis on the headline. HeroBO turns the tail of the h1
+ *     blush because the design's h1 IS two-tone and no owner would type a tag
+ *     into a text box. This design's h2 is drawn one flat cream — it has no
+ *     colour turn — so deriving one here would be inventing a treatment the
+ *     design does not draw. An owner's OWN <em> is still honoured, and is
+ *     re-pointed at the blush so it cannot land purple-on-purple (see R3).
+ *   · No id on the <section>. This page's anchors are menu / about / gallery /
+ *     visit / faq / main; the design gives CTA-BAND none of them and no nav link
+ *     points at it, so inventing one would add a target nothing aims for. A
+ *     derived '#book' resolves to '#main' through ANCHOR_ALIAS below.
+ *   · No aria-label on the <section>. Naming it would make it a landmark
+ *     announced with a word I wrote; the h2 already titles the region.
+ *   · No star row, no rating, no count, no figure of any kind. Nothing in this
+ *     band is a claim, and the ctaBand group declares no numeric field to draw
+ *     one from honestly, so there is nothing here to fabricate.
+ *   · No role="img" and no .plate anywhere — this section holds no upload, so
+ *     there is nothing to give an image role to and nothing to name.
+ *   · No target="_blank" on the cream action unless the href is really off-site.
+ *     The design hard-codes one because its demo href is an external messaging
+ *     URL, but the same button resolves to '#visit' on a stock build and opening
+ *     an in-page anchor in a new tab is a bug. It is emitted for http(s) ONLY.
+ *   · No .lede / .body primitive on the sub-line. Both are --ink-soft, a
+ *     paper-ground ink that is 1.27:1 against this purple — it is DARKER than
+ *     the panel, so the pair is not merely low but effectively unreadable;
+ *     opting in and then overriding colour, size, leading, measure and margin
+ *     would be more code, not less. The sub-line is written out instead.
+ *
+ * ── THE GROUND, and why no .band-* class ────────────────────────────────────
+ * PageBO declares .band-pink, .band-sage and .band-lilac, each carrying its own
+ * text colours, and a section should reach for one of those rather than paint a
+ * background and then pick a text colour by hand. None of them applies here.
+ * The design's closing ground is #7B4FA8 — the PURPLE, for which the wrapper
+ * declares no band class, because in this design the purple is never a
+ * full-width band: it is a rounded CARD floating on the blush-cream page, in the
+ * hero and again here. So the <section> itself stays on --paper and takes no
+ * band class at all, and the panel declares the --accent / --on-accent pair
+ * TOGETHER — exactly the way the wrapper's own band rules declare theirs — so
+ * that nothing inside it has to guess what is legible. FOR REVIEW: if a
+ * .band-accent (or a shared `sip-panel`) is ever added to PageBO, this file and
+ * HeroBO should both move onto it; they are currently the only two declaring
+ * that pair.
+ *
+ * ── THE OUTLINED ACTION ─────────────────────────────────────────────────────
+ * .btn--line is the wrapper's outlined button and both its edge and its label
+ * are --accent, which is invisible on an --accent panel, so both are re-pointed
+ * at the panel's on-colour and the edge is widened to the design's 2px.
+ * THE TWO PILLS ARE THE SAME HEIGHT, by two routes: 15px + a 2px border is 17px
+ * and so is the cream pill's 16px + 1px; and in any case both boxes come to a
+ * 13px line box + 34px of vertical inset = 47px and are lifted to .btn's own
+ * 48px min-height. HORIZONTALLY THEY DIFFER BY ONE PIXEL — 28 + 2 against
+ * 30 + 1 — which is the design's own difference (its cream pill carries no
+ * border at all) and is kept rather than equalised.
+ *
+ * ── THE PHONE ───────────────────────────────────────────────────────────────
+ * THE PHONE ANCHOR CARRIES data-field ONLY — no data-href-field. Its href is
+ * DERIVED from the field's own value, so a data-href-field there would write
+ * "tel:+63…" back into the phone field on the first inline edit; V3 also bails
+ * out of inline editing on tel:/mailto: anchors and on anything carrying
+ * data-href-field. This is the family's single documented exception to "every
+ * anchor gets both".
+ *
+ * ITS READ CHAIN is content.location.phone || content.contact.phone, which is
+ * exactly what the sidebar's Location → Phone input reads (the schema declares
+ * location.phone with fallbackPaths ['contact.phone'] and writes back to the
+ * primary), so the rendered number and the field this hook opens are always the
+ * same value. layout.contact.phone — the display-formatted mirror the builder
+ * derives — is deliberately NOT preferred: astro-builder formats
+ * content.contact.phone and ignores location.phone entirely, so on a site whose
+ * owner typed a number into Location it would render a DIFFERENT number from
+ * the one the hook edits.
+ *
+ * WHY A location.* HOOK IS SAFE HERE. editorBridge resolves a Blocks toggle to
+ * the ONE section holding the most hooks of that prefix and hides only that
+ * node. LocationBO carries location.tag, location.headline and location.hours
+ * and says in as many words that "the closing band and the footer own" the
+ * phone, so this band's single location.* hook cannot outvote it and "hide
+ * LOCATION" keeps resolving to the Location section.
+ *
+ * ── SECTION GATE (R5) ───────────────────────────────────────────────────────
+ * The band renders when it has BODY content: an ACTION (the CTA label or a
+ * phone number) or the SENTENCE. It deliberately does NOT count the eyebrow or
+ * the headline — lib/derive-content-defaults.ts fills ctaBand.headline with
+ * "Ready when you are." on EVERY site, so a gate that counted it would be a
+ * no-op that ships a display line over an empty purple slab. derive also fills
+ * ctaBand.cta.text ('Get in touch') unconditionally, which is why the band does
+ * in practice render on a stock build — but that is a real, working action
+ * pointed at a real id on this page, not a decoration, and an owner who clears
+ * it and supplies no phone and no sentence drops the whole <section> from the
+ * document rather than being left with one line of type on a purple card.
+ * (derive fills neither ctaBand.tag nor ctaBand.sub, so both are genuinely
+ * absent until an owner types them.)
+ *
+ * ── THE FLOOR ───────────────────────────────────────────────────────────────
+ * The design's section is `padding: 76px 28px 0` — a 76px top and NO bottom —
+ * because in that file the FOOTER element carries its own `padding: 56px 28px
+ * 40px`. The wrapper's shared `section` rule is a symmetric
+ * clamp(48px,6.4vw,80px), so the bottom is zeroed here rather than inherited.
+ * This is the one value in the file that depends on a sibling, so it was CHECKED
+ * rather than left for review: FooterBO's `.sip-foot` declares
+ * `padding: 56px 0 40px` — the design's 56px top, intact — and steps to
+ * `40px 0 28px` at 520px, where this band's own top also steps back to 56px. The
+ * pair is verified in both passes. If FooterBO's top padding is ever removed,
+ * the floor has to come back here.
+ *
+ * ── ACCESSIBILITY (R9) ──────────────────────────────────────────────────────
+ * The tel: link's accessible name is the owner's own number and nothing else —
+ * no "Call …" prefix I wrote. The cream action's name is the owner's own label.
+ * There is no image, no icon and no decorative numeral in this section, so
+ * nothing here is aria-hidden and no aria-* attribute is emitted at all — which
+ * also means there is no conditional aria-* that a literal one could collide
+ * with. FOCUS: the wrapper's ring is a --paper outline inside an --accent halo,
+ * built for the paper ground; on this panel the halo would be accent-on-accent
+ * and the cream outline would vanish into the cream pill's own fill, so the two
+ * colours swap — the same move the wrapper already makes for .band-pink. Only
+ * the colours change; the 3px/6px geometry and the pill radius stay the
+ * wrapper's.
+ *
+ * ── CONTRAST, COMPUTED (sRGB relative luminance, WCAG 2.x) against this
+ *    panel's own ground rather than estimated ─────────────────────────────
+ *   --on-accent headline / outlined label on --accent    5.63:1
+ *   --lilac sub-line on --accent                         4.77:1
+ *   --plum label on the --pink pill                      7.41:1
+ *   --on-cream label on the cream pill (--paper)        10.81:1 — the label
+ *       sits on the cream fill, not on the panel, so the purple does not
+ *       change it
+ * Every one of those clears AA at any size. Only the FIRST of the four appears
+ * in PageBO's own measured table, as "paper on an accent fill 5.63" — --paper
+ * and --on-accent are the same hex, so it is literally the same measurement.
+ * PageBO lists neither --lilac on --accent nor --on-cream on --paper at all,
+ * and for the blush pill it measures a DIFFERENT pair than the one this design
+ * draws (--on-pink on --pink, 9.96, where the design's eyebrow label is --plum).
+ * Those three are therefore computed in this file rather than borrowed.
+ *
+ * ONE NON-TEXT PAIR TO REVIEW, stated the same way HeroBO states it because it
+ * is literally the same edge. The outlined pill's border is the design's own
+ * `2px solid rgba(paper,.55)`, which resolves to sRGB 196,171,209 over the panel
+ * and measures 2.86:1 against it — just under the 3:1 WCAG 1.4.11 asks of a UI
+ * component boundary. The design is the specification, so the value is
+ * reproduced rather than quietly nudged; the control is still identifiable by
+ * its label, which is --on-accent at 5.63:1. Raising the alpha to .60 gives
+ * 3.12:1 and is a one-character change if a reviewer wants the bar cleared —
+ * but it must then be changed in HeroBO too, or the page's two ghost buttons
+ * stop matching.
+ *
+ * ── CLASS-NAME LAW (R4, not inferable, do not "tidy") ───────────────────────
+ * The section is .sip-end, NEVER .cta-band: lib/genericThemeOverrides.ts emits
+ * `.cta-band .btn { color: <on-ink> !important }` for every state and would
+ * strand both labels here. Buttons are .btn + .btn--cream / .btn--line (double
+ * dash) for the same reason. Never .btn-primary / .btn-ghost / .btn-yellow /
+ * .btn-light / .nav-cta / .nav-right / .trust / .testi in this family, and never
+ * `.hero` on a <section>.
+ * The prefix is `sip-` — this template's own ("Sipsip", and the design's own id
+ * on its hero image slot), shared with HeroBO's `sip-hero-*` because that file
+ * draws the SAME purple panel. It IS uniform across BO — all fifteen section
+ * components, HeaderBO through FooterBO, prefix `sip-` and nothing else — and an
+ * earlier draft of this block described a split the files do not have. Every
+ * class here is Astro-scoped, so the prefix costs nothing at runtime either
+ * way. What matters is that no name is carried over from ANOTHER TEMPLATE: BL
+ * uses `kc-`, BM uses `tc-`, BN uses `pd-`, and none of those appears here — copying a
+ * sibling's class names verbatim is the mistake an audit had to unpick on an
+ * earlier template.
+ *
+ * ── R3 ──────────────────────────────────────────────────────────────────────
+ * One scoped <style> block, no is:global. The headline is bound with set:html,
+ * and elements created that way cannot be reached by an ordinary scoped rule —
+ * so the owner's <em> is styled through :global(). It NEEDS that rule: PageBO's
+ * `:where(.h2 em) { color: var(--accent) }` would paint the emphasis purple on a
+ * purple panel and make it disappear. It becomes --pink instead, and font-style
+ * is pinned to normal because an em is italic by user-agent default and Baloo 2
+ * ships no italic — the browser would synthesise an oblique that fights its
+ * rounded terminals. The blush is 3.93:1 on the purple, which is the large-text
+ * bar (3:1) and not the body bar; the h2 is 700 weight and never drops below
+ * 26px in any query below, so it stays large text at every width.
+ * SPECIFICITY: PageBO wraps its primitives in :where(), so those rules score
+ * (0,1,1) — the `html[data-page="BO"]` prefix and nothing from the :where().
+ * An Astro-scoped rule here scores at least (0,2,0) and therefore wins even
+ * INSIDE the wrapper's own media queries, which is why the outlined button's
+ * side padding is restated at 520px rather than left to inherit the wrapper's
+ * narrow pass.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// ── ANCHOR GUARD (R7) ──────────────────────────────────────────────────────
+// Copied from HeroBO, character for character, and pointed at THIS page.
+// lib/derive-content-defaults.ts hard-codes ctaBand.cta.href = '#visit'; this
+// page DOES draw '#visit', so on a stock build the fallback never fires — but
+// an owner (or a future derive) can type any of the aliases below, so resolve
+// every in-page href against what PageBO ACTUALLY mounts: keep it when the id
+// exists, remap it when this design carries the same block under another name,
+// otherwise fall back to the target the design was built around. Off-page hrefs
+// (tel:, mailto:, http and anything else without a leading '#') pass through
+// untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBO — and with the copies
+// in HeaderBO, HeroBO and FooterBO. There is no shared import by design (a
+// section component in this repo receives only `content` + `layout`); the
+// copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  location: 'visit', contact: 'visit',
+  services: 'menu', rooms: 'menu',
+  host: 'about', why: 'about',
+  work: 'gallery',
+  book: 'main',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const c = (content as any) || {};
+const cta = c.ctaBand || {};
+
+// `||`, never `??`: an owner who CLEARS a box leaves '' behind, and the sidebar
+// treats '' as empty too. With `??` the empty string would count as a value and
+// the element would render blank instead of being dropped.
+const tag = String(cta.tag || '').trim();
+const headline = String(cta.headline || '').trim();
+const sub = String(cta.sub || '').trim();
+
+const ctaText = String(cta.cta?.text || '').trim();
+// '#visit' is the fallback because that is where this design puts the address,
+// the map and the hours — the thing a closing ask points at.
+const ctaHref = onPage(cta.cta?.href, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// See THE PHONE in the doc comment for why this exact read chain.
+const phone = String(c.location?.phone || c.contact?.phone || '').trim();
+const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : '';
+
+const hasActions = Boolean(ctaText || phone);
+// SECTION GATE (R5) — body content only: an action or the sentence. Neither the
+// eyebrow nor the headline counts; see the doc comment.
+const hasBand = Boolean(hasActions || sub);
+---
+{hasBand && (
+<section class="sip-end">
+  <div class="wrap">
+    <div class="sip-end-panel reveal">
+      {/* The eyebrow's face, weight, size, caps and inline-block come from the
+          shared .kick; what is restated below is everything that turns an
+          eyebrow into a blush pill — plus the label colour, because .kick's
+          default is --accent and purple on the blush is 3.93:1, the one pairing
+          this palette must never make. */}
+      {tag && <span class="kick sip-end-kick" data-field="ctaBand.tag">{tag}</span>}
+      {/* set:html so the owner's own <em> lands where THEY put it in THEIR
+          sentence. The colour change is re-pointed at the blush below (R3). */}
+      {headline && <h2 class="h2 sip-end-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+      {sub && <p class="sip-end-sub" data-field="ctaBand.sub">{sub}</p>}
+      {hasActions && (
+        <div class="sip-end-acts">
+          {ctaText && (
+            <a
+              class="btn btn--cream"
+              href={ctaHref}
+              target={ctaExternal ? '_blank' : undefined}
+              rel={ctaExternal ? 'noopener noreferrer' : undefined}
+              data-field="ctaBand.cta.text"
+              data-href-field="ctaBand.cta.href"
+            >{ctaText}</a>
+          )}
+          {/* data-field ONLY — no data-href-field. See THE PHONE. */}
+          {phone && (
+            <a class="btn btn--line sip-end-tel" href={telHref} data-field="location.phone">{phone}</a>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBO's token vocabulary
+     (--accent --on-accent --paper --paper-rgb --pink --plum --lilac --on-cream
+     --disp --r-pill) and from its shared primitives (.wrap .kick .h2 .btn
+     .btn--cream .btn--line .reveal). There is no literal hex in this file. The
+     two translucent values are written against --paper-rgb, which
+     genericThemeOverrides owns and repaints in step with --paper (both come from
+     the same palette entry), so the outlined pill's edge follows the page's own
+     ground instead of freezing at a literal. On THIS palette that is also the
+     panel's on-colour — --paper and --on-accent are the same hex — but the engine
+     derives --on-accent by luminance (pickOn) rather than from --paper, so under
+     a repainted scheme the two can part company. The edge is decorative; the
+     label carries the contrast either way.
+
+     (Never write a literal end-style-tag inside this block, comments included —
+      it is a raw-text element, so the parser would end the stylesheet there and
+      silently truncate the rest of the file.) */
+
+  /* Design: max-width:1200px; margin:0 auto; padding:76px 28px 0. The measure
+     and the gutter are .wrap's job — the same substitution HeroBO makes for the
+     same 1200/28 box, so the two purple panels on this page stay the same
+     width. The 76px top and the ZERO floor are this section's; see THE FLOOR. */
+  .sip-end { padding: 76px 0 0; }
+
+  /* Design: background --accent; border-radius:36px; padding:64px 52px;
+     text-align:center; position:relative; overflow:hidden.
+     36px is a length, not a colour: this design's panel corner is softer than
+     --r-lg (26px), which is the card radius everywhere else on the page, and
+     HeroBO states the same 36px for the same slab.
+     position/overflow are the design's own and are kept: they clip the panel's
+     children to that radius, which is what keeps a long owner CTA label from
+     poking a square corner out of a round one at the narrow end.
+     The ground/ink pair is declared TOGETHER for the same reason the wrapper's
+     band rules declare theirs — so nothing inside has to guess. */
+  .sip-end-panel {
+    background-color: var(--accent);
+    color: var(--on-accent);
+    border-radius: 36px;
+    padding: 64px 52px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Design: background --pink; color --plum; font-size:11px; font-weight:700;
+     letter-spacing:.14em; text-transform:uppercase; padding:8px 16px;
+     border-radius:100px. Font size and caps come from .kick; its .18em tracking
+     and its --accent ink do not, and are replaced.
+     The pill centres by itself — .kick is inline-block inside a text-align
+     centred panel — so no margin is invented for it. max-width + overflow-wrap
+     keep an owner-typed tag in tracked caps wrapping INSIDE the pill instead of
+     widening the panel (R8).
+     The wrapper's own 520 pass takes .kick to 10.5px/.14em; only the tracking is
+     restated here and at the same value, so nothing in this rule fights it. */
+  .sip-end-kick {
+    background-color: var(--pink);
+    color: var(--plum);
+    letter-spacing: .14em;
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: Baloo 2 700, clamp(32px,4.6vw,64px), lh 1.06,
+     margin .24em auto .26em, --on-accent, max-width 20ch. Face and weight are
+     .h2's; size, leading, margin, colour and measure are all larger/other than
+     that primitive's, so all five are stated. The `auto` side margins are what
+     centre a 20ch block inside the panel.
+     THE MEASURE IS KEPT BELOW 760px on purpose. The wrapper's 760 pass releases
+     the shared .h2 to `max-width:none`, which is right for a left-aligned
+     heading; this one is centred, and a centred display line allowed to run the
+     full panel loses the stacked shape the design draws. A scoped rule outranks
+     that pass, so the 20ch simply stays. */
+  .sip-end-h {
+    font-size: clamp(32px, 4.6vw, 64px);
+    line-height: 1.06;
+    margin: .24em auto .26em;
+    color: var(--on-accent);
+    max-width: 20ch;
+  }
+  /* THE OWNER'S OWN EMPHASIS. :global() because Astro cannot scope markup that
+     arrived through set:html (R3). It is a COLOUR CHANGE and NOT an italic:
+     font-style is pinned to normal because an em is italic by user-agent
+     default and Baloo 2 has no italic to serve. Without this rule PageBO's
+     `.h2 em` would paint it --accent — purple on a purple panel. */
+  .sip-end-h :global(em) { font-style: normal; color: var(--pink); }
+
+  /* Design: font-size:17px; line-height:1.75; a pale lilac; margin:0 auto 30px;
+     max-width:42ch. Written out rather than borrowing .lede or .body — see NOT
+     RENDERED. `auto` side margins centre the measure inside the panel; the 42ch
+     is a cap, so on any viewport where the panel is narrower than 42ch it
+     simply does not bind and never pushes anything sideways. */
+  .sip-end-sub {
+    font-size: 17px;
+    line-height: 1.75;
+    color: var(--lilac);
+    margin: 0 auto 30px;
+    max-width: 42ch;
+  }
+
+  /* Design: display:flex; gap:11px; flex-wrap:wrap; align-items:center;
+     justify-content:center. */
+  .sip-end-acts {
+    display: flex;
+    gap: 11px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Design: border:2px solid the paper at 55%; color --on-accent;
+     font-size:13px; font-weight:700; padding:15px 28px; border-radius:100px.
+     .btn--line's edge and label are both --accent — invisible on an --accent
+     panel — so both are re-pointed at the panel's on-colour. Only the width,
+     the two colours and the padding are set: the solid border style and the
+     pill radius come from .btn's own shorthand. This is the file's ONLY button
+     declaration; the cream primary needs none at all, because btnCream and
+     .btn--cream are the same declaration list. */
+  .sip-end-tel {
+    background-color: transparent;
+    border-width: 2px;
+    border-color: rgba(var(--paper-rgb), .55);
+    color: var(--on-accent);
+    padding: 15px 28px;
+  }
+  /* .btn--line's hover FILLS with --accent, which on this panel would make the
+     button vanish into its own ground. The replacement brings the edge to full
+     strength and adds the lightest possible wash: at .08 the ground resolves to
+     sRGB 134,92,174 and the --on-accent label still measures 4.77:1; past about
+     .10 it drops under 4.5, so this is not a value to nudge upward for a
+     stronger effect. Same figure, same reasoning, same value as HeroBO's ghost. */
+  .sip-end-tel:hover {
+    background-color: rgba(var(--paper-rgb), .08);
+    border-color: var(--on-accent);
+    color: var(--on-accent);
+  }
+
+  /* THE FOCUS RING, INVERTED FOR THIS PANEL — see ACCESSIBILITY. Colours only;
+     the geometry and the pill radius stay the wrapper's. */
+  .sip-end-acts .btn:focus-visible {
+    outline-color: var(--accent);
+    box-shadow: 0 0 0 6px var(--on-accent);
+  }
+
+  /* ── R8 · this section's OWN responsive pass ───────────────────────────────
+     There is no multi-column grid here to collapse — the design's closing band
+     is one centred stack at every width — so what this section owns is the
+     panel's inset and its type ladder, plus making sure nothing can push the
+     page sideways at 360px.
+
+     THE LADDER, traced at EVERY boundary rather than assumed, because two
+     audits found type and plates that GREW as the viewport narrowed (a floor in
+     the 900 query sitting below a cap in the 520 query is how that happens):
+
+       h2 font-size
+         base clamp(32,4.6vw,64) · 900 clamp(30,4.6vw,42) · 520 clamp(26,6.4vw,30)
+         at 900px  base gives 4.6vw = 41.4px (inside 32–64) -> 41.4px;
+                   this query gives min(max(30,41.4),42) = 41.4px. EQUAL.
+         at 520px  the 900 query gives 4.6vw = 23.92 -> floored to 30px;
+                   the 520 query gives 6.4vw = 33.28 -> capped to 30px. EQUAL —
+                   which is why the cap here is 30 and not the 34 a fresh
+                   reading of "smaller than 42" would suggest.
+         at 360px  6.4vw = 23.04 -> floored to 26px. Down, never up.
+         26px at weight 700 is still WCAG "large text" (the bar is 18.66px
+         bold), which is what keeps the blush em's 3.93:1 above its 3:1 floor at
+         the narrowest width.
+
+       panel block padding
+         base flat 64px · 900 clamp(48,7vw,58) · 520 clamp(40,9vw,48)
+         at 900px  base 64px; this query gives 7vw = 63 -> capped to 58px. DOWN.
+         at 520px  the 900 query gives 7vw = 36.4 -> floored to 48px;
+                   the 520 query gives 9vw = 46.8 (inside 40–48) -> 46.8px. DOWN.
+                   The 48px cap is exactly the handover value, so it can never
+                   grow through the boundary.
+         at 360px  9vw = 32.4 -> floored to 40px. Down.
+
+       panel inline padding
+         base flat 52px · 900 clamp(28,5vw,44) · 520 clamp(20,6vw,28)
+         at 900px  base 52px; this query gives 5vw = 45 -> capped to 44px. DOWN.
+         at 520px  the 900 query gives 5vw = 26 -> floored to 28px;
+                   the 520 query gives 6vw = 31.2 -> capped to 28px. EQUAL.
+         at 360px  6vw = 21.6px. Down.
+
+       sub-line     17 -> 16.5 -> 16.   Flat values, trivially monotonic.
+       eyebrow      11 -> 11 -> 10.5.   The 10.5 is the wrapper's own 520 pass,
+                                        not restated here.
+       section top  76 -> 76 -> 56.     Flat, and the one step is downward. The
+                                        gap above the panel is the design's own
+                                        76px until the phone widths, where 76px
+                                        of empty blush above a 40px-inset card
+                                        reads as a hole rather than as air.
+     Every step is a step down and every handover is continuous. */
+  @media (max-width: 900px) {
+    .sip-end-panel { padding: clamp(48px, 7vw, 58px) clamp(28px, 5vw, 44px); }
+    .sip-end-h { font-size: clamp(30px, 4.6vw, 42px); }
+    .sip-end-sub { font-size: 16.5px; }
+  }
+
+  /* Nothing may push the page sideways at 360px: long unbroken strings break
+     anywhere, and a long label wraps inside a full-width button instead of
+     widening the row. */
+  @media (max-width: 520px) {
+    .sip-end { padding-top: 56px; }
+    .sip-end-panel { padding: clamp(40px, 9vw, 48px) clamp(20px, 6vw, 28px); }
+    .sip-end-h {
+      font-size: clamp(26px, 6.4vw, 30px);
+      overflow-wrap: anywhere;
+    }
+    .sip-end-sub {
+      font-size: 16px;
+      margin-bottom: 26px;
+      overflow-wrap: anywhere;
+    }
+    .sip-end-acts {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 11px;
+    }
+    .sip-end-acts .btn {
+      width: 100%;
+      /* BOTH are needed. `white-space: normal` only lets an owner's label wrap
+         BETWEEN words; one long unbroken word still spills past a 100%-wide
+         button on a 360px screen without a break of its own — an audit found
+         exactly that escape because only the first was set. */
+      white-space: normal;
+      overflow-wrap: anywhere;
+      text-align: center;
+    }
+    /* Re-join the wrapper's own 520 pass, which takes .btn to 15px 24px. A
+       scoped rule here scores above that EVEN INSIDE the wrapper's media query,
+       so without this the outlined pill would keep its 28px sides while the
+       cream one dropped to 24px. 22px takes 6px off the base 28px — the same 6px
+       the wrapper takes off the cream pill's 30px — so at 22/24 the pair keeps
+       exactly the 2px padding difference the design gives it at 28/30, and the
+       one-pixel outer difference their borders make (22+2 = 24 against
+       24+1 = 25) is the same one pixel they carry at full width (28+2 = 30
+       against 30+1 = 31). HeroBO's ghost drops to the same 22px for the same
+       reason. The vertical stays 15px, which is what the wrapper's narrow pass
+       uses anyway. */
+    .sip-end-tel {
+      padding-left: 22px;
+      padding-right: 22px;
+    }
+  }
+</style>

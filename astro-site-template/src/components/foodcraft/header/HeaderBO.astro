@@ -1,0 +1,446 @@
+---
+/**
+ * foodcraft / HeaderBO — THE STICKY BLUSH RAIL. "Sipsip Tea Bar"'s front gate,
+ * reproduced from the design's own <header>: a 94%-opaque --paper bar over a
+ * 14px backdrop blur, and one flex row at 16px top and bottom that spreads two
+ * things 20px apart — the brand lock (a 36px purple disc holding the shop's
+ * initial, then a 23px Baloo 2 wordmark with a 9px/.28em purple town tag
+ * stacked under it) and a wrapping row of 13px nav pills at a 6px gap.
+ *
+ * ROLE: wayfinding, and nothing else. This design puts NO action in its header
+ * — see decision 1.
+ *
+ * EDITABLE HOOKS — every visible string on this rail, and nothing else:
+ *   footer.brand                     — the wordmark (also the footer's; one
+ *                                      field, two places, on purpose)
+ *   footer.locality                  — the purple town tag under it
+ *   navbar_links.${i}.label          — one nav pill's label
+ *   navbar_links.${i}.href           — that pill's target (data-href-field)
+ * All four are declared in components/editor/genericContentSchema.ts under the
+ * `header` group, so every one is a hook a sidebar input actually owns. A
+ * data-field on any other path would be a dead hook nothing can edit.
+ *
+ * DERIVED, never authored here:
+ *   - the wordmark falls back to layout.businessName when content.footer.brand
+ *     is blank, because that is the same name from the same submission.
+ *   - THE DISC'S LETTER. The design's circle holds `{{ initial }}` — the first
+ *     character of the shop name, upper-cased. It is derived from the wordmark
+ *     the owner supplied, never chosen here, and it disappears with the
+ *     wordmark. Array.from() rather than charAt() so a name opening on an
+ *     astral character (an emoji, some scripts) yields that whole character
+ *     instead of half a surrogate pair.
+ *   - every in-page href is resolved by onPage() against the ids PageBO really
+ *     renders (see the anchor guard below).
+ *   - `i` is the ORIGINAL, pre-filter index of a nav link, so dropping an
+ *     unreachable row 2 cannot misdirect an edit into row 3.
+ *
+ * NOT RENDERED, deliberately:
+ *   - THE DESIGN'S OWN COPY. Not one word of the designer's demo text is in
+ *     this file. A tea bar whose owner supplied no nav links gets no nav links.
+ *   - THE HEADER CTA (navCtaText / navCtaHref) — decision 1. Those two fields
+ *     are real schema paths, but this design's header has no button in it, and
+ *     a hook is only honest if the pixel it edits exists.
+ *   - contact.phone. It sits in the `header` schema group, but this design
+ *     prints no phone on the rail; the visit block owns the number.
+ *   - business_name / tagline. They drive <title> and the meta description,
+ *     which PageBO owns. Nothing on this rail reads them except as the
+ *     wordmark's fallback.
+ *   - THE WHOLE RAIL, when brand, locality and links are all empty. A sticky
+ *     bar with nothing in it is ~68px of dead chrome on every screen. It is the
+ *     BODY content that is counted — never a tag or a headline, because
+ *     lib/derive-content-defaults.ts fills those on every site and a gate that
+ *     counted them would always pass. This rail has no tag and no headline at
+ *     all, so the count is simply everything the rail can draw.
+ *   - the disc, with no name: there is no initial to put in it.
+ *   - the burger, unless there is a drawer for it to open.
+ *   - a nav link with no label, or whose href reaches no section on this page.
+ *     A 0-width tap target and a link that scrolls nowhere are both broken.
+ *   Every guard sits OUTSIDE its tag, so a blank value removes the ELEMENT and
+ *   not just its text — no empty purple disc, no lock with nothing in it.
+ *   There is no star row, rating, review or numeral on this rail, so nothing
+ *   here can print a claim the owner did not make. There is no upload either,
+ *   so there is no role="img" and no .plate.
+ *
+ * DECISIONS A READER MIGHT OTHERWISE READ AS OVERSIGHTS
+ *
+ * 1. THERE IS NO BUTTON ON THIS RAIL, AND THAT IS THE DESIGN. All three
+ *    siblings in this family (HeaderBL, HeaderBM, HeaderBN) carry a nav CTA
+ *    because their designs draw one. Sipsip's header is a two-part row — lock
+ *    left, pills right — and its call to action lives in the hero, on the cream
+ *    button inside the purple plate. Dropping a --accent pill into the right
+ *    end of this rail would change the composition the design specifies and
+ *    put a second competing primary fill one scroll above the first. So
+ *    navCtaText and navCtaHref are left unbound here. The consequence is stated
+ *    plainly rather than hidden: an owner editing this template sees a
+ *    "Header CTA" box in the sidebar that this page does not draw. That is a
+ *    schema-wide field other templates own, and the alternative — inventing a
+ *    control the design does not have so a sidebar row has somewhere to land —
+ *    is the worse trade.
+ *
+ * 2. WHY THE TINT IS A PLAIN rgba() AND NOT A PSEUDO-ELEMENT. The design's rail
+ *    is rgba(255,247,242,.94) — that is --paper at 94%. PageBO publishes
+ *    --paper-rgb (and buildOverrideCss remaps it with the rest of the palette),
+ *    so the design's exact value is expressible in one token declaration. No
+ *    literal, no extra stacking context, same pixels.
+ *
+ * 3. NO HAIRLINE UNDER THE RAIL. HeaderBM draws one because its design does.
+ *    This one does not: Sipsip separates the bar from the page with the blur
+ *    and the 6% transparency alone. --line here resolves to the same #EEE2F5 as
+ *    --lilac and --well, so a rule would in any case read as a lilac smudge
+ *    rather than the crisp walnut hairline that template gets.
+ *
+ * 4. THE TOWN TAG IS NOT A .kick. The wrapper's .kick is 11px at .18em; the
+ *    design's tag is 9px at .28em, stacked 1px under the wordmark. Those are
+ *    different metrics, not a near-miss, so the tag is a scoped class at the
+ *    design's own numbers. It takes the same --accent as .kick, which is what
+ *    makes it read as part of this family.
+ *
+ * 5. WHY THREE LINE-HEIGHTS ARE RESTATED. The design declares line-height only
+ *    on the wordmark (1); its disc, its tag and its nav pills render at the
+ *    browser `normal` because the design's body sets no line-height. PageBO's
+ *    body sets 1.72, so inheriting would put 13px nav labels in a 22.4px line
+ *    box (13 x 1.72) and take the rail from ~68px to ~72px — 32px of padding
+ *    around a 40.4px pill instead of a 36.3px lock — and would grow the 9px
+ *    tag's line box from ~12.3px to 15.5px, dropping the tag ~1.6px (half the
+ *    added leading lands above the glyphs) off the 1px gap the design puts
+ *    under the wordmark. Each is therefore declared at the value the design
+ *    actually renders: 1 on the disc, `normal` on the tag, 1.4 on the nav label
+ *    (13 x 1.4 = 18.2px, a shade over the `normal` Nunito Sans gives at 13px).
+ *    The rail then measures ~68px on desktop, and at most ~76px below 900px
+ *    where the 44px burger sets the height. PageBO's scroll-padding-top: 92px
+ *    clears both, so in-page anchors still land below the bar at every width.
+ *
+ * 6. WHY flex:none BECAME flex:0 1 auto ON THE LOCK. The design says flex:none,
+ *    which at 360px lets a long shop name shove the burger off screen. The lock
+ *    shrinks and the name wraps instead; at desktop widths the rendering is
+ *    identical to the design. The DISC keeps flex:none — it is a circle, and a
+ *    squashed circle is an ellipse.
+ *
+ * 7. THE NAME WRAPS; IT IS NOT ELLIPSISED. text-overflow needs overflow:hidden,
+ *    and the design's line-height:1 makes the wordmark's clip box shorter than
+ *    Baloo 2's own ascent-plus-descent — so an ellipsis here would shave the
+ *    tails off the descenders in the owner's own name. Wrapping keeps the whole
+ *    name legible, and overflow-wrap:anywhere means a long unbroken string
+ *    breaks rather than pushing the page sideways. The one cost is that two
+ *    wrapped lines at line-height 1 sit tight, which is why the 520 pass opens
+ *    it to 1.1 (see the ladder note below — the LINE BOX still shrinks there).
+ *
+ * 8. THE BURGER AND DRAWER ARE AN ADDITION, NOT A RE-DERIVATION. The design is
+ *    a desktop artboard; its nav is flex-wrap:wrap, which at 360px would stack
+ *    five pills into a sticky block eating a third of the viewport on every
+ *    scroll. So the row collapses into a drawer at one width (<=900px) — the
+ *    row leaves and the burger arrives together, so there is never a band where
+ *    neither is on screen. Nothing in the desktop rendering moves. The burger
+ *    is drawn in this design's own vocabulary: a --lilac pill with --accent
+ *    bars, which is exactly the wrapper's .chip pairing. --accent on --lilac
+ *    computes to 4.77:1 (sRGB relative luminance, WCAG 2.x, from the hexes
+ *    PageBO declares) — well past the 3:1 floor a non-text control needs. The
+ *    drawer's ground is OPAQUE --paper, not --tint: --tint is invisible to the
+ *    theme engine, so on a repainted scheme a --tint panel would hang over a
+ *    page whose --paper had moved.
+ *
+ * 9. WHY THE NAV HOVER IS --accent-deep. It is the design's OWN hover: its
+ *    stylesheet declares a:hover{color:#5C3580}, which is --accent-deep. In the
+ *    demo that rule is shadowed by the inline colour on each nav link, so the
+ *    designer's page happens to render no hover change — an artefact of
+ *    inline-style specificity, not a decision. Shipping a five-link row with no
+ *    hover state would be an interaction regression dressed up as fidelity.
+ *    COMPUTED here, not estimated: --accent-deep on --paper is 8.72:1, over a
+ *    rest colour of --ink-soft on --paper at 7.13:1 — sRGB relative luminance,
+ *    WCAG 2.x, from the hexes PageBO declares. The 7.13 is the figure PageBO's
+ *    own table gives; --accent-deep appears in no pair on that table, so the
+ *    8.72 was computed here by the same method (which reproduces every figure
+ *    the table does state).
+ *
+ * 10. NO CLAMP ANYWHERE IN THIS FILE, AND NO TYPE THAT GROWS. Every type value
+ *     is a fixed px that only ever steps DOWN as the viewport narrows — disc
+ *     36→32, disc letter 20→18, wordmark 23→20, tracking .28em→.22em, row gap
+ *     20→12, row padding 16→13 — and the nav label holds the design's 13px at
+ *     EVERY width. The one line-height that RISES, the wordmark's 1→1.1 at
+ *     520px, lowers the value that matters: 23px x 1 = 23px becomes 20px x 1.1
+ *     = 22px, so the line box shrinks with everything else.
+ *     TWO THINGS DO GET BIGGER BELOW 900px, and both are TAP TARGETS rather
+ *     than type — stated here so the rule above is not read as covering more
+ *     than it does. The drawer row takes a 48px min-height and a 12/18 pad in
+ *     place of the desktop 9/15, and the burger arrives at 44px square, which
+ *     is what lifts the rail to ~76px there from the ~68px it measures on
+ *     desktop. A touch target that shrank with the viewport would be the actual
+ *     bug; nothing the reader reads moves. There are two breakpoints, 900 and
+ *     520, and no third that could invert a floor under a cap the way an
+ *     earlier audit found on another template.
+ *
+ * Never visibility-gated in this file: PageBO owns `visibility.headerSection`.
+ * No .btn class appears here because there is no button (decision 1); the
+ * forbidden .nav-cta / .nav-right / .btn-primary never come up.
+ *
+ * CLASS PREFIX: every scoped class is `sip-`, unique to this template. An
+ * audit had to rename a whole set of classes copied verbatim from a sibling;
+ * nothing here shares a name with HeaderBL's `hb-`, HeaderBM's `tcbm-` or
+ * HeaderBN's `pcbn-`.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const lay = (layout as any) || {};
+const c = (content as any) || {};
+
+// ── ANCHOR GUARD ───────────────────────────────────────────────────────────
+// lib/derive-content-defaults.ts hard-codes nav links to '#about', '#services',
+// '#why', '#work', '#visit', and lib/astro-builder.ts falls back to '#about',
+// '#services', '#gallery', '#contact' — ids most designs never render, so those
+// links scrolled nowhere. Resolve every in-page href against what PageBO
+// ACTUALLY renders: keep it if the id exists, remap it when this design carries
+// the same section under another name, otherwise fall back (nav links pass ''
+// and are dropped). Off-page hrefs — tel:, mailto:, http(s) and anything else
+// without a leading '#' — pass through untouched.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+// This design renames five derived targets: the services block IS the drinks
+// menu (rooms lands there too), '#about' is the shop's own story (host and why
+// are the same block here), '#work' is the photo wall, and '#location' /
+// '#contact' both mean the visit block — address, map and opening hours. A
+// booking link has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. 'Your Business' was a shipped placeholder that rendered as the
+// customer's own name — with nothing supplied the mark is omitted instead.
+// `||`, never `??`: genericContentSchema gives footer.brand
+// fallbackPaths ['business_name'] and ContentFieldsAuto's readWithFallbacks
+// treats '' as empty, so a CLEARED brand box still shows the business name in
+// the sidebar. With `??` an empty string is a value, and the page would have
+// gone wordmark-less while the sidebar displayed a name.
+const brand = String(c.footer?.brand || lay.businessName || '').trim();
+// The design's disc letter. Derived from the name above, never authored, and
+// gone the moment the name is.
+const initial = (Array.from(brand)[0] || '').toUpperCase();
+// The town tag. One field, three consumers (here, the footer wordmark and the
+// map caption) and nothing derives it, so on a first build it is simply absent
+// rather than guessed out of the address.
+const locality = String(c.footer?.locality ?? '').trim();
+
+// Nav links. content.navbar_links is read FIRST and layout.navLinks only as a
+// fallback: astro-builder copies the former onto the latter when it exists, but
+// substitutes a four-row default of its own when it does not — and those rows
+// are not the array the sidebar list edits. Reading content first guarantees
+// that `i` indexes the array an edit actually writes into. `i` is the ORIGINAL
+// index so per-link edits stay aimed at the row the owner clicked even after
+// unreachable rows are dropped.
+const rawNav: any[] = Array.isArray(c.navbar_links)
+  ? c.navbar_links
+  : (Array.isArray(lay.navLinks) ? lay.navLinks : []);
+const navLinks: Array<{ href: string; label: string; i: number }> = rawNav
+  .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
+  .filter((l: { href: string; label: string }) => l.href && l.label);
+
+// The rail renders only when it CARRIES something — the lock or the links. Both
+// counted values are body content; there is no tag or headline on this rail for
+// a derived default to fake the gate with.
+const hasRail = Boolean(brand || locality || navLinks.length > 0);
+---
+{hasRail && (
+  <header class="sip-rail">
+    <div class="wrap sip-in">
+      {(brand || locality) && (
+        <a class="sip-lock" href="#main">
+          {initial && <span class="sip-seal" aria-hidden="true">{initial}</span>}
+          <span class="sip-names">
+            {brand && <span class="sip-mark" data-field="footer.brand">{brand}</span>}
+            {locality && <span class="sip-town" data-field="footer.locality">{locality}</span>}
+          </span>
+        </a>
+      )}
+      {navLinks.length > 0 && (
+        <nav class="sip-nav" id="sip-nav-BO" aria-label="Primary">
+          {navLinks.map((link) => (
+            <a
+              href={link.href}
+              data-field={`navbar_links.${link.i}.label`}
+              data-href-field={`navbar_links.${link.i}.href`}
+            >{link.label}</a>
+          ))}
+        </nav>
+      )}
+      {navLinks.length > 0 && (
+        <button class="sip-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="sip-nav-BO">
+          <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+      )}
+    </div>
+  </header>
+)}
+<script is:inline>
+  (function () {
+    // Null-guarded rather than conditionally rendered: an is:inline script must
+    // stay at the top level, and with no rail (or no drawer) it simply exits.
+    // 'sip-rail' is template-unique because a preview harness can render two
+    // wrappers into one document and a shared class cross-wires the drawers.
+    var rail = document.querySelector('header.sip-rail');
+    if (!rail) return;
+    var btn = rail.querySelector('.sip-burger');
+    if (!btn) return;
+    function setOpen(open) {
+      rail.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () { setOpen(!rail.classList.contains('is-open')); });
+    rail.querySelectorAll('.sip-nav a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  /* The design: sticky, --paper at 94%, blur(14px), and NO hairline (decision
+     3). The tint is a straight rgba() on --paper-rgb, which PageBO publishes
+     and the theme engine remaps with the rest of the palette — so this is the
+     design's own rgba(255,247,242,.94) with no literal in it.
+     (Never write a literal end-style tag inside this block, comments included:
+      it is an HTML raw-text element and the parser would end the stylesheet
+      right there, silently truncating the file.) */
+  .sip-rail {
+    /* z-index is the design's own 50. The wrapper's skip link sits at 100, so
+       the rail clears the page and the skip link still clears the rail. */
+    position: sticky; top: 0; z-index: 50;
+    background-color: rgba(var(--paper-rgb), .94);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  /* The design's row: 16px top and bottom, 20px gap, two parts spread apart.
+     Its 28px side padding is the .wrap's job in this family (min(1200px,92vw)),
+     so only the vertical value is restated here.
+     NOT position:relative — the <=900px drawer is absolutely positioned and
+     resolves against .sip-rail (position:sticky is a positioned element) so it
+     spans the full rail width rather than the wrap. */
+  .sip-in {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 20px; padding: 16px 0;
+  }
+
+  /* flex:0 1 auto rather than the design's flex:none — decision 6. */
+  .sip-lock {
+    display: flex; align-items: center; gap: 10px;
+    flex: 0 1 auto; min-width: 0; color: var(--ink);
+  }
+  /* The disc. flex:none is kept verbatim: a circle that shrinks is an ellipse.
+     --on-accent on --accent is 5.63:1 by PageBO's own computed table. */
+  .sip-seal {
+    flex: none; width: 36px; height: 36px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background-color: var(--accent); color: var(--on-accent);
+    font-family: var(--disp); font-weight: 400; font-size: 20px; line-height: 1;
+  }
+  .sip-names { min-width: 0; }
+  /* line-height is the DESIGN'S own 1. It is safe to keep tight here precisely
+     because nothing clips it — see decision 7. NO letter-spacing: the design
+     declares none on the wordmark, and the wrapper's -.01em reaches only
+     h1-h4 / .h2, which this span is neither of. Weight 400 is likewise the
+     design's — its wordmark sets no font-weight, so it renders at Baloo 2's
+     regular, and stating it here keeps a stray inherited weight off it. */
+  .sip-mark {
+    display: block;
+    font-family: var(--disp); font-weight: 400; font-size: 23px; line-height: 1;
+    color: var(--ink); overflow-wrap: anywhere;
+  }
+  /* NOT .kick — decision 4. 9px caps at .28em in purple, weight 700, sitting
+     1px under the wordmark, and nothing else. */
+  .sip-town {
+    display: block; margin-top: 1px;
+    font-family: var(--sans); font-weight: 700; font-size: 9px; line-height: normal;
+    letter-spacing: .28em; text-transform: uppercase; color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+
+  /* The design's nav: a wrapping row of pills at a 6px gap. margin-left:auto is
+     an addition for the degenerate case the design never drew — a shop with no
+     name and no town tag, where space-between with a single child would park
+     the pills hard LEFT. With both parts present an auto margin eats the free
+     space before justify-content sees it, so the desktop rendering is
+     unchanged. */
+  .sip-nav {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+    margin-left: auto; min-width: 0;
+  }
+  .sip-nav a {
+    display: inline-flex; align-items: center;
+    font-family: var(--sans); font-weight: 600; font-size: 13px; line-height: 1.4;
+    color: var(--ink-soft); padding: 9px 15px; border-radius: var(--r-pill);
+    overflow-wrap: anywhere;
+    transition: color .18s ease;
+  }
+  /* The design's own hover, straight from its stylesheet: #5C3580, which is
+     --accent-deep — decision 9. */
+  .sip-nav a:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .sip-nav a { transition: none; } }
+
+  /* The design specifies no mobile rail (decision 8). The burger borrows this
+     design's OWN secondary treatment — a --lilac pill with --accent marks,
+     which is exactly the wrapper's .chip — so the addition stays inside the
+     template's vocabulary and nothing on it has a sharp corner. */
+  .sip-burger {
+    display: none; flex: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 44px; height: 44px; padding: 12px;
+    background-color: var(--lilac); border: 0; border-radius: var(--r-pill);
+    cursor: pointer;
+  }
+  .sip-burger span {
+    display: block; width: 100%; height: 2px; border-radius: var(--r-pill);
+    background-color: var(--accent);
+    transition: transform .2s ease, opacity .2s ease;
+  }
+  /* 7px is bar height 2 + gap 5 — the exact centre-to-centre distance, so the
+     two surviving bars meet on the middle one's axis. */
+  header.sip-rail.is-open .sip-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.sip-rail.is-open .sip-burger span:nth-child(2) { opacity: 0; }
+  header.sip-rail.is-open .sip-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (prefers-reduced-motion: reduce) { .sip-burger span { transition: none; } }
+
+  /* ONE collapse width: the row leaves and the burger arrives together, so
+     there is never a band where neither is on screen. The drawer is OPAQUE
+     --paper rather than the rail's 94% — it hangs over live page content and a
+     translucent panel would print the page through the links — and it is told
+     apart from the page by a soft shadow and a generous bottom radius, which is
+     how this design draws every other boundary on it. */
+  @media (max-width: 900px) {
+    .sip-burger { display: flex; }
+    .sip-nav {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch;
+      flex-wrap: nowrap; gap: 2px; margin-left: 0;
+      background-color: var(--paper);
+      border-radius: 0 0 var(--r-lg) var(--r-lg);
+      box-shadow: 0 14px 30px rgba(var(--ink-rgb), .12);
+      padding: 8px 16px 14px; max-height: 78vh; overflow-y: auto;
+    }
+    header.sip-rail.is-open .sip-nav { display: flex; }
+    /* The ROW becomes a 48px target — min-height 48, pad 9/15 -> 12/18 — and
+       the TYPE stays at the design's 13px. The target is bought with the row,
+       never by growing type as the viewport narrows (decision 10). */
+    .sip-nav a { display: flex; align-items: center; min-height: 48px; padding: 12px 18px; }
+  }
+
+  /* Everything here steps DOWN. The wordmark's line-height rises 1 -> 1.1, and
+     that is deliberate: 23 x 1 = 23px becomes 20 x 1.1 = 22px, so the line box
+     shrinks with the rest and two wrapped lines stop touching. */
+  @media (max-width: 520px) {
+    .sip-in { gap: 12px; padding: 13px 0; }
+    .sip-seal { width: 32px; height: 32px; font-size: 18px; }
+    .sip-mark { font-size: 20px; line-height: 1.1; }
+    .sip-town { letter-spacing: .22em; }
+  }
+</style>

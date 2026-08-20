@@ -1,0 +1,563 @@
+---
+/**
+ * foodcraft / HowBO — "Sipsip Tea Bar" HOW IT WORKS (design element
+ * data-component="HOW-IT-WORKS", design file line 164).
+ *
+ * ROLE. The page's one procedural block — how a drink is actually ordered at a
+ * bar that has no ordering system. It is the ONLY dark moment in this template:
+ * everything above and below it floats on the blush ground, and this section
+ * drops a single --ink plate at radius 36px into the middle of the page and
+ * puts three lifted cards inside it. That inversion is the whole point of the
+ * band, so the plate is drawn first and every colour inside it is chosen
+ * against the plate rather than against the page.
+ *
+ * DESIGN VALUES, lifted verbatim from "Sipsip Tea Bar Landing.dc.html":
+ *   section    max-width 1200 / padding 80px 28px 0     → .wrap + the wrapper's
+ *                                                         shared section rule
+ *                                                         (see NOT RENDERED)
+ *   plate      background #241A22, radius 36px,
+ *              padding 52px 46px                        → --ink
+ *   head       text-align center, margin-bottom 38px
+ *   eyebrow    11px / 700 / .14em caps on a pill,
+ *              ground #3D2E37, label #F2C6DA,
+ *              padding 8px 16px, radius 100px           → .kick + the lift, see
+ *                                                         THE TWO LIFTED GROUNDS
+ *   h2         Baloo 2 700, clamp(28px,3.8vw,48px)
+ *              /1.08, margin .24em 0 0, #FFF7F2         → .h2 + .sip-how-h2
+ *   emphasis   a COLOUR change to #F2C6DA — never an
+ *              italic; Baloo 2 has none                  → --pink, see THE
+ *                                                         EMPHASIS RULE
+ *   grid       repeat(3, minmax(0,1fr)), gap 20px
+ *   card       background #2F2229, radius 24px,
+ *              padding 28px 26px, text-align center
+ *   badge      56×56 circle, ground #F2C6DA,
+ *              label #3D1B2C, Baloo 2 24px 700          → --pink / --on-pink
+ *   h3         Baloo 2 600, 24px, margin 16px 0 8px,
+ *              #FFF7F2                                   → --on-ink
+ *   body       14.5px / 1.75, #C3B6BD, margin 0
+ *   action     centred, margin-top 34px, btnPink =
+ *              the design's own btn base + #F2C6DA
+ *              ground + #3D1B2C label                    → .btn.btn--pink
+ * Not one literal hex is written in the stylesheet below (R1). Every value the
+ * design's btnPink declares — inline-flex, centred, 13px/700, padding 16px 30px,
+ * radius 100px, the #F2C6DA ground and the #3D1B2C label — is already carried by
+ * the wrapper's `.btn` + `.btn--pink`, which add a min-height of 48px, a 1px
+ * transparent border, a gap, a pinned line-height and a transition of their own.
+ * So this file adds no button rule at all beyond the full-width wrapping label
+ * at 520px.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts
+ * — group id "how", plus the one `link` FieldSpec in group id "hero". A
+ * data-field on any other path is a dead hook no sidebar input owns.)
+ *   how.tag                  — the pink pill eyebrow
+ *   how.headline             — fed with set:html, so an owner can put this
+ *                              design's signature colour emphasis inside their
+ *                              OWN sentence. Guarded: lib/derive-content-
+ *                              defaults.ts supplies no how.headline, so an
+ *                              unset value must draw nothing rather than open
+ *                              a 38px gap above the grid
+ *   how.steps.${i}.title     — ORIGINAL index, see LIST INDEXES
+ *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
+ *                              stored value arrived as .desc / .description, so
+ *                              the first save heals the row onto the schema key
+ *   hero.cta1.text           — the pink button's label
+ *   hero.cta1.href           — its target, via data-href-field. Deliberately the
+ *                              page's ONE primary action reused rather than a
+ *                              new field: the schema declares hero.cta1.text as
+ *                              a `link` spec whose hrefPath IS hero.cta1.href,
+ *                              so both halves are owned by a real sidebar
+ *                              input. The design reuses its own contactUrl /
+ *                              contactLabel in exactly this slot.
+ *
+ * DERIVED (computed here, never authored here):
+ *   · THE NUMERAL, and this is the decision a reader is most likely to read as
+ *     an oversight. The design prints `st.n` — '1', '2', '3' — from its own
+ *     three-row demo array. Those are the DESIGNER filling in their own
+ *     template. What the design SPECIFIES is the treatment: a 56px pink disc
+ *     with a 24px Baloo 2 figure on it, and that treatment is reproduced
+ *     exactly while the string is derived from the DISPLAY position. It is
+ *     aria-hidden and carries NO data-field, so it can never become a content
+ *     key an owner has to maintain, and the list is a real <ol> so the ordinal
+ *     still reaches assistive tech through the markup.
+ *   · `rows` — only the steps carrying real text, each keeping its ORIGINAL
+ *     array index (R6).
+ *   · `--sip-how-cols` — the track count follows the DATA, capped at the
+ *     design's three. Nothing here would print an empty box (the ground is on
+ *     the CARD, not on the track), but two filled steps stretched across three
+ *     tracks would leave a third of the plate blank and read as a row whose
+ *     last step went missing.
+ *   · The <ol> carries an explicit role="list", because `list-style: none` is
+ *     exactly what makes Safari/VoiceOver drop list semantics — and the ordinal
+ *     reaching assistive tech through the markup is the entire reason the
+ *     visible numeral is aria-hidden.
+ *
+ * THE TWO LIFTED GROUNDS — the one thing in this file worth reviewing. The
+ * design's plate is #241A22 (= --ink), its cards are #2F2229 and its eyebrow
+ * pill is #3D2E37. Those last two have NO token in PageBO: they are the ink
+ * lifted a little toward the paper, and R1 forbids inventing the hex. They are
+ * written as exactly that — `rgba(var(--paper-rgb), α)` over the --ink plate —
+ * which is token-only and, unlike a frozen hex, stays correct if buildOverrideCss
+ * repaints --ink and --paper for a scheme. The alphas were solved against the
+ * design's own values and the results COMPUTED, not eyeballed:
+ *   card    .045 → #2E242B  (design #2F2229)
+ *   eyebrow .10  → #3A3037  (design #3D2E37)
+ * The step paragraph's #C3B6BD is the same story in reverse — paper carried
+ * most of the way over the card ground — and is written `rgba(var(--paper-rgb),
+ * .72)`, which composites to #C4BCBA against the design's #C3B6BD. Flagged for
+ * review: three values in this file are token expressions rather than tokens.
+ *
+ * THE EMPHASIS RULE, and why it is overridden here and nowhere else in this
+ * family. PageBO paints `:where(.h2 em)` and `:where(.em)` in --accent, and the
+ * purple is right on every other section in this template because every other
+ * section is on paper. On THIS plate --accent measures 2.83:1 against --ink —
+ * computed, and far under the floor. The design's own emphasis here is the
+ * pink, at 11.13:1. The override is reached through :global() because scoped
+ * rules cannot touch markup that set:html created (R3), and it out-specifies
+ * the wrapper's :where() rule without !important.
+ *
+ * PINK AS TEXT, once, deliberately. PageBO's header says --pink is a GROUND and
+ * never text, and that rule is about the blush page: purple on pink is 3.93:1
+ * and pink on paper is worse. On the INK plate the relationship inverts, and
+ * the design uses the pink as its text colour in both places it appears —
+ * eyebrow and headline emphasis. Both were computed before use (below) and both
+ * clear AA comfortably. Nowhere in this file is pink text placed on anything
+ * but the ink plate or its lift.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The
+ * design's own steps — "Message us the drinks, sugar and ice levels", "Made to
+ * hit your pickup minute so the ice has not melted into it", "Sealed, bagged
+ * and waiting at the counter under your name" — are a service promise, a
+ * punctuality guarantee and a pickup procedure asserted on behalf of a business
+ * nobody has spoken to, so none of them ships. A bar that has said nothing
+ * about its process gets no process section at all.
+ *
+ * SECTION GATE (R5) = rows.length, the BODY content. It cannot count how.tag,
+ * because lib/derive-content-defaults.ts hard-codes how.tag to 'How it works'
+ * on EVERY site — a gate that counted it would drop a full dark plate carrying
+ * an eyebrow and nothing else into the middle of every page that never filled
+ * the steps in, which on this design is the single most conspicuous empty
+ * element the template can produce. The CTA is not counted either: a section
+ * whose only content is a button is a heading over nothing.
+ *
+ * LIST INDEXES (R6). data-field carries the ORIGINAL index; the numeral, the
+ * reveal stagger and the track count use the DISPLAY position, because a
+ * decorative figure and a transition delay are decoration. Dropping a blank
+ * row 2 therefore renumbers the visible discs but cannot misdirect an edit of
+ * row 3 into row 2.
+ *
+ * ARRAY SOURCE. how.steps is canonical, and the hook ALWAYS spells how.steps —
+ * the read-tolerant / write-canonical split every other How section in the repo
+ * uses. A legacy site whose rows live under how.items still RENDERS, but its
+ * hooks are not re-pointed there: genericContentSchema declares no how.items
+ * list and no fallbackPaths for it, so a hook spelled that way would be inert
+ * in the sidebar.
+ *
+ * NOT RENDERED, deliberately:
+ *   · NO id on the section. This page's anchors are menu / about / gallery /
+ *     visit / faq / main; the design gives HOW-IT-WORKS no id and nothing in
+ *     the nav points at it, so inventing #how would add a target nothing aims
+ *     for.
+ *   · NO SECTION PADDING OF ITS OWN. The design writes `padding: 80px 28px 0`
+ *     on this section and lets the NEXT section's top padding be the whole gap;
+ *     PageBO instead declares ONE shared symmetric rhythm —
+ *     `section { padding: clamp(48px,6.4vw,80px) 0 }` — whose cap is exactly
+ *     the design's 80px, and that wrapper rule is the contract all fifteen BO
+ *     sections sit on. A top-only padding here would not restore anything:
+ *     GalleryBO above still pays its own symmetric bottom, so the space above
+ *     the plate is unchanged either way, and the only thing that would move is
+ *     that HOW becomes the one section in the variant that butts into the
+ *     reviews below it. The horizontal 28px is likewise not restated: `.wrap`
+ *     is `min(1200px, 92vw)`, the design's cap and its side air in one
+ *     declaration.
+ *   · NO .band-pink, NO .band-sage, NO .band-lilac. All three exist in the
+ *     wrapper and this section opts into none of them, because the design's
+ *     ground here is neither: it is a full-bleed-free --ink PLATE inside a
+ *     normal paper section, with the page's blush still visible down both
+ *     sides. --ink does carry a declared on-colour in the wrapper — `.plate
+ *     .cap` is `background-color: var(--ink); color: var(--on-ink)` — so the
+ *     text colour on this plate is still the pairing the wrapper declares and
+ *     not one this file invented.
+ *   · NO focus-ring override. The wrapper's indicator is a 3px --paper outline
+ *     with a 6px --accent halo outside it, and --paper against --ink is 15.92:1
+ *     (PageBO's own computed figure), so the ring reads on the dark plate
+ *     without help. The wrapper's one override exists for .band-pink, which
+ *     this section does not use.
+ *   · NO .body primitive on the step paragraph. .body is
+ *     clamp(14.5px,1.3vw,15.5px) / 1.72 / --ink-soft; the design's paragraph is
+ *     a flat 14.5 / 1.75 in a light grey that only exists on the dark plate, so
+ *     all three of those would have been overridden. A section that overrides
+ *     three of a primitive's properties is not reusing it. font-family is left
+ *     to inherit var(--sans) from body, exactly as it does in the design.
+ *   · NO star row, NO rating, NO photo, NO role="img", NO .plate, NO .cap. This
+ *     section has none in the design, so R2's rating rule and R9's accessible
+ *     name have nothing to bind to here.
+ *   · NO `target="_blank"` on an in-page action. The design hard-codes one
+ *     because its own href is a Messenger URL, but the same button may now
+ *     resolve to '#visit', and opening an in-page anchor in a new tab is a bug.
+ *     Emitted for http(s) only.
+ *   · NO cap on the headline measure. The wrapper's .h2 caps itself at 22ch,
+ *     which is right for this template's LEFT-aligned headlines; this one is
+ *     centred by its parent, and a 22ch block with no auto margins would hug
+ *     the left edge of the plate while centring its text inside itself. The
+ *     design states no cap on this h2, so the cap is removed rather than
+ *     converted to `margin-inline: auto`.
+ *
+ * RESPONSIVE (R8). The wrapper owns the shared 760 / 520 type pass; the grid
+ * and the plate below are this section's. THE ONLY CLAMP IN THIS FILE is the
+ * headline's, and it is declared ONCE at base and never restated in a query,
+ * so the ladder cannot invert: clamp(28px,3.8vw,48px) reads its 48px cap from
+ * ~1263px up, 45.6 at 1200, 34.2 at 900, 28.88 at 760 and its 28px floor from
+ * ~737px down. Note that this scoped rule also out-specifies the wrapper's own
+ * 760 `.h2` rule (a :where() selector at 0,1,1 against this file's 0,2,0), so
+ * that clamp(26px,7vw,29px) step never applies here. This file's own curve runs
+ * straight through the boundary — 28.918px at 761, 28.88 at 760 — so nothing
+ * jumps either way: the wrapper's step would have drawn 29px there, and below
+ * 400px its 7vw term falls BELOW this file's flat 28px floor instead. Winning
+ * the specificity fight is therefore not uniformly "smaller"; what it buys is
+ * that ONE monotonic curve governs at every width. Every other size in this
+ * file is flat, and every type and spacing value in the 900 and 520 queries is
+ * below the one it replaces. The single value that GROWS in a query is the
+ * action button's width at 520, which goes full-bleed: it fills the column it
+ * already sits in rather than exceeding it, and it is the reason that rule also
+ * carries white-space + overflow-wrap.
+ *
+ * CONTRAST, COMPUTED from the hexes PageBO declares (sRGB relative luminance,
+ * WCAG 2.x) with the two lifts and the translucent body colour composited
+ * first, rather than estimated:
+ *   --on-ink on --ink (the plate)                     15.92
+ *   --on-ink on the card lift (the step titles)       14.14
+ *   --pink on --ink (the headline emphasis)           11.13
+ *   --pink on the eyebrow lift                         8.36
+ *   rgba(--paper-rgb,.72) on the card lift (the body)  8.02
+ *   --on-pink on --pink (the disc, and the button)     9.96
+ * Caveat, the same one PageBO makes for --muted: buildOverrideCss owns --ink,
+ * --on-ink and --paper-rgb and wins them with !important, so the first five
+ * figures are the NATIVE palette's. The pairing itself is structural — paper
+ * carried over ink — and stays a light-on-dark pair under any scheme, but the
+ * exact numbers are not a guarantee. --pink and --on-pink are invisible to that
+ * file, so the last figure holds everywhere.
+ *
+ * SCOPING (R3). One scoped <style> block, no is:global; the single :global() is
+ * the emphasis rule, which has to reach set:html output. Classes are prefixed
+ * sip-how- for THIS template and are not a sibling's names re-used: an audit
+ * had to rename a whole set copied verbatim between two files in this family,
+ * so nothing here reuses HowBM's hbm- or HowBL's how- names. Button classes are
+ * .btn / .btn--pink only — buildOverrideCss pins label colours on .btn-primary
+ * / .btn-ghost / .nav-cta / .cta-band .btn / .testi .btn with !important, and
+ * none of those selectors reaches anything here (R4).
+ */
+// `layout` is accepted because PageBO passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const how = content?.how || {};
+const tag = typeof how.tag === 'string' ? how.tag.trim() : '';
+// Trimmed and otherwise untouched: this goes out through set:html, so whatever
+// markup the owner typed reaches the emphasis rule intact.
+const headline = typeof how.headline === 'string' ? how.headline.trim() : '';
+
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+// Read tolerantly — a legacy site stores its rows under how.items — and write
+// canonically. See ARRAY SOURCE above.
+const source: Step[] = Array.isArray(how.steps)
+  ? how.steps
+  : (Array.isArray(how.items) ? how.items : []);
+const titleOf = (s: Step): string => String(s?.title ?? '').trim();
+const bodyOf = (s: Step): string => String(s?.body ?? s?.desc ?? s?.description ?? '').trim();
+// A step the admin added but never filled would otherwise print a 56px pink
+// disc over nothing inside a lifted card, and a title of pure whitespace would
+// ship an empty <h3>. Normalise first, drop the blanks (whitespace counts as
+// blank) and keep the ORIGINAL index on every survivor.
+const rows = source
+  .map((s, i: number) => ({ i, title: titleOf(s), body: bodyOf(s) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// Track count follows the DATA, capped at the design's three. Three or more
+// filled steps compute exactly the design's repeat(3, minmax(0,1fr)); a fourth
+// and beyond wrap onto a second row of cards.
+const cols = String(Math.min(Math.max(rows.length, 1), 3));
+
+// Anchor guard (R7). Resolve in-page hrefs against the ids PageBO actually
+// renders — menu, about, gallery, visit, faq, main — and remap what
+// derive-content-defaults emits onto them: the services block IS the drinks
+// menu (rooms lands there too), '#about' is the shop's own story (host and why
+// are the same block here), '#work' is the photo wall, '#location' and
+// '#contact' both mean the visit block, and a booking link has no checkout to
+// reach on this page so it lands on <main>. Off-page hrefs — tel:, mailto:,
+// http(s) and anything else without a leading '#' — pass through untouched.
+// Keep this table in step with the copies in the other BO sections.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content?.hero || {};
+const ctaText = typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '';
+// #visit is where this template puts the address, the map and the opening
+// hours, so it is the honest landing place for an action that cannot be
+// resolved — the last step above it has just told the visitor to come and
+// collect the order.
+const ctaHref = onPage(hero.cta1?.href, '#visit');
+// Carried for http(s) ONLY — see NOT RENDERED above.
+const ctaExternal = /^https?:/i.test(ctaHref);
+---
+{rows.length > 0 && (
+  <section class="sip-how">
+    <div class="wrap">
+      <div class="sip-how-plate">
+        {(tag || headline) && (
+          <div class="sip-how-head reveal">
+            {tag && <span class="kick sip-how-kick" data-field="how.tag">{tag}</span>}
+            {headline && <h2 class="h2 sip-how-h2" data-field="how.headline" set:html={headline}></h2>}
+          </div>
+        )}
+
+        <ol class="sip-how-grid" role="list" style={`--sip-how-cols:${cols}`}>
+          {rows.map((step, k) => (
+            <li class="sip-how-card reveal" data-delay={String(Math.min(k, 3))}>
+              {/* DERIVED chrome: the DISPLAY position, aria-hidden, no
+                  data-field. The <ol> already carries the ordinal for
+                  assistive tech. */}
+              <span class="fig sip-how-n" aria-hidden="true">{String(k + 1)}</span>
+              {step.title && <h3 class="sip-how-t" data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+              {step.body && <p class="sip-how-p" data-field={`how.steps.${step.i}.body`}>{step.body}</p>}
+            </li>
+          ))}
+        </ol>
+
+        {ctaText && (
+          <div class="sip-how-act reveal">
+            <a
+              class="btn btn--pink"
+              href={ctaHref}
+              target={ctaExternal ? '_blank' : undefined}
+              rel={ctaExternal ? 'noopener noreferrer' : undefined}
+              data-field="hero.cta1.text"
+              data-href-field="hero.cta1.href"
+            >{ctaText}</a>
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour and type come only from PageBO's token vocabulary — --ink --on-ink
+     --pink --on-pink --paper-rgb --r-pill --disp --sans, plus .wrap, .kick,
+     .h2, .fig, .btn and .btn--pink. There is not one literal hex in this file
+     (R1); the three values the design draws that have no token are written as
+     token expressions over --ink, documented in the frontmatter.
+
+     (Never write a literal end-style-tag inside a comment in here — the parser
+      would end the stylesheet on the spot and silently truncate the file.) */
+
+  /* The section states NO vertical padding and NO measure: both are the
+     wrapper's, and its `section` cap is exactly the design's 80px. See the
+     frontmatter for why a top-only padding here would buy nothing. */
+
+  /* THE PLATE — the page's one dark ground. --ink with the wrapper's own
+     declared on-colour for it, so nothing inside has to guess.
+     36px is a LENGTH, not a colour: R1 governs colour, and no token holds 36
+     (--r-lg is 26, --r-md is 18, --r-pill is 100), so the design's number
+     stands rather than being rounded to a different drawing. */
+  .sip-how-plate {
+    background-color: var(--ink);
+    color: var(--on-ink);
+    border-radius: 36px;
+    padding: 52px 46px;
+  }
+
+  /* Design: centred header, margin-bottom 38px. The margin lives on the block
+     rather than on the h2, so the gap above the grid is identical whether or
+     not the owner typed a headline — and derive-content-defaults ships how.tag
+     on every site but NO how.headline, so "eyebrow, then straight into the
+     grid" is the DEFAULT state, not an edge case. */
+  .sip-how-head { text-align: center; margin-bottom: 38px; }
+
+  /* The eyebrow keeps .kick's 11px / 700 / uppercase and its tight line box;
+     what is local is the design's .14em tracking, the pill, and the colours.
+     The colours MUST be local: .kick is --accent, and purple on this plate is
+     2.83:1. The ground is the ink lifted a tenth of the way to paper — the
+     design's own eyebrow ground — written as a token expression so it
+     tracks --ink. The hex it solves against is in the frontmatter table.
+     max-width and overflow-wrap because the tag is owner-typed and one
+     unbroken word in .14em caps would otherwise be the widest thing here. */
+  .sip-how-head .sip-how-kick {
+    letter-spacing: .14em;
+    color: var(--pink);
+    background-color: rgba(var(--paper-rgb), .10);
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: Baloo 2 700 (from the wrapper's .h2), clamp(28px,3.8vw,48px) / 1.08,
+     margin .24em 0 0, and the paper-white ink. The colour has to be restated
+     because the
+     wrapper's shared h1-h4 reset paints --ink, which is the ground here. The
+     cap is removed rather than made auto-margined — see NOT RENDERED.
+     This is the file's ONLY clamp and it is declared once; see RESPONSIVE. */
+  .sip-how-h2 {
+    font-size: clamp(28px, 3.8vw, 48px);
+    line-height: 1.08;
+    margin: .24em 0 0;
+    max-width: none;
+    color: var(--on-ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* THE EMPHASIS. PageBO paints .h2 em / .em in --accent, which is right on
+     paper and 2.83:1 on this plate. The design's emphasis here is the pink, at
+     11.13:1. :global() because scoped rules cannot reach markup that set:html
+     created (R3); font-style stays normal because Baloo 2 has no italic and a
+     synthesised oblique fights its rounded terminals. */
+  .sip-how-h2 :global(em),
+  .sip-how-h2 :global(.em) {
+    font-style: normal;
+    color: var(--pink);
+  }
+
+  /* Design: three equal tracks at a 20px gutter, following the DATA up to
+     three. minmax(0,1fr) rather than 1fr so a long unbroken word in a step
+     cannot widen its own track and push the page sideways. The inline custom
+     property sets no grid-template-columns of its own, so the 900px rule below
+     still wins on source order. */
+  .sip-how-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--sip-how-cols, 1), minmax(0, 1fr));
+    gap: 20px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Design: the lifted card ground, radius 24px, padding 28px 26px, centred.
+     The ground is the
+     ink lifted ~4.5% toward paper — see the frontmatter. min-width:0 as well as
+     the minmax() above, because a grid item's default min-width is auto. */
+  .sip-how-card {
+    min-width: 0;
+    background-color: rgba(var(--paper-rgb), .045);
+    border-radius: 24px;
+    padding: 28px 26px;
+    text-align: center;
+    list-style: none;
+  }
+
+  /* THE DISC. .fig already gives var(--disp) at 700 with tabular lining
+     numerals and line-height 1 — four of the design's five values for this
+     figure, verbatim. Local: the flat 24px and the colour, and the colour MUST
+     be local because .fig is --accent and purple on the pink is 3.93:1, the one
+     pairing PageBO forbids outright.
+     Sized by min-width / min-height rather than a hard 56×56 so a tenth step's
+     two-digit numeral grows the disc into a pill instead of spilling out of it;
+     for every figure this design draws the 56px floor governs and the box is
+     the drawn circle. 100px on a 56px box scales to 28px per corner — computed:
+     the two radii on a side sum to 200 > 56, so both scale by 56/200 — which is
+     exactly half of 56, i.e. the design's `50%`. */
+  .sip-how-card .sip-how-n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 56px;
+    min-height: 56px;
+    padding: 0 6px;
+    border-radius: var(--r-pill);
+    background-color: var(--pink);
+    color: var(--on-pink);
+    font-size: 24px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: Baloo 2 600, 24px, margin 16px 0 8px, paper-white. Weight, leading
+     and
+     colour are all restated because the wrapper's shared h1-h4 reset gives 700
+     / 1.12 / --ink; the design states no line-height above this h3, so it
+     computes to `normal`, and the 16px top margin was drawn against that box. */
+  .sip-how-card .sip-how-t {
+    font-weight: 600;
+    font-size: 24px;
+    line-height: normal;
+    margin: 16px 0 8px;
+    color: var(--on-ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 14.5 / 1.75 / the light grey that exists only on this plate /
+     margin 0. Written out rather than taking
+     .body, which would have had three of its properties overridden anyway —
+     see NOT RENDERED. font-family inherits var(--sans) from body, as in the
+     design. Qualified with the card class so it beats the wrapper's bare
+     paragraph reset. */
+  .sip-how-card p.sip-how-p {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: rgba(var(--paper-rgb), .72);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: centred, margin-top 34px. The button itself is the wrapper's
+     .btn.btn--pink, which declares every value the design's btnPink does (and a
+     min-height, a transparent border and a transition of its own besides). */
+  .sip-how-act { text-align: center; margin-top: 34px; }
+
+  /* ── This section's OWN responsive pass (R8). Three tracks go straight to ONE
+        at 900px rather than through a two-up. Computed rather than guessed, and
+        measured against the THREE-TRACK layout at its narrowest — just above
+        this breakpoint, where the plate is still padded 46 a side (this query
+        drops it to 32): .wrap is 828px, the plate's own padding takes 92 and the
+        two gutters 40, leaving 232px a track and 180px of measure inside the
+        card's 26px padding — a 24px Baloo 2 title in 180px is roughly a dozen
+        characters. Two-up would also leave a lone third card on a row of its
+        own. Stacked, the paragraph takes a centred measure cap instead: a step
+        should not run to 110 characters just because its card is now the whole
+        plate. Every length below either reduces the value it replaces (the two
+        paddings, the head margin) or constrains one that was previously
+        unbounded (the paragraph measure); nothing in this block grows. */
+  @media (max-width: 900px) {
+    .sip-how-plate { padding: 44px 32px; }
+    .sip-how-head { margin-bottom: 30px; }
+    .sip-how-grid { grid-template-columns: minmax(0, 1fr); }
+    .sip-how-card p.sip-how-p { max-width: 56ch; margin-inline: auto; }
+  }
+
+  /* 520 · tighten the stack. At 360px .wrap is 331px, this plate padding takes
+     40 and the card padding 36, leaving 255px of measure — which is why the
+     paddings and the title come down here rather than the disc alone. Nothing
+     may push the page sideways: the minmax tracks, the min-width:0 and the
+     overflow-wrap rules above cover the text, and the action goes full-bleed
+     below. Every type and spacing value in this block is below the one it
+     replaces; the action's width is the block's one deliberate growth, and it
+     grows only to the column it already occupies. The headline's clamp is
+     untouched, so the ladder stays monotonic. */
+  @media (max-width: 520px) {
+    .sip-how-plate { padding: 34px 20px; }
+    .sip-how-head { margin-bottom: 24px; }
+    .sip-how-card { padding: 24px 18px; }
+    .sip-how-card .sip-how-n { min-width: 48px; min-height: 48px; font-size: 21px; }
+    .sip-how-card .sip-how-t { font-size: 21px; margin: 14px 0 8px; }
+    .sip-how-act { margin-top: 26px; }
+    /* Full-bleed action. The wrapper pins .btn to white-space: nowrap, so BOTH
+       of these are needed: `normal` alone still lets a label with no spaces
+       escape the button, and `anywhere` alone is overruled by the nowrap. */
+    .sip-how-act .btn { width: 100%; white-space: normal; overflow-wrap: anywhere; }
+  }
+</style>

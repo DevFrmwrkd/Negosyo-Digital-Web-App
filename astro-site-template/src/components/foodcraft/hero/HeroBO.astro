@@ -1,0 +1,613 @@
+---
+/**
+ * foodcraft / HeroBO — "Sipsip Tea Bar"'s arrival.
+ *
+ * ROLE. The page's opening statement and its only h1. The whole hero sits
+ * INSIDE one ultraviolet slab: a 36px-radius panel filled with --accent,
+ * holding two columns — on the left a blush PILL eyebrow, a Baloo 2 headline
+ * whose closing phrase turns BLUSH (a colour change, never an italic), a lede
+ * and two actions; on the right one PERFECT CIRCLE photograph. Lifted verbatim
+ * from the element carrying data-component="HERO" in
+ * "Sipsip Tea Bar Landing.dc.html": section padding 20px 28px 0, panel
+ * background --accent at border-radius 36px with padding 56px 52px, grid
+ * minmax(0,1.05fr) minmax(0,.95fr) at gap 44px with align-items:center and
+ * overflow:hidden, h1 clamp(40px,5.4vw,76px)/1.04 with margin .2em 0 .26em,
+ * lede 17.5px/1.72 at 42ch with 30px beneath it, actions 11px apart, and a
+ * right column at aspect-ratio 1/1 and border-radius 50%.
+ *
+ * EDITABLE HOOKS (every path below is declared in components/editor/
+ * genericContentSchema.ts group id 'hero', so each is live in the sidebar AND
+ * inline):
+ *   hero.image              — data-image-field, the circular photograph
+ *   hero.kicker             — the eyebrow, drawn as the blush pill
+ *   hero.headline           — the h1, set:html so an owner em takes the blush
+ *   hero.headlineLines.${i} — the SAME h1, when hero.headline holds nothing but
+ *                             the derived business name; see THE HEADLINE below
+ *   hero.sub                — the lede
+ *   hero.cta1.text + data-href-field hero.cta1.href — the cream filled button
+ *   hero.cta2.text + data-href-field hero.cta2.href — the outlined button
+ *
+ * DERIVED, never stored and never editable:
+ *   · the photograph's accessible name — layout.businessName and nothing else
+ *   · both button hrefs, resolved through onPage() against the ids PageBO
+ *     actually renders
+ *   · which of the two headline paths the h1 binds to
+ *   · the blush tail, when the owner has not marked one (see THE SIGNATURE)
+ *   · the flat variant (no photograph ⇒ one column), below
+ *
+ * NOT RENDERED, deliberately:
+ *   · No copy of any kind is written by this file. The design's demo strings
+ *     ("Shaken fresh, sealed to go.", "See the drinks", "Contact us") are the
+ *     DESIGNER filling in their own template. A real tea bar gets an arrival
+ *     that says only what that tea bar said, so every guard sits OUTSIDE its
+ *     tag: no pill over nothing, no empty action row, and no purple slab with
+ *     a hole in it where a photograph nobody uploaded would have gone.
+ *   · NO META / PILL ROW under the actions. hero.meta1, hero.meta2 and
+ *     hero.trustLine are all declared by the schema, but THIS design draws no
+ *     such row here — its four facts live in the TRUST section below. Inventing
+ *     a row to use up a declared field would be a layout the designer did not
+ *     draw. The fields stay editable in the sidebar and simply have no element
+ *     here.
+ *   · NO STAR ROW of any kind. The design has none here, and this section has
+ *     no numeric rating field to draw one from; a star that is not counted out
+ *     of a rating is a fabricated claim. The schema's placeholder on hero.meta1
+ *     is literally '★★★★★ rated on Google' — a placeholder is not a default,
+ *     lib/derive-content-defaults.ts emits no meta1 for exactly that reason,
+ *     and this file prints no star glyph at all.
+ *   · hero.tag / hero.photos.* — not declared by the schema. A data-field on a
+ *     path no sidebar input owns looks editable and focuses nothing. (hero.photos
+ *     is read as a display FALLBACK for the image source only; the HOOK is
+ *     always hero.image, the path the sidebar's picker writes.)
+ *   · .reveal. This section is above the fold; it is painted, not animated in.
+ *   · An aria-label on the section. Naming it would make it a landmark
+ *     announced with a word I wrote ("Hero"); the h1 already titles the region.
+ *   · target="_blank". The design's demo markup carries it because its primary
+ *     is hard-wired to a Messenger URL; here the href is the owner's and may be
+ *     an in-page anchor, so navigation is left alone (the family idiom).
+ *   · A .band-* class. The wrapper's three bands (.band-pink .band-sage
+ *     .band-lilac) each carry their own text colours and are the right tool for
+ *     a section that stands on one of the answering grounds — but this hero
+ *     stands on --accent, which has no band, and it is a PANEL inside the paper
+ *     ground rather than a full-bleed band. So the panel declares
+ *     background-color:var(--accent) with color:var(--on-accent) as its own
+ *     pairing, which is the same on-colour discipline the bands use, applied to
+ *     the one ground the wrapper does not pre-declare.
+ *
+ * THE THREE HUES, as this section uses them (no literal hex anywhere in this
+ * file — R1):
+ *   --accent  is the panel. Everything below sits ON it.
+ *   --pink    is a GROUND twice over — the eyebrow pill and the headline tail —
+ *             and is TEXT exactly once, on the h1, where it is large type. It
+ *             is never body text here.
+ *   --sage    is not used. The design does not put it in the hero, and this
+ *             file does not invent a place for it.
+ *
+ * COLOUR / CONTRAST — COMPUTED, not estimated (WCAG 2.x sRGB relative
+ * luminance, over the hexes PageBO declares):
+ *   --on-cream on the cream primary          10.81:1
+ *   --plum on the --pink eyebrow pill         7.41:1
+ *   --on-accent on --accent (h1, ghost label)  5.63:1  — agrees with PageBO
+ *   --lilac lede on --accent                   4.77:1
+ *   ghost label on its .08 paper hover wash    4.77:1  (the wash resolves to
+ *     sRGB 134,92,174 over --accent; anything heavier than ~.10 drops the
+ *     label under 4.5, which is why the wash is this light)
+ *   --pink headline tail on --accent           3.93:1  — this is the SAME pair
+ *     PageBO flags as failing, and it fails the 4.5 BODY floor exactly as the
+ *     wrapper says. It is used here only inside the h1, whose smallest size in
+ *     any query is 28px at weight 700 — far above the 18.66px-bold threshold
+ *     for large text, where the floor is 3:1. Nothing else in this file puts
+ *     the pink on the purple, and nothing here puts the purple on the pink.
+ *
+ * ONE NON-TEXT PAIR TO REVIEW. The ghost button's edge is the design's own
+ * `2px solid rgba(paper, .55)`, which resolves to sRGB 196,171,209 over the
+ * panel and measures 2.86:1 against it — just under the 3:1 that WCAG 1.4.11
+ * asks of a UI component boundary. The design is the specification, so the
+ * value is reproduced rather than quietly nudged; the control is still
+ * identifiable by its label, which is --on-accent at 5.63:1. Raising the alpha
+ * to .60 gives 3.12:1 and is a one-value change if a reviewer wants the bar
+ * cleared.
+ *
+ * THE EYEBROW USES --plum, NOT --on-pink, and that is the design and not a
+ * slip. The design's hero pill fills with the blush and labels it in the value
+ * PageBO names --plum; its pink BUTTON further down the page fills with the
+ * same blush and labels it in --on-pink instead. Both clear AA (7.41 and
+ * 9.96), the design distinguishes them, and this file follows the design.
+ *
+ * THE HEADLINE, and why one heading reads two paths. This design's headline is
+ * ONE flowing sentence whose closing phrase turns blush — not a stack of lines
+ * — so the h1 is hero.headline rendered through set:html and the emphasis is an
+ * em the OWNER types.
+ * The catch is WHICH FIELD actually holds the owner's headline, because two
+ * layers upstream disagree:
+ *   · lib/derive-content-defaults.ts auto-fills hero.headline with the BARE
+ *     BUSINESS NAME on every named site (`headline: name || undefined`), and
+ *     lib/astro-builder.ts's mergeShallow lets that derived value stand
+ *     wherever the owner left the field unset.
+ *   · lib/services/groq.service.ts — the extraction that writes the copy for a
+ *     real submission — emits hero.headlineLines and NEVER hero.headline.
+ * So "always prefer hero.headline" prints the business name and drops the
+ * authored headline on the floor for exactly the sites that have one. The rule
+ * is therefore: hero.headline wins whenever it is AUTHORED, meaning anything
+ * other than the business name the derive layer fills in. When it is that
+ * auto-fill (or empty), the surviving headlineLines rows win — flowed INLINE
+ * inside the same h1, because this design's headline is a sentence and not a
+ * stack — each carrying its ORIGINAL array index, so dropping a blank row 2
+ * cannot misdirect an edit into row 3 (R6). The decorative part — which row
+ * gets the blush — uses the DISPLAY position instead, because "the last one you
+ * can see" is what the eye is being told.
+ * The field a click opens is always the field the visible text came from:
+ * binding hero.headlineLines.0 to text that arrived as hero.headline (or the
+ * reverse) aims an inline edit at a slot the sidebar is not showing.
+ *
+ * THE SIGNATURE, MADE REACHABLE. The design's h1 is two-tone — cream, then a
+ * blush close ("sealed to go.") — and it got there because the DESIGNER typed a
+ * span into their own markup. No owner is going to type a tag into a text box,
+ * so without a fallback the headline renders one flat colour on every real site
+ * and one of the two things that makes this template recognisable never ships.
+ * When the owner has NOT marked emphasis, the tail is derived from THEIR OWN
+ * sentence and adds not one word — it only decides where the sentence turns.
+ * An explicit em always wins; this fills a silence. Note the design's own
+ * headline turns at its comma, which is exactly what the derivation below does
+ * with it.
+ * IT IS A COLOUR CHANGE AND NOT AN ITALIC. Baloo 2 ships no italic, so asking
+ * for one synthesises an oblique that fights its rounded terminals; every
+ * emphasis rule below therefore states font-style:normal explicitly, because
+ * an em is italic by user-agent default.
+ *
+ * SECTION GATE (R5). The arrival renders when it has something to SAY or SHOW:
+ * a headline, a lede, or the photograph. It deliberately does NOT count the
+ * eyebrow (derive-content-defaults builds one from city + trade for sites with
+ * neither name, tagline nor upload) and does NOT count the two buttons (derive
+ * sets cta1/cta2 text UNCONDITIONALLY, so counting either makes the gate a
+ * no-op that always passes).
+ * FOR REVIEW — this is the one section in the family whose gate counts the
+ * headline, against the letter of R5. Here the headline IS the body: it is the
+ * document's only h1, and a hero dropped for having "only" an h1 takes the
+ * page's heading with it and opens the site on the trust row. A purple panel
+ * carrying a real headline is not an empty section with a heading over it.
+ *
+ * NO PHOTOGRAPH ⇒ ONE COLUMN. The circle is a COLUMN here, not a background. If
+ * the owner uploaded nothing, rendering it anyway leaves a ~470px purple disc
+ * on a purple panel — a visible hole. So the plate is dropped entirely and the
+ * grid collapses to a single track, with the copy held at 523px: that is the
+ * width the left column has IN THE DESIGN, at the design's own measure
+ * ((1200 − 56 gutter − 104 panel padding − 44 gap) × 1.05/2.00), so the
+ * sentence is not re-flowed to a width the design never gave it.
+ * Both that 523px and the ~470px disc above are the DESIGN's box, not this
+ * build's. PageBO's .wrap is `width: min(var(--maxw), 92vw)` with NO padding,
+ * so at the full 1200px measure the live two-column left track is ~552px and
+ * the circle ~500px; the 28px gutter the design writes into its own max-width
+ * is 4vw here and only bites below 1304px. The design's 523px cap is kept
+ * deliberately rather than widened to match — see the LADDER note below, whose
+ * figures are measured off `92vw` and are this build's, not the design's.
+ *
+ * THE SECTION HAS NO BOTTOM PADDING, and that is the design, not an oversight.
+ * The HERO element ends at `padding:20px 28px 0`; the TRUST row below carries
+ * its own 22px of top padding, and every other section brings its own top
+ * padding from the wrapper's `section` rule. A floor here would double it.
+ *
+ * TWO VALUES THIS FILE DOES NOT RESTATE, so a reader does not read them as
+ * misses. (1) The h1's letter-spacing: the design declares none, and PageBO's
+ * heading primitive sets -.01em on every h1–h4 in the template on purpose;
+ * that family decision is left to own it rather than being unpicked in one
+ * section for -0.76px at 76px. (2) The eyebrow's line-height: it keeps the
+ * shared .kick's 1.1, which makes the pill ~3px shorter than the design's
+ * browser-default leading (11px x Nunito Sans's ~1.36 normal leading against
+ * 11px x 1.1). Only the pill's ground, label, tracking, padding and radius are
+ * stated here.
+ *
+ * CLASS-NAME LAW (not inferable, do not "tidy"): the section is .sip-hero, NOT
+ * .hero — lib/genericThemeOverrides.ts force-paints `.hero .btn-ghost` and
+ * `.hero .btn-primary:hover` with !important and would strand a label here.
+ * Buttons are .btn + .btn--cream / .btn--line (double dash) for the same
+ * reason. Never .btn-primary / .btn-ghost / .btn-yellow / .btn-light /
+ * .nav-cta / .nav-right / .trust / .testi / .cta-band in this family. The `sip-`
+ * prefix is this template's ("Sipsip", and the design's own id on the hero
+ * image slot) and is shared with no sibling: BL uses `kc-`, BM uses `tc-`, BN
+ * uses `pd-`. An audit had to rename a whole set of classes that were copied
+ * verbatim from the template before it.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+// Anchor guard, copied from the BM sibling and re-pointed at THIS page.
+// lib/derive-content-defaults.ts hard-codes '#visit' for hero.cta1 and
+// '#services' for hero.cta2; this page renders `visit` but not `services`, so
+// one is kept and the other is remapped. Resolve every in-page href against
+// what PageBO actually draws: keep it when the id exists, remap it when this
+// design carries the same block under another id, otherwise fall back to the
+// target the design was built around. Off-page hrefs (tel:, mailto:, http)
+// pass through untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBO — and with the copies
+// in HeaderBO, CtaBandBO and FooterBO. There is no shared import by design (a
+// section component in this repo receives only `content` + `layout`); the
+// copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  location: 'visit', contact: 'visit',
+  services: 'menu', rooms: 'menu',
+  host: 'about', why: 'about',
+  work: 'gallery',
+  book: 'main',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+
+// Display fallbacks only — the HOOK below is always hero.image, the path the
+// sidebar's image picker writes. The quote escape keeps a filename with an
+// apostrophe from closing the url('') early and killing the declaration.
+const heroImage = String(hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '');
+const heroImageCss = heroImage.replace(/'/g, '%27');
+
+const kicker = hero.kicker || '';
+
+// THE HEADLINE — full reasoning in the doc comment. hero.headline is this
+// design's field; the rows take over only when hero.headline is nothing but the
+// business name derive-content-defaults auto-filled (or is empty), which is the
+// shape every AI-written submission arrives in.
+const bizName = String(layout?.businessName ?? '').trim();
+const headline = String(hero.headline ?? '').trim();
+const lineRows: Array<{ text: string; i: number }> = (Array.isArray(hero.headlineLines) ? hero.headlineLines : [])
+  .map((t: any, i: number) => ({ text: String(t ?? ''), i }))
+  .filter((l: { text: string }) => l.text.trim() !== '');
+// …and only when they SAY something hero.headline does not. On the ordinary
+// named site both hold the same one line, and the single-line hook keeps it.
+const useRows =
+  lineRows.length > 0 &&
+  (headline === '' || headline === bizName) &&
+  lineRows.map((l) => l.text.trim()).join(' ') !== headline;
+const hasHeadline = useRows || headline !== '';
+
+// ── THE SIGNATURE, MADE REACHABLE ────────────────────────────────────────
+// When the owner has NOT marked emphasis themselves, the tail is derived from
+// their OWN sentence and adds not one word:
+//   • more than one line                  -> the last line
+//   • a comma, dash, colon or semicolon   -> everything after the LAST one
+//   • anything else                       -> nothing at all
+// That last case is deliberate. A single clause is a single clause, and
+// splitting inside one would lean on a word the owner never leaned on — the
+// design's own headline turns at "fresh, / sealed to go" precisely because that
+// is where its sentence turns, and only the writer knows that point.
+const hasOwnEm = (v: string): boolean => /<em[\s>]/i.test(v);
+const emphasise = (raw: string): string => {
+  if (!raw || hasOwnEm(raw)) return raw;
+  const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const tail = lines.pop() as string;
+    return lines.join(' ') + ' <em>' + tail + '</em>';
+  }
+  // The LAST break wins, so a sentence with two commas emphasises its close
+  // rather than its middle. The lookahead keeps a trailing comma from matching.
+  const re = /[,;:—–]\s+(?=\S)/g;
+  let cut = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) cut = m.index + m[0].length;
+  if (cut <= 0 || cut >= raw.length) return raw;
+  return raw.slice(0, cut) + '<em>' + raw.slice(cut) + '</em>';
+};
+const headlineHtml = emphasise(headline);
+// The rows path marks its LAST VISIBLE row instead, and only when no row is
+// already carrying the owner's own em.
+const rowsOwnEm = lineRows.some((l) => hasOwnEm(l.text));
+
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+// The design's primary is its contact action and its secondary points at the
+// drinks; those are the two fallbacks when an owner's href resolves to nothing.
+const cta1Href = onPage(hero.cta1?.href, '#visit');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, '#menu');
+
+// The photograph's accessible name is the owner's own words or nothing. With no
+// business name there is no honest name for the picture, so it leaves the
+// accessibility tree instead of announcing a phrase I invented. Built as ONE
+// spread object so a conditional attribute can never end up beside a literal
+// (R9 — two components in an earlier family shipped exactly that duplication,
+// and the literal aria-hidden won).
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+const hasArrival = !!(hasHeadline || sub || heroImage);
+---
+{hasArrival && (
+<section class={heroImage ? 'sip-hero' : 'sip-hero sip-hero--flat'}>
+  <div class="wrap">
+    <div class="sip-hero-panel">
+      <div class="sip-hero-copy">
+        {kicker && <span class="kick sip-hero-kick" data-field="hero.kicker">{kicker}</span>}
+        {!useRows && headline !== '' && <h1 class="sip-hero-h1" data-field="hero.headline" set:html={headlineHtml}></h1>}
+        {useRows && (
+          <h1 class="sip-hero-h1">
+            {lineRows.map((l, k) => (
+              <span class:list={['sip-hero-ln', !rowsOwnEm && k === lineRows.length - 1 && 'sip-hero-ln--em']}><span data-field={`hero.headlineLines.${l.i}`} set:html={l.text}></span>{k === lineRows.length - 1 ? '' : ' '}</span>
+            ))}
+          </h1>
+        )}
+        {sub && <p class="lede sip-hero-lede" data-field="hero.sub">{sub}</p>}
+        {(cta1Text || cta2Text) && (
+          <div class="sip-hero-ctas">
+            {cta1Text && (
+              <a class="btn btn--cream" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>
+            )}
+            {cta2Text && (
+              <a class="btn btn--line sip-hero-ghost" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* The circle. No upload ⇒ no column at all, rather than a purple disc on
+          a purple panel standing in for a picture nobody supplied. */}
+      {heroImage && (
+        <div class="plate sip-hero-shot">
+          <div
+            class="ph sip-hero-ph"
+            data-image-field="hero.image"
+            style={`background-image:url('${heroImageCss}');`}
+            {...photoA11y}
+          ></div>
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBO's token vocabulary
+     (--paper --accent --on-accent --pink --plum --lilac --disp --r-pill --r-lg
+     --paper-rgb) and from its shared primitives (.wrap .kick .lede .btn
+     .btn--cream .btn--line .plate .ph). There is no literal hex in this file.
+     The two translucent values are written against --paper-rgb, which the theme
+     engine owns and repaints in step with --paper, so they track the panel's
+     own on-colour instead of drifting away from it.
+
+     HOW THESE RULES WIN, and the one config that would break them. Astro scopes
+     a style block with the project's `scopedStyleStrategy`, and this project
+     takes the default, 'attribute' — so `.sip-hero-shot` ships as
+     `.sip-hero-shot[data-astro-cid-…]`, specificity (0,2,0). The wrapper's
+     primitives are `html[data-page="BO"] :where(.plate)`, specificity (0,1,1),
+     because :where() contributes nothing; its `section` rule is (0,1,2). Two
+     classes beat one, which is how the panel's padding replaces the shared
+     section padding, the eyebrow's blush ground replaces .kick's purple ink,
+     the lede keeps its 42ch measure against the wrapper's 760 override, and the
+     ghost button keeps a cream edge instead of .btn--line's purple one — none
+     of it with !important.
+     Setting scopedStyleStrategy:'where' in astro.config.mjs would collapse
+     every one of those to (0,1,0) and silently hand the wrapper the win. Two-
+     class rules (`.sip-hero-ctas .btn`) survive that; the single-class ones do
+     not. */
+
+  /* Design: max-width:1200px; margin:0 auto; padding:20px 28px 0. The measure
+     and the gutter are .wrap's job; the 20px top and the ZERO floor are this
+     section's. See the doc comment on why there is no bottom padding. */
+  .sip-hero { padding: 20px 0 0; }
+
+  /* Design: background --accent; border-radius:36px; padding:56px 52px;
+     display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+     gap:44px; align-items:center; overflow:hidden.
+     36px is a length, not a token: the design's hero corner is softer than
+     --r-lg (26px), which is the card radius everywhere else on this page. The
+     ground/ink pair is declared together here for the same reason the wrapper's
+     bands declare theirs — so nothing inside has to guess what is legible. */
+  .sip-hero-panel {
+    background-color: var(--accent);
+    color: var(--on-accent);
+    border-radius: 36px;
+    padding: 56px 52px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+    gap: 44px;
+    align-items: center;
+    overflow: hidden;
+  }
+  /* No photograph ⇒ one track, and the copy holds the measure the left column
+     actually has at the design's own width. Letting the sentence run the full
+     panel would be a headline this design never draws. */
+  .sip-hero--flat .sip-hero-panel { grid-template-columns: minmax(0, 1fr); }
+  .sip-hero--flat .sip-hero-copy { max-width: 523px; }
+
+  /* min-width:0 lets a long word wrap inside the track instead of widening it
+     and pushing the page sideways. */
+  .sip-hero-copy { min-width: 0; }
+
+  /* Design: background --pink; color --plum; font-size:11px; font-weight:700;
+     letter-spacing:.14em; text-transform:uppercase; padding:8px 16px;
+     border-radius:100px. The face, weight, size, caps and inline-block come
+     from the shared .kick and are not restated; what IS restated is everything
+     that turns an eyebrow into a pill — plus the label colour, because .kick's
+     default is --accent and purple on the blush is 3.93:1, the one pairing this
+     palette must never make. max-width keeps a long derived kicker wrapping
+     inside the column instead of stretching it. */
+  .sip-hero-kick {
+    background-color: var(--pink);
+    color: var(--plum);
+    letter-spacing: .14em;
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    max-width: 100%;
+  }
+
+  /* Design: font-family Baloo 2; font-weight:700; font-size:clamp(40px,5.4vw,
+     76px); line-height:1.04; margin:.2em 0 .26em; color --on-accent. Larger and
+     tighter than the shared .h2, which is why this is an h1 rule of its own and
+     not that primitive. The design sets NO max-width on the h1 — its column is
+     the measure — so none is invented here; the narrow queries below add one
+     only once the columns collapse. */
+  .sip-hero-h1 {
+    font-family: var(--disp);
+    font-weight: 700;
+    font-size: clamp(40px, 5.4vw, 76px);
+    line-height: 1.04;
+    margin: .2em 0 .26em;
+    color: var(--on-accent);
+  }
+  /* THE SIGNATURE. A COLOUR CHANGE, and font-style is pinned to normal because
+     an em is italic by user-agent default and Baloo 2 has no italic to serve —
+     the browser would synthesise an oblique that fights its rounded terminals.
+     :global() because Astro cannot scope markup that arrived through set:html
+     (R3) — which covers both the owner's own em and the derived tail on the
+     single-line path. The blush is 3.93:1 on the purple: large-text only, and
+     the h1 never drops below 28px/700 in any query below. */
+  .sip-hero-h1 :global(em) { font-style: normal; color: var(--pink); }
+  /* Rows path only (hero.headlineLines). They FLOW as one sentence rather than
+     stacking, because this design's h1 is a sentence — the wrap comes from the
+     column, exactly as it does on the single-line path. The word space between
+     rows is a real text node in the markup, not a faked margin. */
+  .sip-hero-ln { display: inline; }
+  /* The derived tail on the rows path. Same treatment as an owner-typed em,
+     declared separately because the rows are real elements this file owns and
+     so do not need :global(). */
+  .sip-hero-ln--em { font-style: normal; color: var(--pink); }
+
+  /* Design: font-size:17.5px; line-height:1.72; a pale lilac; margin:0 0 30px;
+     max-width:42ch. The shared .lede is the right primitive for the measure and
+     the leading, but its colour is --ink-soft, which is a paper-ground ink; on
+     the purple panel the design uses a pale lilac, and the size is flat rather
+     than clamped. That lilac is sRGB 239,228,246 against --lilac's 238,226,245
+     — one step apart on red and blue, two on green — and --lilac is the token
+     it maps to; no new colour is invented for the difference. 4.77:1 on
+     --accent. */
+  .sip-hero-lede {
+    color: var(--lilac);
+    font-size: 17.5px;
+    line-height: 1.72;
+    max-width: 42ch;
+    margin: 0 0 30px;
+  }
+
+  /* Design: display:flex; gap:11px; flex-wrap:wrap; align-items:center. */
+  .sip-hero-ctas {
+    display: flex;
+    gap: 11px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* Design: border:2px solid the paper at 55%; color --on-accent;
+     font-size:13px; font-weight:700; padding:15px 28px; border-radius:100px.
+     .btn--line is the wrapper's outlined button and its edge and label are
+     --accent — invisible on an --accent panel — so both are re-pointed at the
+     panel's own on-colour. Only width and colour are set: the solid style and
+     the pill radius come from .btn's own shorthand. */
+  .sip-hero-ghost {
+    background-color: transparent;
+    border-width: 2px;
+    border-color: rgba(var(--paper-rgb), .55);
+    color: var(--on-accent);
+    padding: 15px 28px;
+  }
+  /* .btn--line's hover fills with --accent, which on this panel would make the
+     button disappear. The replacement brings the edge to full strength and adds
+     the lightest possible wash: at .08 the ground resolves to sRGB 134,92,174
+     and the --on-accent label still measures 4.77:1; past about .10 it drops
+     under 4.5, so this is not a value to nudge upward for a stronger effect. */
+  .sip-hero-ghost:hover {
+    background-color: rgba(var(--paper-rgb), .08);
+    border-color: var(--on-accent);
+    color: var(--on-accent);
+  }
+
+  /* THE FOCUS RING, INVERTED FOR THIS PANEL. The wrapper's ring is a 3px
+     --paper outline inside a 6px --accent halo, which is built for the paper
+     ground: on this panel the halo is accent-on-accent and vanishes, and worse,
+     the cream outline lands invisibly on the cream primary's own fill. So the
+     two colours swap — exactly the move the wrapper already makes for
+     .band-pink — giving a purple edge on the cream button inside a cream halo
+     on the purple panel. Only the colours change; the 3px/6px geometry and the
+     pill radius stay the wrapper's. */
+  .sip-hero-ctas .btn:focus-visible {
+    outline-color: var(--accent);
+    box-shadow: 0 0 0 6px var(--on-accent);
+  }
+
+  /* Design: position:relative; aspect-ratio:1/1; border-radius:50%;
+     overflow:hidden; a lighter purple ground. The relative positioning, the clipping
+     and the isolation are the .plate primitive; the square ratio and the full
+     round are this design's. min-height releases the primitive's 180px floor,
+     which would otherwise fight the ratio in the narrowest column.
+     THAT GROUND HAS NO TOKEN — PageBO declares no purple between --accent and
+     --lilac — and no new colour is invented for it: the nearest token-only
+     expression is a .14 paper wash over the panel, which resolves to sRGB
+     141,103,178 against the design's own 142,99,186. It is only ever seen
+     while an uploaded photograph is still decoding, because the plate does not
+     render at all without one. */
+  .sip-hero-shot {
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    border-radius: 50%;
+    background-color: rgba(var(--paper-rgb), .14);
+  }
+  /* Two classes deep on purpose: the wrapper's `:where(.plate) .ph` scores one
+     element more than a single scoped class would, so `.sip-hero-ph` alone would
+     lose to it. Restating cover/center costs nothing and means the photograph
+     cannot letterbox if that primitive is ever narrowed. */
+  .sip-hero-shot .sip-hero-ph {
+    background-color: rgba(var(--paper-rgb), .14);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* ── R8 · this section's OWN grid. The wrapper handles the shared 760/520
+     pass; the two columns, the panel and the circle are this file's problem.
+
+     THE LADDER, traced across every breakpoint, because two audits found type
+     and plates that GREW as the viewport narrowed.
+       h1        76 → 48 → 34 → 28.  The base clamp reads 48.65px at 901px and
+                 the 900 query caps at 48px, so the step down is a step down;
+                 the 900 query reads exactly 34px at 520px, which is precisely
+                 the 520 query's cap, so that handover is continuous.
+       lede      17.5 → 16.5 → 15.5.  Flat values, trivially monotonic.
+       eyebrow   11 → 11 → 10.5.
+       panel pad 56/52 → 44/32 → 32/22.   gap 44 → 34 → 26.
+       section   20 → 20 → 14 top.        lede floor 30 → 26 → 22.
+       circle    tracks the column above 900 and reads 323px at 901px; the 900
+                 query therefore caps at 320px, NOT at the panel width. Left
+                 uncapped, a stacked circle would jump from 323px to 764px as
+                 the viewport crossed 901 → 900 — a plate growing on a smaller
+                 screen, which is the exact bug those audits found. 320 → 300. */
+  @media (max-width: 900px) {
+    .sip-hero-panel {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 34px;
+      padding: 44px 32px;
+    }
+    /* Full width now, so the sentence takes a measure instead of a column. */
+    .sip-hero--flat .sip-hero-copy { max-width: none; }
+    .sip-hero-h1 { font-size: clamp(34px, 5.4vw, 48px); max-width: 18ch; }
+    .sip-hero-lede { font-size: 16.5px; margin-bottom: 26px; }
+    .sip-hero-shot { width: 100%; max-width: 320px; justify-self: center; }
+  }
+
+  @media (max-width: 520px) {
+    /* Nothing may push the page sideways at 360px: long unbroken strings break
+       anywhere, and a long label wraps inside a full-width button instead of
+       widening the row. */
+    .sip-hero { padding-top: 14px; }
+    .sip-hero-panel { padding: 32px 22px; gap: 26px; border-radius: var(--r-lg); }
+    .sip-hero-kick { font-size: 10.5px; padding: 7px 14px; overflow-wrap: anywhere; }
+    .sip-hero-h1 { font-size: clamp(28px, 6.6vw, 34px); max-width: none; overflow-wrap: anywhere; }
+    .sip-hero-lede { font-size: 15.5px; max-width: none; overflow-wrap: anywhere; margin-bottom: 22px; }
+    .sip-hero-ctas { gap: 10px; }
+    /* white-space:normal lets a label wrap at its spaces; overflow-wrap covers
+       the label that HAS none. Without the second declaration one long unbroken
+       word runs straight out of the button box at 360px — the wrapper's
+       overflow-x:hidden suppresses the scrollbar and the label is clipped
+       instead, which is the same bug wearing a different coat. */
+    .sip-hero-ctas .btn { flex: 1 1 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+    /* Re-join the wrapper's 520 button padding: its `:where(.btn)` rule cannot
+       reach the ghost's own (0,2,0) padding, so without this the primary drops
+       to 24px while the secondary stays at 28px. 22px keeps the design's 2px
+       difference between the two. */
+    .sip-hero-ghost { padding-left: 22px; padding-right: 22px; }
+    .sip-hero-shot { max-width: 300px; }
+  }
+</style>

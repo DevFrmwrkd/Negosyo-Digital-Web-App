@@ -1,0 +1,487 @@
+---
+/**
+ * foodcraft / AreaBO — "Sipsip Tea Bar" (BO), the DELIVERY COVERAGE panel
+ * (design element data-component="SERVICE-AREA").
+ *
+ * ROLE: the page's one coverage panel, and the only CENTRED block in this
+ * template. A lilac plate sits inside the page's blush ground, holding — all
+ * centred on one axis — a cream pill eyebrow, a Baloo 2 head carrying this
+ * design's purple colour-emphasis, one short note, and then a wrapping row of
+ * cream PILL CHIPS, each naming a place and, where the owner gave one, how long
+ * the run to it takes. Nothing in it has a sharp corner and nothing in it is
+ * ruled: the chips ARE the list, so there is no hairline anywhere in this file.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from
+ * "Sipsip Tea Bar Landing.dc.html":
+ *   section   padding 60px 28px 0 — the 1200/28px half is the shared .wrap
+ *   panel     ground #EEE2F5 · radius 32px · padding 42px 40px · text centred
+ *   eyebrow   inline-block PILL · 11px / 700 / .14em / uppercase ·
+ *             colour #5C3580 on a #FFF7F2 ground · padding 8px 16px ·
+ *             radius 100px                            → the wrapper's .kick
+ *   headline  Baloo 2 700 · clamp(25px,3.2vw,40px) / 1.1 · margin .24em 0 8px ·
+ *             #241A22, with a #7B4FA8 <span> emphasis → the wrapper's .h2
+ *   note      14.5px / 1.72 / #5D5158 · margin 0 auto 26px · max-width 48ch
+ *   chip row  flex · wrap · gap 10px · justify-content center
+ *   chip      #FFF7F2 ground · radius 100px · padding 11px 18px · 13.5px ·
+ *             600 · #241A22, with the time in a 700 #7B4FA8 <strong>
+ *
+ * R1 · NO LITERAL HEX. Every hex the design writes here is used through the
+ * PageBO token holding the SAME value:
+ *   #EEE2F5 --lilac · #FFF7F2 --paper · #5C3580 --accent-deep · #241A22 --ink
+ *   #5D5158 --ink-soft · #7B4FA8 --accent · 100px --r-pill
+ * R1 GOVERNS COLOUR, NOT LENGTH, so the panel's 32px corner is written as the
+ * literal the design writes. No token holds it — --r-lg is 26px and --r-md is
+ * 18px — and rounding a bespoke plate to the nearest token is a different
+ * drawing, not a substitution. The direct precedent is CredentialsBO, whose
+ * plate carries the very same 32px this design writes here and takes it as a
+ * literal with the reasoning spelled out (its DECISION 7); CtaBandBO and HeroBO
+ * keep 36px, HowBO 36/24px, WhyBO 28px, FaqBO 22px, TrustBO 22px the same way.
+ * --r-lg is still the right answer for anything drawn as the shared .plate, or
+ * for a card whose design number is within a pixel or two of 26 — this panel is
+ * neither.
+ *
+ * THE THREE HUES. This section touches the LILAC ground only. It never renders
+ * --pink or --sage, so the pairing this palette cannot survive — purple text on
+ * the pink, 3.93:1 — cannot arise here. The ground is taken by opting into the
+ * wrapper's own .band-lilac rather than by setting a background and then picking
+ * a text colour: .band-lilac declares BOTH halves (--lilac ground, --ink text)
+ * in one place, which is exactly the guessing this template forbids. It is
+ * applied to the PANEL rather than to the <section>, because the design draws
+ * this ground as an inset plate with the blush page still visible around it, not
+ * as a full-bleed band — the class is a ground/text PAIR, and nothing in its
+ * declaration is width-bound.
+ *
+ * EDITABLE HOOKS (every one DECLARED in components/editor/genericContentSchema.ts
+ * under the `area` group — a data-field on any other path is a dead hook no
+ * sidebar input owns):
+ *   area.tag              — the eyebrow pill
+ *   area.headline         — the head. set:html, so an owner's own <em> lands
+ *                           wherever THEY put it in THEIR sentence; the purple
+ *                           emphasis itself is PageBO's global .h2 em rule, not
+ *                           anything written here
+ *   area.body             — the note under the head
+ *   area.rows.${i}.place  — the PRIMARY list: place + run time, which is
+ *   area.rows.${i}.time     character-for-character the design's two-cell chip
+ *   area.places.${i}      — the FALLBACK list, plain STRINGS. Read only when
+ *                           area.rows has no usable row; rendered place-only,
+ *                           with no <strong> emitted at all rather than an empty
+ *                           purple cell inside the pill
+ *
+ * DERIVED (computed here, never authored here):
+ *   · `timedRows` / `placeRows` — the surviving rows, each still carrying its
+ *     ORIGINAL array index into data-field (R6), so dropping a blank row 2
+ *     cannot misdirect an edit of row 3 into row 2. Nothing in this section is
+ *     numbered or railed, so no DISPLAY index is needed anywhere.
+ *   · a row carrying a time but NO place is dropped whole: a lone purple
+ *     "25 min" in a cream pill asserts a delivery to nowhere.
+ *   · shape tolerance — area.rows is a list of objects, but a row that arrived
+ *     as a plain string is read as its place and still hooked at
+ *     area.rows.${i}.place, so the first edit heals it onto the schema key
+ *     instead of writing a second shape.
+ *
+ * READ BUT NOT HOOKED: area.sub. area.body is the canonical path the schema
+ * owns and the only one hooked; area.sub is read as a fallback so a site that
+ * stored a paragraph there before the schema settled still shows it, and the
+ * first edit writes area.body, which then wins. Hooking area.sub would emit a
+ * dead hook — v3 gates inline editing on isSchemaEditablePath and the schema
+ * does not declare it.
+ *
+ * R2 · NOTHING VISIBLE IS SUPPLIED BY THIS FILE. Not one word. The design's
+ * "Delivery", its "We deliver around Katipunan" and its nine sample places with
+ * their minute counts are the DESIGNER filling in their own template. A delivery
+ * radius and a run time are operational commitments for a business nobody has
+ * spoken to, so none of it ships. Every guard sits OUTSIDE its tag, so an empty
+ * value removes the ELEMENT and not just its text: no empty eyebrow pill, no
+ * head over nothing, no empty chip, and — because the chip IS its own cream
+ * pill — no pill drawn around a row that is not there.
+ * NO STAR ROW EXISTS HERE, and that is a rule and not an omission: the schema
+ * exposes no numeric rating anywhere on area.*, so there is no field this
+ * section could clamp to 1–5 and draw. Five stars for a customer who gave no
+ * rating is a fabricated claim, and the same logic forbids inventing one for a
+ * neighbourhood.
+ *
+ * SECTION GATE (R5). lib/derive-content-defaults.ts hard-codes area.tag to
+ * 'Service area' and, for any site with a city, area.headline to `Serving
+ * ${city}` AND area.places to `[city]` — that is essentially every site we
+ * ship. So the gate counts BODY content only, and discounts that one derived
+ * entry:
+ *   · any usable area.rows row (the schema ships area.rows EMPTY, so a filled
+ *     one can only have come from a person), OR
+ *   · TWO OR MORE area.places entries (the owner named a second place), OR
+ *   · an owner-written area.body.
+ * Counting the tag or the head would print this panel on nearly every build with
+ * a single chip echoing the shop's own city — the address again, dressed up as
+ * a delivery zone.
+ * KNOWN EDGE, flagged rather than hidden: when the gate opens on area.body alone
+ * and area.places is still the derived `[city]`, that one city chip is printed.
+ * It is true (it is where the shop is) and it matches the shipped behaviour of
+ * the rest of the catalogue, so consistency wins — but it is the one place a
+ * derived value reaches this panel.
+ *
+ * DELIBERATELY NOT RENDERED, so none of these reads as an oversight:
+ *   · NO onPage() ANCHOR HELPER AND NO PAGE_ANCHORS SET (R7). The design gives
+ *     SERVICE-AREA no id and no href of any kind, and nothing in this file emits
+ *     an <a>, so the helper would be dead code with no call site — which is what
+ *     a reviewer flags instead. AreaBL, AreaBM, AreaBN, TrustBO and AboutBO each
+ *     made the same call for the same reason. If a link is ever added here it
+ *     must arrive WITH the helper copied from a sibling, and for THIS page that
+ *     means PAGE_ANCHORS = menu / about / gallery / visit / faq / main, with
+ *     ANCHOR_ALIAS mapping location + contact → visit, services + rooms → menu,
+ *     host + why → about, work → gallery, book → main, and off-page hrefs
+ *     (tel: mailto: http) passing through untouched.
+ *   · NO id on the <section>. The page's six anchors are owned by the sections
+ *     that are actually linked to; the design gives this one none.
+ *   · NO BUTTON. The design puts no action in this panel. An "Order delivery"
+ *     would be both a label this business never wrote (R2) and an href pointing
+ *     at nothing. That is also why none of .btn--fill / .btn--pink / .btn--cream
+ *     / .btn--line appears (R4) — and no engine-pinned name (.btn-primary
+ *     .btn-ghost .nav-cta .cta-band .trust .testi, or `.hero` on a <section>)
+ *     appears anywhere in this file either.
+ *   · NO map, NO radius, NO distance unit, NO delivery fee, NO minimum order.
+ *     We have no such data and every one of them is a commercial claim.
+ *   · NO row COUNT asserted in markup or copy. The chips wrap, so four or eleven
+ *     owner-typed places lay out on the same row without leaving a hole and
+ *     without the file having an opinion about how many there should be.
+ *   · NO hairline anywhere. Sibling templates rule their coverage rows with
+ *     .rowrule; in THIS design the separation is the gap between two pills, so
+ *     borrowing that primitive would draw a line the design does not have.
+ *   · NOT the wrapper's .chip primitive. That one is the lilac-ground /
+ *     purple-label tag this template uses elsewhere; this design's chip is a
+ *     CREAM pill with an ink label, on a lilac ground. Reusing .chip would put
+ *     a lilac pill on a lilac plate and dissolve the whole row.
+ *   · NOT the design's own 1.1 head line-height or its 8px head margin-bottom in
+ *     isolation — both ARE taken, see the style block. What is NOT taken is the
+ *     design's SECTION padding, either half of it, for the reason below.
+ *
+ * SECTION PADDING IS THE WRAPPER'S, not this file's. The design writes
+ * `padding:60px 28px 0`: the 1200/gutter half is the shared .wrap, and the top
+ * is `html[data-page="BO"] section`'s clamp(48px,6.4vw,80px), which runs 20px
+ * over the design's 60px at wide widths and meets it at 937.5px. CREDENTIALS
+ * carries the IDENTICAL 60px in this same design and CredentialsBO left it to
+ * the wrapper (its DECISION 8), as AboutBO did with its own 76px; forking here
+ * would render two sections the design spaces identically at 80px and 60px — an
+ * inconsistency the design does not have, produced by one section of fifteen
+ * re-cutting its own vertical rhythm. The design's bottom-0 is likewise a
+ * WHOLE-PAGE decision (every unbanded section in this document pads top only)
+ * and belongs in the shared rule. Flagged, not done here. An earlier draft of
+ * this file forked the clamp to clamp(36px,4.8vw,60px); it has been removed.
+ *
+ * SPECIFICITY, for every note below. scopedStyleStrategy defaults to
+ * 'attribute' in Astro 5 and this repo sets no override, and the compiler adds
+ * that attribute to EVERY compound of a selector, not just the last — verified
+ * against this file's own emitted CSS, which reads
+ * `.sip-area-panel[data-astro-cid-…] .sip-area-h[data-astro-cid-…]`. So a
+ * two-class rule in this block weighs (0,4,0), and a one-class rule (0,2,0).
+ *
+ * R9 · ACCESSIBILITY. There is no image and no .plate in this section, so there
+ * is no role="img" anywhere and nothing to give an accessible name to. Nothing
+ * here is decorative — the place and the time are both content and both
+ * announced — so nothing is aria-hidden, and no element carries a literal
+ * attribute beside a conditional one. The chip row is a real <ul> AND carries
+ * role="list": `list-style: none` is exactly what makes Safari/VoiceOver drop
+ * list semantics, so without the role the count never reaches assistive tech.
+ *
+ * R3 · SCOPING. One scoped style block, no is:global. Astro's scoped styles
+ * cannot reach elements created by set:html, which is why there is no purple-em
+ * rule for the head here: PageBO styles :where(.h2 em) globally (font-style
+ * normal, --accent — a COLOUR change, because Baloo 2 has no italic and asking
+ * for one synthesises an oblique that fights its rounded terminals), so an
+ * owner's emphasis is already purple and a scoped duplicate would be dead CSS.
+ * Anything this file ever needed to say about an owner <em> would have to go
+ * through :global().
+ *
+ * R8 · RESPONSIVE. This section owns no multi-column grid — the design lays the
+ * chips out as a WRAPPING flex row, which reflows continuously and has no track
+ * count to collapse at 900px. What this file does own was traced across every
+ * breakpoint, because two audits found type that GREW as the viewport narrowed:
+ *   head        clamp(25px,3.2vw,40px), declared ONCE and restated in no query.
+ *               It caps at 40px above ~1250px and falls to its 25px floor at
+ *               ~781px, then holds. It deliberately out-specifies the wrapper's
+ *               760 step to clamp(26px,7vw,29px) — (0,4,0) over (0,1,1) — which
+ *               is the intent: this is a panel head, not a section head, and it
+ *               must not overtake the sections around it on a phone.
+ *   note        a flat 14.5px at every width (the wrapper's .body would clamp it
+ *               UP to 15.5px, which the design does not do).
+ *   chip        a flat 13.5px at every width; no query restates it.
+ *   panel pad   clamp(24px,5.2vw,42px) / clamp(20px,5vw,40px), each monotonic
+ *               from its cap to its floor with no query restating either.
+ *   section pad NOT THIS FILE'S — it is the wrapper's clamp(48px,6.4vw,80px),
+ *               see SECTION PADDING above.
+ * At 360px nothing may push sideways: the eyebrow, the head, the note and both
+ * chip cells all take overflow-wrap: anywhere, and the chip itself is capped at
+ * max-width: 100% with min-width: 0 so a hyphenless place name wraps INSIDE its
+ * pill instead of widening the document. There is no button in this section, so
+ * the full-width `white-space: normal` + `overflow-wrap: anywhere` pair has
+ * nothing to apply to.
+ *
+ * CONTRAST — COMPUTED from PageBO's own token hexes (sRGB relative luminance,
+ * WCAG 2.x), not copied from its table. The method was checked against the
+ * wrapper's own figures first and reproduces them (ink/paper 15.92 vs its 15.92,
+ * ink/lilac 13.51 vs its 13.51, accent/paper 5.63 vs its 5.63):
+ *   eyebrow      --accent-deep on --paper   8.72:1   (the pill's cream ground)
+ *   head         --ink on --lilac          13.51:1
+ *   head em      --accent on --lilac        4.77:1   (see below)
+ *   note         --ink-soft on --lilac      6.05:1
+ *   chip place   --ink on --paper          15.92:1
+ *   chip time    --accent on --paper        5.63:1
+ * Nothing in this section is below AA. The head's purple emphasis at 4.77 is the
+ * narrowest pair here and it is stated rather than rounded away: it clears the
+ * 4.5 body floor on its own, and the head is 25–40px at weight 700, which is
+ * large text under WCAG (the 3.0 floor) several times over. It is also why the
+ * chip's purple is set on the CREAM pill (5.63) and not straight onto the lilac.
+ *
+ * CLASS PREFIX. `sip-area-`, this template's own — matching AboutBO's
+ * `sip-about-` and deliberately NOT the `dz-` (BM), `sa-` (BL) or `pcw-ar-` (BN)
+ * sets the sibling templates use. Copying a class set verbatim between templates
+ * is what an earlier audit had to unpick. Only the HOUSE STYLE crossed over from
+ * AreaBM: the doc block, the tolerant reads and the guard discipline. No
+ * palette, no layout and no class name did.
+ */
+// `layout` is accepted because PageBO passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const body = area.body || area.sub || '';
+
+type Row = { place: string; time: string; placeField: string; timeField: string };
+
+// PRIMARY: area.rows — place + run time, which is exactly the design's two-cell
+// chip. An object row is canonical; a string row is tolerated and still hooked
+// at .place so the first edit heals it onto the schema key.
+const rawRows: any[] = Array.isArray(area.rows) ? area.rows : [];
+const timedRows: Row[] = rawRows
+  .map((r: any, i: number): Row => {
+    const o = r && typeof r === 'object' ? r : { place: r };
+    return {
+      place: String(o.place ?? '').trim(),
+      time: String(o.time ?? '').trim(),
+      placeField: `area.rows.${i}.place`,
+      timeField: `area.rows.${i}.time`,
+    };
+  })
+  // A time with no place is a delivery to nowhere — drop the whole row (R2).
+  .filter((r) => r.place.length > 0);
+
+// FALLBACK: area.places — plain STRINGS, which is how the schema ships them and
+// how every other template reads them. Place-only chips; no <strong> emitted.
+const rawPlaces: any[] = Array.isArray(area.places) ? area.places : [];
+const placeRows: Row[] = rawPlaces
+  .map((p: any, i: number): Row => ({
+    place: String(p ?? '').trim(),
+    time: '',
+    placeField: `area.places.${i}`,
+    timeField: '',
+  }))
+  .filter((r) => r.place.length > 0);
+
+const rows: Row[] = timedRows.length > 0 ? timedRows : placeRows;
+// See SECTION GATE in the block above. Never `rows.length > 0`.
+const show = timedRows.length > 0 || placeRows.length >= 2 || Boolean(body);
+---
+{show && (
+  <section class="sip-area">
+    <div class="wrap">
+      {/* .band-lilac carries BOTH halves of the pairing — the --lilac ground and
+          the --ink text that is legible on it — so nothing below has to guess a
+          text colour on this plate. */}
+      <div class="band-lilac sip-area-panel reveal">
+        {tag && <span class="kick sip-area-kick" data-field="area.tag">{tag}</span>}
+        {headline && <h2 class="h2 sip-area-h" data-field="area.headline" set:html={headline}></h2>}
+        {/* area.body comes from a plain textarea, so it is bound as TEXT. */}
+        {body && <p class="body sip-area-note" data-field="area.body">{body}</p>}
+
+        {rows.length > 0 && (
+          <ul class="sip-area-chips reveal" role="list" data-delay="1">
+            {rows.map((r) => (
+              /* One cream pill per row. `place` is guaranteed non-empty by the
+                 filter above, so guarding it here would be dead code; `time` is
+                 optional and IS guarded outside its tag, so a place-only row
+                 prints one cell and not one cell plus an empty purple slot. */
+              <li class="sip-area-chip">
+                <span class="sip-area-place" data-field={r.placeField}>{r.place}</span>
+                {r.time && <strong class="sip-area-time" data-field={r.timeField}>{r.time}</strong>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Design: padding 60px 28px 0. BOTH halves belong to the wrapper — the
+     1200/28px gutter is the shared .wrap, and the vertical rhythm is
+     `html[data-page="BO"] section` — so nothing is restated here. See SECTION
+     PADDING in the block above for why the design's 60px is NOT forked: the
+     same design writes 60px on CREDENTIALS too, and CredentialsBO left it to
+     the wrapper. The class stays as this section's identity hook. */
+  .sip-area { min-width: 0; }
+
+  /* Design: #EEE2F5 ground · radius 32px · padding 42px 40px · text centred.
+     The GROUND and its text colour both come from the wrapper's .band-lilac on
+     this element, so the only things stated here are the corner, the padding and
+     the centring. The 32px is the design's own literal: no token holds it
+     (--r-lg is 26px, --r-md 18px), R1 governs colour and not length, and every
+     bespoke plate in this template keeps its design number the same way —
+     CredentialsBO's plate is 32px on this very value (see R1 in the block
+     above). The clamps hold the design's 42/40 at every width down to ~808px
+     and ~800px respectively, below which the padding gives way before the chips
+     do. */
+  .sip-area-panel {
+    border-radius: 32px;
+    padding: clamp(24px, 5.2vw, 42px) clamp(20px, 5vw, 40px);
+    text-align: center;
+  }
+
+  /* THE EYEBROW. The wrapper's .kick already carries this design's type — 11px,
+     700, uppercase, inline-block — and owns the whole size curve (it steps to
+     10.5px at 520), so no font-size is written here. What .kick does NOT know is
+     that in THIS panel the eyebrow is a PILL on the CREAM: the paper ground, the
+     deep-purple label, 8px/16px of padding and the 100px corner. Those four and
+     the design's .14em tracking (the wrapper's base is .18em; its own 520 step
+     lands on the same .14em, so nothing moves there) are all that is restated.
+     The label is --accent-deep and not --accent because that is what the design
+     writes — and it is the darker of the two, which this small cream pill wants.
+     .kick is an inline-block, so max-width:100% is what bounds one long
+     owner-typed word at 360px (R8). Qualified by the panel so it out-specifies
+     the wrapper's :where() primitive whatever order the sheets land in. */
+  .sip-area-panel .sip-area-kick {
+    letter-spacing: .14em;
+    color: var(--accent-deep);
+    background-color: var(--paper);
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: Baloo 2 700 · clamp(25px,3.2vw,40px) / 1.1 · margin .24em 0 8px.
+     DELIBERATELY smaller than the wrapper's .h2 (clamp(28px,3.9vw,52px)/1.12) —
+     the design sizes this panel head BELOW a full section head, and the family
+     answer is that a panel head must not overtake the sections around it. Family
+     and colour still come from the shared .h2; only the size, the leading and
+     the margins are this section's.
+     max-width:none — the design's SERVICE-AREA h2 carries NO measure cap and
+     sits centred on one line; the wrapper's 22ch would wrap the design's own
+     head at 40px. Releasing it cannot push the page sideways, because the panel
+     bounds it and this rule carries overflow-wrap (R8).
+     CLAMP CHECK: this is the section's ONLY font-size for the head — no query
+     below restates it, so it falls monotonically from 40px to its 25px floor at
+     ~781px and stays there. The wrapper's 760 `:where(.h2)` step to
+     clamp(26px,7vw,29px) is (0,1,1) and loses to this (0,4,0) rule, which is the
+     intent; that rule's `max-width:none` and `overflow-wrap:anywhere` are
+     restated here so nothing is lost by winning. */
+  .sip-area-panel .sip-area-h {
+    font-size: clamp(25px, 3.2vw, 40px);
+    line-height: 1.1;
+    margin: .24em 0 8px;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 14.5px / 1.72 / #5D5158 / max-width 48ch / margin 0 auto 26px. The
+     wrapper's .body already supplies the family, the 1.72 leading and --ink-soft
+     — the colour token is what keeps this off a literal hex — but its font-size
+     clamps UP to 15.5px, which this design does not do, so the flat 14.5 is
+     stated. `margin: 0 auto` (not `0 auto 26px`) is deliberate: the design's
+     26px is the gap ABOVE the chips, and it is spent by .sip-area-chips below
+     instead, so a panel with a note and no chips ends flush rather than trailing
+     26px of nothing. Adjacent-sibling margins collapse in normal flow, so the
+     no-note case lands on the same 26px rather than 8px + 26px.
+     (0,4,0) beats the wrapper's `:where(p){margin:0 0 1em}` at (0,1,1), so the
+     auto-centring actually holds. */
+  .sip-area-panel .sip-area-note {
+    margin: 0 auto;
+    max-width: 48ch;
+    font-size: 14.5px;
+    line-height: 1.72;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: flex · wrap · gap 10px · justify-content center. A WRAPPING row, not
+     a grid — there is no track count here to collapse at 900px, which is why
+     this section owns no column query. It is a real <ul> for the semantics; the
+     list chrome is stripped here and role="list" on the element puts the
+     semantics back for Safari/VoiceOver (R9). */
+  .sip-area-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    list-style: none;
+    margin: 26px 0 0;
+    padding: 0;
+  }
+
+  /* THE CHIP. Design: #FFF7F2 ground · radius 100px · padding 11px 18px ·
+     13.5px · 600 · #241A22. The design separates its two cells with a literal
+     space in the markup; an inline-flex gap of .3em puts the same space in the
+     same place while letting the time be guarded independently — a place-only
+     row prints no trailing space. The inner wrap plus overflow-wrap is what
+     keeps a long owner-typed place inside the pill at 360px rather than widening
+     the document (R8).
+     LINE-HEIGHT IS THE ONE VALUE HERE THAT IS NOT THE DESIGN'S, and it is
+     declared rather than inherited on purpose: the design writes none on the
+     chip AND none on its body, so its pill renders at the browser's `normal`,
+     while PageBO's body sets 1.72 and would inherit straight into this pill and
+     inflate a one-line chip. 1.5 is stated as the closest deliberate value that
+     still leaves a WRAPPED second line room — which the design's single-line
+     inline span never has to have. It is flat at every width; no query restates
+     it. */
+  .sip-area-chip {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0 .3em;
+    max-width: 100%;
+    min-width: 0;
+    list-style: none;
+    background-color: var(--paper);
+    border-radius: var(--r-pill);
+    padding: 11px 18px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* The place inherits the pill's 13.5px/600/--ink; only the wrap guard is its
+     own. The time is the design's purple 700 — the one place in this section the
+     brand colour appears as small text, and it appears on the CREAM pill (5.63),
+     never straight on the lilac. No font-family: the design leaves it on Nunito
+     Sans, so this is NOT .fig, which is the Baloo 2 figure this template
+     reserves for prices and proof numerals. */
+  .sip-area-place { min-width: 0; overflow-wrap: anywhere; }
+  .sip-area-time {
+    min-width: 0;
+    font-weight: 700;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+
+  /* PageBO's shared 760 pass releases `.lede { max-width: none }` but says
+     nothing about .body, and the note's 48ch above is more specific than the
+     wrapper anyway. It is released here so a phone-landscape wrap is not left
+     holding a 48ch column inside a full-width panel. No font-size is touched in
+     this query — nothing in this file can invert a clamp. */
+  @media (max-width: 760px) {
+    .sip-area-panel .sip-area-note { max-width: none; }
+  }
+  /* 520: nothing may push the page sideways. Every cell already wraps anywhere,
+     so a long unbroken string — a hyphenless barangay, a URL — wraps inside its
+     own pill instead of widening the document. Only the two gaps tighten here;
+     both new values are SMALLER than the ones above them, and no font-size,
+     padding clamp or measure is restated, so every ladder in this file stays
+     monotonic. There is no button in this section, so the full-width
+     white-space rule has nothing to apply to. */
+  @media (max-width: 520px) {
+    .sip-area-chips { gap: 8px; margin-top: 22px; }
+    .sip-area-chip { padding: 10px 16px; }
+  }
+</style>
