@@ -6,6 +6,7 @@ import { useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
 import { CheckCircle, AlertCircle, Clock, Loader2, Eye, X, Wallet } from "lucide-react"
 import AdminLayout from "../components/AdminLayout"
+import { needsFunding, describeStateAge } from "@/lib/payouts/fundingState"
 
 /**
  * Payout Management — READ-ONLY transaction view.
@@ -30,6 +31,7 @@ interface WithdrawalRecord {
     wiseTransferId?: string
     wiseStatus?: string
     wiseDetailedState?: string
+    lastStatusCheckAt?: number
     errorMessage?: string
     failureReason?: string
     transactionRef?: string
@@ -47,31 +49,9 @@ const STATUS_TABS: Array<{ key: WithdrawalStatus; label: string }> = [
     { key: 'failed', label: 'Failed' },
 ]
 
-/**
- * Wise states that mean the money has LEFT the Creator Payout jar. Anything
- * else on a 'processing' row is still waiting for an admin to fund it.
- */
-const FUNDED_STATES = ['funds_converted', 'outgoing_payment_sent', 'paid_out', 'bounced_back', 'charged_back']
-
-/**
- * Does this row need someone to go to Wise and release the money?
- *
- * Every transfer this app creates starts unfunded — funding is a manual step in
- * the Wise dashboard by design (docs/wise/WISE-PAYMENT-FLOW-MOBILE.md Stage 4).
- * So a 'processing' row means "waiting for you", NOT "the system is working on
- * it", which is exactly what the old spinning blue "Processing" badge implied.
- *
- * An empty wiseDetailedState counts as needing funding rather than as unknown:
- * that field is only written by the hourly status cron, so a withdrawal made in
- * the last hour has none — and it is certainly unfunded, because nothing in the
- * codebase funds anything.
- */
-function needsFunding(w: WithdrawalRecord): boolean {
-    if (w.status !== 'processing') return false
-    const state = (w.wiseDetailedState || '').toLowerCase()
-    if (!state) return true
-    return !FUNDED_STATES.some((s) => state.includes(s))
-}
+// needsFunding / describeStateAge live in lib/payouts/fundingState.ts — they
+// decide whether an admin is told to send money, and that call has been wrong
+// once already in a way that invited a double payment, so it is unit-tested.
 
 function statusPill(status: WithdrawalRecord['status']) {
     const map: Record<WithdrawalRecord['status'], { bg: string; text: string; Icon: typeof CheckCircle; label: string }> = {
@@ -199,6 +179,15 @@ export default function PayoutsPage() {
                             <p className="mt-1 text-xs text-orange-800">
                                 Fund each one from the <span className="font-semibold">Creator Payout</span> jar, not the
                                 main PHP balance. Match them in Wise by the reference below.
+                            </p>
+                            {/* Without this, someone who funds a transfer and comes
+                                straight back sees the same badge and concludes it
+                                failed — the reading is only as fresh as the hourly
+                                cron that writes wiseDetailedState. */}
+                            <p className="mt-1 text-xs text-orange-700">
+                                Already paid one of these? Wise status is refreshed hourly, so a payment you just made
+                                can take up to an hour to clear from this list. Check the transfer in Wise before
+                                sending again.
                             </p>
                             <ul className="mt-3 space-y-1.5">
                                 {awaitingFunding.map((w) => (
@@ -477,6 +466,10 @@ function TransactionDetailModal({ w, onClose }: { w: WithdrawalRecord; onClose: 
                                     <span className="font-semibold">Creator Payout</span> jar — not the main PHP balance
                                     — matching on{' '}
                                     <span className="font-mono">{w.reference || w.wiseTransferId || 'the reference'}</span>.
+                                </p>
+                                <p className="mt-1.5 text-[11px] text-orange-700">
+                                    Wise state {describeStateAge(w, Date.now())}. If you already paid this one, confirm
+                                    in Wise before sending again — this view refreshes hourly.
                                 </p>
                                 <a
                                     href="https://wise.com/transactions"
