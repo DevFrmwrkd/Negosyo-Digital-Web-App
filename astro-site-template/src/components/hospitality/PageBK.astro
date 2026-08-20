@@ -233,9 +233,15 @@ const __og = layout.ogImage || layout.favicon || '';
     html[data-page="BK"] img { max-width: 100%; display: block; }
     html[data-page="BK"] a { color: inherit; text-decoration: none; }
     html[data-page="BK"] ::selection { background: var(--accent); color: var(--on-accent); }
+    /* text-transform is DECLARED, not defaulted. A property a template never
+       states is a property another template's is:global block can reach — and
+       two of them shipped an unscoped h1,h2,h3,h4{text-transform:uppercase}
+       that turned this design's mixed-case serif into capitals on every built
+       page. Those are scoped now; this line means it cannot happen again from
+       any future one. */
     html[data-page="BK"] :where(h1,h2,h3,h4) {
       margin: 0; font-family: var(--disp); font-weight: 400; color: var(--bone-hi);
-      letter-spacing: 0; line-height: 1.1;
+      letter-spacing: 0; line-height: 1.1; text-transform: none;
     }
     /* This bare-element paragraph reset is (0,1,1): always qualify a section's
        own paragraph rules with a parent class (.villa-copy p) so they win. */

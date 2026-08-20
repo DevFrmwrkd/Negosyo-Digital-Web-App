@@ -286,9 +286,13 @@ const __fontHref = buildFontHref(__themePairing);
     html[data-page="BJ"] img { max-width: 100%; display: block; }
     html[data-page="BJ"] a { color: inherit; text-decoration: none; }
     html[data-page="BJ"] ::selection { background: var(--green); color: var(--paper); }
+    /* text-transform is DECLARED, not defaulted — see the note in PageBK. Two
+       templates shipped an unscoped h1,h2,h3,h4{text-transform:uppercase} in an
+       is:global block, and because index.astro bundles every wrapper's globals
+       into one stylesheet it capitalised this design's headings too. */
     html[data-page="BJ"] :where(h1,h2,h3,h4) {
       margin: 0; font-family: var(--disp); font-weight: 400; color: var(--ink);
-      letter-spacing: 0; line-height: 1.06;
+      letter-spacing: 0; line-height: 1.06; text-transform: none;
     }
     /* This bare-element paragraph reset is (0,1,1): always qualify a section's
        own paragraph rules with a parent class (.host-prose p) so they win. */

@@ -135,6 +135,65 @@ const labelled = {};
 const errors = [];
 const codes = Object.keys(scanned).sort();
 
+// ── UNSCOPED GLOBALS ──────────────────────────────────────────────────
+//    index.astro imports every wrapper, so Astro bundles every is:global
+//    block into ONE stylesheet that ships on every page. A bare element
+//    selector in one of them reaches all 63 templates.
+//
+//    Two blocks shipped h1,h2,h3,h4{text-transform:uppercase} and
+//    capitalised the headings of every mixed-case design in the catalogue.
+//    Nothing caught it: the build passes, tsc passes, every other check here
+//    passes, and the page renders perfectly — just in the wrong case.
+//
+//    Only text-transform is policed. The other properties those blocks set
+//    (font-family, weight, leading) are overridden by every template that
+//    styles its own headings, so they never surface. text-transform is the
+//    one almost nobody declares, which is exactly why it leaked.
+{
+    const walkStyles = (dir) => {
+        for (const f of fs.readdirSync(dir)) {
+            const p = path.join(dir, f);
+            if (fs.statSync(p).isDirectory()) { walkStyles(p); continue; }
+            if (!f.endsWith(".astro")) continue;
+            const src = fs.readFileSync(p, "utf8");
+            for (const block of src.matchAll(/<style[^>]*is:global[^>]*>([\s\S]*?)<\/style>/g)) {
+                // Comments first. A rule with one above it would otherwise read
+                // as a selector called `/* Buttons … */ .btn`, which is neither
+                // page-prefixed nor a class and so reports a phantom leak.
+                const css = block[1].replace(/\/\*[\s\S]*?\*\//g, " ");
+                for (const rule of css.split("}")) {
+                    if (!/text-transform\s*:/i.test(rule)) continue;
+                    const sel = (rule.split("{")[0] || "").trim();
+                    if (!sel || sel.startsWith("@")) continue;
+                    // Split on TOP-LEVEL commas only: `:where(h1,h2,h3,h4)`
+                    // carries its own, and splitting inside it turns a properly
+                    // scoped rule into three bare element selectors.
+                    const parts = [];
+                    let depth = 0, cur = "";
+                    for (const ch of sel) {
+                        if (ch === "(") depth++;
+                        else if (ch === ")") depth--;
+                        if (ch === "," && depth === 0) { parts.push(cur); cur = ""; continue; }
+                        cur += ch;
+                    }
+                    parts.push(cur);
+                    // Scoped enough: every part is either page-prefixed or a
+                    // class (a class cannot collide across templates).
+                    const scoped = parts.every((one) => /\[data-page|^\./.test(one.trim()));
+                    if (scoped) continue;
+                    const short = sel.replace(/\s+/g, " ").slice(0, 70);
+                    errors.push(
+                        path.relative(ROOT, p) +
+                        ': is:global sets text-transform on the UNSCOPED selector "' + short +
+                        '" — it reaches every template. Prefix it with html[data-page="…"].'
+                    );
+                }
+            }
+        }
+    };
+    walkStyles(COMPONENTS);
+}
+
 // ── Leaflet wiring. Cheap, and it catches a failure that is invisible in
 //    every automated check we have: the page builds, the section renders, the
 //    map just never appears.
