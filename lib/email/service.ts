@@ -67,6 +67,29 @@ interface SendArgs {
 }
 
 /**
+ * What this deployment will actually put on an outgoing email, without sending
+ * one and without exposing the API key.
+ *
+ * Exists because the from-address is invisible until a customer receives mail:
+ * it comes from Vercel env, not from code, so a stale or unverified value only
+ * shows up in someone's inbox. `usingTestSender` is the one that matters —
+ * `onboarding@resend.dev` is Resend's shared onboarding address, carries none
+ * of our domain's SPF/DKIM/DMARC alignment or sending reputation, and replies
+ * to it bounce (which is what RESEND_REPLY_TO exists to work around).
+ */
+export function getMailerDiagnostics() {
+    const from = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
+    const replyTo = process.env.RESEND_REPLY_TO;
+    return {
+        from,
+        fromSource: process.env.RESEND_FROM_EMAIL ? 'RESEND_FROM_EMAIL' : 'code default',
+        replyTo: replyTo ?? null,
+        apiKeyConfigured: !!process.env.RESEND_API_KEY,
+        usingTestSender: /@resend\.dev>?\s*$/i.test(from.trim()),
+    };
+}
+
+/**
  * Subject lines are header text, not HTML — entity-encoding them the way
  * ./templates escapes the body would leak literal `&amp;` into inboxes. So
  * strip markup instead, and flatten CR/LF plus every other control character
