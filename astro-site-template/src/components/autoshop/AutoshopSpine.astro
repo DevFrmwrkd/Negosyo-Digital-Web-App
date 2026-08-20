@@ -29,7 +29,24 @@
   h1, h2, h3, h4 {
     font-family: var(--display);
     font-weight: 900; line-height: 0.95; margin: 0;
-    letter-spacing: -0.02em; text-transform: uppercase;
+    letter-spacing: -0.02em;
+  }
+  /* THE CAPS ARE SCOPED, the rest is not, and that asymmetry is the point.
+     index.astro imports every wrapper, so Astro bundles every is:global block
+     into ONE stylesheet that ships on every page. An unscoped
+     `h1,h2,h3,h4{text-transform:uppercase}` therefore uppercased the headings of
+     all 63 templates — including two whose designs are mixed-case serif, where
+     it turned "A whole villa, and no one else in it." into a shout.
+     The other declarations here are harmless because every template sets its own
+     heading font, weight and leading, so they are overridden everywhere. Nothing
+     overrode text-transform, because almost nothing declares it. */
+  html[data-page="P"] h1, html[data-page="P"] h2, html[data-page="P"] h3, html[data-page="P"] h4,
+  html[data-page="Q"] h1, html[data-page="Q"] h2, html[data-page="Q"] h3, html[data-page="Q"] h4,
+  html[data-page="R"] h1, html[data-page="R"] h2, html[data-page="R"] h3, html[data-page="R"] h4,
+  html[data-page="S"] h1, html[data-page="S"] h2, html[data-page="S"] h3, html[data-page="S"] h4,
+  html[data-page="T"] h1, html[data-page="T"] h2, html[data-page="T"] h3, html[data-page="T"] h4,
+  html[data-page="AF"] h1, html[data-page="AF"] h2, html[data-page="AF"] h3, html[data-page="AF"] h4 {
+    text-transform: uppercase;
   }
   img { max-width: 100%; display: block; }
   a { color: inherit; text-decoration: none; }
