@@ -16,7 +16,6 @@
  *   location.headline                   — the h2. set:html, so an owner's <em>
  *                                         picks up the template's italic-brass
  *                                         emphasis (styled by PageBK, not here).
- *   location.address                    — the address line under the h2
  *   location.sub                        — the arrival note, right of the head
  *   location.rules.<original i>.label    — ledger row label
  *   location.rules.<original i>.value    — ledger row value
@@ -30,16 +29,24 @@
  *   layout.contact.city  → the map caption (the design's "villaRegion")
  *   layout.contact.address / .lat / .lng → fallbacks behind the location.* pair
  *
- * THE HEADLINE / ADDRESS SPLIT. The design sets the ADDRESS as the h2. Straight
- * mapping would be a trap: lib/derive-content-defaults.ts fills location.headline
- * with "Where to find us" on every site, while location.address carries
- * fallbackPaths: ['contact.address'] and so arrives already holding the real
- * street address. Printing only the h2 would therefore print "Where to find us"
- * and drop the address off the page. So the h2 is the headline and the address
- * prints as the line beneath it — the LocationBJ precedent — and it is SKIPPED
- * when it is the same string as the headline (compared with tags stripped and
- * whitespace/case flattened), so an owner who does paste their address into the
- * headline gets the design's single address line, not the same words twice.
+ * THE HEADLINE IS THE ADDRESS, and there is no second address line. The design's
+ * head is eyebrow + h2 + sub, with the h2 set to `{{ addressLine }}` — three
+ * elements, no fourth.
+ *
+ * This file briefly printed the address as a paragraph beneath the h2, on the
+ * reasoning that lib/derive-content-defaults.ts fills location.headline with
+ * "Where to find us" on every site while location.address arrives holding the
+ * real street line, so mapping the design straight would drop the address off
+ * the page. That reasoning was sound and the answer was still wrong: the head is
+ * a flex row whose two cells share a bottom edge, so a two-line paragraph in the
+ * left cell drags the sub down a row and strands it on the right beside nothing.
+ * The design has no such paragraph and neither does this.
+ *
+ * The address still reaches a visitor. It feeds the geocode below — tier 2 of
+ * the map, which is how this section finds its own pin — and FooterBK prints it
+ * in the contact column, so location.address keeps a live sidebar input. An
+ * owner who wants the street line as the heading pastes it into the headline,
+ * which is exactly what the design does.
  *
  * NOT RENDERED, deliberately:
  *   location.phone and location.hours. The design's LOCATION prints neither; the
@@ -68,11 +75,10 @@
  * el.innerHTML = '' first, which is what erases it. The literal id="map" and the
  * exact global name __hospitalityBKInitMap are a contract with PageBK — rename
  * either and the drawn face silently stays on screen under the tiles.
- * NOTE FOR THE WRAPPER: PageBK defines __hospitalityBKInitMap but does not load
- * leaflet.css / leaflet.js (PageBJ does, at its lines 158 and 573). Until those
- * two tags exist, window.L is undefined, the boot returns immediately and tier 3
- * is what ships. That is harmless here — tier 3 is the design — but it means the
- * coordinates an owner types have no visible effect yet.
+ * PageBK loads leaflet.css and leaflet.js and defines the boot. It once defined
+ * the boot WITHOUT the two tags, so window.L never existed, the boot returned on
+ * its first line and tier 3 shipped on every villa however many coordinates an
+ * owner typed. scripts/check-template-blocks.mjs now fails that combination.
  *
  * A CLEARED coordinate field leaves '', which passes != null and which Number('')
  * turns into 0 — booting Leaflet and pinning the villa at 0,0 in the Gulf of
@@ -105,13 +111,17 @@ const loc = content.location || {};
 const tag = loc.tag || '';
 const headline = loc.headline || '';
 const sub = loc.sub || '';
+// READ, NOT PRINTED. The design's head is eyebrow + h2 + sub, and its h2 IS the
+// address — `{{ addressLine }}`. There is no second address paragraph anywhere
+// in that section. This template grew one so a site whose headline was not its
+// address would still show the street line; that paragraph is also what pushed
+// the sub down a row, because it joined the cell the sub bottom-aligns to.
+//
+// The address is not lost by dropping it. It feeds the geocode below (tier 2 of
+// the map, which is how this very section finds the pin) and FooterBK prints it
+// in the contact column — so location.address still owns a live sidebar input
+// and an owner still reads their street line on the page.
 const address = String(loc.address || layout.contact?.address || '').trim();
-const addressLines: string[] = address ? address.split('\n') : [];
-// The headline arrives through set:html, so strip tags before comparing — an
-// owner who wrote their address with an <em> in it still matches.
-const flat = (s: string): string =>
-  String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
-const showAddress = !!address && flat(address) !== flat(headline);
 
 // Blank rows are dropped: the editor's "+ Add" inserts { label: '', value: '' },
 // and an empty row would spend a hairline plus 26px of padding saying nothing.
@@ -150,24 +160,16 @@ const hasLoc = hasGrid || !!sub;
 {hasLoc && (
 <section class="loc" id="location">
   <div class="wrap">
+    {/* TWO children, exactly as the design draws it: the heading block and the
+        sub beside it. No address paragraph — the design has none, because its
+        heading IS the address. See the note on `address` in the frontmatter for
+        where the street line still appears. */}
     <div class="loc-head reveal">
-      {/* THREE children, not two. The address used to live inside .loc-head-l,
-          which made it part of what the sub is bottom-aligned TO — so a site
-          whose headline is not already its address grew a two-line paragraph
-          under the heading and the sub dropped a row to meet its bottom edge,
-          stranded on the right with nothing beside it. The address is its own
-          grid item now, on a second row under the heading, where it can be any
-          height without moving anything. */}
       <div class="loc-head-l">
         {tag && <span class="kick" data-field="location.tag">{tag}</span>}
         {headline && <h2 class="h2 loc-h2" data-field="location.headline" set:html={headline}></h2>}
       </div>
       {sub && <p class="body loc-sub" data-field="location.sub">{sub}</p>}
-      {showAddress && (
-        <p class="loc-addr" data-field="location.address">
-          {addressLines.map((line: string, i: number) => (<>{i > 0 && <br />}{line}</>))}
-        </p>
-      )}
     </div>
     {hasGrid && (
       <div class:list={['loc-grid', 'reveal', (!hasMap || rules.length === 0) && 'one-up']} data-delay="1">
@@ -251,39 +253,24 @@ const hasLoc = hasGrid || !!sub;
   </script>
 )}
 <style>
-  /* ── THE HEAD · the design's split: heading left, sub right, both sitting on
-        the same bottom edge, 36px to the grid.
-        A GRID rather than the design's flex row, for one reason: this template
-        can also print an address under the heading, which the design never does
-        because its heading IS the address. In a flex row that paragraph joins
-        the cell the sub is aligned to and pushes the sub down a row. As a grid
-        the heading and the sub share row 1 and the address takes row 1 of its
-        own beneath, so the sub stays level with the heading whether the address
-        is there or not. */
+  /* ── THE HEAD · flex, baseline-bottom, space-between, wrapping before either
+        side can overflow. 36px to the grid, straight from the design.
+        Two children only — the heading block and the sub. It briefly held a
+        third, an address paragraph, and that is what dragged the sub down: in
+        this row a taller left cell moves everything aligned to its bottom edge.
+        The design has no such paragraph, so neither does this. */
   .loc-head {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    column-gap: 30px;
-    margin: 0 0 36px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap; margin: 0 0 36px;
   }
-  .loc-head-l { grid-column: 1; grid-row: 1; min-width: 0; }
+  .loc-head-l { min-width: 0; }
   /* PageBK's .h2 already carries the design's face, clamp(31px,4vw,54px)/1.1 and
      --bone-hi. Only the margin differs: the design pushes the h2 .26em BELOW the
      eyebrow and nothing after it. */
   .loc-h2 { margin: .26em 0 0; }
-  /* Qualified with the parent class on purpose — PageBK's bare-paragraph reset is
-     (0,1,1) and it sets a bottom margin these two must not inherit. */
-  .loc-head .loc-addr {
-    grid-column: 1; grid-row: 2;
-    margin: .55em 0 0; font-size: 15px; line-height: 1.75; color: var(--grey);
-    max-width: 42ch; overflow-wrap: anywhere;
-  }
-  /* Row 1 beside the heading, flush right, exactly as the design draws it. */
-  .loc-head .loc-sub {
-    grid-column: 2; grid-row: 1; justify-self: end;
-    margin: 0; min-width: 0; max-width: 36ch; overflow-wrap: anywhere;
-  }
+  /* Qualified with the parent class on purpose — PageBK's bare-paragraph reset
+     is (0,1,1) and it sets a bottom margin this must not inherit. */
+  .loc-head .loc-sub { margin: 0; min-width: 0; max-width: 36ch; overflow-wrap: anywhere; }
 
   /* ── THE SPLIT · the design's 1.2fr / .8fr with a 26px gutter. Either cell can
         be absent — no coordinates and no address drops the map, no rows drop the
@@ -362,17 +349,11 @@ const hasLoc = hasGrid || !!sub;
   @media (max-width: 900px) {
     /* Ledger under the map: the rules are what a guest reads twice. */
     .loc-grid { grid-template-columns: minmax(0,1fr); }
-    /* One column: heading, then address, then sub — reading order, and the sub
-       stops being flush right against nothing. */
-    .loc-head { grid-template-columns: minmax(0,1fr); row-gap: 14px; }
-    .loc-head-l { grid-row: 1; }
-    .loc-head .loc-addr { grid-column: 1; grid-row: 2; }
-    .loc-head .loc-sub { grid-column: 1; grid-row: 3; justify-self: start; max-width: none; }
+    .loc-head .loc-sub { max-width: none; }
   }
   @media (max-width: 760px) {
     .map-frame { min-height: 300px; }
     .loc-head { margin-bottom: 28px; }
-    .loc-head .loc-addr { max-width: none; }
     .rules { padding: 22px 24px; }
   }
   @media (max-width: 520px) {
