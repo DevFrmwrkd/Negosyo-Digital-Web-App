@@ -29,6 +29,7 @@ import { Resend } from 'resend';
 import {
     getApprovalEmailHtml,
     getPaymentConfirmationEmailHtml,
+    getPromoWebsiteLiveEmailHtml,
     getPaymentLinkEmailHtml,
     getPaymentFollowUpEmailHtml,
     getDomainLiveEmailHtml,
@@ -290,6 +291,41 @@ export async function sendPaymentConfirmationEmail(data: PaymentConfirmationEmai
     }
 }
 
+interface PromoWebsiteLiveEmailData {
+    businessName: string;
+    businessOwnerName: string;
+    businessOwnerEmail: string;
+    websiteUrl: string;
+    creatorName?: string;
+}
+
+/**
+ * PROMO — tell the owner their free website is live.
+ *
+ * The counterpart to sendPaymentConfirmationEmail for sites nobody paid for.
+ * Keep the two apart: sending the confirmation for a comped site mails the
+ * owner a receipt for money they never sent, which is the exact failure this
+ * whole path exists to prevent.
+ */
+export async function sendPromoWebsiteLiveEmail(data: PromoWebsiteLiveEmailData) {
+    try {
+        const html = getPromoWebsiteLiveEmailHtml({
+            businessName: data.businessName,
+            businessOwnerName: data.businessOwnerName,
+            websiteUrl: data.websiteUrl,
+            creatorName: data.creatorName,
+        });
+        return await sendEmail({
+            to: data.businessOwnerEmail,
+            subject: `${data.businessName} is Now Live — Free, Nothing to Pay`,
+            html,
+        });
+    } catch (error: any) {
+        console.error('Error in sendPromoWebsiteLiveEmail:', error);
+        throw error;
+    }
+}
+
 interface DomainLiveEmailData {
     businessName: string;
     businessOwnerName: string;
@@ -389,6 +425,7 @@ export async function sendWithdrawalStatusEmail(data: WithdrawalStatusEmailData)
 export {
     getApprovalEmailHtml,
     getPaymentConfirmationEmailHtml,
+    getPromoWebsiteLiveEmailHtml,
     getPaymentLinkEmailHtml,
     getPaymentFollowUpEmailHtml,
     getDomainLiveEmailHtml,

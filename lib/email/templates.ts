@@ -68,7 +68,7 @@ export function getPaymentConfirmationEmailHtml(params: {
                         <td style="background:linear-gradient(135deg,#E4B05E 0%,#C89548 50%,#A67836 100%);padding:48px 40px 40px;text-align:center;">
                             <!-- Logo mark -->
                             <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
-                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">NEGOSYO DIGITAL</span>
+                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">TENDSO</span>
                             </div>
                             <h1 style="margin:0 0 12px;color:#ffffff;font-size:32px;font-weight:800;line-height:1.2;letter-spacing:-0.5px;">
                                 Payment Confirmed!
@@ -198,6 +198,162 @@ export function getPaymentConfirmationEmailHtml(params: {
                         </td>
                     </tr>
 
+    `
+}
+
+/**
+ * PROMO — the website is live and the owner owes nothing.
+ *
+ * Deliberately not a variant of getPaymentConfirmationEmailHtml. That template
+ * is a receipt: it renders "Payment Summary", "Amount Paid" and a CONFIRMED
+ * badge, all of which would be a lie here — the owner never paid. Nothing in
+ * this email states or implies a transaction, and nothing invites one, so an
+ * owner who reads it carefully cannot come away thinking a bill is coming.
+ */
+export function getPromoWebsiteLiveEmailHtml(params: {
+    businessName: string
+    businessOwnerName: string
+    websiteUrl: string
+    /** The creator who gave the site away — named so the gift has a person behind it. */
+    creatorName?: string
+    platformEmail?: string
+}): string {
+    // Escaped at the top so no interpolation site below can be missed.
+    const businessName = escapeHtml(params.businessName)
+    const businessOwnerName = escapeHtml(params.businessOwnerName)
+    const websiteUrl = escapeHtml(params.websiteUrl)
+    const creatorName = escapeHtml(params.creatorName)
+    const wiseEmail = escapeHtml(params.platformEmail || paymentConfig.wiseEmail || 'frmwrkd.media@gmail.com')
+
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Website is Live — ${businessName}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f0f0f;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+        <tr>
+            <td align="center" style="padding:40px 16px;">
+
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;width:100%;background-color:#1a1a1a;border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.5);">
+
+                    <!-- Hero -->
+                    <tr>
+                        <td style="background:linear-gradient(135deg,#E4B05E 0%,#C89548 50%,#A67836 100%);padding:48px 40px 40px;text-align:center;">
+                            <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
+                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">TENDSO</span>
+                            </div>
+                            <h1 style="margin:0 0 12px;color:#ffffff;font-size:32px;font-weight:800;line-height:1.2;letter-spacing:-0.5px;">
+                                Your Website is Live!
+                            </h1>
+                            <p style="margin:0;color:rgba(255,255,255,0.75);font-size:16px;line-height:1.6;">
+                                A gift for ${businessName} &mdash; nothing to pay
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Greeting -->
+                    <tr>
+                        <td style="padding:36px 40px 0;">
+                            <p style="margin:0 0 12px;font-size:16px;color:#a1a1aa;line-height:1.7;">
+                                Hi <strong style="color:#ffffff;">${businessOwnerName}</strong>,
+                            </p>
+                            <p style="margin:0;font-size:16px;color:#a1a1aa;line-height:1.7;">
+                                ${creatorName
+        ? `<strong style="color:#ffffff;">${creatorName}</strong> chose <strong style="color:#ffffff;">${businessName}</strong> for a free website under our current promo &mdash; and it is built, published, and live on the web right now.`
+        : `<strong style="color:#ffffff;">${businessName}</strong> was chosen for a free website under our current promo &mdash; and it is built, published, and live on the web right now.`}
+                                <strong style="color:#E4B05E;">There is nothing for you to pay.</strong>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- No-charge notice -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:12px;overflow:hidden;">
+                                <tr>
+                                    <td style="padding:28px;">
+                                        <p style="margin:0 0 14px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">What this costs you</p>
+                                        <p style="margin:0 0 10px;font-size:26px;color:#E4B05E;font-weight:800;letter-spacing:-0.5px;">&#8369;0</p>
+                                        <p style="margin:0;font-size:14px;color:#a1a1aa;line-height:1.7;">
+                                            No invoice, no payment link, and no card on file. If anyone contacts you asking for payment for this website, it did not come from us &mdash; reply to this email and we will confirm.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Website CTA -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:12px;overflow:hidden;">
+                                <tr>
+                                    <td style="padding:24px;text-align:center;">
+                                        <p style="margin:0 0 18px;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;">Your Live Website</p>
+                                        <!--[if mso]>
+                                        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="${websiteUrl}" style="height:48px;v-text-anchor:middle;width:240px;" arcsize="17%" fillcolor="#E4B05E">
+                                            <center style="color:#ffffff;font-family:sans-serif;font-size:15px;font-weight:bold;">Visit Your Website &rarr;</center>
+                                        </v:roundrect>
+                                        <![endif]-->
+                                        <!--[if !mso]><!-->
+                                        <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                                            <tr>
+                                                <td style="border-radius:8px;background:linear-gradient(135deg,#C89548,#E4B05E);">
+                                                    <a href="${websiteUrl}" target="_blank" style="display:block;padding:14px 32px;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:0.3px;font-family:sans-serif;">
+                                                        Visit Your Website &rarr;
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <!--<![endif]-->
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Edits -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <p style="margin:0;font-size:16px;color:#a1a1aa;line-height:1.7;">
+                                Your business is now online and accessible to everyone. <strong style="color:#f5f5f5;">Free edits for your first year</strong> &mdash; new hours, new photos, a new price. Tell us what you want changed and we'll make it for you.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Support -->
+                    <tr>
+                        <td style="padding:28px 40px 0;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#111111;border:1px solid #2d2d2d;border-radius:10px;">
+                                <tr>
+                                    <td style="padding:18px 24px;text-align:center;">
+                                        <p style="margin:0 0 4px;font-size:13px;color:#6b7280;">Questions? We're here to help.</p>
+                                        <a href="mailto:${wiseEmail}" style="color:#E4B05E;font-size:14px;font-weight:600;text-decoration:none;">${wiseEmail}</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding:32px 40px;text-align:center;">
+                            <p style="margin:0 0 4px;font-size:12px;color:#3f3f46;">&copy; 2026 Tendso. All rights reserved.</p>
+                            <p style="margin:0;font-size:12px;color:#3f3f46;">The Thinking Ends Here. So the work doesn't.</p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
     `
 }
 
@@ -541,7 +697,7 @@ export function getPaymentLinkEmailHtml(params: {
                         <td style="background:linear-gradient(135deg,#C89548 0%,#E4B05E 50%,#E8C078 100%);padding:48px 40px 40px;text-align:center;">
                             <!-- Logo mark -->
                             <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:12px;padding:10px 18px;margin-bottom:24px;">
-                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">NEGOSYO DIGITAL</span>
+                                <span style="color:#ffffff;font-size:14px;font-weight:700;letter-spacing:1px;">TENDSO</span>
                             </div>
                             <h1 style="margin:0 0 12px;color:#ffffff;font-size:32px;font-weight:800;line-height:1.2;letter-spacing:-0.5px;">
                                 Your website is<br>ready to launch 🚀

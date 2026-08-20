@@ -22,6 +22,7 @@ import {
   Coins,
   ClipboardCheck,
   AlertTriangle,
+  Gift,
 } from "lucide-react";
 
 type TopActionBarProps = {
@@ -32,6 +33,10 @@ type TopActionBarProps = {
   hasTranscript: boolean;
   /** Timestamp of last follow-up email sent (ms), undefined if none */
   followUpSentAt?: number;
+  /** True when this submission is on the ₱1,499 custom-domain tier — it cannot be comped. */
+  isCustomDomainTier?: boolean;
+  /** True once this site has already been given away under the promo. */
+  isComped?: boolean;
 
   // Loading flags
   updating: boolean;
@@ -42,6 +47,7 @@ type TopActionBarProps = {
   enhancing: boolean;
   sendingEmail: boolean;
   markingPaid: boolean;
+  markingComped: boolean;
   deleting: boolean;
   sendingFollowUp: boolean;
 
@@ -55,6 +61,7 @@ type TopActionBarProps = {
   onSendToClient: () => void;
   onEnhanceImages: () => void;
   onMarkAsPaid: () => void;
+  onGiveFree: () => void;
   onResendPaymentEmail: () => void;
   onSendFollowUp: () => void;
   onReject: () => void;
@@ -80,6 +87,8 @@ export default function TopActionBar({
   websitePublishedUrl,
   hasTranscript,
   followUpSentAt,
+  isCustomDomainTier = false,
+  isComped = false,
   updating,
   generatingWebsite,
   publishingWebsite,
@@ -88,6 +97,7 @@ export default function TopActionBar({
   enhancing,
   sendingEmail,
   markingPaid,
+  markingComped,
   deleting,
   sendingFollowUp,
   onGenerateWebsite,
@@ -99,6 +109,7 @@ export default function TopActionBar({
   onSendToClient,
   onEnhanceImages,
   onMarkAsPaid,
+  onGiveFree,
   onResendPaymentEmail,
   onSendFollowUp,
   onReject,
@@ -129,6 +140,17 @@ export default function TopActionBar({
   const canReject = !["rejected", "deployed", "pending_payment", "paid", "unpublished"].includes(status);
   const canMarkInReview = status === "submitted";
   const canMarkPaid = status === "pending_payment";
+  // Promo: hand the site to the owner for free, creator still earns their ₱500.
+  // Offered from the moment a real website exists to give away, and still
+  // offered at pending_payment — an owner who was billed and went quiet is
+  // exactly the case a promo rescues. Hidden once the site is already comped or
+  // settled, and never shown on the custom-domain tier, where "free" would mean
+  // the platform paying a registrar out of pocket.
+  const canGiveFree =
+    !isComped &&
+    !isCustomDomainTier &&
+    websiteGenerated &&
+    ["approved", "website_generated", "deployed", "pending_payment"].includes(status);
   const canSendToClient = status === "deployed";
   const canUnpublish = !!websitePublishedUrl;
   const canResendPaymentEmail = status === "pending_payment";
@@ -184,6 +206,16 @@ export default function TopActionBar({
               icon={Coins}
               label="Mark as paid"
               tone="emerald"
+            />
+          )}
+
+          {/* Give free (promo) — creator still paid */}
+          {canGiveFree && (
+            <SecondaryBtn
+              onClick={onGiveFree}
+              loading={markingComped}
+              icon={Gift}
+              label="Give free"
             />
           )}
 

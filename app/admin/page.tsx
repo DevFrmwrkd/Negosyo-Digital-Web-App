@@ -98,6 +98,7 @@ export default function AdminDashboard() {
     const allAnalytics = useQuery(api.analytics.getAllAnalytics, {})
     // Hostinger custom-domain fees the platform paid (deducted from gross earnings)
     const totalHostingerCosts = useQuery(api.domains.getTotalHostingerDomainCostsPHP, {})
+    const promoStats = useQuery(api.admin.getPromoStats, {})
 
     const handleBackfill = async () => {
         setBackfilling(true)
@@ -227,9 +228,15 @@ export default function AdminDashboard() {
         return daily.reduce((sum: number, r: any) => sum + (r.earningsTotal || 0), 0)
     }, [allAnalytics])
 
-    // Net earnings = gross minus Hostinger custom-domain fees the platform paid
+    // Net earnings = gross minus Hostinger custom-domain fees the platform paid,
+    // minus the promo. `grossEarnings` sums the analytics earningsTotal rows,
+    // which are written for EVERY credited submission — including sites given
+    // away free, where the creator's payout is real but the ₱0 collected is not
+    // revenue. Left in, each free site would inflate this tile by the payout it
+    // actually cost. Subtracted, the same way Hostinger fees already are.
     const hostingerCosts = totalHostingerCosts ?? 0
-    const totalEarnings = Math.max(0, grossEarnings - hostingerCosts)
+    const promoCosts = promoStats?.compedPayoutTotal ?? 0
+    const totalEarnings = Math.max(0, grossEarnings - hostingerCosts - promoCosts)
 
     const earningsChartData = {
         labels: earningsTimeSeries.map((r) => {
@@ -413,9 +420,13 @@ export default function AdminDashboard() {
                         <p className="text-3xl font-black text-gray-900 tracking-tight">₱{totalEarnings.toLocaleString()}</p>
                         <span className="text-[10px] font-bold text-gray-400">All time</span>
                     </div>
-                    {hostingerCosts > 0 && (
+                    {(hostingerCosts > 0 || promoCosts > 0) && (
                         <p className="text-[10px] font-medium text-gray-400 mt-2">
-                            Gross ₱{grossEarnings.toLocaleString()} − Hostinger ₱{hostingerCosts.toLocaleString()}
+                            Gross ₱{grossEarnings.toLocaleString()}
+                            {hostingerCosts > 0 && <> − Hostinger ₱{hostingerCosts.toLocaleString()}</>}
+                            {promoCosts > 0 && (
+                                <> − Promo ₱{promoCosts.toLocaleString()} ({promoStats?.compedCount} free)</>
+                            )}
                         </p>
                     )}
                 </div>

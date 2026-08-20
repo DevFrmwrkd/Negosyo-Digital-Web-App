@@ -43,6 +43,42 @@ export const REFERRAL_BONUS = 1000;
 
 export type SubmissionTier = 'standard' | 'with_custom_domain';
 
+/**
+ * ── PROMO / COMPED SITES ────────────────────────────────────────────────────
+ *
+ * A comped submission is a website the business owner received for free. The
+ * creator is still paid their full commission — the promo gives away the sale,
+ * never the creator's earnings.
+ *
+ * The rule that matters everywhere: **absent means paid.** Every submission
+ * written before the promo existed, and every ordinary sale since, leaves
+ * `pricingMode` unset. A reader that treats `undefined` as anything other than
+ * a normal paid sale will either hide real revenue or pay out on nothing, so
+ * the check lives here once instead of as a bare `=== 'comped'` in each caller.
+ */
+export type PricingMode = 'paid' | 'comped';
+
+export const PRICING_MODE_COMPED: PricingMode = 'comped';
+
+/** True when the business owner was charged nothing for this website. */
+export function isComped(row: { pricingMode?: string | null } | null | undefined): boolean {
+    return row?.pricingMode === PRICING_MODE_COMPED;
+}
+
+/**
+ * What the owner was actually charged — ₱0 for a promo site, otherwise the
+ * submission's stored total. `amount` deliberately keeps the list price on a
+ * comped row (it is what the site was worth, and the creator's commission is
+ * derived from it), so revenue readers must go through this rather than
+ * reading `amount` directly.
+ */
+export function ownerChargeFor(
+    row: { pricingMode?: string | null; amount?: number | null } | null | undefined,
+): number {
+    if (!row || isComped(row)) return 0;
+    return row.amount ?? 0;
+}
+
 /** Owner total for the standard tier (no custom domain). */
 export const STANDARD_PRICE = BASE_PRICE; // ₱999
 

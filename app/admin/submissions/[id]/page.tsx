@@ -7,6 +7,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { Loader2, Palette, FileEdit, Check, X, AlertTriangle, Trash2, ExternalLink, PanelRightClose, PanelRightOpen, Globe, ChevronLeft } from "lucide-react";
+import { isComped } from "@/lib/pricing";
 import { PhotoLightbox } from "@/components/PhotoLightbox";
 import WebsitePreview from "@/components/WebsitePreview";
 import VisualEditor from "@/components/editor/VisualEditor";
@@ -240,6 +241,10 @@ export default function SubmissionDetailPage() {
 
     const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
     const [markingPaid, setMarkingPaid] = useState(false);
+
+    const [showGiveFreeModal, setShowGiveFreeModal] = useState(false);
+    const [giveFreeReason, setGiveFreeReason] = useState("");
+    const [markingComped, setMarkingComped] = useState(false);
 
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [rejectionReason, setRejectionReason] = useState("");
@@ -565,6 +570,39 @@ export default function SubmissionDetailPage() {
             setShowModal(true);
         } finally {
             setMarkingPaid(false);
+        }
+    };
+
+    /**
+     * PROMO — give the website to the owner for free; the creator still earns
+     * their commission. Separate route from mark-paid because the owner gets a
+     * different email: a gift notice, never a receipt.
+     */
+    const handleGiveFree = async () => {
+        if (!submissionData || !user) return;
+        setMarkingComped(true);
+        try {
+            const response = await fetch("/api/mark-comped", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    submissionId: submissionData._id,
+                    reason: giveFreeReason.trim() || undefined,
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Failed to give this website away");
+            setShowGiveFreeModal(false);
+            setGiveFreeReason("");
+            setModalType("success");
+            setModalMessage(result.message || "Website given free. Creator credited.");
+            setShowModal(true);
+        } catch (error: any) {
+            setModalType("error");
+            setModalMessage(error.message || "Failed to give this website away. Please try again.");
+            setShowModal(true);
+        } finally {
+            setMarkingComped(false);
         }
     };
 
@@ -906,6 +944,11 @@ export default function SubmissionDetailPage() {
                     websitePublishedUrl={websitePublishedUrl}
                     hasTranscript={!!submission.transcript}
                     followUpSentAt={(submission as any).followUpEmailSentAt}
+                    isCustomDomainTier={
+                        (submissionData as any)?.submissionType === "with_custom_domain" ||
+                        !!(submissionData as any)?.requestedDomain
+                    }
+                    isComped={isComped(submissionData as any)}
                     updating={updating}
                     generatingWebsite={generatingWebsite}
                     publishingWebsite={publishingWebsite}
@@ -914,6 +957,7 @@ export default function SubmissionDetailPage() {
                     enhancing={enhancing}
                     sendingEmail={sendingEmail}
                     markingPaid={markingPaid}
+                    markingComped={markingComped}
                     deleting={deleting}
                     sendingFollowUp={sendingFollowUp}
                     onGenerateWebsite={() => handleGenerateWebsite()}
@@ -925,6 +969,7 @@ export default function SubmissionDetailPage() {
                     onSendToClient={handleSendWebsiteEmail}
                     onEnhanceImages={handleTriggerEnhancedImages}
                     onMarkAsPaid={() => setShowMarkPaidModal(true)}
+                    onGiveFree={() => setShowGiveFreeModal(true)}
                     onResendPaymentEmail={handleResendPaymentEmail}
                     onSendFollowUp={handleSendFollowUp}
                     onReject={() => handleStatusUpdate("rejected")}
@@ -1322,6 +1367,83 @@ export default function SubmissionDetailPage() {
                             >
                                 {markingPaid && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {markingPaid ? "Processing…" : "Confirm payment"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showGiveFreeModal && submission && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl p-6 sm:p-7">
+                        <h3
+                            style={{ fontFamily: "var(--font-fraunces)" }}
+                            className="text-2xl font-semibold text-neutral-900 mb-2"
+                        >
+                            Give this website free
+                        </h3>
+                        <p className="text-neutral-600 mb-4 text-sm">
+                            The business owner pays nothing. The creator is still paid in full.
+                        </p>
+
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                            <p className="text-sm font-semibold text-amber-900 mb-2">This will:</p>
+                            <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
+                                <li>
+                                    Add ₱{(submission.creator_payout ?? 0).toLocaleString()} to the creator&apos;s
+                                    withdrawable balance
+                                </li>
+                                <li>Charge the owner ₱0 and send them a &quot;your site is live, free&quot; email</li>
+                                <li>Keep the website online permanently (no payment chase, no auto-unpublish)</li>
+                                <li>Record the submission as promo — kept out of revenue, not counted as a sale</li>
+                            </ul>
+                        </div>
+
+                        {/* The cost, stated plainly. A giveaway is real money out. */}
+                        <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-4">
+                            <p className="text-sm text-rose-900">
+                                <span className="font-semibold">Cost to Tendso: </span>
+                                ₱{(submission.creator_payout ?? 0).toLocaleString()} paid out, ₱0 collected. This
+                                cannot be undone from the admin UI.
+                            </p>
+                        </div>
+
+                        {!websitePublishedUrl && (
+                            <div className="bg-neutral-100 border border-neutral-200 rounded-xl p-4 mb-4">
+                                <p className="text-sm text-neutral-700">
+                                    This site isn&apos;t published yet, so no email will go out. The creator is still
+                                    credited — publish it, then tell the owner yourself.
+                                </p>
+                            </div>
+                        )}
+
+                        <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+                            Reason <span className="text-neutral-400 font-normal">(optional, internal only)</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={giveFreeReason}
+                            onChange={(e) => setGiveFreeReason(e.target.value)}
+                            placeholder="e.g. August promo"
+                            disabled={markingComped}
+                            className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:opacity-50"
+                        />
+
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowGiveFreeModal(false)}
+                                disabled={markingComped}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold border border-neutral-200 hover:bg-neutral-50 transition-colors disabled:opacity-50 min-h-[44px] text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleGiveFree}
+                                disabled={markingComped}
+                                className="flex-1 py-3 px-4 rounded-xl font-semibold bg-amber-600 hover:bg-amber-700 text-white transition-colors disabled:opacity-50 min-h-[44px] text-sm inline-flex items-center justify-center gap-2"
+                            >
+                                {markingComped && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {markingComped ? "Processing…" : "Give it free"}
                             </button>
                         </div>
                     </div>
