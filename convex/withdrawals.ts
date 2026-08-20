@@ -1,6 +1,6 @@
 import { v } from 'convex/values';
-import { query, mutation, internalMutation, internalAction, internalQuery } from './_generated/server';
-import { internal } from './_generated/api';
+import { query, mutation, action, internalMutation, internalAction, internalQuery } from './_generated/server';
+import { api, internal } from './_generated/api';
 
 // ==================== MUTATIONS ====================
 
@@ -649,6 +649,75 @@ export const recordStatusCheck = internalMutation({
         await ctx.db.patch(args.withdrawalId, updates)
     },
 })
+
+/**
+ * Poll Wise for ONE withdrawal, right now, on an admin's request.
+ *
+ * WHY THIS EXISTS: wiseDetailedState is written only by the hourly cron, and the
+ * admin payouts page decides whether to show "Fund in Wise" from that field. So
+ * an admin who funds a transfer and returns to the page sees an unchanged badge
+ * for up to an hour and reasonably concludes the funding failed — the one
+ * conclusion that leads to paying the same creator twice. This closes that
+ * window: fund, refresh, see the truth.
+ *
+ * Admin-gated by resolving adminId to a real admin row rather than trusting the
+ * string, the same way admin.markPaid does — this reaches the Wise API and can
+ * move a withdrawal into a terminal state that credits totalWithdrawn.
+ *
+ * Deliberately does NOT email the creator. The cron owns creator comms and
+ * throttles them to one a day; an admin clicking refresh three times while
+ * checking their work must not send three emails.
+ */
+export const refreshFromWise = action({
+    args: {
+        withdrawalId: v.id('withdrawals'),
+        adminId: v.string(),
+    },
+    handler: async (ctx, args): Promise<{
+        refreshed: boolean
+        reason?: string
+        wiseDetailedState?: string
+        statusChangedTo?: string
+    }> => {
+        const actor = await ctx.runQuery(api.creators.getByClerkId, { clerkId: args.adminId });
+        if (!actor || actor.role !== 'admin') throw new Error('Forbidden: admin access required');
+
+        const withdrawal: any = await ctx.runQuery(internal.withdrawals.getByIdInternal, {
+            id: args.withdrawalId,
+        });
+        if (!withdrawal) throw new Error('Withdrawal not found');
+        if (!withdrawal.wiseTransferId) {
+            // Still 'pending': processWiseTransfer has not created the transfer
+            // yet, so there is nothing at Wise to ask about.
+            return { refreshed: false, reason: 'No Wise transfer has been created for this withdrawal yet.' };
+        }
+
+        const { getTransferStatus } = await import('./lib/wise');
+        const status = await getTransferStatus(withdrawal.wiseTransferId);
+
+        await ctx.runMutation(internal.withdrawals.recordStatusCheck, {
+            withdrawalId: args.withdrawalId,
+            wiseDetailedState: status.detailedStatus,
+            sendEmail: false,
+        });
+
+        // Apply the terminal transition the webhook would have applied, but ONLY
+        // from 'processing'. updateByWiseTransferId adds to totalWithdrawn and
+        // notifies on completion, and restores balance on failure — none of it
+        // guarded against running twice, so re-refreshing an already-completed
+        // row would credit the creator's withdrawn total again.
+        let statusChangedTo: string | undefined;
+        if (status.isFinal && withdrawal.status === 'processing') {
+            statusChangedTo = status.isCompleted ? 'completed' : 'failed';
+            await ctx.runMutation(internal.withdrawals.updateByWiseTransferId, {
+                wiseTransferId: withdrawal.wiseTransferId,
+                status: statusChangedTo as 'completed' | 'failed',
+            });
+        }
+
+        return { refreshed: true, wiseDetailedState: status.detailedStatus, statusChangedTo };
+    },
+});
 
 /**
  * Cron-triggered action: poll Wise for stalled withdrawals + send follow-up emails.
