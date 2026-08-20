@@ -1001,10 +1001,16 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                     </div>
                 );
             })()}
+            {/* originals={effectivePhotos}, NOT the raw photos prop.
+                /api/upload-image returns an R2 url into draft.images and never
+                touches submissions.photos, so a photo uploaded in the Media tab
+                was missing from the one picker an admin actually reaches — the
+                one that opens when they click an image in the preview. The
+                Media grid was fixed for this; the modal was not. */}
             <ImagePickerModal
                 open={!!imagePickerField}
                 field={imagePickerField}
-                originals={photos ?? []}
+                originals={effectivePhotos}
                 enhanced={(enhancedImageUrls ?? []) as unknown as Record<string, any>}
                 onClose={() => setImagePickerField(null)}
                 onSelect={handleImagePick}
