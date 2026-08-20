@@ -1,0 +1,372 @@
+---
+/**
+ * foodcraft / GalleryBM — "Tahanan Cafe"'s room, in photographs.
+ *
+ * ROLE. The only section on the page that is nothing but the owner's own
+ * pictures. A centred head — the underlined walnut eyebrow over one display
+ * headline carrying the template's italic walnut emphasis — sitting above the
+ * design's five-slot mosaic: a tall lead print spanning both rows beside four
+ * smaller frames, all on the plain white ground.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * the element carrying data-component="GALLERY" in
+ * "Tahanan Cafe Landing.dc.html":
+ *
+ *   head           text-align:center; margin-bottom:34px
+ *   eyebrow        10px / .34em caps, #7A4E2D, 700, on a 1px #E0D3C6 rule with
+ *                  9px under it                                       → .kick
+ *   headline       Libre Caslon Text 400, clamp(29px,3.8vw,50px), lh 1.14,
+ *                  margin `.26em 0 0`, #241B14, and — like every other
+ *                  headline in this design — NO max-width of its own
+ *   emphasis       `Inside <em>…</em>`, italic #7A4E2D            → .h2 em
+ *   grid           minmax(0,2fr) minmax(0,1fr) minmax(0,1fr)
+ *   rows           196px 196px                     gap 14px
+ *   tile           #F7F2EC ground, 2px radius, overflow hidden    → .plate
+ *   lead tile      grid-row: span 2
+ *
+ * NO LITERAL HEX APPEARS IN THIS FILE, and in fact no colour at all: every
+ * colour the design names already has a wrapper token holding the same value
+ * (#7A4E2D is --accent, #241B14 is --ink, #E0D3C6 is --line-2, #F7F2EC is
+ * --well, 2px is --r) and every one of them arrives on a shared primitive.
+ * This file states GEOMETRY only.
+ *
+ * ── EDITABLE HOOKS (every one DECLARED in components/editor/genericContentSchema.ts,
+ *    group id 'gallery' — nothing else in that group exists) ───────────────────
+ *   gallery.tag                        → the underlined walnut eyebrow (.kick)
+ *   gallery.headline                   → the display h2, set:html
+ *   gallery.items.<original i>.image   → data-image-field, one per mosaic frame
+ *   gallery.items.<original i>.caption → the optional opaque ink caption pill
+ * That is the whole list. A data-field on any other path is a dead hook no
+ * sidebar input owns, so no other path is written here.
+ *
+ * ── NOT SUPPLIED BY THIS COMPONENT ──────────────────────────────────────────
+ * NOT ONE VISIBLE WORD. The design's slot placeholders — "The room",
+ * "Counter", "Pastry case", "A plate", "Corner table" — are the DESIGNER
+ * filling their own template. They are captions for photographs nobody has
+ * looked at, so they are neither hard-coded nor invented as caption defaults:
+ * an uncaptioned photo is simply a photo. The same goes for the head; the
+ * design's own "Inside <em>{{ cafeName }}</em>" is the designer's copy, and an
+ * owner who typed no headline gets no headline ELEMENT. Every guard sits
+ * OUTSIDE its tag, so there is never an eyebrow hanging over nothing, never an
+ * empty caption pill on a photo, and never a head block with nothing in it.
+ *
+ * ── THE SECTION GATE ────────────────────────────────────────────────────────
+ * The section renders only when at least one row carries an IMAGE — the BODY
+ * content, never the tag or the headline. lib/derive-content-defaults.ts sets
+ * gallery.tag ('Inside') and gallery.headline ('A look at our work') on EVERY
+ * site, so a gate counting those would ship an eyebrow and a display headline
+ * over an empty grid. Once photos exist the tag and headline render (still
+ * individually guarded) — refusing them would strand two live sidebar inputs.
+ *
+ * ── DERIVED, not authored ───────────────────────────────────────────────────
+ * ROW INDEXES. Rows with no image are dropped, and the ORIGINAL array index
+ * travels with the survivor as `.i`. The editor writes the data-field path
+ * verbatim into the draft, so a re-indexed path would patch a different row:
+ * clearing row 2's photo would misdirect row 3's caption edits into row 2.
+ * Nothing here is numbered on screen, so no display index is needed.
+ *
+ * THE COUNT LADDER. The design hard-codes five slots; content does not.
+ * derive-content-defaults hands over up to six photos and an owner may upload
+ * one or eleven, so the design's five-up is the TOP of a ladder rather than the
+ * only case, each tier drawn for its own count so none can open a hole:
+ *   1   one full-width print, still two rows tall
+ *   2   two full-height columns on the design's lopsided 2fr / 1fr
+ *   3   the tall lead plus two stacked beside it
+ *   4   the design's three tracks, the fourth frame taking both narrow ones
+ *   5   the design's own grid, exactly
+ *   6+  extras flow into implicit 196px rows and the LAST frame stretches over
+ *       whatever tracks its row left empty, so the mosaic never ends on a
+ *       ragged half-row. The stretch is computed PER BREAKPOINT — a three-track
+ *       row and a two-track row run out at different counts — and is reset
+ *       entirely at one column.
+ *
+ * ── DECISIONS A READER MIGHT OTHERWISE THINK WERE OVERSIGHTS ────────────────
+ * · THE SECTION STATES NO VERTICAL PADDING. The design writes `padding:84px
+ *   30px 0` on every section and lets the NEXT section's top padding be the
+ *   whole gap. PageBM instead declares one SHARED, symmetric rhythm —
+ *   `section { padding: clamp(52px,7vw,84px) 0 }`, capped at the design's own
+ *   84px — and that wrapper rule is the contract all fifteen sections in this
+ *   variant sit on. Restating a bare-bottom here would make this the one
+ *   section that butts into the next. The horizontal 30px is likewise not
+ *   restated: .wrap is `min(1160px, 92vw)`, which is the design's 1160px cap
+ *   and its side air in one declaration.
+ * · THE 14px GAP IS DELIBERATE, and it is the one place in this design that
+ *   has one. The family signature is grids drawn with BORDERS rather than gaps
+ *   (HOW-IT-WORKS, the menu ledger, the FAQ all rule their cells) — but the
+ *   GALLERY element specifies `gap:14px` on a gridful of clipped photo plates,
+ *   where a hairline between two images would read as a seam. The design says
+ *   gap; this file writes gap. It is not a leftover from a ruled sibling.
+ * · NO onPage() ANCHOR-REMAP HELPER. This section renders no link, no button
+ *   and no numeral, and the 'gallery' schema group declares no href field at
+ *   all — so PAGE_ANCHORS / ANCHOR_ALIAS would have nothing to remap and would
+ *   ship as dead frontmatter. Omitted rather than carried unused. The section's
+ *   own id="gallery" IS one of the page's five anchors, and is the target the
+ *   header and footer link AT.
+ * · THE CAPTION PILL IS NOT IN THE DESIGN, and that is not a liberty. The
+ *   GALLERY element draws five bare tiles; its `placeholder="The room"` /
+ *   "Counter" / "Pastry case" strings are the design tool's SLOT LABELS, shown
+ *   in the editor and never rendered. But genericContentSchema declares
+ *   `gallery.items.*.caption` as a live sidebar input, and PageBM ships a .cap
+ *   primitive for exactly it — so the pill exists, guarded, or that input would
+ *   be wired to nothing. No photo gets one unless the owner typed one, which is
+ *   why the default rendering is the design's: bare tiles.
+ * · The design's 34px down to the mosaic sits on the HEAD BLOCK, not on the
+ *   h2's own margin-bottom. With both strings present it renders identically
+ *   (the h2 keeps the design's .26em above and adds nothing below); with the
+ *   headline cleared, an eyebrow-only head still clears the photos instead of
+ *   gluing them to its underside.
+ * · .h2 max-width is released to none. The wrapper caps every headline at 24ch,
+ *   which is right for the design's left-aligned heads — but this head is
+ *   CENTRED, and a 24ch block with `margin:… 0 0` would hug the left edge with
+ *   its text centred inside a narrow column. The design gives this h2 no
+ *   max-width, so neither does this file.
+ * · min-height is zeroed on the frames. The wrapper floors .plate at 180px,
+ *   which would fight the design's fixed 196px rows the moment they shrink.
+ * · THE ITALIC WALNUT EMPHASIS comes from the WRAPPER's global `.h2 em` rule,
+ *   not from here. set:html builds that <em> after Astro has scoped this
+ *   stylesheet, so no scoped selector could reach it — which is exactly why
+ *   nothing in this file needs :global(): the wrapper already owns it. The
+ *   eyebrow's underline is likewise the shared .kick primitive and is NOT
+ *   restated, because restating it is how a section loses the design's single
+ *   most recognisable mark.
+ * · THE HOVER LIFT is the only thing here the static design file could not
+ *   express. The wrapper ships `transition: transform .5s ease` on .ph, which
+ *   is dead weight unless a section moves it, and a photo mosaic is where it
+ *   belongs. It is a 1.03 scale inside an already-clipped plate — the frame
+ *   itself never moves, so no hairline or corner shifts — and reduced-motion
+ *   cancels it.
+ * · An apostrophe in an upload path would close the `url('…')` and blank the
+ *   tile, so the path is percent-escaped FOR CSS ONLY. The raw value still
+ *   travels into data-image-field, which is what the editor reads back.
+ * · THE ROW HEIGHT GROWS at the one-column breakpoint (≤520 floors higher than
+ *   ≤900 does), and that is intended, not the clamp inversion an audit found on
+ *   the previous template. It is a BOX, not type: at ≤900 a frame is one of two
+ *   ~234px columns and 148px keeps it near the design's 1.5:1; at ≤520 the same
+ *   frame is the full ~478px width, and holding 148px would print a letterbox.
+ *   Within each query the clamp is monotonic, and at the 900 boundary the cap
+ *   (196px) meets the base row exactly, so nothing jumps there. No type size is
+ *   restated in this file at any width — the wrapper owns the 760/520 pass.
+ *
+ * ── ACCESSIBILITY ───────────────────────────────────────────────────────────
+ * A tile is announced only when the owner gave it words. With a caption the
+ * photo layer is role="img" named by THAT CAPTION — the owner's own words — and
+ * the caption is also the visible pill. With no caption the layer is HIDDEN
+ * from the tree rather than announced as "image"; inventing "Cafe photo" would
+ * publish a description of something nobody described. The two attributes are
+ * mutually exclusive and BOTH conditional, so no literal aria-hidden ever sits
+ * beside a conditional one.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const gallery = (content && content.gallery) || {};
+const tag = typeof gallery.tag === 'string' ? gallery.tag.trim() : '';
+const headline = typeof gallery.headline === 'string' ? gallery.headline.trim() : '';
+
+type Tile = { image?: string; caption?: string };
+// The legacy bare-array form lives at content.gallery ITSELF — not the
+// `gallery` alias above, which is the object form's home. Both shapes reach
+// production, so both are read.
+const raw: Tile[] = Array.isArray(gallery.items)
+  ? gallery.items
+  : (Array.isArray(content?.gallery) ? (content.gallery as Tile[]) : []);
+
+const tiles = raw
+  .map((t, i) => ({
+    image: (t && typeof t.image === 'string' ? t.image : '').trim(),
+    caption: (t && typeof t.caption === 'string' ? t.caption : '').trim(),
+    i,
+  }))
+  .filter((t) => Boolean(t.image));
+
+const n = tiles.length;
+
+// CSS-only escape; the raw value still goes into data-image-field.
+const cssUrl = (s: string) => s.replace(/'/g, '%27');
+
+/* Row completion, computed per breakpoint (see THE COUNT LADDER above).
+   THREE tracks: the design's five fill rows 1–2 exactly, so extras open a fresh
+   three-wide row — a remainder of 1 stretches the trailing frame over all three
+   tracks, a remainder of 2 over two. Four photos is its own case, the fourth
+   frame taking both narrow tracks.
+   TWO tracks (≤900): the lead still spans both rows, frames 2 and 3 finish the
+   second column, and the extras run two per row — so an even count leaves the
+   trailing frame alone and it stretches across the pair. */
+const rem3 = n > 5 ? (n - 5) % 3 : 0;
+const wideDesk = n === 4 ? 2 : (rem3 === 1 ? 3 : (rem3 === 2 ? 2 : 0));
+const wideMid = (n >= 4 && (n - 3) % 2 === 1) ? 2 : 0;
+---
+{n > 0 && (
+  <section class="tcg" id="gallery">
+    <div class="wrap">
+      {(tag || headline) && (
+        <div class="tcg-head reveal">
+          {tag && <span class="kick" data-field="gallery.tag">{tag}</span>}
+          {headline && <h2 class="h2 tcg-h2" data-field="gallery.headline" set:html={headline}></h2>}
+        </div>
+      )}
+
+      <div
+        class:list={[
+          'tcg-mosaic',
+          'reveal',
+          n === 1 && 'tcg-x1',
+          n === 2 && 'tcg-x2',
+          n === 3 && 'tcg-x3',
+        ]}
+        data-delay="1"
+      >
+        {tiles.map((t, pos) => (
+          <figure
+            class:list={[
+              'plate',
+              'tcg-frame',
+              pos === n - 1 && wideDesk === 3 && 'tcg-w3',
+              pos === n - 1 && wideDesk === 2 && 'tcg-w2',
+              pos === n - 1 && wideMid === 2 && 'tcg-wm2',
+            ]}
+          >
+            <div
+              class="ph"
+              role={t.caption ? 'img' : undefined}
+              aria-label={t.caption || undefined}
+              aria-hidden={t.caption ? undefined : 'true'}
+              data-image-field={`gallery.items.${t.i}.image`}
+              style={`background-image:url('${cssUrl(t.image)}');`}
+            ></div>
+            {t.caption && (
+              <figcaption class="cap" data-field={`gallery.items.${t.i}.caption`}>{t.caption}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* .tcg carries NO rule on purpose. PageBM's shared `section` rhythm already
+     states the design's 84px (capped there, symmetric by contract) and .wrap
+     already states its 1160px / 92vw. The class stays in the markup as this
+     section's root hook. Read the frontmatter before adding a bare bottom here:
+     a padding-bottom:0 would make this the one section that butts into the
+     next, because every sibling in the variant leans on the wrapper's rhythm.
+
+     The design's centred head, and its 34px down to the mosaic carried by the
+     BLOCK so an eyebrow with no headline still clears the photos. */
+  .tcg-head {
+    text-align: center;
+    margin: 0 0 34px;
+  }
+
+  /* The eyebrow is owner-typed and set in 10px caps on .34em of tracking, so a
+     single unbroken word (a pasted URL) is far wider than its character count
+     suggests. Stated at EVERY width, not only in the 520 query: the wrapper's
+     `body { overflow-x: hidden }` CLIPS an overflowing eyebrow rather than
+     scrolling to it, so on a 900px viewport the tail of it would simply be
+     gone. Only the wrapping is touched — restating .kick's font-size would
+     cancel the wrapper's 520 pass, and restating its border-bottom would risk
+     the signature underline outright. Matches WhyBM / HowBM / TestimonialsBM,
+     which all state this unconditionally. */
+  .tcg-head .kick {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* `.26em 0 0` verbatim; nothing below it (the block owns that). The wrapper's
+     24ch cap is released because this head is centred — see the frontmatter. */
+  .tcg-h2 {
+    margin: .26em 0 0;
+    max-width: none;
+  }
+
+  /* ── THE MOSAIC ───────────────────────────────────────────────────────────
+     The design's tracks verbatim: 2fr / 1fr / 1fr, two fixed 196px rows, a 14px
+     gap, and the lead print spanning both rows. --row is one knob so the
+     breakpoints move the row height without restating the grid.
+
+     minmax(0,…) on every track, never a bare fr: a background-image tile has no
+     intrinsic width, but a caption pill does, and one long caption in a bare
+     1fr track would push the whole page sideways on a phone. */
+  .tcg-mosaic {
+    --row: 196px;
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: var(--row) var(--row);
+    grid-auto-rows: var(--row);
+    gap: 14px;
+  }
+  .tcg-mosaic .tcg-frame:first-child { grid-row: span 2; }
+
+  /* Ground (--well), the 2px corner and the clip all arrive with .plate, which
+     is exactly what the design specifies per tile — so only geometry is set
+     here. The wrapper floors .plate at 180px, which would fight the fixed rows,
+     so that floor is released. */
+  .tcg-frame {
+    margin: 0;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  /* The one thing a static design file cannot state. See the frontmatter. */
+  .tcg-frame:hover .ph { transform: scale(1.03); }
+  @media (prefers-reduced-motion: reduce) {
+    .tcg-frame:hover .ph { transform: none; }
+  }
+
+  /* ── THE COUNT LADDER. Each tier restates the tracks for its own count so no
+        tier can leave a hole. Two compounds plus Astro's scope attribute, so
+        each out-specifies the base grid above AND the collapse rules below —
+        wherever a tier is already narrow enough to survive the collapse. */
+  .tcg-mosaic.tcg-x1 { grid-template-columns: minmax(0, 1fr); }
+  .tcg-mosaic.tcg-x2,
+  .tcg-mosaic.tcg-x3 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .tcg-mosaic.tcg-x2 .tcg-frame { grid-row: span 2; }
+
+  /* Row completion on the trailing frame (see the frontmatter). */
+  .tcg-mosaic .tcg-frame.tcg-w3 { grid-column: span 3; }
+  .tcg-mosaic .tcg-frame.tcg-w2 { grid-column: span 2; }
+
+  /* ── 900px · the three-track mosaic collapses to two. The lead keeps its
+        two-row span, which is what makes 3, 5, 7 … photos land on complete rows
+        here while the even counts stretch their last frame. .tcg-x1 is
+        deliberately NOT restated — it already out-specifies the base, so a lone
+        photo keeps the full width instead of shrinking to a half tile beside an
+        empty track — and .tcg-x2 / .tcg-x3 keep the design's lopsided 2fr / 1fr
+        for the same reason. The 196px cap meets the base row exactly at this
+        boundary, so nothing jumps as it is crossed. */
+  @media (max-width: 900px) {
+    .tcg-mosaic {
+      --row: clamp(148px, 23vw, 196px);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    .tcg-mosaic .tcg-frame.tcg-w3,
+    .tcg-mosaic .tcg-frame.tcg-w2 { grid-column: auto; }
+    .tcg-mosaic .tcg-frame.tcg-wm2 { grid-column: span 2; }
+  }
+
+  /* ── 520px · one column. A ~150px-wide tile is too small to read as a room,
+        so the mosaic becomes a stack, every span is reset so nothing reaches
+        for a track that is not there, and the row grows because each frame is
+        now the full width (see the frontmatter — this is a box, not type).
+        Nothing may push the page sideways at this width: the track is
+        minmax(0,…), the frames cannot exceed it, the wrapper already breaks a
+        long caption inside its pill, and the eyebrow's own break rule (stated
+        at every width, above) keeps a pasted URL from running off the head. */
+  @media (max-width: 520px) {
+    .tcg-mosaic {
+      --row: clamp(168px, 55vw, 256px);
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .tcg-mosaic.tcg-x2,
+    .tcg-mosaic.tcg-x3 { grid-template-columns: minmax(0, 1fr); }
+    .tcg-mosaic .tcg-frame,
+    .tcg-mosaic.tcg-x2 .tcg-frame,
+    .tcg-mosaic .tcg-frame:first-child { grid-row: auto; }
+    .tcg-mosaic .tcg-frame.tcg-wm2 { grid-column: auto; }
+    /* …except the solo photo, which stays a two-row print so it still reads as
+       the lead image it is and not a stray thumbnail. Out-specifies the reset
+       above on compound count, so it does not depend on source order. */
+    .tcg-mosaic.tcg-x1 .tcg-frame:first-child { grid-row: span 2; }
+  }
+</style>

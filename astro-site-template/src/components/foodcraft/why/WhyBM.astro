@@ -1,0 +1,311 @@
+---
+/**
+ * foodcraft / WhyBM — "WHY-US" (Tahanan Cafe / BM).
+ *
+ * ROLE: the argument block, and the ONE tinted ground on the light half of this
+ * page. A CENTRED head — the underlined eyebrow over one Libre Caslon Text
+ * headline — and beneath it a three-track row of CENTRED columns, each opening
+ * with a hairline-ringed DISC holding an ordinal numeral, then the reason's
+ * title and the owner's paragraph. No photo, no price, no button: this is the
+ * only section in the template that argues rather than describes or lists, and
+ * "Tahanan Cafe Landing.dc.html" draws it with nothing else.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * that file's data-component="WHY-US" — nothing is re-derived to survive an
+ * admin colour scheme, and no literal hex appears in this file (R1). The colours
+ * are the wrapper tokens whose VALUES are the design's hexes:
+ *   band ground  #FAF7F3 -> --tint          disc ring #DCCDBE -> --line-3
+ *   numeral      #7A4E2D -> --accent        title     #241B14 -> --ink
+ *   paragraph    #5C5147 -> --ink-soft
+ *   section   background:#FAF7F3; padding:76px 0        (full-bleed)
+ *   head      text-align:center; margin-bottom:44px
+ *   h2        margin:.26em 0 0; NO max-width (it is centred across the wrap)
+ *   grid      repeat(3,minmax(0,1fr)) / gap 38px
+ *   disc      60x60; 1px solid #DCCDBE; border-radius:50%; margin:0 auto 18px;
+ *             Libre Caslon Text 22px #7A4E2D
+ *   title     Libre Caslon Text 400 23px; margin:0 0 10px; #241B14
+ *   body      15px / 1.8; #5C5147; margin:0 auto; max-width:34ch
+ *
+ * THE ROUND DISC IS THE DESIGN'S, NOT A DRIFT. This template is otherwise
+ * SHARP — 2px corners, no pill anywhere — so a 50%-radius ring looks at first
+ * like a copy-paste from a softer template. It is not: the design draws exactly
+ * one circle on the whole page and this is it, a struck medallion around an
+ * ordinal, not a pill around a label. Reproduced as handed over. Every other
+ * corner in this file is the wrapper's --r.
+ *
+ * CLASS PREFIX: `tcw-` (Tahanan Cafe / why). Deliberately NOT the BL sibling's
+ * `why-*` set — an audit had to rename a whole block of classes that arrived
+ * verbatim from the template before it. Only the HOUSE STYLE is inherited from
+ * WhyBL (this doc block, the guard discipline, the original-vs-display index
+ * rule); the palette, the centring, the disc and the metrics are this design's.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts
+ * under the "Why us" group, so the sidebar owns a real input for each — a
+ * data-field on an undeclared path is a dead hook that focuses nothing):
+ *   why.tag                — the eyebrow. The wrapper's .kick primitive, NOT
+ *                            restated here: the underline (border-bottom +
+ *                            9px padding) is one of this design's two
+ *                            signatures and lives on that primitive, so a
+ *                            section that re-declares the eyebrow loses it.
+ *   why.headline           — the h2, rendered with set:html so an owner's own
+ *                            <em> picks up PageBM's ITALIC WALNUT EMPHASIS (the
+ *                            other signature). That rule is GLOBAL in the
+ *                            wrapper on purpose: scoped styles cannot reach
+ *                            elements created by set:html (R3), so an italic
+ *                            rule written in this file would never apply to it,
+ *                            and any rule this file ever needs for that <em>
+ *                            must be written :global().
+ *   why.items.${i}.title   — the reason (h3)
+ *   why.items.${i}.body    — the reason's paragraph. CANONICAL key: the value
+ *                            can arrive as .description through astro-builder's
+ *                            normalizeBlock alias map (line ~897 spells
+ *                            { description: 'body' }), and as .desc from older
+ *                            payloads, so the READ tolerates all three while the
+ *                            data-field always spells the key the schema
+ *                            declares — otherwise the sidebar never receives the
+ *                            edit.
+ *
+ * R2 — NOTHING IS SUPPLIED BY THIS FILE. Not one visible string is written here.
+ * The design's demo copy ("Why here", "Why neighbours keep coming back.") is the
+ * DESIGNER filling in their own template; a real cafe gets a page that says only
+ * what that cafe said. Every guard sits OUTSIDE its tag, so an empty value
+ * removes the ELEMENT and not just its text: no eyebrow over nothing, no
+ * heading over an empty grid, no empty paragraph, no ringed disc floating above
+ * a reason that is not there — and the centred head DIV itself is guarded, so an
+ * owner who clears both the tag and the headline does not pay 44px of margin for
+ * an empty box.
+ *
+ * DERIVED, not authored:
+ *   · THE NUMERAL. The design's demo data carries an `n` field; our schema
+ *     declares no numeral input, so it is computed from the DISPLAY index,
+ *     zero-padded to two digits, and marked aria-hidden — ordinal decoration,
+ *     and a screen reader already gets the order from the document. It is the
+ *     ONE thing keyed to the display index rather than the original one (R6):
+ *     after a blank row is dropped the printed sequence must read 01-02-03,
+ *     never 01-03. Everything an EDIT touches uses the ORIGINAL index, so
+ *     deleting reason 2 can never misdirect a write into reason 3.
+ *   · The disc, its ring and the tinted ground. Decorative, no data-field.
+ *
+ * DELIBERATELY NOT RENDERED (so none of it reads as an oversight):
+ *   · why.image and why.lead. Both are schema-declared and both are used by
+ *     sibling templates, but this design's WHY-US has neither a plate nor a lead
+ *     paragraph — it is eyebrow, headline, three centred columns. Adding either
+ *     would be building a different section than the one that was handed over.
+ *     No plate also means no role="img" and no alt anywhere in this file (R9):
+ *     there is no upload here to name.
+ *   · NO STAR ROW (R2). This section carries no rating field and no review, and
+ *     the design draws none here. Stars belong to TESTIMONIALS, and only ever
+ *     drawn from a real numeric rating — five stars printed for a customer who
+ *     gave no rating is a fabricated claim.
+ *   · NO id ON THE SECTION. The page's ids are menu / about / gallery / visit /
+ *     faq / main, and the design gives WHY-US none of them; PageBM's nav remaps
+ *     a derived '#why' onto '#about'. An id here would create a target the
+ *     navigation never points at and a second landing place for the same link.
+ *   · NO onPage() ANCHOR HELPER (R7), and this is a decision, not an omission.
+ *     The design's WHY-US renders no href of any kind — no button, no link — so
+ *     there is nothing to remap and a copied helper would ship as dead code. If
+ *     a link is ever added here, copy the helper from a BM sibling with
+ *     PAGE_ANCHORS = menu / about / gallery / visit / faq / main and
+ *     ANCHOR_ALIAS mapping location,contact -> visit · services,rooms -> menu ·
+ *     host,why -> about · work -> gallery · book -> main, passing tel: /
+ *     mailto: / http through untouched.
+ *   · NO PER-REASON ICON. A drawn pictogram claims WHAT the reason is about; the
+ *     owner's words are the only signal this section is allowed to carry. The
+ *     disc holds a number, which claims nothing.
+ *
+ * TRACK COUNT vs ITEM COUNT: the grid is fixed at three tracks because the
+ * design fixes three (hint-placeholder-count="3"). An owner who adds a fourth
+ * reason gets a second row, not four squeezed columns — the design's proportions
+ * survive and no owner content is refused.
+ *
+ * TWO PIECES OF SECTION GEOMETRY, and why they are handled differently:
+ *   · PADDING. This is the one section on the light half with a VISIBLE ground,
+ *     so its own padding is drawn rather than merely spacing. The design writes
+ *     76px top and bottom; the wrapper's shared rule is clamp(52px,7vw,84px),
+ *     which caps 8px higher. The cap is pulled to the drawn 76px here and the
+ *     fluid floor is kept, so the band matches the design at full width and
+ *     still breathes correctly on a phone.
+ *   · MARGIN-TOP. The design writes margin-top:84px on the band because every
+ *     unbanded section in it pads TOP only; in the built page the wrapper pads
+ *     both ends of every section, so restating it would double the gap. That
+ *     bottom-0 rhythm is a WHOLE-PAGE decision that belongs in the wrapper —
+ *     one section re-deriving it while fourteen siblings keep theirs is exactly
+ *     the local drift that put an earlier template out of step. Flagged, not
+ *     done here.
+ */
+// `layout` is accepted because PageBM passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const why = content.why || {};
+const tag = typeof why.tag === 'string' ? why.tag.trim() : '';
+// Nothing beyond trim() is done to the headline: it goes out through set:html so
+// whatever markup the owner typed reaches the wrapper's italic-walnut em rule.
+const headline = typeof why.headline === 'string' ? why.headline.trim() : '';
+
+type Item = { title?: string; body?: string; desc?: string; description?: string };
+const items: Item[] = Array.isArray(why.items) ? why.items : [];
+const titleOf = (it: Item): string => String(it?.title ?? '').trim();
+const bodyOf = (it: Item): string => String(it?.body ?? it?.desc ?? it?.description ?? '').trim();
+
+// A reason the owner added but never filled would otherwise spend a ringed disc,
+// a numeral and 18px of margin on nothing. Drop the blanks (whitespace counts as
+// blank) but carry the ORIGINAL index `i` so every data-field still writes into
+// the real array slot.
+const rows = items
+  .map((it, i: number) => ({ i, title: titleOf(it), body: bodyOf(it) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// SECTION GATE (R5). Counts the COLUMNS only. lib/derive-content-defaults.ts
+// emits why.tag ('Why us') and why.headline ('Why choose X') for every site
+// while shipping items: [] — so a gate that counted the tag or the headline
+// would be always-true and would ship an eyebrow and a headline over an empty
+// tinted band on every first build.
+const hasReasons = rows.length > 0;
+---
+{hasReasons && (
+  <section class="tcw">
+    <div class="wrap">
+      {(tag || headline) && (
+        <div class="tcw-head reveal">
+          {tag && <span class="kick" data-field="why.tag">{tag}</span>}
+          {headline && <h2 class="h2 tcw-h2" data-field="why.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="tcw-grid">
+        {rows.map((r, d: number) => (
+          /* `d` is the DISPLAY index and `r.i` is the ORIGINAL one. The numeral
+             is the only thing keyed to `d`, so the printed sequence stays
+             unbroken after a blank row is dropped; it is aria-hidden because the
+             order is already carried by the document, and it carries no second
+             literal aria-hidden anywhere (R9). The stagger tops out at the
+             wrapper's last declared delay, so a fourth reason simply reveals
+             with the third. */
+          <div class="tcw-col reveal" data-delay={d > 0 ? String(Math.min(d, 3)) : undefined}>
+            <div class="fig tcw-disc" aria-hidden="true">{String(d + 1).padStart(2, '0')}</div>
+            {r.title && <h3 class="tcw-t" data-field={`why.items.${r.i}.title`}>{r.title}</h3>}
+            {r.body && <p class="tcw-p" data-field={`why.items.${r.i}.body`}>{r.body}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* ── THE TINTED BAND. The design's one soft ground on the light half of the
+        page: full-bleed --tint, no rule above or below it — the
+        colour change IS the division. Padding is capped at the drawn 76px while
+        the wrapper's fluid floor is kept; see the frontmatter for why the
+        design's margin-top:84px is deliberately not restated. */
+  .tcw {
+    background-color: var(--tint);
+    padding-block: clamp(52px, 7vw, 76px);
+  }
+
+  /* ── the centred head. */
+  .tcw-head { text-align: center; margin-bottom: 44px; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .34em tracking, so a
+     single unbroken word is unusually wide for its character count — and the
+     wrapper's 520 pass only re-sizes .kick, it does not let it break (R8).
+     ONLY overflow-wrap is stated: a scoped class out-specifies the wrapper's
+     :where(.kick), so restating a font-size here would silently cancel that
+     520 pass, and restating the border-bottom would risk losing the signature
+     underline outright. */
+  .kick { overflow-wrap: anywhere; }
+
+  /* ── the headline. The wrapper's .h2 primitive already carries the design's
+        face, clamp(29px,3.8vw,50px), line-height 1.14 and --ink; only what this
+        section draws differently is restated — the design's `margin:.26em 0 0`
+        (the 44px below belongs to the head, not the heading) and the RELEASED
+        measure. The shared primitive caps at 24ch, which on a centred heading
+        renders as centred text inside a left-hugging 24ch box; the design gives
+        this h2 no max-width at all, so it is released and the .wrap is its
+        bound. NO font-size is restated anywhere in this file, at any
+        breakpoint, so there is no clamp for a narrower viewport to invert (R8). */
+  .tcw-h2 { margin: .26em 0 0; max-width: none; }
+
+  /* ── the three centred columns. Tracks and gap exactly as drawn. */
+  .tcw-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 38px;
+  }
+  /* min-width:0 as well as the minmax() above: a grid item's default min-width
+     is auto, so one unbroken word in a title would otherwise widen its track and
+     push the whole page sideways (R8). */
+  .tcw-col { min-width: 0; text-align: center; }
+
+  /* ── THE DISC. The design's single circle, and the only 50% radius in this
+        template — a struck medallion around an ordinal, not a pill around a
+        label. It rides the wrapper's .fig primitive for the face, the tabular
+        lining figures and line-height 1, and states the ring, the size and the
+        22px the design draws. Upright, not italic: this design italicises the
+        headline emphasis, not its numerals. */
+  .tcw-disc {
+    width: 60px; height: 60px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    border: 1px solid var(--line-3);
+    border-radius: 50%;
+    font-size: 22px;
+  }
+
+  /* Libre Caslon Text at 400 is the design's weight for this title; it is pinned
+     rather than inherited so no heading rule elsewhere can push it onto a face
+     this wrapper does not load. LEADING: the design's WHY-US title carries no
+     line-height and the design's own stylesheet sets none, so `normal` is
+     literally what it draws — restated because PageBM's shared h1-h4 rule is
+     1.14, which is the h2's display leading and sets a 23px title tighter than
+     it was drawn the moment an owner's reason runs to two lines. Guessing a
+     number would be a divergence of its own. */
+  .tcw-t {
+    font-family: var(--disp); font-weight: 400; font-size: 23px;
+    line-height: normal;
+    margin: 0 0 10px; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* PageBM's `:where(p){margin:0 0 1em}` sits at (0,1,1), so this paragraph rule
+     is qualified with its parent class to out-specify it — the design's
+     paragraph has no bottom margin at all, and its `margin:0 auto` is what
+     centres the 34ch measure inside the track. */
+  .tcw-col .tcw-p {
+    margin: 0 auto; max-width: 34ch;
+    font-size: 15px; line-height: 1.8; color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── 900 · the collapse this family gives a three-track row of TEXT: two
+        tracks here, one at 560. Two-up the track is (92vw − 34px) / 2, which is
+        ~397px at 900 and ~241px at 561 — so the 34ch measure above binds and
+        centres the paragraph over the wide half of this range, and below about
+        646px the track is simply narrower than the cap and the paragraph fills
+        it. A max-width cannot overflow either way; the tracks are minmax(0,…)
+        and every owner string breaks anywhere, so nothing pushes sideways. */
+  @media (max-width: 900px) {
+    .tcw-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 34px; }
+    .tcw-head { margin-bottom: 36px; }
+  }
+
+  /* ── 560 · one column. minmax(0,...) rather than 1fr: a single track still
+        defaults to an auto minimum. The measure cap is RELEASED here, because
+        below this width the column is the whole .wrap — 92vw on a phone is
+        already a comfortable measure, while a 34ch cap would leave a narrow
+        ribbon of text stranded in a wide centred gutter. */
+  @media (max-width: 560px) {
+    .tcw-grid { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+    .tcw-col .tcw-p { max-width: none; }
+  }
+
+  /* ── 520 · tighten the stack. Nothing here may push the page sideways: the
+        overflow-wrap rules and the minmax/min-width tracks cover that, and there
+        is no button in this section to give white-space:normal to. The disc
+        keeps its drawn 60px — it is a fixed 60px box inside a track that never
+        falls below ~290px, so it cannot overflow, and shrinking it would be a
+        re-derivation rather than a fit. */
+  @media (max-width: 520px) {
+    .tcw-grid { gap: 26px; }
+    .tcw-head { margin-bottom: 28px; }
+  }
+</style>

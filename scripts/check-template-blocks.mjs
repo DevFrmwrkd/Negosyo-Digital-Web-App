@@ -21,7 +21,13 @@
  *      leaflet.js — defining the boot without them is silent: window.L never
  *      exists, the boot returns, and the section's drawn fallback map face is
  *      all any owner ever sees however many coordinates they type
- *   5. no template is missing from the scan
+ *   5. a wrapper frontmatter doc comment never closes itself early — an
+ *      asterisk followed by a slash inside the prose ends the comment on the
+ *      spot, and the rest of the paragraph is parsed as JavaScript. That
+ *      fails EVERY site build, not just this template: index.astro imports
+ *      all 65 wrappers into one bundle. No CI job runs the astro build, so
+ *      without this check nothing warns until a customer site fails to render
+ *   6. no template is missing from the scan
  *
  * Run: node scripts/check-template-blocks.mjs
  */
@@ -208,6 +214,57 @@ for (const fam of fs.readdirSync(COMPONENTS)) {
             errors.push(`${fam}/${f}: defines a map boot but never loads leaflet.js — window.L is undefined, so the boot returns and the map never appears`);
         if (!/leaflet@[\d.]+\/dist\/leaflet\.css/.test(src))
             errors.push(`${fam}/${f}: defines a map boot but never loads leaflet.css — the tiles render as a stack of unpositioned images`);
+    }
+}
+
+// ── A frontmatter doc comment that closes itself early. Nothing else catches
+//    this: no CI job runs `astro build`, and when it does fail it takes EVERY
+//    template down with it, because index.astro imports all 65 wrappers into a
+//    single bundle. Three wrappers shipped a token list written as the word
+//    "accent" followed by an asterisk and a slash, which ends the comment
+//    mid-sentence; esbuild then parses the remaining prose as JavaScript and
+//    stops at the first bare word. The site build fails; nothing warns first.
+const CR = String.fromCharCode(13);
+const LF = String.fromCharCode(10);
+const COMMENT_CLOSE = "*" + "/";
+const COMMENT_OPEN = "/" + "*";
+for (const fam of fs.readdirSync(COMPONENTS)) {
+    const d = path.join(COMPONENTS, fam);
+    if (!fs.statSync(d).isDirectory()) continue;
+    for (const f of fs.readdirSync(d)) {
+        if (!/^Page[A-Z]+[.]astro$/.test(f)) continue;
+        const src = fs.readFileSync(path.join(d, f), "utf8").split(CR + LF).join(LF);
+        // The frontmatter only. A closer inside the template body is markup or
+        // CSS, not a comment, and is not this script's business.
+        const fm = src.split(/^---$/m)[1] ?? "";
+        let open = false;
+        for (const [i, line] of fm.split(LF).entries()) {
+            if (!open) {
+                const o = line.indexOf(COMMENT_OPEN);
+                if (o === -1) continue;
+                open = true;
+                // A one-line comment opens and closes on the same line; only
+                // what follows the opener can close it.
+                const rest = line.slice(o + 2);
+                const c = rest.indexOf(COMMENT_CLOSE);
+                if (c === -1) continue;
+                open = false;
+                continue;
+            }
+            const c = line.indexOf(COMMENT_CLOSE);
+            if (c === -1) continue;
+            open = false;
+            // A legitimate terminator is alone on its line. Prose in front of
+            // it means the comment ended somewhere its author did not intend.
+            const before = line.slice(0, c).trim();
+            if (before !== "" && before !== "*")
+                errors.push(
+                    fam + "/" + f + ": the frontmatter doc comment closes itself on line " +
+                    (i + 1) + " of the frontmatter — " + JSON.stringify(line.trim().slice(0, 64)) +
+                    ". Everything after it is parsed as JavaScript, which breaks the build for " +
+                    "ALL templates, not only this one.",
+                );
+        }
     }
 }
 

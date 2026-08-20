@@ -1,0 +1,473 @@
+---
+/**
+ * foodcraft / HeroBM — "Tahanan Cafe"'s arrival.
+ *
+ * ROLE. The page's opening statement and its only h1. Two equal columns on the
+ * white ground: on the left the underlined walnut eyebrow, a Libre Caslon Text
+ * headline whose closing phrase falls into WALNUT ITALIC, a lede and two
+ * actions; on the right one tall rectangular photograph at a 2px corner.
+ * Lifted verbatim from the element carrying data-component="HERO" in
+ * "Tahanan Cafe Landing.dc.html": section padding 62px 30px 0, grid
+ * minmax(0,1fr) minmax(0,1fr) at 50px with align-items:center, h1
+ * clamp(40px,5.4vw,74px)/1.1 with margin .26em 0 .3em, lede 17.5px/1.78 at 44ch
+ * with 32px beneath it, actions 12px apart, and a 520px-tall plate on --well at
+ * border-radius 2px.
+ *
+ * EDITABLE HOOKS (every path is declared in components/editor/
+ * genericContentSchema.ts, so each is live in the sidebar AND inline):
+ *   hero.image              — data-image-field, the photograph
+ *   hero.kicker             — the eyebrow (.kick)
+ *   hero.headline           — the h1, set:html so an owner <em> takes the
+ *                             walnut italic
+ *   hero.headlineLines.${i} — the SAME h1, when hero.headline holds nothing but
+ *                             the derived business name; see THE HEADLINE below
+ *   hero.sub                — the lede
+ *   hero.cta1.text + data-href-field hero.cta1.href — the walnut filled button
+ *   hero.cta2.text + data-href-field hero.cta2.href — the outlined button
+ *
+ * DERIVED, never stored and never editable:
+ *   · the photograph's accessible name — layout.businessName and nothing else
+ *   · both button hrefs, resolved through onPage() against the ids PageBM
+ *     actually renders
+ *   · which of the two headline paths the h1 binds to
+ *   · the italic walnut tail, when the owner has not marked one (see THE
+ *     SIGNATURE)
+ *   · the flat variant (no photograph ⇒ one column), below
+ *
+ * NOT RENDERED, deliberately:
+ *   · No copy of any kind is written by this file. The design's demo strings
+ *     ("The corner table is still yours.", "See the menu", "Contact us",
+ *     "Neighbourhood café · San Juan") are the DESIGNER filling in their own
+ *     template. A real café gets an arrival that says only what that café said,
+ *     so every guard sits OUTSIDE its tag: no eyebrow over nothing, no empty
+ *     action row, and no 520px cream slab standing in for a photograph nobody
+ *     uploaded.
+ *   · NO META / PILL ROW. hero.meta1, hero.meta2 and hero.trustLine are all
+ *     declared by the schema and the previous template in this family renders
+ *     them as three chips — but THIS design has no such row under its actions,
+ *     and inventing one to use up a declared field would be a layout the
+ *     designer did not draw. The fields stay editable in the sidebar and simply
+ *     have no element here. (This also means R6 cannot arise outside the
+ *     headline rows: there is no other list in this section.)
+ *   · NO STAR ROW of any kind. The design has none here, and a star drawn from
+ *     anything other than a numeric rating field is a fabricated claim. The
+ *     schema's placeholder on hero.meta1 is literally '★★★★★ rated on Google';
+ *     a placeholder is not a default, lib/derive-content-defaults.ts emits no
+ *     meta1 for exactly that reason, and this file prints no star glyph at all.
+ *   · hero.tag / hero.photos.* — not declared by the schema. A data-field on a
+ *     path no sidebar input owns looks editable and focuses nothing.
+ *   · .reveal. This section is above the fold; it is painted, not animated in.
+ *   · An aria-label on the <section>. Naming it would make it a landmark
+ *     announced with a word I wrote ("Hero"); the h1 already titles the region.
+ *   · target="_blank". The design's demo markup carries it because its primary
+ *     is hard-wired to a Messenger URL; here the href is the owner's and may be
+ *     an in-page anchor, so navigation is left alone (the family idiom).
+ *   · A restated eyebrow. The underline IS the design's signature and it lives
+ *     on the shared .kick primitive — a section that re-declares the eyebrow
+ *     loses the border-bottom. Only a wrap safety is added, and in two places:
+ *     max-width:100% in the base rule, overflow-wrap at 520px.
+ *
+ * THE HEADLINE, and why one heading reads two paths. This design's headline is
+ * ONE flowing sentence whose closing phrase falls into walnut italic — not a
+ * stack of lines — so the h1 is hero.headline rendered through set:html and the
+ * emphasis is an <em> the OWNER types.
+ * The catch is WHICH FIELD actually holds the owner's headline, because two
+ * layers upstream disagree:
+ *   · lib/derive-content-defaults.ts auto-fills hero.headline with the BARE
+ *     BUSINESS NAME on every named site (`headline: name || undefined`), and
+ *     lib/astro-builder.ts's mergeShallow lets that derived value stand
+ *     wherever the owner left the field unset.
+ *   · lib/services/groq.service.ts — the extraction that writes the copy for a
+ *     real submission — emits hero.headlineLines and NEVER hero.headline.
+ * So "always prefer hero.headline" prints the business name and drops the
+ * authored headline on the floor for exactly the sites that have one. The rule
+ * is therefore: hero.headline wins whenever it is AUTHORED, meaning anything
+ * other than the business name the derive layer fills in. When it is that
+ * auto-fill (or empty), the surviving headlineLines rows win — flowed INLINE
+ * inside the same h1, because this design's headline is a sentence and not a
+ * stack — each carrying its ORIGINAL array index, so dropping a blank row 2
+ * cannot misdirect an edit into row 3 (R6).
+ * The field a click opens is always the field the visible text came from:
+ * binding hero.headlineLines.0 to text that arrived as hero.headline (or the
+ * reverse) aims an inline edit at a slot the sidebar is not showing.
+ *
+ * THE SIGNATURE, MADE REACHABLE. The design's h1 is two-tone — ink, then a
+ * walnut italic tail ("is still yours.") — and it got there because the
+ * DESIGNER typed <em> into their own markup. No owner is going to type a tag
+ * into a text box, so without a fallback the headline renders one flat colour
+ * on every real site and one of the two things that makes this template
+ * recognisable never ships. When the owner has NOT marked emphasis, the tail is
+ * derived from THEIR OWN sentence and adds not one word — it only decides where
+ * the sentence turns. An explicit <em> always wins; this fills a silence.
+ *
+ * SECTION GATE (R5). The arrival renders when it has something to SAY or SHOW:
+ * a headline, a lede, or the photograph. It deliberately does NOT count the
+ * eyebrow (derive-content-defaults builds one from city + trade for sites with
+ * neither name, tagline nor upload) and does NOT count the two buttons (derive
+ * sets cta1/cta2 text UNCONDITIONALLY, so counting either makes the gate a
+ * no-op that always passes).
+ * FOR REVIEW: this is the one section in the family whose gate counts the
+ * headline, because here the headline IS the body — it is the document's only
+ * h1, and a hero dropped for having "only" an h1 takes the page's heading with
+ * it and opens the site on the trust row.
+ *
+ * NO PHOTOGRAPH ⇒ ONE COLUMN. The plate is a COLUMN here, not a background. If
+ * the owner uploaded nothing, rendering it anyway leaves a 520px cream slab
+ * beside the copy — a hole at full height. So the plate is dropped entirely and
+ * the grid collapses to a single track, with the copy held at 555px: that is
+ * the width the left column actually has at the design's own measure
+ * ((1160 − 50) / 2), so the sentence is not re-flowed to a width the design
+ * never gave it.
+ *
+ * THE SECTION HAS NO BOTTOM PADDING, and that is the design, not an oversight.
+ * The HERO element ends at `padding:62px 30px 0`; the TRUST row below carries
+ * its own 56px of top margin, and every other section brings its own top
+ * padding from the wrapper's `section` rule. A floor here would double it.
+ *
+ * COLOUR / CONTRAST (R1 — no literal hex in this file, only PageBM's tokens):
+ *   --ink headline on --paper 16.9:1 · --ink-soft lede 7.71:1 · --accent
+ *   eyebrow and italic 7.11:1 · --on-accent on the walnut fill 7.11:1 · --ink
+ *   label inside a --line-2 hairline 16.9:1. Every pairing is the design's own,
+ *   taken from the wrapper's token table unchanged.
+ *   THESE NUMBERS ARE RECOMPUTED, NOT COPIED, and they disagree with the
+ *   wrapper. PageBM's VERIFIED CONTRAST block states 14.9 / 7.29 / 7.06 for
+ *   these same three pairs; a WCAG 2.x sRGB relative-luminance pass over the
+ *   hex values that same wrapper declares gives 16.91 / 7.71 / 7.11. Its whole
+ *   table is low by roughly 3-12% — except --band-kick on --band, which it
+ *   states as 7.62 against an actual 7.37, the one figure that errs high.
+ *   Nothing crosses a threshold in either direction and every pair still clears
+ *   AA, so this is a documentation defect in the wrapper rather than a
+ *   rendering one; it is flagged here and not edited from a section file.
+ *   The 2px corner is --r; this file states no radius of its own, because the
+ *   design's hero radius IS the wrapper's --r and .plate already carries it.
+ *
+ * CLASS-NAME LAW (not inferable, do not "tidy"): the section is .tc-arrival,
+ * NOT .hero — lib/genericThemeOverrides.ts force-paints `.hero .btn-ghost` with
+ * !important and would strand a label here. Buttons are .btn + .btn--fill /
+ * .btn--line (double dash) for the same reason. Never .btn-primary /
+ * .btn-ghost / .btn-yellow / .btn-light / .nav-cta / .trust / .testi /
+ * .cta-band in this family. The `tc-` prefix is this template's and is not
+ * shared with the BL sibling's `kc-`: an audit had to rename a whole set of
+ * classes that were copied verbatim from the template before it.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+// Anchor guard, copied from the BL sibling and re-pointed at THIS page.
+// lib/derive-content-defaults.ts hard-codes '#visit' for hero.cta1 and
+// '#services' for hero.cta2; this page renders `visit` but not `services`, so
+// one is kept and the other is remapped. Resolve every in-page href against
+// what PageBM actually draws: keep it when the id exists, remap it when this
+// design carries the same block under another id, otherwise fall back to the
+// target the design was built around. Off-page hrefs (tel:, mailto:, http)
+// pass through untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBM — and with the copies
+// in HeaderBM, CtaBandBM and FooterBM. There is no shared import by design (a
+// section component in this repo receives only `content` + `layout`); the
+// copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  location: 'visit', contact: 'visit',
+  services: 'menu', rooms: 'menu',
+  host: 'about', why: 'about',
+  work: 'gallery',
+  book: 'main',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+
+// Display fallbacks only — the HOOK below is always hero.image, the path the
+// sidebar's image picker writes. The quote escape keeps a filename with an
+// apostrophe from closing the url('') early and killing the declaration.
+const heroImage = String(hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '');
+const heroImageCss = heroImage.replace(/'/g, '%27');
+
+const kicker = hero.kicker || '';
+
+// THE HEADLINE — full reasoning in the doc comment. hero.headline is this
+// design's field; the rows take over only when hero.headline is nothing but the
+// business name derive-content-defaults auto-filled (or is empty), which is the
+// shape every AI-written submission arrives in.
+const bizName = String(layout?.businessName ?? '').trim();
+const headline = String(hero.headline ?? '').trim();
+const lineRows: Array<{ text: string; i: number }> = (Array.isArray(hero.headlineLines) ? hero.headlineLines : [])
+  .map((t: any, i: number) => ({ text: String(t ?? ''), i }))
+  .filter((l: { text: string }) => l.text.trim() !== '');
+// …and only when they SAY something hero.headline does not. On the ordinary
+// named site both hold the same one line, and the single-line hook keeps it.
+const useRows =
+  lineRows.length > 0 &&
+  (headline === '' || headline === bizName) &&
+  lineRows.map((l) => l.text.trim()).join(' ') !== headline;
+const hasHeadline = useRows || headline !== '';
+
+// ── THE SIGNATURE, MADE REACHABLE ────────────────────────────────────────
+// When the owner has NOT marked emphasis themselves, the tail is derived from
+// their OWN sentence and adds not one word:
+//   • more than one line                  -> the last line
+//   • a comma, dash, colon or semicolon   -> everything after the LAST one
+//   • anything else                       -> nothing at all
+// That last case is deliberate. A single clause is a single clause, and
+// splitting inside one would lean on a word the owner never leaned on — the
+// design's own headline turns at "table / is still yours" precisely because
+// that is where its sentence turns, and only the writer knows that point.
+const hasOwnEm = (v: string): boolean => /<em[\s>]/i.test(v);
+const emphasise = (raw: string): string => {
+  if (!raw || hasOwnEm(raw)) return raw;
+  const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const tail = lines.pop() as string;
+    return lines.join(' ') + ' <em>' + tail + '</em>';
+  }
+  // The LAST break wins, so a sentence with two commas emphasises its close
+  // rather than its middle. The lookahead keeps a trailing comma from matching.
+  const re = /[,;:—–]\s+(?=\S)/g;
+  let cut = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) cut = m.index + m[0].length;
+  if (cut <= 0 || cut >= raw.length) return raw;
+  return raw.slice(0, cut) + '<em>' + raw.slice(cut) + '</em>';
+};
+const headlineHtml = emphasise(headline);
+// The rows path marks its LAST row instead, and only when no row is already
+// carrying the owner's own <em>.
+const rowsOwnEm = lineRows.some((l) => hasOwnEm(l.text));
+
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+// The design's primary is its contact action and its secondary points at the
+// menu; those are the two fallbacks when an owner's href resolves to nothing.
+const cta1Href = onPage(hero.cta1?.href, '#visit');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, '#menu');
+
+// The photograph's accessible name is the owner's own words or nothing. With no
+// business name there is no honest name for the picture, so it leaves the
+// accessibility tree instead of announcing a phrase I invented. Built as ONE
+// spread object so a conditional attribute can never end up beside a literal
+// (R9 — two components in an earlier family shipped exactly that duplication,
+// and the literal aria-hidden won).
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+const hasArrival = !!(hasHeadline || sub || heroImage);
+---
+{hasArrival && (
+<section class={heroImage ? 'tc-arrival' : 'tc-arrival tc-arrival--flat'}>
+  <div class="wrap">
+    <div class="tc-ar-grid">
+      <div class="tc-ar-copy">
+        {kicker && <span class="kick tc-ar-kick" data-field="hero.kicker">{kicker}</span>}
+        {!useRows && headline !== '' && <h1 class="tc-ar-h1" data-field="hero.headline" set:html={headlineHtml}></h1>}
+        {useRows && (
+          <h1 class="tc-ar-h1">
+            {lineRows.map((l, k) => (
+              <span class:list={['tc-ar-ln', !rowsOwnEm && k === lineRows.length - 1 && 'tc-ar-ln--em']}><span data-field={`hero.headlineLines.${l.i}`} set:html={l.text}></span>{k === lineRows.length - 1 ? '' : ' '}</span>
+            ))}
+          </h1>
+        )}
+        {sub && <p class="lede tc-ar-lede" data-field="hero.sub">{sub}</p>}
+        {(cta1Text || cta2Text) && (
+          <div class="tc-ar-ctas">
+            {cta1Text && (
+              <a class="btn btn--fill" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>
+            )}
+            {cta2Text && (
+              <a class="btn btn--line tc-ar-line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* The photograph. No upload ⇒ no column at all, rather than a 520px
+          cream slab standing in for a picture nobody supplied. */}
+      {heroImage && (
+        <div class="plate tc-ar-shot">
+          <div
+            class="ph tc-ar-ph"
+            data-image-field="hero.image"
+            style={`background-image:url('${heroImageCss}');`}
+            {...photoA11y}
+          ></div>
+        </div>
+      )}
+    </div>
+  </div>
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBM's token vocabulary
+     (--paper --well --ink --ink-soft --accent --line-2 --disp --sans --r) and
+     from its shared primitives (.wrap .kick .lede .btn .btn--fill .btn--line
+     .plate .ph). There is no literal hex in this file, and no radius either:
+     this design's hero corner IS --r, which .plate already carries.
+
+     HOW THESE RULES WIN, and the one config that would break them. Astro scopes
+     a style block with the project's `scopedStyleStrategy`, and this project
+     takes the default, 'attribute' — so `.tc-ar-shot` ships as
+     `.tc-ar-shot[data-astro-cid-…]`, specificity (0,2,0). The wrapper's
+     primitives are `html[data-page="BM"] :where(.plate)`, specificity (0,1,1),
+     because :where() contributes nothing; its `section` rule is (0,1,2). Two
+     classes beat one, which is how the plate's height replaces the 180px floor,
+     the h1 keeps its .26em margins against the shared `margin:0`, the lede
+     keeps its 32px floor, and the section keeps its 62px/0 padding — none of it
+     with !important.
+     Setting scopedStyleStrategy:'where' in astro.config.mjs would collapse
+     every one of those to (0,1,0) and silently hand the wrapper the win. Two-
+     class rules (`.tc-ar-ctas .btn`) survive that; the single-class ones do not. */
+
+  /* Design: max-width:1160px; margin:0 auto; padding:62px 30px 0. The measure
+     and the gutter are .wrap's job; the 62px top and the ZERO floor are this
+     section's. See the doc comment on why there is no bottom padding. */
+  .tc-arrival {
+    padding: 62px 0 0;
+  }
+
+  /* Design: grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:50px;
+     align-items:center. The grid is the one place this design uses a gap rather
+     than a rule — everywhere else it draws with borders, but the hero's two
+     halves are not a table and the design gives them air. */
+  .tc-ar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 50px;
+    align-items: center;
+  }
+  /* No photograph ⇒ one track, and the copy holds the measure the left column
+     actually has at the design's own width ((1160 − 50) / 2). Letting the
+     sentence run the full 1160 would be a headline this design never draws. */
+  .tc-arrival--flat .tc-ar-grid { grid-template-columns: minmax(0, 1fr); }
+  .tc-arrival--flat .tc-ar-copy { max-width: 555px; }
+
+  /* min-width:0 lets a long word wrap inside the track instead of widening it
+     and pushing the page sideways. */
+  .tc-ar-copy { min-width: 0; }
+
+  /* THE EYEBROW IS NOT RESTATED. Its 10px/.34em caps, its walnut and — above
+     all — its border-bottom + 9px of padding live on the shared .kick, and a
+     redeclaration here would drop the underline that is the design's single
+     most recognisable mark. Only the block behaviour is touched, and only so a
+     very long derived kicker can wrap instead of stretching the column. */
+  .tc-ar-kick { max-width: 100%; }
+
+  /* Design: font-size:clamp(40px,5.4vw,74px); line-height:1.1;
+     margin:.26em 0 .3em. Larger and tighter than the shared .h2, which is why
+     this is an h1 rule of its own and not that primitive. The design sets NO
+     max-width on the h1 — its column is the measure — so none is invented
+     here; the narrow queries below add one only once the columns collapse. */
+  .tc-ar-h1 {
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: clamp(40px, 5.4vw, 74px);
+    line-height: 1.1;
+    letter-spacing: 0;
+    margin: .26em 0 .3em;
+    color: var(--ink);
+  }
+  /* THE SIGNATURE. Libre Caslon Text ships a real 400 italic, so this is a
+     drawn italic and not a synthesised oblique. :global() because Astro cannot
+     scope markup that arrived through set:html (R3) — which covers both the
+     owner's own <em> and the derived tail on the single-line path. */
+  .tc-ar-h1 :global(em) { font-style: italic; color: var(--accent); }
+  /* Rows path only (hero.headlineLines). They FLOW as one sentence rather than
+     stacking, because this design's h1 is a sentence — the wrap comes from the
+     column, exactly as it does on the single-line path. The word space between
+     rows is a real text node in the markup, not a faked margin. */
+  .tc-ar-ln { display: inline; }
+  /* The derived tail on the rows path. Same treatment as an owner-typed <em>,
+     declared separately because the rows are real elements this file owns and
+     so do not need :global(). */
+  .tc-ar-ln--em { font-style: italic; color: var(--accent); }
+
+  /* Design: the lede's 17.5px/1.78/44ch is the shared .lede verbatim (its clamp
+     tops out at exactly 17.5px); only the 32px beneath it is local. */
+  .tc-ar-lede { margin: 0 0 32px; }
+
+  /* Design: display:flex; gap:12px; flex-wrap:wrap; align-items:center. */
+  .tc-ar-ctas {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  /* The design's outlined secondary is the shared button at 28px of side
+     padding rather than 30px — the only metric in which the two differ. */
+  .tc-ar-line { padding-left: 28px; padding-right: 28px; }
+
+  /* Design: height:520px; the plate colour (which is --well), a 2px corner
+     (which is --r) and overflow:hidden — that is the .plate primitive exactly,
+     so only the height is stated here. The wrapper's .plate reserves a 180px
+     minimum for short plates; this one states its own height, so that floor is
+     released. */
+  .tc-ar-shot {
+    height: 520px;
+    min-height: 0;
+  }
+  /* Two classes deep on purpose: the wrapper's `:where(.plate) .ph` scores one
+     element more than a single scoped class would, so `.tc-ar-ph` alone would
+     lose to it. Restating cover/center costs nothing and means the photograph
+     cannot letterbox if that primitive is ever narrowed. No colour is restated —
+     that stays in the primitive, where the theme engine keeps control of it. */
+  .tc-ar-shot .tc-ar-ph {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* ── R8 · this section's OWN grid. The wrapper handles the shared 760/520
+     pass; the two columns are this file's problem and collapse here.
+
+     THE CLAMP LADDER, checked across breakpoints because an audit on the
+     previous template found a headline that GREW as the viewport narrowed. The
+     base clamp(40px,5.4vw,74px) is already at its 40px FLOOR by 741px, so it is
+     left untouched at 900 — there is nothing to re-scale, and any cap written
+     here would have to sit above 48.6px (its value at 900px) to avoid a jump.
+     The 520 query then caps at exactly 40px, which is what the base clamp is
+     handing over at that width, so the ramp only ever descends: 74 → 40 → 29. */
+  @media (max-width: 900px) {
+    .tc-ar-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 34px;
+    }
+    /* Full width now, so the sentence takes a measure instead of a column. */
+    .tc-ar-h1 { max-width: 20ch; }
+    .tc-arrival--flat .tc-ar-copy { max-width: none; }
+    .tc-ar-lede { margin-bottom: 28px; }
+    /* Stacked, the plate is now full width, so 520px of it would be a wall
+       between the copy and the row below. */
+    .tc-ar-shot { height: clamp(360px, 52vw, 460px); }
+  }
+
+  @media (max-width: 520px) {
+    /* Nothing may push the page sideways at 360px: long unbroken strings break
+       anywhere, and a long uppercase label wraps inside a full-width button
+       instead of widening the row. */
+    .tc-arrival { padding-top: 46px; }
+    .tc-ar-grid { gap: 28px; }
+    .tc-ar-kick { overflow-wrap: anywhere; }
+    .tc-ar-h1 { font-size: clamp(29px, 8.6vw, 40px); max-width: none; overflow-wrap: anywhere; }
+    .tc-ar-lede { max-width: none; overflow-wrap: anywhere; margin-bottom: 24px; }
+    .tc-ar-ctas { gap: 10px; }
+    /* white-space:normal lets a label wrap at its spaces; overflow-wrap covers
+       the label that HAS none. Without the second declaration one long unbroken
+       word runs straight out of the button box at 360px — the wrapper's
+       overflow-x:hidden suppresses the scrollbar and the label is clipped
+       instead, which is the same bug wearing a different coat. */
+    .tc-ar-ctas .btn { flex: 1 1 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+    /* Re-join the wrapper's 520 button padding: without this the rule above
+       keeps the secondary at 28px while the primary drops to 22px. */
+    .tc-ar-line { padding-left: 22px; padding-right: 22px; }
+    /* The CAP meets the 360px floor of the query above rather than clearing it:
+       at a larger cap the photograph would get TALLER as the viewport crossed
+       520px downward, which is a plate growing on a smaller screen. */
+    .tc-ar-shot { height: clamp(300px, 78vw, 360px); }
+  }
+</style>

@@ -1,0 +1,573 @@
+---
+/**
+ * foodcraft / CtaBandBM — "Tahanan Cafe" CLOSING CTA BAND
+ * (design element data-component="CTA-BAND").
+ *
+ * ROLE. The last ask on the page, and the only place in this white design that
+ * turns the ground over: a two-column walnut-ink band running the full width of
+ * the viewport, carrying a tan eyebrow, the largest Libre Caslon Text line after
+ * the h1, one sentence, and exactly two ways to act — the owner's own CTA as a
+ * white paper button and the owner's own phone number in the outlined secondary
+ * — with a photograph filling the other half, flush to the band's top, bottom
+ * and outer edge.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * the element carrying data-component="CTA-BAND" in
+ * "Tahanan Cafe Landing.dc.html":
+ *
+ *   section     background #241B14                        → --band, which is
+ *               what `band-dark` already paints. This band is the design's ONE
+ *               dark ground (PageBM says so in as many words), so unlike the
+ *               previous template in this family there is no deeper shade to
+ *               reach for and this file states NO ground of its own.
+ *   container   max-width 1160px, centred, NO padding of its own
+ *               (NOT .wrap — see THE CONTAINER below)
+ *   grid        minmax(0,1.05fr) minmax(0,.95fr); align-items:stretch
+ *   copy cell   padding 82px 44px 82px 30px;
+ *               display:flex; flex-direction:column; justify-content:center
+ *   eyebrow     10px / .34em caps / #C9A57C / 700          → .kick on
+ *               .band-dark, which is #C9A57C (--band-kick) AND drops the
+ *               underline. The design draws this one eyebrow WITHOUT its rule
+ *               — a --line-2 hairline is invisible on #241B14 — and that is
+ *               exactly the flip the wrapper's band rule performs. Restating
+ *               the eyebrow here would put the underline back.
+ *   h2          Libre Caslon Text 400, clamp(32px,4.4vw,60px), lh 1.1,
+ *               margin .26em 0 .3em, #FFFFFF, and NO max-width
+ *                                                          → .h2 on .band-dark
+ *   sub         17px / 1.78 / #D6CCC2, margin 0 0 30px, max-width 40ch
+ *                                                          → --band-body
+ *   actions     flex, gap 12px, wrap, align-items center
+ *   primary     btnCream — #FFFFFF fill, #4A3320 label, 12.5px/.14em/700 caps,
+ *               16px 30px, 2px radius                      → .btn.btn--paper,
+ *               character for character, with ZERO extra declarations
+ *   secondary   1px rgba(255,255,255,.42), #FFFFFF label, same type,
+ *               16px 28px, 2px radius        → .band-dark .btn--line, which
+ *               differs in ONE metric: 28px of side padding against the base
+ *               30px. That is the only button declaration in this file.
+ *   photo cell  position:relative; min-height 420px; background #F7F2EC
+ *                                                          → .plate + --well
+ *
+ * NO LITERAL HEX APPEARS IN THIS FILE (R1). Every colour the design names
+ * already has a wrapper token holding the same value: #241B14 is --band,
+ * #C9A57C is --band-kick, #FFFFFF is --on-band (and --paper on the cream
+ * button), #D6CCC2 is --band-body, #4A3320 is --ink-deep, #F7F2EC is --well,
+ * rgba(255,255,255,.42) is rgba(var(--paper-rgb),.42), 1160px is --maxw, 2px is
+ * --r. Every one of those arrives through a primitive rather than being
+ * restated, which is why the style block below is short.
+ *
+ * SHARP, NOT SOFT. There is no pill in this design and none here: the buttons
+ * take --r (2px) from the shared .btn, and the flush photo half takes 0 because
+ * a half that runs to the band's edge has no corner to round.
+ *
+ * ── EDITABLE HOOKS (every one DECLARED in
+ *    components/editor/genericContentSchema.ts, so each data-field below is a
+ *    hook a real sidebar input owns and focuses) ────────────────────────────
+ *   ctaBand.tag        — the tan eyebrow (.kick)
+ *   ctaBand.headline   — the h2, bound with set:html so an owner's own <em>
+ *                        takes the template's signature italic anywhere inside
+ *                        THEIR sentence (on this band that italic is TAN, not
+ *                        walnut — the wrapper owns that rule, see R3 below)
+ *   ctaBand.sub        — the one sentence under it
+ *   ctaBand.cta.text + data-href-field ctaBand.cta.href — the cream action
+ *   location.phone     — the outlined action (data-field ONLY, see THE PHONE)
+ *   ctaBand.image      — data-image-field, the right half's photograph
+ * Nothing else. A data-field on any other path is a dead hook that no sidebar
+ * input owns and that focuses nothing, so no other path is written here.
+ *
+ * ── DERIVED, never stored and never editable ────────────────────────────────
+ *   · the CTA's href, resolved through onPage() against the ids PageBM actually
+ *     mounts, and its target/rel pair — one conditional per attribute, so
+ *     neither is ever emitted twice
+ *   · the tel: href, built from the phone's OWN digits
+ *   · whether the band is two columns or one — see THE EMPTY HALF
+ *
+ * ── NOT SUPPLIED BY THIS COMPONENT (R2) ─────────────────────────────────────
+ * NOT ONE VISIBLE WORD. The design's demo strings — "See you soon", "Come by,
+ * or send your order.", "Message us your order and a pickup time…" and the
+ * slot's "Drop a warm interior photo" — are the DESIGNER filling in their own
+ * template. A real business gets a closing band that says only what that
+ * business said, so every guard sits OUTSIDE its tag: no tan eyebrow over
+ * nothing, no headline above an empty column, no action row with no actions in
+ * it, no hairline under a row that is not there, and no cream rectangle
+ * standing in for a photograph nobody uploaded.
+ *
+ * ── NOT RENDERED, deliberately ──────────────────────────────────────────────
+ *   · No id on the <section>. This page's anchors are menu / about / gallery /
+ *     visit / faq / main; the design gives CTA-BAND none of them and no nav link
+ *     points at it, so inventing one would add a target nothing aims for. A
+ *     derived '#book' resolves to '#main' through ANCHOR_ALIAS below.
+ *   · No aria-label on the <section>. Naming it would make it a landmark
+ *     announced with a word I wrote; the h2 already titles the region.
+ *   · No target="_blank" on the cream action. The design hard-codes one because
+ *     its demo href is an external messaging URL, but here the same button
+ *     resolves to '#visit' on a stock build, and opening an in-page anchor in a
+ *     new tab is a bug. It is emitted for http(s) ONLY.
+ *   · A star row, a rating, a count, or any other figure. Nothing in this band
+ *     is a claim, so there is nothing here to fabricate and no numeric field in
+ *     the ctaBand group to draw one from honestly.
+ *   · .reveal on the PHOTOGRAPH. The copy stack reveals like the rest of the
+ *     family, but the photo is a full-height ground: translating it 14px would
+ *     slide a sliver of --band out from under a cream-grounded half on every
+ *     scroll-in.
+ *   · The design's `margin-top:84px`. In that file every section is
+ *     padding-top-only with a bare bottom, so the band owns the gap above it.
+ *     PageBM instead declares a symmetric shared `section` rhythm of
+ *     clamp(52px,7vw,84px), and the section that precedes this one — FaqBM —
+ *     ships with that shared padding intact, so its own bottom padding already
+ *     IS that 84px. Adding the design's margin on top would open a ~168px hole
+ *     above the band. FOR REVIEW: this is the one assumption in the file that
+ *     depends on a sibling. If FaqBM turns out to zero its bottom padding (to
+ *     keep some bare-bottom treatment of its own), this band must take the
+ *     84px margin back or the two will collide.
+ *
+ * ── THE CONTAINER ───────────────────────────────────────────────────────────
+ * The grid is NOT wrapped in .wrap, which is the one place this section departs
+ * from the family's habit. .wrap is min(--maxw, 92vw) — the family's stand-in
+ * for the "1160px box with 30px of padding" every OTHER section in this design
+ * has. This band's container is the one that carries NO padding: the design
+ * moved that 30px inside the copy cell precisely so the photograph could run to
+ * the container's edge. Wrapping it would apply the page gutter twice — once as
+ * 4vw of walnut ink down both edges of the band, again as the copy cell's 30px
+ * — which stops the picture 4vw short of the edge on every viewport under
+ * ~1261px and pushes the closing copy 30px right of every other section's text.
+ * So the container states the design's own two values (--maxw, centred).
+ * The wrapper's shared `section` padding is zeroed here for the same reason on
+ * the other axis: the design puts ALL of this band's vertical inset inside the
+ * copy cell (82px block) so the photograph can reach the band's top and bottom
+ * edges. Keeping the shared padding would float the picture in an 84px walnut
+ * frame and lose the flush half that is the whole point of the layout.
+ *
+ * ── SECTION GATE (R5) ───────────────────────────────────────────────────────
+ * The band renders when it has BODY content: an action (the CTA label or a
+ * phone number), the sentence, or the photograph. It deliberately does NOT
+ * count the eyebrow or the headline — lib/derive-content-defaults.ts fills
+ * ctaBand.headline with "Ready when you are." on EVERY site, so a gate that
+ * counted it would be a no-op that ships a headline with nothing under it.
+ * derive also fills ctaBand.cta.text ('Get in touch') unconditionally, which is
+ * why the band does in practice render on a stock build — but that is a real,
+ * working action pointed at a real id on this page, not a decoration, and an
+ * owner who clears it and supplies no phone, no sub and no photo drops the
+ * whole <section> from the document rather than being left with a lone line of
+ * type on a walnut slab. (derive fills neither ctaBand.tag, ctaBand.sub nor
+ * ctaBand.image, so all three are genuinely absent until an owner types them.)
+ *
+ * ── THE EMPTY HALF ──────────────────────────────────────────────────────────
+ * The design is two columns because the designer filled both. Either half can
+ * be empty on a real site, so each cell is guarded independently and the grid
+ * drops to a single 1fr track whenever only one of them exists. Without that,
+ * an owner with no photograph would get their closing ask squeezed into the
+ * left 52% of the band with a bare cream rectangle beside it — a layout the
+ * design never draws, and one that reads as a broken image rather than as a
+ * deliberate surface, because on THIS band the empty plate is CREAM (--well,
+ * the design's own #F7F2EC) against walnut ink. In the one-column case the copy
+ * cell's right padding comes back to the design's own 30px page gutter, so the
+ * text is not left visibly off-centre by the 44px that only ever existed to
+ * hold it off the photograph.
+ *
+ * ── THE PHONE ───────────────────────────────────────────────────────────────
+ * THE PHONE ANCHOR CARRIES data-field ONLY — no data-href-field. Its href is
+ * DERIVED from the field's own value, so a data-href-field there would write
+ * "tel:+63…" back into the phone field on the first inline edit; V3 also bails
+ * out of inline editing on tel:/mailto: anchors and on anything carrying
+ * data-href-field. This is the family's single documented exception to "every
+ * anchor gets both".
+ *
+ * ITS READ CHAIN is content.location.phone || content.contact.phone, which is
+ * exactly what the sidebar's Location → Phone input reads (the schema declares
+ * location.phone with fallbackPaths ['contact.phone'] and writes back to the
+ * primary), so the rendered number and the field this hook opens are always the
+ * same value. layout.contact.phone — the display-formatted mirror the builder
+ * derives — is deliberately NOT preferred: astro-builder formats
+ * content.contact.phone and ignores location.phone entirely, so on a site whose
+ * owner typed a number into Location it would render a DIFFERENT number from
+ * the one the hook edits.
+ *
+ * WHY A location.* HOOK IS SAFE HERE. editorBridge resolves a Blocks toggle to
+ * the ONE section holding the most hooks of that prefix and hides only that
+ * node. This page's location.* census is LocationBM (tag, headline, address,
+ * hours, phone, lat, lng, directions…), FooterBM and this band (1), so "hide
+ * LOCATION" resolves to the Location section and keeps resolving there. The
+ * known edge is a TIE on a preview where visibility.locationBlock is already
+ * false AND the footer holds only one location.* hook; that is preview-only and
+ * dropping the hook would cost the number its inline edit on every site to
+ * spare it, so the hook stays.
+ *
+ * ── ACCESSIBILITY (R9) ──────────────────────────────────────────────────────
+ * The photograph is aria-hidden, with a LITERAL unconditional attribute and no
+ * conditional aria-* beside it to collide with (a literal aria-hidden="true"
+ * sitting next to a conditional one is a duplicated attribute; the literal wins
+ * and hides content that should be announced). role="img" is NOT emitted: there
+ * is no owner-typed caption anywhere in the ctaBand group, so the only
+ * accessible name available would be a literal I invented or the business name
+ * the header has already announced. R9 says hide it rather than announce it as
+ * something, so it is hidden — and the .cap primitive is likewise not drawn,
+ * because there is no field to fill it from.
+ * The tel: link's accessible name is the owner's own number and nothing else —
+ * no "Call …" prefix I wrote. The cream action's name is the owner's own label.
+ * FOCUS: the wrapper's band focus ring — a --band outline inside a --band-kick
+ * halo — applies here unchanged and is not restated.
+ *
+ * ── CONTRAST, on this band's ground (#241B14), from PageBM's own measured
+ *    table so no figure here is re-derived ─────────────────────────────────
+ *   --on-band headline / outlined label      14.9:1
+ *   --band-body sub-line                     10.3:1
+ *   --band-kick eyebrow / the italic <em>      7.62:1
+ *   --ink-deep label on the cream fill        11.6:1 (the label sits on white,
+ *                                            not on the band, so the dark
+ *                                            ground does not change it)
+ * Every one of those is above AA at any size.
+ *
+ * ── CLASS-NAME LAW (R4, not inferable, do not "tidy") ───────────────────────
+ * The section is .tcend, NEVER .cta-band: buildOverrideCss emits
+ * `.cta-band .btn { color: <on-ink> !important }` for every state and would
+ * strand both labels here. Buttons are .btn + .btn--paper / .btn--line (double
+ * dash) for the same reason. Never .btn-primary / .btn-ghost / .btn-yellow /
+ * .btn-light / .nav-cta / .nav-right / .trust / .testi in this family, and
+ * never `.hero` on a <section>.
+ * The prefix is `tcend-`, this template's own and shared with nothing: the BL
+ * sibling's `kc-` names were NOT carried over, which is the mistake an audit had
+ * to unpick on the template before it.
+ *
+ * ── R3 ──────────────────────────────────────────────────────────────────────
+ * One scoped <style> block, no is:global. The headline is bound with set:html,
+ * and elements created that way cannot be reached by a scoped rule — which is
+ * fine, because the <em> inside it needs no rule from this file: PageBM's own
+ * `:where(.band-dark) .h2 em { color: var(--band-kick) }` lives in its is:global
+ * block and already turns the signature italic tan on this ground.
+ * SPECIFICITY: PageBM wraps its primitives in :where(), so those rules score
+ * (0,1,1) — the `html[data-page="BM"]` prefix and nothing from the :where().
+ * An Astro-scoped rule here scores (0,2,0) and therefore wins even INSIDE the
+ * wrapper's own media queries, which is why the secondary button's side padding
+ * is restated at 520px rather than left to inherit the wrapper's narrow pass.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// ── ANCHOR GUARD (R7) ──────────────────────────────────────────────────────
+// Copied from the BL sibling and pointed at THIS page. lib/derive-content-
+// defaults.ts hard-codes ctaBand.cta.href = '#visit'; this page DOES draw
+// '#visit', so on a stock build the fallback never fires — but an owner (or a
+// future derive) can type any of the aliases below, so resolve every in-page
+// href against what PageBM ACTUALLY mounts: keep it when the id exists, remap it
+// when this design carries the same block under another name, otherwise fall
+// back to the target the design was built around. Off-page hrefs — tel:,
+// mailto:, http(s) and anything else without a leading '#' — pass through
+// untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBM and with the copies in
+// the other BM sections. There is no shared import by design (a section
+// component in this repo receives only `content` + `layout`); the copies must
+// stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+// This design renames six derived targets: the services block IS the menu
+// (rooms lands there too), '#about' is the café's own story (host and why are
+// the same block here), '#work' is the photo wall, and '#location' / '#contact'
+// both mean the visit block — address, map and opening hours. A booking link has
+// no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const c = (content as any) || {};
+const cta = c.ctaBand || {};
+
+// `||`, never `??`: an owner who CLEARS a box leaves '' behind, and the sidebar
+// treats '' as empty too. With `??` the empty string would count as a value and
+// the element would render blank instead of being dropped.
+const tag = String(cta.tag || '').trim();
+const headline = String(cta.headline || '').trim();
+const sub = String(cta.sub || '').trim();
+
+// The hook is always ctaBand.image, the path the sidebar's image picker writes.
+// The quote escape keeps a filename with an apostrophe from closing the url('')
+// early and killing the whole declaration.
+const bandImage = String(cta.image || '').trim();
+const bandImageCss = bandImage.replace(/'/g, '%27');
+
+const ctaText = String(cta.cta?.text || '').trim();
+// '#visit' is the fallback because that is where this design puts the address,
+// the map and the hours — the thing a closing ask points at.
+const ctaHref = onPage(cta.cta?.href, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// See THE PHONE'S READ CHAIN in the doc comment.
+const phone = String(c.location?.phone || c.contact?.phone || '').trim();
+const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : '';
+
+const hasActions = Boolean(ctaText || phone);
+const hasCopy = Boolean(tag || headline || sub || hasActions);
+// SECTION GATE (R5) — body content only: an action, the sentence, or the photo.
+// Neither the eyebrow nor the headline counts; see the doc comment.
+const hasBand = Boolean(hasActions || sub || bandImage);
+// One column whenever a half is missing; see THE EMPTY HALF.
+const solo = !(hasCopy && bandImage);
+---
+{hasBand && (
+<section class="tcend band-dark">
+  <div class:list={['tcend-grid', solo && 'solo']}>
+    {hasCopy && (
+      <div class="tcend-copy reveal">
+        {/* .kick ALONE — the eyebrow's colour, size, tracking and the band's
+            underline-drop all arrive from the wrapper. Restating the eyebrow
+            here is how a section loses the design's signature mark. */}
+        {tag && <span class="kick tcend-kick" data-field="ctaBand.tag">{tag}</span>}
+        {/* set:html so the owner's own <em> lands where THEY put it in THEIR
+            sentence; the tan italic is PageBM's global band rule (R3). */}
+        {headline && <h2 class="h2 tcend-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="tcend-sub" data-field="ctaBand.sub">{sub}</p>}
+        {hasActions && (
+          <div class="tcend-acts">
+            {ctaText && (
+              <a
+                class="btn btn--paper"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="ctaBand.cta.text"
+                data-href-field="ctaBand.cta.href"
+              >{ctaText}</a>
+            )}
+            {/* data-field ONLY — no data-href-field. See THE PHONE. */}
+            {phone && (
+              <a class="btn btn--line tcend-tel" href={telHref} data-field="location.phone">{phone}</a>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+    {/* No upload ⇒ no cell at all, rather than a cream rectangle standing in for
+        a picture nobody supplied. The ground, the clip and the positioning
+        context all arrive with .plate; this file states only what the design
+        changes about them (flush corners and a 420px floor). */}
+    {bandImage && (
+      <div class="plate tcend-shot">
+        <div
+          class="ph"
+          data-image-field="ctaBand.image"
+          style={`background-image:url('${bandImageCss}');`}
+          aria-hidden="true"
+        ></div>
+      </div>
+    )}
+  </div>
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBM's token vocabulary
+     (--band --band-kick --band-body --on-band --paper --paper-rgb --ink-deep
+     --well --maxw --r) and from its shared primitives (.kick .h2 .plate .ph
+     .btn .btn--paper .btn--line .band-dark .reveal). There is no literal hex in
+     this file.
+
+     (Never write a literal end-style-tag inside this block, comments included —
+      it is a raw-text element, so the parser would end the stylesheet there and
+      silently truncate the rest of the file.) */
+
+  /* The walnut-ink ground, the tan underline-less eyebrow, the white .h2 and
+     both button treatments all arrive from the wrapper's one `band-dark` class,
+     and this file must not restate any of them. Unlike the previous template in
+     this family there is no deeper band shade to reach for: PageBM says the
+     closing band is the design's ONLY dark ground, and --band already holds the
+     design's #241B14. So the section overrides exactly ONE thing — the shared
+     vertical padding, to zero — because the design's whole inset lives inside
+     the copy cell so the photograph can reach the band's edges.
+     No margin-top; the reasoning is in the frontmatter. */
+  .tcend { padding: 0; }
+
+  /* THE CONTAINER, exactly as the design draws it: capped at --maxw (the
+     wrapper's token, holding the design's own 1160px, so no literal measure is
+     written here), centred, and carrying NO gutter of its own — that is what
+     lets the photograph run to the band's edge below the cap, which is the whole
+     point of a flush half. The 30px page gutter lives on the copy cell.
+     Deliberately NOT .wrap; the reasoning is in the frontmatter. */
+  .tcend-grid {
+    width: 100%;
+    max-width: var(--maxw);
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+    align-items: stretch;
+  }
+  /* One half missing ⇒ one track. See THE EMPTY HALF in the frontmatter. */
+  .tcend-grid.solo { grid-template-columns: minmax(0, 1fr); }
+
+  /* Design: padding 82px 44px 82px 30px, flex column, centred. min-width:0 so a
+     long unbroken word inside it can never widen the track (R8). */
+  .tcend-copy {
+    padding: 82px 44px 82px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+  /* The 44px only ever existed to hold the copy off the photograph. Two classes,
+     so this scores above the plain `.tcend-copy` shorthand and survives into the
+     media queries — which is why the 520 pass restates it rather than trusting
+     its own shorthand to land. */
+  .solo .tcend-copy { padding-right: 30px; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .34em tracking: one
+     unbroken word would otherwise be the widest thing on the page (R8). Its
+     colour and its dropped underline are the wrapper's; only the wrap is here.
+     align-self keeps the inline-block from stretching across a flex column, so
+     the eyebrow stays as wide as its own text. */
+  .tcend-kick {
+    align-self: flex-start;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: Libre Caslon Text clamp(32px,4.4vw,60px)/1.1, margin .26em 0 .3em —
+     the biggest line on the page after the h1. The design gives this headline no
+     measure cap, so the wrapper's `.h2 { max-width: 24ch }` is released and the
+     copy column IS the measure. Face, weight, colour and the tan italic <em> all
+     still come from .h2 + .band-dark. */
+  .tcend-h {
+    font-size: clamp(32px, 4.4vw, 60px);
+    line-height: 1.1;
+    margin: .26em 0 .3em;
+    max-width: none;
+  }
+
+  /* Design: 17px / 1.78 / #D6CCC2, margin 0 0 30px, max-width 40ch. Written out
+     rather than borrowing .lede or .body: on a band those are --band-body
+     already, but at a different size, leading and measure, so every value would
+     have been overridden anyway. Qualified by its own class so it beats the
+     wrapper's (0,1,1) bare-paragraph margin reset. */
+  .tcend-sub {
+    font-size: 17px;
+    line-height: 1.78;
+    color: var(--band-body);
+    margin: 0 0 30px;
+    max-width: 40ch;
+  }
+
+  /* Design: flex, gap 12px, wrap, align-items center. */
+  .tcend-acts {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  /* Design: the outlined action is the shared band button at 28px of side
+     padding rather than the base 30px — the ONLY metric in which it differs from
+     `.band-dark .btn--line`. This is the one button declaration in the file; the
+     cream primary needs none at all, because btnCream and .btn--paper are the
+     same declaration list. */
+  .tcend-tel {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  /* THE PHOTO HALF. Design: position:relative, min-height 420px, ground #F7F2EC,
+     and the slot filling it. .plate brings the positioning context, the clip,
+     the isolation AND that exact ground (--well is #F7F2EC), so only the two
+     things the design changes are stated: flush corners — this is a flush half,
+     not a framed plate — and the 420px floor that keeps the band tall even under
+     short copy. align-items:stretch on the grid is what makes it match the
+     copy's height. The .ph primitive already carries cover / center / no-repeat
+     and the same ground, and the inline background-image always wins over its
+     empty-state washes, so nothing about .ph is restated here. */
+  .tcend-shot {
+    min-height: 420px;
+    border-radius: 0;
+  }
+
+  /* ── R8 · this section's OWN grid ──────────────────────────────────────────
+     The two columns collapse at 900px, where 1.05fr of the container has run out
+     of measure for a 60px display line. DOM order is kept (copy, then photo) so
+     the reading order and the visual order stay the same — no `order` juggling.
+     The photo's 420px floor exists to match a two-column copy cell; stacked and
+     full-width it is a standalone band photograph, and 420px of it on a phone is
+     a crop nobody framed, so the floor comes down with the layout.
+
+     CLAMP CONTINUITY, checked at each boundary rather than assumed — a value
+     that is FLOORED in one query while the next query's CAP sits above that
+     floor is how type and inset GROW as the viewport narrows. Every clamp in
+     this file is traced at both boundaries, headline and copy inset alike:
+
+       headline
+         at 900px  base gives min(max(32, 39.6), 60) = 39.6px;
+                   this query's cap is 40px and 4.4vw = 39.6px → 39.6px. Equal.
+         at 520px  this query gives min(max(28, 22.9), 40) = 28px;
+                   the 520 query's cap is 28px → 28px. Equal.
+       copy cell's block padding
+         at 900px  base is a flat 82px; this query's cap is 78px and
+                   9vw = 81px → 78px. Steps DOWN, never up.
+         at 520px  this query is already on its FLOOR — 9vw = 46.8px, so
+                   min(max(54, 46.8), 78) = 54px — which is why the 520 query
+                   is capped at 54px and not at the 62px a fresh reading of
+                   "smaller than 78" would suggest. 12vw = 62.4px there, so the
+                   cap is what lands: 54px → 54px. Equal.
+     Every step is continuous and every step below them shrinks. */
+  @media (max-width: 900px) {
+    .tcend-grid { grid-template-columns: minmax(0, 1fr); }
+    .tcend-copy { padding: clamp(54px, 9vw, 78px) 30px; }
+    .tcend-h { font-size: clamp(28px, 4.4vw, 40px); }
+    .tcend-sub { font-size: 16.5px; max-width: none; }
+    .tcend-shot { min-height: 320px; }
+  }
+
+  /* Nothing may push the page sideways at 360px: long unbroken strings break
+     anywhere, and a long uppercase label wraps inside a full-width button
+     instead of widening the row. The design's 30px gutter costs a sixth of the
+     measure on the narrowest phones, so it comes in to 24px here. */
+  @media (max-width: 520px) {
+    /* Capped at 54px, NOT 62px: the 900 query is already sitting on its 54px
+       floor by the time the viewport reaches 520px, so a 62px cap here would
+       make the copy inset GROW by 8px as the phone got narrower. See CLAMP
+       CONTINUITY above. */
+    .tcend-copy { padding: clamp(46px, 12vw, 54px) 24px; }
+    /* Restated, not inherited: `.solo .tcend-copy` is a class heavier than the
+       shorthand above it, so without this a photoless band on a phone keeps 30px
+       on the right against 24px on the left and sits visibly off-centre. */
+    .solo .tcend-copy { padding-right: 24px; }
+    .tcend-h {
+      font-size: clamp(24px, 6.4vw, 28px);
+      overflow-wrap: anywhere;
+    }
+    .tcend-sub {
+      font-size: 16px;
+      margin-bottom: 26px;
+      overflow-wrap: anywhere;
+    }
+    .tcend-acts {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 11px;
+    }
+    .tcend-acts .btn {
+      width: 100%;
+      white-space: normal;
+      text-align: center;
+      /* The label is owner-typed and set in tracked caps: `white-space: normal`
+         only lets it wrap BETWEEN words, so one long unbroken word still needs
+         a break of its own or it spills past a 100%-wide button on a 360px
+         screen (R8 pairs the two). */
+      overflow-wrap: anywhere;
+    }
+    /* Re-join the wrapper's own 520 pass. A scoped rule here scores (0,2,0)
+       against the wrapper's (0,1,1) EVEN INSIDE the wrapper's media query, so
+       without this the secondary would keep its 28px sides while the cream
+       primary drops to the shared 22px. */
+    .tcend-tel {
+      padding-left: 22px;
+      padding-right: 22px;
+    }
+    .tcend-shot { min-height: 240px; }
+  }
+</style>

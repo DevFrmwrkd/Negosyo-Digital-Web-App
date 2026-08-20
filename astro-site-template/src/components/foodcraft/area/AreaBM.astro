@@ -1,0 +1,395 @@
+---
+/**
+ * foodcraft / AreaBM — "Tahanan Cafe" DELIVERY COVERAGE
+ * (design element data-component="SERVICE-AREA").
+ *
+ * ROLE: the page's one coverage panel. A neighbourhood café that runs coffee
+ * and pastry out to the streets around it sells that on a plain list of places
+ * and — where the owner gave one — how long each run takes. In THIS design the
+ * panel is not a tint and not a band: it is the white ground itself, boxed by a
+ * single hairline at the design's 2px corner. The grid inside it is drawn with
+ * BORDERS, not gaps — the rule under each row IS the separation, which is why
+ * the row gap is zero.
+ *
+ * DESIGN VALUES, lifted verbatim from "Tahanan Cafe Landing.dc.html". Not one
+ * hex is written in this file (R1); each is named by the token PageBM declares
+ * at the same value.
+ *   section  padding 62px 30px 0 — the 30px is the design's page gutter, which
+ *            is .wrap here, and the 0 bottom is because every sibling section in
+ *            this design is padding-top-only. PageBM's shared section rhythm
+ *            supplies the trailing gap, so only the 62px ceiling is taken.
+ *   panel    NO fill (the white ground shows through) · 1px #EDE6DF all round
+ *            · radius 2px · padding 40px 38px      → --line / --r
+ *   head     flex · align-items flex-end · space-between · gap 26px ·
+ *            flex-wrap wrap · margin-bottom 24px
+ *   eyebrow  10px / .34em caps / #7A4E2D / 700 ON a 1px #E0D3C6 underline with
+ *            9px of padding — i.e. character-for-character the shared .kick
+ *            primitive, so it is NOT restated here. Restating it is how a
+ *            section loses this design's most recognisable mark.
+ *   h2       Libre Caslon Text 400 · clamp(23px,2.9vw,36px) · 1.18 ·
+ *            margin .26em 0 0 · #241B14            → .h2 + .dz-h2 / --ink
+ *   note     14.5px / 1.75 / #5C5147 / max-width 34ch / margin 0 → --ink-soft
+ *   grid     repeat(3, minmax(0,1fr)) · gap 0 34px (ZERO row gap on purpose)
+ *   row      flex · baseline · gap 12px · padding 12px 0 · border-bottom 1px
+ *            #F2ECE5                               → .rowrule + --tint-2
+ *   place    14.5px / #241B14                      → --ink
+ *   time     margin-left auto · 13px / 600 / #7A4E2D / nowrap → --accent
+ *
+ * THE ROW HAIRLINE IS --tint-2, AND THAT IS AN EXACT MATCH, not a judgement.
+ * The design draws the panel's outer box in #EDE6DF (--line) and the rules
+ * INSIDE it one step lighter at #F2ECE5, so the frame reads as structure and
+ * the row rules read as ledger ruling. PageBM declares #F2ECE5 as --tint-2, so
+ * the row overrides exactly one property of the shared .rowrule — its
+ * border-bottom-colour — and inherits every metric (flex, baseline, gap 12px,
+ * padding 12px 0, min-width 0), which is character-for-character this design's
+ * row.
+ *
+ * WHAT THAT PAIR DOES UNDER AN ADMIN COLOUR PICK — stated correctly, because an
+ * earlier draft of this comment had it backwards. The two weights do NOT move
+ * together. buildOverrideCss rewrites --line to palette.line with !important and
+ * does not touch --tint-2 at all, so an EXPLICIT scheme repaints the frame and
+ * leaves the row rules at the design's #F2ECE5; on a dark scheme the inner
+ * ruling can end up the BRIGHTER of the two. That is accepted rather than
+ * worked around: R1 says map each hex to the token declared at the same value,
+ * and re-picking the row colour for whichever token happens to survive the
+ * engine is the palette re-derivation that shipped an earlier template in this
+ * catalogue looking like a different design. The design's own scheme is the
+ * shipped case, and on it the relationship is exact.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
+ * group "area" — a data-field on any other path is a dead hook no sidebar input
+ * owns)
+ *   area.tag                — the eyebrow
+ *   area.headline           — fed with set:html so an owner can place this
+ *                             design's signature italic-walnut emphasis
+ *                             anywhere inside their OWN sentence
+ *   area.body               — the note beside the headline
+ *   area.rows.${i}.place    — the primary list: place + delivery time
+ *   area.rows.${i}.time
+ *   area.places.${i}        — the FALLBACK list, a list of plain STRINGS.
+ *                             Read only when area.rows has no usable row;
+ *                             rendered place-only, with no time element emitted
+ *                             at all rather than an empty walnut slot.
+ *
+ * DERIVED / READ BUT NOT HOOKED: area.sub. area.body is the canonical path the
+ * schema owns and the only one hooked. area.sub is read as a fallback so a site
+ * that stored a paragraph there before the schema settled still shows it; the
+ * first edit writes area.body, which then wins, so the two can never disagree
+ * on screen. Hooking area.sub would emit a dead hook — v3 gates inline editing
+ * on isSchemaEditablePath and the schema does not declare it.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The
+ * design's "Delivery" / "Where we deliver", its "Same-day coffee and pastry
+ * runs nearby. Office catering needs a day's notice." and its nine Metro Manila
+ * districts are the DESIGNER filling in their own template. A same-day promise,
+ * a notice period and a 25-minute run to Quezon Ave are operational commitments
+ * for a business nobody has spoken to, so none of it ships. A row carrying a
+ * time but NO place is dropped whole: a lone walnut "20 min" asserts a delivery
+ * to nowhere. A row with a place and no time renders the place alone and the
+ * time element is not emitted at all. Every guard sits OUTSIDE its tag, so an
+ * empty value removes the ELEMENT — never a bare hairline under a row that is
+ * not there, never a heading over nothing. The head is guarded at BOTH levels:
+ * the whole head only exists when there is a tag, a headline or a note (else
+ * its 24px bottom margin opens a hole above the list), and its left half only
+ * exists when there is a tag or a headline (an empty flex item under
+ * space-between shoves the note to the far edge of the panel).
+ *
+ * SECTION GATE (R5). lib/derive-content-defaults.ts hard-codes area.tag to
+ * 'Service area' and, for any site with a city, area.headline to `Serving
+ * ${city}` AND area.places to `[city]` — that is essentially every site we
+ * ship. So the gate counts BODY content only, and discounts that one derived
+ * entry:
+ *   · any usable area.rows row (the schema ships area.rows EMPTY, so a filled
+ *     one can only have come from a person), OR
+ *   · TWO OR MORE area.places entries (the owner named a second place), OR
+ *   · an owner-written area.body.
+ * Counting the tag or the headline would print this panel on nearly every build
+ * with a single row echoing the café's own city — the address again, dressed up
+ * as a delivery zone.
+ *
+ * KNOWN EDGE, flagged rather than hidden: when the gate opens on area.body
+ * alone and area.places is still the derived `[city]`, that one city row is
+ * printed. It is true (it is where the café is) and it matches the shipped
+ * behaviour of the rest of the catalogue, so consistency wins — but it is the
+ * one place a derived value reaches this page, and requiring two places before
+ * the list draws at all is a one-line change.
+ *
+ * LIST INDEXES (R6). data-field always carries the ORIGINAL array index, so
+ * dropping a blank row 2 cannot misdirect an edit of row 3 into row 2. This
+ * section has no decorative numeral, so no display index is needed.
+ *
+ * SHAPE TOLERANCE. area.rows is a list of objects; a row that arrived as a
+ * plain string is read as its place and still hooked at area.rows.${i}.place,
+ * so the first edit heals the row onto the schema key instead of writing a
+ * second shape.
+ *
+ * NOT RENDERED, deliberately — read these before filing an oversight:
+ *   - NO ANCHOR-REMAP HELPER AND NO PAGE_ANCHORS SET (R7). The design gives
+ *     SERVICE-AREA no id and no href of any kind, and nothing in this file
+ *     emits a link, so an onPage() helper here would be dead code with no call
+ *     site — the same omission the BL sibling makes for the same reason. The
+ *     page's ids (menu / about / gallery / visit / faq / main) are owned by the
+ *     sections that actually link to them.
+ *   - No button. The design puts no action in this panel, and inventing a
+ *     "Order delivery" would be both fabricated copy (R2) and a label this
+ *     business never wrote.
+ *   - No star row. There is no rating anywhere in this section's data, and R2's
+ *     rule stands: stars are drawn only from a numeric rating field.
+ *   - No row COUNT asserted in markup or copy. Three tracks because the design
+ *     is three tracks; four or eleven owner-typed places lay out on the same
+ *     tracks without leaving a hole.
+ *   - No map, no radius, no distance unit, no delivery fee, no minimum order.
+ *     We have no such data and every one of them is a commercial claim.
+ *
+ * ACCESSIBILITY (R9). No image and no .plate here, so no role="img" anywhere.
+ * Nothing in this section is decorative — the place and the time are both
+ * content and both announced — so nothing is aria-hidden, and no element
+ * carries a literal attribute beside a conditional one. The list is a real
+ * <ul> AND carries role="list": `list-style: none` is exactly what makes
+ * Safari/VoiceOver drop list semantics, so without the role the count never
+ * reaches assistive tech.
+ *
+ * CONTRAST (WCAG 2.x sRGB, the design's palette, measured on --paper — the
+ * white ground IS this panel's ground, there is no fill):
+ *   --ink on --paper 16.91 (the place) · --ink-soft on --paper 7.71 (the note)
+ *   --accent on --paper 7.11 (the eyebrow and the delivery time)
+ * Nothing in this section is below AA, at any size, without an override.
+ * These three are RE-MEASURED from the hexes, not copied: PageBM's "VERIFIED
+ * CONTRAST" table understates the same three pairs (14.9 / 7.29 / 7.06), as it
+ * does most of its rows. Every discrepancy there is in the SAFE direction bar
+ * band-kick/band (claimed 7.62, actually 7.37 — still far above AA), so nothing
+ * has been mis-shipped, but the table is not reproducible from the tokens it
+ * names and should not be copied forward into another section.
+ *
+ * SCOPING (R3). One scoped style block, no is:global. Scoped rules cannot reach
+ * elements that set:html creates, which is why there is no italic-walnut rule
+ * for the headline's <em> here: PageBM styles :where(.h2 em) from its global
+ * block, so an owner's emphasis is already walnut italic and a scoped duplicate
+ * would be dead CSS.
+ *
+ * CLASS PREFIX. `dz-` (delivery zone), distinct from every other BM section and
+ * deliberately NOT the `sa-` set the previous template in this family uses —
+ * copying a class set verbatim between templates is what an earlier audit had
+ * to unpick.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const body = area.body || area.sub || '';
+
+type Row = { place: string; time: string; placeField: string; timeField: string };
+
+// PRIMARY: area.rows — place + delivery time. An object row is canonical; a
+// string row is tolerated and still hooked at .place so the first edit heals it.
+const rawRows: any[] = Array.isArray(area.rows) ? area.rows : [];
+const timedRows: Row[] = rawRows
+  .map((r: any, i: number): Row => {
+    const o = r && typeof r === 'object' ? r : { place: r };
+    return {
+      place: String(o.place ?? '').trim(),
+      time: String(o.time ?? '').trim(),
+      placeField: `area.rows.${i}.place`,
+      timeField: `area.rows.${i}.time`,
+    };
+  })
+  // A time with no place is a delivery to nowhere — drop the whole row (R2).
+  .filter((r) => r.place.length > 0);
+
+// FALLBACK: area.places — plain STRINGS, which is how the schema ships them and
+// how every other template reads them. Place-only rows; no time element.
+const rawPlaces: any[] = Array.isArray(area.places) ? area.places : [];
+const placeRows: Row[] = rawPlaces
+  .map((p: any, i: number): Row => ({
+    place: String(p ?? '').trim(),
+    time: '',
+    placeField: `area.places.${i}`,
+    timeField: '',
+  }))
+  .filter((r) => r.place.length > 0);
+
+const rows: Row[] = timedRows.length > 0 ? timedRows : placeRows;
+// See SECTION GATE in the block above. Never `rows.length > 0`.
+const show = timedRows.length > 0 || placeRows.length >= 2 || Boolean(body);
+---
+{show && (
+  <section class="dz">
+    <div class="wrap">
+      <div class="dz-frame">
+        {(tag || headline || body) && (
+          <div class="dz-head reveal">
+            {(tag || headline) && (
+              <div class="dz-title">
+                {tag && <span class="kick" data-field="area.tag">{tag}</span>}
+                {headline && <h2 class="h2 dz-h2" data-field="area.headline" set:html={headline}></h2>}
+              </div>
+            )}
+            {body && <p class="dz-note" data-field="area.body">{body}</p>}
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <ul class="dz-list reveal" role="list" data-delay="1">
+            {rows.map((r) => (
+              <li class="rowrule dz-row">
+                <span class="dz-place" data-field={r.placeField}>{r.place}</span>
+                {r.time && <span class="dz-time" data-field={r.timeField}>{r.time}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Design: padding 62px 30px 0 — the 30px gutter is .wrap and the 0 bottom is
+     because every sibling in this design is padding-top-only, so PageBM's
+     symmetric section rhythm already supplies the trailing gap. Only the 62px
+     ceiling is taken, and it is taken on BOTH edges like every other BM section
+     — the wrapper made that call for the whole family, and breaking rhythm in
+     one section would leave a seam. The 6.2vw slope is not the wrapper's 7vw:
+     it is the slope that reaches this section's 46px floor at ~742px, the same
+     width at which the wrapper's clamp(52px,7vw,84px) reaches its own, so the
+     two shrink in step and this panel never crosses over a neighbour on the way
+     down. Beats `html[data-page="BM"] section` (0,1,2) at (0,2,0) via Astro's
+     scope attribute (scopedStyleStrategy defaults to 'attribute' in Astro 5, so
+     the scope really does add a class-weight unit — it would NOT under the
+     'where' strategy, and every specificity note in this file assumes the
+     default) — no !important needed. */
+  .dz { padding: clamp(46px, 6.2vw, 62px) 0; }
+
+  /* Design: NO fill · 1px #EDE6DF all round · 2px corner · padding 40px 38px.
+     The absence of a background is the design — this panel is the white ground
+     boxed by a hairline, which is why the row rules inside it have to be a
+     lighter weight than the frame to read as ruling rather than as more frame.
+     The clamps resolve to exactly 40px / 38px at every width down to ~705px,
+     below which 38px of padding inside a 92vw wrap starts eating the rows. */
+  .dz-frame {
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: clamp(22px, 5.7vw, 40px) clamp(18px, 5.4vw, 38px);
+  }
+
+  /* Design: flex · flex-end · space-between · gap 26px · wrap · mb 24px. */
+  .dz-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 26px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  /* min-width:0 on both halves so a long unbroken owner string shrinks its half
+     instead of widening the panel and pushing the page sideways (R8). */
+  .dz-title { min-width: 0; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .34em tracking, so one
+     unbroken word is unusually wide for its character count (R8). ONLY these
+     two properties are stated: the underline, the colour, the size and the
+     tracking all stay on the shared .kick primitive, because restating the
+     eyebrow is how a section in this template loses the design's signature
+     rule. .kick is an inline-block, so max-width:100% is what bounds it. */
+  .kick { max-width: 100%; overflow-wrap: anywhere; }
+
+  /* Design: Libre Caslon Text 400 · clamp(23px,2.9vw,36px) · 1.18 ·
+     margin .26em 0 0. DELIBERATELY smaller than the wrapper's .h2
+     (clamp(29px,3.8vw,50px)) and with the margin on the TOP rather than the
+     bottom — the design sizes this panel head below a full section head and
+     hangs it off the eyebrow above it. The wrapper's rule is a :where(), so
+     this class wins at (0,2,0) with no !important.
+     max-width:none — the design's SERVICE-AREA h2 carries NO measure cap and
+     sits on one line beside the 34ch note; the wrapper's `.h2 { max-width:
+     24ch }` would break it. Releasing it cannot widen the panel, because
+     .dz-title is a flex item at min-width:0 and this rule carries
+     overflow-wrap, so a long owner headline shrinks and breaks instead (R8).
+     CLAMP CHECK: this is the section's ONLY font-size for the h2 — no
+     breakpoint below restates it, so it falls monotonically from 36px to its
+     23px floor at ~793px and stays there. It cannot grow as the viewport
+     narrows. (The wrapper's 760px `:where(.h2)` bump to clamp(26px,7vw,38px)
+     is (0,1,1) and loses to this rule, which is the intent: this is a panel
+     head, not a section head, and it must not overtake the sections around
+     it on a phone.) */
+  .dz-h2 {
+    font-size: clamp(23px, 2.9vw, 36px);
+    line-height: 1.18;
+    margin: 0.26em 0 0;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 14.5px / 1.75 / #5C5147 / 34ch / margin 0. Same COLOUR as the
+     wrapper's .body primitive but not the same scale — .body clamps to
+     14.5–15px/1.8 and sets no measure — so the metrics are stated here and the
+     colour still comes from the token. (0,2,0) beats the wrapper's (0,1,1)
+     bare-paragraph margin reset, so `margin: 0` actually holds. */
+  .dz-note {
+    margin: 0;
+    min-width: 0;
+    max-width: 34ch;
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: repeat(3, minmax(0,1fr)) · gap 0 34px. The ZERO row gap is the
+     design: the hairline under each row is the separation, and a row gap would
+     open a space between a rule and the row beneath it. minmax(0,1fr) rather
+     than 1fr so a long place name cannot widen its own track. */
+  .dz-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 34px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* Flex, baseline, 12px gap, 12px 0 padding and min-width:0 all come from the
+     wrapper's .rowrule, which is character-for-character this design's row.
+     Only the list-item chrome and the ONE property the design states
+     differently — the lighter #F2ECE5 rule, which is --tint-2 exactly — are set
+     here. See THE ROW HAIRLINE in the frontmatter. */
+  .dz-row {
+    list-style: none;
+    border-bottom-color: var(--tint-2);
+  }
+
+  .dz-place {
+    font-size: 14.5px;
+    color: var(--ink);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  /* Design: margin-left auto · 13px · 600 · #7A4E2D · nowrap. No font-family:
+     the design leaves the time on Karla, so this is NOT .fig — .fig is the
+     serif figure this template reserves for prices and proof numerals. */
+  .dz-time {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* R8 · this section owns its own grid. Three tracks are the design and they
+     must not survive past 900px, where a 34px gutter leaves a place name and
+     its time fighting over the same line. Nothing in these queries restates a
+     font-size that a wider query also sets, so no clamp can invert. */
+  @media (max-width: 900px) {
+    .dz-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 26px; }
+  }
+  @media (max-width: 620px) {
+    .dz-list { grid-template-columns: minmax(0, 1fr); }
+    .dz-head { gap: 18px; margin-bottom: 20px; }
+    .dz-note { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    /* Release the design's nowrap at the one width where a long owner-typed
+       time ("about 25 minutes on a good day") would push the viewport sideways.
+       Above 520px the tracks are wide enough for it to hold on one line. */
+    .dz-time { white-space: normal; overflow-wrap: anywhere; text-align: right; }
+  }
+</style>

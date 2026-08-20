@@ -1,0 +1,299 @@
+---
+/**
+ * foodcraft / TrustBM — "Tahanan Cafe"'s ruled fact strip.
+ *
+ * ROLE. The four-up strip the design sets 56px under the hero, on the plain
+ * WHITE ground with no panel and no fill behind it. It is drawn entirely in
+ * RULES: one hairline across the top, one across the bottom, and a vertical
+ * hairline down the right of every cell — the design's grid is made of borders,
+ * not gaps, and this strip is the clearest statement of that. Each cell is a
+ * 29px WALNUT Libre Caslon figure over a 10px tracked-caps label, centred.
+ * It is the first thing read after the headline and the band most likely to be
+ * believed, so not one word in it is written by this component.
+ *
+ * EDITABLE HOOKS (both declared by components/editor/genericContentSchema.ts
+ * under the `trust.cells` list spec — live in the sidebar with add / remove /
+ * reorder, maxItems 4):
+ *   trust.cells.${i}.num    — the walnut figure. set:html, so an owner's
+ *                             "&lt; 1 hr", "7am", "₱—" or a real <em> emphasis
+ *                             survives escaping.
+ *   trust.cells.${i}.label  — the tracked-caps label under it.
+ * There is no other hook here. A data-field on any path that schema does not
+ * declare is a dead hook that no sidebar input owns.
+ *
+ * DERIVED (computed, never authored by this file):
+ *   · `rows` — the cells that actually carry text, each carrying its ORIGINAL
+ *     array index `i` so a data-field always addresses the real slot. Dropping
+ *     a blank cell 2 must never redirect an edit of cell 3 into it (R6). The
+ *     reveal stagger uses the DISPLAY index instead, because it is decoration.
+ *   · `--cols` — the column count follows the DATA, capped at the design's
+ *     four. The vertical hairlines are drawn per CELL (border-right on the
+ *     item), not per track, so a hardcoded repeat(4) would NOT print empty
+ *     ruled boxes — an empty grid track paints nothing at all. What it would
+ *     do is quieter and still wrong: the strip's top and bottom rules sit on
+ *     the CONTAINER and span the whole wrap whatever the cell count, so two
+ *     facts would sit crushed into the left quarter of a 1160px rule with the
+ *     right half blank — a table whose last entries went missing. The track
+ *     count follows what was typed so the rules always frame content.
+ *
+ * NOT RENDERED, and why:
+ *   · NO eyebrow, NO headline, NO lede, NO button, NO photo. The design's TRUST
+ *     section has none of them and the schema declares none for `trust`. In
+ *     particular there is no .kick here, so the family's underlined-eyebrow
+ *     signature is simply absent from this strip — as drawn.
+ *   · NO placeholder figure, NO zero, NO em dash, NO "—". The demo's "4 /
+ *     Philippine farms · 4.9 / Google rating" is the DESIGNER filling their own
+ *     template; a farm count or a review score is a claim only the café may
+ *     make. lib/derive-content-defaults.ts carries no `trust` key at all, so
+ *     this strip exists only where a human typed.
+ *   · NO section at all when nothing was typed (R5). The gate counts BODY
+ *     content — cells with real text — not a tag or a headline, because this
+ *     strip has neither to miscount. lib/astro-builder.ts already forces
+ *     visibility.trustBlock false on a zero-length array; this gate is the belt
+ *     to that brace, catching what the builder cannot see: rows that are
+ *     PRESENT but blank, since the editor's Add button inserts
+ *     { num: '', label: '' } and the builder gates on raw array LENGTH. A blank
+ *     row surviving would print a ruled cell containing nothing.
+ *   · NO onPage() anchor-remap helper, and that is deliberate rather than an
+ *     oversight: this strip emits no <a> at all, so PAGE_ANCHORS / ANCHOR_ALIAS
+ *     (menu / about / gallery / visit / faq / main) would be unreachable dead
+ *     code in this one file, and an unused const is what a reviewer would flag
+ *     instead. The remap belongs in every BM section that does emit an href.
+ *     TrustBL and TrustBK made the same call for the same reason.
+ *   · NO role="img", NO .plate, NO .cap — there is no image slot in this strip,
+ *     so there is nothing to name (R9). Nothing here is aria-hidden either: the
+ *     figure and the label are both real owner content and are announced
+ *     normally, and there is no decorative numeral or icon to suppress.
+ *   · NO star row, NO rating — this strip carries no review, so R2's rating
+ *     rule has nothing to bind to here. If an owner types "4.9" into `num` it
+ *     is printed as the TEXT they typed, never re-read as a score and never
+ *     redrawn as five glyphs.
+ *   · NO band-dark. The closing CTA band is the only dark ground in this
+ *     design; this strip sits on white.
+ *
+ * DECISIONS a reader would otherwise take for a mistake:
+ *
+ *   · The RIGHT-HAND hairline on the LAST cell is the design's. Its sc-for puts
+ *     border-right on every repeated cell, so the strip closes with a short
+ *     vertical rule at the wrap's right edge while the first cell has no rule
+ *     on its left. That asymmetry is drawn, and it is reproduced verbatim
+ *     rather than "tidied" into a border-left-except-first, which is a
+ *     different drawing. Nothing clips it, because unlike the previous
+ *     template's slab this strip has no radius and no overflow to hide.
+ *
+ *   · The section's spacing is `padding: 56px 0 0`, not the design's
+ *     `margin: 56px auto 0`. Visually identical — the strip has no ground of
+ *     its own — but a padding cannot collapse out through <main> on a site
+ *     whose hero block is switched off, and it cannot merge with the next
+ *     section's top space. Zero at the BOTTOM is also the design: the space
+ *     under the strip belongs to ABOUT's own 84px. The wrapper's shared
+ *     `section { padding: clamp(52px,7vw,84px) 0 }` is (0,1,1) and this scoped
+ *     class compiles to (0,2,0) under Astro's DEFAULT `scopedStyleStrategy:
+ *     "attribute"` (astro.config.mjs does not set it), so it wins without
+ *     !important. Checked by compiling this file: the emitted selector is
+ *     `.th-facts[data-astro-cid-…]`.
+ *
+ *   · The strip's WIDTH is the wrapper's `.wrap`, not the design's own
+ *     `max-width:1160px; padding:0 30px`. EVERY section in the design carries
+ *     that same pair and PageBM expresses it once, as `.wrap` =
+ *     `min(1160px, 92vw)` — so past ~1260px the ruled strip measures the full
+ *     1160 rather than the design's 1100 inner column. Re-cutting the 30px
+ *     gutter in this one file would inset this strip from the hero above and
+ *     the about block below, and these rules READ as alignment: a hairline
+ *     that stops short of the columns it divides is the worse infidelity.
+ *     If the gutter is wanted it belongs in the wrapper, once.
+ *
+ *   · The FIGURE restates only its SIZE. .fig already gives Libre Caslon Text
+ *     400, tabular lining numerals, line-height 1 and --accent — which is
+ *     exactly the design's #7A4E2D at exactly its line-height. Only the flat
+ *     29px is local. Nothing is re-coloured: walnut on white is 7.11:1.
+ *
+ *   · The LABEL restates its WEIGHT, and this is the one value that departs
+ *     from the primitive, so here is the reasoning. .mono is 10px / .2em /
+ *     uppercase / var(--sans) / var(--muted) — every one of those is the
+ *     design's label verbatim, including the colour (#6B6057 = --muted, 6.11:1
+ *     on white — PageBM's header table says 5.71, which understates it; the
+ *     whole of that table is a little off and none of it unsafely). The design
+ *     draws this particular label at font-weight 600, one notch below the
+ *     wrapper's 700 tracked-caps default, and it does so for EVERY quiet caps
+ *     label it sets — the footer bar, the gallery caption, the review byline,
+ *     the spec and hours values are all 600 — while keeping 700 for the
+ *     eyebrows and the buttons. Karla ships 600 and the wrapper loads it.
+ *     The design is the specification, so the 600 is reproduced. No other
+ *     property of .mono is restated — a section restating a primitive is how a
+ *     family drifts apart, and the size/tracking/colour need no help.
+ *
+ *   · The label's leading is PINNED at 1.3. The design sets no line-height on
+ *     its caps labels, so in the design document they compute to `normal`;
+ *     PageBM's `body { line-height: 1.78 }` would otherwise inflate this 10px
+ *     line box and print the design's 10px gap under the figure as ~14px, and
+ *     the cell several px taller than drawn. 1.3 restores the rhythm and still
+ *     lets a longer owner label wrap without the two lines' caps touching.
+ *
+ *   · An owner's <em> inside `num` is LEFT ITALIC and left WALNUT. The italic
+ *     emphasis is this template's signature and Libre Caslon Text ships a real
+ *     400 italic, so nothing is synthesised. It inherits --accent from .fig for
+ *     free: `:where(.h2 em)` and `:where(.em)` cannot reach a bare <em> inside
+ *     a .fig, and the browser default supplies the slant. NO rule is written
+ *     for it, so no :global() is needed — had one been, set:html output sits
+ *     outside scoped CSS and would have required it (R3).
+ *
+ *   · Both cell values carry `overflow-wrap: anywhere`. A pasted URL or an
+ *     unspaced string in a 29px serif is the one thing in this strip that could
+ *     push the page sideways at 520 (R8). Nothing here uses a clamp at all, so
+ *     no floor in the 900 query can outrank a cap in the 520 query.
+ *
+ *   · The strip TOLERATES two content shapes. The schema stores
+ *     `content.trust = { cells: [...] }`; a few older records store a plain
+ *     array at `content.trust`. Both are read, and the data-field path is
+ *     written as the schema's `trust.cells.${i}.*` either way, because that is
+ *     the only path the sidebar owns.
+ *
+ * No id: nothing on the page links to this strip (the BM anchor set is menu,
+ * about, gallery, visit, faq, main).
+ *
+ * Class names are prefixed th-facts- for THIS template. They are not the
+ * previous template's names re-used: an audit had to rename a whole set that
+ * had been copied verbatim between two files in this family.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const trust = content?.trust || {};
+// Tolerate both shapes at every read: the schema's { cells: [...] } and the
+// legacy plain array some older records still store under content.trust.
+const cells: any[] = Array.isArray(trust.cells)
+  ? trust.cells
+  : (Array.isArray(trust) ? trust : []);
+
+const asText = (v: any) => (v === null || v === undefined ? '' : String(v));
+
+// The ORIGINAL index rides along in `i`. Only rows with real text survive, so a
+// half-filled row prints one line and an empty row prints no cell at all — no
+// vertical hairline dividing a column that is not there (R2, R6).
+const rows = cells
+  .map((c: any, i: number) => ({ value: asText(c?.num), note: asText(c?.label), i }))
+  .filter((r) => Boolean(r.value.trim() || r.note.trim()));
+
+// Follow the data, but never widen past the design's four tracks (the schema
+// caps the list at 4 anyway). Anything beyond four wraps to a second row and
+// picks up a horizontal hairline above it.
+const cols = String(Math.min(Math.max(rows.length, 1), 4));
+---
+{rows.length > 0 && (
+  <section class="th-facts">
+    <div class="wrap">
+      <div class="th-facts-strip" style={`--cols:${cols}`}>
+        {rows.map((r, k) => (
+          <div class="th-facts-item reveal" data-delay={String(k % 4)}>
+            {r.value.trim() && (
+              <div class="fig th-facts-value" data-field={`trust.cells.${r.i}.num`} set:html={r.value}></div>
+            )}
+            {r.note.trim() && (
+              <div class="mono th-facts-note" data-field={`trust.cells.${r.i}.label`}>{r.note}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from the wrapper's token vocabulary
+     (--line --accent --muted --disp --sans, via .wrap / .fig / .mono). There is
+     not one literal hex in this file (R1).
+
+     (Never write a literal end-style-tag inside a comment in here — the parser
+      would end the stylesheet on the spot and silently truncate the file.) */
+
+  /* The design's TRUST section has no vertical padding of its own — the cells
+     do all of it — and it sits 56px under the hero with nothing beneath it.
+     See the frontmatter note on why that 56px is padding rather than margin. */
+  .th-facts { padding: 56px 0 0; }
+
+  /* The strip: a grid drawn with RULES. One hairline over, one under, and the
+     tracks follow the data up to the design's four. */
+  .th-facts-strip {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* 28px 22px, centred, with the design's hairline on the right of EVERY cell,
+     including the last, which closes the strip at the wrap's edge. */
+  .th-facts-item {
+    min-width: 0;
+    padding: 28px 22px;
+    text-align: center;
+    border-right: 1px solid var(--line);
+  }
+  /* Only reachable if a record predates the schema's maxItems 4 cap. */
+  .th-facts-item:nth-child(n + 5) { border-top: 1px solid var(--line); }
+
+  /* .fig already gives Libre Caslon Text 400, tabular lining numerals,
+     line-height 1 and the design's walnut. The flat 29px is the only local
+     value. Written as a descendant so it clears the wrapper's (0,1,1) rules
+     with room to spare, whatever the source order. */
+  .th-facts-strip .th-facts-value {
+    font-size: 29px;
+    /* A pasted URL or an unspaced string must not push the page sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  /* .mono is already 10px / .2em / uppercase / var(--sans) / var(--muted) —
+     the design's label treatment exactly, colour included. Three things are
+     local, and only three:
+       · font-weight 600 — the design draws this label one notch below the
+         wrapper's 700 tracked-caps default; see the frontmatter note.
+       · margin-top: 10px — the design's gap under the figure.
+       · line-height: 1.3 — the design's caps labels set no leading, so they
+         compute to `normal` in the design document. PageBM's body 1.78 would
+         leak in, inflate this 10px line box and print that 10px gap as ~14px. */
+  .th-facts-strip .th-facts-note {
+    font-weight: 600;
+    margin-top: 10px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── This section's OWN responsive pass. The wrapper handles the shared
+        760 / 520 type pass; the grid below is ours (R8). Nothing here uses a
+        clamp, so there is no floor in one query that can outgrow a cap in the
+        next. ──────────────────────────────────────────────────────────────── */
+  @media (max-width: 900px) {
+    /* Two up. The interior vertical rule is now the odd cell's right border and
+       every cell past the first pair gains a horizontal one. The horizontal
+       rule is restated rather than left to lapse: compiled it reads
+       .th-facts-item[data-astro-cid]:nth-child(n+3) — (0,3,0), which beats the
+       base cell's (0,2,0) whatever the source order, but a reader should not
+       have to work that out. */
+    .th-facts-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .th-facts-item:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  }
+  @media (max-width: 520px) {
+    /* One column. A 10px label at .2em tracking cannot hold a ~180px half
+       column without splitting mid-word. The trailing right hairline is dropped
+       here: at full width it would draw a stray vertical line down the page
+       edge instead of dividing anything, and the horizontal rule between cells
+       takes over the dividing.
+
+       ONLY the VERTICAL padding moves off the design's 28px 22px, and only
+       because stacking multiplies it: four cells one above the other spend the
+       design's vertical padding four times over. The 22px HORIZONTAL padding is
+       the design's and stays — nothing at this width is pressing on it (the
+       wrap is 92vw, so the cell is ~390px wide).
+
+       The figure stays at the design's flat 29px. It is NOT shrunk: the cell is
+       WIDER one-up at 520 than two-up at 900, where the figure is left alone,
+       so a 520-only reduction would be both a deviation and backwards. Long
+       unbroken strings are already handled by overflow-wrap above. */
+    .th-facts-strip { grid-template-columns: minmax(0, 1fr); }
+    .th-facts-item {
+      padding: 22px;
+      border-right: 0;
+      border-top: 1px solid var(--line);
+    }
+    .th-facts-item:first-child { border-top: 0; }
+  }
+</style>

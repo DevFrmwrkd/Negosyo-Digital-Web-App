@@ -1,0 +1,431 @@
+---
+/**
+ * foodcraft / TestimonialsBM — "Tahanan Cafe" FROM THE REGULARS: a CENTRED head
+ * (the signature underlined walnut eyebrow over a Libre Caslon Text headline)
+ * above a three-up row of quote cards drawn on the WHITE ground with a hairline
+ * box and a 2px corner — each card opened by a rating mark, then the quote in
+ * Libre Caslon Text at 19px, and a tracked-caps attribution pinned to the
+ * bottom of the card.
+ *
+ * ROLE: the social proof a stranger reads before deciding to walk in — which is
+ * exactly why this file prints nothing the owner did not put on record.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from the
+ * `data-component="TESTIMONIALS"` element of "Tahanan Cafe Landing.dc.html":
+ *   head          text-align:center, margin-bottom 40px
+ *   eyebrow       10px / .34em / caps / 700 / #7A4E2D, sitting ON a 1px #E0D3C6
+ *                 rule with 9px of padding under it   → THE .kick PRIMITIVE,
+ *                 restated NOWHERE here. The underline is the single most
+ *                 recognisable mark in this design and it lives on the shared
+ *                 primitive; a section that re-declares the eyebrow loses it.
+ *   headline      Libre Caslon Text 400, clamp(29px,3.8vw,50px)/1.14,
+ *                 margin .26em 0 0 — identical to the wrapper's .h2 except that
+ *                 the design's margin is on TOP and the block is centred, so
+ *                 only the margin/alignment is overridden below.
+ *   grid          repeat(3, minmax(0,1fr)), gap 24px
+ *   card          <figure>, margin 0, 1px #EDE6DF hairline, radius 2px,
+ *                 padding 30px 28px, display:flex, column, gap 14px.
+ *                 NO fill: the design gives the figure no background, so the
+ *                 white page shows through. That is deliberate and is not a
+ *                 missing --card declaration — this design draws its grids with
+ *                 BORDERS, not with filled tiles.
+ *   mark          13px, #8A5A34, letter-spacing 3px
+ *   quote         Libre Caslon Text 19px / 1.6, #241B14, margin 0
+ *   attribution   margin-top auto, 11px / .2em / caps / 600 / #6B6057
+ * Mapped to the wrapper tokens carrying those exact values: #FFFFFF = --paper,
+ * #EDE6DF = --line, #E0D3C6 = --line-2, 2px = --r, #8A5A34 = --accent-2,
+ * #241B14 = --ink, #6B6057 = --muted, #7A4E2D = --accent, Libre Caslon Text =
+ * --disp, Karla = --sans. NO LITERAL HEX APPEARS BELOW, and nothing is
+ * re-derived to "survive" a colour scheme — this is the card the designer drew.
+ *
+ * WHY NOT .mono FOR THE ATTRIBUTION: the shared .mono is 10px / .2em / 700 and
+ * takes --muted. The design's figcaption here is 11px / .2em / 600. Half a
+ * weight and a pixel apart, so it is written scoped rather than borrowed —
+ * borrowing would quietly ship a different line than the design specifies.
+ *
+ * NOT A BAND. The closing CTA band is the only dark ground in this design; the
+ * testimonials sit on plain white. So this file carries no `band-dark`, and the
+ * --band / --band-kick / --band-body / --on-band trio is untouched here.
+ *
+ * CLASS PREFIX `tah-`, chosen for THIS template. It is deliberately NOT the
+ * `rg-` set from TestimonialsBL: an audit had to rename a whole class set that
+ * had been copied verbatim from the template before it, and two templates
+ * sharing a scoped class name makes every future diff read as a shared
+ * component that is not one. Only the house STYLE was copied from BL — the doc
+ * block, the coercion helpers, the guard discipline.
+ *
+ * CLASS-NAME NOTE (theme engine): the section must NOT be class "testi" —
+ * buildOverrideCss pins `.testi, .testi p { color: … !important }` and would
+ * repaint the quotes with a scheme colour this design never chose. It is
+ * "tah-reviews", and it emits no button at all, so no engine label pin
+ * (.btn-primary/.btn-ghost/.nav-cta/.cta-band/.trust) reaches anything here.
+ *
+ * READS content.testimonials.items ({quote, who, rating}); tolerates the legacy
+ * bare array parked at content.testimonials and the legacy author/name
+ * spellings for the attribution. The data-field always names the CANONICAL
+ * path, so the first sidebar edit migrates a legacy row onto the real key.
+ *
+ * COERCED AT EVERY READ — THE ROW FIRST, THEN EVERY FIELD. Nothing upstream
+ * type-checks either one. astro-builder's normalizeBlock passes a non-object
+ * entry straight through (`if (!it || typeof it !== 'object') return it`), so
+ * `items` can hold a null, and reading `.quote` off that null throws at BUILD
+ * time and takes the whole page down. So each row is normalised to an object
+ * before a single field is read, and a bare STRING row is read as the quote
+ * itself — the legacy shape where the row IS the quote — so owner text is never
+ * silently dropped. Then the fields: a quote arriving as a number crashes the
+ * build on .trim(); one arriving as an object prints "[object Object]" through
+ * set:html. str() passes strings and finite numbers and treats everything else
+ * as absent. Blank-after-trim counts as absent too — a whitespace-only `who`
+ * must not draw an empty figcaption, and a whitespace-only tag must not draw an
+ * empty underlined eyebrow (an eyebrow with no word is a bare floating rule).
+ * normalizeBlock aliases name/author onto `who` only when `who` is null, so a
+ * row carrying who:'' keeps its blank; the fallback chain below is `||` and not
+ * `??` so that row still prints the name the owner did type.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
+ * group "testimonials" — a data-field on a path the schema does not own is a
+ * dead hook that no sidebar input can focus)
+ *   testimonials.tag                  — the underlined walnut eyebrow
+ *   testimonials.headline             — set:html, so an owner can place this
+ *                                       design's second signature, the REAL
+ *                                       Libre Caslon Text ITALIC WALNUT
+ *                                       emphasis, anywhere inside their own
+ *                                       sentence (the wrapper styles .h2 em)
+ *   testimonials.items.${i}.quote     — set:html, the serif blockquote
+ *   testimonials.items.${i}.who       — the tracked-caps figcaption
+ *   testimonials.items.${i}.rating    — read, never printed as text: it is the
+ *                                       ONLY thing that can draw a star (below).
+ *                                       It deliberately carries NO data-field on
+ *                                       the star row, and that is not a missing
+ *                                       hook — the row RENDERS the number, it is
+ *                                       not the number. editorBridge's ed:update
+ *                                       would replace the glyphs with the raw
+ *                                       digit, and VisualEditor (which does not
+ *                                       honour data-derived) makes every
+ *                                       [data-field] contentEditable, so an
+ *                                       admin could type stars back into rating
+ *                                       and lose the score. It is edited in the
+ *                                       sidebar's "Rating out of 5" box, which
+ *                                       genericContentSchema declares.
+ *
+ * DERIVED, not authored: the number of stars, and the reveal delay (capped at 3
+ * because the wrapper only defines delays 1-3, so a fourth card must not wait).
+ *
+ * ANTI-FABRICATION — the hard rule of this section:
+ *   - THE STAR ROW IS NOT HARDCODED. The design prints five stars over every
+ *     quote, because the designer was filling in their own template. Five stars
+ *     for a customer who never gave a score is a claim invented on the owner's
+ *     behalf, so stars are drawn ONLY from a finite numeric
+ *     testimonials.items.${i}.rating. Non-numeric, blank and absent ratings draw
+ *     no stars at all; the card instead opens with a short walnut hairline that
+ *     occupies the same beat and states nothing — which also suits a design
+ *     whose whole grammar is hairlines. Expect that hairline on essentially
+ *     every real site: it is the correct, honest default, not a missing feature.
+ *   - CLAMPING, stated so it is not read as an oversight: a rating is rounded,
+ *     then capped at 5 (a typo of "7" draws five stars, never seven). A value
+ *     that rounds BELOW 1 — 0, -2, 0.4 — is treated as no usable rating and
+ *     draws the hairline. It is never clamped UP to one star, because inventing
+ *     a star out of a zero is the same fabrication as inventing five.
+ *   - The accessible name announces the SAME number that is drawn, so the label
+ *     and the glyphs can never disagree.
+ *   - NO review count, NO average score, NO platform name, NO "regulars' choice"
+ *     badge. None of it is in the data contract, and the design draws none.
+ *   - Quote and attribution are guarded independently and every guard sits
+ *     OUTSIDE its tag, so an unattributed quote renders as a quote rather than
+ *     as an empty caption holding the card's bottom gap open.
+ *   - A row with no quote is DROPPED: the card IS the quote, so a name-only row
+ *     would draw a hairline box attributing nothing to somebody. The row stays
+ *     in the sidebar and reappears the instant a quote is typed.
+ *
+ * SECTION GATE: the whole <section> renders only when at least one row has a
+ * real quote. It deliberately does NOT count tag/headline. Those two arrive
+ * from the admin sidebar or the AI extractor with nothing behind them all the
+ * time, and lib/derive-content-defaults.ts fills heads across the site, so a
+ * gate counting a headline would ship a centred heading over an empty grid —
+ * the one thing a proof section must never do.
+ *
+ * ORIGINAL INDEXES: `i` is captured BEFORE blank rows are dropped, so deleting
+ * row 2 cannot misdirect an edit of row 3 into row 4. Nothing here is numbered
+ * on screen, so no display index is needed.
+ *
+ * THE ONE AUTHORED STRING in this file is the stars' aria-label, which is never
+ * visible. It exists because a row of glyphs with no accessible name is
+ * decoration announcing nothing, and a rating the owner typed is information a
+ * screen-reader user is entitled to. No visible word on this page comes from
+ * this file.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   testimonials.source   — the schema declares it, but this template already
+ *                           has an honest home for a star claim (rating), and
+ *                           the design draws no source line under the head. A
+ *                           "Reviews on Google" line would also be a platform
+ *                           claim nothing in the pipeline verifies.
+ *   testimonials.bigQuote — there is no pull-quote element in this design.
+ *   testimonials.items.${i}.role — the row schema stops at quote/who/rating, so
+ *                           the hook would focus nothing in the v3 sidebar.
+ *   No image: the design's card is type only, with no avatar plate — so there
+ *   is no .plate, no .ph, no .cap, no role="img" on a photo and nothing that
+ *   would need an owner-authored accessible name.
+ *
+ * NO ANCHOR HELPER, and that is not an omission. The design's TESTIMONIALS
+ * element contains no <a> at all, so this file emits no href and owns no
+ * data-href-field. Copying onPage()/PAGE_ANCHORS/ANCHOR_ALIAS in here would be
+ * an unused function rather than a safeguard — the same call TestimonialsBL
+ * made, for the same reason. The section also takes NO id: the page's ids are
+ * menu / about / gallery / visit / faq / main, and the design gives this
+ * section none of them.
+ *
+ * CONTRAST (sRGB relative luminance, recomputed against this design's native
+ * palette on the white ground — NOT copied from the wrapper's table, which
+ * understates several pairs and labels one of them wrongly):
+ *   quote --ink on --paper 16.9 · stars --accent-2 on --paper 5.85 ·
+ *   eyebrow --accent on --paper 7.11 · attribution --muted on --paper 6.11.
+ *   Nothing here is below AA. The wrapper's frontmatter prints 14.9 for
+ *   ink/paper and 5.71 for "muted/paper" — 5.71 is in fact --muted on --tint
+ *   (5.72), a surface this section never uses. Both of its figures are LOWER
+ *   than the truth, so its "nothing is below the bar" conclusion still holds;
+ *   only the numbers are wrong.
+ *   --muted is remapped by the engine to palette.inkSoft, so the attribution
+ *   figure is the native value and not a guarantee under every scheme.
+ *
+ * --accent-2 IS INVISIBLE TO THE ENGINE, which is worth stating because the
+ * wrapper's frontmatter says buildOverrideCss wins "accent*" and that reads as
+ * covering this token. It does not: the engine emits --accent, --accent-rgb,
+ * --accent-light, --accent-soft and --accent-deep, and nothing named
+ * --accent-2. So under a scheme pick the eyebrow moves and the star mark keeps
+ * the design's #8A5A34 walnut. That is the right outcome for a mark whose whole
+ * job is to sit quietly beside the quote, but it is a divergence a reader would
+ * otherwise assume was an oversight.
+ *
+ * VERTICAL RHYTHM comes from the wrapper's shared `section` padding; the
+ * design's "84px top, 0 bottom" is that same rhythm once every section stacks.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const test = content.testimonials || {};
+
+/* Coerce at EVERY read — see COERCED AT EVERY READ above. A string passes; a
+   finite number passes as its digits; null, undefined, NaN, an array and an
+   object are not content and become ''. Nothing downstream calls a string
+   method on raw input, so no shape from the pipeline can fail the build. */
+const str = (v: unknown): string =>
+  typeof v === 'string' ? v : (typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+
+const tag = str(test.tag).trim();
+const headline = str(test.headline).trim();
+
+type Item = {
+  quote?: unknown;
+  who?: unknown;
+  author?: unknown;
+  name?: unknown;
+  rating?: unknown;
+};
+
+/* Tolerate both shapes at every read: the canonical object with .items, and the
+   legacy bare array parked at content.testimonials. */
+const items: Item[] = Array.isArray(test.items)
+  ? test.items
+  : (Array.isArray(test) ? (test as Item[]) : []);
+
+/* A rating is a CLAIM about a customer. Only a finite number becomes stars; it
+   is rounded, capped at 5, and anything that rounds below 1 yields 0 — which
+   draws the hairline, not a star. Never widen this.
+   READ THROUGH str(), the same gate every other field here uses: a bare
+   Number() is wider than this file's own rule, because Number(true) is 1 and
+   Number(['5']) is 5 — so a boolean or a single-element array arriving from the
+   extractor would have printed a star nobody typed. str() passes strings and
+   finite numbers and nothing else. */
+const starsOf = (it: Item): number => {
+  const r = Number(str(it.rating).trim());
+  if (!Number.isFinite(r)) return 0;
+  const n = Math.round(r);
+  return n >= 1 ? Math.min(5, n) : 0;
+};
+
+const STAR = '★';
+
+/* Normalise ONCE, carrying the ORIGINAL array index, then drop the rows that
+   cannot render an honest card. Gating on `rows` rather than `items` also means
+   a block of blank rows hides instead of shipping three empty hairline boxes. */
+const rows = items
+  .map((raw, i: number) => {
+    /* THE ROW IS COERCED BEFORE ANY FIELD IS READ. A null row would throw on
+       `.quote` and fail the build; a bare string row is the quote the owner
+       typed and is kept, not dropped. */
+    const it: Item = raw && typeof raw === 'object' ? (raw as Item) : ({ quote: raw } as Item);
+    return {
+      /* the quote keeps its own leading/trailing space — only the GUARD is
+         trimmed, so a blank-looking quote cannot open a hairline card */
+      quote: str(it.quote),
+      who: str(it.who).trim() || str(it.author).trim() || str(it.name).trim(),
+      stars: starsOf(it),
+      i,
+    };
+  })
+  .filter((r) => Boolean(r.quote.trim()));
+
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="tah-reviews">
+    <div class="wrap">
+      {hasHead && (
+        <div class="tah-head reveal">
+          {tag && <span class="kick" data-field="testimonials.tag">{tag}</span>}
+          {headline && <h2 class="h2" data-field="testimonials.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="tah-grid">
+        {rows.map((row, k) => (
+          <figure class="tah-card reveal" data-delay={String(Math.min(k, 3))}>
+            {row.stars > 0 ? (
+              /* Drawn from the owner's own number, and named with that same
+                 number so the glyphs are never decoration-only. */
+              <span class="tah-stars" role="img" aria-label={`Rated ${row.stars} out of 5`}>
+                <span aria-hidden="true">{STAR.repeat(row.stars)}</span>
+              </span>
+            ) : (
+              /* Where the design hardcodes five stars. A walnut hairline on the
+                 same beat: same visual opening, same card height, no claim. */
+              <span class="tah-rule" aria-hidden="true"></span>
+            )}
+            <blockquote data-field={`testimonials.items.${row.i}.quote`} set:html={row.quote}></blockquote>
+            {row.who && (
+              <figcaption data-field={`testimonials.items.${row.i}.who`}>{row.who}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* ── head · centred, 40px of air under it (design) ───────────────────────── */
+  .tah-head { text-align: center; margin-bottom: 40px; }
+  /* The eyebrow is NOT restated here — only wrapped. Restating .kick's font or
+     colour would drop the border-bottom that IS the signature. */
+  .tah-head .kick { overflow-wrap: anywhere; }
+  /* The wrapper's .h2 is left-aligned with a BOTTOM margin; the design's head is
+     centred with the margin on TOP. The 24ch cap from the wrapper is kept and
+     centred by the auto margins so a long owner headline cannot run the full
+     width of the container. No font-size is touched at ANY breakpoint here, so
+     this section cannot re-introduce the clamp inversion an audit found on the
+     previous template (a 900-query floor sitting above a 520-query cap). */
+  .tah-reviews .h2 {
+    margin: 0.26em auto 0;
+    overflow-wrap: anywhere;
+  }
+  /* set:html output carries no scope attribute, so an owner's <em> inside the
+     headline is only reachable through :global(). The wrapper already paints
+     .h2 em italic walnut; this rule exists so the .em spelling behaves the same
+     when the emphasis arrives from the editor. */
+  .tah-reviews .h2 :global(em),
+  .tah-reviews .h2 :global(.em) { font-style: italic; color: var(--accent); }
+
+  /* ── grid · three up, 24px (design) ──────────────────────────────────────── */
+  .tah-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+
+  /* ── card · the design's hairline box on the white ground, SHARP 2px corner.
+        No background: the design gives the figure none, and this template draws
+        its grids with borders rather than fills. The flex column with a 14px
+        gap is the design's own spacing mechanism — it is what lets the
+        attribution be pushed to the bottom edge with margin-top:auto so a short
+        quote and a long one still line their names up across a row. ───────── */
+  .tah-card {
+    margin: 0;
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 30px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ── the rating mark. Both variants occupy the same ~23px beat so a card WITH
+        a rating and a card without stay on the same baseline in the same row.
+        line-height is DECLARED rather than inherited so that height is
+        deterministic and does not move with the body leading — and 1.78 is
+        precisely the value it WOULD inherit from the wrapper's body, so this
+        declaration changes nothing on screen. The design leaves its own mark row
+        at `normal` (its body sets no line-height at all), which is a hair
+        tighter; that gap belongs to the wrapper's shared body leading, applies
+        to every BM section, and is not re-derived here. ──────────────────── */
+  .tah-stars {
+    display: block;
+    font-size: 13px;
+    line-height: 1.78;
+    letter-spacing: 3px;
+    color: var(--accent-2);
+  }
+  /* The hairline that replaces the design's hardcoded star row. 74px is roughly
+     the width five glyphs occupy at 13px on 3px tracking, and the 11px margins
+     reproduce the 23px the star row takes. */
+  .tah-rule {
+    display: block;
+    width: 74px;
+    max-width: 100%;
+    height: 1px;
+    background-color: var(--accent-2);
+    margin: 11px 0;
+  }
+
+  /* ── quote · Libre Caslon Text at the design's 19px. The UA gives <blockquote>
+        a 40px side margin, so the reset here is load-bearing, not tidying. The
+        wrapper's bare-element `p` reset is (0,1,1), which is why every rule in
+        this block is qualified by a section or card class. ────────────────── */
+  .tah-card blockquote {
+    margin: 0;
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: 19px;
+    line-height: 1.6;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* An owner's <em> inside a quote stays the quote's own ink. The italic walnut
+     emphasis is the HEADLINE signature; repainting a customer's words walnut
+     would read as the cafe talking, not the customer. */
+  .tah-card blockquote :global(em),
+  .tah-card blockquote :global(.em) { font-style: italic; color: inherit; }
+
+  /* ── attribution · the design's 11px / .2em / 600, pinned to the card floor.
+        Written scoped rather than borrowed from .mono (10px / .2em / 700). ── */
+  .tah-card figcaption {
+    margin-top: auto;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── RESPONSIVE · this section owns its own grid; the wrapper owns the shared
+        760 / 520 type pass. Nothing here may push the page sideways: every text
+        node above already carries overflow-wrap:anywhere, and there is no
+        button in this section to hold a nowrap label. ─────────────────────── */
+  @media (max-width: 900px) {
+    .tah-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+  }
+  @media (max-width: 640px) {
+    .tah-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .tah-head { margin-bottom: 32px; }
+    .tah-reviews .h2 { max-width: none; }
+    .tah-card { padding: 24px 20px; }
+    /* 19px to 18px, and the same beat kept: font-size only ever DECREASES as the
+       viewport narrows, at every breakpoint in this file. */
+    .tah-card blockquote { font-size: 18px; line-height: 1.55; }
+    .tah-card figcaption { letter-spacing: 0.16em; }
+    .tah-stars { letter-spacing: 2px; }
+  }
+</style>

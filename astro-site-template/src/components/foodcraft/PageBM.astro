@@ -1,0 +1,557 @@
+---
+/**
+ * foodcraft / PageBM — "Tahanan Cafe" (a neighbourhood café with a corner table).
+ *
+ * White & walnut: Libre Caslon Text over Karla on a plain WHITE ground, ruled
+ * with hairlines and cornered at 2px. There is no pill and no soft edge
+ * anywhere — the page reads like a well-set page of a newspaper rather than a
+ * card deck, and the rules are structural, not decorative: sections are divided
+ * by 1px lines, and the grids are drawn with borders rather than gaps.
+ *
+ * TWO SIGNATURES, and neither is the colour:
+ *   1. THE UNDERLINED EYEBROW. Every .kick carries `border-bottom: 1px solid
+ *      var(--line-2); padding-bottom: 9px`. It is the single most recognisable
+ *      thing in the design and it is on the shared primitive, so a section that
+ *      restates the eyebrow will lose it.
+ *   2. THE ITALIC WALNUT EMPHASIS inside a headline — "The corner table <em>is
+ *      still yours.</em>". Libre Caslon Text ships a real 400 italic, so this
+ *      is not synthesised.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from
+ * "Tahanan Cafe Landing.dc.html". Nothing is re-derived, darkened or "made
+ * portable". The one axis the design itself exposes as configurable is its
+ * accent — its own data-props seeds a colour picker at #7A4E2D — so that is the
+ * token the theme engine is welcome to move.
+ *
+ * TOKEN NAMING IS CHECKED AGAINST THE ENGINE, NOT ASSUMED. buildOverrideCss
+ * owns a long list of colour words and wins every one with !important:
+ * gold peach amber lime blue mint yellow teal forest olive brass, plus
+ * paper/paper-2/card/ink/ink-soft/line/muted/accent-any, on-any and the rgb triplets.
+ * The previous template in this family shipped a token called --amber with a
+ * comment claiming the engine knew nothing about it; the engine rewrites
+ * --amber to palette.primary, and every scheme pick would have repainted a
+ * band. So: before naming a token here, grep genericThemeOverrides.ts for it.
+ *
+ *   OWNED BY THE ENGINE, deliberately — these are the axes a scheme SHOULD
+ *   move: --paper --card --ink --ink-soft --line --muted --accent
+ *   --accent-deep and the rgb triplets. Note --muted is remapped to
+ *   palette.inkSoft, so the contrast figure below is the NATIVE value and not
+ *   a guarantee under every scheme.
+ *
+ *   INVISIBLE TO THE ENGINE, verified by diffing this file's declarations
+ *   against it: --tint --tint-2 --well --ink-deep --line-2 --line-3 --band
+ *   --band-kick --band-body --on-band. The band trio matters most — they were
+ *   chosen against #241B14 specifically, so they must not move.
+ *
+ * ROLE OF THIS FILE: the wrapper emits the WHOLE document (doctype, head,
+ * tokens, fonts, Leaflet, skip link, scroll-reveal). It does NOT compose with
+ * BaseLayout. It is the only file in the variant that touches `siteData`; the
+ * 15 section components receive only `layout` + `content`.
+ *
+ * EDITABLE HOOKS OWNED BY THIS FILE: none. PageBM renders no editable text of
+ * its own — it READS layout.businessName / layout.tagline (<title>),
+ * content.description, layout.favicon and layout.ogImage || layout.favicon.
+ * Every data-field / data-image-field / data-href-field lives in a section.
+ *
+ * THE ONE HARDCODED VISIBLE STRING is the skip link's "Skip to content", an
+ * a11y affordance visible on focus only.
+ *
+ * VERIFIED CONTRAST — every figure below was COMPUTED from the hexes this file
+ * declares (sRGB relative luminance, WCAG 2.x), not estimated and not carried
+ * over from a sibling. An audit caught an earlier draft of this table stating
+ * band-kick/band as 7.62 when the palette gives 7.37; a number that errs HIGH
+ * is the dangerous kind, because it can wave through a pair that is actually
+ * under the bar. Re-run the arithmetic if you touch a hex above.
+ *   ink/paper 16.91 · ink/tint 15.83 · ink/well 15.19 · ink-soft/paper 7.71
+ *   accent/paper 7.11 (eyebrows, numerals, the emphasis)
+ *   paper on an accent fill 7.11 · on-band/band 16.91 · band-body/band 10.69
+ *   band-kick/band 7.37 · ink-deep on a paper fill 11.76
+ *   muted/paper 6.11 — this design's small print clears AA on its own, which
+ *   the previous two in this family did not. Nothing here is below the bar.
+ *
+ * FORBIDDEN CLASS NAMES here (read lib/genericThemeOverrides.ts before adding a
+ * button): .btn-primary .btn-ghost .btn-yellow .btn-light .nav-cta .nav-right
+ * .testi .cta-band .trust, and `.hero` on a <section>. The engine pins those
+ * labels !important for every state. Buttons here are .btn--fill / .btn--line /
+ * .btn--paper / .linkc, which it does not touch.
+ *
+ * FONT-PAIRING SENTINEL (two lines, wrapper-local, touches no shared file):
+ * lib/astro-builder.ts defaults `layout.fontPairing` to the literal 'modern',
+ * and resolveTheme's `lockVariant` only blanks ''/'auto'/'default' — so without
+ * the sentinel buildOverrideCss force-swaps Libre Caslon Text + Karla with
+ * !important on ~every real site and the design's faces never reach a visitor.
+ *
+ * RENDER ORDER, exactly as the design draws it: Header, Hero, Trust, About (our
+ * story), Services (the menu), Why (why here), Gallery, How, Testimonials,
+ * Credentials, Location (visit), Area (delivery), Faq, CtaBand, Footer.
+ *
+ * BANDS: the closing band is the ONLY dark ground in the design. A section that
+ * wants it carries `band-dark` alongside its own class; that one class flips the
+ * h2, the body, the eyebrow and both button treatments.
+ *
+ * Leaflet: this wrapper LOADS leaflet.css + leaflet.js and defines
+ * window.__foodcraftBMInitMap (family-unique, because a preview harness can
+ * render two wrappers in one document and a shared name cross-wires the maps).
+ * LocationBM calls that exact string. Keep `el.innerHTML = ''` in the boot — it
+ * erases the drawn fallback map-face — and keep id="map" literal.
+ */
+import HeaderBM from './header/HeaderBM.astro';
+import HeroBM from './hero/HeroBM.astro';
+import TrustBM from './trust/TrustBM.astro';
+import AboutBM from './about/AboutBM.astro';
+import ServicesBM from './services/ServicesBM.astro';
+import WhyBM from './why/WhyBM.astro';
+import GalleryBM from './gallery/GalleryBM.astro';
+import HowBM from './how/HowBM.astro';
+import TestimonialsBM from './testimonials/TestimonialsBM.astro';
+import CredentialsBM from './credentials/CredentialsBM.astro';
+import LocationBM from './location/LocationBM.astro';
+import AreaBM from './area/AreaBM.astro';
+import FaqBM from './faq/FaqBM.astro';
+import CtaBandBM from './ctaBand/CtaBandBM.astro';
+import FooterBM from './footer/FooterBM.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+const { scheme: __themeScheme, pairing: __resolvedPairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+// FONT-PAIRING SENTINEL — see the note in the frontmatter.
+const __pairing = (layout.fontPairing === 'modern' && !layout.fontPairingExplicit) ? '' : __resolvedPairing;
+const __fontHref = buildFontHref(__pairing);
+const __overrideCss = buildOverrideCss(__themeScheme, __pairing);
+const __desc = (content as any).description || '';
+const __favicon = layout.favicon || '';
+const __og = layout.ogImage || layout.favicon || '';
+---
+<!DOCTYPE html>
+<html lang="en-PH" data-page="BM">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{title}</title>
+{__desc && <meta name="description" content={__desc} />}
+<meta name="theme-color" content="#FFFFFF" />
+<meta property="og:title" content={title} />
+{__desc && <meta property="og:description" content={__desc} />}
+{__og && <meta property="og:image" content={__og} />}
+{__favicon && <link rel="icon" href={__favicon} />}
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Karla:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+{__fontHref && <link href={__fontHref} rel="stylesheet" />}
+<!-- Leaflet. BOTH tags are load-bearing: without the stylesheet the tiles render
+     as a stack of unpositioned images, and without the script window.L never
+     exists, the boot below returns immediately, and LocationBM's drawn fallback
+     map-face is all an owner ever sees however many coordinates they type.
+     scripts/check-template-blocks.mjs fails a wrapper that defines a map boot
+     without loading both. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+<style is:global>
+    /* ═══════════════════════════════════════════════════════════════════════
+       Every selector is prefixed html[data-page="BM"], including the reset,
+       body, img, a and ::selection. An unscoped rule in one of these blocks
+       reaches all 64 templates: two of them once shipped
+       h1,h2,h3,h4{text-transform:uppercase} and capitalised every mixed-case
+       design in the catalogue.
+
+       (Never write a literal end-style-tag inside this block, comments
+        included — it is an HTML raw-text element, so the parser would end the
+        stylesheet right there.)
+       ═══════════════════════════════════════════════════════════════════════ */
+
+    html[data-page="BM"] {
+      /* ── the white world ──────────────────────────────────────────────── */
+      --paper: #FFFFFF;
+      --card: #FFFFFF;
+      --tint: #FAF7F3;
+      --tint-2: #F2ECE5;
+      --well: #F7F2EC;
+      --ink: #241B14;
+      --ink-deep: #4A3320;
+      --ink-soft: #5C5147;
+      --muted: #6B6057;
+      /* Two weights of rule, and the difference is load-bearing: --line is the
+         quiet structural hairline, --line-2 is the one you can see (the eyebrow
+         underline, the outlined button). */
+      --line: #EDE6DF;
+      --line-2: #E0D3C6;
+      --line-3: #DCCDBE;
+
+      /* ── the accent, the one token the engine may move ────────────────── */
+      --accent: #7A4E2D;
+      --accent-deep: #573418;
+      --accent-2: #8A5A34;
+      --accent-rgb: 122,78,45;
+
+      /* ── the closing band. Invisible to the engine on purpose: these three
+            were chosen against #241B14 and must not move. ───────────────── */
+      --band: #241B14;
+      --band-kick: #C9A57C;
+      --band-body: #D6CCC2;
+      --on-band: #FFFFFF;
+
+      /* ── engine vocabulary it also rewrites; declared so nothing inherits a
+            blank, and used deliberately. */
+      --ink-rgb: 36,27,20;
+      --paper-rgb: 255,255,255;
+      --on-ink: #FFFFFF;
+      --on-paper: #241B14;
+      --on-accent: #FFFFFF;
+      --on-primary: #FFFFFF;
+
+      /* ── type + metrics ───────────────────────────────────────────────── */
+      --disp: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+      --serif: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+      --sans: "Karla", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      /* This design has no monospace: its tracked caps are Karla 700. */
+      --mono: "Karla", system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      --maxw: 1160px;
+      /* SHARP. 2px everywhere — there is no pill and no soft edge in this
+         design, and a rounded corner would read as a different template. */
+      --r: 2px;
+    }
+
+    /* ── reset + document ─────────────────────────────────────────────────── */
+    html[data-page="BM"] *,
+    html[data-page="BM"] *::before,
+    html[data-page="BM"] *::after { box-sizing: border-box; }
+    html[data-page="BM"] {
+      -webkit-text-size-adjust: 100%; scroll-behavior: smooth;
+      scroll-padding-top: 88px;
+    }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BM"] { scroll-behavior: auto; } }
+    html[data-page="BM"] body {
+      margin: 0; padding: 0;
+      background-color: var(--paper); color: var(--ink);
+      font-family: var(--sans); font-size: 16.5px; line-height: 1.78;
+      -webkit-font-smoothing: antialiased; overflow-x: hidden;
+    }
+    html[data-page="BM"] img { max-width: 100%; display: block; }
+    html[data-page="BM"] a { color: inherit; text-decoration: none; }
+    html[data-page="BM"] ::selection { background: var(--accent); color: var(--on-accent); }
+    /* text-transform is DECLARED, not defaulted — a property a template never
+       states is one another template's is:global block can reach. */
+    html[data-page="BM"] :where(h1,h2,h3,h4) {
+      margin: 0; font-family: var(--disp); font-weight: 400; color: var(--ink);
+      letter-spacing: 0; line-height: 1.14; text-transform: none;
+    }
+    /* This bare-element paragraph reset is (0,1,1): always qualify a section's
+       own paragraph rules with a parent class so they win. */
+    html[data-page="BM"] :where(p) { margin: 0 0 1em; }
+
+    /* ── layout scaffolding ───────────────────────────────────────────────── */
+    html[data-page="BM"] :where(.wrap) { width: min(var(--maxw), 92vw); margin-inline: auto; }
+    html[data-page="BM"] section { padding: clamp(52px,7vw,84px) 0; position: relative; }
+
+    /* ── THE ONE DARK BAND. The closing band, and nothing else in the design. */
+    html[data-page="BM"] :where(.band-dark) { background-color: var(--band); color: var(--on-band); }
+    html[data-page="BM"] :where(.band-dark) .h2,
+    html[data-page="BM"] :where(.band-dark) .fig { color: var(--on-band); }
+    html[data-page="BM"] :where(.band-dark) .body,
+    html[data-page="BM"] :where(.band-dark) .lede { color: var(--band-body); }
+    html[data-page="BM"] :where(.band-dark) .mono { color: var(--band-body); }
+    /* On the band the eyebrow drops its underline and takes the warm tan. Both
+       halves are forced. The inherited --line-2 rule is not too faint on the
+       dark ground, it is far too LOUD — 11.52:1 — so it reads as a border round
+       the words rather than the hairline the design draws. And the inherited
+       --accent cannot stay: walnut on walnut is 2.38:1, under the 3:1 floor for
+       any text at all. --band-kick is the tan chosen against this ground. */
+    html[data-page="BM"] :where(.band-dark) .kick {
+      color: var(--band-kick); border-bottom-color: transparent; padding-bottom: 0;
+    }
+    html[data-page="BM"] :where(.band-dark) .h2 em,
+    html[data-page="BM"] :where(.band-dark) .h2 .em { color: var(--band-kick); }
+
+    /* ── .kick — THE SIGNATURE EYEBROW. 10px caps at .34em in walnut, sitting
+          ON a hairline. The underline is the design's most recognisable mark;
+          it lives here so a section cannot lose it by restating the eyebrow. */
+    html[data-page="BM"] :where(.kick) {
+      /* line-height pinned TIGHT for the same reason as .btn — and here it is
+         load-bearing: the underline is drawn by border-bottom, so a loose line
+         box drops the rule away from the words and softens the one mark this
+         family is recognised by. */
+      line-height: 1.1;
+      display: inline-block;
+      font-family: var(--sans); font-weight: 700; font-size: 10px;
+      letter-spacing: .34em; text-transform: uppercase; color: var(--accent);
+      border-bottom: 1px solid var(--line-2); padding-bottom: 9px;
+    }
+
+    /* ── display headline + the ITALIC WALNUT EMPHASIS. Libre Caslon Text ships
+          a real 400 italic, so nothing here is synthesised. Sections feed the h2
+          with set:html so an owner can place the emphasis in their own
+          sentence. */
+    html[data-page="BM"] :where(.h2) {
+      font-family: var(--disp); font-weight: 400;
+      font-size: clamp(29px,3.8vw,50px); line-height: 1.14; letter-spacing: 0;
+      margin: 0 0 .3em; color: var(--ink); max-width: 24ch;
+    }
+    html[data-page="BM"] :where(.h2 em),
+    html[data-page="BM"] :where(.h2 .em),
+    html[data-page="BM"] :where(.em) { font-style: italic; color: var(--accent); }
+    html[data-page="BM"] :where(.lede) {
+      color: var(--ink-soft); font-size: clamp(15.5px,1.5vw,17.5px); line-height: 1.78;
+      max-width: 44ch; margin: 0;
+    }
+    html[data-page="BM"] :where(.body) {
+      color: var(--ink-soft); font-size: clamp(14.5px,1.3vw,15px); line-height: 1.8;
+    }
+    html[data-page="BM"] :where(.mono) {
+      font-family: var(--sans); font-weight: 700; font-size: 10px;
+      letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+    }
+    /* ── .fig — the serif figure (prices, proof numbers, numerals). Italic in
+          this design wherever it is a numeral, which the sections opt into. */
+    html[data-page="BM"] :where(.fig) {
+      font-family: var(--disp); font-weight: 400; color: var(--accent);
+      font-variant-numeric: tabular-nums lining-nums; line-height: 1;
+    }
+
+    /* ── BUTTONS ────────────────────────────────────────────────────────────
+       Straight from the design's own renderVals(): one shared base at 12.5px /
+       .14em / 700 / 2px, and three fills.
+         .btn--fill   btnNav/btnBrown — walnut fill, white label
+         .btn--line   the outlined secondary — no fill, --line-2 hairline
+         .btn--paper  btnCream — white fill, --ink-deep label, used ON the band
+       Every hover DARKENS the same fill and keeps the same label colour: never
+       lighter, never transparent, never a hue change. That is what stranded the
+       Ironwood label, and the trap is live here because buildOverrideCss pins
+       some labels with !important. */
+    html[data-page="BM"] :where(.btn) {
+      /* line-height is DECLARED. The design sets none on its buttons, so they
+         render at the browser normal; inheriting body line-height instead
+         inflated every control by ~6px and, on the eyebrow below, pushed the
+         underline off the text it belongs to. A label is one line: 1 is what a
+         button wants. */
+      line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center; gap: .55em;
+      padding: 16px 30px; min-height: 48px;
+      border-radius: var(--r); border: 1px solid transparent;
+      font-family: var(--sans); font-weight: 700; font-size: 12.5px;
+      letter-spacing: .14em; text-transform: uppercase; text-decoration: none;
+      cursor: pointer; white-space: nowrap;
+      transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+    }
+    html[data-page="BM"] :where(.btn--fill) {
+      background-color: var(--accent); color: var(--on-accent); border-color: var(--accent);
+    }
+    html[data-page="BM"] :where(.btn--fill:hover) {
+      background-color: var(--accent-deep); color: var(--on-accent); border-color: var(--accent-deep);
+      transform: translateY(-2px);
+    }
+    html[data-page="BM"] :where(.btn--fill:active) { transform: translateY(0); }
+    html[data-page="BM"] :where(.btn--line) {
+      background-color: transparent; color: var(--ink); border-color: var(--line-2);
+    }
+    html[data-page="BM"] :where(.btn--line:hover) {
+      background-color: var(--ink); color: var(--paper); border-color: var(--ink);
+      transform: translateY(-2px);
+    }
+    html[data-page="BM"] :where(.btn--line:active) { transform: translateY(0); }
+    html[data-page="BM"] :where(.btn--paper) {
+      background-color: var(--paper); color: var(--ink-deep); border-color: var(--paper);
+    }
+    html[data-page="BM"] :where(.btn--paper:hover) {
+      background-color: var(--paper); color: var(--ink-deep); border-color: var(--paper);
+      box-shadow: inset 0 0 0 999px rgba(0,0,0,.08);
+      transform: translateY(-2px);
+    }
+    html[data-page="BM"] :where(.btn--paper:active) { transform: translateY(0); }
+    /* Inside the band the outlined secondary takes white on a white hairline. */
+    html[data-page="BM"] :where(.band-dark) .btn--line {
+      background-color: transparent; color: var(--on-band); border-color: rgba(var(--paper-rgb),.42);
+    }
+    html[data-page="BM"] :where(.band-dark) .btn--line:hover {
+      background-color: rgba(var(--paper-rgb),.12); color: var(--on-band); border-color: var(--on-band);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="BM"] .btn { transition: none; }
+      html[data-page="BM"] .btn--fill:hover,
+      html[data-page="BM"] .btn--line:hover,
+      html[data-page="BM"] .btn--paper:hover { transform: none; }
+    }
+
+    /* ── .linkc — the quiet text action. Its colour never changes on hover,
+          only the rule under it, so it cannot fail a contrast check mid-
+          interaction. */
+    html[data-page="BM"] :where(.linkc) {
+      display: inline-flex; align-items: center; gap: .5em; min-height: 44px;
+      font-family: var(--sans); font-weight: 700; font-size: 13px;
+      letter-spacing: .02em; color: var(--accent);
+      border-bottom: 1px solid transparent; padding-bottom: 2px;
+      transition: border-bottom-color .18s ease, transform .18s ease;
+    }
+    html[data-page="BM"] :where(.linkc:hover) {
+      color: var(--accent); border-bottom-color: var(--accent); transform: translateY(-1px);
+    }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BM"] .linkc { transition: none; } }
+
+    /* ── FOCUS · one DUO ring: a 3px paper outline inside a walnut halo. */
+    html[data-page="BM"] :where(a,button,summary,[tabindex]):focus-visible {
+      outline: 3px solid var(--paper); outline-offset: 0;
+      box-shadow: 0 0 0 6px var(--accent);
+      border-radius: var(--r);
+    }
+    html[data-page="BM"] :where(.band-dark) :where(a,button,summary,[tabindex]):focus-visible {
+      outline-color: var(--band); box-shadow: 0 0 0 6px var(--band-kick);
+    }
+
+    /* ── .plate / .ph — the image frame and its empty state. The design's wells
+          are flat --well; the two faint washes only exist so an unfilled slot
+          reads as a deliberate surface rather than a broken image. */
+    html[data-page="BM"] :where(.plate) {
+      position: relative; overflow: hidden; min-height: 180px;
+      border-radius: var(--r);
+      background-color: var(--well); isolation: isolate;
+    }
+    html[data-page="BM"] :where(.plate) .ph {
+      position: absolute; inset: 0; z-index: 1;
+      background-color: var(--well);
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+      background-image:
+        radial-gradient(78% 64% at 22% 14%, rgba(var(--accent-rgb),.12), transparent 62%),
+        radial-gradient(66% 60% at 84% 90%, rgba(var(--ink-rgb),.06), transparent 60%);
+      transition: transform .5s ease;
+    }
+    /* Caption on an OPAQUE ink pill, never a gradient scrim: white on --ink
+       holds 16.91:1 over ANY owner photo, however dark or blown out. */
+    html[data-page="BM"] :where(.plate) .cap {
+      position: absolute; left: 12px; bottom: 12px; z-index: 3;
+      max-width: calc(100% - 24px);
+      background-color: var(--ink); color: var(--on-band);
+      font-family: var(--sans); font-weight: 700; font-size: 9px;
+      letter-spacing: .2em; text-transform: uppercase;
+      padding: 6px 12px; border-radius: var(--r);
+      overflow-wrap: anywhere;
+    }
+    @media (prefers-reduced-motion: reduce) { html[data-page="BM"] :where(.plate) .ph { transition: none; } }
+
+    /* ── .rowrule — the label/value hairline row used by the spec ledger, the
+          opening hours and the delivery list. One declaration, three sections. */
+    html[data-page="BM"] :where(.rowrule) {
+      display: flex; align-items: baseline; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--line);
+      min-width: 0;
+    }
+
+    /* ── scroll reveal ─────────────────────────────────────────────────────── */
+    html[data-page="BM"] :where(.reveal) {
+      opacity: 0; transform: translateY(14px);
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    html[data-page="BM"] :where(.reveal.in) { opacity: 1; transform: none; }
+    html[data-page="BM"] :where(.reveal[data-delay="1"]) { transition-delay: .08s; }
+    html[data-page="BM"] :where(.reveal[data-delay="2"]) { transition-delay: .16s; }
+    html[data-page="BM"] :where(.reveal[data-delay="3"]) { transition-delay: .24s; }
+    @media (prefers-reduced-motion: reduce) {
+      html[data-page="BM"] .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* ── skip link ─────────────────────────────────────────────────────────── */
+    html[data-page="BM"] :where(.skip) {
+      position: absolute; left: -999px; top: 0; z-index: 100;
+      background-color: var(--accent); color: var(--on-accent);
+      padding: 12px 18px; border-radius: 0 0 var(--r) 0;
+      font-family: var(--sans); font-weight: 700; font-size: 11.5px;
+      letter-spacing: .14em; text-transform: uppercase;
+    }
+    html[data-page="BM"] :where(.skip:focus) { left: 0; top: 0; }
+
+    /* ── SHARED MOBILE PASS · 760 / 520 ────────────────────────────────────── */
+    @media (max-width: 760px) {
+      html[data-page="BM"] :where(.h2) { font-size: clamp(26px,7vw,38px); max-width: none; overflow-wrap: anywhere; }
+      html[data-page="BM"] :where(.lede) { max-width: none; }
+    }
+    @media (max-width: 520px) {
+      html[data-page="BM"] :where(.kick) { font-size: 9.5px; letter-spacing: .26em; }
+      html[data-page="BM"] :where(.btn) { padding: 15px 22px; }
+    }
+</style>
+
+<style is:inline set:html={__overrideCss}></style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+{visibility.headerSection !== false && <HeaderBM content={content} layout={layout} />}
+<main id="main">
+  {visibility.heroSection !== false && <HeroBM content={content} layout={layout} />}
+  {visibility.trustBlock !== false && <TrustBM content={content} layout={layout} />}
+  {visibility.aboutSection !== false && <AboutBM content={content} layout={layout} />}
+  {visibility.servicesSection !== false && <ServicesBM content={content} layout={layout} />}
+  {visibility.whyUsBlock !== false && <WhyBM content={content} layout={layout} />}
+  {visibility.gallerySection !== false && <GalleryBM content={content} layout={layout} />}
+  {visibility.howItWorksBlock !== false && <HowBM content={content} layout={layout} />}
+  {visibility.testimonialsBlock !== false && <TestimonialsBM content={content} layout={layout} />}
+  {visibility.credentialsBlock !== false && <CredentialsBM content={content} layout={layout} />}
+  {visibility.locationBlock !== false && <LocationBM content={content} layout={layout} />}
+  {visibility.serviceAreaBlock !== false && <AreaBM content={content} layout={layout} />}
+  {visibility.faqBlock !== false && <FaqBM content={content} layout={layout} />}
+  {visibility.ctaBandBlock !== false && <CtaBandBM content={content} layout={layout} />}
+</main>
+{visibility.footerSection !== false && <FooterBM content={content} layout={layout} />}
+
+<script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script is:inline>
+  (function () {
+    var els = document.querySelectorAll('.reveal');
+    if (!els.length) return;
+    if (!('IntersectionObserver' in window) ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      els.forEach(function (el) { el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    els.forEach(function (el) { io.observe(el); });
+  })();
+
+  // Family-unique name — LocationBM calls this exact string. The innerHTML wipe
+  // erases the drawn fallback map-face before Leaflet paints. The short retry
+  // covers a slow or blocked CDN and gives up rather than spinning: the drawn
+  // face IS the design and is a perfectly good thing to be left with.
+  window.__foodcraftBMInitMap = function (lat, lng, label) {
+    var tries = 0;
+    (function go() {
+      var el = document.getElementById('map');
+      if (!el) return;
+      if (typeof window.L === 'undefined') {
+        if (tries++ < 25) setTimeout(go, 80);
+        return;
+      }
+      el.innerHTML = '';
+      var map = window.L.map(el, { scrollWheelZoom: false, attributionControl: true }).setView([lat, lng], 16);
+      // LABELLED basemap: someone finding a café needs the street names, and
+      // voyager is the CARTO set that sits inside a warm white design.
+      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19, subdomains: 'abcd',
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      }).addTo(map);
+      // Colours are READ from the live tokens rather than baked, so an admin
+      // colour pick recolours the pin too.
+      var cs = window.getComputedStyle(document.documentElement);
+      var accent = (cs.getPropertyValue('--accent') || '').trim() || '#7A4E2D';
+      var paper = (cs.getPropertyValue('--paper') || '').trim() || '#FFFFFF';
+      var icon = window.L.divIcon({
+        className: '',
+        iconSize: [16, 16], iconAnchor: [8, 8],
+        html: '<span style="display:block;width:16px;height:16px;border-radius:50%;background:' +
+              accent + ';border:3px solid ' + paper + ';box-shadow:0 0 0 1px ' + accent + '"></span>',
+      });
+      var marker = window.L.marker([lat, lng], { icon: icon }).addTo(map);
+      if (label) marker.bindPopup(label);
+    })();
+  };
+</script>
+</body>
+</html>

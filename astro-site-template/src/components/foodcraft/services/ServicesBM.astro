@@ -1,0 +1,438 @@
+---
+/**
+ * foodcraft / ServicesBM — "Tahanan Cafe": THE MENU.
+ *
+ * ROLE. The design's SERVICES element (id="menu"), verbatim: a CENTRED head —
+ * underlined eyebrow, display h2 with its italic walnut emphasis, one narrow
+ * paragraph — over a THREE-CARD GRID. Each card is a hairlined box with NO
+ * padding of its own and a clipped corner: a 190px photo well flush to the top
+ * three edges, then a padded body carrying a tracked-caps walnut tag, the dish
+ * name, its blurb, and a foot pinned to the bottom by `margin-top:auto` behind a
+ * paler hairline, with a small detail line left and a serif price hard right.
+ *
+ * NOTE THE DIFFERENCE FROM ITS PREDECESSOR, because it is the whole section:
+ * BL's menu head is a SPLIT head (h2 left, paragraph right) and its card is
+ * text-only with a numeral. BM's head is CENTRED and its card LEADS WITH A
+ * PHOTOGRAPH and has no numeral at all. Nothing here is inherited from that
+ * file but the shape of this comment and the guard discipline — the class names
+ * are deliberately their own (`.mnu-*`, not BL's `.s-*`), because an audit had
+ * to rename a set copied verbatim between two templates in this family.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every number below is lifted from
+ * "Tahanan Cafe Landing.dc.html" and nothing is re-derived: the 40px head
+ * margin, the 22px grid gutter, the 190px photo well, the 24px/24px/26px body
+ * padding, the 9px stack gap, the 16px foot offset, the 9.5px/.22em tag, the
+ * 23px/1.22 dish name, the 14px/1.72 blurb, the 12px/600 detail line and the
+ * 21px serif price. Hex maps to the token of the SAME value (R1), so no literal
+ * hex appears in this file:
+ *   #EDE6DF --line (card hairline) · #F7F2EC --well (photo ground, via .plate)
+ *   #F2ECE5 --tint-2 (the paler foot hairline) · #7A4E2D --accent (tag, price)
+ *   #241B14 --ink (dish name) · #5C5147 --ink-soft (blurb, sub) ·
+ *   #6B6057 --muted (detail line) · 2px --r (via .plate / the card).
+ *
+ * ON --tint-2 AS A HAIRLINE, since a reader will think it an oversight: the
+ * design draws the foot rule at #F2ECE5, which is PALER than the card's own
+ * #EDE6DF border. --line-3 is this template's other rule token but it is
+ * #DCCDBE — darker than the card border, i.e. the opposite of what the design
+ * draws — so using it would invert the design to keep a token in its category.
+ * --tint-2 is the token that IS #F2ECE5. It is one of the tokens PageBM lists
+ * as invisible to the theme engine, so it will not move under a scheme pick;
+ * that is the same deal --well and --line-3 already take in this wrapper.
+ *
+ * EDITABLE HOOKS — every path below is DECLARED in components/editor/
+ * genericContentSchema.ts's `services` group, so none is a dead hook:
+ *   services.tag                    — eyebrow (.kick)
+ *   services.headline               — h2, set:html so the owner's own <em>
+ *                                     lands where THEY put it in THEIR sentence
+ *   services.sub                    — the centred paragraph under the headline
+ *   services.items.${i}.image       — data-image-field, the card's photo well
+ *   services.items.${i}.tag         — the tracked-caps walnut tag
+ *   services.items.${i}.title       — the dish name (h3)
+ *   services.items.${i}.desc        — the blurb
+ *   services.items.${i}.note        — the small detail line, foot left
+ *   services.items.${i}.price       — the serif price, foot right
+ *
+ * DERIVED: NOTHING. Unlike its predecessor this card carries no numeral, so
+ * this file computes no glyph at all. Every mark on this section is either a
+ * string the owner typed or a rule drawn by CSS.
+ *
+ * NOTHING IS SUPPLIED BY THIS FILE (R2). The design's demo cards are the
+ * DESIGNER filling their own template; a drink nobody sells is an invented
+ * drink and a price nobody quoted is an invented price, so not one of them is a
+ * fallback. The price is printed VERBATIM — never converted, never given a
+ * currency symbol this file chose, never totalled or compared against another
+ * card. Every guard sits OUTSIDE its element, so an empty value removes the
+ * ELEMENT: no photo well over a card with no upload, no empty tag, no heading
+ * over nothing, and no foot hairline drawn under a foot that carries neither a
+ * detail line nor a price.
+ *
+ * NOT RENDERED, DELIBERATELY:
+ *   · No button anywhere. The design's menu card carries no link and the
+ *     section carries no action — this page's actions live in the header, the
+ *     hero and the closing band. services.ctaLabel / services.ctaHref are
+ *     therefore left to the templates that actually draw a per-card button;
+ *     emitting them here would put a live sidebar input on a control this page
+ *     does not have.
+ *   · NO onPage() ANCHOR-REMAP HELPER (R7), for the same reason: this section
+ *     emits no href at all, declares no data-href-field, and a helper with
+ *     nothing to remap is dead code — inventing a button to give it a job is
+ *     exactly the trade this family forbids. The section's own id="menu" is one
+ *     of the page's anchors and is what the header links AT. If a link is ever
+ *     added here, copy onPage() from a BM sibling with
+ *       PAGE_ANCHORS  = {menu, about, gallery, visit, faq, main}
+ *       ANCHOR_ALIAS  = {location→visit, contact→visit, services→menu,
+ *                        rooms→menu, host→about, why→about, work→gallery,
+ *                        book→main}
+ *     and pass tel:/mailto:/http: through untouched.
+ *   · No rating and NO STAR. The design prints none, so this section makes no
+ *     rating claim. (Family rule: N stars are drawn only from a numeric rating
+ *     field, clamped 1–5, aria-hidden with the number itself announced — never
+ *     five stars over a review that carried none.) services.items[].rating is
+ *     read by the templates that draw one; here it would be a hook on nothing.
+ *   · No meta line, no price unit, no feature chips, no whole-package band.
+ *     The design's card is photo / tag / name / blurb / detail / price and
+ *     nothing else. services.items[].meta, .duration, .features and the
+ *     services.whole.* group belong to the zig-zag and hospitality templates; a
+ *     data-field for something this section never draws is an input that
+ *     silently changes nothing. In particular the price is drawn WITHOUT
+ *     .duration beside it, because the design's foot has one price span and
+ *     appending a unit it does not draw would be this file inventing layout.
+ *   · services.headline is the only set:html field. The dish name is plain
+ *     text, as the design prints it — and a set:html child could not be reached
+ *     by this scoped block anyway (R3).
+ *   · No hover on the photo. The wrapper ships `transition: transform .5s` on
+ *     .ph for the sections that move it; a menu card in this design is static,
+ *     so it is left still rather than given motion the design never had.
+ *
+ * THE CARD FILTER. A card counts as real when it carries a photo, a title, a
+ * desc, a tag, a note OR a price — the six things this card can draw. All six
+ * are counted on purpose: each is something an owner put into a live input, so
+ * dropping a card that holds only a photo, or only a price, would silently
+ * delete their work. A row holding none of them is an unfilled "+ Add" row, and
+ * it would spend a whole bordered plate on nothing visible.
+ *
+ * INDEXES (R6). Blank rows are dropped, but every data-field and
+ * data-image-field carries the row's ORIGINAL array index, so deleting card 2
+ * cannot misdirect an edit into card 3. There is no decorative numeral here, so
+ * no display index is needed anywhere.
+ *
+ * SECTION GATE (R5). lib/derive-content-defaults.ts fills services.tag,
+ * services.headline AND services.sub on every site (it derives the sub from the
+ * business name) while leaving services.items at [] — so a gate that counted
+ * the tag or the headline would ship a centred heading and a paragraph over an
+ * empty grid on every site that listed nothing. The gate counts BODY content
+ * only: at least one real card. There is no standalone photo or panel in this
+ * section to count alongside them.
+ *
+ * THE PHOTO WELL IS GUARDED, and that is the one decision most likely to be
+ * read as a deviation. The schema labels this field "Image (zig-zag
+ * templates)", so most real sites arrive with every services row's image empty.
+ * Rendering the well unconditionally would hand a café six 190px beige
+ * rectangles — the .plate empty state is a deliberate surface for a slot the
+ * design KNOWS is filled, not a licence to draw six of them. A card without an
+ * upload therefore starts at its body padding, and the border-drawn grid still
+ * reads as the design's grid because the frame, not the photo, is what draws it.
+ *
+ * ACCESSIBILITY (R9). A photo is announced only when the owner gave it words:
+ * with a dish name the photo layer is role="img" named by THAT NAME — the
+ * owner's own words — and without one it is hidden from the tree rather than
+ * announced as "image", because inventing "Cafe dish photo" would publish a
+ * description of something nobody described. The three attributes are mutually
+ * exclusive and ALL conditional, so no literal aria-hidden ever sits beside a
+ * conditional one.
+ *
+ * CONTRAST, on this design's native palette. These are RECOMPUTED from the
+ * wrapper's own token values (WCAG 2.x relative luminance) rather than copied,
+ * because PageBM's frontmatter table understates every figure this section
+ * uses: --ink/--paper 16.91, not 14.9 (dish name) · --ink-soft/--paper 7.71,
+ * not 7.29 (blurb, sub) · --accent/--paper 7.11, not 7.06 (eyebrow, tag,
+ * price) · --muted/--paper 6.11, not 5.71 (the 12px detail line). The wrapper's
+ * numbers are conservative, so nothing was mis-shipped by them — but a figure
+ * quoted in a doc comment is checkable, so this one is checked. Nothing on this
+ * section is below AA, including the small print, which the two previous
+ * templates in this family could not say.
+ *   ONE SCHEME CAVEAT: --muted is rewritten to palette.inkSoft by
+ *   genericThemeOverrides.ts, so under a scheme pick the 12px detail line and
+ *   the blurb converge on a single colour. That is not a re-derivation to
+ *   avoid: the design draws the detail line at #6B6057 and --muted is the token
+ *   that holds it, which is what R1 asks for.
+ *
+ * RESPONSIVE (R8). The wrapper owns the shared 760/520 pass and the whole
+ * vertical section rhythm (`section { padding: clamp(52px,7vw,84px) 0 }`);
+ * that is page-level and is deliberately not restated here for one section.
+ * This file owns its GRID: three tracks to two at 900, to one at 620 — below
+ * 900 a 23px dish name inside 24px of padding has less measure at three-across
+ * than the design ever gave it. Every track is minmax(0,1fr) and every
+ * owner-typed string on the card breaks anywhere, so at 520 (checked against a
+ * 360px viewport) nothing can push the page sideways; a long unbroken price and
+ * a one-word tag typed in caps are the two likeliest strings here to arrive
+ * unbreakable. CLAMPS ARE MONOTONIC ACROSS BREAKPOINTS: every size this file
+ * states only ever decreases as the viewport narrows (23px→21px name,
+ * 21px→19px price), and the headline's own clamp is never restated here at all,
+ * so this section cannot introduce a heading that grows on a narrower screen.
+ *   THE CLAMP IT INHERITS IS NOT MONOTONIC, and a reader tracing R8 through
+ *   this file deserves to know it is a WRAPPER bug rather than a clean pass:
+ *   PageBM's .h2 is clamp(29px,3.8vw,50px) and becomes clamp(26px,7vw,38px) at
+ *   max-width:760px, so the rendered headline STEPS UP 29px → 38px as the
+ *   viewport crosses 760 (3.8vw is already at its 29px floor there, while 7vw
+ *   is pinned to its 38px cap until 543px). PageBL has the identical step,
+ *   31px → 40px. It is deliberately not patched from here: restating a size on
+ *   .mnu-h2 would fix one of the fifteen sections that render an .h2 and hide
+ *   the fault from the other fourteen, so it is reported against the wrapper.
+ *
+ * SPECIFICITY (R3). PageBM wraps its primitives in :where(), so an Astro-scoped
+ * rule here at (0,2,0) beats the global at (0,1,1) — media queries included. So
+ * never restate a property the wrapper tunes per breakpoint without restating
+ * it at that breakpoint too (that is why .mnu-sub's measure is released again
+ * below), and never restate a heading's face, weight or colour at all: the
+ * wrapper's heading rule already owns them. The italic walnut emphasis inside
+ * the headline arrives through set:html AFTER scoping, so it is unreachable
+ * from this block by design — the wrapper's global `.h2 em` rule is what paints
+ * it, and nothing here needs :global() precisely because of that.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const services = (content && content.services) || {};
+// `services` is a wrapper OR a bare legacy array, so every scalar read has to
+// tolerate both — on an array these are simply undefined, which is what the
+// guards below expect.
+const tag = typeof services.tag === 'string' ? services.tag.trim() : '';
+const headline = typeof services.headline === 'string' ? services.headline.trim() : '';
+const sub = typeof services.sub === 'string' ? services.sub.trim() : '';
+
+type Item = { title?: string; desc?: string; tag?: string; note?: string; price?: string; image?: string };
+// Both shapes: the wrapped `{tag, headline, sub, items[]}` and the legacy bare
+// array at content.services (see lib/services-shape.ts).
+const rawItems: any[] = Array.isArray(services.items)
+  ? services.items
+  : (Array.isArray(content?.services) ? content.services : []);
+
+// …and all three VOCABULARIES. lib/astro-builder.ts maps name→title /
+// description→desc when content.services arrives as a bare array, but NOT when
+// it arrives already wrapped — and a wrapped row still carrying the legacy key
+// names is exactly what the editor's brief draft-normalisation window wrote.
+// Without this mapping every row on such a site fails the "did the owner fill
+// anything in?" filter below and the WHOLE MENU vanishes while the data sits
+// untouched in the record. A bare string row (the oldest shape of all) becomes
+// its own title rather than being spread into character keys and lost.
+const str = (v: any) => (typeof v === 'string' ? v.trim() : '');
+const items: Item[] = rawItems.map((it: any) => {
+  if (typeof it === 'string') return { title: it.trim() };
+  if (!it || typeof it !== 'object') return {};
+  return {
+    title: str(it.title) || str(it.name),
+    desc: str(it.desc) || str(it.description),
+    tag: str(it.tag),
+    note: str(it.note),
+    price: str(it.price),
+    image: str(it.image),
+  };
+});
+
+// Drop the rows an owner added and never filled — carrying the ORIGINAL index
+// (R6). Only the six fields this card DRAWS count; see THE CARD FILTER above.
+const cards = items
+  .map((it, i: number) => ({ ...it, i }))
+  .filter((r) => Boolean(r.image || r.title || r.desc || r.tag || r.note || r.price));
+
+// An apostrophe in an upload's filename would otherwise close the url('') early
+// and take the whole background-image declaration down with it. The RAW value
+// still travels into data-image-field, which is what the editor reads back.
+const cssUrl = (s: string) => s.replace(/'/g, '%27');
+
+// R5: body content only. tag / headline / sub are all derived on every site.
+const hasSection = cards.length > 0;
+---
+{hasSection && (
+  <section class="mnu" id="menu">
+    <div class="wrap">
+      {(tag || headline || sub) && (
+        <div class="mnu-head reveal">
+          {tag && <span class="kick" data-field="services.tag">{tag}</span>}
+          {headline && <h2 class="h2 mnu-h2" data-field="services.headline" set:html={headline}></h2>}
+          {sub && <p class="mnu-sub" data-field="services.sub">{sub}</p>}
+        </div>
+      )}
+
+      <div class="mnu-grid">
+        {cards.map((it, k) => (
+          <article class="mnu-card reveal" data-delay={String(k % 3)}>
+            {/* Guarded OUTSIDE the well, so a card with no upload starts at its
+                body rather than opening with an empty beige rectangle. */}
+            {it.image && (
+              <div class="plate mnu-shot">
+                <div
+                  class="ph"
+                  data-image-field={`services.items.${it.i}.image`}
+                  role={it.title ? 'img' : undefined}
+                  aria-label={it.title || undefined}
+                  aria-hidden={it.title ? undefined : 'true'}
+                  style={`background-image:url('${cssUrl(it.image)}');`}
+                ></div>
+              </div>
+            )}
+            {/* A card holding only a photo draws no padded body at all. */}
+            {(it.tag || it.title || it.desc || it.note || it.price) && (
+              <div class="mnu-body">
+                {it.tag && <span class="mono mnu-tag" data-field={`services.items.${it.i}.tag`}>{it.tag}</span>}
+                {it.title && <h3 class="mnu-name" data-field={`services.items.${it.i}.title`}>{it.title}</h3>}
+                {it.desc && <p class="mnu-copy" data-field={`services.items.${it.i}.desc`}>{it.desc}</p>}
+                {/* Guarded OUTSIDE the foot, so a card with neither a detail
+                    line nor a price draws no hairline across the bottom of
+                    nothing. */}
+                {(it.note || it.price) && (
+                  <div class="mnu-foot">
+                    {it.note && <span class="mnu-detail" data-field={`services.items.${it.i}.note`}>{it.note}</span>}
+                    {/* Printed exactly as typed. `margin-left:auto` keeps it on
+                        the design's right edge even when the detail line beside
+                        it is absent and space-between has nothing to push
+                        against. */}
+                    {it.price && <span class="fig mnu-price" data-field={`services.items.${it.i}.price`}>{it.price}</span>}
+                  </div>
+                )}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* One scoped block. Read the SPECIFICITY note in the frontmatter before adding
+     to it. (Never write a literal end-of-stylesheet tag inside a comment here,
+     not even as an example — this is a raw-text element and the parser would end
+     the stylesheet on the spot, silently truncating the rest of the file.)
+
+     `.mnu` itself carries NO rule, on purpose and not by omission: PageBM's
+     shared `section { padding: clamp(52px,7vw,84px) 0 }` is the whole of this
+     section's outer rhythm, and the class is here only so the section is
+     nameable from a devtools inspection. */
+
+  /* ── THE CENTRED HEAD. The eyebrow is .kick and is NOT restated: its walnut,
+        its .34em tracking and above all its underline live on the shared
+        primitive, and a section that redeclares the eyebrow loses the mark that
+        makes this design recognisable. .kick is inline-block, so text-align
+        centres it as the design does. */
+  .mnu-head { text-align: center; margin-bottom: 40px; }
+
+  /* Margin and measure only. Size, face, colour, the italic walnut <em> and both
+     of the wrapper's mobile passes stay with .h2. The design gives this headline
+     no measure cap, so the wrapper's 24ch is released — otherwise a 24ch block
+     would sit at the left of a centred head. */
+  .mnu-h2 { margin: .26em 0 .2em; max-width: none; }
+
+  /* The design's paragraph is a flat 15px/1.75 over 44ch in --ink-soft, centred
+     under the headline. That is tighter and smaller than the wrapper's .lede,
+     which is sized for the hero, so it is its own rule rather than a .lede
+     override. Qualified by its class so it beats the wrapper's (0,1,1)
+     paragraph reset and its 1em bottom margin. */
+  .mnu-sub {
+    margin: 0 auto; max-width: 44ch;
+    font-size: 15px; line-height: 1.75; color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE CARD GRID. Three equal tracks, 22px gutter. minmax(0,1fr) rather than
+        1fr so one long unbroken price cannot widen its column. */
+  .mnu-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+
+  /* The card is a hairline FRAME with no padding of its own — the photo runs
+     flush to three edges and only the body below it is inset. The clip is what
+     lets the photo take the frame's 2px corner. */
+  .mnu-card {
+    display: flex; flex-direction: column; min-width: 0;
+    padding: 0; overflow: hidden;
+    border: 1px solid var(--line); border-radius: var(--r);
+  }
+
+  /* .plate already supplies the --well ground, the 2px corner, the clip and the
+     positioning; the fixed height is the design's. The wrapper floors .plate at
+     180px, which would fight a shorter height the moment one is asked for, so it
+     is zeroed here as the family's other framed sections do. */
+  .mnu-shot { height: 190px; min-height: 0; }
+
+  /* ── the padded body. `flex: 1` lets it fill the card so the foot's
+        margin-top:auto has somewhere to push to, which is what lines the prices
+        up across a row of cards whose blurbs differ in length. */
+  .mnu-body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 9px;
+    padding: 24px 24px 26px;
+  }
+
+  /* .mono gives the design's tracked caps in --sans at 700 uppercase; this card
+     tracks its tag a little wider, sets it a half-pixel smaller and — unlike
+     every other tracked label on the page — paints it WALNUT rather than
+     --muted, so those three are restated and nothing else is. */
+  .mnu-tag {
+    font-size: 9.5px; letter-spacing: .22em; color: var(--accent);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+
+  /* Face, weight, colour, letter-spacing and margin all come from the wrapper's
+     heading rule; only the size, the line-height and the break behaviour are
+     this section's. */
+  .mnu-name { font-size: 23px; line-height: 1.22; overflow-wrap: anywhere; }
+
+  /* Qualified by its own class so it beats the wrapper's (0,1,1) paragraph
+     reset, whose 1em bottom margin would break the card's 9px rhythm. */
+  .mnu-copy {
+    margin: 0; font-size: 14px; line-height: 1.72; color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── the foot, behind the design's PALER hairline (see the --tint-2 note in
+        the frontmatter). margin-top:auto pins it to the bottom of the body. */
+  .mnu-foot {
+    margin-top: auto; padding-top: 16px;
+    border-top: 1px solid var(--tint-2);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  }
+  .mnu-detail {
+    min-width: 0; font-size: 12px; font-weight: 600; color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  /* .fig supplies the display face, the walnut, tabular figures and line-height
+     1 — the primitive PageBM names for exactly this job. Only the size is
+     restated. margin-left:auto holds the design's right edge when the detail
+     line is absent and space-between has nothing to push against. */
+  .mnu-price {
+    min-width: 0; margin-left: auto; text-align: right;
+    font-size: 21px; overflow-wrap: anywhere;
+  }
+
+  /* ── 900: three tracks become two. Below this a 23px dish name inside 24px of
+        padding has less measure at three-across than the design ever gave it. */
+  @media (max-width: 900px) {
+    .mnu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ── 760: the head tightens, and its paragraph gives up the 44ch measure THIS
+        file set — the wrapper's own release cannot reach a (0,2,0) rule. */
+  @media (max-width: 760px) {
+    .mnu-head { margin-bottom: 30px; }
+    .mnu-sub { max-width: none; }
+  }
+
+  /* ── 620: one column. */
+  @media (max-width: 620px) {
+    .mnu-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* ── 520 (checked against a 360px viewport: nothing here can push the page
+        sideways — the grid's one track is minmax(0,1fr), the photo well is a
+        background rather than an <img>, and every owner-typed string in the card
+        breaks anywhere). Every size below is SMALLER than its base value, so the
+        card cannot grow as the screen narrows. */
+  @media (max-width: 520px) {
+    .mnu-body { padding: 22px 20px 24px; }
+    .mnu-name { font-size: 21px; }
+    .mnu-price { font-size: 19px; }
+    .mnu-tag { letter-spacing: .18em; }
+    /* The eyebrow is inline-block from the wrapper, so one long word an owner
+       types would otherwise sit at its full tracked width. */
+    .mnu-head .kick { max-width: 100%; overflow-wrap: anywhere; }
+  }
+</style>

@@ -1,0 +1,389 @@
+---
+/**
+ * foodcraft / HowBM — "Tahanan Cafe" HOW IT WORKS (design element
+ * data-component="HOW-IT-WORKS").
+ *
+ * ROLE: the page's one procedural block — how an order is actually placed at a
+ * café that has no ordering system. It sits between the gallery and the
+ * reviews, on the same white ground as everything around it, and it is the
+ * clearest example of this design's grid rule: THE GRID IS DRAWN WITH BORDERS,
+ * NOT GAPS. A hairline runs across the top of the row and every cell carries a
+ * right-hand and a bottom hairline, so the three steps read as ruled columns of
+ * a page rather than as three cards.
+ *
+ * DESIGN VALUES, lifted verbatim from "Tahanan Cafe Landing.dc.html" line 151:
+ *   section    max-width 1160 / padding 84px 30px 0          → .wrap + the
+ *              wrapper's shared `section` rule (see NOT RENDERED)
+ *   header     text-align center, margin-bottom 44px
+ *   eyebrow    10px / .34em caps / #7A4E2D 700, on a
+ *              1px #E0D3C6 underline, padding-bottom 9px     → .kick, UNTOUCHED
+ *   h2         Libre Caslon Text 400, clamp(29px,3.8vw,50px)
+ *              /1.14, margin .26em 0 0, #241B14, NO cap      → .h2 + .hbm-h2
+ *   emphasis   real <em> italic in #7A4E2D                   → wrapper .h2 em
+ *   grid       repeat(3, minmax(0,1fr)), NO gap,
+ *              border-top 1px #EDE6DF                        → --line
+ *   cell       padding 32px 30px,
+ *              border-right + border-bottom 1px #EDE6DF      → --line
+ *   numeral    Libre Caslon Text ITALIC 17px #7A4E2D         → .fig + .hbm-n
+ *   h3         Libre Caslon Text 400, 24px,
+ *              margin 13px 0 9px, #241B14
+ *   body       15px / 1.8 / #5C5147, margin 0                → .body
+ *   action     centred, margin-top 38px, btnBrown =
+ *              btn + accent fill + #FFFFFF label             → .btn.btn--fill
+ * Not one hex is written in this file (R1). btnBrown is character-for-character
+ * the wrapper's `.btn` base plus `.btn--fill`, so this file adds NO button rule
+ * at all beyond the full-width, wrapping label at 520px.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
+ * group id "how" / group id "hero" — a data-field on any other path is a dead
+ * hook that no sidebar input owns)
+ *   how.tag                  — the underlined walnut eyebrow
+ *   how.headline             — fed with set:html, so an owner can place the
+ *                              design's signature italic walnut emphasis inside
+ *                              their OWN sentence. Guarded: derive-content-
+ *                              defaults supplies no how.headline, so an unset
+ *                              value must draw nothing rather than open a gap
+ *   how.steps.${i}.title     — original index, see LIST INDEXES
+ *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
+ *                              stored value arrived as .desc / .description, so
+ *                              the first save heals the row onto the schema key
+ *   hero.cta1.text           — the walnut button's label
+ *   hero.cta1.href           — its target. Deliberately the page's ONE primary
+ *                              action reused rather than a new field: the schema
+ *                              declares hero.cta1.text as a `link` FieldSpec
+ *                              whose hrefPath is hero.cta1.href, so both halves
+ *                              are owned by a real sidebar input. The design
+ *                              reuses its own contactUrl/contactLabel in exactly
+ *                              this slot
+ *
+ * DERIVED, not content:
+ *   THE NUMERAL, and this is the decision a reader is most likely to think is an
+ *   oversight. The design prints word ordinals — "One", "Two", "Three" — from
+ *   its own `st.n` demo array. Those are the DESIGNER filling in their own
+ *   template, and they are three English words this component would be putting
+ *   on a Filipino owner's page (R2). What the design SPECIFIES is the treatment:
+ *   Libre Caslon Text, real italic, 17px, walnut, sitting above the title. That
+ *   treatment is reproduced exactly and the string is derived — a zero-padded
+ *   DISPLAY index, the same numeral form the very same design file uses for its
+ *   CREDENTIALS column. It is aria-hidden and carries no data-field, so it can
+ *   never become a content key an owner has to maintain. The list is a real
+ *   <ol>, so the ordinal reaches assistive tech through the markup instead.
+ *
+ *   THE TRACK COUNT. `--cols` follows the DATA, capped at the design's three.
+ *   The design writes repeat(3, minmax(0,1fr)) over its own three-row demo
+ *   array; hardcoding three under two filled steps would leave the row's top
+ *   hairline running on across a third of the page with no cell beneath it and
+ *   the bottom rule stopping short — a broken table rather than an editorial
+ *   one, because this grid is drawn with BORDERS and a missing cell takes its
+ *   rules with it. At three steps or more the computed value is
+ *   character-for-character the design's. Same idiom as TrustBM's `--cols`.
+ *
+ *   THE LIST ROLE. The <ol> carries role="list", because `list-style: none` is
+ *   exactly what makes Safari/VoiceOver drop list semantics — and the ordinal
+ *   reaching assistive tech through the markup is the entire reason the visible
+ *   numeral is aria-hidden. Same idiom as AreaBM's <ul>.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The design's
+ * own steps — "Message us the drinks and a pickup time", "Mornings before nine
+ * we reply fastest", "Made to hit your minute" — are a reply-time promise and a
+ * punctuality guarantee made on behalf of a business nobody has spoken to, so
+ * none of them ships. A café that has said nothing about its process gets no
+ * process section at all: blank rows are dropped and an all-blank list removes
+ * the whole <section>.
+ *
+ * SECTION GATE (R5) = rows.length, the BODY content. It cannot count how.tag,
+ * because lib/derive-content-defaults.ts hard-codes how.tag to 'How it works' on
+ * EVERY site — a gate that counted it would ship an eyebrow, a headline and a
+ * bare top hairline over an empty grid on every site that never filled the steps
+ * in. The CTA is not counted either: a section whose only content is a button is
+ * a heading over nothing.
+ *
+ * LIST INDEXES (R6). data-field carries the ORIGINAL array index; the numeral
+ * carries the DISPLAY index. Dropping a blank row 2 therefore renumbers the
+ * visible column but cannot misdirect an edit of row 3 into row 2.
+ *
+ * ARRAY SOURCE. how.steps is canonical, and the hook ALWAYS spells how.steps —
+ * the read-tolerant / write-canonical split every other How section in the repo
+ * uses. A legacy site whose rows live under how.items still RENDERS, but its
+ * hooks are not re-pointed at how.items: genericContentSchema declares no
+ * how.items list and no fallbackPaths for it, so a hook spelled that way would
+ * be inert in the sidebar.
+ *
+ * NOT RENDERED, deliberately:
+ *   - No id on the section. This page's anchors are menu / about / gallery /
+ *     visit / faq / main; the design gives HOW-IT-WORKS no id and no nav link
+ *     points at it, so inventing #how would add a target nothing aims for.
+ *   - No max-width on the headline. The wrapper's .h2 caps itself at 24ch, which
+ *     is right for the design's LEFT-aligned headlines; this one is centred by
+ *     its parent, and a 24ch block with no auto margins would hug the left edge
+ *     while centring its text inside itself. The design states no cap on this
+ *     h2, so the cap is removed rather than converted to `margin-inline:auto`.
+ *   - No border-left anywhere. The design rules the top of the row, then the
+ *     right and bottom of every cell — so the row has a right edge and no left
+ *     edge. That asymmetry is drawn, not missed; it is what lets the first step
+ *     sit flush with the eyebrow and the headline above it.
+ *   - No italic-emphasis rule. The headline is fed with set:html and scoped
+ *     rules cannot reach elements set:html creates (R3); the wrapper already
+ *     paints `:where(.h2 em)` italic walnut from its global block, so a scoped
+ *     duplicate here would be dead CSS.
+ *   - No `target="_blank"` on an IN-PAGE action. The design hard-codes one
+ *     because its own href is a Messenger URL, but the same button may now
+ *     resolve to '#visit', and opening an in-page anchor in a new tab is a bug.
+ *     Emitted for http(s) only.
+ *   - NO SECTION PADDING OF ITS OWN, and this one was audited BACK to the
+ *     wrapper. The design writes `padding: 84px 30px 0` on every section and
+ *     lets the NEXT section's top padding be the whole gap; PageBM instead
+ *     declares ONE shared symmetric rhythm — `section { padding:
+ *     clamp(52px,7vw,84px) 0 }`, capped at the design's own 84px — and that
+ *     wrapper rule is the contract all fifteen sections in this variant sit on
+ *     (GalleryBM and CredentialsBM state the same, and only TrustBM departs,
+ *     because the design gives that strip no padding at all). A top-only
+ *     padding here would NOT restore the design's 84px: GalleryBM above still
+ *     pays its own symmetric bottom 84, so the space above this row is 168
+ *     either way, and the only thing that would change is that HOW becomes the
+ *     one section in the variant that butts into the reviews below it. The
+ *     horizontal 30px is likewise not restated: .wrap is `min(1160px, 92vw)`,
+ *     the design's 1160 cap and its side air in one declaration.
+ *   - No star row, no rating, no photo: this section has none in the design.
+ *
+ * SCOPING (R3). One scoped <style> block, no is:global. The section class is
+ * "hbm" and the scoped classes are prefixed hbm- for THIS template: an audit had
+ * to rename a set of classes copied verbatim from the previous template, so
+ * nothing here reuses HowBL's how-band / how-grid / how-step / how-num names.
+ * Button classes are .btn / .btn--fill only — buildOverrideCss pins label
+ * colours on .btn-primary / .btn-ghost / .nav-cta / .cta-band .btn / .testi .btn
+ * with !important, and none of those selectors reaches anything here (R4).
+ */
+// `layout` is accepted because PageBM passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const how = content.how || {};
+const tag = typeof how.tag === 'string' ? how.tag.trim() : '';
+// Trimmed, and otherwise untouched: this goes out through set:html, so whatever
+// markup the owner typed reaches the wrapper's em rule intact.
+const headline = typeof how.headline === 'string' ? how.headline.trim() : '';
+
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+// Read tolerantly — a legacy site stores its rows under how.items — and write
+// canonically. See ARRAY SOURCE above.
+const source: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+const titleOf = (s: Step): string => String(s?.title ?? '').trim();
+const bodyOf = (s: Step): string => String(s?.body ?? s?.desc ?? s?.description ?? '').trim();
+// A step the admin added but never filled would otherwise print a walnut numeral
+// over nothing inside a fully ruled cell, and a title of pure whitespace would
+// ship an empty <h3>. Normalise first, drop the blanks (whitespace counts as
+// blank) and keep the ORIGINAL index on every survivor.
+const rows = source
+  .map((s, i: number) => ({ i, title: titleOf(s), body: bodyOf(s) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// Track count follows the DATA, capped at the design's three — see THE TRACK
+// COUNT above. Three or more filled steps compute exactly the design's
+// repeat(3, minmax(0,1fr)).
+const cols = String(Math.min(Math.max(rows.length, 1), 3));
+
+// Anchor guard (R7). Resolve in-page hrefs against the ids PageBM actually
+// renders — menu, about, gallery, visit, faq, main — and map what
+// derive-content-defaults emits onto them. Off-page hrefs (tel:, mailto:, http)
+// pass straight through untouched. Keep this table in step with the copies in
+// the other BM sections.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+const ctaText = typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '';
+// #visit is where this template puts the address, the hours and the way to reach
+// the café, so it is the honest landing place for an action that cannot be
+// resolved — the step above it has just told the visitor to get in touch.
+const ctaHref = onPage(hero.cta1?.href, '#visit');
+// Carried for http(s) ONLY — see NOT RENDERED above.
+const ctaExternal = /^https?:/i.test(ctaHref);
+---
+{rows.length > 0 && (
+  <section class="hbm">
+    <div class="wrap">
+      {(tag || headline) && (
+        <div class="hbm-head reveal">
+          {tag && <span class="kick" data-field="how.tag">{tag}</span>}
+          {headline && <h2 class="h2 hbm-h2" data-field="how.headline" set:html={headline}></h2>}
+        </div>
+      )}
+
+      <ol class="hbm-grid" role="list" style={`--cols:${cols}`}>
+        {rows.map((step, k) => (
+          <li class="hbm-cell reveal" data-delay={String(Math.min(k, 3))}>
+            {/* DERIVED chrome: display index, aria-hidden, no data-field. The
+                <ol> already carries the ordinal for assistive tech. */}
+            <span class="fig hbm-n" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+            {step.title && <h3 class="hbm-t" data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+            {step.body && <p class="body hbm-p" data-field={`how.steps.${step.i}.body`}>{step.body}</p>}
+          </li>
+        ))}
+      </ol>
+
+      {ctaText && (
+        <div class="hbm-act reveal">
+          <a
+            class="btn btn--fill"
+            href={ctaHref}
+            target={ctaExternal ? '_blank' : undefined}
+            rel={ctaExternal ? 'noopener noreferrer' : undefined}
+            data-field="hero.cta1.text"
+            data-href-field="hero.cta1.href"
+          >{ctaText}</a>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* The white ground, the underlined walnut eyebrow, the Libre Caslon headline,
+     the italic emphasis, the body copy and both button treatments all arrive
+     from the wrapper's shared primitives. This file must not restate any of
+     them — restating the eyebrow in particular would cost the design its
+     signature underline.
+
+     What IS set here is the block rhythm and the ruled grid.
+
+     THE SECTION STATES NO VERTICAL PADDING AND NO MEASURE. Design: `padding:
+     84px 30px 0; max-width:1160px`. Both halves are the wrapper's: `.wrap` is
+     `min(1160px, 92vw)`, and `html[data-page="BM"] section` is
+     `clamp(52px,7vw,84px) 0`, which tops out at exactly the design's 84px. A
+     scoped `.hbm { padding: … 0 0 }` WOULD win that rule on specificity — but
+     it would not buy the design's 84px gap, because GalleryBM above keeps its
+     own symmetric bottom padding; it would only make HOW the single section in
+     the variant with no space under it. See the frontmatter. */
+
+  /* Design: centred header block, margin-bottom 44px. The margin lives on the
+     block rather than on the h2, so the gap above the grid is identical whether
+     or not the owner typed a headline — and derive-content-defaults ships
+     how.tag on every site but NO how.headline, so "eyebrow, then straight into
+     the grid" is the DEFAULT state, not an edge case. */
+  .hbm-head { text-align: center; margin-bottom: 44px; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .34em tracking: one
+     unbroken word would otherwise be the widest thing on the page (R8). Only
+     wrapping is touched — the underline, the tracking and the walnut come from
+     the .kick primitive. */
+  .hbm-head .kick { overflow-wrap: anywhere; }
+
+  /* Design: margin .26em 0 0, and NO max-width. The wrapper's .h2 is a :where()
+     rule so both win without !important. The cap has to go rather than become
+     `margin-inline:auto`: see NOT RENDERED in the frontmatter. */
+  .hbm-h2 { margin: 0.26em 0 0; max-width: none; }
+
+  /* THE GRID IS DRAWN WITH BORDERS, NOT GAPS — the design's rule for this whole
+     page. Top hairline on the row, right + bottom hairline on every cell, and
+     no gap at all, so the columns share their rules.
+     minmax(0,1fr) rather than 1fr so a long unbroken word in a step cannot
+     widen its own track and push the page sideways.
+     --cols is the design's 3 for any real three-step process and only drops
+     below it when the owner filled fewer — an empty track in a grid drawn with
+     BORDERS is a hairline hanging over nothing. The inline custom property sets
+     no `grid-template-columns` of its own, so the 900px rule below still wins
+     on source order. */
+  .hbm-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+    border-top: 1px solid var(--line);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* Design: padding 32px 30px, border-right + border-bottom.
+     min-width:0 as well as the minmax() above: a grid item's default min-width
+     is auto, so one unbroken word would still widen its track. */
+  .hbm-cell {
+    min-width: 0;
+    padding: 32px 30px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    list-style: none;
+  }
+
+  /* Design: Libre Caslon Text ITALIC, 17px, walnut, on its own line. The face,
+     the weight, the walnut and the tabular figures come from the wrapper's .fig,
+     which PageBM documents as the primitive a section opts into for a numeral;
+     the italic and the size are this section's. `display:block` because the
+     design's numeral is a <div> and the title must start on a new line, and the
+     leading is restated as `normal` because the design states none on it — .fig
+     ships line-height:1, and the h3's 13px top margin was drawn against a
+     `normal` box. */
+  .hbm-n.fig {
+    display: block;
+    font-style: italic;
+    font-size: 17px;
+    line-height: normal;
+  }
+
+  /* Design: Libre Caslon Text 400, 24px, margin 13px 0 9px, #241B14. The face,
+     the weight and the ink all arrive from the wrapper's shared h1-h4 reset —
+     unlike the band sections of this family, the ground here is paper, so the
+     colour is correct as inherited and is NOT restated. The leading is: the
+     design states none above this h3, so it computes to `normal`, while the
+     shared reset is 1.14, which would set a two-line title tighter than drawn.
+     Qualified with the cell class so it beats that (0,1,1) reset. */
+  .hbm-cell .hbm-t {
+    font-size: 24px;
+    line-height: normal;
+    margin: 13px 0 9px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Qualified with the parent class so it beats the wrapper's bare-element
+     paragraph reset. Size, leading and the --ink-soft colour are already exactly
+     the design's, via the .body primitive. */
+  .hbm-cell p.hbm-p { margin: 0; overflow-wrap: anywhere; }
+
+  /* Design: centred, margin-top 38px. */
+  .hbm-act { text-align: center; margin-top: 38px; }
+
+  /* R8 · this section owns its own grid. Three tracks are the design, and they
+     go straight to ONE at 900px rather than through a two-up: at 900 each track
+     is about 276px less 60px of cell padding, a ~24-character measure, and three
+     steps in two tracks leave a half-ruled orphan row that reads as a broken
+     grid rather than as an editorial one. Stacked, the paragraph takes a measure
+     cap instead: a step should not run to 110 characters just because its column
+     is now the whole page. */
+  @media (max-width: 900px) {
+    .hbm-grid { grid-template-columns: minmax(0, 1fr); }
+    /* Stacked, a right-hand rule on a full-width cell is a stray vertical line
+       down the edge of the page; the row rules carry the grid on their own. */
+    .hbm-cell { border-right: 0; }
+    .hbm-cell p.hbm-p { max-width: 62ch; }
+    .hbm-head { margin-bottom: 34px; }
+  }
+  /* 520 · tighten the stack. Nothing here may push the page sideways: the
+     overflow-wrap rules above and the minmax/min-width tracks cover the text,
+     and the action goes full-bleed below. Every size in this block is BELOW the
+     value it replaces, so nothing grows as the viewport narrows. */
+  @media (max-width: 520px) {
+    .hbm-head { margin-bottom: 26px; }
+    .hbm-cell { padding: 26px 18px; }
+    .hbm-n.fig { font-size: 16px; }
+    .hbm-cell .hbm-t { font-size: 21px; margin: 11px 0 8px; }
+    .hbm-act { margin-top: 28px; }
+    /* Full-bleed action: the wrapper pins .btn to white-space: nowrap, which
+       would push the viewport sideways on a long owner-typed label. */
+    .hbm-act .btn { width: 100%; white-space: normal; }
+  }
+</style>
