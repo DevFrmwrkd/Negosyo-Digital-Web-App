@@ -87,11 +87,12 @@
  *     whose hero block is switched off, and it cannot merge with the next
  *     section's top space. Zero at the BOTTOM is also the design: the space
  *     under the strip belongs to ABOUT's own 84px. The wrapper's shared
- *     `section { padding: clamp(52px,7vw,84px) 0 }` is (0,1,1) and this scoped
- *     class compiles to (0,2,0) under Astro's DEFAULT `scopedStyleStrategy:
- *     "attribute"` (astro.config.mjs does not set it), so it wins without
- *     !important. Checked by compiling this file: the emitted selector is
- *     `.th-facts[data-astro-cid-…]`.
+ *     `html[data-page="BM"] section { padding: clamp(52px,7vw,84px) 0 }` is
+ *     (0,1,2) — two type selectors, `html` and `section`, plus one attribute —
+ *     and this scoped class compiles to (0,2,0) under Astro's DEFAULT
+ *     `scopedStyleStrategy: "attribute"` (astro.config.mjs does not set it),
+ *     so it wins without !important. Checked by compiling this file: the
+ *     emitted selector is `.th-facts[data-astro-cid-…]`.
  *
  *   · The strip's WIDTH is the wrapper's `.wrap`, not the design's own
  *     `max-width:1160px; padding:0 30px`. EVERY section in the design carries
@@ -112,8 +113,8 @@
  *     from the primitive, so here is the reasoning. .mono is 10px / .2em /
  *     uppercase / var(--sans) / var(--muted) — every one of those is the
  *     design's label verbatim, including the colour (#6B6057 = --muted, 6.11:1
- *     on white — PageBM's header table says 5.71, which understates it; the
- *     whole of that table is a little off and none of it unsafely). The design
+ *     on white, and exactly the figure PageBM's own contrast note gives for
+ *     that same pair — nothing here is rounded or carried over). The design
  *     draws this particular label at font-weight 600, one notch below the
  *     wrapper's 700 tracked-caps default, and it does so for EVERY quiet caps
  *     label it sets — the footer bar, the gallery caption, the review byline,

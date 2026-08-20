@@ -125,19 +125,18 @@
  * padding from the wrapper's `section` rule. A floor here would double it.
  *
  * COLOUR / CONTRAST (R1 — no literal hex in this file, only PageBM's tokens):
- *   --ink headline on --paper 16.9:1 · --ink-soft lede 7.71:1 · --accent
+ *   --ink headline on --paper 16.91:1 · --ink-soft lede 7.71:1 · --accent
  *   eyebrow and italic 7.11:1 · --on-accent on the walnut fill 7.11:1 · --ink
- *   label inside a --line-2 hairline 16.9:1. Every pairing is the design's own,
- *   taken from the wrapper's token table unchanged.
- *   THESE NUMBERS ARE RECOMPUTED, NOT COPIED, and they disagree with the
- *   wrapper. PageBM's VERIFIED CONTRAST block states 14.9 / 7.29 / 7.06 for
- *   these same three pairs; a WCAG 2.x sRGB relative-luminance pass over the
- *   hex values that same wrapper declares gives 16.91 / 7.71 / 7.11. Its whole
- *   table is low by roughly 3-12% — except --band-kick on --band, which it
- *   states as 7.62 against an actual 7.37, the one figure that errs high.
- *   Nothing crosses a threshold in either direction and every pair still clears
- *   AA, so this is a documentation defect in the wrapper rather than a
- *   rendering one; it is flagged here and not edited from a section file.
+ *   label on --paper inside a --line-2 hairline 16.91:1. Every pairing is the
+ *   design's own, taken from the wrapper's token table unchanged.
+ *   THESE NUMBERS ARE READ OFF THE ONE COMPUTED TABLE, NOT WORKED OUT BY HAND,
+ *   and they AGREE with the wrapper figure for figure — PageBM's VERIFIED
+ *   CONTRAST block gives the same 16.91 / 7.71 / 7.11 for these three pairs.
+ *   An earlier draft of this comment asserted that the wrapper's whole table
+ *   ran low and that its --band-kick / --band figure ran high; neither was
+ *   true, and the disagreement was hand arithmetic done in this file. If a hex
+ *   ever moves, re-run the table and copy from it rather than recomputing in a
+ *   section file.
  *   The 2px corner is --r; this file states no radius of its own, because the
  *   design's hero radius IS the wrapper's --r and .plate already carries it.
  *

@@ -108,8 +108,8 @@
  * D2. THE LINKS COLUMN HAS THREE POSSIBLE SOURCES AND ONLY TWO HOOK SHAPES.
  *     footer.explore.links is the schema's own list for this column, so it wins
  *     when the owner filled it. Otherwise the column mirrors the rail, reading
- *     layout.navLinks — the same array HeaderBM reads, so the two can never
- *     disagree after a builder fallback — and hooks `navbar_links.${i}.*`,
+ *     content.navbar_links — the array the sidebar list edits, which is what
+ *     the hook indexes must address — and hooks `navbar_links.${i}.*`,
  *     which is the path the sidebar owns for that array. The third case is the
  *     one to notice: lib/astro-builder.ts substitutes its OWN four links
  *     ("About / Services / Gallery / Contact") when content.navbar_links is
@@ -301,15 +301,22 @@ const contactTitle = String(f.visit?.title ?? '').trim();
 
 // ── THE LINKS COLUMN (D2). Three sources, two hook shapes, one index rule.
 const exploreFromAdmin = Array.isArray(f.explore?.links) && f.explore.links.length > 0;
-// content.navbar_links is what the sidebar owns; lay.navLinks is that same array
-// passed through by the builder, or the builder's OWN four links when content
-// carries none. Reading lay.navLinks keeps the rail and the footer identical;
-// testing content tells us whether a hook would land on anything.
+// content.navbar_links is what the sidebar owns. lay.navLinks is NOT "that same
+// array passed through" — that claim was here and it was false, and the guard
+// below was built on it. astro-builder.ts:880 resolves content.navbar_links to
+// the owner's rows or else derive-content-defaults' FIVE; :348 builds
+// layout.navLinks from the RAW content.navbar_links or else FOUR hard-coded
+// rows. On a site whose owner never touched the nav they are different lengths
+// with different labels, so iterating one while hooking the other put an edit
+// on the wrong row: the column showed "Gallery" and the hook opened "Why us".
+// Iterate the array the hooks address. lay.navLinks stays as a fallback for a
+// harness that renders this component without astro-builder, and in that case
+// no hook is emitted at all, because none would land on anything.
 const navFromContent = Array.isArray(c.navbar_links) && c.navbar_links.length > 0;
 type LinkRow = { label: string; href: string; i: number; labelHook?: string; hrefHook?: string };
 const columnLinks: LinkRow[] = ((exploreFromAdmin
   ? f.explore.links.map((l: any) => ({ label: l?.text, href: l?.href }))
-  : (Array.isArray(lay.navLinks) ? lay.navLinks : [])) as any[])
+  : (navFromContent ? c.navbar_links : (Array.isArray(lay.navLinks) ? lay.navLinks : []))) as any[])
   .map((l: any, i: number): LinkRow => ({
     label: String(l?.label ?? '').trim(),
     href: onPage(l?.href, ''),

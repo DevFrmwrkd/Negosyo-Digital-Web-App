@@ -26,7 +26,13 @@
  * TOKEN NAMING IS CHECKED AGAINST THE ENGINE, NOT ASSUMED. buildOverrideCss
  * owns a long list of colour words and wins every one with !important:
  * gold peach amber lime blue mint yellow teal forest olive brass, plus
- * paper/paper-2/card/ink/ink-soft/line/muted/accent-any, on-any and the rgb triplets.
+ * paper, paper-2, card, ink, ink-soft, line, muted, the rgb triplets, and
+ * EXACTLY these ten of the accent/on families and no others:
+ *   --accent --accent-deep --accent-light --accent-soft --accent-rgb
+ *   --on-accent --on-primary --on-ink --on-paper --on-brass
+ * The list is exact on purpose. An earlier draft wrote "accent-any, on-any",
+ * which is wrong in both directions: it claims tokens the engine has never
+ * heard of are owned, and it would have a reader move a token that never moves.
  * The previous template in this family shipped a token called --amber with a
  * comment claiming the engine knew nothing about it; the engine rewrites
  * --amber to palette.primary, and every scheme pick would have repainted a
@@ -178,9 +184,11 @@ const __og = layout.ogImage || layout.favicon || '';
       --ink-deep: #4A3320;
       --ink-soft: #5C5147;
       --muted: #6B6057;
-      /* Two weights of rule, and the difference is load-bearing: --line is the
-         quiet structural hairline, --line-2 is the one you can see (the eyebrow
-         underline, the outlined button). */
+      /* THREE weights of rule are declared, and the difference between the
+         first two is load-bearing: --line is the quiet structural hairline,
+         --line-2 is the one you can see (the eyebrow underline, the outlined
+         button). --line-3 is a shade darker again and no primitive in this file
+         uses it — it is declared for the sections that draw with it. */
       --line: #EDE6DF;
       --line-2: #E0D3C6;
       --line-3: #DCCDBE;

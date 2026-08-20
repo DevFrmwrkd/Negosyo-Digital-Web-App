@@ -28,9 +28,12 @@
  *   eyebrow     10px / .34em caps / #C9A57C / 700          → .kick on
  *               .band-dark, which is #C9A57C (--band-kick) AND drops the
  *               underline. The design draws this one eyebrow WITHOUT its rule
- *               — a --line-2 hairline is invisible on #241B14 — and that is
- *               exactly the flip the wrapper's band rule performs. Restating
- *               the eyebrow here would put the underline back.
+ *               — and the reason is NOT that the hairline disappears: --line-2
+ *               on #241B14 is 11.52:1, so it is far too LOUD and boxes the
+ *               words in instead of ruling under them. That is PageBM's own
+ *               stated reason at its band .kick rule, and it is exactly the
+ *               flip the wrapper's band rule performs. Restating the eyebrow
+ *               here would put the underline back.
  *   h2          Libre Caslon Text 400, clamp(32px,4.4vw,60px), lh 1.1,
  *               margin .26em 0 .3em, #FFFFFF, and NO max-width
  *                                                          → .h2 on .band-dark
@@ -209,10 +212,10 @@
  *
  * ── CONTRAST, on this band's ground (#241B14), from PageBM's own measured
  *    table so no figure here is re-derived ─────────────────────────────────
- *   --on-band headline / outlined label      14.9:1
- *   --band-body sub-line                     10.3:1
- *   --band-kick eyebrow / the italic <em>      7.62:1
- *   --ink-deep label on the cream fill        11.6:1 (the label sits on white,
+ *   --on-band headline / outlined label     16.91:1
+ *   --band-body sub-line                    10.69:1
+ *   --band-kick eyebrow / the italic <em>      7.37:1
+ *   --ink-deep label on the cream fill       11.76:1 (the label sits on white,
  *                                            not on the band, so the dark
  *                                            ground does not change it)
  * Every one of those is above AA at any size.
