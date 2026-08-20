@@ -1,0 +1,439 @@
+---
+/**
+ * foodcraft / FaqBO — "Sipsip Tea Bar" (BO), the FAQ band
+ * (design element data-component="FAQ").
+ *
+ * ROLE: the page's one plain-answer band. A CENTRED head — a lilac pill eyebrow
+ * over one Baloo 2 headline — sits above a TWO-COLUMN masonry-free grid of
+ * white rounded cards, each holding a question and its answer, every answer
+ * drawn OPEN. There is no accordion: the design draws all six cards expanded,
+ * and on a drinks-counter page the answers ARE the practicalities. Someone
+ * standing on the pavement deciding whether to walk in should not have to click
+ * to find out. Nothing here is ruled and nothing here is sharp — the card's own
+ * radius is the only edge in the band.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from
+ * "Sipsip Tea Bar Landing.dc.html":
+ *   section    id="faq" (kept verbatim) · padding 76px 28px 0
+ *   head       text-align center · margin-bottom 30px
+ *   eyebrow    inline-block PILL · 11px / 700 / .14em / uppercase ·
+ *              colour #5C3580 on an #EEE2F5 ground · padding 8px 16px ·
+ *              radius 100px                            → the wrapper's .kick
+ *   headline   Baloo 2 700 · clamp(30px,4vw,52px) / 1.08 · margin .24em 0 0 ·
+ *              #241A22                                 → the wrapper's .h2
+ *   grid       repeat(2, minmax(0,1fr)) · gap 14px
+ *   card       #FFFFFF ground · radius 22px · padding 24px 26px
+ *   question   Baloo 2 600 · 20px · margin 0 0 8px · #241A22
+ *   answer     14.5px / 1.78 · #5D5158 · margin 0
+ *
+ * ONE TYPOGRAPHIC VALUE HERE IS NOT THE DESIGN'S, and it is stated rather than
+ * left to be discovered: the design writes NO letter-spacing on ANY heading —
+ * not on this h2, not on this h3, not on the hero h1 — while PageBO pins
+ * :where(h1,h2,h3,h4) AND :where(.h2) to -.01em for the whole template. That
+ * tracking is deliberately NOT overridden here. It is the wrapper's shared
+ * display treatment, worn by every heading on the page, and unpicking it in one
+ * band would leave this headline tracking differently from the ones above and
+ * below it to buy back -.52px at the 52px cap and -.2px on the 20px question.
+ * The divergence is the WRAPPER's to reverse across all fifteen sections at
+ * once, not this band's to fork; it is recorded here so a reader diffing this
+ * file against the design finds it already answered.
+ *
+ * R1 · NO LITERAL HEX. Every hex the design writes here is used through the
+ * PageBO token holding the SAME value:
+ *   #EEE2F5 --lilac · #5C3580 --accent-deep · #241A22 --ink · #FFFFFF --card
+ *   #5D5158 --ink-soft · #7B4FA8 --accent (owner links only) · 100px --r-pill
+ * ONE VALUE HAS NO TOKEN and is reported rather than invented: the card's 22px
+ * corner. --r-md is 18px and --r-lg is 26px, so no token holds 22, and this is a
+ * LENGTH, not a colour — R1 governs colour. Rounding to either neighbour would
+ * be a different drawing on the only shape this band is made of, so the design's
+ * number stands, exactly as TrustBO keeps the same 22px on the design's other
+ * small white card and CredentialsBO keeps its 32px plate and 20px cell.
+ *
+ * THE THREE HUES. This band touches the LILAC only, and only as the eyebrow
+ * pill's ground with the design's own deep purple on it. It renders no --pink
+ * and no --sage at all, so the pairing this palette cannot survive — --accent on
+ * --pink, 3.93:1 — cannot arise here. It also declares no band class: the design
+ * leaves the FAQ on the page's blush ground and floats white cards on it, so
+ * there is no ground/text pair for this section to opt into. The white-on-blush
+ * card is a QUIET step (--card #FFFFFF against --paper #FFF7F2) and that is the
+ * design's intent — the cards are separated by their corners, not by contrast.
+ *
+ * EDITABLE HOOKS — all four DECLARED in components/editor/genericContentSchema.ts
+ * under section id 'faq'. A data-field on any other path is a dead hook that no
+ * sidebar input owns, so nothing outside this list is bound:
+ *   faq.tag             — the eyebrow pill
+ *   faq.headline        — the h2. Rendered with set:html so an owner can put
+ *                         this template's PURPLE COLOUR EMPHASIS anywhere inside
+ *                         their own sentence. That <em> rule is global in PageBO
+ *                         on purpose: scoped styles cannot reach markup made by
+ *                         set:html (R3), so an emphasis rule written here would
+ *                         never apply. Note the emphasis is a COLOUR CHANGE and
+ *                         not an italic — Baloo 2 ships no italic, and asking
+ *                         for one synthesises an oblique that fights its rounded
+ *                         terminals.
+ *   faq.items.${i}.q    — the question
+ *   faq.items.${i}.a    — the answer, also set:html so an owner can emphasise,
+ *                         bold or link inside their own sentence
+ *
+ * SHAPE TOLERANCE, read but never hooked: the schema declares faq.items with
+ * fallbackPaths ['faq'], so the stored value is legitimately EITHER
+ * {tag, headline, items:[…]} or a bare ARRAY; and legacy submissions spell the
+ * pair {question, answer} where the schema and every current writer spell
+ * {q, a}. Both shapes are read, but the data-field hook ALWAYS spells
+ * faq.items.${i}.q / .a — that is the path the sidebar input owns, so the first
+ * edit heals a legacy row onto the schema key instead of writing a third shape.
+ *
+ * DERIVED (computed here, never authored here): only `rows` — the surviving
+ * question/answer pairs, each still carrying its ORIGINAL array index (R6) — and
+ * the two .reveal wrappers with their single data-delay step. Nothing in this
+ * band is numbered, badged or railed, so R6's decorative-DISPLAY-index half has
+ * nothing here to apply to; its original-index half does, and is honoured.
+ *
+ * R2 · NOT ONE WORD IS SUPPLIED BY THIS FILE, and on an FAQ that rule bites
+ * harder than anywhere else on the page: an answer is a PROMISE about a business
+ * this template has never visited. So there is no opening or closing time, no
+ * "last order thirty minutes before close", no sugar-level or ice-level scale,
+ * no dairy-free / lactose claim, no allergen statement, no wifi, no power
+ * outlet, no seating or laptop policy, no delivery radius, no minimum order, no
+ * card-versus-cash line, no "we reply within…", and no example question. The
+ * design's own demo strings ("Good to know", "Asked a lot" and its six sample
+ * rows) are the DESIGNER filling in their own template. Every guard sits OUTSIDE
+ * its tag, so an empty value removes the ELEMENT and not merely its text: no
+ * empty eyebrow pill, no headline over nothing, no empty <h3> holding open 8px
+ * of margin above a blank line box, and — because the card IS its own white
+ * plate — no plate drawn around a row that is not there.
+ * NO STAR ROW EXISTS HERE, and that is a rule rather than an omission. The
+ * schema exposes no numeric rating anywhere on faq.*, so there is no field this
+ * band could clamp to 1–5 and draw; five stars over someone who gave no rating
+ * is a fabricated claim. That treatment belongs to TESTIMONIALS, where it is
+ * drawn only from a numeric rating, clamped, aria-hidden, with the number itself
+ * in the accessible label — and where a review with no rating gets a plain rule
+ * instead. An FAQ row has nothing to stand in for, so it gets no rule either.
+ *
+ * SECTION GATE (R5) — IT COUNTS THE CARDS, never the tag and never the headline.
+ * lib/derive-content-defaults.ts hard-codes faq.tag to 'Good to know' and
+ * faq.headline to 'Questions, answered' on EVERY site, while emitting items only
+ * when the submission actually answered something. A gate on tag || headline
+ * would therefore ship a centred 52px headline standing over an empty grid on
+ * any shop whose owner typed no questions. With no filled row the whole
+ * <section> is omitted — no eyebrow, no headline, no grid, no card and no
+ * padding.
+ *
+ * ROW GUARDS: a card is kept when EITHER field has content, and the two tags are
+ * guarded independently. Silently vanishing an answer an owner typed is a worse
+ * failure than printing a lone paragraph inside a card. Fields are TRIMMED
+ * before they are tested, because a value holding only a space is truthy and
+ * would print exactly that empty element.
+ *
+ * DELIBERATELY NOT RENDERED, so none of it reads as an oversight:
+ *   · NO onPage() ANCHOR HELPER AND NO PAGE_ANCHORS SET (R7). The helper exists
+ *     to rewrite an owner's href onto the ids this page really has — for BO that
+ *     set is `menu about gallery visit faq main`, with location/contact → visit,
+ *     services/rooms → menu, host/why → about, work → gallery, book → main, and
+ *     tel: / mailto: / http passing through untouched. This band emits NO href
+ *     of any kind: no button, no link, no data-href-field, because the design
+ *     gives the FAQ no action at all. A remap helper with no call site is dead
+ *     code a later reader would have to prove unused, which is what a reviewer
+ *     flags instead — so it is not carried, exactly as AreaBO, TrustBO, AboutBO
+ *     and FaqBM each record for the same reason. The one anchor this file owns
+ *     is its own id="faq", already in that set and already what HeaderBO's nav
+ *     links to.
+ *   · no <details>/<summary> accordion, per the design (see ROLE).
+ *   · no button and no CTA. The order action lives in the header, the hero, the
+ *     CTA band and the footer, exactly where the design places it.
+ *   · no card border and no hairline. The design gives the card a ground and a
+ *     corner and nothing else; a 1px --line edge would read as a second, weaker
+ *     rectangle inside the corner it is meant to trace.
+ *   · no .plate, no role="img" and no aria-hidden anywhere (R9). This band
+ *     renders no image, no upload and no decorative glyph, so there is no
+ *     element to give an accessible name and none to hide from the tree. No
+ *     accessibility attribute in this file is conditional, so there is no way
+ *     for a literal one to be duplicated beside a conditional one.
+ *   · no data-block marker: editorBridge only needs one where two content
+ *     prefixes share a <section>. This band is faq.* alone, so the Blocks toggle
+ *     resolves to it by hook weight already.
+ *
+ * SECTION PADDING IS THE WRAPPER'S, not this file's, and that is a decision. The
+ * design writes `padding:76px 28px 0`: the 1200/28px half is the shared .wrap,
+ * and PageBO's `section { padding: clamp(48px,6.4vw,80px) 0 }` renders 76.8px at
+ * a 1200px viewport and meets the design's 76px exactly at 1187.5px — i.e. this
+ * design's own 76px IS the wrapper's shared step at the width the design was
+ * drawn to. The design's bottom-0 is a WHOLE-PAGE rhythm decision (every unbanded
+ * section in that document pads top only) which belongs in the wrapper, so no
+ * local override is written. CredentialsBO and AboutBO flagged the identical
+ * mismatch and left it to the wrapper; so does this file.
+ *
+ * R3 — one scoped <style>, no is:global. Both the headline and the answers
+ * arrive through set:html, so scoped rules cannot reach inside them: the
+ * headline's purple <em> is PageBO's global :where(.h2 em), and an <em>,
+ * <strong> or <a> inside an answer is reached from here via :global().
+ *
+ * VERIFIED CONTRAST — COMPUTED (sRGB relative luminance, WCAG 2.x) from the
+ * hexes PageBO declares, not estimated. Nothing in this band is below AA:
+ *   eyebrow  --accent-deep on --lilac ....... 7.40
+ *   headline --ink on --paper .............. 15.92
+ *   question --ink on --card ............... 16.86
+ *   answer   --ink-soft on --card ........... 7.54
+ *   an owner's link --accent on --card ...... 5.96
+ * --muted is not used in this band at all. Neither is --accent on --pink, the
+ * one pairing this palette fails at 3.93 — see THE THREE HUES above.
+ */
+// `layout` is accepted because PageBO passes it to every section uniformly.
+// This band reads nothing outside content.*, so it is never destructured.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// The schema declares 'faq.items' with fallbackPaths ['faq'], so the stored
+// value is legitimately EITHER {tag, headline, items:[…]} or a bare array.
+// Both shapes are read; only an OBJECT can carry a tag or a headline.
+const faqRaw = content.faq;
+const faq = faqRaw && !Array.isArray(faqRaw) ? faqRaw : {};
+const tag = (faq.tag || '').trim();
+const headline = (faq.headline || '').trim();
+
+// Legacy submissions spell the pair {question, answer}; the schema (and every
+// current writer) spells {q, a}. Read both — but the data-field hook below
+// always spells q / a, which is the path the sidebar input owns.
+type Item = { q?: string; a?: string; question?: string; answer?: string };
+const items: Item[] = Array.isArray(faq.items)
+  ? faq.items
+  : Array.isArray(faqRaw)
+    ? (faqRaw as Item[])
+    : [];
+
+// Optional chaining, not a bare read: a stored list can carry a null slot (a row
+// deleted by an older editor left a hole), and reading `.q` off it would throw
+// at BUILD time and take the whole site down, not just this band.
+const qOf = (it: Item): string => it?.q ?? it?.question ?? '';
+const aOf = (it: Item): string => it?.a ?? it?.answer ?? '';
+
+// R6 — carry the ORIGINAL index past the blank filter, so removing question 2
+// cannot misdirect an edit of question 3 into question 2.
+const rows = items
+  .map((it, i: number) => ({ i, q: qOf(it).trim(), a: aOf(it).trim() }))
+  .filter((r) => Boolean(r.q || r.a));
+
+// With neither eyebrow nor headline the head block would spend 30px of margin on
+// nothing, so it is omitted whole rather than rendered empty.
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="sip-faq" id="faq">
+    <div class="wrap">
+      {hasHead && (
+        <div class="sip-faq-head reveal">
+          {tag && <span class="kick sip-faq-kick" data-field="faq.tag">{tag}</span>}
+          {headline && <h2 class="h2 sip-faq-h" data-field="faq.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="sip-faq-grid reveal" data-delay="1">
+        {rows.map((row) => (
+          <div class="sip-faq-card">
+            {row.q && <h3 class="sip-faq-q" data-field={`faq.items.${row.i}.q`}>{row.q}</h3>}
+            {row.a && <p class="sip-faq-a" data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* The band keeps PageBO's shared section padding and the page's blush ground:
+     the design declares no background here, and the white cards ARE the
+     figure/ground step (see the frontmatter note on SECTION PADDING).
+     min-width:0 so a long unbroken word inside a card can never widen the grid
+     and push the page sideways (R8). */
+  .sip-faq { min-width: 0; }
+
+  /* Design: text-align center, margin-bottom 30px. That is the whole head rule —
+     the pill and the headline bring their own type. */
+  .sip-faq-head {
+    text-align: center;
+    margin-bottom: 30px;
+    min-width: 0;
+  }
+
+  /* THE EYEBROW. The wrapper's .kick already carries this design's type — 11px,
+     700, uppercase, inline-block, line-height 1.1 — and owns the whole size
+     curve (it steps to 10.5px at 520), so no font-size is written here. What
+     .kick does NOT know is that in THIS band the eyebrow is a PILL on the blush:
+     the lilac ground, the deep-purple label, 8px/16px of padding and the 100px
+     corner. Those four and the design's .14em tracking (the wrapper's base is
+     .18em; its own 520 step lands on the same .14em, so nothing moves there) are
+     all that is restated. The label is --accent-deep and not --accent because
+     that is what the design writes, and it is the darker of the two, which this
+     pale lilac pill wants: 7.40 against 4.77 for --accent on this SAME
+     lilac ground. Both are computed here rather than carried over — the
+     wrapper's 5.63 is --accent on --paper, which is a different ground and
+     not the comparison this pill makes.
+     .kick is an inline-block, so max-width:100% is what bounds one long
+     owner-typed word at 360px (R8). Qualified by the head so it out-specifies
+     the wrapper's :where() primitive whatever order the sheets land in. */
+  .sip-faq-head .sip-faq-kick {
+    letter-spacing: .14em;
+    color: var(--accent-deep);
+    background-color: var(--lilac);
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: Baloo 2 700 · clamp(30px,4vw,52px) / 1.08 · margin .24em 0 0. Face,
+     weight and colour are already the shared .h2's; only the size, the leading
+     and the margins are this band's. The margin runs ABOVE the headline and not
+     below it, because the 30px gap to the grid is the head block's own
+     margin-bottom, not the headline's.
+
+     max-width:none — the design's FAQ h2 carries NO measure cap and is CENTRED.
+     Leaving the wrapper's 22ch in place would be visibly wrong here rather than
+     merely tighter: a 22ch block box sits at the START of its line box, so the
+     text would centre inside a box that is itself parked on the left. Releasing
+     it cannot push the page sideways because this rule carries
+     overflow-wrap:anywhere (R8).
+
+     THE CLAMP LADDER, traced ACROSS BREAKPOINTS because two audits in this
+     family found type that GREW as the viewport narrowed:
+       1300px+ .. 52px (cap)  ·  1200px .. 48px  ·  900px .. 36px
+       760px .. 30.4px  ·  750px and below .. 30px (floor), flat from there
+     No media query in this file restates this size, so that ramp is the whole of
+     it: it only ever DECREASES as the viewport narrows and never goes under the
+     design's own floor. The wrapper's 760 `:where(.h2)` STEP DOWN to
+     clamp(26px,7vw,29px) is (0,1,1) and loses to this (0,4,0) rule, which is the
+     intent — that rule's own max-width:none and overflow-wrap:anywhere are
+     restated here, so nothing is lost by winning. */
+  .sip-faq-head .sip-faq-h {
+    font-size: clamp(30px, 4vw, 52px);
+    line-height: 1.08;
+    margin: .24em 0 0;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: repeat(2, minmax(0,1fr)) · gap 14px. minmax(0,…) on BOTH tracks is
+     what lets a card shrink instead of overflowing — an `auto` minimum would let
+     one long word set the column width. */
+  .sip-faq-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    min-width: 0;
+  }
+
+  /* Design: #FFFFFF ground · radius 22px · padding 24px 26px. No token holds
+     22px — --r-md is 18px and --r-lg is 26px — and this is a length, not a
+     colour, so the design's number stands (see R1 in the block above). No
+     border: the design gives this card a ground and a corner and nothing else.
+     NO alignment property is written: a grid item stretches to its row by
+     default, so two cards side by side already share a height — which is the
+     design's own drawing — and a block container already starts its content at
+     the top, so an `align-content` here would be a declaration that changes
+     nothing. */
+  .sip-faq-card {
+    background-color: var(--card);
+    border-radius: 22px;
+    padding: 24px 26px;
+    min-width: 0;
+  }
+
+  /* Design: Baloo 2 600 · 20px · margin 0 0 8px · #241A22. PageBO sets
+     :where(h1,h2,h3,h4) to Baloo 2 700 --ink at line-height 1.12 with -.01em
+     tracking. The face and colour are the design's already; the WEIGHT is not —
+     the design steps this h3 down to 600, which is the difference between a
+     question and a section head — so 600 is stated.
+     line-height is stated as `normal` because that is literally what the design
+     renders: its h3 carries no line-height and its stylesheet sets none. Picking
+     a number would be a divergence, and inheriting the wrapper's 1.12 would be a
+     VISIBLE one the moment an owner's question runs longer than the designer's
+     and wraps — at 1.12 Baloo 2's generous descenders crowd the caps of the next
+     line.
+     QUALIFIED BY THE CARD, which records the rule this one beats rather than
+     being what makes it win. This project builds on Astro 5 with the default
+     scopedStyleStrategy 'attribute', so the scope compiles to
+     `[data-astro-cid-…]` on EVERY compound — worth (0,1,0) each, not the
+     nothing a `:where()` scope would contribute. A bare `.sip-faq-q` therefore
+     weighs (0,2,0) and already beats PageBO's `html[data-page="BO"]
+     :where(h1,h2,h3,h4)` at (0,1,1); the two-class form written here is (0,4,0)
+     and wins by more. Either way the question renders at the design's
+     600/normal rather than the wrapper's 700/1.12 — but the qualification is
+     what keeps that true if the strategy is ever moved to 'where', where a bare
+     class would drop to (0,1,0) and silently lose. */
+  .sip-faq-card .sip-faq-q {
+    font-weight: 600;
+    font-size: 20px;
+    line-height: normal;
+    margin: 0 0 8px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 14.5px / 1.78 · #5D5158 · margin 0. Deliberately NOT the wrapper's
+     .body primitive: .body clamps 14.5px UP to 15.5px and sets 1.72 leading,
+     and this design pins the run flat at 14.5/1.78. Qualified by the card so it
+     clears PageBO's `:where(p){margin:0 0 1em}` at (0,1,1) — an unqualified
+     class would win too, but the card-scoped form documents which rule it is
+     beating. */
+  .sip-faq-card .sip-faq-a {
+    margin: 0;
+    font-size: 14.5px;
+    line-height: 1.78;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* The answer arrives through set:html, so scoped rules cannot reach inside it
+     (R3). An owner's emphasis keeps the answer's own colour: the purple on a
+     14.5px run inside a paragraph reads as a link that does not work — this
+     template's purple emphasis is the HEADLINE's signature and stays there. */
+  .sip-faq-card .sip-faq-a :global(em),
+  .sip-faq-card .sip-faq-a :global(i) { font-style: italic; color: inherit; }
+  .sip-faq-card .sip-faq-a :global(strong),
+  .sip-faq-card .sip-faq-a :global(b) { font-weight: 700; color: var(--ink); }
+  /* An owner who pastes a link into an answer gets the purple, underlined on
+     hover only — the same restraint as the wrapper's .linkc and the same reason:
+     a colour that does not move mid-interaction cannot fail a contrast check
+     halfway through one. --accent on --card is 5.96, above AA. */
+  .sip-faq-card .sip-faq-a :global(a) {
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    overflow-wrap: anywhere;
+  }
+  .sip-faq-card .sip-faq-a :global(a:hover) {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* 900 — this band's OWN grid, which is the part R8 leaves to this file. Two
+     cards of 24/26px padding inside a 92vw wrap run out of measure before the
+     type does, so the tracks fold to one and the cards stack. The 14px gutter is
+     kept: it is already the design's tightest gap and a stacked column wants the
+     same breath a row does. NO font-size is touched here — the headline's base
+     clamp is already handing over 36px at this width, and any cap written below
+     that number would make it JUMP as the viewport crossed 900px. */
+  @media (max-width: 900px) {
+    .sip-faq-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* 520 — nothing may push the page sideways. Every track is already
+     minmax(0,…) and every string in here breaks anywhere, so what is left is
+     spacing and one type step, and every one of them is strictly SMALLER than
+     the value above it, so the ladder stays monotonic:
+       head margin 30 → 24 · card padding 24/26 → 22/20 · question 20 → 19
+     The ANSWER is not re-sized: 14.5px is already this design's floor for body
+     copy and the wrapper's .body clamp bottoms out at the same number, so a
+     smaller step here would be this file inventing a size the design never
+     writes.
+     THE HEADLINE IS NOT RE-CLAMPED HERE either. Its own clamp reaches the
+     design's 30px FLOOR at 750px and holds flat from there down — that floor is
+     the design's own answer for a narrow viewport, and restating a clamp inside
+     a max-width query is the exact construct that shipped a headline which GREW
+     as the viewport narrowed on an earlier template in this family. The measure
+     is handled too: this file already sets max-width:none, so the wrapper's 760
+     `max-width:none` has nothing left to add, and overflow-wrap:anywhere covers
+     an owner headline longer than the designer's at any width. */
+  @media (max-width: 520px) {
+    .sip-faq-head { margin-bottom: 24px; }
+    .sip-faq-card { padding: 22px 20px; }
+    .sip-faq-card .sip-faq-q { font-size: 19px; }
+  }
+</style>

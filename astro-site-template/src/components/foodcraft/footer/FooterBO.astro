@@ -1,0 +1,761 @@
+---
+/**
+ * foodcraft / FooterBO — "Sipsip Tea Bar" · THE CLOSING BLUSH PAGE.
+ *
+ * ROLE: the last place a visitor looks for the name, the number, the address
+ * and the way back into the page before they give up. So every cell here is
+ * real owner data, or the cell is not drawn.
+ *
+ * WHAT THE DESIGN DRAWS (reproduced value for value from the element carrying
+ * data-component="FOOTER" in "Sipsip Tea Bar Landing.dc.html" — nothing
+ * re-derived, nothing rounded): no band and no background of its own, so the
+ * blush --paper ground simply continues; 56px of air above and 40px below; a
+ * minmax(0,1.5fr) / minmax(0,1fr) / minmax(0,1fr) grid at a 34px gap holding
+ * the brand lock (a 36px purple disc carrying the shop's initial beside a 24px
+ * Baloo 2 wordmark, 10px apart, 13px of space under them), a 14px/1.78 blurb
+ * capped at 34ch, and one 13.5px purple action; then two link columns, each
+ * opened by a 10px purple caps heading at .24em and 13px of space, over 14px
+ * rows on a ~27px pitch. The grid is CLOSED by a hairline 32px under it, and
+ * 20px below that a two-cell colophon of 11px/600 --muted text, space-between.
+ *
+ * EDITABLE HOOKS — every visible string in this file, and nothing else. Each
+ * is declared in components/editor/genericContentSchema.ts, so each is a hook a
+ * sidebar input actually owns (a data-field on any other path is a dead hook):
+ *   footer.brand                     — the 24px wordmark, and the colophon's
+ *                                      identity half (HeaderBO's rail wordmark
+ *                                      is the same field: one box, three places)
+ *   footer.blurb                     — the standing line under the lock
+ *   navCtaText                       — the purple action's label (see D3)
+ *   navCtaHref                       — its target (data-href-field)
+ *   footer.explore.title             — the LINKS column heading
+ *   footer.explore.links.${i}.text   — a links-column label, when the owner
+ *   footer.explore.links.${i}.href     filled the footer's own links list
+ *   navbar_links.${i}.label          — a links-column label, when the column is
+ *   navbar_links.${i}.href             mirroring the rail instead (see D2)
+ *   footer.visit.title               — the CONTACT column heading
+ *   location.address                 — the address line, and the colophon's
+ *     or contact.address               other half — whichever box holds it (D5)
+ *   location.phone                   — the tel: row (data-field only, D6)
+ *     or contact.phone
+ *   contact.email                    — the mailto: row (D7)
+ *   footer.visit.lines.${i}          — the contact column's extra static rows,
+ *                                      which is what stands where the design
+ *                                      drew "Hours & directions" (D8)
+ *   footer.notes.${i}                — the colophon's RIGHT cell (D1)
+ *
+ * DERIVED here, never authored here:
+ *   · THE DISC'S LETTER. The design's circle holds `{{ initial }}`. It is the
+ *     first character of the wordmark the owner supplied, upper-cased, and it
+ *     leaves the moment the wordmark does. Array.from() rather than charAt() so
+ *     a name opening on an astral character yields that whole character and not
+ *     half a surrogate pair. It carries no hook of its own — it is aria-hidden
+ *     decoration whose source is the field two nodes away — which does mean a
+ *     LIVE inline edit of the wordmark leaves the letter stale until the next
+ *     build. Hooking it would offer an editor a one-character box that writes
+ *     into the whole name, which is worse.
+ *   · the wordmark falls back to layout.businessName when footer.brand is
+ *     blank — the same name out of the same submission, not an invention.
+ *   · the blurb falls back to footer.brand_blurb, the schema's own alias.
+ *   · the tel: href is built from the phone's own digits and the mailto: href
+ *     from the email. Neither prefix is ever stored (D6).
+ *   · every in-page href is resolved by onPage() against the ids PageBO really
+ *     renders. PAGE_ANCHORS and ANCHOR_ALIAS are byte-identical to HeaderBO's,
+ *     so the rail and the footer can never send a visitor to two places.
+ *   · `i` on every list row is the ORIGINAL, pre-filter index (R6), so dropping
+ *     an unreachable row 2 cannot misdirect an edit into row 3. The colophon's
+ *     separators are drawn from the DISPLAY position instead, since they are
+ *     decoration and nothing edits them.
+ *   · the colophon's address is FLATTENED to one line (newlines to commas) to
+ *     fit a single 11px row — which is why that node, and only that node,
+ *     carries data-derived: editorBridge's ed:update would otherwise paint the
+ *     raw multi-line scalar into a one-line row. The COLUMN's address is NOT
+ *     derived: it is the stored string verbatim, broken by `white-space:
+ *     pre-line`, so an inline edit there stays truthful.
+ *
+ * NOT RENDERED, deliberately:
+ *   · THE DESIGN'S OWN COPY. "Sipsip", "Menu", "The drinks", "Our story",
+ *     "FAQ", "Find us", "Hours & directions", "Contact us", the blurb, the
+ *     address and "Prices in Philippine pesos" are the DESIGNER filling in
+ *     their own template. Not one of those words is in this file. A tea bar
+ *     that supplied no links gets no links column, not the designer's three.
+ *   · a column heading with no column under it, a lock with no name, a blurb
+ *     with no text, a link with no label or no reachable target, an action with
+ *     no label, a colophon with nothing in it, and the whole footer when all of
+ *     the above are empty. EVERY guard sits OUTSIDE its tag, so a blank value
+ *     removes the ELEMENT and not just its text.
+ *   · THE GRID'S CLOSING HAIRLINE when nothing follows it. The design draws
+ *     that rule BETWEEN the grid and the colophon, so it rides a modifier
+ *     (.sip-fgrid--ruled) the markup adds only when the colophon renders.
+ *     Otherwise a site with a phone but no name and no address would close on a
+ *     lilac hairline floating 40px above the bottom of the page (R2: no
+ *     hairline under a row that is not there).
+ *   · THE STICKY ORDER BAR the design draws immediately AFTER the footer. It is
+ *     not inside data-component="FOOTER" and carries no data-component of its
+ *     own, so it belongs to no section in this build; its one string,
+ *     `barLine` ("Order ahead — ready in about 10 minutes"), is a turnaround-
+ *     time promise with no schema field behind it; and a fixed bar with no
+ *     dismiss would sit over every screen of a page whose CtaBand already draws
+ *     the same two actions. FLAG FOR REVIEW: if that bar is wanted, it is a
+ *     component of its own with a field of its own, not a tail on this file.
+ *   · footer.locality. The rail prints the town tag because the design's
+ *     HEADER draws one; the design's FOOTER lock is disc plus name and nothing
+ *     else, so repeating the tag here would be composing a lock the design
+ *     does not have.
+ *   · footer.hours and footer.social. Both are declared in this very schema
+ *     group, and this design's footer draws neither an hours table nor a social
+ *     row. LocationBO owns the hours.
+ *   · .reveal. The footer is the page terminus; fading in the last thing on
+ *     screen buys nothing and risks a footer that never un-hides.
+ *   · any star row, rating or numeral. R2's star rule has nothing to bite on
+ *     here — there is not one node on this band that could print a claim the
+ *     owner did not make.
+ *   · role="img" and .plate (R9). There is no upload anywhere in this footer.
+ *     The one graphic is the initial disc, which is decoration over text that
+ *     is already announced beside it, so it is aria-hidden and so are the
+ *     colophon separators.
+ *
+ * DECISIONS a reader would otherwise take for an oversight
+ *
+ * D1. THE COLOPHON'S RIGHT CELL IS footer.notes, NOT THE CURRENCY SENTENCE.
+ *     The design prints `Prices in {{ currencyName }}` there. That is a claim
+ *     about how this business quotes and no field carries it, so the sentence
+ *     is gone — but the CELL is not, because footer.notes is declared in this
+ *     group, labelled "Footer notes (copyright row)", and
+ *     lib/derive-content-defaults.ts seeds it to `© <year> <name>` from the
+ *     owner's own submitted name (and deliberately suppresses a bare "© 2026"
+ *     with no name). So the design's two-cell row survives with the owner's own
+ *     small print in it. A note that repeats the left cell VERBATIM is dropped
+ *     — an exact-match test only, because "© 2026 Sipsip" is different
+ *     information from "Sipsip · 24 Esteban Abada St" and both belong there.
+ *     This follows FooterBM and FooterBN; FooterBL dropped the cell instead.
+ *
+ * D2. THE LINKS COLUMN HAS THREE SOURCES AND ONLY TWO HOOK SHAPES.
+ *     footer.explore.links is the schema's own list for this column, so it wins
+ *     when the owner filled it. Otherwise the column mirrors the rail, reading
+ *     content.navbar_links — the same array HeaderBO reads FIRST, so the two
+ *     can never disagree — and hooks `navbar_links.${i}.*`. The third case is
+ *     the one to notice: lib/astro-builder.ts substitutes its OWN four links
+ *     ("About / Services / Gallery / Contact") onto layout.navLinks when
+ *     content.navbar_links is absent entirely. Those labels are nobody's words,
+ *     so those rows render with NO hook rather than pointing an editor at a
+ *     path that holds nothing. Astro omits an undefined attribute, so this
+ *     costs no markup.
+ *
+ * D3. THE ACTION IS COUNTED BY THE BRAND COLUMN'S OWN GATE. The design draws
+ *     contactLabel exactly once in this footer, in the brand column, so unlike
+ *     FooterBM there is no second place for it to fall to and no stutter to
+ *     guard against. It therefore joins brand and blurb in deciding whether
+ *     that column exists at all: with no name and no blurb but a real action,
+ *     dropping the column would throw away a working link rather than avoid an
+ *     empty one. That does not breach R5 — a CTA is body content with a real
+ *     target, not a tag and not a headline.
+ *     The pair hooked is navCtaText / navCtaHref, from the Header group, not
+ *     hero.cta1: components/editor/editorBridge.ts resolves a Blocks toggle by
+ *     counting hooks of a given prefix inside closest('section,footer'), so a
+ *     footer carrying hero.* hooks would become a candidate for "hide the Hero
+ *     block". navCtaText has no entry in that PREFIX map at all, so it is
+ *     toggle-inert. Note HeaderBO deliberately does NOT bind this pair (its
+ *     design has no rail button), so on this template the footer is the only
+ *     place the sidebar's "Header CTA" box reaches a pixel.
+ *
+ * D4. THE COLUMN HEADINGS ARE NOT .kick, AND THAT IS THE DESIGN. The wrapper's
+ *     .kick is 11px at .18em; the design's footer headings are 10px at .24em.
+ *     Those are different metrics, not a near-miss, so the heading is a scoped
+ *     class at the design's own numbers, taking the same --accent that makes it
+ *     read as part of this family. They stay <h4> because two real headings
+ *     give the columns a structure a screen-reader user can navigate; the
+ *     design's plain <div> does not. (A scoped class has to restate them AND
+ *     out-specify them: `html[data-page="BO"] :where(h1,h2,h3,h4)` scores
+ *     (0,1,1) — the `html` type selector counts — and pins family, weight,
+ *     colour, tracking, uppercasing, line-height and margin, while an
+ *     unqualified scoped class scores only (0,1,0), because Astro emits its
+ *     scope as `:where(.astro-<hash>)` and :where() adds nothing. See S1 in the
+ *     stylesheet: every rule in this file that contests a wrapper rule is
+ *     qualified by its parent class for exactly that reason.)
+ *
+ * D5. THE ADDRESS AND THE PHONE HOOK WHICHEVER BOX ACTUALLY HOLDS THEM. The
+ *     schema declares the same two facts twice: location.address /
+ *     location.phone in the Location group, and contact.address / contact.phone
+ *     in the Footer and Header groups. Both are live inputs, so the hook
+ *     follows the source rather than being pinned to one path — an inline edit
+ *     then writes back into the box the value came out of instead of forking a
+ *     second copy that wins on the next build. Location is read first because
+ *     LocationBO's own doc block states that this file is what keeps
+ *     location.address editable (its headline IS the address but hooks
+ *     location.headline).
+ *     ONE consequence to know about: `location` IS a prefix in editorBridge's
+ *     Blocks map, so these hooks make this footer a candidate host for "hide
+ *     the Location block". That resolver scores by COUNT and LocationBO carries
+ *     more location.* hooks than the two here, so the real section always wins.
+ *   · WHY THE contact.phone BRANCH IS data-derived: astro-builder passes
+ *     content.contact through with `phone: formatPhoneDisplay(...)`, so that
+ *     branch prints a display string that is not byte-identical to the stored
+ *     one. data-derived keeps ed:update from painting the raw scalar into a row
+ *     that shows the formatted one; click-to-focus still works. The
+ *     location.phone branch and content.location generally pass through
+ *     untouched, so they need no such opt-out.
+ *
+ * D6. THE tel: ANCHOR CARRIES data-field ONLY, no data-href-field. Its href is
+ *     derived from the field's own value, so a href hook there would write
+ *     "tel:+63…" straight back into the phone box. Same for the mailto: row.
+ *
+ * D7. THE EMAIL ROW IS AN ADDITION. The design draws none — its demo bar took
+ *     orders on Messenger — but contact.email is schema-declared in the very
+ *     group this footer belongs to and is bound by no other BO section, so a
+ *     real business that supplies one had it appear NOWHERE on the page. It
+ *     takes the design's own 14px row treatment, so nothing new is invented
+ *     visually.
+ *
+ * D8. footer.visit.lines STANDS WHERE "Hours & directions" WAS. The design's
+ *     third contact row is an in-page link whose LABEL is the designer's words,
+ *     and no field carries a label for it, so the link is gone. The slot is
+ *     not: "Visit column lines" is a declared list for exactly this column, so
+ *     an owner who wants a third line there has one, in their own words.
+ *
+ * D9. PHONE AND EMAIL ARE UNDERLINED, THE STATIC LINES ARE NOT. In this design
+ *     the contact column's address and its phone link are the SAME family, size
+ *     and colour — the design gives the link no distinguishing treatment at all
+ *     — so without an underline nothing but hover would mark it as a link
+ *     (WCAG 1.4.1). text-decoration adds no box, so thickening it on hover
+ *     cannot shift the rows. Deliberately NOT applied to the links column:
+ *     those are wayfinding links in a list, unambiguous by position and
+ *     heading, and the design draws them bare.
+ *
+ * D10. NO .btn IN THIS FILE, AT ALL (R4). lib/genericThemeOverrides.ts emits
+ *      `.testi .btn, .cta-band .btn, footer .btn { color: <on-ink> !important }`
+ *      — a .btn anywhere under this <footer> would take a label colour picked
+ *      for an INK ground and vanish on this blush one. The design's footer has
+ *      no button anyway (a 13.5px text action and 14px rows), so the action is
+ *      the wrapper's .linkc and the rows are plain anchors, neither of which
+ *      the engine touches. None of .btn--fill / .btn--pink / .btn--cream /
+ *      .btn--line appears, and neither does any forbidden name.
+ *
+ * D11. THE COLOPHON IS NOT .mono. The wrapper's .mono is 11px uppercase at
+ *      .16em and weight 700; this design's colophon is 11px weight 600, mixed
+ *      case, NO tracking. Borrowing .mono would shout a row the design speaks,
+ *      so every declaration is restated at the design's own numbers. Its colour
+ *      is --muted, which is the design's #6B6067 exactly.
+ *
+ * D12. NO TOP HAIRLINE AND NO BAND. Every other seam in this design is a rule
+ *      or a colour change, so their absence here looks like an omission. It is
+ *      the design: the footer is bare --paper continuing straight out of the
+ *      section above, whose CTA is a purple plate inset from the page edge.
+ *      A --line rule across the top would draw a lilac hairline the design
+ *      never had, and .band-pink / .band-sage / .band-lilac are all wrong here
+ *      for the same reason — the design puts no ground under this footer.
+ *
+ * D13. THE ROWS ARE BLOCKS, NOT THE DESIGN'S <p>. The design uses
+ *      `<p style="margin:0 0 8px">` per row over a body with no declared
+ *      line-height — about a 27px pitch. Here each row is a block at 14px/1.5
+ *      with 3px of padding either side: the same ~27px pitch, the whole row is
+ *      the tap target, and no trailing margin dangles above the hairline.
+ *
+ * COLOUR — wrapper tokens only, no literal hex anywhere (R1). Every colour this
+ * design's footer uses has a token holding the same value:
+ *   #FFF7F2 --paper (the ground) and --on-accent (the disc letter)
+ *   #241A22 --ink (wordmark) · #7B4FA8 --accent (disc, headings, action)
+ *   #5D5158 --ink-soft (blurb and every row) · #6B6067 --muted (the colophon)
+ *   #5C3580 --accent-deep (the design's own stated hover: its stylesheet
+ *   declares a:hover{color:#5C3580}, shadowed in the demo only by the inline
+ *   colour on each footer link).
+ *   THE ONE VALUE WITH NO EXACT TOKEN is the hairline, #EFE6EB. PageBO declares
+ *   --line as #EEE2F5 (the same value as --lilac and --well), so the hairline
+ *   role token is a hair cooler than the design's warm grey. --line ships,
+ *   because the alternative is a literal hex the theme engine cannot repaint.
+ *   Flagged rather than quietly absorbed. Nothing else needed re-deriving.
+ *
+ * CONTRAST — every run in this file sits on --paper, so the figures are PageBO's
+ * own verified table, not new arithmetic: ink 15.92 · ink-soft 7.13 · muted
+ * 5.68 · accent 5.63. The disc letter is --on-accent on an --accent fill, which
+ * that table gives as 5.63. HeaderBO's table gives --accent-deep on --paper as
+ * 8.72, which is the hover state here. Nothing on this band is below AA. The
+ * pair this palette fails on — --accent on --pink at 3.93 — cannot occur here:
+ * there is no pink in this footer.
+ *
+ * RESPONSIVE (R8): the wrapper owns the shared 760 / 520 pass; this file owns
+ * its own grid. Three columns cannot hold 14px rows and a 34ch blurb below
+ * ~900px, so they stack there at ONE width — there is never a band where a
+ * column is 90px wide. There is NO clamp() in this file: every size is a fixed
+ * px that only ever steps DOWN as the viewport narrows (padding 56/40 → 40/28,
+ * gap 34 → 28 → 24, hairline inset 32 → 26 → 22, disc 36 → 32, disc letter
+ * 20 → 18, wordmark 24 → 21 at a constant 1.1 line-height, heading tracking
+ * .24em → .18em, colophon gap 16 → 10). No floor in the 900 query sits above a
+ * cap in the 520 query, and the row type holds the design's 14px at every width.
+ * The only two values that grow are touch targets, not type or plates: at 900 a
+ * link row takes a 44px floor and a static line takes 9px of padding, because
+ * that is where the columns stack and a row becomes a primary target.
+ * Long unbroken strings get overflow-wrap: anywhere on every text node; the
+ * action additionally declares white-space: normal so a label with no spaces in
+ * it wraps instead of escaping.
+ *
+ * CLASS NAMES are `sip-f*`. `sip-` is this template's prefix throughout — the
+ * template briefly shipped three (`sip-` on eleven sections, `ss-` on Hero and
+ * CtaBand, `ssbo-` on Header) and was unified on this one — and no
+ * name in this file is used by any other BO section — the nearest neighbours are
+ * FaqBO's `sip-faq*`, which share the stem and collide with nothing (the
+ * stylesheet is scoped either way). Nothing here shares a name with FooterBL's
+ * `fb-`, FooterBM's `tcbm-` or FooterBN's `pcbn-` set — an audit had to rename
+ * a whole set of classes copied verbatim between templates in this family.
+ *
+ * Visibility: PageBO gates this file on visibility.footerSection — never here.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const c = (content as any) || {};
+const lay = (layout as any) || {};
+const f = c.footer || {};
+
+// ── ANCHOR GUARD (R7) — byte-identical to HeaderBO's, so the rail and the
+// footer can never send a visitor to different places.
+// lib/derive-content-defaults.ts hard-codes nav links to '#about', '#services',
+// '#why', '#work', '#visit' and navCtaHref to '#visit'; lib/astro-builder.ts
+// falls back to '#about', '#services', '#gallery', '#contact'. Most of those
+// ids no design renders. Resolve every in-page href against what PageBO
+// ACTUALLY renders: keep it if the id exists, remap it when this design carries
+// the same material under another name, otherwise fall back — and the links
+// column passes '' as the fallback, because a dead entry in a wayfinding list is
+// worse than a missing one. Off-page hrefs (tel:, mailto:, http(s), anything
+// without a leading '#') pass through untouched.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+// This design renames five derived targets: the services block IS the drinks
+// menu (rooms lands there too), '#about' is the shop's own story (host and why
+// are the same block here), '#work' is the photo wall, and '#location' /
+// '#contact' both mean the visit block — address, map and opening hours. A
+// booking link has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+// The wordmark. `||`, never `??`, and identical to HeaderBO's resolution:
+// genericContentSchema gives footer.brand fallbackPaths ['business_name'] and
+// ContentFieldsAuto's readWithFallbacks treats '' as empty, so a CLEARED brand
+// box still shows the business name in the sidebar. With `??` an empty string
+// would be a value and the page would go wordmark-less while the sidebar
+// displayed a name. 'Your Business' once shipped as a real customer's own mark;
+// with nothing supplied the lock is omitted instead of inventing a name.
+const brand = String(f.brand || lay.businessName || '').trim();
+// The design's disc letter — derived from the name above, never authored, and
+// gone the moment the name is.
+const initial = (Array.from(brand)[0] || '').toUpperCase();
+// footer.brand_blurb is the schema's declared alias for the same box.
+const blurb = String(f.blurb || f.brand_blurb || '').trim();
+
+// The page's one action, from the Header group (D3). '#visit' is the fallback
+// because that is where this design puts the address, the map and the opening
+// hours, and it is the id the derived default already names.
+const ctaText = String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(c.navCtaHref, '#visit');
+// Computed, never literal, and ONE conditional per attribute — an owner may
+// point this at #visit or at a tel:, and forcing those into a new tab is wrong.
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// Column headings — bound, not hardcoded, and guarded, so an owner who clears
+// the box gets a column with no heading rather than the designer's word. The
+// schema's own owner-facing labels decide which feeds which: footer.explore.title
+// is "Links column heading" and footer.visit.title is "Contact column heading",
+// which are this design's two footer headings.
+const linksTitle = String(f.explore?.title ?? '').trim();
+const contactTitle = String(f.visit?.title ?? '').trim();
+
+// ── THE LINKS COLUMN (D2). Three sources, two hook shapes, one index rule.
+const exploreFromAdmin = Array.isArray(f.explore?.links) && f.explore.links.length > 0;
+// content.navbar_links is what the sidebar list owns and what HeaderBO reads
+// first; lay.navLinks is that same array passed through, or the builder's OWN
+// four links when content carries none. Testing content tells us whether a hook
+// would land on anything at all.
+const navFromContent = Array.isArray(c.navbar_links) && c.navbar_links.length > 0;
+type LinkRow = { label: string; href: string; i: number; labelHook?: string; hrefHook?: string };
+const columnLinks: LinkRow[] = ((exploreFromAdmin
+  ? f.explore.links.map((l: any) => ({ label: l?.text, href: l?.href }))
+  : (navFromContent ? c.navbar_links : (Array.isArray(lay.navLinks) ? lay.navLinks : []))) as any[])
+  .map((l: any, i: number): LinkRow => ({
+    label: String(l?.label ?? '').trim(),
+    href: onPage(l?.href, ''),
+    i,
+    // undefined when nothing owns the path — Astro omits an undefined
+    // attribute, so those rows simply carry no hook.
+    labelHook: exploreFromAdmin
+      ? `footer.explore.links.${i}.text`
+      : (navFromContent ? `navbar_links.${i}.label` : undefined),
+    hrefHook: exploreFromAdmin
+      ? `footer.explore.links.${i}.href`
+      : (navFromContent ? `navbar_links.${i}.href` : undefined),
+  }))
+  .filter((l: LinkRow) => Boolean(l.label && l.href));
+
+// ── THE CONTACT COLUMN. Two schema paths hold each of these facts, so the hook
+// follows whichever one actually supplied the value (D5). content.location is
+// passed through verbatim by the builder, so those two branches print exactly
+// what is stored; content.contact has its phone display-formatted on the way
+// through, which is why only that branch is marked derived.
+const addrFromLocation = String(c.location?.address ?? '').trim();
+const addrFromContact = String(c.contact?.address ?? lay.contact?.address ?? '').trim();
+const address = addrFromLocation || addrFromContact;
+const addressHook = addrFromLocation
+  ? 'location.address'
+  : (addrFromContact ? 'contact.address' : undefined);
+
+const phoneFromLocation = String(c.location?.phone ?? '').trim();
+const phoneFromContact = String(c.contact?.phone ?? lay.contact?.phone ?? '').trim();
+const phone = phoneFromLocation || phoneFromContact;
+const phoneHook = phoneFromLocation
+  ? 'location.phone'
+  : (phoneFromContact ? 'contact.phone' : undefined);
+const phoneDerived = !phoneFromLocation && Boolean(phoneFromContact);
+// Built, never stored (D6).
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+
+const email = String(c.contact?.email ?? lay.contact?.email ?? '').trim();
+
+// The design's third contact row, in the owner's own words (D8).
+type LineRow = { v: string; i: number };
+const visitLines: LineRow[] = (Array.isArray(f.visit?.lines) ? f.visit.lines : [])
+  .map((l: any, i: number): LineRow => ({ v: String(l ?? '').trim(), i }))
+  .filter((l: LineRow) => Boolean(l.v));
+
+// Colophon identity line: the design prints one line, and the address boxes are
+// multi-line textareas. Flattened for THIS row only (hence data-derived on it).
+const addressFlat = address.replace(/\s*\n+\s*/g, ', ');
+
+const norm = (v: string): string => v.replace(/\s+/g, ' ').trim().toLowerCase();
+
+// Colophon right cell (D1). Empty rows go, and so does a note that is an EXACT
+// repeat of what the left cell already prints — nothing cleverer, because a ©
+// line that happens to contain the name is different information from the
+// name-and-address line beside it.
+type NoteRow = { v: string; i: number };
+const notes: NoteRow[] = (Array.isArray(f.notes) ? f.notes : [])
+  .map((n: any, i: number): NoteRow => ({ v: String(n ?? '').trim(), i }))
+  .filter((n: NoteRow) => Boolean(n.v) && norm(n.v) !== norm(brand) && norm(n.v) !== norm(addressFlat));
+
+// ── GATES — BODY content only (R5). The two column headings never count: a
+// heading is not a column, and one printed over nothing is the exact failure the
+// rule exists for. footer.brand / footer.blurb / navbar_links / navCtaText /
+// footer.notes ARE seeded by derive-content-defaults, but from the owner's own
+// submitted name, city and business type — that is their data, not an invented
+// headline.
+const hasBrandCol = Boolean(brand || blurb || ctaText);
+const hasContactCol = Boolean(address || phone || email || visitLines.length > 0);
+const hasGrid = hasBrandCol || columnLinks.length > 0 || hasContactCol;
+const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
+---
+{(hasGrid || hasColophon) && (
+<footer class="sip-foot">
+  <div class="wrap">
+    {hasGrid && (
+      <div class:list={['sip-fgrid', hasColophon && 'sip-fgrid--ruled']}>
+        {hasBrandCol && (
+          <div class="sip-fbrand">
+            {brand && (
+              <div class="sip-flock">
+                {/* Decoration over a name that is announced by the node beside
+                    it, so it is hidden from the tree (R9). No hook: see the
+                    DERIVED note in the frontmatter. */}
+                {initial && <span class="sip-fseal" aria-hidden="true">{initial}</span>}
+                <span class="sip-fmark" data-field="footer.brand">{brand}</span>
+              </div>
+            )}
+            {blurb && <p class="sip-fblurb" data-field="footer.blurb">{blurb}</p>}
+            {/* Both hooks sit on the ANCHOR: the editor's link popover reads
+                data-field from whatever carries data-href-field, so a label on
+                an inner span would leave it editing an empty path. The arrow is
+                generated content — editorBridge writes an inline edit back
+                through innerHTML, so a glyph inside the element could end up
+                stored in navCtaText; a pseudo-element cannot. */}
+            {ctaText && (
+              <a
+                class="linkc sip-fcta"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+          </div>
+        )}
+
+        {columnLinks.length > 0 && (
+          <div class="sip-fcol">
+            {linksTitle && <h4 class="sip-fh" data-field="footer.explore.title">{linksTitle}</h4>}
+            {columnLinks.map((l) => (
+              <a
+                class="sip-frow"
+                href={l.href}
+                data-field={l.labelHook}
+                data-href-field={l.hrefHook}
+              >{l.label}</a>
+            ))}
+          </div>
+        )}
+
+        {hasContactCol && (
+          <div class="sip-fcol">
+            {contactTitle && <h4 class="sip-fh" data-field="footer.visit.title">{contactTitle}</h4>}
+            <address class="sip-faddr">
+              {/* The stored string verbatim — `white-space: pre-line` draws the
+                  owner's own line breaks, so the DOM text and the field value
+                  stay identical and a live edit cannot lie. */}
+              {address && (
+                <span class="sip-frow sip-fline" data-field={addressHook}>{address}</span>
+              )}
+              {phone && (
+                <a
+                  class="sip-frow sip-fchan"
+                  href={`tel:${phoneDigits}`}
+                  data-field={phoneHook}
+                  data-derived={phoneDerived ? '' : undefined}
+                >{phone}</a>
+              )}
+              {/* mailto: is BUILT, never stored — the visible text stays the
+                  plain address so an inline edit can never write "mailto:…"
+                  back into the email box. */}
+              {email && (
+                <a class="sip-frow sip-fchan" href={`mailto:${email}`} data-field="contact.email">{email}</a>
+              )}
+              {visitLines.map((l) => (
+                <span class="sip-frow sip-fline" data-field={`footer.visit.lines.${l.i}`}>{l.v}</span>
+              ))}
+            </address>
+          </div>
+        )}
+      </div>
+    )}
+
+    {hasColophon && (
+      <div class="sip-fcolo">
+        {(brand || addressFlat) && (
+          <span class="sip-fid">
+            {brand && <span data-field="footer.brand">{brand}</span>}
+            {brand && addressFlat && <span class="sip-fsep" aria-hidden="true">·</span>}
+            {addressFlat && <span data-field={addressHook} data-derived>{addressFlat}</span>}
+          </span>
+        )}
+        {notes.length > 0 && (
+          <span class="sip-fnotes">
+            {notes.map((n, d) => (
+              <>
+                {d > 0 && <span class="sip-fsep" aria-hidden="true">·</span>}
+                <span data-field={`footer.notes.${n.i}`}>{n.v}</span>
+              </>
+            ))}
+          </span>
+        )}
+      </div>
+    )}
+  </div>
+</footer>
+)}
+<style>
+  /* The design's closing page: bare --paper, 56px of air above the grid, 40px
+     under the colophon, and NO top rule and no band (see D12 — the section
+     above ends in an inset purple plate, and the page ground simply continues).
+     The wrapper's `section` padding rule targets <section> only, so all of this
+     padding is this file's.
+     (Never write a literal end-style tag inside this block, comments included:
+      it is an HTML raw-text element and the parser would end the stylesheet
+      right there, silently truncating the file.) */
+  .sip-foot {
+    background-color: var(--paper);
+    padding: 56px 0 40px;
+  }
+
+  /* 1.5fr / 1fr / 1fr at a 34px gap — the design's own tracks. minmax(0,…) on
+     every one of them, also the design's, so a long unbroken address or link
+     label cannot widen a column past its share and push the page sideways. */
+  .sip-fgrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 34px;
+  }
+  /* The hairline the design draws 32px under the grid — but it is the rule
+     BETWEEN the grid and the colophon, so the markup adds this modifier only
+     when a colophon follows. Left unconditional it becomes an empty rule 40px
+     above the bottom of the page whenever brand, address and notes are all
+     blank while a column still renders. --line is the hairline token; see the
+     COLOUR note in the frontmatter for the one value in this footer that has no
+     exact token. */
+  .sip-fgrid--ruled {
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  .sip-fbrand, .sip-fcol { min-width: 0; }
+
+  /* The lock: disc and wordmark centred on each other, 10px apart, 13px of
+     space under them. Wraps rather than overflowing at 360px. */
+  .sip-flock {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 13px; min-width: 0;
+  }
+  /* A circle, so it never shrinks — a squashed circle is an ellipse. Baloo 2 at
+     the design's 400, and line-height is DECLARED: the design's body sets none,
+     so its disc letter renders at the browser normal, while PageBO's body sets
+     1.72 and would push a 20px glyph into a 34px line box inside a 36px well. */
+  .sip-fseal {
+    flex: none; width: 36px; height: 36px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background-color: var(--accent); color: var(--on-accent);
+    font-family: var(--disp); font-weight: 400; font-size: 20px; line-height: 1;
+  }
+  .sip-fmark {
+    font-family: var(--disp); font-weight: 400; font-size: 24px;
+    line-height: 1.1; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+
+  /* Qualified by the parent class because it HAS to be (S1): the wrapper's
+     paragraph reset is `html[data-page="BO"] :where(p) { margin: 0 0 1em }` at
+     (0,1,1) and a bare `.sip-fblurb` scores (0,1,0) — the scoping attribute
+     adds nothing — so unqualified this rule loses its margin outright. (0,2,0)
+     wins it. 34ch, 1.78 and the 15px bottom margin are the design's own. */
+  .sip-fbrand .sip-fblurb {
+    margin: 0 0 15px;
+    font-family: var(--sans); font-size: 14px; line-height: 1.78;
+    color: var(--ink-soft); max-width: 34ch; overflow-wrap: anywhere;
+  }
+  /* The design's 13.5px purple action. .linkc carries the family, the weight,
+     the 44px tap floor and the underline mechanics, so only the size, the
+     colour, the wrap rules and the arrow are added — the arrow as generated
+     content, and with no margin: .linkc is an inline-flex box, so the
+     pseudo-element is a flex ITEM and the primitive's own `gap: .5em` already
+     spaces it. Both wrap declarations are needed: a label with no spaces in it
+     needs overflow-wrap to break AND white-space to be allowed to wrap at all.
+     QUALIFIED BY THE PARENT, and the colour RESTATED, for the reason in S1
+     below: a bare `.sip-fcta` scores (0,1,0) and loses font-size to the
+     wrapper's `:where(.linkc)` at (0,1,1) — the action would render at the
+     primitive's 14px, not the design's 13.5px — while the colour it never
+     declared falls to `html[data-page="BO"] a { color: inherit }` at (0,1,2),
+     which out-specifies `:where(.linkc){color:var(--accent)}` and would print
+     this purple action in --ink. (0,2,0) here clears both. */
+  .sip-fbrand .sip-fcta {
+    font-size: 13.5px; color: var(--accent);
+    white-space: normal; overflow-wrap: anywhere;
+  }
+  .sip-fbrand .sip-fcta::after { content: '\2192'; }
+  /* The design's own a:hover, at (0,3,0) so it beats the rule above outright
+     rather than tying with it and depending on source order. */
+  .sip-fbrand .sip-fcta:hover { color: var(--accent-deep); border-bottom-color: var(--accent-deep); }
+
+  /* Column headings: 10px purple caps at .24em with 13px under them — the
+     design's own treatment, and note it carries NO underline. The eyebrow rule
+     belongs to .kick and to the sections; these are restated rather than
+     borrowed because the metrics differ (D4). Qualified by the parent for S1:
+     a bare `.sip-fh` scores (0,1,0) and the wrapper's
+     `html[data-page="BO"] :where(h1,h2,h3,h4)` scores (0,1,1), so an
+     unqualified class loses family, weight, colour, tracking, uppercasing,
+     line-height and margin all at once — the heading would render as black
+     Baloo 2 in mixed case at -.01em with nothing under it. */
+  .sip-fcol .sip-fh {
+    margin: 0 0 13px;
+    font-family: var(--sans); font-weight: 700; font-size: 10px;
+    letter-spacing: .24em; text-transform: uppercase; color: var(--accent);
+    line-height: 1.4; overflow-wrap: anywhere;
+  }
+
+  /* The design's rows: 14px --ink-soft on a ~27px pitch. Blocks rather than the
+     design's paragraphs, so the whole row is the tap target and the last row
+     leaves no margin dangling above the hairline (D13). */
+  .sip-frow {
+    display: block; padding: 3px 0;
+    font-family: var(--sans); font-weight: 400; font-size: 14px; line-height: 1.5;
+    color: var(--ink-soft);
+    transition: color .18s ease;
+    overflow-wrap: anywhere;
+  }
+  /* S1. THE ANCHOR ROWS NEED THE PARENT CLASS. Astro scopes a rule as
+     `.sip-frow:where(.astro-<hash>)`, and :where() contributes NOTHING to
+     specificity — so the block above scores (0,1,0) while the wrapper's
+     `html[data-page="BO"] a { color: inherit; text-decoration: none }` scores
+     (0,1,2) and wins. Unqualified, every link in these columns would drop
+     --ink-soft for the inherited --ink while the plain address line beside it
+     kept --ink-soft: two colours in one column. (0,2,1) clears it, and (0,3,1)
+     on the hover so the hover beats the resting colour instead of tying. */
+  .sip-fcol a.sip-frow { color: var(--ink-soft); }
+  .sip-fcol a.sip-frow:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .sip-frow { transition: none; } }
+
+  .sip-faddr { font-style: normal; margin: 0; min-width: 0; }
+  /* The stored string, unaltered — pre-line draws the owner's own line breaks
+     without this file generating a single line-break tag. */
+  .sip-fline { white-space: pre-line; }
+  /* Phone and email are underlined; the static lines beside them are not (D9).
+     text-decoration adds no box, so thickening it on hover cannot shift rows.
+     Qualified for S1 too, and for the same rule: the wrapper's `a` sets
+     `text-decoration: none` at (0,1,2), so an unqualified `.sip-fchan` at
+     (0,1,0) would draw no underline at all and D9 would be a comment describing
+     something the stylesheet never did. */
+  .sip-fcol a.sip-fchan {
+    text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 3px;
+  }
+  .sip-fcol a.sip-fchan:hover { text-decoration-color: var(--accent-deep); text-decoration-thickness: 2px; }
+
+  /* The colophon: 20px under the hairline, two cells, space-between, 11px at
+     weight 600 in --muted with no tracking and no uppercasing — the design's
+     own row, which is why it is not .mono (D11). With one cell absent the
+     remaining cell simply sits left. Wraps rather than overflows.
+     line-height is DECLARED but not invented: the design sets none on this row,
+     so it renders at the browser normal (~1.36 for Nunito Sans), while PageBO's
+     body sets 1.72 — inheriting that would open the design's tightest row by
+     half a line. 1.4 is the design's own leading, restated. */
+  .sip-fcolo {
+    padding-top: 20px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    font-family: var(--sans); font-size: 11px; font-weight: 600; line-height: 1.4;
+    color: var(--muted); overflow-wrap: anywhere;
+  }
+  .sip-fid, .sip-fnotes { min-width: 0; overflow-wrap: anywhere; }
+  .sip-fsep { margin: 0 .45em; }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────────────────
+     The wrapper owns the shared 760 / 520 pass; this file owns its own grid.
+     Three columns cannot hold 14px rows and a 34ch blurb below ~900px, so they
+     stack there — at ONE width, so there is never a band where a column is 90px
+     wide. Every TYPE size and every enclosing gap below only ever shrinks as
+     the viewport narrows, and there is no clamp() anywhere in this file to
+     invert: nothing has a floor in one query sitting above a cap in the next.
+     The two values that GROW are touch targets rather than type — at 900 a link
+     row takes a 44px floor and a static line takes 9px of padding, which is
+     where the columns stack and a row becomes a primary target — so nothing the
+     reader is measuring gets bigger on a smaller screen. */
+  @media (max-width: 900px) {
+    .sip-fgrid { grid-template-columns: 1fr; gap: 28px; }
+    .sip-fgrid--ruled { padding-bottom: 26px; }
+    /* Stacked, each link row is a primary target rather than one of three
+       columns. The static lines get air instead of a tap floor — they are not
+       targets, and forcing a 44px box round a one-line address only opens a
+       gap. */
+    a.sip-frow { min-height: 44px; display: flex; align-items: center; }
+    .sip-fline { padding: 9px 0; }
+  }
+  @media (max-width: 520px) {
+    .sip-foot { padding: 40px 0 28px; }
+    .sip-fgrid { gap: 24px; }
+    .sip-fgrid--ruled { padding-bottom: 22px; }
+    .sip-fseal { width: 32px; height: 32px; font-size: 18px; }
+    /* 24px x 1.1 = 26.4px becomes 21px x 1.1 = 23.1px: the line box shrinks
+       with the type, not against it. */
+    .sip-fmark { font-size: 21px; }
+    .sip-fbrand .sip-fblurb { max-width: none; }
+    /* Wide tracking on a full-width caps row is what actually pushes a 320px
+       screen sideways, so the tracking comes in rather than the type. */
+    .sip-fcol .sip-fh { letter-spacing: .18em; }
+    .sip-fcolo { gap: 10px; }
+    .sip-fsep { margin: 0 .3em; }
+  }
+</style>

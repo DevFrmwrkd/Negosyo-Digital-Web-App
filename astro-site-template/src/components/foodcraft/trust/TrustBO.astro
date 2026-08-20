@@ -1,0 +1,380 @@
+---
+/**
+ * foodcraft / TrustBO — "Sipsip Tea Bar"'s four-up proof cards.
+ *
+ * ROLE. The strip the design sets 22px under the hero, between it and ABOUT.
+ * Four equal tracks with a 14px gutter, each holding a WHITE card at radius
+ * 22px, padded 24px 20px, laid out as a horizontal row: a 46px round pastel
+ * badge carrying one short Baloo 2 figure, then a 13px/1.5 label beside it.
+ * Nothing is ruled and nothing is banded — the cards float on the page's own
+ * blush ground. It is the band most likely to be read as fact, so not one word
+ * in it is written by this component.
+ *
+ * EDITABLE HOOKS (both declared by components/editor/genericContentSchema.ts
+ * under the `trust.cells` list spec — add / remove / reorder in the sidebar,
+ * maxItems 4):
+ *   trust.cells.${i}.num    — the figure inside the badge. set:html, so an
+ *                             entity-bearing value ("&lt; 1 hr", "R&amp;D",
+ *                             "&#8369;180") prints as the character rather
+ *                             than as its source.
+ *   trust.cells.${i}.label  — the sentence-case label beside it. ESCAPED, not
+ *                             set:html: it is a 13px phrase, and escaping is
+ *                             the safer default for the field that is not a
+ *                             figure. Same split as TrustBN.
+ * There is no third hook. A data-field on any path that schema does not declare
+ * is a dead hook that no sidebar input owns.
+ *
+ * DERIVED (computed here, never authored here):
+ *   · `rows` — only the cells carrying real text, each still carrying its
+ *     ORIGINAL array index `i`, so dropping a blank cell 2 cannot redirect an
+ *     edit of cell 3 into slot 2 (R6). The reveal stagger and the badge colour
+ *     both use the DISPLAY position instead, because a transition delay and a
+ *     decorative wash are decoration.
+ *   · `--sip-cols` / `--sip-cols-md` — the track count follows the DATA,
+ *     capped at the design's four on the wide layout and at two below 900px.
+ *     Unlike the ruled siblings in this family nothing here would print an
+ *     empty box (a bare grid track paints nothing, and the cards' ground is on
+ *     the CARD, not on the track), but two facts stretched across four tracks
+ *     would still leave half the row blank and read as a table whose last
+ *     entries went missing. Following the data keeps the cards filling the
+ *     width they are given — in the 900 query too, which is why the narrow
+ *     count is derived rather than written flat: a hard `repeat(2, …)` there
+ *     would strand a LONE card at half width beside an empty track between
+ *     521 and 900, and then grow it back to full width below 520 — precisely
+ *     the direction R8 forbids.
+ *
+ * NOT RENDERED, and why:
+ *   · NO eyebrow, NO headline, NO lede, NO button, NO photo, NO id. The
+ *     design's TRUST section has none of them and the schema declares none for
+ *     `trust`. In particular there is no .kick here — the family's tracked-caps
+ *     eyebrow is simply absent from this strip, as drawn. No id because nothing
+ *     on this page links to it (the BO anchor set is menu, about, gallery,
+ *     visit, faq, main).
+ *   · NO placeholder figure, no zero, no em dash. The demo's "2h / Tea brewed
+ *     fresh every two hours · 4.9 / Rated by students on Google" is the
+ *     DESIGNER filling their own template; a brew interval and a review score
+ *     are claims only this tea bar may make. lib/derive-content-defaults.ts
+ *     carries no `trust` key at all, so this strip exists only where a human
+ *     typed.
+ *   · NO section at all when nothing was typed (R5). The gate counts BODY
+ *     content — cells with real text — and there is no tag or headline here it
+ *     could wrongly count instead. lib/astro-builder.ts already forces
+ *     visibility.trustBlock false on a zero-LENGTH array; this gate is the belt
+ *     to that brace and catches what a length check cannot see: rows that are
+ *     PRESENT but blank, since the sidebar's Add button inserts
+ *     { num: '', label: '' }. A blank row surviving would print an empty white
+ *     card with a coloured dot in it.
+ *   · NO band-pink, NO band-sage, NO band-lilac. The wrapper offers all three
+ *     and this section deliberately opts into none: the design gives TRUST the
+ *     page's own blush ground (--paper) with white cards floating on it, and
+ *     the pastels appear only inside the badges. Wrapping the strip in a band
+ *     would put a pastel ground behind pastel badges and flatten the one
+ *     contrast this strip is drawn on.
+ *   · NO onPage() anchor helper, deliberately rather than by omission: this
+ *     strip emits no <a> at all, so PAGE_ANCHORS / ANCHOR_ALIAS (menu, about,
+ *     gallery, visit, faq, main; with location/contact → visit,
+ *     services/rooms → menu, host/why → about, work → gallery, book → main)
+ *     would be unreachable dead code in this one file — which is what a
+ *     reviewer would flag instead. The remap belongs in every BO section that
+ *     does emit an href. TrustBN, TrustBM and TrustBL each made the same call
+ *     for the same reason.
+ *   · NO role="img", NO .plate, NO .cap — there is no image slot in this strip,
+ *     so there is nothing to give an accessible name to (R9).
+ *   · NOTHING is aria-hidden. The badge is not an icon and not a decorative
+ *     numeral: it holds the owner's own figure, which is the whole point of the
+ *     band, so it is announced normally alongside its label. The only
+ *     decoration here — the badge's pastel wash — is a background colour and
+ *     carries nothing to hide. No attribute on any element below is written
+ *     twice.
+ *   · NO star row and NO rating. This strip carries no review, so R2's rating
+ *     rule has nothing to bind to. If an owner types "4.9" into `num` it is
+ *     printed as the TEXT they typed — never re-read as a score, never redrawn
+ *     as five glyphs.
+ *
+ * DECISIONS a reader would otherwise take for oversights:
+ *
+ *   · THE FOURTH BADGE COLOUR IS A SUBSTITUTION, and it is the one thing in
+ *     this file that is not the design's own value. The design's four badges
+ *     are (ground / label): #EEE2F5 / #5C3580, #F7DCE7 / #5C2A45, #E3EFDC /
+ *     #3C5C2A and #FBEBD6 / #6B4A18. The first three are exactly --lilac /
+ *     --accent-deep, --pink-2 / --plum and --sage / --on-sage. The fourth pair
+ *     — a warm amber on cream — has NO token in PageBO: it is neither a
+ *     declared colour nor a value the wrapper names, and R1 forbids inventing
+ *     the hex. (Borrowing --amber / --peach / --brass is not an escape either.
+ *     They are not names for an amber: genericThemeOverrides.ts writes all
+ *     three with !important on every build, set to the SCHEME's primary, so
+ *     the badge would take whatever hue the admin picked. PageBO's whole
+ *     argument is that these hues must hold their relationship.) The
+ *     fourth badge therefore uses --pink / --on-pink, the palette's remaining
+ *     declared ground-and-on-colour pair, which keeps four visually distinct
+ *     badges and keeps every one of them a pastel ground with the on-colour
+ *     the wrapper declares for it. Flagged for review.
+ *
+ *   · The badge colour cycles by DISPLAY position (`:nth-child(4n + …)`), not
+ *     by the stored index. It is decoration, so R6 sends it to the display
+ *     position: dropping a blank cell 2 must not leave a gap in the colour
+ *     sequence, and the row should read lilac / pink-2 / sage / pink whatever
+ *     survived the filter. The data-field paths beside it still carry the
+ *     ORIGINAL index.
+ *
+ *   · The badge DOES reuse the wrapper's .fig primitive. The design declares
+ *     exactly THREE type properties on that span — font-family 'Baloo 2',
+ *     font-size 19px, font-weight 700 — and .fig supplies two of them
+ *     verbatim: var(--disp) and 700. .fig also brings tabular lining numerals
+ *     and line-height 1, which the design does not set; both are inert on this
+ *     box, since at 19px even the body's 1.72 gives a 32.7px line box, well
+ *     inside the 46px floor the badge is centred in. Only two things are
+ *     local: the flat 19px, and the colour, which has to be the badge's own
+ *     on-colour rather than .fig's --accent. Purple on any of these four
+ *     pastels is precisely the failure PageBO's header warns about.
+ *
+ *   · The LABEL does not reuse .body. .body declares THREE properties —
+ *     font-size clamp(14.5px,1.3vw,15.5px), line-height 1.72 and colour
+ *     --ink-soft; the design's label is a flat 13px / 1.5 / --ink-soft at 600.
+ *     Two of those three would have had to be overridden and a fourth added,
+ *     leaving the colour as the only thing actually inherited, which is not
+ *     reuse — so it is written locally, from tokens only. font-family is left
+ *     to inherit var(--sans) from body, exactly as it does in the design.
+ *
+ *   · The badge is min-width / min-height 46px with a 4px horizontal padding,
+ *     not a hard `width:46px;height:46px;flex:none`. For every figure the
+ *     design draws (two and three characters) the minimums govern and the box
+ *     renders at exactly 46×46 as specified. A longer owner value — "2014" is
+ *     the schema's own placeholder — then grows the box into a pill instead of
+ *     spilling its text out over the label, and a pathological unbroken string
+ *     wraps inside the 46px floor and grows the badge downwards. Nothing can
+ *     push the row sideways: the flex basis is auto with shrink allowed, and
+ *     both values carry overflow-wrap: anywhere (R8).
+ *
+ *   · border-radius on the badge is var(--r-pill), not the design's literal
+ *     `50%`. On a 46×46 box these are the SAME drawing, computed not assumed:
+ *     the two 100px radii on a side sum to 200 > 46, so CSS scales both by
+ *     46/200, giving 23px — exactly half of 46, i.e. a full circle. On a grown
+ *     pill the same scaling gives fully rounded ends. Using the token keeps the
+ *     badge on the family's pill vocabulary in both states.
+ *
+ *   · The CARD radius is the design's literal 22px. R1 governs COLOUR, and
+ *     this is a length: --r-md is 18px and --r-lg is 26px, so no token holds
+ *     22px, and rounding to either would be a different drawing on the one
+ *     shape this section is made of.
+ *
+ *   · The section's spacing is `padding: 22px 0 0`, not the design's
+ *     `margin: 22px auto 0`. Visually identical — the strip has no ground of
+ *     its own — but a padding cannot collapse out through <main> on a site
+ *     whose hero is switched off, and cannot merge with the next section's top
+ *     space. Zero at the BOTTOM is also the design: the space under the strip
+ *     belongs to ABOUT's own 76px. The wrapper's shared
+ *     `html[data-page="BO"] section { padding: clamp(48px,6.4vw,80px) 0 }` is
+ *     (0,1,2) — one attribute, two type selectors — and this scoped class
+ *     compiles to `.sip-proof[data-astro-cid-…]`, (0,2,0), under Astro's
+ *     default `scopedStyleStrategy: "attribute"`. Two class-level components
+ *     beat one, so it wins without !important.
+ *
+ *   · The strip's WIDTH is the wrapper's `.wrap`, not the design's own
+ *     `max-width:1200px; padding:0 28px`. Every section in the design carries
+ *     that same pair and PageBO expresses it once as `.wrap` =
+ *     `min(1200px, 92vw)`, so past ~1305px this strip measures the full 1200
+ *     rather than the design's 1144 inner column. Re-cutting the 28px gutter
+ *     in this one file would inset the cards from the hero above and the about
+ *     block below, and these cards read as alignment against them. If the
+ *     gutter is wanted it belongs in the wrapper, once.
+ *
+ *   · An owner <em> or <i> inside `num` is DE-ITALICISED and given nothing
+ *     back, and that asymmetry with TrustBN is deliberate — TrustBN kills the
+ *     oblique on both tags too; only its recolour is dropped here. PageBO is explicit that this
+ *     template's emphasis is a COLOUR change because Baloo 2 has no italic and
+ *     the browser would synthesise an oblique fighting its rounded terminals.
+ *     But the badge is a pastel ground already carrying the single colour the
+ *     wrapper declares legible on it; a second colour inside a 46px badge is
+ *     the exact move that takes this palette under AA. Killing the oblique and
+ *     leaving the colour alone is the lesser loss. Reached through :global()
+ *     because set:html output sits outside scoped CSS (R3). Flagged for review.
+ *
+ *   · The read tolerates both content shapes — the schema's { cells: [...] }
+ *     and the bare array a few older records still store at content.trust —
+ *     while always WRITING the data-field as trust.cells.${i}.*, since that is
+ *     the only path the sidebar owns. Note lib/astro-builder.ts's own
+ *     visibility check recognises the { cells } shape alone, so a legacy record
+ *     is already hidden before this file runs; the tolerant read is defensive
+ *     and costs one line to make this component correct wherever it is mounted.
+ *
+ *   · Nothing in this section uses a clamp. Every size is FLAT across all three
+ *     widths and only the column count changes, so the responsive ladder is
+ *     monotonic by construction: there is no floor in the 900 query that could
+ *     outrank a cap in the 520 query (R8).
+ *
+ * CONTRAST, computed from the hexes PageBO declares (sRGB relative luminance,
+ * WCAG 2.x) rather than estimated:
+ *   --accent-deep on --lilac  7.39   --plum on --pink-2  8.73
+ *   --on-sage on --sage       6.40   --on-pink on --pink 9.96
+ *   --ink-soft on --card      7.54   (the label on the white card)
+ * Two caveats, both the same one PageBO makes for --muted: buildOverrideCss
+ * owns --card, --ink-soft and --accent-deep and wins them with !important, so
+ * the first and last figures are the NATIVE palette's and not a guarantee
+ * across every scheme. --lilac, --pink, --pink-2, --sage, --plum, --on-pink
+ * and --on-sage are invisible to that file, so those pairings hold.
+ *
+ * Class names are prefixed sip- for THIS template. They are not a sibling's
+ * names re-used: an audit had to rename a whole set that had been copied
+ * verbatim between two files in this family.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const trust = content?.trust || {};
+// Both shapes are read; only the schema's path is ever written.
+const cells: any[] = Array.isArray(trust.cells)
+  ? trust.cells
+  : (Array.isArray(trust) ? trust : []);
+
+const asText = (v: any) => (v === null || v === undefined ? '' : String(v));
+
+// The ORIGINAL index rides along in `i` (R6). A half-filled row prints the one
+// value it has; a wholly empty row prints no card, so there is never a white
+// plate sitting empty in the run (R2).
+const rows = cells
+  .map((c: any, i: number) => ({ num: asText(c?.num), label: asText(c?.label), i }))
+  .filter((r) => Boolean(r.num.trim() || r.label.trim()));
+
+// Follow the data, never past the design's four tracks (the schema caps the
+// list at 4 anyway; anything older wraps onto a second row of cards).
+const cols = String(Math.min(Math.max(rows.length, 1), 4));
+// The 900 query's count, derived for the same reason: two up, but never more
+// tracks than there are cards to fill them.
+const colsMd = String(Math.min(Math.max(rows.length, 1), 2));
+---
+{rows.length > 0 && (
+  <section class="sip-proof">
+    <div class="wrap">
+      <div class="sip-proof-grid" style={`--sip-cols:${cols};--sip-cols-md:${colsMd}`}>
+        {rows.map((r, k) => (
+          <div class="sip-proof-card reveal" data-delay={String(k % 4)}>
+            {r.num.trim() && (
+              <span class="fig sip-proof-badge" data-field={`trust.cells.${r.i}.num`} set:html={r.num}></span>
+            )}
+            {r.label.trim() && (
+              <span class="sip-proof-note" data-field={`trust.cells.${r.i}.label`}>{r.label}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBO's token vocabulary
+     (--card --ink-soft --lilac --pink --pink-2 --sage --plum --accent-deep
+     --on-pink --on-sage --sans --r-pill, plus .wrap and .fig). There is not one
+     literal hex in this file (R1).
+
+     (Never write a literal end-style-tag inside a comment in here — the parser
+      would end the stylesheet on the spot and silently truncate the file.) */
+
+  /* The design's TRUST sits 22px under the hero with nothing beneath it: the
+     space below belongs to ABOUT's own 76px. See the frontmatter note on why
+     that 22px is padding rather than margin. */
+  .sip-proof { padding: 22px 0 0; }
+
+  /* Four equal tracks at a 14px gutter, following the data up to the design's
+     four. */
+  .sip-proof-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--sip-cols, 1), minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  /* The card: white, radius 22px, padded 24px 20px, a horizontal row of badge
+     then label, vertically centred — all the design's.
+
+     The two custom properties below are the badge's pastel pairing. The base
+     declaration is the design's FIRST badge, so a lone card is lilac; the three
+     overrides carry the rest of the cycle. Position is the DISPLAY position on
+     purpose — a dropped blank row must not leave a hole in the sequence. */
+  .sip-proof-card {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 24px 20px;
+    /* No token holds 22px: --r-md is 18px and --r-lg is 26px, and this is a
+       length, not a colour. The design's number stands. */
+    border-radius: 22px;
+    background-color: var(--card);
+    --sip-badge-bg: var(--lilac);
+    --sip-badge-fg: var(--accent-deep);
+  }
+  .sip-proof-card:nth-child(4n + 2) { --sip-badge-bg: var(--pink-2); --sip-badge-fg: var(--plum); }
+  .sip-proof-card:nth-child(4n + 3) { --sip-badge-bg: var(--sage);   --sip-badge-fg: var(--on-sage); }
+  /* The design's fourth is a warm amber that PageBO does not name. --pink with
+     its declared --on-pink is the substitution; see the frontmatter note. */
+  .sip-proof-card:nth-child(4n + 4) { --sip-badge-bg: var(--pink);   --sip-badge-fg: var(--on-pink); }
+
+  /* .fig already gives var(--disp) at 700, tabular lining numerals and
+     line-height 1 — the design's figure exactly. Only the flat 19px and the
+     colour are local, and the colour MUST be local: .fig is --accent, and
+     purple on any of these four pastels is the pairing PageBO forbids.
+     Written as a descendant so it clears the wrapper's :where() primitive
+     whatever the source order. */
+  .sip-proof-card .sip-proof-badge {
+    /* Grow-none, shrink-allowed, sized by content down to the 46px floor. */
+    flex: 0 1 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 46px;
+    min-height: 46px;
+    /* Only bites past the design's own two- and three-character figures; below
+       that the 46px floor governs and the badge is the drawn circle. */
+    padding: 0 4px;
+    /* 100px on a 46px box scales to 23px per corner — a full circle, which is
+       the design's `50%`; on a grown pill it gives rounded ends. */
+    border-radius: var(--r-pill);
+    background-color: var(--sip-badge-bg);
+    color: var(--sip-badge-fg);
+    font-size: 19px;
+    text-align: center;
+    /* A pasted URL or an unspaced string must not push the row sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  /* An owner <em> or <i> inside the figure: no synthesised oblique, on either
+     tag — Baloo 2 has no italic and the browser would slant its rounded
+     terminals. It is NOT recoloured: the badge ground carries the one colour
+     declared legible on it, and a second colour inside a 46px pastel badge is
+     how this palette goes under AA. :global() because set:html output cannot
+     be reached by scoped rules (R3). */
+  .sip-proof-badge :global(em),
+  .sip-proof-badge :global(i) { font-style: normal; }
+
+  /* The design's label: flat 13px / 1.5 / 600 in --ink-soft. font-family is
+     left to inherit var(--sans) from body, as it does in the design. */
+  .sip-proof-card .sip-proof-note {
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 600;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── This section's OWN responsive pass. The wrapper owns the shared 760 /
+        520 type pass; the grid below is ours (R8). Only the column count
+        changes at either width — every size in this file is flat — so no floor
+        in the 900 query can outgrow a cap in the 520 query, and the badge
+        cycle keeps running by display position at any track count. ────────── */
+  @media (max-width: 900px) {
+    /* Two up — but never more tracks than there are cards. A flat repeat(2)
+       here would sit a lone card at half width beside an empty track, and then
+       grow it back to full width in the 520 query below; the ladder has to run
+       one way only (R8). */
+    .sip-proof-grid { grid-template-columns: repeat(var(--sip-cols-md, 1), minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    /* One up. The card is a horizontal row, so it holds its shape as it
+       widens; the design's 24px 20px padding is kept rather than trimmed,
+       because at 92vw the row has more space than it had two-up at 900 and
+       nothing here is pressing on it. At 360 the label still has ~230px after
+       the badge and the gutter, and both values wrap anywhere. */
+    .sip-proof-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

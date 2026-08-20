@@ -1,0 +1,551 @@
+---
+/**
+ * foodcraft / TestimonialsBO — "Sipsip Tea Bar" REVIEWS: a CENTRED head (the
+ * lilac eyebrow pill over a Baloo 2 headline and one small muted line) above a
+ * FULL-BLEED HORIZONTAL RAIL of soft white quote cards that snap as you swipe —
+ * each card opened by a rating mark, then the quote in Nunito Sans at 16.5px,
+ * and an attribution pinned to the card floor beside a round initial badge.
+ *
+ * ROLE: the social proof a stranger reads before deciding to walk in — which is
+ * exactly why this file prints nothing the owner did not put on record.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from the
+ * `data-component="TESTIMONIALS"` element of "Sipsip Tea Bar Landing.dc.html":
+ *   section       padding 80px 0 0, overflow:hidden — the shared wrapper
+ *                 `section` rhythm plus the clip that lets the rail bleed.
+ *   head          max-width 1200 / 28px gutter — drawn with the shared .wrap
+ *                 primitive, which centres min(--maxw, 92vw) — centred,
+ *                 margin-bottom 30px
+ *   eyebrow       11px / .14em / caps / 700, #5C3580 ON a #EEE2F5 pill,
+ *                 padding 8px 16px, radius 100px
+ *   headline      Baloo 2 700, clamp(30px,4vw,52px)/1.08, margin .24em 0 6px
+ *   note          13px / 600 / #6B6067, margin 0
+ *   rail          display:flex, gap 16px, overflow-x:auto, padding 0 28px 20px,
+ *                 scroll-snap-type: x mandatory
+ *   card          <figure>, margin 0, flex:none, width 360px,
+ *                 scroll-snap-align:center, #FFFFFF, radius 26px,
+ *                 padding 28px 26px, flex column, gap 14px
+ *   mark          14px, letter-spacing 2px
+ *   quote         16.5px / 1.72, #241A22, margin 0 (BODY face, not the display
+ *                 face — the design sets no font-family on the blockquote, so it
+ *                 inherits Nunito Sans; declared here so nothing can leak in)
+ *   attribution   margin-top auto, flex row, align centre, gap 11px
+ *   badge         38x38 circle, Baloo 2 16px/700, one of the design's tinted
+ *                 pairs
+ *   name          13px / 600 / #6B6067
+ * Mapped to the wrapper tokens holding those exact values: #FFF7F2 = --paper,
+ * #FFFFFF = --card, #241A22 = --ink, #6B6067 = --muted, #7B4FA8 = --accent,
+ * #5C3580 = --accent-deep, #EEE2F5 = --lilac, #F2C6DA = --pink,
+ * #F7DCE7 = --pink-2, #5C2A45 = --plum, #E3EFDC = --sage, #3C5C2A = --on-sage,
+ * 26px = --r-lg, 100px = --r-pill, Baloo 2 = --disp, Nunito Sans = --sans,
+ * 1200px = --maxw. NO LITERAL HEX APPEARS BELOW.
+ *
+ * THE ONE COLOUR IN THIS ELEMENT WITH NO TOKEN, stated rather than invented:
+ * the design's star row is #9A6510 and its fourth badge pair is #6B4A18 on
+ * #FBEBD6 — a warm amber the wrapper never names (it declares purple, pink,
+ * sage, lilac and plum, and no amber at all; --tint and --well are both cool).
+ * Rather than write a hex, the stars take --accent, the brand purple that leads
+ * this palette, and the badge cycles the THREE tokenised pairs only. Flagged in
+ * the handover report as the one deliberate divergence from the design file.
+ *
+ * THE THREE HUES ARE NOT INTERCHANGEABLE, so: --pink appears here ONCE and only
+ * as a GROUND — the small rounded bar that replaces a star row on a review with
+ * no rating. Nothing in this file paints text with --pink or --sage, and no
+ * purple is ever set on a pink ground (that pair is 3.93 and is how this design
+ * goes wrong). The card sits on --card, not on a band, so this file declares no
+ * .band-pink / .band-sage / .band-lilac: the design gives this section the plain
+ * blush page ground.
+ *
+ * CLASS PREFIX `sip-`, chosen for THIS template. It is deliberately NOT the
+ * `tah-` set from TestimonialsBM nor the `rg-` set before it: an audit had to
+ * rename a whole class set that had been copied verbatim from a sibling, and two
+ * templates sharing a scoped class name makes every future diff read as a shared
+ * component that is not one. Only the house STYLE was copied from BM — this doc
+ * block's shape, the coercion helpers, the guard discipline.
+ *
+ * CLASS-NAME NOTE (theme engine): the section must NOT be class "testi" —
+ * buildOverrideCss pins `.testi, .testi p { color: … !important }` and would
+ * repaint every quote with a scheme colour this design never chose. It is
+ * "sip-reviews", and it emits no button at all, so no engine label pin
+ * (.btn-primary / .btn-ghost / .nav-cta / .cta-band / .trust) reaches anything
+ * here. Buttons in this template are .btn--fill / .btn--pink / .btn--cream /
+ * .btn--line; this section draws none because the design draws none.
+ *
+ * READS content.testimonials.items ({quote, who, rating}); tolerates the legacy
+ * bare array parked at content.testimonials and the legacy author/name
+ * spellings for the attribution. The data-field always names the CANONICAL
+ * path, so the first sidebar edit migrates a legacy row onto the real key.
+ *
+ * COERCED AT EVERY READ — THE ROW FIRST, THEN EVERY FIELD. Nothing upstream
+ * type-checks either one. astro-builder's normalizeBlock passes a non-object
+ * entry straight through, so `items` can hold a null, and reading `.quote` off
+ * that null throws at BUILD time and takes the whole page down. So each row is
+ * normalised to an object before a single field is read, and a bare STRING row
+ * is read as the quote itself — the legacy shape where the row IS the quote —
+ * so owner text is never silently dropped. Then the fields: a quote arriving as
+ * a number crashes the build on .trim(); one arriving as an object prints
+ * "[object Object]" through set:html. str() passes strings and finite numbers
+ * and treats everything else as absent. Blank-after-trim counts as absent too —
+ * a whitespace-only `who` must not draw an empty attribution row holding the
+ * card's bottom gap open, and a whitespace-only tag must not draw an empty
+ * lilac pill (a pill with no word in it is a floating blob).
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
+ * group "testimonials" — a data-field on a path the schema does not own is a
+ * dead hook that no sidebar input can focus)
+ *   testimonials.tag                  — the lilac eyebrow pill
+ *   testimonials.headline             — set:html, so an owner can place this
+ *                                       design's signature emphasis, the PURPLE
+ *                                       COLOUR CHANGE, anywhere inside their own
+ *                                       sentence. It is a colour change and not
+ *                                       an italic because Baloo 2 ships no
+ *                                       italic and asking for one synthesises an
+ *                                       oblique that fights its rounded
+ *                                       terminals; the wrapper already styles
+ *                                       .h2 em / .h2 .em / .em that way, which
+ *                                       is why no scoped rule restates it.
+ *   testimonials.source               — the small muted line under the headline.
+ *                                       The design's own demo text there is a
+ *                                       swipe hint; a hint is UI copy and this
+ *                                       file writes no copy, so the slot is
+ *                                       bound to the one declared field that
+ *                                       lives in that position ("Source line")
+ *                                       and the line simply does not exist until
+ *                                       the owner types into it.
+ *   testimonials.items.${i}.quote     — set:html, the blockquote
+ *   testimonials.items.${i}.who       — the attribution beside the badge
+ *   testimonials.items.${i}.rating    — read, never printed as text: it is the
+ *                                       ONLY thing that can draw a star (below).
+ *                                       It deliberately carries NO data-field on
+ *                                       the star row, and that is not a missing
+ *                                       hook — the row RENDERS the number, it is
+ *                                       not the number. editorBridge's ed:update
+ *                                       would replace the glyphs with the raw
+ *                                       digit, and VisualEditor (which does not
+ *                                       honour data-derived) makes every
+ *                                       [data-field] contentEditable, so an
+ *                                       admin could type stars back into rating
+ *                                       and lose the score. It is edited in the
+ *                                       sidebar's "Rating out of 5" box, which
+ *                                       genericContentSchema declares.
+ *
+ * DERIVED, not authored: the number of stars; the badge INITIAL (the first
+ * character of the attribution the owner typed, uppercased in CSS rather than in
+ * the string so nothing is mangled — toUpperCase turns a German sharp s into two
+ * letters); which of the three tinted badge pairs a card gets (display position,
+ * so it stays an even cycle after a blank row is dropped); and the reveal delay,
+ * capped at 3 because the wrapper only defines delays 1-3 and a fourth card must
+ * not wait forever.
+ *
+ * ANTI-FABRICATION — the hard rule of this section:
+ *   - THE STAR ROW IS NOT HARDCODED. The design prints five stars over every
+ *     quote, because the designer was filling in their own template. Five stars
+ *     for a customer who never gave a score is a claim invented on the owner's
+ *     behalf, so stars are drawn ONLY from a finite numeric
+ *     testimonials.items.${i}.rating. Non-numeric, blank and absent ratings draw
+ *     no stars at all; the card instead opens with a short rounded --pink bar
+ *     that occupies the same beat and states nothing — a soft mark, which is
+ *     what a design with no sharp corner anywhere wants. Expect that bar on
+ *     essentially every real site: it is the correct, honest default, not a
+ *     missing feature.
+ *   - CLAMPING, stated so it is not read as an oversight: a rating is rounded,
+ *     then capped at 5 (a typo of "7" draws five stars, never seven). A value
+ *     that rounds BELOW 1 — 0, -2, 0.4 — is treated as no usable rating and
+ *     draws the bar. It is never clamped UP to one star, because inventing a
+ *     star out of a zero is the same fabrication as inventing five.
+ *   - The accessible name announces the SAME number that is drawn, so the label
+ *     and the glyphs can never disagree.
+ *   - NO review count, NO average score, NO platform name, NO "students' choice"
+ *     badge. None of it is in the data contract, and the design draws none.
+ *   - Quote and attribution are guarded independently and every guard sits
+ *     OUTSIDE its tag, so an unattributed quote renders as a quote rather than
+ *     as an empty row with a badge showing no letter.
+ *   - A row with no quote is DROPPED: the card IS the quote, so a name-only row
+ *     would draw a white card attributing nothing to somebody. The row stays in
+ *     the sidebar and reappears the instant a quote is typed.
+ *
+ * SECTION GATE: the whole <section> renders only when at least one row has a
+ * real quote. It deliberately does NOT count tag / headline / source. Those
+ * three arrive from the admin sidebar or the AI extractor with nothing behind
+ * them all the time, and lib/derive-content-defaults.ts fills heads across the
+ * site, so a gate counting a headline would ship a centred heading over an empty
+ * rail — the one thing a proof section must never do.
+ *
+ * ORIGINAL INDEXES: `i` is captured BEFORE blank rows are dropped, so deleting
+ * row 2 cannot misdirect an edit of row 3 into row 4. The two DECORATIVE things
+ * that do vary per card — the badge tint and the reveal delay — use the display
+ * position `k` instead, because a gap in the cycle after a dropped row would be
+ * visible.
+ *
+ * THE ONE AUTHORED STRING in this file is the stars' aria-label, which is never
+ * visible. It exists because a row of glyphs with no accessible name is
+ * decoration announcing nothing, and a rating the owner typed is information a
+ * screen-reader user is entitled to. No visible word on this page comes from
+ * this file.
+ *
+ * KEYBOARD ACCESS TO THE RAIL. A horizontally scrolling region whose cards hold
+ * no focusable element is unreachable by keyboard in every browser that has not
+ * shipped auto-focusable scrollers, so the rail takes tabindex="0" and picks up
+ * the wrapper's shared focus ring through its :where([tabindex]) selector. Its
+ * accessible name is the OWNER'S OWN HEADLINE via aria-labelledby — never a
+ * literal written here — so when there is no headline the rail stays focusable
+ * and scrollable but is announced with no name, rather than with a name this
+ * file invented. The role/label pair is spread from a single object so a missing
+ * headline can never emit a duplicated or empty attribute.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   testimonials.bigQuote — there is no pull-quote element in this design.
+ *   testimonials.items.${i}.role — the row schema stops at quote/who/rating, so
+ *                           the hook would focus nothing in the v3 sidebar.
+ *   No image: the badge is a derived letter on a tinted circle, not a photo, so
+ *   there is no .plate, no .ph, no .cap, no role="img" on an upload and nothing
+ *   that would need an owner-authored accessible name for a picture.
+ *
+ * NO ANCHOR HELPER, and that is not an omission. The design's TESTIMONIALS
+ * element contains no <a> at all, so this file emits no href and owns no
+ * data-href-field. Copying onPage() / PAGE_ANCHORS / ANCHOR_ALIAS in here would
+ * be an unused function rather than a safeguard — the same call TestimonialsBM
+ * made, for the same reason. The section also takes NO id of the page's anchor
+ * set (menu / about / gallery / visit / faq / main): the design gives this
+ * section none of them. The single id it does emit exists only to hang
+ * aria-labelledby off the headline.
+ *
+ * CONTRAST — COMPUTED here (sRGB relative luminance, WCAG 2.x) from the hexes
+ * the wrapper declares, not copied and not estimated. The method was checked
+ * first by reproducing two of the wrapper's own published figures exactly
+ * (accent/paper 5.63 and ink/card 16.86):
+ *   quote --ink on --card 16.86 · name --muted on --card 6.01 ·
+ *   stars --accent on --card 5.96 · eyebrow --accent-deep on --lilac 7.40 ·
+ *   badge --accent-deep on --lilac 7.40 · --plum on --pink-2 8.73 ·
+ *   --on-sage on --sage 6.40. Nothing here is below AA.
+ *   TWO CAVEATS rather than a clean bill: --muted is remapped by the engine to
+ *   palette.inkSoft, and --accent-deep is aliased to palette.primaryDeep, so
+ *   those two figures are the NATIVE values and not a guarantee under every
+ *   scheme pick. --lilac, --pink, --pink-2, --sage, --on-sage and --plum were
+ *   each grepped against genericThemeOverrides.ts and are absent from it, so
+ *   every ground in this file holds still while its label may move — which is
+ *   the wrapper's own .chip exposure, not something introduced here.
+ *
+ * RESPONSIVE. The wrapper owns the shared 760 / 520 type pass and this file
+ * never touches .h2's font-size, so the headline ladder stays the wrapper's and
+ * cannot be inverted from here. THERE IS NO MULTI-COLUMN GRID TO COLLAPSE AT
+ * 900px: the rail is one row at every width by design — that IS the phone
+ * pattern, and it is what the design draws. Instead of stepping down a column
+ * count, the card narrows continuously through max-width:86vw, so a 360px
+ * viewport gets a card that fits inside the rail with the next one peeking, and
+ * every scoped type size in this file only ever DECREASES as the viewport
+ * narrows (quote 16.5→15.5, stars 14→13, name 13→12.5, note 13→12.5, badge
+ * 38→34px). Nothing pushes the page sideways: the rail scrolls itself, the body
+ * clips the axis, and every text node carries overflow-wrap:anywhere. There is
+ * no button in this section, so the white-space/overflow-wrap pair a full-width
+ * label needs does not arise.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const test = content.testimonials || {};
+
+/* Coerce at EVERY read — see COERCED AT EVERY READ above. A string passes; a
+   finite number passes as its digits; null, undefined, NaN, an array and an
+   object are not content and become ''. Nothing downstream calls a string
+   method on raw input, so no shape from the pipeline can fail the build. */
+const str = (v: unknown): string =>
+  typeof v === 'string' ? v : (typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+
+const tag = str(test.tag).trim();
+const headline = str(test.headline).trim();
+const note = str(test.source).trim();
+
+type Item = {
+  quote?: unknown;
+  who?: unknown;
+  author?: unknown;
+  name?: unknown;
+  rating?: unknown;
+};
+
+/* Tolerate both shapes at every read: the canonical object with .items, and the
+   legacy bare array parked at content.testimonials. */
+const items: Item[] = Array.isArray(test.items)
+  ? test.items
+  : (Array.isArray(test) ? (test as Item[]) : []);
+
+/* A rating is a CLAIM about a customer. Only a finite number becomes stars; it
+   is rounded, capped at 5, and anything that rounds below 1 yields 0 — which
+   draws the soft bar, not a star. Never widen this.
+   READ THROUGH str(), the same gate every other field here uses: a bare
+   Number() is wider than this file's own rule, because Number(true) is 1 and
+   Number(['5']) is 5 — so a boolean or a single-element array arriving from the
+   extractor would have printed a star nobody typed. */
+const starsOf = (it: Item): number => {
+  const r = Number(str(it.rating).trim());
+  if (!Number.isFinite(r)) return 0;
+  const n = Math.round(r);
+  return n >= 1 ? Math.min(5, n) : 0;
+};
+
+const STAR = '★';
+
+/* The three tinted badge pairs this palette actually names. The design cycles
+   four; its fourth is the untokenised warm amber described above. */
+const BADGE_TINTS = ['a', 'b', 'c'];
+
+/* Normalise ONCE, carrying the ORIGINAL array index, then drop the rows that
+   cannot render an honest card. Gating on `rows` rather than `items` also means
+   a block of blank rows hides instead of shipping four empty white cards. */
+const rows = items
+  .map((raw, i: number) => {
+    /* THE ROW IS COERCED BEFORE ANY FIELD IS READ. A null row would throw on
+       `.quote` and fail the build; a bare string row is the quote the owner
+       typed and is kept, not dropped. */
+    const it: Item = raw && typeof raw === 'object' ? (raw as Item) : ({ quote: raw } as Item);
+    /* normalizeBlock aliases name/author onto `who` only when `who` is null, so
+       a row carrying who:'' keeps its blank; this chain is `||` and not `??` so
+       that row still prints the name the owner did type. */
+    const who = str(it.who).trim() || str(it.author).trim() || str(it.name).trim();
+    return {
+      /* the quote keeps its own leading/trailing space — only the GUARD is
+         trimmed, so a blank-looking quote cannot open an empty card */
+      quote: str(it.quote),
+      who,
+      /* Array.from, not [0]: charAt would split an emoji or an astral-plane
+         letter in half and print a replacement glyph. */
+      initial: Array.from(who)[0] || '',
+      stars: starsOf(it),
+      i,
+    };
+  })
+  .filter((r) => Boolean(r.quote.trim()));
+
+const hasHead = Boolean(tag || headline || note);
+/* The rail's accessible name is the owner's headline or nothing at all. */
+const HEAD_ID = 'sip-reviews-h';
+const railNameAttrs = headline ? { role: 'group', 'aria-labelledby': HEAD_ID } : {};
+---
+{rows.length > 0 && (
+  <section class="sip-reviews">
+    {hasHead && (
+      <div class="wrap sip-head reveal">
+        {tag && <span class="kick sip-kick" data-field="testimonials.tag">{tag}</span>}
+        {headline && <h2 class="h2" id={HEAD_ID} data-field="testimonials.headline" set:html={headline}></h2>}
+        {note && <p class="sip-note" data-field="testimonials.source">{note}</p>}
+      </div>
+    )}
+    <div class="sip-rail" tabindex="0" {...railNameAttrs}>
+      {rows.map((row, k) => (
+        <figure class="sip-card reveal" data-delay={String(Math.min(k, 3))}>
+          {row.stars > 0 ? (
+            /* Drawn from the owner's own number, and named with that same
+               number so the glyphs are never decoration-only. */
+            <span class="sip-stars" role="img" aria-label={`Rated ${row.stars} out of 5`}>
+              <span aria-hidden="true">{STAR.repeat(row.stars)}</span>
+            </span>
+          ) : (
+            /* Where the design hardcodes five stars. A soft pink bar on the same
+               beat: same visual opening, same card height, no claim. */
+            <span class="sip-bar" aria-hidden="true"></span>
+          )}
+          <blockquote data-field={`testimonials.items.${row.i}.quote`} set:html={row.quote}></blockquote>
+          {row.who && (
+            <figcaption class="sip-by">
+              {row.initial && (
+                <span class={`sip-badge sip-badge--${BADGE_TINTS[k % BADGE_TINTS.length]}`} aria-hidden="true">{row.initial}</span>
+              )}
+              <span class="sip-who" data-field={`testimonials.items.${row.i}.who`}>{row.who}</span>
+            </figcaption>
+          )}
+        </figure>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  /* The design's own clip. The rail carries its own overflow-x, so this is the
+     belt to that pair of braces: it keeps a reveal transform on a full-bleed
+     row from ever registering against the page. */
+  .sip-reviews { overflow: hidden; }
+
+  /* head · the shared .wrap gutter, centred, 30px of air under it (design) */
+  .sip-head { text-align: center; margin-bottom: 30px; }
+
+  /* The eyebrow keeps the .kick PRIMITIVE and adds only the design's pill: the
+     lilac ground, the deep-purple label, the 100px radius. Font size is NOT
+     restated, so the wrapper's own 520px step on .kick still lands and this
+     section cannot invert the eyebrow ladder. Letter-spacing is the design's
+     .14em rather than the primitive's .18em. */
+  .sip-kick {
+    background-color: var(--lilac);
+    color: var(--accent-deep);
+    border-radius: var(--r-pill);
+    padding: 8px 16px;
+    letter-spacing: 0.14em;
+    max-width: 100%;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+
+  /* The wrapper's .h2 is left-aligned with a BOTTOM margin; the design's head is
+     centred with the margin on TOP. The 22ch cap from the wrapper is kept and
+     centred by the auto margins so a long owner headline cannot run the full
+     width. NO font-size is touched at ANY breakpoint in this file, so the
+     clamp inversion an audit found on an earlier template — a 900-query floor
+     sitting above a 520-query cap — cannot be reintroduced here. */
+  .sip-reviews .h2 {
+    margin: 0.24em auto 6px;
+    overflow-wrap: anywhere;
+  }
+
+  /* the small muted line under the headline (design: 13px / 600) */
+  .sip-note {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* rail · FULL BLEED, not inside .wrap: the design runs the row edge to edge
+     so the next card peeks past the gutter and reads as swipeable. The inline
+     padding is the .wrap primitive's own auto margin, recomputed: .wrap is
+     min(--maxw, 92vw) centred, so HALF OF WHAT IT LEAVES OVER *is* its gutter,
+     and card 1's left edge lands on the headline's at every width. It is
+     measured in % of this row — whose containing block is the section content
+     box, the very box .wrap centres inside — and not in vw, because a vw
+     counts the scrollbar that box does not, which drifted the card half a
+     scrollbar right of the headline on every desktop. max(0px, …) only stops a
+     sub-200px viewport computing a negative padding, which would drop the
+     declaration and lose the gutter altogether. */
+  .sip-rail {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 0 max(0px, (100% - min(var(--maxw), 92vw)) / 2) 20px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* card · the design's soft white tile. The flex column with a 14px gap is the
+     design's own spacing mechanism, and it is what lets the attribution be
+     pushed to the bottom edge with margin-top:auto so a short quote and a long
+     one still line their names up across the row. max-width is the whole
+     narrow-viewport story: the fixed 360px holds until 86vw is the smaller of
+     the two, after which the card shrinks continuously instead of stepping. */
+  .sip-card {
+    margin: 0;
+    flex: none;
+    width: 360px;
+    max-width: 86vw;
+    min-width: 0;
+    scroll-snap-align: center;
+    background-color: var(--card);
+    border-radius: var(--r-lg);
+    padding: 28px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* the rating mark. Both variants occupy the same ~24px beat so a card WITH a
+     rating and a card without stay on the same baseline in the same row.
+     line-height is DECLARED rather than inherited so that height is
+     deterministic — and 1.72 is precisely the value it WOULD inherit from the
+     wrapper's body, so this declaration changes nothing on screen. */
+  .sip-stars {
+    display: block;
+    font-size: 14px;
+    line-height: 1.72;
+    letter-spacing: 2px;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+  /* The bar that replaces the design's hardcoded star row: --pink used as a
+     GROUND, which is the only way this palette allows it. 3px on a pill radius
+     because nothing in this design is sharp; 10.5px margins reproduce the 24px
+     the star row occupies. */
+  .sip-bar {
+    display: block;
+    width: 64px;
+    max-width: 100%;
+    height: 3px;
+    border-radius: var(--r-pill);
+    background-color: var(--pink);
+    margin: 10.5px 0;
+  }
+
+  /* quote · the UA gives <blockquote> a 40px side margin, so the reset here is
+     load-bearing, not tidying. */
+  .sip-card blockquote {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.72;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* set:html output carries no scope attribute, so an owner's emphasis inside a
+     quote is only reachable through :global(). It keeps the quote's own ink:
+     the purple colour change is the HEADLINE signature, and repainting a
+     customer's words purple would read as the tea bar talking, not the
+     customer. Nunito Sans has a real italic, so the italic here is genuine and
+     not the synthesised oblique Baloo 2 would give. */
+  .sip-card blockquote :global(em),
+  .sip-card blockquote :global(.em) { font-style: italic; color: inherit; }
+
+  /* attribution · pinned to the card floor (design) */
+  .sip-by {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+  /* the derived initial. Uppercased in CSS, never in the string. */
+  .sip-badge {
+    flex: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: var(--disp);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .sip-badge--a { background-color: var(--lilac); color: var(--accent-deep); }
+  .sip-badge--b { background-color: var(--pink-2); color: var(--plum); }
+  .sip-badge--c { background-color: var(--sage); color: var(--on-sage); }
+  .sip-who {
+    min-width: 0;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* RESPONSIVE · this section owns its rail; the wrapper owns the shared 760 /
+     520 type pass. There is no column count to collapse at 900px — see the
+     frontmatter — so 900 only tightens the gutter between cards. */
+  @media (max-width: 900px) {
+    .sip-rail { gap: 14px; }
+  }
+  @media (max-width: 520px) {
+    .sip-head { margin-bottom: 24px; }
+    .sip-kick { padding: 7px 14px; letter-spacing: 0.12em; }
+    .sip-note { font-size: 12.5px; }
+    .sip-card { padding: 24px 22px; gap: 12px; }
+    /* every size below only ever DECREASES from its base value */
+    .sip-card blockquote { font-size: 15.5px; }
+    .sip-stars { font-size: 13px; letter-spacing: 1.5px; }
+    .sip-bar { width: 58px; margin: 9.7px 0; }
+    .sip-badge { width: 34px; height: 34px; font-size: 15px; }
+    .sip-who { font-size: 12.5px; }
+  }
+</style>

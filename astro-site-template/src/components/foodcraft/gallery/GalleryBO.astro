@@ -1,0 +1,554 @@
+---
+/**
+ * foodcraft / GalleryBO — "Sipsip Tea Bar" (BO), the counter in photographs.
+ *
+ * ROLE: the one section on the page that is nothing but the owner's own
+ * pictures. A CENTRED head — the lilac pill eyebrow over one Baloo 2 headline
+ * carrying this template's purple colour-emphasis — sitting above the design's
+ * SCATTERED four-up: a row of soft photo tiles where every other tile is
+ * dropped 26px and four of the eight corners are blown out to 60px, so the grid
+ * reads as hand-placed rather than ruled. Nothing in it has a sharp corner.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every number below is lifted verbatim from
+ * the element carrying data-component="GALLERY" in
+ * "Sipsip Tea Bar Landing.dc.html":
+ *   head        text-align center · margin-bottom 30px
+ *   eyebrow     inline-block PILL · 11px / 700 / .14em / uppercase ·
+ *               #5C3580 on a #EEE2F5 ground · padding 8px 16px · radius 100px
+ *                                                        → the wrapper's .kick
+ *   headline    Baloo 2 700 clamp(30px,4vw,52px)/1.08 · margin `.24em 0 0` ·
+ *               #241A22, with a #7B4FA8 <span> emphasis   → the wrapper's .h2
+ *   grid        repeat(4, minmax(0,1fr)) · gap 14px
+ *   tile        height 250px · overflow hidden · ground #F0E4F6  → .plate
+ *   stagger     margin-top 26px on tiles 2, 4, 6, 8 (0 on 1, 3, 5, 7)
+ *   corners     26px on every tile, ONE corner opened to 60px on four of them:
+ *               tile 2 bottom-right · 3 top-left · 5 top-right · 8 bottom-left
+ *   caption     absolute 10px/10px · #FFF7F2 ground · #241A22 label · 11px /
+ *               700 · padding 6px 13px · radius 100px          → .plate .cap
+ * The stagger and the blown corners are the whole character of this section and
+ * are reproduced exactly; neither has been flattened to suit a list of unknown
+ * length (see THE COUNT LADDER).
+ *
+ * CLASS NAMES ARE THIS TEMPLATE'S OWN. An audit had to rename a whole set of
+ * classes copied verbatim from a sibling, so nothing here reuses GalleryBM's
+ * `.tcg-*` or GalleryBN's `.sec-*`: every scoped class is prefixed `.sip-gal-`,
+ * matching AboutBO's `.sip-about-` for this same template. Only the HOUSE STYLE
+ * crossed over — the doc block, the tolerant reads, the guard discipline, the
+ * count ladder as an idea. No palette, no layout and no class name did.
+ *
+ * R1 · NO LITERAL HEX. Every hex the design writes here is used through the
+ * PageBO token holding the same value:
+ *   #EEE2F5 --lilac · #5C3580 --accent-deep · #241A22 --ink ·
+ *   #FFF7F2 --paper · #7B4FA8 --accent (the emphasis, via the wrapper) ·
+ *   26px --r-lg · 100px --r-pill
+ *   ONE COLOUR HAS NO EXACT TOKEN and is reported rather than invented: the
+ *   design's tile ground is #F0E4F6, and no PageBO token holds that value. The
+ *   nearest is --well / --lilac (#EEE2F5, each channel within 2/255), which is
+ *   what .plate already paints, so the plate takes the token and no hex is
+ *   written. Identical to the call AboutBO made for the same ground. Flagged so
+ *   nobody reads it as a miss.
+ *   THE 60px CORNER AND THE 250px HEIGHT are LENGTHS, not colours. PageBO's
+ *   radius scale is 100 / 26 / 18 and holds no 60, so the blown corner is
+ *   stated as a local custom property (--sip-gal-corner) rather than pretending
+ *   a token exists. R1 governs colour, and no colour LITERAL appears here: the
+ *   four colours this file sets — --accent-deep, --lilac, --paper, --ink — are
+ *   every one of them a token reference.
+ *   THE PAIRING RISK IN THIS PALETTE DOES NOT ARISE HERE: this section sits on
+ *   the plain --paper ground and opts into none of .band-pink / .band-sage /
+ *   .band-lilac, so no purple is ever set on the pink. The only purple that
+ *   appears is on the blush paper (5.63:1) and on the lilac pill (7.40:1).
+ *
+ * ── EDITABLE HOOKS (each one DECLARED in components/editor/genericContentSchema.ts
+ *    under the `gallery` group, whose entire declaration is three fields —
+ *    gallery.tag, gallery.headline, and the gallery.items LIST with its two
+ *    item fields (image, caption) — which is what the four hook paths below
+ *    resolve to, so every data-field is a hook a real sidebar input owns) ────
+ *   gallery.tag                        → the lilac pill eyebrow (.kick)
+ *   gallery.headline                   → the display h2, set:html
+ *   gallery.items.<original i>.image   → data-image-field, one per tile
+ *   gallery.items.<original i>.caption → the optional cream caption pill
+ * That is the whole list. A data-field on any other path is a dead hook no
+ * sidebar input owns, so no other path is written here.
+ *
+ * ── R2 · NOTHING VISIBLE IS SUPPLIED BY THIS FILE. Not one word. The design's
+ * demo copy — "Gallery", "Straight from the counter." and the eight slot
+ * placeholders ("Classic", "Taro", "The bar", "Pearls", "Fruit tea", "Matcha",
+ * "The corner", "To go") — is the DESIGNER filling their own template. Those
+ * eight are captions for photographs nobody has looked at, so they are neither
+ * hard-coded nor invented as caption defaults: an uncaptioned photo is simply a
+ * photo, and that is also what derive-content-defaults ships (it seeds images
+ * and omits the caption key entirely). Every guard sits OUTSIDE its tag, so an
+ * empty value removes the ELEMENT: no empty eyebrow pill, no headline over
+ * nothing, no head block with nothing in it, and no empty cream pill sitting on
+ * a photograph.
+ * NO STAR ROW EXISTS IN THIS SECTION. The design's GALLERY carries no rating
+ * and the `gallery` group exposes no numeric field, so there is nothing here
+ * that could print five stars for someone who gave no number.
+ *
+ * ── DERIVED (computed here, never invented) ─────────────────────────────────
+ *   · TILE INDEXES (R6). Rows with no image are dropped and the ORIGINAL array
+ *     index travels with the survivor as `.i`. The editor writes the data-field
+ *     path verbatim into the draft, so a re-indexed path would patch a
+ *     different row: clearing row 2's photo would misdirect row 3's caption
+ *     edits into row 2.
+ *   · THE STAGGER AND THE CORNERS ARE DECORATIVE, so they key off the DISPLAY
+ *     position (R6), not the original index — the design's rhythm is "every
+ *     other tile drops", and it must stay every other tile after a blank row is
+ *     removed. The corner pattern cycles at 8, which is the design's own run
+ *     length, so a ninth photograph restarts it rather than running out.
+ *   · gallery.items is read tolerantly: the object form, the legacy bare ARRAY
+ *     at content.gallery itself (both shapes reach production), and a bare
+ *     string inside the list treated as an image path. A `.map is not a
+ *     function` costs the whole page, not one tile.
+ *   · the image url has its apostrophes percent-escaped before it goes into
+ *     url('…'), so an upload named "sipsip's counter.jpg" cannot close the
+ *     quote early and take the whole declaration down with it. The RAW value
+ *     still travels into data-image-field, which is what the editor reads back.
+ *   · THE COUNT LADDER. The design hard-codes eight slots; content does not.
+ *     derive-content-defaults hands over up to six photos and an owner may
+ *     upload one or eleven, so the design's four-up is the TOP of a ladder:
+ *       1–3   the grid narrows to exactly that many tracks, so a short gallery
+ *             is three full tiles rather than three tiles and a hole
+ *       4–8   the design's four tracks, exactly
+ *       any   when the last row does not divide by the track count, the FINAL
+ *             tile stretches over whatever tracks its row left empty, so the
+ *             grid never ends ragged. Six photos — the default build — is the
+ *             case this exists for: four across, then one tile and one wide.
+ *     The stretch is computed PER BREAKPOINT (a four-track row and a two-track
+ *     row run out at different counts) and is reset entirely at one column.
+ *
+ * ── DELIBERATELY NOT RENDERED, so none of these reads as an oversight ───────
+ *   · NO onPage() ANCHOR HELPER (R7). This section renders no href of any kind:
+ *     the design's GALLERY has no button, no link and no action, and the
+ *     `gallery` schema group declares no href field, so PAGE_ANCHORS /
+ *     ANCHOR_ALIAS would have nothing to remap and would ship as dead
+ *     frontmatter that later drifts out of step with the wrapper. If a link is
+ *     ever added here it must arrive WITH the helper copied in from HeaderBO,
+ *     and for THIS page that means PAGE_ANCHORS = menu / about / gallery /
+ *     visit / faq / main, with ANCHOR_ALIAS mapping location + contact → visit,
+ *     services + rooms → menu, host + why → about, work → gallery, book →
+ *     main, and off-page hrefs (tel: mailto: http) passing through untouched.
+ *     The anchor duty this file DOES own is its id="gallery" — one of PageBO's
+ *     six page anchors, the target the header nav links at, and the target the
+ *     `work` alias resolves to.
+ *   · NO BUTTONS (R4), because the design's GALLERY has none. So none of
+ *     .btn--fill / .btn--pink / .btn--cream / .btn--line appears here, nor does
+ *     any engine-pinned name (.btn-primary .btn-ghost .nav-cta .cta-band .trust
+ *     .testi, or `.hero` on a <section>).
+ *   · THE DESIGN'S OWN HEADLINE SIZE (clamp(30px,4vw,52px)/1.08). PageBO's
+ *     shared .h2 is clamp(28px,3.9vw,52px)/1.12 — the same 52px cap — and
+ *     forking a font-size into one of fifteen sections would leave this
+ *     headline out of step with the other fourteen. The wrapper normalised it;
+ *     the wrapper keeps it. Only the design's MARGIN is set here.
+ *   · SECTION PADDING. The design writes `padding:80px 28px 0`: the 1200/gutter
+ *     half is the shared .wrap (min(1200px, 92vw)) and the top is the wrapper's
+ *     `section { padding: clamp(48px,6.4vw,80px) 0 }`, which caps at exactly
+ *     the design's 80px. The design's bottom-0 is a WHOLE-PAGE rhythm decision
+ *     (every unbanded section in it pads top only) and belongs in the wrapper's
+ *     shared rule; one section zeroing its own bottom while fourteen siblings
+ *     keep theirs is the local re-derivation that puts a template out of step
+ *     with its design. Flagged, not done here.
+ *
+ * ── THREE DECISIONS WORTH SEEING ───────────────────────────────────────────
+ *   · EVERY TILE RULE IS QUALIFIED WITH .sip-gal-grid, and the reason has to be
+ *     stated correctly, because an earlier draft of this block stated it
+ *     backwards. HOW THIS PROJECT SCOPES: Astro's `scopedStyleStrategy` defaults
+ *     to 'attribute' and astro-site-template/astro.config.mjs overrides nothing,
+ *     so the BUILD emits `.sip-gal-frame[data-astro-cid-…]` — one attribute
+ *     selector on every scoped compound, worth (0,1,0) each. dist/index.html
+ *     carries data-astro-cid and contains no `:where(.astro-` at all. (Calling
+ *     @astrojs/compiler.transform() directly shows `:where(.astro-…)` instead,
+ *     because the bare compiler API defaults to 'where'; that output is NOT what
+ *     ships, and mistaking it for "the compiler's emitted CSS" is what produced
+ *     the earlier claim.)
+ *     So against the wrapper's `html[data-page="BO"] :where(.plate)` at (0,1,1)
+ *     and `… :where(.plate) .cap` at (0,2,1), the rules below ship at (0,4,0)
+ *     and (0,6,0). Nothing here is one class away from losing — a lone
+ *     `.sip-gal-frame` would already weigh (0,2,0) and win. The qualifiers stay
+ *     because they read consistently and because they would still hold if
+ *     scopedStyleStrategy were ever set to 'where'.
+ *   · THE CAPTION PILL IS THE DESIGN'S, NOT THE PRIMITIVE'S DEFAULT. PageBO's
+ *     .plate .cap is an opaque --ink pill with an --on-ink label; the GALLERY
+ *     element draws the inverse — an opaque --paper pill with an --ink label,
+ *     at 10px/10px and 6px/13px instead of 12px/12px and 7px/14px. The class is
+ *     still .cap, so the position, z-index, family and wrap machinery stay
+ *     shared, and only those five design values are restated — plus a max-width
+ *     derived from the design's own 10px offsets, so a long caption wraps inside
+ *     the tile rather than running past it. BOTH pills are fully opaque, so both
+ *     hold their own contrast over any photograph whatever; this one measures
+ *     --ink on --paper, computed below. The design is the specification, so the
+ *     design's pill is what ships.
+ *   · THE HOVER LIFT is the only thing here the static design file could not
+ *     express. PageBO ships `transition: transform .5s ease` on .ph, which is
+ *     dead weight unless a section moves it, and a photo grid is where it
+ *     belongs. It is a 1.03 scale INSIDE an already-clipped plate, so the
+ *     frame, its blown corner and its caption never move, and reduced-motion
+ *     cancels it.
+ *
+ * ── R5 · THE SECTION GATE ───────────────────────────────────────────────────
+ * The section renders only when at least one row carries an IMAGE — the BODY
+ * content, never the tag or the headline. lib/derive-content-defaults.ts sets
+ * gallery.tag ('Inside') and gallery.headline ('A look at our work') on EVERY
+ * site, so a gate counting those would ship an eyebrow and a display headline
+ * over an empty grid. Once photographs exist the tag and headline render (still
+ * individually guarded) — refusing them would strand two live sidebar inputs.
+ *
+ * ── R9 · ACCESSIBILITY ──────────────────────────────────────────────────────
+ * A tile is announced only when the owner gave it words. With a caption the
+ * photo layer is role="img" named by THAT CAPTION — the owner's own words, and
+ * also the visible pill. With no caption the layer is HIDDEN from the tree
+ * rather than announced as "image"; inventing "Tea bar photo" would publish a
+ * description of something nobody described. The two attributes are mutually
+ * exclusive and BOTH conditional, so no literal aria-hidden ever sits beside a
+ * conditional one — the duplicated-attribute bug earlier components shipped,
+ * where the literal wins and hides content that should have been announced.
+ * Nothing else here is decorative: the stagger and the blown corners are CSS,
+ * so there is no numeral and no icon that could need hiding.
+ *
+ * ── R3 · one scoped style block, no is:global. Astro's scoped styles cannot
+ * reach elements created by set:html, so the owner's own <em> inside the
+ * headline is styled by PageBO's global `:where(.h2 em)` rule — font-style
+ * normal and --accent, a COLOUR change, because Baloo 2 has no italic and
+ * asking for one synthesises an oblique that fights its rounded terminals — and
+ * NOT from here. Anything this file ever needed to say about an owner <em>
+ * would have to go through :global().
+ *
+ * ── R8 · RESPONSIVE. THIS FILE STATES NO CLAMP AND NO FONT-SIZE AT ANY WIDTH,
+ * so the inversion two audits found — a floor in the 900 query sitting under a
+ * cap in the 520 query — has nothing here to happen to. Every metric it does
+ * own was traced across all three widths:
+ *   tracks     4 · 2 (≤900) · 1 (≤520)          — the collapse R8 asks for
+ *   gap        14px flat
+ *   tile       250px flat. Width follows .wrap = min(1200px, 92vw) less the
+ *              gaps: ~265×250 at a 1200px viewport (.wrap is 1104px there, not
+ *              1200), ~290×250 once .wrap reaches its 1200px cap at ~1304px and
+ *              wider, ~407×250 just inside the 900 collapse (828px of wrap, two
+ *              tracks, one 14px gap), ~331×250 at 360 — never taller, never
+ *              shorter
+ *   stagger    26px · 26px · 0 (≤520, where a drop is only a second gap in a
+ *              single column) — monotonically down
+ *   corner     60px flat
+ *   eyebrow    no font-size set here, so the wrapper's 11px → 10.5px step at
+ *              520 is the whole curve; the .14em tracking this file sets is the
+ *              design's and is the same value the wrapper drops to at 520, so
+ *              nothing moves.
+ * At 360px nothing may push sideways: every grid track is minmax(0,…), the
+ * caption is absolutely positioned inside a clipped plate AND still takes
+ * overflow-wrap: anywhere, and the eyebrow and headline take it too so one long
+ * owner word — a hyphenless place name, a pasted URL — wraps instead of
+ * widening the document. (The wrapper's `body { overflow-x: hidden }` would
+ * CLIP such a word rather than scroll to it, so the tail of it would simply be
+ * gone.) There is no button in this section, so R8's full-width
+ * `white-space: normal` + `overflow-wrap: anywhere` pair has nothing to apply
+ * to.
+ *
+ * ── CONTRAST, COMPUTED from PageBO's own token hexes (sRGB relative luminance,
+ * WCAG 2.x) rather than copied from its table — the method was checked against
+ * two of the wrapper's own figures first and reproduces BOTH exactly, with no
+ * disagreement to explain away (ink/paper 15.92, accent/paper 5.63):
+ *   eyebrow    --accent-deep on --lilac    7.40:1  (7.3956 unrounded)
+ *   headline   --ink on --paper           15.92:1  (15.9234 unrounded)
+ *   emphasis   --accent on --paper         5.63:1  (5.6263; the wrapper's .h2 em)
+ *   caption    --ink on --paper           15.92:1  (an OPAQUE pill, so this is
+ *                                                   the real pairing over any
+ *                                                   photograph)
+ * Nothing in this section is below AA, and no pair here puts the purple on the
+ * pink — the one combination this palette cannot survive.
+ */
+// `layout` is accepted because PageBO passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const gallery = (content && content.gallery) || {};
+// An array at content.gallery would make these undefined, which is correct:
+// the legacy bare-array form carries no tag and no headline.
+const tag = typeof gallery.tag === 'string' ? gallery.tag.trim() : '';
+const headline = typeof gallery.headline === 'string' ? gallery.headline.trim() : '';
+
+// The legacy bare-array form lives at content.gallery ITSELF — not the
+// `gallery` alias above, which is the object form's home. Both shapes reach
+// production, so both are read.
+const rawTiles: any[] = Array.isArray(gallery.items)
+  ? gallery.items
+  : (Array.isArray(content && content.gallery) ? content.gallery : []);
+
+// Blank rows go; the ORIGINAL index travels with every survivor (R6).
+const tiles = rawTiles
+  .map((row: any, i: number) => {
+    // An older draft has stored a bare path where the schema's newItem creates
+    // { image, caption }. Read as an image rather than dropped.
+    const item = typeof row === 'string'
+      ? { image: row, caption: '' }
+      : (row && typeof row === 'object' ? row : { image: '', caption: '' });
+    return {
+      image: String((item as any).image ?? '').trim(),
+      caption: String((item as any).caption ?? '').trim(),
+      i,
+    };
+  })
+  .filter((t) => t.image.length > 0);
+
+const n = tiles.length;
+
+// CSS-only escape; the raw value still goes into data-image-field.
+const cssUrl = (s: string) => s.replace(/'/g, '%27');
+
+/* THE DESIGN'S CORNER RHYTHM, by DISPLAY position (R6): one corner of tiles 2,
+   3, 5 and 8 is opened to 60px, the rest stay on the shared 26px. The run is
+   eight long — the design's own slot count — so a ninth photograph restarts it
+   instead of falling off the end. '' means "all four corners at --r-lg". */
+const CORNERS = ['', 'br', 'tl', '', 'tr', '', '', 'bl'];
+
+/* Row completion, per breakpoint (see THE COUNT LADDER above).
+   FOUR tracks: 1–3 photos narrow the grid to their own count, so only 5+ can
+   leave a partial row; the trailing tile then stretches over the tracks its row
+   did not fill — remainder 1 spans all four, 2 spans three, 3 spans two.
+   TWO tracks (≤900): an odd count leaves the trailing tile alone, and it
+   stretches across the pair. */
+const rem4 = n > 4 ? n % 4 : 0;
+const wideDesk = rem4 === 1 ? 4 : (rem4 === 2 ? 3 : (rem4 === 3 ? 2 : 0));
+const wideMid = (n > 2 && n % 2 === 1) ? 2 : 0;
+
+// R5 — BODY content only. tag and headline are excluded: both are derived onto
+// every site, so counting them would make this gate always-true.
+const hasSection = n > 0;
+---
+{hasSection && (
+  <section class="sip-gal" id="gallery">
+    <div class="wrap">
+      {(tag || headline) && (
+        <div class="sip-gal-head reveal">
+          {tag && <span class="kick sip-gal-kick" data-field="gallery.tag">{tag}</span>}
+          {headline && <h2 class="h2 sip-gal-h" data-field="gallery.headline" set:html={headline}></h2>}
+        </div>
+      )}
+
+      <div
+        class:list={[
+          'sip-gal-grid',
+          'reveal',
+          n === 1 && 'sip-gal-x1',
+          n === 2 && 'sip-gal-x2',
+          n === 3 && 'sip-gal-x3',
+        ]}
+        data-delay="1"
+      >
+        {tiles.map((t, pos) => (
+          <figure
+            class:list={[
+              'plate',
+              'sip-gal-frame',
+              /* Decorative, so keyed off the DISPLAY position, never t.i. */
+              pos % 2 === 1 && 'sip-gal-drop',
+              CORNERS[pos % 8] && `sip-gal-${CORNERS[pos % 8]}`,
+              pos === n - 1 && wideDesk === 4 && 'sip-gal-w4',
+              pos === n - 1 && wideDesk === 3 && 'sip-gal-w3',
+              pos === n - 1 && wideDesk === 2 && 'sip-gal-w2',
+              pos === n - 1 && wideMid === 2 && 'sip-gal-wm2',
+            ]}
+          >
+            <div
+              class="ph"
+              data-image-field={`gallery.items.${t.i}.image`}
+              role={t.caption ? 'img' : undefined}
+              aria-label={t.caption || undefined}
+              aria-hidden={t.caption ? undefined : 'true'}
+              style={`background-image:url('${cssUrl(t.image)}');`}
+            ></div>
+            {t.caption && (
+              <figcaption class="cap sip-gal-cap" data-field={`gallery.items.${t.i}.caption`}>{t.caption}</figcaption>
+            )}
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* .sip-gal carries NO rule on purpose. PageBO's shared `section` rhythm
+     already states this design's 80px top (capped there, and symmetric by
+     contract) and .wrap already states its 1200px / 92vw. The class stays in
+     the markup as this section's root hook. Read the frontmatter before adding
+     a bare bottom here: a padding-bottom:0 would make this the one section that
+     butts into the next, because every sibling in the variant leans on the
+     wrapper's rhythm. */
+
+  /* THE CENTRED HEAD. The design's 30px down to the grid sits on the BLOCK, not
+     on the h2's own margin-bottom, so an eyebrow with no headline still clears
+     the photographs instead of gluing them to its underside. */
+  .sip-gal-head {
+    text-align: center;
+    margin: 0 0 30px;
+  }
+
+  /* THE EYEBROW. The wrapper's .kick already carries the design's type — 11px,
+     700, uppercase, inline-block — and owns the whole size curve (it steps to
+     10.5px at 520), so no font-size is written here. What .kick does NOT know
+     is that in THIS design the eyebrow is a PILL: a lilac ground, the deep
+     purple label, 8px/16px of padding and the 100px corner. Those four and the
+     design's .14em tracking (the wrapper's base is .18em) are the only things
+     restated. The label is --accent-deep and not --accent because that is what
+     the design writes; it also happens to be the darker of the two, which this
+     ground can afford. Qualified with .sip-gal-head so it out-specifies the
+     wrapper's :where() primitive whatever order the sheets land in. */
+  .sip-gal-head .sip-gal-kick {
+    letter-spacing: .14em;
+    color: var(--accent-deep);
+    background-color: var(--lilac);
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* `.24em 0 0` verbatim; nothing below it (the block owns that). The wrapper's
+     22ch cap is RELEASED because this head is centred: a 22ch block with
+     `margin:… 0 0` would hug the left edge of the wrap with its text centred
+     inside a narrow column. The design gives this h2 no max-width, so neither
+     does this file. No font-size is set — the wrapper's shared clamp and its
+     shared 760 pass own the whole size curve, and the purple emphasis is the
+     wrapper's global `.h2 em` rule, which a scoped selector could not reach
+     anyway because set:html builds that <em> after this sheet was scoped. */
+  .sip-gal-head .sip-gal-h {
+    margin: .24em 0 0;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE SCATTERED FOUR-UP ────────────────────────────────────────────────
+     The design's tracks verbatim: four equal columns, 14px apart. The three
+     knobs below are the design's own numbers, kept as custom properties so the
+     breakpoints move the stagger without restating the grid, and so the one
+     length in this template that has no token (60px) is named rather than
+     sprinkled through four rules.
+     minmax(0,…) on every track is the DESIGN's own value, kept verbatim, and it
+     is also the safe one: a bare 1fr floors at min-content, so any future
+     IN-FLOW child of a tile could widen its track past its share. Today's
+     caption is absolutely positioned and so contributes nothing to min-content
+     — this is belt, not brace, and it is here because the design put it here. */
+  .sip-gal-grid {
+    --sip-gal-h: 250px;
+    --sip-gal-drop: 26px;
+    --sip-gal-corner: 60px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+  /* THE COUNT LADDER, short end. Each tier restates the tracks for its own
+     count so a three-photo gallery is three full tiles and not three tiles
+     beside a hole. Two compounds plus Astro's scope, so each out-specifies the
+     base grid above AND the collapse rules below — wherever a tier is already
+     narrow enough to survive the collapse. */
+  .sip-gal-grid.sip-gal-x1 { grid-template-columns: minmax(0, 1fr); }
+  .sip-gal-grid.sip-gal-x2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sip-gal-grid.sip-gal-x3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  /* THE TILE. Ground (--well), the shared 26px corner and the clip all arrive
+     with .plate, which is what the design specifies per tile — so only geometry
+     is set here. `margin: 0` is load-bearing: a <figure> carries a 1em/40px UA
+     margin that would blow the grid apart. The wrapper's 180px .plate floor
+     never binds at 250px, but it is released so the design's height is the one
+     source of truth for it.
+     ON THE .sip-gal-grid QUALIFIER — the frontmatter has the full working. This
+     build scopes with `[data-astro-cid-…]` (Astro's 'attribute' default), so
+     this rule ships at (0,4,0) against the wrapper's
+     `html[data-page="BO"] :where(.plate)` at (0,1,1), and min-height:0 lands. It
+     would land at one class fewer too; the qualifier is for consistency, not
+     rescue. */
+  .sip-gal-grid .sip-gal-frame {
+    margin: 0;
+    min-width: 0;
+    min-height: 0;
+    height: var(--sip-gal-h);
+  }
+  /* THE STAGGER — every other tile dropped, which is what stops this grid
+     reading as a ruled table. On a grid item the margin adds to the row's
+     height exactly as it does in the design. Three classes, so it beats the
+     `margin: 0` shorthand above on weight rather than on source order. */
+  .sip-gal-grid .sip-gal-frame.sip-gal-drop { margin-top: var(--sip-gal-drop); }
+
+  /* THE BLOWN CORNERS. One corner per marked tile opened to 60px; the other
+     three stay on the shared --r-lg so the tile still belongs to the template's
+     radius scale. Three classes across TWO compounds, so this build's
+     per-compound scope attribute makes it (0,5,0) — clear of the wrapper's
+     :where(.plate) corner at (0,1,1). */
+  .sip-gal-grid .sip-gal-frame.sip-gal-br { border-radius: var(--r-lg) var(--r-lg) var(--sip-gal-corner) var(--r-lg); }
+  .sip-gal-grid .sip-gal-frame.sip-gal-tl { border-radius: var(--sip-gal-corner) var(--r-lg) var(--r-lg) var(--r-lg); }
+  .sip-gal-grid .sip-gal-frame.sip-gal-tr { border-radius: var(--r-lg) var(--sip-gal-corner) var(--r-lg) var(--r-lg); }
+  .sip-gal-grid .sip-gal-frame.sip-gal-bl { border-radius: var(--r-lg) var(--r-lg) var(--r-lg) var(--sip-gal-corner); }
+
+  /* Row completion on the trailing tile (see the frontmatter). */
+  .sip-gal-grid .sip-gal-frame.sip-gal-w4 { grid-column: span 4; }
+  .sip-gal-grid .sip-gal-frame.sip-gal-w3 { grid-column: span 3; }
+  .sip-gal-grid .sip-gal-frame.sip-gal-w2 { grid-column: span 2; }
+
+  /* THE CAPTION PILL, the design's way round: an opaque CREAM ground with the
+     ink label, where the wrapper's shared .cap is the inverse. The class is
+     still .cap, so position, z-index, family, weight, size and the wrap guard
+     stay shared; the five values the design states differently are restated
+     (left, bottom, padding, ground, label), plus a max-width matched to the
+     design's own 10px offsets, and overflow-wrap repeated rather than assumed
+     because a caption is the one owner string in this section that sits in a
+     fixed box.
+     WEIGHT: the wrapper's `html[data-page="BO"] :where(.plate) .cap` is (0,2,1)
+     — one attribute, one class, one element. Under this build's 'attribute'
+     scoping the rule below ships as
+     `.sip-gal-grid[cid] .sip-gal-frame[cid] .sip-gal-cap[cid]` = (0,6,0), so the
+     design's cream pill wins outright. */
+  .sip-gal-grid .sip-gal-frame .sip-gal-cap {
+    left: 10px;
+    bottom: 10px;
+    max-width: calc(100% - 20px);
+    padding: 6px 13px;
+    background-color: var(--paper);
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* The one thing a static design file cannot state. See the frontmatter: the
+     wrapper ships the transition on .ph and only a section can move it. */
+  .sip-gal-grid .sip-gal-frame:hover .ph { transform: scale(1.03); }
+  @media (prefers-reduced-motion: reduce) {
+    .sip-gal-grid .sip-gal-frame:hover .ph { transform: none; }
+  }
+
+  /* ── 900px · four tracks collapse to two. At this width .wrap is 828px, so a
+        four-up tile measures (828 − 3×14) / 4 = 196.5px across — a thumbnail,
+        not a photograph of anything. Two tracks give it (828 − 14) / 2 = 407px.
+        The stagger STAYS: with
+        two tracks the dropped tiles are the whole right-hand column, which is
+        the design's rhythm intact rather than a leftover.
+        .sip-gal-x1 and .sip-gal-x2 are deliberately not restated — both already
+        out-specify the bare .sip-gal-grid selector below, so a one- or two-photo
+        gallery keeps the tracks its count earned. Only x3 has to come down. */
+  @media (max-width: 900px) {
+    .sip-gal-grid,
+    .sip-gal-grid.sip-gal-x3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sip-gal-grid .sip-gal-frame.sip-gal-w4,
+    .sip-gal-grid .sip-gal-frame.sip-gal-w3,
+    .sip-gal-grid .sip-gal-frame.sip-gal-w2 { grid-column: auto; }
+    .sip-gal-grid .sip-gal-frame.sip-gal-wm2 { grid-column: span 2; }
+  }
+
+  /* ── 520px · one column. A two-up tile is 232px at 520 and 159px by 360, so
+        the pair stops reading as a gallery well before this band ends, and the
+        grid becomes a stack: every span is reset so nothing reaches for a track
+        that is not there, and the stagger goes to 0 because in a single column
+        a 26px drop is not a rhythm, only a second gap. Nothing may push the
+        page sideways at this width — the track is minmax(0,…), the tiles cannot
+        exceed it, the caption wraps inside its own pill, and the eyebrow and
+        headline break anywhere (both stated at EVERY width above, because the
+        wrapper's `body { overflow-x: hidden }` would clip an overflowing word
+        at 900px rather than scroll to it). */
+  @media (max-width: 520px) {
+    .sip-gal-grid,
+    .sip-gal-grid.sip-gal-x2,
+    .sip-gal-grid.sip-gal-x3 { grid-template-columns: minmax(0, 1fr); }
+    .sip-gal-grid .sip-gal-frame.sip-gal-w4,
+    .sip-gal-grid .sip-gal-frame.sip-gal-w3,
+    .sip-gal-grid .sip-gal-frame.sip-gal-w2,
+    .sip-gal-grid .sip-gal-frame.sip-gal-wm2 { grid-column: auto; }
+    .sip-gal-grid .sip-gal-frame.sip-gal-drop { margin-top: 0; }
+  }
+</style>

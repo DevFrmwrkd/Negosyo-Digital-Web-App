@@ -1,0 +1,519 @@
+---
+/**
+ * foodcraft / AboutBO — "Sipsip Tea Bar" (BO), the OUR STORY section.
+ *
+ * ROLE: the tea bar talking about itself. The design draws a two-column split —
+ * PHOTOGRAPH ON THE LEFT on the lilac wash, the story on the RIGHT: a lilac pill
+ * eyebrow, a Baloo 2 headline carrying its purple colour-emphasis, the owner's
+ * paragraphs, then a wrapping row of white PILL SPEC CHIPS, each one a label
+ * with its value set in the purple. Nothing in it has a sharp corner.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every number below is lifted verbatim from
+ * the element carrying data-component="ABOUT" in "Sipsip Tea Bar Landing.dc.html":
+ *   grid        minmax(0,.9fr) minmax(0,1.1fr), gap 52px, align-items center
+ *   photo       LEFT column · height 400px · radius 28px · ground #F0E4F6
+ *   eyebrow     inline-block PILL · 11px / 700 / .14em / uppercase ·
+ *               colour #5C3580 on a #EEE2F5 ground · padding 8px 16px ·
+ *               radius 100px                          → the wrapper's .kick
+ *   headline    Baloo 2 700 clamp(30px,4vw,52px)/1.08, margin .24em 0 .3em,
+ *               #241A22, with a #7B4FA8 <span> emphasis
+ *                                                     → the wrapper's .h2
+ *   paragraphs  16.5px / 1.82 / #5D5158 / max-width 50ch / margin 0 0 1em,
+ *               the LAST one 0 0 26px (the gap above the spec chips)
+ *   spec row    flex · wrap · gap 10px
+ *   spec chip   #FFFFFF ground · radius 100px · padding 11px 18px · 13px ·
+ *               600 · #241A22, with the value in a 700 #7B4FA8 strong
+ * The photograph stays on the LEFT and the chips keep their wrapping flow.
+ * Neither has been moved to suit an editor mechanism.
+ *
+ * CLASS NAMES ARE THIS TEMPLATE'S OWN. An audit had to rename a whole set of
+ * classes copied verbatim from a sibling, so nothing here reuses AboutBM's
+ * `.tah-about-*`: every scoped class is prefixed `.sip-about-` for Sipsip. Only
+ * the HOUSE STYLE crossed over — the doc block, the tolerant reads, the guard
+ * discipline. No palette, no layout and no class name did.
+ *
+ * R1 · NO LITERAL HEX. Every hex the design writes here is used through the
+ * PageBO token that holds the same value:
+ *   #EEE2F5 --lilac · #5C3580 --accent-deep · #241A22 --ink · #5D5158 --ink-soft
+ *   #FFFFFF --card · #7B4FA8 --accent · 100px --r-pill
+ * .plate supplies the photo ground and its corner, .kick the eyebrow type and
+ * .h2 the headline, so the only values restated below are the ones no primitive
+ * knows: the two grid tracks, the 400px plate, the paragraph's 16.5/1.82/50ch,
+ * the 26px gap, the eyebrow's pill ground and the two chip cell types.
+ *   ONE COLOUR HAS NO EXACT TOKEN and is reported rather than invented: the
+ *   design's first photo ground is #F0E4F6, and no PageBO token holds that
+ *   value. The nearest is --well / --lilac (#EEE2F5, each channel within 2/255),
+ *   which is what .plate already paints, so the plate takes the token and no hex
+ *   is written. Flagged so nobody reads it as a miss.
+ *   THE PAIRING RISK IN THIS PALETTE DOES NOT ARISE HERE: this section sits on
+ *   the plain --paper ground and uses neither .band-pink nor .band-sage, so no
+ *   purple is ever set on the pink. The one pink token this section's design
+ *   touches (--pink-2, the second photo's ground) belongs to an element that is
+ *   not rendered — see DELIBERATELY NOT RENDERED.
+ *
+ * EDITABLE HOOKS (each one DECLARED in components/editor/genericContentSchema.ts
+ * under the `about` group, so every data-field below is a hook a real sidebar
+ * input owns):
+ *   about.image             (data-image-field) — the left photograph
+ *   about.tag               — eyebrow (.kick)
+ *   about.headline          — h2, set:html so an owner's own <em> lands wherever
+ *                             THEY put it in THEIR sentence; the design's purple
+ *                             emphasis is PageBO's global .h2 em rule, not
+ *                             anything written here
+ *   about.lead              — the FIRST paragraph. Rendered on purpose: the
+ *                             sidebar's "Lead paragraph" box writes about.lead,
+ *                             and a schema field no component renders is the
+ *                             mirror image of a dead hook and just as broken.
+ *   about.paragraphs.${i}   — the remaining paragraphs (set:html)
+ *   about.specs.${i}.label  — the chip's label cell
+ *   about.specs.${i}.value  — the chip's purple value cell
+ * about.signature is READ once — as the photograph's accessible name — and is
+ * never printed. See R9.
+ *
+ * R2 · NOTHING VISIBLE IS SUPPLIED BY THIS FILE. Not one word. The design's demo
+ * copy ("Our story", "Real tea, real milk, pearls cooked hourly.", the six
+ * sample spec rows) is the DESIGNER filling their own template, and the image
+ * slot's "The counter" is an editor affordance, not page copy — none of it
+ * ships. A shop that wrote no spec rows advertises none.
+ * Every guard sits OUTSIDE its tag, so an empty value removes the ELEMENT and
+ * not just its text: no empty eyebrow pill, no headline over nothing, no empty
+ * plate, and — because a spec chip IS its own white pill — no pill printed
+ * around a row that is not there.
+ * NO STAR ROW exists in this section: the design's ABOUT carries no rating and
+ * the schema exposes no numeric rating on about.*, so there is nothing here that
+ * could print five stars for a customer who gave no number.
+ *
+ * DERIVED (computed here, never invented):
+ *   · paraRows / specRows drop blank entries but carry the ORIGINAL array index
+ *     into data-field (R6), so deleting row 2 cannot misdirect an edit into
+ *     row 3. Nothing decorative is numbered in this section — the chips carry no
+ *     numeral and no rail index — so no display index is needed.
+ *   · a spec row survives on EITHER cell — a label the owner typed but has not
+ *     filled in yet is still their line; only a wholly empty row is dropped.
+ *   · about.paragraphs / about.specs are read tolerantly (array or bare string;
+ *     objects or bare strings inside). Draft content has arrived as both shapes
+ *     before, and a `.map is not a function` costs the whole page, not one row.
+ *   · the grid drops to ONE track whenever only one column has content, so a
+ *     missing photo never leaves a 400px hole beside the copy. Above 900px the
+ *     surviving column then keeps the MEASURE the design gives it — 631px of
+ *     copy, 517px of photo, which ARE this grid's two tracks inside PageBO's
+ *     1200px .wrap (1200 − 52px gap, split 1.1fr / .9fr) — rather than
+ *     stretching across the page. This is the common case, not an edge one:
+ *     derive-content-defaults seeds no about.image, so a copy-only ABOUT is what
+ *     a first build renders.
+ *   · the image url has its apostrophes percent-escaped before it goes into
+ *     url('…'), so an upload named "sipsip's counter.jpg" cannot close the quote
+ *     early and take the whole declaration down with it.
+ *
+ * SECTION GATE (R5): tag and headline are deliberately NOT counted.
+ * lib/derive-content-defaults.ts sets about.tag = 'About' on EVERY site and
+ * about.headline = `About ${name}` on every named one, so a gate that counted
+ * them would be always-true and would ship a heading over an empty section. The
+ * gate counts BODY content only: the lead, the surviving paragraphs, the
+ * surviving spec rows, the photograph. (about.lead is also derived, but from the
+ * owner's OWN facts — their name, city and business type — so it is a real
+ * sentence about a real business, which is what body content means here.)
+ *
+ * DELIBERATELY NOT RENDERED, so none of these reads as an oversight:
+ *   · THE SECOND PHOTOGRAPH. The design stacks a smaller plate under the first
+ *     one — height 230px, width 66%, margin -52px 0 0 auto, a --pink-2 ground
+ *     inside a 6px --paper border. It is not drawn here because the `about`
+ *     group in genericContentSchema.ts declares exactly ONE image, about.image.
+ *     A second plate could only be (a) a data-field on an undeclared path such
+ *     as about.image2 — a dead hook no sidebar input owns, which is what an
+ *     older template in this family shipped — or (b) an empty pink rectangle
+ *     with no upload behind it, which is furniture this component invented. Both
+ *     are worse than its absence, so the design's PRIMARY plate is rendered at
+ *     its own 400px and the overlap is left out. If about.image2 is ever
+ *     declared, the second plate belongs back here exactly as specified above.
+ *   · NO onPage() ANCHOR HELPER (R7). This section renders no href of any kind —
+ *     the design's ABOUT has no button, no link and no action, so there is no
+ *     data-href-field to remap, and a helper that is never called is dead code
+ *     that later drifts out of step with the wrapper. If a link is ever added
+ *     here it must arrive WITH the helper copied in from a sibling, and for THIS
+ *     page that means PAGE_ANCHORS = menu / about / gallery / visit / faq / main
+ *     with ANCHOR_ALIAS mapping location + contact → visit, services + rooms →
+ *     menu, host + why → about, work → gallery, book → main, and off-page hrefs
+ *     (tel: mailto: http) passing through untouched. The anchor duty this file
+ *     DOES own is its id="about" — one of PageBO's six page anchors, and the
+ *     target the header nav and the host/why aliases resolve to.
+ *   · about.signature and about.role as VISIBLE text. They belong to a host
+ *     identity row, which is a different design; the ABOUT element here draws a
+ *     photograph, a story and a chip row, and no person.
+ *   · a .cap pill on the plate. The design's about photograph carries no caption
+ *     and no schema field would let an owner write one, so a caption here could
+ *     only be a literal this file invented.
+ *   · .band-pink / .band-sage / .band-lilac. The design draws ABOUT on the plain
+ *     blush ground; the pink and sage grounds are spent elsewhere on this page.
+ *   · the design's own headline font-size and line-height (clamp(30px,4vw,52px)
+ *     / 1.08). PageBO's shared .h2 is clamp(28px,3.9vw,52px) / 1.12 — the same
+ *     52px cap, a 2px lower floor and a slightly looser leading — and forking a
+ *     font-size into one of fifteen sections would leave this headline out of
+ *     step with the other fourteen. The wrapper normalised it; the wrapper keeps
+ *     it. Only the design's MARGINS are set here.
+ *   · the design's 28px / 24px plate corners. PageBO already normalised this
+ *     design's 22–28px card radii into one --r-lg (26px), which is what .plate
+ *     paints. Writing 28px here would make this the only section in the template
+ *     off the token.
+ * SECTION PADDING is the wrapper's, not this file's. The design writes
+ * `padding:76px 28px 0`: the 1200/gutter half is the shared .wrap, and the top
+ * is `html[data-page="BO"] section`'s clamp(48px,6.4vw,80px), which caps 4px
+ * above the design's 76px. The design's bottom-0 is a WHOLE-PAGE rhythm decision
+ * (every unbanded section in it pads top only) and belongs in the wrapper's
+ * shared rule; one section zeroing its own bottom while fourteen siblings keep
+ * theirs is exactly the local re-derivation that puts a template out of step
+ * with its design. Flagged, not done here.
+ *
+ * R9 · the plate renders ONLY when there is a real upload, so role="img" is
+ * honest by construction. Its accessible name is about.signature — the owner's
+ * OWN words (derive-content-defaults seeds it from the business name, so on a
+ * tea bar the photograph announces as the tea bar). Never a literal written
+ * here. With no signature the photo is HIDDEN from the accessibility tree rather
+ * than announced as something we guessed, and that is done with ONE conditional
+ * aria-hidden — never a literal aria-hidden="true" sitting beside a conditional
+ * one, which is the duplicated-attribute bug earlier components shipped: the
+ * literal wins and hides content that should have been announced. Nothing else
+ * in this section is decorative — there is no numeral and no icon to hide.
+ *
+ * R3 · one scoped style block, no is:global. Astro's scoped styles cannot reach
+ * elements created by set:html, so the owner's own <em> inside the headline is
+ * styled by PageBO's global `:where(.h2 em)` rule (font-style normal, --accent —
+ * a COLOUR change, because Baloo 2 has no italic and asking for one synthesises
+ * an oblique that fights its rounded terminals) and NOT from here. Anything this
+ * file ever needed to say about an owner <em> would have to go through
+ * :global().
+ *
+ * R4 · this section has no buttons at all, so none of .btn--fill / .btn--pink /
+ * .btn--cream / .btn--line appears; nor does any engine-pinned name
+ * (.btn-primary .btn-ghost .nav-cta .cta-band .trust .testi, or `.hero` on a
+ * <section>).
+ *
+ * R8 · every clamp this file owns was traced ACROSS the breakpoints, because two
+ * audits found type and plates that GREW as the viewport narrowed:
+ *   plate height  400px above 900 · clamp(260px,44vw,360px) from 900 down
+ *                 (44vw = 396 at 900, so it enters at its 360px cap, below 400)
+ *                 · clamp(200px,50vw,260px) from 520 down. At 520px the first
+ *                 yields 44vw = 228.8 clamped UP to its 260px floor and the
+ *                 second yields 50vw = 260 clamped DOWN to its 260px cap — they
+ *                 meet at exactly 260px, and the curve only ever falls.
+ *   grid gap      52px above 900 · clamp(28px,4.4vw,44px) below it, which is
+ *                 39.6px at the 900 boundary and falls from there.
+ *   paragraph     a flat 16.5px at every width.
+ *   eyebrow       no font-size is set here at all, so the wrapper's 11px → 10.5px
+ *                 step at 520 is the whole curve. The .14em tracking this file
+ *                 sets is the design's, and it is the same value the wrapper
+ *                 drops to at 520, so nothing moves.
+ * At 360px nothing may push sideways: the eyebrow, headline, paragraphs and both
+ * chip cells all take overflow-wrap: anywhere. There is no button in this
+ * section, so the full-width `white-space: normal` + `overflow-wrap: anywhere`
+ * pair has nothing to apply to.
+ *
+ * CONTRAST, COMPUTED from PageBO's own token hexes (sRGB relative luminance,
+ * WCAG 2.x) rather than copied from its table — the method was checked against
+ * two of the wrapper's own figures first and reproduces BOTH exactly, with no
+ * disagreement to explain away (ink/paper 15.92, ink-soft/paper 7.13):
+ *   eyebrow      --accent-deep on --lilac   7.40:1
+ *   headline     --ink on --paper          15.92:1
+ *   paragraphs   --ink-soft on --paper      7.13:1
+ *   chip label   --ink on --card           16.86:1
+ *   chip value   --accent on --card         5.96:1
+ * Nothing in this section is below AA, and no pair here puts the purple on the
+ * pink — the one combination this palette cannot survive.
+ */
+// `layout` is accepted because PageBO passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+
+const tag = about.tag || '';
+const headline = about.headline || '';
+const lead = about.lead || '';
+const image = String(about.image || '');
+// An apostrophe in an upload's filename would otherwise close the url('') early
+// and take the whole background-image declaration down with it.
+const imageCss = image.replace(/'/g, '%27');
+
+// Read tolerantly: a draft has arrived with this as a bare string before, and a
+// `.map is not a function` costs the whole page rather than one paragraph. The
+// only fallback taken is the SAME path as a string — folding in a legacy
+// `about.body` is not done here, because the data-field would then point at
+// about.paragraphs.0 while the text lived somewhere else, and an input that
+// edits a different string than the one under it is a broken hook.
+const paragraphSource: any[] = Array.isArray(about.paragraphs)
+  ? about.paragraphs
+  : (typeof about.paragraphs === 'string' && about.paragraphs.trim()
+    ? [about.paragraphs]
+    : []);
+// A blank row in the admin's paragraph list would otherwise render an empty <p>
+// that still spends its margin. Drop the blanks, carry the ORIGINAL index (R6).
+const paraRows = paragraphSource
+  .map((text: any, i: number) => ({ text: String(text ?? ''), i }))
+  .filter((row) => row.text.trim().length > 0);
+
+// Same discipline for the chips. An item may legitimately be an object
+// {label,value} (what the schema's newItem creates) or, from an older draft, a
+// bare string — treated as a label with no value rather than dropped.
+const specSource: any[] = Array.isArray(about.specs) ? about.specs : [];
+const specRows = specSource
+  .map((row: any, i: number) => {
+    const item = row && typeof row === 'object' ? row : { label: row, value: '' };
+    return {
+      label: String(item.label ?? '').trim(),
+      value: String(item.value ?? '').trim(),
+      i,
+    };
+  })
+  // EITHER cell keeps the row. Only a wholly empty row goes, so no white pill is
+  // ever drawn around a row that is not there.
+  .filter((row) => row.label.length > 0 || row.value.length > 0);
+
+// The photograph's accessible name — the owner's own words, never a literal.
+const photoName = String(about.signature || '').trim();
+
+// Track count, computed here so the published grid never keeps an empty 400px
+// column standing beside a single populated one.
+const hasCopy = Boolean(tag || headline || lead) || paraRows.length > 0 || specRows.length > 0;
+const hasPhoto = Boolean(image);
+// R5 — BODY content only. tag and headline are excluded: both are derived onto
+// every site, so counting them would make this gate always-true.
+const hasSection = Boolean(lead || image) || paraRows.length > 0 || specRows.length > 0;
+---
+{hasSection && (
+  <section class="sip-about" id="about">
+    <div class="wrap">
+      <div class:list={['sip-about-grid', !(hasCopy && hasPhoto) && 'sip-about-grid--solo']}>
+        {hasPhoto && (
+          /* LEFT column, as the design draws it. .plate already gives the lilac
+             ground, the design's generous --r-lg corner and the overflow clip. */
+          <div class="plate sip-about-plate reveal">
+            <div
+              class="ph"
+              data-image-field="about.image"
+              role={photoName ? 'img' : undefined}
+              aria-label={photoName || undefined}
+              aria-hidden={photoName ? undefined : 'true'}
+              style={`background-image:url('${imageCss}');`}
+            ></div>
+          </div>
+        )}
+        {hasCopy && (
+          <div class="sip-about-copy">
+            {tag && <span class="kick sip-about-kick" data-field="about.tag">{tag}</span>}
+            {headline && <h2 class="h2 sip-about-h reveal" data-field="about.headline" set:html={headline}></h2>}
+            {/* about.lead comes from a plain textarea, so it is bound as TEXT.
+                The paragraph LIST below is where an owner writes markup. */}
+            {lead && <p class="lede sip-about-p reveal" data-delay="1" data-field="about.lead">{lead}</p>}
+            {paraRows.map((row, k: number) => (
+              <p
+                class="lede sip-about-p reveal"
+                data-delay={String((k % 3) + 1)}
+                data-field={`about.paragraphs.${row.i}`}
+                set:html={row.text}
+              ></p>
+            ))}
+            {specRows.length > 0 && (
+              <div class="sip-about-specs reveal" data-delay="2">
+                {specRows.map((row) => (
+                  /* One white pill per row, exactly as the design draws it. Each
+                     cell is guarded on its own, so a half-filled row prints one
+                     cell and not one cell plus a gap. */
+                  <span class="sip-about-spec">
+                    {row.label && (
+                      <span class="sip-about-l" data-field={`about.specs.${row.i}.label`}>{row.label}</span>
+                    )}
+                    {row.value && (
+                      <strong class="sip-about-v" data-field={`about.specs.${row.i}.value`}>{row.value}</strong>
+                    )}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* THE DESIGN'S SPLIT, verbatim: .9fr of photograph against 1.1fr of story,
+     52px apart, the two columns centred on each other. The photo leads because
+     the design puts it first; that order is also the DOM order, so the single
+     column below 900px reads photograph-then-story exactly as the design does. */
+  .sip-about-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+    gap: 52px;
+    align-items: center;
+  }
+  .sip-about-grid--solo { grid-template-columns: minmax(0, 1fr); }
+  .sip-about-copy { min-width: 0; }
+
+  /* The design has no one-column ABOUT, so --solo is a state this file has to
+     answer for. The family answer is to keep the surviving column at the MEASURE
+     it has in the design rather than let it stretch across the whole wrap. It
+     matters most here: a copy-only ABOUT is the DEFAULT first build —
+     derive-content-defaults seeds no about.image. 631px and 517px ARE this
+     grid's two tracks inside PageBO's 1200px .wrap (1200 − 52px gap, split
+     1.1fr / .9fr), so this restores the design's proportions rather than
+     inventing new ones. Below 900px one track is everybody's layout and the caps
+     lift. */
+  @media (min-width: 901px) {
+    .sip-about-grid--solo .sip-about-copy { max-width: 631px; }
+    .sip-about-grid--solo .sip-about-plate { max-width: 517px; }
+  }
+
+  /* THE EYEBROW. The wrapper's .kick already carries the design's type — 11px,
+     700, uppercase, inline-block — and the wrapper owns the whole size curve
+     (it steps to 10.5px at 520), so no font-size is written here. What .kick
+     does NOT know is that in THIS design the eyebrow is a PILL: a lilac ground,
+     the deep purple label, 8px/16px of padding and the 100px corner. Those four
+     and the design's .14em tracking (the wrapper's base is .18em) are the only
+     things restated. The label is --accent-deep and not --accent because that is
+     what the design writes; it also happens to be the darker of the two, which
+     this ground can afford. max-width + overflow-wrap keep one long owner word —
+     a hyphenless place name — from pushing the document sideways at 360px (R8).
+     Everything here is qualified with .sip-about-copy so it out-specifies the
+     wrapper's :where() primitive whatever order the sheets land in. */
+  .sip-about-copy .sip-about-kick {
+    letter-spacing: .14em;
+    color: var(--accent-deep);
+    background-color: var(--lilac);
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* The headline is the wrapper's .h2 (Baloo 2 700, clamp(28px,3.9vw,52px)/1.12,
+     --ink); only the design's own margins are set here, and no font-size — the
+     shared clamp and the shared 760 pass own the whole size curve. The purple
+     emphasis is PageBO's global rule: a scoped rule could not reach markup
+     created by set:html (R3). The wrapper's shared 22ch cap is left in place;
+     against this column's 631px it sits near the same measure, so at most it
+     wraps a long headline a word earlier — the design constrains this headline
+     with the COLUMN, and the 760 pass releases the cap entirely. */
+  .sip-about-copy .sip-about-h { margin: .24em 0 .3em; overflow-wrap: anywhere; }
+
+  /* THE PARAGRAPH. The wrapper's .lede already carries the family and the
+     design's --ink-soft; the three metrics the design states for THIS section —
+     16.5px, 1.82, 50ch — are not .lede's defaults (15.5–17.5px / 1.72 / 46ch),
+     so they are set here rather than by bending the shared primitive that other
+     sections also use. PageBO's `:where(p){margin:0 0 1em}` carries the
+     wrapper's own element specificity, hence the parent-class qualifier. */
+  .sip-about-copy .sip-about-p {
+    font-size: 16.5px;
+    line-height: 1.82;
+    max-width: 50ch;
+    margin: 0 0 1em;
+    overflow-wrap: anywhere;
+  }
+  /* The design gives its LAST paragraph `margin:0 0 26px` — the gap above the
+     chips. That gap is spent by .sip-about-specs below instead, so the same 26px
+     appears in the same place while a section with NO chips ends flush rather
+     than trailing 26px of nothing. */
+  .sip-about-copy .sip-about-p:last-of-type { margin-bottom: 0; }
+  /* A cleared headline is a real case, and then the eyebrow pill would sit flush
+     on the first paragraph — the h2's .24em top margin is what normally opens
+     that gap. Adjacency, so it fires only in that case, and qualified because
+     the shorthand above would otherwise re-zero the top margin. */
+  .sip-about-copy .sip-about-kick + .sip-about-p { margin-top: 14px; }
+
+  /* THE SPEC CHIPS — a wrapping row, 10px apart. This is NOT the wrapper's
+     .chip: that primitive is the lilac/purple label this design uses for tags,
+     while the spec chip is a WHITE pill with an ink label, so it is written out
+     rather than fought with four overrides. */
+  .sip-about-specs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 26px;
+  }
+  /* The pill itself. The design separates its two cells with a literal space in
+     the markup; an inline-flex gap of .3em puts the same space in the same place
+     while letting each cell be guarded independently — a value-only row prints
+     no leading space, and a label-only row prints no trailing one. The inner
+     wrap plus overflow-wrap is what keeps a long owner value inside the pill at
+     360px instead of widening the document (R8).
+     LINE-HEIGHT IS DECLARED, and it is the one metric on this pill the design
+     does not write: its chip inherits the demo page's body, which sets none, so
+     it renders at the browser normal (~1.36 for Nunito Sans). PageBO's body
+     sets 1.72, and inheriting that would add ~4.6px to every pill — the same
+     inflation the wrapper's .btn declares line-height:1 to avoid. 1 is not
+     available here: a .btn never wraps and this pill does at 360px, where 1
+     would collide the two lines. 1.5 is the tightest value that still opens a
+     wrapped pill, and it leaves a one-line pill ~1.8px taller than the design's
+     rather than ~4.6px. */
+  .sip-about-spec {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 .3em;
+    max-width: 100%;
+    min-width: 0;
+    background-color: var(--card);
+    border-radius: var(--r-pill);
+    padding: 11px 18px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* The label inherits the pill's 13px/600/--ink; only the wrap guard is its
+     own. The value is the design's purple 700 — the one place in this section
+     the brand colour appears as text, and it appears on the white card, never
+     on a pink. */
+  .sip-about-l { min-width: 0; overflow-wrap: anywhere; }
+  .sip-about-v {
+    min-width: 0;
+    font-weight: 700;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+
+  /* The photograph's own height. .plate knows the ground, the corner and the
+     clip; the design's fixed 400px is the one thing it does not. */
+  .sip-about-plate { height: 400px; }
+
+  /* R8 · ONE COLUMN BEFORE THE COPY MEASURE IS SQUEEZED. Computed against the
+     REAL wrap, not the viewport: at a 900px viewport PageBO's .wrap is
+     min(1200px, 92vw) = 828px, so this grid has 828 - 52 = 776px to split and
+     the .9fr track is 776 x .45 = ~349px. That is about where a 400px
+     photograph stops earning its width and the 50ch paragraph starts breaking
+     badly. (An earlier draft of this comment read ~381px, which is what you get
+     by treating the viewport itself as the wrap and forgetting the 92vw gutter.
+     The 631/517 figures quoted above are the same split at the wrap's 1200px
+     cap, which the .wrap only reaches from a 1304px viewport up.) */
+  @media (max-width: 900px) {
+    .sip-about-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: clamp(28px, 4.4vw, 44px);
+    }
+    /* Full-bleed at one column, 400px would be a large share of a laptop
+       viewport. 44vw is 396px at this boundary, so the clamp enters on its 360px
+       cap — below the 400px above it, never above. */
+    .sip-about-plate { height: clamp(260px, 44vw, 360px); }
+  }
+  /* PageBO's shared 760 pass releases `.lede { max-width: none }`, but the rule
+     above is more specific and would silently defeat it, leaving a 50ch column
+     of text inside a full-width phone-landscape wrap. The release is restated
+     here so this section follows the wrapper instead of overriding it. */
+  @media (max-width: 760px) {
+    .sip-about-copy .sip-about-p { max-width: none; }
+  }
+  /* 520: nothing may push the page sideways. Every cell already wraps anywhere,
+     so a long unbroken string — a URL, a tea origin, a hyphenless spec — wraps
+     inside its pill instead of widening the document. There is no button in this
+     section, so the full-width white-space rule has nothing to apply to.
+     CLAMP CONTINUITY: at 520px the rule above yields 44vw = 228.8px clamped UP
+     to its 260px floor, and the rule below yields 50vw = 260px clamped DOWN to
+     its 260px cap. They meet at exactly 260px and the height only ever falls as
+     the viewport narrows — the audit's "plate grew below 520" failure was a
+     floor sitting under a cap, and that cannot happen here. */
+  @media (max-width: 520px) {
+    .sip-about-specs { gap: 8px; margin-top: 22px; }
+    .sip-about-plate { height: clamp(200px, 50vw, 260px); }
+  }
+</style>

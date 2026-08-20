@@ -1,0 +1,504 @@
+---
+/**
+ * foodcraft / WhyBO — "WHY-US" (Sipsip Tea Bar / BO).
+ *
+ * ROLE. The argument block, and the only section in this template that argues
+ * rather than describes, lists or shows. A CENTRED head — a lilac pill eyebrow
+ * over one Baloo 2 headline — and beneath it a STACK of full-width white
+ * cards, each drawn as a horizontal pair: a 76px pastel MEDALLION carrying an
+ * ordinal numeral, then the reason's title and the owner's paragraph beside it.
+ * No photo, no price, no button, no link. The cards float on the page's own
+ * blush ground; nothing here is banded and nothing is ruled.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * "Sipsip Tea Bar Landing.dc.html", data-component="WHY-US". No literal hex
+ * appears in this file (R1) — the colours are the wrapper tokens whose VALUES
+ * are the design's hexes:
+ *   eyebrow ground #EEE2F5 -> --lilac       eyebrow ink  #5C3580 -> --accent-deep
+ *   headline       #241A22 -> --ink         emphasis     #7B4FA8 -> --accent
+ *   card ground    #FFFFFF -> --card        title        #241A22 -> --ink
+ *   paragraph      #5D5158 -> --ink-soft
+ *   medallion 1    #EEE2F5 / #5C3580 -> --lilac  / --accent-deep
+ *   medallion 2    #F7DCE7 / #5C2A45 -> --pink-2 / --plum
+ *   medallion 3    #E3EFDC / #3C5C2A -> --sage   / --on-sage
+ * EVERY colour this section draws has a token. Unlike TrustBO — whose fourth
+ * badge is a warm amber the wrapper does not name — the WHY-US trio is exactly
+ * the three declared ground/on-colour pairs, so nothing here is a substitution.
+ *
+ *   section   padding:80px 28px 0            head    text-align:center; mb:34px
+ *   eyebrow   11px/700, .14em, uppercase, pill, padding:8px 16px
+ *   h2        clamp(30px,4vw,52px); line-height:1.08; margin:.24em 0 0
+ *   card      #FFF; border-radius:28px; padding:30px 34px; margin-bottom:14px
+ *   card grid minmax(0,88px) minmax(0,1fr); gap:26px; align-items:center
+ *   medallion 76x76; border-radius:50%; Baloo 2 700 32px
+ *   title     Baloo 2 600 26px; margin:0 0 7px
+ *   body      15.5px / 1.78; margin:0; max-width:64ch
+ *
+ * EDITABLE HOOKS. Every path below is declared in
+ * components/editor/genericContentSchema.ts under the "Why us" group (id:
+ * 'why'), so the sidebar owns a real input for each — a data-field on any other
+ * path is a dead hook that focuses nothing:
+ *   why.tag                — the eyebrow. Rides the wrapper's .kick primitive
+ *                            (face, weight, 11px, uppercase) so the wrapper's
+ *                            520 pass still re-sizes it; only the design's
+ *                            .14em tracking, its --accent-deep ink and its
+ *                            lilac pill are stated locally, and each of those
+ *                            needs the .sip-why-head qualifier to land at all
+ *                            (see SPECIFICITY below). font-size is
+ *                            DELIBERATELY not restated: the QUALIFIED selector
+ *                            does out-specify the wrapper's :where(.kick), so
+ *                            restating it here would silently cancel that pass.
+ *   why.headline           — the h2, rendered with set:html so an owner's own
+ *                            <em> picks up PageBO's emphasis, which in this
+ *                            template is a COLOUR CHANGE to --accent and not an
+ *                            italic (Baloo 2 has no italic; asking for one
+ *                            synthesises an oblique that fights its rounded
+ *                            terminals). That rule is GLOBAL in the wrapper on
+ *                            purpose: scoped styles cannot reach elements
+ *                            created by set:html (R3), so any rule this file
+ *                            ever needs for that <em> must be written
+ *                            :global(). None is needed today — the wrapper
+ *                            already de-italicises it and recolours it.
+ *   why.items.${i}.title   — the reason (h3). Escaped, not set:html.
+ *   why.items.${i}.body    — the reason's paragraph. Escaped. CANONICAL key:
+ *                            the value can arrive as .description through
+ *                            lib/astro-builder.ts's normalizeBlock alias map
+ *                            (line ~897 spells { description: 'body' }), and as
+ *                            .desc from older payloads, so the READ tolerates
+ *                            all three while the data-field always spells the
+ *                            key the schema declares — otherwise the sidebar
+ *                            never receives the edit.
+ *
+ * R2 — NOTHING VISIBLE IS SUPPLIED BY THIS FILE. Not one word. The design's
+ * demo copy ("Why us", "What makes it taste right.", "You choose the sugar")
+ * is the DESIGNER filling in their own template; a real tea bar gets a page
+ * that says only what that tea bar said. Every guard sits OUTSIDE its tag, so
+ * an empty value removes the ELEMENT and not merely its text: no eyebrow over
+ * nothing, no heading over an empty stack, no white card holding a medallion
+ * and no reason, no empty paragraph under a title.
+ *
+ * DERIVED, not authored:
+ *   · THE NUMERAL. The design's demo data carries an `n` field ('01','02','03');
+ *     our schema declares no numeral input, so it is computed from the DISPLAY
+ *     index, zero-padded to two digits, and marked aria-hidden — ordinal
+ *     decoration, and a screen reader already gets the order from the document.
+ *     It and the medallion colour are the ONLY things keyed to the display
+ *     index rather than the original one (R6): after a blank row is dropped the
+ *     printed sequence must read 01-02-03, never 01-03, and the pastel cycle
+ *     must not skip a hue. Everything an EDIT touches uses the ORIGINAL index,
+ *     so deleting reason 2 can never misdirect a write into reason 3.
+ *   · The medallion, its pastel wash and the card ground. Decoration; no
+ *     data-field, nothing to announce.
+ *
+ * DELIBERATELY NOT RENDERED, so none of it reads as an oversight:
+ *   · why.image and why.lead. Both are schema-declared and both are used by
+ *     sibling templates, but this design's WHY-US has neither a plate nor a
+ *     lead paragraph — it is eyebrow, headline, stacked cards. Adding either
+ *     would be building a different section than the one handed over. No plate
+ *     also means no .plate, no .cap, no role="img" and no alt anywhere in this
+ *     file (R9): there is no upload here to give an accessible name to.
+ *   · NO STAR ROW (R2). This section carries no review and no rating field, and
+ *     the design draws no stars here. Stars belong to TESTIMONIALS and only
+ *     ever drawn from a real numeric rating — five stars printed for a customer
+ *     who gave no rating is a fabricated claim. A reason with no numeral does
+ *     not get one invented either; the ordinal above is decoration, not data.
+ *   · NO id ON THE SECTION. The page's ids are menu / about / gallery / visit /
+ *     faq / main, and the design gives WHY-US none of them; the nav remaps a
+ *     derived '#why' onto '#about'. An id here would create a target the
+ *     navigation never points at and a second landing place for the same link.
+ *   · NO .band-pink / .band-sage / .band-lilac. The wrapper offers all three
+ *     and this section opts into none, as drawn: WHY-US sits on the page's own
+ *     blush --paper with WHITE cards on it, and the three pastels appear only
+ *     inside the medallions. Banding the section would put a pastel ground
+ *     behind pastel medallions and flatten the one contrast it is drawn on.
+ *   · NO onPage() ANCHOR HELPER (R7), and this is a decision rather than an
+ *     omission. The design's WHY-US emits no href of any kind — no button, no
+ *     link, no chip that navigates — so there is nothing to remap and a copied
+ *     helper would ship as unreachable dead code in this one file, which is
+ *     what a reviewer would flag instead. WhyBM, WhyBN and TrustBO each made
+ *     the same call for the same reason. If a link is ever added here, copy the
+ *     helper from a BO sibling with PAGE_ANCHORS = menu / about / gallery /
+ *     visit / faq / main and ANCHOR_ALIAS mapping location,contact -> visit ·
+ *     services,rooms -> menu · host,why -> about · work -> gallery ·
+ *     book -> main, passing tel: / mailto: / http(s) through untouched.
+ *   · NO PER-REASON ICON. A drawn pictogram claims WHAT the reason is about;
+ *     the owner's words are the only signal this section may carry. The
+ *     medallion holds a number, which claims nothing.
+ *
+ * DECISIONS a reader would otherwise take for oversights:
+ *
+ *   · SPECIFICITY: EVERY OVERRIDE OF A WRAPPER PRIMITIVE IS QUALIFIED BY ITS
+ *     PARENT CLASS, and this is not decoration. Astro 5 scopes this sheet as
+ *     `:where(.astro-HASH)` — VERIFIED by compiling the file and reading the
+ *     emitted CSS, not assumed — and :where() contributes NOTHING to
+ *     specificity. So a bare `.sip-why-t` is (0,1,0), while every PageBO
+ *     primitive is `html[data-page="BO"] :where(…)` = (0,1,1) and WINS on the
+ *     type selector. An earlier draft wrote .sip-why-kick, .sip-why-h2 and
+ *     .sip-why-t unqualified and all three were silently dead: the eyebrow drew
+ *     at the wrapper's .18em in --accent (the purple, not the design's deep
+ *     purple), the headline kept `margin:0 0 .3em`, `line-height:1.12` and the
+ *     22ch cap that leaves a CENTRED heading hugging the left of the wrap, and
+ *     the reason's title drew at 700/1.12 instead of the design's 600/normal.
+ *     `.sip-why-head …` and `.sip-why-card …` take each to (0,2,0), which
+ *     outranks (0,1,1). AboutBO, GalleryBO and TrustBO all qualify for exactly
+ *     this reason. Rules that override nothing the wrapper declares
+ *     (.sip-why-head, .sip-why-list, .sip-why-card, .sip-why-body) are left
+ *     unqualified on purpose — specificity bought without a fight is noise.
+ *
+ *   · THE h2 FONT-SIZE IS NOT RESTATED. The design draws this heading at
+ *     clamp(30px,4vw,52px); the wrapper's shared .h2 primitive is
+ *     clamp(28px,3.9vw,52px), and the wrapper owns a 760 pass that re-clamps
+ *     it. NEITHER FLOOR EVER APPLIES: 3.9vw only falls below 28px under a 718px
+ *     viewport and 4vw only falls below 30px under 750px, and at 760px and
+ *     narrower the wrapper's own pass has already replaced the clamp outright.
+ *     The real divergence is the SLOPE — 3.9vw against the design's 4vw — so
+ *     between 761px and 1333px this heading renders 2.5% smaller than drawn:
+ *     46.8px instead of 48px at a 1200px viewport, 50.7px instead of 52px at
+ *     1300px, identical from 1333px up. Peak loss ~1.3px. The qualified
+ *     selector below WOULD out-specify the 760 pass, so a local font-size would
+ *     pin the design's clamp at every width and leave one section growing while
+ *     fourteen siblings re-size; AboutBO and GalleryBO made the same call.
+ *     Only what this section draws DIFFERENTLY is stated:
+ *     line-height 1.08, margin .24em 0 0, and the released measure (the shared
+ *     primitive caps at 22ch, which on a CENTRED heading renders as centred
+ *     text inside a left-hugging 22ch box; the design gives this h2 no
+ *     max-width at all, so the .wrap is its bound).
+ *
+ *   · THE TITLE'S LEADING IS `normal`, on purpose. The design's h3 carries no
+ *     line-height and the design's own stylesheet sets none, so `normal` — with
+ *     Baloo 2's own generous metrics — is literally what it draws. It is
+ *     restated because PageBO's shared h1-h4 rule is 1.12, which is the h2's
+ *     display leading and would set a 26px title far tighter than it was drawn
+ *     the moment an owner's reason runs to two lines. Guessing a number would
+ *     be a divergence of its own.
+ *
+ *   · THE CARD RADIUS IS THE DESIGN'S LITERAL 28px. R1 governs COLOUR; this is
+ *     a length. --r-lg is 26px and --r-md is 18px, so no token holds 28px, and
+ *     rounding to --r-lg would be a different drawing on the shape this whole
+ *     section is made of. The MEDALLION instead uses var(--r-pill), not the
+ *     design's `50%`: on a 76x76 box these are the same drawing, computed and
+ *     not assumed — two 100px radii on one 76px side sum to 200 > 76, so CSS
+ *     scales both by 76/200 = 0.38, giving 38px per corner, which is exactly
+ *     half of 76, i.e. a full circle. Using the token keeps the medallion on
+ *     the family's pill vocabulary.
+ *
+ *   · THE MEDALLION REUSES .fig, which already gives var(--disp) at 700 with
+ *     tabular lining numerals — the design's figure exactly. Only the 32px and
+ *     the COLOUR are local, and the colour MUST be local: .fig is --accent, and
+ *     purple on any of these three pastels is precisely the failure PageBO's
+ *     header warns about. .fig's line-height:1 is kept rather than the design's
+ *     `normal`; the numeral is a single line centred in a fixed square box, so
+ *     the two are the same drawing.
+ *
+ *   · THE PARAGRAPH DOES NOT REUSE .body. .body is clamp(14.5px,1.3vw,15.5px)
+ *     / 1.72 / --ink-soft; the design's is a FLAT 15.5px / 1.78. Only the
+ *     colour would have been inherited, and a section that overrides two of a
+ *     primitive's three properties is not reusing it. Written locally from
+ *     tokens only. font-family is left to inherit var(--sans) from body,
+ *     exactly as it does in the design.
+ *
+ *   · THE CARD GAP IS `gap:14px` ON THE STACK, not the design's
+ *     `margin-bottom:14px` on every card. Identical between cards; the
+ *     difference is the 14px the design leaves BELOW the last one, which is an
+ *     artefact of its repeat loop rather than a spacing decision — the space
+ *     under this section belongs to GALLERY's own 80px.
+ *
+ *   · THE SECTION'S OWN PADDING IS NOT RESTATED. The design writes
+ *     `padding:80px 28px 0`; the wrapper's shared
+ *     `section { padding: clamp(48px,6.4vw,80px) 0 }` caps at exactly that 80px
+ *     and keeps a fluid floor for a phone. The design's ZERO bottom is a
+ *     WHOLE-PAGE rhythm — every unbanded section in that file pads top only —
+ *     and belongs in the wrapper once, not re-derived in one section while
+ *     fourteen siblings keep theirs. Flagged, not done here. The 28px gutter is
+ *     likewise the wrapper's `.wrap` (min(1200px, 92vw)) for every section in
+ *     this template; re-cutting it in this one file would inset these cards
+ *     from the blocks above and below that they read as aligned with.
+ *
+ *   · `flex:none` FROM THE DESIGN'S MEDALLION IS DROPPED. Its parent is
+ *     display:grid in the design too, so the property was already inert there;
+ *     shipping it would be copying a no-op rather than a drawing.
+ *
+ * RESPONSIVE (R8). The wrapper owns the shared 760 and 520 TYPE pass; the grid
+ * below is this section's own. There is no multi-column CONTENT grid here to
+ * collapse — the cards are full-width and stacked at every width, exactly as
+ * drawn — so the 900 and 520 passes instead tighten the one two-track
+ * construct this section has: the decorative medallion rail beside the text.
+ * THE LADDER IS MONOTONIC BY CONSTRUCTION: every FIXED length decreases at
+ * each narrower step and none increases —
+ *   rail track 88 -> 78 -> 66 · medallion 76 -> 68 -> 60 · numeral 32 -> 28 ->
+ *   26 · card gap 26 -> 22 -> 18 · card padding 30/34 -> 26/26 -> 24/20 ·
+ *   head margin 34 -> 30 -> 26.
+ * The FLUID text track is the remainder and therefore gains room at each step,
+ * which is the intent. There is not one clamp in this file, so there is no
+ * floor in the 900 query that could outrank a cap in the 520 query. Nothing can
+ * push the page sideways at 360px: both grids are minmax(0,…), the card and the
+ * text column carry min-width:0, and the eyebrow, headline, title and
+ * paragraph all carry overflow-wrap:anywhere. There is no button in this
+ * section, so R8's white-space:normal pairing has nothing to apply to.
+ *
+ * FLAGGED, NOT FIXED HERE — the WRAPPER's own .h2 ladder inverts. PageBO's base
+ * is clamp(28px,3.9vw,52px) and its 760 pass is clamp(26px,7vw,38px), so a
+ * 761px viewport computes 3.9vw = 29.68px while a 760px viewport computes 7vw =
+ * 53.2px capped to 38px: the headline GROWS by ~8.3px as the viewport narrows
+ * past that breakpoint. It does so in all fifteen BO sections, not this one.
+ * Restating font-size locally would fix it here and break the family's single
+ * shared size curve, so it belongs in PageBO, once.
+ *
+ * TRACK COUNT vs ITEM COUNT: the stack takes any number of reasons. The design
+ * fixes three (hint-placeholder-count="3") and gives each a hue; a fourth
+ * reason restarts the pastel cycle at lilac rather than being refused or
+ * squeezed.
+ *
+ * CONTRAST — COMPUTED from the hexes PageBO declares (sRGB relative luminance,
+ * WCAG 2.x), not estimated, and rounded DOWN:
+ *   --accent-deep on --lilac   7.39   (the eyebrow pill)
+ *   --plum        on --pink-2  8.73   (medallion 2)
+ *   --on-sage     on --sage    6.40   (medallion 3)
+ *   --ink         on --card   16.85   (the reason's title)
+ *   --ink-soft    on --card    7.54   (the reason's paragraph)
+ * Nothing this section draws sits below AA. TWO CAVEATS, both the same one
+ * PageBO makes for --muted: buildOverrideCss owns --card, --ink, --ink-soft and
+ * --accent-deep and wins each with !important, so the first, fourth and fifth
+ * figures are the NATIVE palette's and not a guarantee across every admin
+ * scheme. --lilac, --pink-2, --sage, --plum and --on-sage are invisible to that
+ * file, so those pairings hold whatever the scheme.
+ *
+ * CLASS PREFIX: `sip-why-` (Sipsip / why), matching the BO family's own `sip-`
+ * prefix — `sip-about-`, `sip-gal-`, `sip-proof-` — for THIS template. Deliberately NOT the `tcw-`, `pcw-` or `why-*` sets of the WhyBM /
+ * WhyBN / WhyBL siblings — an audit had to rename a whole block of classes that
+ * had arrived verbatim from the template before them. Only the HOUSE STYLE is
+ * inherited from those files (this doc block, the guard discipline, the
+ * original-vs-display index rule); the palette, the stack, the medallion and
+ * every metric are this design's.
+ */
+// `layout` is accepted because PageBO passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const why = content?.why || {};
+const tag = typeof why.tag === 'string' ? why.tag.trim() : '';
+// Nothing beyond trim() is done to the headline: it goes out through set:html
+// so whatever markup the owner typed reaches the wrapper's colour-change em rule.
+const headline = typeof why.headline === 'string' ? why.headline.trim() : '';
+
+type Item = { title?: string; body?: string; desc?: string; description?: string };
+const items: Item[] = Array.isArray(why.items) ? why.items : [];
+const titleOf = (it: Item): string => String(it?.title ?? '').trim();
+const bodyOf = (it: Item): string => String(it?.body ?? it?.desc ?? it?.description ?? '').trim();
+
+// A reason the owner added but never filled would otherwise spend a whole white
+// card, a pastel medallion and a numeral on nothing. Drop the blanks
+// (whitespace counts as blank) but carry the ORIGINAL index `i` so every
+// data-field still writes into the real array slot (R6).
+const rows = items
+  .map((it, i: number) => ({ i, title: titleOf(it), body: bodyOf(it) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// SECTION GATE (R5). Counts the CARDS only. lib/derive-content-defaults.ts emits
+// why.tag ('Why us') and why.headline ('Why choose X') for every site while
+// shipping items: [] — so a gate that counted the tag or the headline would be
+// always-true and would ship an eyebrow and a headline over an empty stack on
+// every first build.
+const hasReasons = rows.length > 0;
+---
+{hasReasons && (
+  <section class="sip-why">
+    <div class="wrap">
+      {(tag || headline) && (
+        <div class="sip-why-head reveal">
+          {tag && <span class="kick sip-why-kick" data-field="why.tag">{tag}</span>}
+          {headline && <h2 class="h2 sip-why-h2" data-field="why.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="sip-why-list">
+        {rows.map((r, d: number) => (
+          /* `d` is the DISPLAY index and `r.i` is the ORIGINAL one. The numeral
+             and the medallion hue are the only things keyed to `d`, so both the
+             printed sequence and the pastel cycle stay unbroken after a blank
+             row is dropped. The numeral is aria-hidden — the order is already
+             carried by the document — and it carries no second literal
+             aria-hidden anywhere (R9). The stagger tops out at the wrapper's
+             last declared delay, which is 3 — so cards one to four each get
+             their own step (none, .08s, .16s, .24s) and a FIFTH reason reveals
+             together with the fourth. */
+          <div class="sip-why-card reveal" data-delay={d > 0 ? String(Math.min(d, 3)) : undefined}>
+            <span class="fig sip-why-n" aria-hidden="true">{String(d + 1).padStart(2, '0')}</span>
+            <div class="sip-why-body">
+              {r.title && <h3 class="sip-why-t" data-field={`why.items.${r.i}.title`}>{r.title}</h3>}
+              {r.body && <p class="sip-why-p" data-field={`why.items.${r.i}.body`}>{r.body}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBO's token vocabulary
+     (--card --ink --ink-soft --lilac --pink-2 --sage --plum --accent-deep
+     --on-sage --disp --r-pill, plus the .wrap, .kick, .h2 and .fig primitives).
+     There is not one literal hex in this file (R1).
+
+     (Never write a literal end-style-tag inside a comment in here — the parser
+      would end the stylesheet on the spot and silently truncate the file.) */
+
+  /* The section takes the wrapper's shared vertical padding, which caps at
+     exactly the design's 80px; see the frontmatter for why the design's
+     bottom-0 is a whole-page decision and is not restated here. */
+
+  /* ── THE CENTRED HEAD. */
+  .sip-why-head { text-align: center; margin-bottom: 34px; }
+
+  /* The eyebrow is the design's LILAC PILL, built on the wrapper's .kick
+     primitive so the family's tracked-caps eyebrow (face, 700, 11px, uppercase,
+     inline-block, line-height 1.1) is inherited rather than re-declared.
+     QUALIFIED BY .sip-why-head, and that is load-bearing: this sheet is scoped
+     with :where(.astro-HASH), which adds no specificity, so a bare
+     .sip-why-kick would be (0,1,0) and would LOSE to the wrapper's
+     html[data-page="BO"] :where(.kick) at (0,1,1) — the tracking and the ink
+     below would never land. With the parent it is (0,2,0) and wins.
+     font-size is deliberately absent: BECAUSE the qualified selector now
+     out-specifies :where(.kick), restating it would cancel the wrapper's 520
+     pass. The tracking IS restated — the design draws .14em here, which is also
+     the value that pass drops to, so it holds at every width. The ink is
+     --accent-deep, the design's own, not .kick's --accent. */
+  .sip-why-head .sip-why-kick {
+    letter-spacing: .14em;
+    color: var(--accent-deep);
+    background-color: var(--lilac);
+    padding: 8px 16px;
+    border-radius: var(--r-pill);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── the headline. The wrapper's .h2 primitive carries the face, the clamp
+        and --ink; only the three things this section draws differently are
+        stated. Qualified by .sip-why-head for the same (0,2,0) vs (0,1,1)
+        reason as the eyebrow — bare, none of the three would land, and the
+        22ch cap in particular would leave this CENTRED heading hugging the
+        left of the wrap with its text centred inside a narrow column. No
+        font-size at any breakpoint in this file, so there is no clamp for a
+        narrower viewport to invert (R8). */
+  .sip-why-head .sip-why-h2 {
+    line-height: 1.08;
+    margin: .24em 0 0;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE STACK. Full-width cards at the design's 14px rhythm. `gap` rather
+        than the design's per-card margin-bottom; see the frontmatter. */
+  .sip-why-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  /* ── THE CARD. White, radius 28px, padded 30px 34px, drawn as a medallion
+        rail beside the text and vertically centred — all the design's. The two
+        custom properties are the medallion's pastel pairing; the base
+        declaration is the design's FIRST hue, so a lone reason is lilac, and
+        the two overrides carry the rest of the cycle. Position is the DISPLAY
+        position on purpose (R6) — a dropped blank row must not leave a hole in
+        the sequence. No token holds 28px, and this is a length, not a colour,
+        so the design's number stands. */
+  .sip-why-card {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 88px) minmax(0, 1fr);
+    gap: 26px;
+    align-items: center;
+    padding: 30px 34px;
+    border-radius: 28px;
+    background-color: var(--card);
+    --sip-why-bg: var(--lilac);
+    --sip-why-fg: var(--accent-deep);
+  }
+  .sip-why-card:nth-child(3n + 2) { --sip-why-bg: var(--pink-2); --sip-why-fg: var(--plum); }
+  .sip-why-card:nth-child(3n + 3) { --sip-why-bg: var(--sage);   --sip-why-fg: var(--on-sage); }
+
+  /* ── THE MEDALLION. .fig already gives var(--disp) at 700 with tabular lining
+        numerals — the design's figure exactly. Only the size and the colour are
+        local, and the colour MUST be local: .fig is --accent, and purple on any
+        of these three pastels is the pairing PageBO forbids. Written as a
+        descendant so it clears the wrapper's :where() primitive whatever the
+        source order. 100px on a 76px box scales to 38px per corner — a full
+        circle, which is the design's 50%. */
+  .sip-why-card .sip-why-n {
+    width: 76px;
+    height: 76px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-pill);
+    background-color: var(--sip-why-bg);
+    color: var(--sip-why-fg);
+    font-size: 32px;
+  }
+
+  /* min-width:0 as well as the minmax() above: a grid item's default min-width
+     is auto, so one unbroken word in a title would otherwise widen this track
+     and push the whole page sideways (R8). */
+  .sip-why-body { min-width: 0; }
+
+  /* Baloo 2 at 600 is the design's weight for this title, pinned rather than
+     inherited so no heading rule elsewhere can push it onto a face this wrapper
+     does not load. LEADING is `normal` because the design sets none; see the
+     frontmatter for why a number is not guessed here. Qualified by
+     .sip-why-card so it reaches (0,2,0): PageBO's :where(h1,h2,h3,h4) is
+     (0,1,1) and declares BOTH font-weight 700 and line-height 1.12, so a bare
+     .sip-why-t would have rendered this title at the wrapper's weight and
+     leading and neither line below would have done anything. */
+  .sip-why-card .sip-why-t {
+    font-family: var(--disp);
+    font-weight: 600;
+    font-size: 26px;
+    line-height: normal;
+    margin: 0 0 7px;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* PageBO's `:where(p){margin:0 0 1em}` sits at (0,1,1), so this rule is
+     qualified with its parent class to out-specify it — the design's paragraph
+     has no bottom margin at all. Flat 15.5px / 1.78, not the .body primitive's
+     clamp; font-family inherits var(--sans) from body, as in the design. */
+  .sip-why-card .sip-why-p {
+    margin: 0;
+    max-width: 64ch;
+    font-size: 15.5px;
+    line-height: 1.78;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── 900 · this section has no multi-column CONTENT grid to collapse: the
+        cards are full-width and stacked at every width, as drawn. What tightens
+        instead is the decorative medallion rail, giving the text more of the
+        card. Every value below is SMALLER than the base and larger than the 520
+        step, so the ladder only ever descends (R8). At a 900px viewport .wrap
+        is 828px, the card's inner box 776px (828 - 2x26) and the text track
+        676px (776 - 78 - 22) - WIDER than the 646.9px the base step leaves at
+        901px, so the paragraph only ever gains room here. Which of the two
+        bounds actually binds it, the 64ch measure or the track, depends on
+        Nunito Sans' ch advance and is deliberately not asserted. */
+  @media (max-width: 900px) {
+    .sip-why-head { margin-bottom: 30px; }
+    .sip-why-card { grid-template-columns: minmax(0, 78px) minmax(0, 1fr); gap: 22px; padding: 26px; }
+    .sip-why-card .sip-why-n { width: 68px; height: 68px; font-size: 28px; }
+  }
+
+  /* ── 520 · the phone step. Same move, one notch further, and it is what makes
+        360px comfortable: .wrap is 331.2px there, the card's inner box 291.2px
+        and the text track 207.2px after the 66px rail and the 18px gap — versus
+        149.2px if the base rail and padding had been kept. Nothing here can
+        overflow: both grids are minmax(0,…), the card and the text column carry
+        min-width:0, and every owner string wraps anywhere. There is no button
+        in this section to give white-space:normal to. */
+  @media (max-width: 520px) {
+    .sip-why-head { margin-bottom: 26px; }
+    .sip-why-card { grid-template-columns: minmax(0, 66px) minmax(0, 1fr); gap: 18px; padding: 24px 20px; }
+    .sip-why-card .sip-why-n { width: 60px; height: 60px; font-size: 26px; }
+  }
+</style>
