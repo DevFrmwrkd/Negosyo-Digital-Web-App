@@ -168,6 +168,46 @@ const useRows =
   lineRows.map((l) => l.text.trim()).join(' ') !== headline;
 const hasHeadline = useRows || headline !== '';
 
+// ── THE SIGNATURE, MADE REACHABLE ────────────────────────────────────────
+// This design's h1 is two-tone: bone, then a brass italic tail. It got there
+// because the designer typed <em> into their own markup. No owner is going to
+// do that from a text box, so on every real site the headline rendered one flat
+// colour and the most recognisable move in the design never shipped.
+//
+// When the owner has NOT marked emphasis themselves, the tail is derived from
+// their OWN sentence and adds not one word:
+//   • more than one line          -> the last line
+//   • a comma, dash, colon or semicolon -> everything after the LAST one
+//   • anything else               -> nothing at all
+//
+// That last case is deliberate. A single clause is a single clause, and
+// splitting inside one would lean on a word the owner never leaned on — the
+// design's own headline ("A whole villa, and no one else in it.") breaks at a
+// comma precisely because that is where its sentence turns.
+//
+// An explicit <em> always wins: this only fills a silence.
+const hasOwnEm = (v: string): boolean => /<em[\s>]/i.test(v);
+const emphasise = (raw: string): string => {
+  if (!raw || hasOwnEm(raw)) return raw;
+  const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const tail = lines.pop() as string;
+    return lines.join(" ") + " <em>" + tail + "</em>";
+  }
+  // The LAST break wins, so a sentence with two commas emphasises its close
+  // rather than its middle. The lookahead keeps a trailing comma from matching.
+  const re = /[,;:\u2014\u2013]\s+(?=\S)/g;
+  let cut = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) cut = m.index + m[0].length;
+  if (cut <= 0 || cut >= raw.length) return raw;
+  return raw.slice(0, cut) + "<em>" + raw.slice(cut) + "</em>";
+};
+const headlineHtml = emphasise(headline);
+// The rows path marks its LAST row instead, and only when no row is already
+// carrying the owner's own <em>.
+const rowsOwnEm = lineRows.some((l) => hasOwnEm(l.text));
+
 const sub = hero.sub || '';
 const cta1Text = hero.cta1?.text || '';
 const cta1Href = onPage(hero.cta1?.href, '#location');
@@ -205,11 +245,11 @@ const hasArrival = !!(hasHeadline || sub || heroImage);
   {/* Layer 2 — the copy stack. */}
   <div class="wrap vm-copy">
     {kicker && <span class="kick vm-kick" data-field="hero.kicker">{kicker}</span>}
-    {!useRows && headline !== '' && <h1 class="vm-h1" data-field="hero.headline" set:html={headline}></h1>}
+    {!useRows && headline !== '' && <h1 class="vm-h1" data-field="hero.headline" set:html={headlineHtml}></h1>}
     {useRows && (
       <h1 class="vm-h1">
         {lineRows.map((l, k) => (
-          <span class="vm-ln"><span data-field={`hero.headlineLines.${l.i}`} set:html={l.text}></span>{k === lineRows.length - 1 ? '' : ' '}</span>
+          <span class:list={['vm-ln', !rowsOwnEm && k === lineRows.length - 1 && 'vm-ln--em']}><span data-field={`hero.headlineLines.${l.i}`} set:html={l.text}></span>{k === lineRows.length - 1 ? '' : ' '}</span>
         ))}
       </h1>
     )}
@@ -326,6 +366,10 @@ const hasArrival = !!(hasHeadline || sub || heroImage);
      20ch measure, exactly as it does on the single-line path. The word space
      between rows is a real text node in the markup, not a faked margin. */
   .vm-ln { display: inline; }
+  /* The derived tail on the rows path. Same treatment as an owner-typed <em>,
+     declared separately because the rows are real elements this file owns and
+     do not need :global(). */
+  .vm-ln--em { font-style: italic; color: var(--accent); }
 
   .vm-lede {
     font-size: 18.5px;
