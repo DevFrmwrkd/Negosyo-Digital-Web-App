@@ -329,10 +329,17 @@ const hasBand = Boolean(hasActions || sub || bandImage);
     z-index: 2;
   }
   /* Design: max-width 600px. min-width:0 so a long unbroken string inside it
-     cannot widen the column. */
+     cannot widen the column.
+     THE READABILITY PANEL — the same one the hero uses, see the note there.
+     Copy on a photograph gets a ground; the measure is the 600px this column
+     already had, so the panel wraps the text rather than re-flowing it. */
   .vm-close-col {
-    max-width: 600px;
+    max-width: min(640px, 100%);
     min-width: 0;
+    background-color: rgba(var(--scrim-rgb), .92);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-lg);
+    padding: clamp(30px, 4.2vw, 56px);
   }
 
   /* Design: Prata clamp(34px,4.8vw,68px)/1.05, margin .22em 0 .32em. The column
