@@ -1,0 +1,406 @@
+---
+/**
+ * foodcraft / AboutBL — "Kalinaw Coffee" (BL), the OUR STORY section.
+ *
+ * ROLE: the café talking about itself. The design draws a two-column split with
+ * the PHOTOGRAPH ON THE LEFT (a tall 540px plate) and the story on the right —
+ * eyebrow, Fraunces headline with its italic rust emphasis, the owner's
+ * paragraphs, then a two-up hairline SPEC LEDGER of label/value facts.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every number below is lifted verbatim from
+ * the element carrying data-component="ABOUT" in "Kalinaw Coffee Landing.dc.html":
+ *   grid        minmax(0,.92fr) minmax(0,1.08fr), gap 60px, align-items center
+ *   photo       LEFT column · height 540px · radius 14px · ground #F2E8D8
+ *   eyebrow     10px / .42em / uppercase / 600 / #B4541F   → the wrapper's .kick
+ *   headline    Fraunces 400 clamp(31px,4vw,54px)/1.08, margin .26em 0 .34em,
+ *               #241A12, with an italic #B4541F <em>       → the wrapper's .h2
+ *   paragraphs  16.5px / 1.85 / #6B5C4E / max-width 52ch / margin 0 0 1em,
+ *               the LAST one 0 0 28px (the gap above the ledger)
+ *   ledger      repeat(2, minmax(0,1fr)), gap 0 32px
+ *   ledger row  flex · baseline · gap 12px · padding 12px 0 · border-bottom
+ *               1px #EDE2D1                                 → the wrapper's .rowrule
+ *   label       14.5px #241A12   ·   value  margin-left:auto 13px #948373
+ * The photo stays on the LEFT and the ledger keeps both of its tracks. Neither
+ * has been moved to suit an editor mechanism, and no colour has been re-derived
+ * to survive a scheme — that pair of habits is what shipped an earlier template
+ * looking like a different design.
+ *
+ * R1 · NO LITERAL HEX. Every hex the design writes here already has a name in
+ * PageBL and is used through it:
+ *   #F2E8D8 --well · #B4541F --accent · #241A12 --ink · #6B5C4E --ink-soft
+ *   #EDE2D1 --line-2 · #948373 --muted · 14px --r-md
+ * .plate supplies --well and --r-md, .rowrule supplies the --line-2 hairline and
+ * the whole row geometry, .kick supplies the eyebrow and .h2 the headline — so
+ * the only values restated below are the ones no primitive knows: the two grid
+ * tracks, the 540px plate, the paragraph's 16.5/1.85/52ch, the 28px gap and the
+ * two ledger cell types.
+ *
+ * EDITABLE HOOKS (each one DECLARED in components/editor/genericContentSchema.ts,
+ * so every data-field below is a hook a real sidebar input owns):
+ *   about.image             (data-image-field) — the left photograph
+ *   about.tag               — eyebrow (.kick)
+ *   about.headline          — h2, set:html so an owner's own <em> lands wherever
+ *                             THEY put it in THEIR sentence; the design's
+ *                             signature italic rust is the wrapper's .h2 em rule
+ *   about.lead              — the FIRST paragraph. Drawn on purpose: the
+ *                             sidebar's "Lead paragraph" box writes about.lead,
+ *                             and a schema field no component renders is the
+ *                             mirror image of a dead hook and just as broken.
+ *   about.paragraphs.${i}   — the remaining paragraphs (set:html)
+ *   about.specs.${i}.label  — the ledger's left cell
+ *   about.specs.${i}.value  — the ledger's right cell
+ * about.signature is READ once — as the photograph's accessible name — and is
+ * never printed. See R9 below.
+ *
+ * R2 · NOTHING VISIBLE IS SUPPLIED BY THIS FILE. Not one word. The design's demo
+ * copy ("Our story", "One roaster, six farms, no rush.", the six sample spec
+ * rows) is the DESIGNER filling their own template, and the image slot's "Drop
+ * the roaster or counter" is an editor affordance, not page copy — none of it
+ * ships. A café that wrote no spec rows advertises none.
+ * Every guard sits OUTSIDE its tag, so an empty value removes the ELEMENT and
+ * not just its text: no empty eyebrow, no headline over nothing, no empty plate,
+ * and — because a .rowrule IS its own hairline — no rule drawn under a spec row
+ * that is not there.
+ * NO STAR ROW exists in this section: the design's ABOUT carries no rating and
+ * the schema exposes no numeric rating on about.*, so there is nothing here that
+ * could print five stars for a customer who gave no number.
+ *
+ * DERIVED (computed here, never invented):
+ *   · paraRows / specRows drop blank entries but carry the ORIGINAL array index
+ *     into data-field (R6), so deleting row 2 cannot misdirect an edit into row 3.
+ *   · a spec row survives on EITHER cell — a label the owner typed but has not
+ *     filled in yet is still their line; only a wholly empty row is dropped.
+ *   · about.paragraphs / about.specs are read tolerantly (array, bare string, or
+ *     objects vs bare strings). Draft content has arrived as both shapes before,
+ *     and a `.map is not a function` costs the whole page, not one row.
+ *   · the grid drops to ONE track whenever only one column has content, so a
+ *     missing photo never leaves a 540px hole beside the copy. Above 900px the
+ *     surviving column then keeps the MEASURE the design gives it — 637px of
+ *     copy, 543px of photo, which ARE the design's two tracks at PageBL's 1240px
+ *     .wrap (1240 − 60 gap, split .92fr/1.08fr) — rather than stretching across
+ *     the page. This is the common case, not an edge one: derive-content-defaults
+ *     seeds no about.image, so a copy-only ABOUT is what a first build renders,
+ *     and a ledger free to span 1240px would set each label and its value at
+ *     opposite ends of the page instead of drawing the design's ruled ledger.
+ *   · the image url has its apostrophes percent-escaped before it goes into
+ *     url('…'), so an upload named "kalinaw's roaster.jpg" cannot close the
+ *     quote early and kill the whole declaration.
+ *
+ * SECTION GATE (R5): tag and headline are deliberately NOT counted.
+ * lib/derive-content-defaults.ts sets about.tag = 'About' on EVERY site and
+ * about.headline = `About ${name}` on every named one, so a gate that counted
+ * them would be always-true and would ship a heading over an empty section. The
+ * gate counts BODY content only: the lead, the surviving paragraphs, the
+ * surviving spec rows, the photograph. (about.lead is also derived, but from the
+ * owner's OWN facts — their name, city and business type — so it is a real
+ * sentence about a real business, which is what body content means here.)
+ *
+ * DELIBERATELY NOT RENDERED, so none of these reads as an oversight:
+ *   · NO onPage() ANCHOR HELPER (R7). This section renders no href of any kind —
+ *     the design's ABOUT has no button, no link and no action, so there is no
+ *     data-href-field to remap and a helper that is never called is dead code
+ *     that later drifts out of step with the wrapper. If a link is ever added
+ *     here it must arrive WITH the helper copied in from a sibling, with
+ *     PAGE_ANCHORS = menu/about/gallery/location/faq/main and ANCHOR_ALIAS
+ *     mapping visit+contact → location, services+rooms → menu, host+why →
+ *     about, work → gallery, book → main. The anchor duty this file DOES own is
+ *     its id="about" — one of PageBL's six page anchors, and the target the
+ *     header nav and the host/why aliases resolve to.
+ *   · about.signature and about.role as VISIBLE text. They belong to a host
+ *     identity row, which is a different design; the ABOUT element here draws a
+ *     photograph, a story and a spec ledger, and no person.
+ *   · a .cap pill on the plate. The design's about photograph carries no caption
+ *     and no schema field would let an owner write one, so a caption here could
+ *     only be a literal this file invented.
+ *   · band-dark. The design draws ABOUT on the plain cream ground; the espresso
+ *     bands in this template are HOW-IT-WORKS and CTA-BAND.
+ *   · a max-width on the .h2. The wrapper's 24ch cap at the clamp's 54px is
+ *     ~648px, which is the design's own 637px column to within a character —
+ *     the design constrains this headline with the COLUMN, not with a rule of
+ *     its own, so forking the shared primitive would buy nothing.
+ * SECTION PADDING is the wrapper's, not this file's. The design writes
+ * `padding:96px 32px 0`: the 1240/gutter half is the shared .wrap, and the 96px
+ * top is `html[data-page="BL"] section`'s clamp(56px,7.6vw,96px), which caps at
+ * exactly that. The design's bottom-0 is a WHOLE-PAGE rhythm decision (every
+ * unbanded section in it pads top only) and belongs in the wrapper's shared
+ * rule; one section zeroing its own bottom while fourteen siblings keep theirs
+ * is exactly the local re-derivation that put an earlier template out of step
+ * with its design. Flagged, not done here.
+ *
+ * R9 · the plate renders ONLY when there is a real upload, so role="img" is
+ * honest by construction. Its accessible name is about.signature — the owner's
+ * OWN words (derive-content-defaults seeds it from the business name, so on a
+ * café the photograph announces as the café). Never a literal written here. With
+ * no signature the photo is HIDDEN from the accessibility tree rather than
+ * announced as something we guessed, and that is done with ONE conditional
+ * aria-hidden — never a literal aria-hidden="true" sitting beside a conditional
+ * one, which is the duplicated-attribute bug two BK components shipped: the
+ * literal wins and hides content that should have been announced.
+ *
+ * R3 · one scoped <style>, no is:global. Astro's scoped styles cannot reach
+ * elements created by set:html, so the owner's own <em> inside the headline is
+ * styled by PageBL's global `:where(.h2 em)` rule (italic, weight 500, rust) and
+ * NOT from here. Anything this file ever needs to say about an owner <em> would
+ * have to go through :global().
+ *
+ * R4 · this section has no buttons at all, and none of the engine-pinned class
+ * names (.btn-primary .btn-ghost .nav-cta .cta-band .trust .testi, or `.hero` on
+ * a <section>) appears anywhere below.
+ *
+ * CONTRAST, the design's own values: label --ink on --paper 14.6:1, paragraphs
+ * --ink-soft on --paper 6.71:1, eyebrow --accent on --paper 5.31:1. The ledger's
+ * VALUE cell is --muted at 3.86:1 — below AA, and PageBL's frontmatter already
+ * records that this is the design's palette and the owner's call to change in
+ * one line. It is not re-derived here; a section quietly darkening a shared
+ * token would put this ledger out of step with the three other places --muted is
+ * used. Flagged for the owner, unchanged.
+ */
+// `layout` is accepted because PageBL passes it to every section uniformly;
+// this block reads nothing outside content.*.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+const about = content.about || {};
+
+const tag = about.tag || '';
+const headline = about.headline || '';
+const lead = about.lead || '';
+const image = String(about.image || '');
+// An apostrophe in an upload's filename would otherwise close the url('') early
+// and take the whole background-image declaration down with it.
+const imageCss = image.replace(/'/g, '%27');
+
+// Read tolerantly: a draft has arrived with this as a bare string before, and a
+// `.map is not a function` costs the whole page rather than one paragraph. The
+// only fallback taken is the SAME path as a string — folding in a legacy
+// `about.body` is not done here, because the data-field would then point at
+// about.paragraphs.0 while the text lived somewhere else, and an input that
+// edits a different string than the one under it is a broken hook.
+const paragraphSource: any[] = Array.isArray(about.paragraphs)
+  ? about.paragraphs
+  : (typeof about.paragraphs === 'string' && about.paragraphs.trim()
+    ? [about.paragraphs]
+    : []);
+// A blank row in the admin's paragraph list would otherwise render an empty <p>
+// that still spends its margin. Drop the blanks, carry the ORIGINAL index (R6).
+const paraRows = paragraphSource
+  .map((text: any, i: number) => ({ text: String(text ?? ''), i }))
+  .filter((row) => row.text.trim().length > 0);
+
+// Same discipline for the ledger. An item may legitimately be an object
+// {label,value} (what the schema's newItem creates) or, from an older draft, a
+// bare string — treated as a label with no value rather than dropped.
+const specSource: any[] = Array.isArray(about.specs) ? about.specs : [];
+const specRows = specSource
+  .map((row: any, i: number) => {
+    const item = row && typeof row === 'object' ? row : { label: row, value: '' };
+    return {
+      label: String(item.label ?? '').trim(),
+      value: String(item.value ?? '').trim(),
+      i,
+    };
+  })
+  // EITHER cell keeps the row. Only a wholly empty row goes, so no hairline is
+  // ever drawn under a row that is not there.
+  .filter((row) => row.label.length > 0 || row.value.length > 0);
+
+// The photograph's accessible name — the owner's own words, never a literal.
+const photoName = String(about.signature || '').trim();
+
+// Track count, computed here so the published grid never keeps an empty 540px
+// column standing beside a single populated one.
+const hasCopy = Boolean(tag || headline || lead) || paraRows.length > 0 || specRows.length > 0;
+const hasPhoto = Boolean(image);
+// R5 — BODY content only. tag and headline are excluded: both are derived onto
+// every site, so counting them would make this gate always-true.
+const hasSection = Boolean(lead || image) || paraRows.length > 0 || specRows.length > 0;
+---
+{hasSection && (
+  <section class="story" id="about">
+    <div class="wrap">
+      <div class:list={['story-grid', !(hasCopy && hasPhoto) && 'story-grid--solo']}>
+        {hasPhoto && (
+          /* LEFT column, as the design draws it. .plate already gives the --well
+             ground, the --r-md (14px) corner and the overflow clip. */
+          <div class="plate story-plate reveal">
+            <div
+              class="ph"
+              data-image-field="about.image"
+              role={photoName ? 'img' : undefined}
+              aria-label={photoName || undefined}
+              aria-hidden={photoName ? undefined : 'true'}
+              style={`background-image:url('${imageCss}');`}
+            ></div>
+          </div>
+        )}
+        {hasCopy && (
+          <div class="story-copy">
+            {tag && <span class="kick" data-field="about.tag">{tag}</span>}
+            {headline && <h2 class="h2 story-h reveal" data-field="about.headline" set:html={headline}></h2>}
+            {/* about.lead comes from a plain textarea, so it is bound as TEXT.
+                The paragraph LIST below is where an owner writes markup. */}
+            {lead && <p class="lede story-p reveal" data-delay="1" data-field="about.lead">{lead}</p>}
+            {paraRows.map((row, k: number) => (
+              <p
+                class="lede story-p reveal"
+                data-delay={String((k % 3) + 1)}
+                data-field={`about.paragraphs.${row.i}`}
+                set:html={row.text}
+              ></p>
+            ))}
+            {specRows.length > 0 && (
+              <div class="story-specs reveal" data-delay="2">
+                {specRows.map((row) => (
+                  /* .rowrule is the wrapper's shared label/value hairline — the
+                     design's spec row exactly. Each cell is guarded on its own,
+                     so a half-filled row prints one cell and not one cell plus a
+                     gap. */
+                  <div class="rowrule story-spec">
+                    {row.label && (
+                      <span class="story-spec-l" data-field={`about.specs.${row.i}.label`}>{row.label}</span>
+                    )}
+                    {row.value && (
+                      <span class="story-spec-v" data-field={`about.specs.${row.i}.value`}>{row.value}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* THE DESIGN'S SPLIT, verbatim: .92fr of photograph against 1.08fr of story,
+     60px apart, the two columns centred on each other. The photo leads because
+     the design puts it first; that order is also the DOM order, so the single
+     column below 900px reads photograph-then-story exactly as the design does. */
+  .story-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr);
+    gap: 60px;
+    align-items: center;
+  }
+  .story-grid--solo { grid-template-columns: minmax(0, 1fr); }
+  .story-copy { min-width: 0; }
+
+  /* The design has no one-column ABOUT, so --solo is a state this file has to
+     answer for. The family answer is to keep the surviving column at the MEASURE
+     it has in the design rather than let it stretch across the whole wrap. It
+     matters most here: a copy-only ABOUT is the DEFAULT first build —
+     derive-content-defaults seeds no about.image — and a ledger free to span
+     1240px prints a label and its value at opposite ends of the page, which is
+     not the ruled ledger the design draws. 637px and 543px ARE the design's two
+     tracks at PageBL's 1240px .wrap (1240 − 60px gap, split 1.08fr / .92fr), so
+     this restores the design's proportions rather than inventing new ones. Below
+     900px one track is everybody's layout and the caps lift. */
+  @media (min-width: 901px) {
+    .story-grid--solo .story-copy { max-width: 637px; }
+    .story-grid--solo .story-plate { max-width: 543px; }
+  }
+
+  /* The eyebrow IS the wrapper's .kick (10px caps, .42em, --accent) — the
+     design's span, already named, so nothing about it is restated here and it
+     cannot fork from the rest of the template. The one thing ADDED is a wrap
+     rule: .kick is an inline-block carrying .42em of tracking, and one long
+     owner word (a hyphenless place name) would push the document sideways at
+     360px (R8). Only properties the wrapper never sets are added. */
+  .story-copy .kick { max-width: 100%; overflow-wrap: anywhere; }
+
+  /* The headline is the wrapper's .h2 (Fraunces 400, clamp(31px,4vw,54px)/1.08,
+     --ink); only the design's own margins are set here. The italic rust <em> is
+     PageBL's global rule — a scoped rule could not reach markup created by
+     set:html (R3). Every rule below is qualified with .story-copy so it
+     out-specifies the wrapper's :where() primitives whatever order the sheets
+     land in. */
+  .story-copy .story-h { margin: .26em 0 .34em; overflow-wrap: anywhere; }
+
+  /* THE PARAGRAPH. The wrapper's .lede already carries the family and the
+     design's --ink-soft; the three metrics the design states for THIS section —
+     16.5px, 1.85, 52ch — are not .lede's defaults (15.5–17.5px / 1.72 / 44ch),
+     so they are set here rather than by bending the shared primitive that eleven
+     other sections also use. PageBL's `:where(p){margin:0 0 1em}` is (0,1,1) and
+     would beat a bare .lede, hence the parent-class qualifier. */
+  .story-copy .story-p {
+    font-size: 16.5px;
+    line-height: 1.85;
+    max-width: 52ch;
+    margin: 0 0 1em;
+    overflow-wrap: anywhere;
+  }
+  /* The design gives its LAST paragraph `margin:0 0 28px` — the gap above the
+     ledger. That gap is spent by .story-specs below instead, so the same 28px
+     appears in the same place while a section with NO ledger ends flush rather
+     than trailing 28px of nothing. */
+  .story-copy .story-p:last-of-type { margin-bottom: 0; }
+  /* A cleared headline is a real case, and then the eyebrow would sit flush on
+     the first paragraph — the h2's .26em top margin is what normally opens that
+     gap. Adjacency, so it fires only in that case, and qualified because the
+     shorthand above would otherwise re-zero the top margin. */
+  .story-copy .kick + .story-p { margin-top: 14px; }
+
+  /* THE SPEC LEDGER — two equal columns, 32px apart, no row gap: each row
+     carries its own 12px padding and its own hairline (the wrapper's .rowrule),
+     which is what makes a continuous ruled ledger rather than a stack of
+     separated cards. */
+  .story-specs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 32px;
+    margin-top: 28px;
+  }
+  /* .rowrule supplies flex / baseline / 12px gap / 12px 0 padding / the 1px
+     --line-2 underline / min-width:0 — the design's row exactly. Only the two
+     cell types are stated here. */
+  .story-copy .story-spec-l {
+    font-size: 14.5px; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* `text-align: right` is the ONE property here the design does not write, and
+     it is a no-op in the state the design shows: margin-left:auto already puts a
+     single-line value hard against the right edge. It takes effect only when a
+     value WRAPS — at 520px, or on a long owner value — where the design's own
+     flex row would leave the second line ragged-left under a right-aligned
+     first. That is the design's alignment continued into a state it never had to
+     draw, not a new alignment. */
+  .story-copy .story-spec-v {
+    margin-left: auto; text-align: right;
+    font-size: 13px; color: var(--muted);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+
+  /* The photograph's own height. .plate knows the ground, the corner and the
+     clip; the design's fixed 540px is the one thing it does not. */
+  .story-plate { height: 540px; }
+
+  /* ── R8 · ONE COLUMN BEFORE THE COPY MEASURE IS SQUEEZED. At 900px the .92fr
+        track is ~390px, which is about where a 540px photograph stops earning
+        its width and the 52ch paragraph starts breaking badly. */
+  @media (max-width: 900px) {
+    .story-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: clamp(28px, 4.4vw, 44px);
+    }
+    /* Full-bleed at one column, 540px would be most of a laptop viewport. */
+    .story-plate { height: clamp(300px, 52vw, 460px); }
+  }
+  /* PageBL's shared 760 pass releases `.lede { max-width: none }`, but the rule
+     above is more specific and would silently defeat it, leaving a 52ch column
+     of text inside a full-width phone-landscape wrap. The release is restated
+     here so this section follows the wrapper instead of overriding it. */
+  @media (max-width: 760px) {
+    .story-copy .story-p { max-width: none; }
+    .story-specs { gap: 0 24px; }
+  }
+  /* ── 520: nothing may push the page sideways. The ledger goes to a single
+        column (two label/value pairs in ~150px each would break every value onto
+        its own line), and both cells already wrap anywhere, so a long unbroken
+        string — a URL, an origin name, a hyphenless spec — wraps instead of
+        widening the document. There is no button in this section, so the
+        full-width white-space rule has nothing to apply to. */
+  @media (max-width: 520px) {
+    .story-specs { grid-template-columns: minmax(0, 1fr); margin-top: 24px; }
+    .story-plate { height: clamp(240px, 62vw, 340px); }
+  }
+</style>

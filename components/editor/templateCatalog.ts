@@ -108,6 +108,7 @@ const TRADES_TEMPLATES: TemplateDef[] = [
 
 const FOODCRAFT_TEMPLATES: TemplateDef[] = [
     { letter: "AL", code: "foodcraft:AL", label: "Pastel Deco Panaderia", tagline: "Cream + terracotta · bakeries", preview: "/template-previews/al.html" },
+    { letter: "BL", code: "foodcraft:BL", label: "Kalinaw Coffee", tagline: "Cream + rust · cafés, roasters & brunch", preview: "/template-previews/bl.html" },
 ];
 
 const SERVICES_TEMPLATES: TemplateDef[] = [

@@ -1,0 +1,311 @@
+---
+/**
+ * foodcraft / FaqBL — "FAQ" (Kalinaw Coffee / BL).
+ *
+ * ROLE: the design's FAQ element — a narrow head column (eyebrow + one Fraunces
+ * headline) beside a wide stack of hairline-separated question-and-answer rows,
+ * on the page's own cream ground. NO ACCORDION: the design draws every answer
+ * open, and on a café page the answers ARE the practicalities — whether there is
+ * wifi, whether the kitchen is still on, whether a table can be held. Someone
+ * standing on the pavement deciding should not have to click to find out.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every value below is lifted verbatim from the
+ * element carrying data-component="FAQ" in "Kalinaw Coffee Landing.dc.html",
+ * mapped hex → token (R1 — not one literal hex appears in this file):
+ *   section    id="faq" ............................. kept verbatim
+ *   grid       minmax(0,.7fr) / minmax(0,1.3fr), gap 54px, align-items:start
+ *   eyebrow    10px / .42em / 600 / #B4541F ......... the wrapper's .kick
+ *   headline   Fraunces 400 clamp(31px,4vw,54px) / 1.08 / #241A12,
+ *              margin .26em 0 0 .................... the wrapper's .h2 + --ink
+ *   row        border-bottom 1px #E9DFCF, padding 23px 0 ...... var(--line)
+ *   question   Fraunces 400 21px / #241A12, margin 0 0 10px ... var(--ink)
+ *              line-height: the design declares none, so `normal` is restated
+ *              here to hold off the wrapper's heading default of 1.08
+ *   answer     15px / 1.8 / #6B5C4E, margin 0, max-width 64ch . var(--ink-soft)
+ * The rust --accent is the one token the design itself exposes as configurable
+ * (its own data-props seeds a picker at #B4541F), so an admin colour pick
+ * recolours the eyebrow and leaves the cream, the ink and the hairline alone.
+ *
+ * EDITABLE HOOKS (all four declared in components/editor/genericContentSchema.ts,
+ * section id 'faq' — a data-field on any other path is a dead hook that no
+ * sidebar input owns):
+ *   faq.tag              — the eyebrow
+ *   faq.headline         — the h2, rendered with set:html so an owner can place
+ *                          the template's ITALIC RUST EMPHASIS anywhere inside
+ *                          their own sentence. That <em> rule is GLOBAL in
+ *                          PageBL on purpose: scoped styles cannot reach
+ *                          elements created by set:html (R3), so an italic rule
+ *                          written in this file would never apply to it.
+ *   faq.items.${i}.q     — the question
+ *   faq.items.${i}.a     — the answer, also set:html so an owner can emphasise,
+ *                          bold or link inside it
+ *
+ * DERIVED, and therefore carrying NO data-field: nothing at all. This section
+ * renders no counter, no numeral, no icon, no badge and no chip. The design
+ * gives the FAQ no ornament — the hairline between rows is the only one — so
+ * there is nothing here for a display index to number and nothing for R6's
+ * display-index rule to apply to. R6's other half DOES apply, below.
+ *
+ * R2 — NOT ONE WORD IS SUPPLIED BY THIS FILE, and here that rule is load-bearing
+ * beyond the usual. An FAQ answer is a promise about a business this template
+ * has never visited. So: no opening or closing time, no "the kitchen stops 30
+ * minutes before close", no wifi claim, no power-outlet claim, no parking, no
+ * pet or laptop or group policy, no minimum spend, no card-vs-cash line, no "we
+ * reply within…", and no example question. The design's own demo strings ("Good
+ * to know", "Often asked", and its sample answers) are the DESIGNER filling in
+ * their own template; they are not this file's to type. Note that
+ * lib/derive-content-defaults.ts happens to emit that same 'Good to know' tag
+ * on every site — which is exactly why the gate below never counts it.
+ *
+ * R5 — THE SECTION GATE COUNTS THE ROWS, never the tag or the headline.
+ * derive-content-defaults fills faq.tag and faq.headline on EVERY site
+ * ('Good to know' / 'Questions, answered') while emitting items only when the
+ * submission actually answered something. A gate on tag||headline would ship a
+ * 54px headline over an empty column on any café whose owner typed no questions.
+ * With no filled row the whole <section> is omitted — no eyebrow, no headline,
+ * no grid, no padding, no hairline.
+ *
+ * R6 — blank rows are dropped, but every kept row carries its ORIGINAL index
+ * into data-field, so deleting question 2 can never misdirect an edit into
+ * question 3.
+ *
+ * ROW GUARDS: a row is kept when EITHER field has content, and the two tags are
+ * guarded independently. Silently vanishing an answer an owner typed is a worse
+ * failure than printing a lone paragraph between two hairlines. Each guard sits
+ * OUTSIDE its tag, so a half-filled row prints only what was typed — never an
+ * empty <h3> holding open 10px of margin over a blank line box, and never a
+ * hairline under a row that is not there. Fields are TRIMMED before they are
+ * tested, because a value holding only a space is truthy and would print exactly
+ * that empty element.
+ *
+ * DELIBERATELY NOT RENDERED (so none of it reads as an oversight):
+ *   · NO STAR ROW and no rating ornament of any kind (R2). Five stars over a
+ *     customer who gave no rating is a fabricated claim; that treatment belongs
+ *     to TESTIMONIALS, where it is drawn only from a numeric
+ *     testimonials.items.N.rating, clamped 1–5, aria-hidden, with the number
+ *     itself in the accessible label. An FAQ row has no rating to draw from, so
+ *     there is nothing here to draw — not even the plain rule that stands in for
+ *     a missing one.
+ *   · no <details>/<summary> accordion. The design shows every answer open;
+ *     collapsing them would hide the practicalities behind a click.
+ *   · no sticky head column. The design draws a plain `align-items:start` grid
+ *     and pins nothing.
+ *   · NO onPage() ANCHOR-REMAP HELPER, and this is a decision rather than an
+ *     omission (R7). The helper exists to rewrite an owner's href onto the ids
+ *     this page really has — for BL that set is `menu about gallery location faq
+ *     main`, with visit/contact → location, services/rooms → menu, host/why →
+ *     about, work → gallery, book → main, and tel:/mailto:/http passing through
+ *     untouched. This section emits NO href of any kind: no button, no link, no
+ *     data-href-field. A remap helper with nothing to remap is dead code that a
+ *     later reader would have to prove unused, so it is not carried. The one
+ *     anchor this file owns is its own id="faq" — already in that set, and what
+ *     HeaderBL's nav links to.
+ *   · no button. The design gives this band no action; the contact button lives
+ *     in the header, the CTA band and the footer.
+ *   · no `band-dark`. The design keeps FAQ on the cream ground; the espresso
+ *     bands in this template are HOW and CTA-BAND, and adding a third would
+ *     change the page's rhythm, not just this section's colour.
+ *   · no data-block marker: editorBridge only needs one where two content
+ *     prefixes share a <section>. This section is faq.* alone, so the Blocks
+ *     toggle resolves to it by hook weight already — and one prefix per section
+ *     is what stops a neighbouring toggle reaching in here.
+ *   · no role="img" and no aria-hidden anywhere (R9). This band renders no
+ *     image, no plate and no decorative glyph, so there is no element to name
+ *     and none to hide. Nothing in this file emits a conditional accessibility
+ *     attribute, so there is no way for a literal one to be duplicated beside it.
+ *
+ * VERTICAL RHYTHM is the wrapper's, deliberately — and the two sides of this
+ * section are NOT the same story in the design, so they are worth separating.
+ *
+ * BELOW is the gap this file actually controls, and it lands exactly. The design
+ * writes `padding:96px 32px 0` here — a BARE BOTTOM — and then opens the CTA
+ * band with `margin-top:96px`, so 96px of cream sits between the last hairline
+ * and the espresso edge. PageBL's shared `section { padding:
+ * clamp(56px,7.6vw,96px) 0 }` puts that same 96px on THIS section's bottom
+ * instead, which is why CtaBandBL drops the design's `margin-top` AND zeroes its
+ * own section padding — its frontmatter names this file as the reason. The two
+ * halves add to exactly 96px at desktop. The dependency runs both ways: a
+ * `padding-bottom:0` here would close the gap to nothing, and a margin there
+ * would open it to ~192px. Neither file may move without the other.
+ *
+ * ABOVE is the FAMILY's conversion, not this section's decision. The design's
+ * 96px there is the FAQ's own top padding measured against a bare-bottomed
+ * SERVICE-AREA; AreaBL keeps the shared symmetric rhythm instead (76px bottom),
+ * so the real gap is that 76px plus this section's 96px. It runs wider than the
+ * design's, and it runs wider identically at every cream-to-cream boundary in
+ * this template, because PageBL answers a padding-top-only design with one
+ * symmetric `section` rule. Correcting it here alone would not restore the
+ * design — it would make the FAQ the single band out of step with its thirteen
+ * siblings, which is the divergence a reader would actually see.
+ *
+ * Likewise the headline measure is the wrapper's `.h2 max-width:24ch`, which is
+ * wider than the .7fr track it sits in and therefore never the constraint here.
+ *
+ * R3 — one scoped <style>, no is:global. Both the headline and the answers are
+ * injected with set:html, so scoped rules cannot reach inside them: the
+ * headline's italic rust <em> is styled by PageBL's global :where(.h2 em), and
+ * an <em> inside an answer is reached from here through :global().
+ *
+ * CONTRAST on the cream ground (the design's own palette, as verified in
+ * PageBL). Nothing in this section is below AA:
+ *   eyebrow --accent/--paper 5.31 · question --ink/--paper 14.6
+ *   answer --ink-soft/--paper 6.71
+ * The sub-AA --muted is not used here at all.
+ */
+// `layout` is accepted because PageBL passes it to every section uniformly.
+// This band reads nothing outside content.*, so it is never destructured.
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// The schema declares 'faq.items' with fallbackPaths ['faq'], so the stored
+// value is legitimately EITHER {tag, headline, items:[…]} or a bare array.
+// Both shapes are read.
+const faq = content.faq || {};
+const tag = (faq.tag || '').trim();
+const headline = (faq.headline || '').trim();
+
+// Legacy submissions spell the pair {question, answer}; the schema (and every
+// current writer) spells {q, a}. Read both, but the data-field hook always
+// spells q / a — that is the path the sidebar input owns.
+type Item = { q?: string; a?: string; question?: string; answer?: string };
+const items: Item[] = Array.isArray(faq.items)
+  ? faq.items
+  : (Array.isArray(faq) ? faq : []);
+// Optional chaining, not a bare read: a stored list can carry a null slot (a row
+// deleted in an older editor left a hole), and reading `.q` off it would throw
+// at BUILD time and take the whole site down, not just this band.
+const qOf = (it: Item): string => it?.q ?? it?.question ?? '';
+const aOf = (it: Item): string => it?.a ?? it?.answer ?? '';
+
+// R6 — carry the ORIGINAL index past the blank filter, so removing row 2 cannot
+// misdirect an edit into row 3.
+const rows = items
+  .map((it, i: number) => ({ i, q: qOf(it).trim(), a: aOf(it).trim() }))
+  .filter((r) => Boolean(r.q || r.a));
+
+// With neither eyebrow nor headline the head column would spend a whole grid
+// track on nothing, so it is omitted and the grid collapses to one.
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="ask" id="faq">
+    <div class="wrap">
+      <div class:list={['ask-grid', !hasHead && 'nohead']}>
+        {hasHead && (
+          <div class="ask-head reveal">
+            {tag && <span class="kick" data-field="faq.tag">{tag}</span>}
+            {headline && <h2 class="h2 ask-h" data-field="faq.headline" set:html={headline}></h2>}
+          </div>
+        )}
+        <div class="ask-list reveal" data-delay="1">
+          {rows.map((row) => (
+            <div class="ask-row">
+              {row.q && <h3 class="ask-q" data-field={`faq.items.${row.i}.q`}>{row.q}</h3>}
+              {row.a && <p class="ask-a" data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+
+<style>
+  /* The section keeps PageBL's shared padding and the cream page ground: the
+     design puts no band under FAQ. min-width:0 so a long unbroken word inside a
+     row can never widen the grid and push the page sideways (R8). */
+  .ask { min-width: 0; }
+
+  /* The design's split, verbatim: a narrow head against a wide answer column.
+     minmax(0,…) on both tracks is what lets the rows shrink instead of
+     overflowing their track. */
+  .ask-grid {
+    display: grid;
+    grid-template-columns: minmax(0, .7fr) minmax(0, 1.3fr);
+    gap: 54px;
+    align-items: start;
+  }
+  .ask-grid.nohead { grid-template-columns: minmax(0, 1fr); }
+
+  .ask-head { min-width: 0; }
+  /* R8 — the head is the narrow track (.7fr), so it runs out of room first. A
+     one-word tag longer than the track would otherwise sit outside it; the
+     wrapper only breaks the .h2 below 760px, and this grid is still two columns
+     down to 900. */
+  .ask-head .kick { max-width: 100%; overflow-wrap: anywhere; }
+  /* The design's headline margin. The wrapper's .h2 ships `0 0 .3em`, which
+     would open a gap under the last line of a head column that has nothing
+     below it. */
+  .ask-h { margin: .26em 0 0; overflow-wrap: anywhere; }
+
+  .ask-list { min-width: 0; }
+
+  /* Every row carries the hairline, the last one included — that is how the
+     design closes the stack against the espresso CTA band beneath it. */
+  .ask-row {
+    border-bottom: 1px solid var(--line);
+    padding: 23px 0;
+    min-width: 0;
+  }
+
+  /* PageBL sets :where(h1,h2,h3,h4) to Fraunces 400 --ink at line-height 1.08.
+     The face, weight and colour are the design's already; only the leading is
+     restated, and it is restated as `normal` because that is literally what the
+     design renders — its h3 carries no line-height and its stylesheet sets none.
+     Guessing a number would be a divergence, and the wrapper's 1.08 would be a
+     visible one the moment an owner's question is longer than the designer's and
+     wraps: at 1.08 the descenders of the first line touch the caps of the
+     second. */
+  .ask-q {
+    font-size: 21px;
+    line-height: normal;
+    margin: 0 0 10px;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* PageBL's `:where(p){margin:0 0 1em}` is (0,1,1); qualifying with the row
+     class puts this above it so the design's zero margin actually lands. The
+     answer is NOT the wrapper's .body primitive: .body is a clamped
+     14.5–15px / 1.75, and the design pins this run at a flat 15px / 1.8. */
+  .ask-row .ask-a {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--ink-soft);
+    max-width: 64ch;
+    overflow-wrap: anywhere;
+  }
+  /* The answer arrives through set:html, so scoped rules cannot reach inside it
+     (R3). An owner's emphasis keeps the answer's own colour: rust on a 15px run
+     inside a paragraph reads as a link that does not work — the template's rust
+     italic is the HEADLINE's signature and stays there. */
+  .ask-row .ask-a :global(em),
+  .ask-row .ask-a :global(i) { font-style: italic; color: inherit; }
+  .ask-row .ask-a :global(strong),
+  .ask-row .ask-a :global(b) { font-weight: 600; color: var(--ink); }
+  /* An owner who pastes a link into an answer gets the rust, underlined on hover
+     only — the same restraint as the wrapper's .linkc, and the same reason: a
+     colour that does not move mid-interaction cannot fail a contrast check. */
+  .ask-row .ask-a :global(a) {
+    color: var(--accent);
+    border-bottom: 1px solid transparent;
+    overflow-wrap: anywhere;
+  }
+  .ask-row .ask-a :global(a:hover) { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── 900 · the head column narrows past legibility before the answers do, so
+        the two tracks fold to one and the headline sits above its own stack. */
+  @media (max-width: 900px) {
+    .ask-grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+  }
+
+  /* ── 520 · nothing may push the page sideways. Both tracks are already
+        minmax(0,…) and every string breaks anywhere; the measure cap comes off
+        so a 64ch answer is not narrower than the phone it is being read on. */
+  @media (max-width: 520px) {
+    .ask-row { padding: 20px 0; }
+    .ask-q { font-size: 19px; }
+    .ask-row .ask-a { font-size: 14.5px; max-width: none; }
+  }
+</style>

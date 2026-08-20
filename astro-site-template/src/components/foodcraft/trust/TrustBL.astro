@@ -1,0 +1,284 @@
+---
+/**
+ * foodcraft / TrustBL — "Kalinaw Coffee"'s proof strip.
+ *
+ * ROLE. The espresso panel the design drops 62px under the hero: a rounded
+ * (16px) dark slab sitting INSIDE the 1240 wrap — not full-bleed — carrying a
+ * four-up grid of centred cells. Each cell is a 30px AMBER Fraunces figure over
+ * a 10px tracked-caps label, with a hairline between the columns. It is the
+ * first thing read after the headline and the band most likely to be believed,
+ * so not one word in it is written by this component.
+ *
+ * EDITABLE HOOKS (both declared by components/editor/genericContentSchema.ts
+ * under the `trust.cells` list spec — live in the sidebar with add / remove /
+ * reorder, maxItems 4):
+ *   trust.cells.${i}.num    — the amber figure. set:html, so an owner's
+ *                             "&lt; 1 hr", "24/7", "₱—" or "6am–6pm" survives
+ *                             escaping.
+ *   trust.cells.${i}.label  — the tracked-caps label under it.
+ * There is no other hook here. A data-field on any path that schema does not
+ * declare is a dead hook that no sidebar input owns.
+ *
+ * DERIVED (computed, never authored by this file):
+ *   · `rows` — the cells that actually carry text, each carrying its ORIGINAL
+ *     array index `i` so a data-field always addresses the real slot. Dropping
+ *     a blank cell 2 must never redirect an edit of cell 3 into it (R6). The
+ *     stagger delay uses the DISPLAY index instead, because it is decoration.
+ *   · `--cols` — the column count follows the DATA, capped at the design's
+ *     four. A hardcoded repeat(4) would strand two empty tracks on a two-fact
+ *     panel and shove the content into the left half of the slab.
+ *
+ * NOT RENDERED, and why:
+ *   · NO eyebrow, NO headline, NO lede, NO button, NO photo. The design's TRUST
+ *     panel has none of them and the schema declares none for `trust`.
+ *   · NO placeholder figure, NO zero, NO em dash. The demo's numbers are the
+ *     DESIGNER filling their own template; a bean-origin count or a roast date
+ *     is a claim only the café may make. lib/derive-content-defaults.ts carries
+ *     no `trust` key at all, so this panel exists only where a human typed.
+ *   · NO section at all when nothing was typed (R5). The gate counts BODY
+ *     content — cells with real text — not a tag or a headline, because this
+ *     band has neither to miscount. lib/astro-builder.ts already forces
+ *     visibility.trustBlock false on a zero-length array; this gate is the belt
+ *     to that brace, catching what the builder cannot see: rows that are
+ *     PRESENT but blank, since the editor's Add button inserts
+ *     { num: '', label: '' } and the builder gates on raw array LENGTH.
+ *   · NO onPage() anchor-remap helper, and that is deliberate rather than an
+ *     oversight: this panel emits no <a> at all, so PAGE_ANCHORS / ANCHOR_ALIAS
+ *     would be unreachable dead code in this one file. The remap belongs in
+ *     every BL section that does emit an href (menu / about / gallery /
+ *     location / faq / main). TrustBK made the same call for the same reason.
+ *   · NO role="img", NO plate, NO cap — there is no image slot in this panel, so
+ *     there is nothing to name (R9). Nothing here is aria-hidden either: the
+ *     figure and the label are both real owner content and are announced
+ *     normally, and there is no decorative numeral or icon to suppress.
+ *   · NO star row, NO rating — this band carries no review, so R2's rating rule
+ *     has nothing to bind to here.
+ *
+ * DECISIONS a reader would otherwise take for a mistake:
+ *
+ *   · `band-dark` sits on the PANEL, not on the <section>. The design paints
+ *     #241A12 on the rounded inner div inside a 1240/32 gutter, and leaves the
+ *     page cream on either side of it. Putting the class on the section would
+ *     flood the full viewport width with espresso — a different drawing. Every
+ *     band-dark rule in PageBL is a DESCENDANT selector, so it reaches the fig,
+ *     the mono and the focus ring from the panel just as well.
+ *
+ *   · The FIGURE is overridden to --band-accent. `:where(.band-dark) .fig` gives
+ *     --bone, which is the wrapper's sensible default for a figure on espresso;
+ *     the design's trust numerals are specifically #E8A33C, the same amber it
+ *     uses for the band eyebrows and the band button. That is the design's
+ *     accent-on-espresso and it is reproduced, not re-derived. amber/band is
+ *     7.91:1. The override needs to beat (0,2,1), so it is written as a
+ *     descendant of .kc-proof-slab — a bare .kc-proof-fig compiles to (0,2,0)
+ *     under this project's `scopedStyleStrategy: "attribute"` and would silently
+ *     lose.
+ *
+ *   · The LABEL is overridden to --bone-soft, and this is the one value in the
+ *     file that is NOT an exact token match, so here is the whole reasoning.
+ *     The design's label is #A2907E (5.54:1 on the band). PageBL declares no
+ *     token with that value — it is an outlier the designer also reuses on the
+ *     CREAM footer bar, a generic quiet-caps colour rather than a band colour.
+ *     The candidates, and why:
+ *        --muted      #948373  nearest in raw RGB (Δ22), and it DOES clear AA
+ *                              on espresso: 4.67:1, where the bar for a 10px
+ *                              label is 4.5. Contrast is not what rules it out.
+ *                              The THEME ENGINE is. --muted is the cream-ground
+ *                              token and lib/genericThemeOverrides.ts rewrites
+ *                              it — `--muted: palette.inkSoft !important` — to
+ *                              a muted ink picked against the SCHEME'S PAPER,
+ *                              so a light scheme prints a near-black label on
+ *                              the espresso slab. It is safe on cream, and only
+ *                              on cream.
+ *        --bone-soft  #B8A795  the band's own quiet-text token, Δ39, one notch
+ *                              LIGHTER than the design's value, 7.31:1 on the
+ *                              band — and it is in the group that override list
+ *                              leaves alone (--bone and its two soft variants
+ *                              are never rewritten), so it survives any scheme.
+ *        --bone-soft-2 #CDBFAD what `:where(.band-dark) .mono` already gives —
+ *                              Δ79, clearly lighter than drawn, and it flattens
+ *                              the design's deliberate step down from the amber
+ *                              figure to the quiet label.
+ *     --bone-soft is the closest of the two BAND-SAFE tokens and it keeps the
+ *     figure/label hierarchy the design draws. If the
+ *     owner's palette is ever given a token at #A2907E, this is a one-line
+ *     change. No literal hex is introduced either way (R1).
+ *
+ *   · An owner's <em> inside `num` is LEFT ITALIC — the opposite of what
+ *     TrustBK does. There the display face (Prata) ships no italic, so an <em>
+ *     only synthesised an oblique digit. Fraunces ships a real italic at 500
+ *     and the italic emphasis IS this template's signature, so it is allowed to
+ *     stand. It inherits AMBER rather than picking up the page's rust `.em`
+ *     colour, because rust on espresso is 1.6:1 and would delete the emphasised
+ *     characters — and it inherits it for free, since `:where(.h2 em)` and
+ *     `:where(.em)` cannot reach a bare <em> inside a .fig. No rule is written,
+ *     so no :global() is needed; had one been, set:html output sits outside
+ *     scoped CSS and would have required it (R3).
+ *
+ *   · The RIGHT-HAND hairline on the LAST cell is the design's. Its sc-for puts
+ *     border-right on every repeated cell, so the strip closes with a short
+ *     vertical rule at the panel edge. Reproduced verbatim rather than
+ *     "tidied" into a border-left-except-first, which is a different drawing.
+ *     `overflow: hidden` on the panel is what the design's border-radius
+ *     implies once that trailing rule exists: without it the hairline runs
+ *     straight past the 16px corner curve and prints two dark ticks on the
+ *     cream page above and below the slab. Nothing in this band is focusable,
+ *     so the clip cannot swallow a focus ring.
+ *
+ *   · The section's padding is `62px 0 0`, not a margin. The design writes
+ *     `margin:62px auto 0`; the section here has no ground of its own (the
+ *     panel carries it), so padding is visually identical and cannot collapse
+ *     out through <main> on a site whose hero block is switched off. The
+ *     wrapper's shared `section { padding: clamp(56px,7.6vw,96px) 0 }` is
+ *     (0,1,1) and a scoped class beats it without !important.
+ *
+ *   · The label's leading is PINNED at 1.3 rather than inherited. The design
+ *     sets no line-height on its caps labels, so in the design document they
+ *     compute to `normal`; PageBL's `body { line-height: 1.7 }` would otherwise
+ *     inflate this 10px line box and print the design's 9px gap under the
+ *     figure as ~13px, and the cell several px taller than drawn.
+ *
+ *   · The label's font-weight is NOT restated. .mono is already 10px / .2em /
+ *     uppercase / var(--sans), which is the design's label treatment; its 500
+ *     is the wrapper's tracked-caps weight and a section restating a primitive
+ *     is how a family drifts apart.
+ *
+ * No id: nothing on the page links to this panel (the BL anchor set is menu,
+ * about, gallery, location, faq, main).
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const trust = content?.trust || {};
+// Tolerate both shapes at every read: the schema's { cells: [...] } and the
+// legacy plain array some older records still store under content.trust.
+const cells: any[] = Array.isArray(trust.cells)
+  ? trust.cells
+  : (Array.isArray(trust) ? trust : []);
+
+const asText = (v: any) => (v === null || v === undefined ? '' : String(v));
+
+// The ORIGINAL index rides along in `i`. Only rows with real text survive, so a
+// half-filled row prints one line and an empty row prints no cell at all — no
+// hairline dividing a column that is not there.
+const rows = cells
+  .map((c: any, i: number) => ({ num: asText(c?.num), label: asText(c?.label), i }))
+  .filter((r) => Boolean(r.num.trim() || r.label.trim()));
+
+// Follow the data, but never widen past the design's four tracks (the schema
+// caps the list at 4 anyway). Anything beyond four wraps to a second row and
+// picks up a horizontal hairline above it.
+const cols = String(Math.min(Math.max(rows.length, 1), 4));
+---
+{rows.length > 0 && (
+  <section class="kc-proof">
+    <div class="wrap">
+      <div class="kc-proof-slab band-dark" style={`--cols:${cols}`}>
+        {rows.map((r, k) => (
+          <div class="kc-proof-cell reveal" data-delay={String(k % 4)}>
+            {r.num.trim() && (
+              <div class="fig kc-proof-fig" data-field={`trust.cells.${r.i}.num`} set:html={r.num}></div>
+            )}
+            {r.label.trim() && (
+              <div class="mono kc-proof-lab" data-field={`trust.cells.${r.i}.label`}>{r.label}</div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour and type come only from the wrapper's token vocabulary
+     (--band --band-rule --band-accent --bone-soft --disp --sans --r-lg, via
+     .band-dark / .fig / .mono). There is not one literal hex in this file. */
+
+  /* The design's TRUST section has no vertical padding of its own — the cells
+     do all of it — and it sits 62px under the hero. See the frontmatter note on
+     why that 62px is padding rather than the design's margin. */
+  .kc-proof { padding: 62px 0 0; }
+
+  /* The rounded espresso slab. --r-lg IS the design's 16px; .band-dark supplies
+     the ground and, by descent, the fig / mono / focus treatments. */
+  .kc-proof-slab {
+    border-radius: var(--r-lg);
+    /* The design's border-radius only reads as a radius once the trailing
+       hairline is clipped to it — see the frontmatter note. */
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+  }
+
+  /* 32px 22px, centred, with the design's hairline on the right of EVERY cell,
+     including the last, which closes the strip at the panel edge. */
+  .kc-proof-cell {
+    min-width: 0;
+    padding: 32px 22px;
+    text-align: center;
+    border-right: 1px solid var(--band-rule);
+  }
+  /* Only reachable if a record predates the schema's maxItems 4 cap. */
+  .kc-proof-cell:nth-child(n + 5) { border-top: 1px solid var(--band-rule); }
+
+  /* .fig already gives Fraunces 400, tabular lining numerals and line-height 1.
+     The design's size is a flat 30px and its colour is the band's amber, not
+     the wrapper's default bone for a figure on espresso — the descendant
+     selector is what beats that (0,2,1) rule. */
+  .kc-proof-slab .kc-proof-fig {
+    font-size: 30px;
+    color: var(--band-accent);
+    /* A pasted URL or an unspaced string must not push the page sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  /* .mono is already 10px / .2em / uppercase / var(--sans), exactly the design's
+     label treatment. Three things are local:
+       · colour — the design's quiet label is DARKER than the wrapper's default
+         for .mono on a band; see the frontmatter note for the full reasoning
+         and the two rejected candidates.
+       · margin-top: 9px — the design's gap under the figure.
+       · line-height: 1.3 — the design's caps labels set no leading, so they
+         compute to `normal` in the design document. PageBL's body 1.7 would
+         leak in, inflate this 10px line box and print that 9px gap as ~13px.
+         1.3 restores the design's rhythm and still lets a longer owner label
+         wrap without the two lines' cap-heights touching. */
+  .kc-proof-slab .kc-proof-lab {
+    color: var(--bone-soft);
+    margin-top: 9px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── This section's OWN responsive pass. The wrapper handles the shared
+        760 / 520 type pass; the grid below is ours (R8). ─────────────────── */
+  @media (max-width: 900px) {
+    /* Two up. The interior vertical rule is now the odd cell's right border and
+       the second pair gains a horizontal one. Every rule is restated rather
+       than left to lapse — (0,2,0) beats (0,1,0) whatever the source order. */
+    .kc-proof-slab { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .kc-proof-cell:nth-child(n + 3) { border-top: 1px solid var(--band-rule); }
+  }
+  @media (max-width: 520px) {
+    /* One column. A 10px label at .2em tracking cannot hold a ~180px half
+       column without splitting mid-word. The trailing right hairline is dropped
+       here: at full width it would draw a stray vertical line down the panel
+       edge instead of dividing anything.
+
+       ONLY the VERTICAL padding moves off the design's 32px 22px, and only
+       because stacking multiplies it: four cells one above the other spend the
+       design's vertical padding four times over. The 22px HORIZONTAL padding is
+       the design's and stays — nothing at this width is pressing on it (the
+       wrap is 92vw, so the cell is ~390px wide).
+
+       The figure stays at the design's flat 30px. It is NOT shrunk: the cell is
+       WIDER one-up at 520 than two-up at 900, where the figure is left alone,
+       so a 520-only reduction would be both a deviation and backwards. Long
+       unbroken strings are already handled by overflow-wrap above. */
+    .kc-proof-slab { grid-template-columns: minmax(0, 1fr); }
+    .kc-proof-cell {
+      padding: 24px 22px;
+      border-right: 0;
+      border-top: 1px solid var(--band-rule);
+    }
+    .kc-proof-cell:first-child { border-top: 0; }
+  }
+</style>

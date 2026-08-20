@@ -1,0 +1,354 @@
+---
+/**
+ * foodcraft / AreaBL — "Kalinaw Coffee" DELIVERY & CATERING (design element
+ * data-component="SERVICE-AREA").
+ *
+ * ROLE: the page's one coverage panel. A café that runs coffee and pastry out
+ * to nearby offices sells that on a plain list of places and — where the owner
+ * gave one — how long each run takes. It is the only section in this template
+ * drawn as a TINTED CARD sitting inside the page gutter: not a band, not the
+ * cream ground, a --paper-2 panel inside a --line hairline.
+ *
+ * DESIGN VALUES, lifted verbatim from "Kalinaw Coffee Landing.dc.html":
+ *   section  padding 76px 0 (the design writes 76px 32px 0; the 32px is its own
+ *            page gutter, which is .wrap here, and the 0 bottom is because its
+ *            siblings are all padding-top-only)
+ *   panel    background #F7EFE1 · 1px #E9DFCF ALL ROUND · radius 16px ·
+ *            padding 42px 40px             → --paper-2 / --line / --r-lg
+ *   head     flex · align-items flex-end · space-between · gap 26px ·
+ *            flex-wrap wrap · margin-bottom 24px
+ *   eyebrow  10px / .42em caps / #B4541F / 600            → .kick
+ *   h2       Fraunces 400 · clamp(24px,2.9vw,36px) · 1.16 · margin .26em 0 0 ·
+ *            #241A12                                      → .h2 + .sa-h2
+ *   note     14.5px / 1.7 / #6B5C4E / max-width 34ch / margin 0 → --ink-soft
+ *   grid     repeat(3, minmax(0,1fr)) · gap 0 32px (no ROW gap — the hairline
+ *            under each row IS the separation)
+ *   row      flex · baseline · gap 12px · padding 12px 0 · border-bottom 1px
+ *            #E5D9C6                       → the wrapper's .rowrule, see below
+ *   place    14.5px / #241A12                             → --ink
+ *   time     margin-left auto · 13px / #B4541F / nowrap    → --accent
+ * Not one hex is written in this file (R1).
+ *
+ * THE ONE HAIRLINE THAT HAS NO TOKEN, and the one decision here worth a second
+ * opinion. The design's row rule is #E5D9C6 and PageBL declares no token with
+ * that value: --line-2 #EDE2D1 (what .rowrule ships), --line #E9DFCF, --line-3
+ * #F2EADC, --line-btn #E0D3C0. This row sits on the TINTED #F7EFE1 panel rather
+ * than on paper, and the design darkens the rule for exactly that reason — the
+ * hairline is the only structure this section has, so its weight is content,
+ * not decoration. Nearest declared value wins: --line-btn is off by (5,6,6) per
+ * channel where .rowrule's --line-2 is off by (8,9,11) and reads noticeably
+ * fainter on the tinted ground. So the row keeps the wrapper's .rowrule for
+ * every metric — flex, baseline, gap 12px, padding 12px 0, min-width 0, which
+ * is character-for-character this design's row — and overrides the ONE property
+ * the design disagrees on. Reverting is deleting one declaration.
+ * (Deliberately NOT argued from "which token survives an admin scheme": --line
+ * is the one of the four that buildOverrideCss remaps, and picking it on that
+ * ground would be re-deriving the palette to suit the engine, which is the
+ * exact move that shipped Kubo Stays looking like a different design.)
+ *
+ * EDITABLE HOOKS (all declared in components/editor/genericContentSchema.ts,
+ * group "area" — a data-field on any other path is a dead hook that no sidebar
+ * input owns)
+ *   area.tag                — the eyebrow
+ *   area.headline           — set:html, so an owner can put this template's
+ *                             signature italic-rust <em> anywhere inside their
+ *                             own sentence
+ *   area.body               — the note beside the headline
+ *   area.rows.${i}.place    — the primary list: place + delivery time
+ *   area.rows.${i}.time
+ *   area.places.${i}        — the FALLBACK list, a list of plain STRINGS. Read
+ *                             only when area.rows has no usable row; rendered
+ *                             place-only, with no time element emitted at all
+ *                             rather than an empty rust slot
+ *
+ * area.body vs area.sub. area.body is the canonical path the schema owns and
+ * the only one hooked. area.sub is READ (never hooked) so a site that stored a
+ * paragraph there before the schema settled still shows it; the first edit
+ * writes area.body, which then wins, so the two can never disagree on screen.
+ * Hooking area.sub instead would emit a dead hook — v3 gates inline editing on
+ * isSchemaEditablePath and the schema does not declare it.
+ *
+ * ANTI-FABRICATION (R2). Not one word here is written by this file. The
+ * design's own list and its "Same-day coffee and pastry runs to these areas.
+ * Office catering needs a day's notice." are the DESIGNER filling in their own
+ * template — a same-day promise and a notice period are operational commitments
+ * for a business nobody has spoken to, so none of it ships. A row with a time
+ * but no place is DROPPED: a lone rust "20 min" asserts a delivery to nowhere.
+ * A row with a place and no time renders the place alone and the time element
+ * is not emitted at all. Every guard sits OUTSIDE its tag, so an empty value
+ * removes the ELEMENT — never a bare hairline under a row that is not there, an
+ * empty rust slot, or a heading over nothing. The head is guarded at BOTH
+ * levels: the whole .sa-head only exists when there is a tag, a headline or a
+ * note (otherwise its 24px bottom margin opens a hole above the list), and its
+ * left half only exists when there is a tag or a headline (an empty flex item
+ * under space-between shoves the note to the far edge of the panel).
+ *
+ * SECTION GATE (R5). lib/derive-content-defaults.ts hard-codes area.tag to
+ * 'Service area' and, for any site with a city, area.headline to `Serving
+ * ${city}` AND area.places to `[city]` — that is essentially every site we
+ * ship. So the gate counts BODY content only, and discounts that one derived
+ * entry:
+ *   · any usable area.rows row (the schema ships area.rows EMPTY, so a filled
+ *     one can only have come from a person), OR
+ *   · TWO OR MORE area.places entries (the owner named a second place), OR
+ *   · an owner-written area.body.
+ * Counting the tag or the headline would print this panel on nearly every build
+ * with a single row echoing the café's own city — the address again, dressed up
+ * as a delivery zone.
+ *
+ * KNOWN EDGE, flagged rather than hidden: when the gate opens on area.body
+ * alone and area.places is still the derived `[city]`, that one city row is
+ * printed. It is true (it is where the café is) and it matches the shipped
+ * behaviour of AreaBJ/AreaBK, so the catalogue stays consistent — but it is the
+ * one place a derived value reaches the page, and requiring two places before
+ * the list draws at all is a one-line change.
+ *
+ * LIST INDEXES (R6). data-field always carries the ORIGINAL array index, so
+ * dropping a blank row 2 cannot misdirect an edit of row 3 into row 2. This
+ * section has no decorative numeral, so no display index is needed.
+ *
+ * SHAPE TOLERANCE. area.rows is a list of objects; a row that arrived as a
+ * plain string is read as its place and still hooked at area.rows.${i}.place,
+ * so the first edit heals the row onto the schema key instead of writing a
+ * second shape.
+ *
+ * NOT RENDERED, deliberately:
+ *   - No id on the section and NO LINKS OF ANY KIND. The design gives
+ *     SERVICE-AREA neither, and this page's ids are menu / about / gallery /
+ *     location / faq / main. Because nothing here emits an href, this file
+ *     carries NO onPage() anchor-remap helper and no PAGE_ANCHORS set (R7): the
+ *     copy that HeaderBL / HeroBL / CtaBandBL / FooterBL share would be dead
+ *     code in a file with nothing to remap. That is an omission on purpose.
+ *   - No button. The design puts no action in this panel, and inventing a
+ *     "Book catering" would be both fabricated copy and an anchor to an id this
+ *     page does not have.
+ *   - No row count asserted in markup or copy. Three tracks because the design
+ *     is three tracks; four or eleven owner-typed places lay out on the same
+ *     tracks without leaving a hole.
+ *   - No map, no radius, no distance unit, no delivery fee. We have no such
+ *     data and every one of them is a commercial claim.
+ *
+ * ACCESSIBILITY (R9). No image and no plate here, so no role="img" anywhere —
+ * and nothing in this section is decorative, so nothing is aria-hidden: the
+ * place and the time are both content and both announced. No element carries a
+ * literal attribute beside a conditional one. The list is a real <ul> AND
+ * carries role="list": the design's rows have no markers, and `list-style:
+ * none` is exactly what makes Safari/VoiceOver drop list semantics, so without
+ * the role the count never reaches assistive tech.
+ *
+ * CONTRAST (sRGB, the design's palette, measured on the --paper-2 panel rather
+ * than on paper — the panel is the ground here):
+ *   --ink on --paper-2 14.9 (the place) · --ink-soft on --paper-2 5.63 (note)
+ *   --accent on --paper-2 4.35 — a hair BELOW AA, and the design's own value.
+ *   It carries only the 13px time beside a place name set at 14.9:1, never a
+ *   sentence. Swapping the time to var(--accent-deep) clears it at 6.4:1 and is
+ *   a one-line change; it is the owner's palette and the owner's call, so this
+ *   file ships the design's rust, the way PageBL ships the design's --muted.
+ *
+ * SCOPING (R3). One scoped style block, no is:global. The headline is fed with
+ * set:html and scoped rules cannot reach elements that set:html creates — which
+ * is why there is no italic-rust rule here: PageBL styles `:where(.h2 em)` from
+ * its global block, so an owner's <em> is emphasised there and a scoped
+ * duplicate would be dead CSS.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const body = area.body || area.sub || '';
+
+type Row = { place: string; time: string; placeField: string; timeField: string };
+
+// PRIMARY: area.rows — place + delivery time. An object row is canonical; a
+// string row is tolerated and still hooked at .place so the first edit heals it.
+const rawRows: any[] = Array.isArray(area.rows) ? area.rows : [];
+const timedRows: Row[] = rawRows
+  .map((r: any, i: number): Row => {
+    const o = r && typeof r === 'object' ? r : { place: r };
+    return {
+      place: String(o.place ?? '').trim(),
+      time: String(o.time ?? '').trim(),
+      placeField: `area.rows.${i}.place`,
+      timeField: `area.rows.${i}.time`,
+    };
+  })
+  // A time with no place is a delivery to nowhere — drop the whole row.
+  .filter((r) => r.place.length > 0);
+
+// FALLBACK: area.places — plain STRINGS. Seven templates already read them as
+// strings, so nothing is reshaped here. Place-only rows; no time element.
+const rawPlaces: any[] = Array.isArray(area.places) ? area.places : [];
+const placeRows: Row[] = rawPlaces
+  .map((p: any, i: number): Row => ({
+    place: String(p ?? '').trim(),
+    time: '',
+    placeField: `area.places.${i}`,
+    timeField: '',
+  }))
+  .filter((r) => r.place.length > 0);
+
+const rows: Row[] = timedRows.length > 0 ? timedRows : placeRows;
+// See SECTION GATE in the block above. Never `rows.length > 0`.
+const show = timedRows.length > 0 || placeRows.length >= 2 || Boolean(body);
+---
+{show && (
+  <section class="sa">
+    <div class="wrap">
+      <div class="sa-panel">
+        {(tag || headline || body) && (
+          <div class="sa-head reveal">
+            {(tag || headline) && (
+              <div class="sa-title">
+                {tag && <span class="kick" data-field="area.tag">{tag}</span>}
+                {headline && <h2 class="h2 sa-h2" data-field="area.headline" set:html={headline}></h2>}
+              </div>
+            )}
+            {body && <p class="sa-note" data-field="area.body">{body}</p>}
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <ul class="sa-list reveal" role="list" data-delay="1">
+            {rows.map((r) => (
+              <li class="rowrule sa-row">
+                <span class="sa-place" data-field={r.placeField}>{r.place}</span>
+                {r.time && <span class="sa-time" data-field={r.timeField}>{r.time}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Design: padding 76px 0. Its siblings are padding-top-only and PageBL gives
+     every section symmetric padding, so the shared rhythm already supplies the
+     trailing gap; only the 76px ceiling is taken here, kept on the wrapper's own
+     7.6vw slope so it never crushes on a phone. Beats the wrapper's
+     `html[data-page="BL"] section` (0,1,2) at (0,2,0) with the scope attribute. */
+  .sa { padding: clamp(56px, 7.6vw, 76px) 0; }
+
+  /* Design: #F7EFE1 · 1px #E9DFCF all round · 16px · 42px 40px. The clamps
+     resolve to exactly 42px / 40px at every width the design was drawn at and
+     only give way below ~725px, where 40px of padding inside a 92vw wrap starts
+     eating the rows themselves. */
+  .sa-panel {
+    background-color: var(--paper-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: clamp(26px, 5.8vw, 42px) clamp(20px, 5.4vw, 40px);
+  }
+
+  /* Design: flex · flex-end · space-between · gap 26px · wrap · mb 24px. */
+  .sa-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 26px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  /* min-width:0 on both halves so a long unbroken owner string shrinks its half
+     instead of widening the panel and pushing the page sideways (R8). */
+  .sa-title { min-width: 0; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .42em tracking, so a
+     single unbroken word is unusually wide for its character count (R8). It is
+     an inline-block, so it takes max-width:100% alongside the wrap — the same
+     pair AboutBL / FaqBL / CredentialsBL put on their own .kick. */
+  .kick { max-width: 100%; overflow-wrap: anywhere; }
+
+  /* Design: Fraunces 400 · clamp(24px,2.9vw,36px) · 1.16 · margin .26em 0 0.
+     DELIBERATELY smaller than the wrapper's .h2 (clamp(31px,4vw,54px)) and with
+     the margin on the TOP rather than the bottom — the design sizes this panel
+     head below a full section head and hangs it off the eyebrow. The wrapper's
+     rule is a :where(), so this class wins with no !important.
+     max-width: none — the design's SERVICE-AREA h2 carries NO measure cap and
+     draws on ONE line at 1240px (the panel's 1096px of inner width holds the
+     headline beside a 34ch note with room to spare), which the wrapper's
+     `.h2 { max-width: 24ch }` would break to two. Releasing it cannot widen the
+     panel: .sa-title is a flex item at min-width:0 and this rule carries
+     overflow-wrap, so a long owner headline shrinks and breaks instead (R8).
+     Same release, same reason, as ServicesBL / CredentialsBL / GalleryBL. */
+  .sa-h2 {
+    font-size: clamp(24px, 2.9vw, 36px);
+    line-height: 1.16;
+    margin: 0.26em 0 0;
+    max-width: none;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 14.5px / 1.7 / #6B5C4E / 34ch / margin 0. Same COLOUR as the
+     wrapper's .body primitive but not the same scale — .body clamps to
+     15px/1.75 and sets no max-width — so the metrics are stated here and the
+     colour still comes from the token. (0,2,0) with the scope attribute, so it
+     beats the wrapper's (0,1,1) bare-paragraph margin reset. */
+  .sa-note {
+    margin: 0;
+    min-width: 0;
+    max-width: 34ch;
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: repeat(3, minmax(0,1fr)) · gap 0 32px. The ZERO row gap is the
+     design: the hairline under each row is the separation, and a row gap would
+     open a space between a rule and the row beneath it. minmax(0,1fr) rather
+     than 1fr so a long place name cannot widen its track. */
+  .sa-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 32px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* Flex, baseline, 12px gap, 12px 0 padding and min-width:0 all come from the
+     wrapper's .rowrule, which is character-for-character this design's row. Only
+     list-item chrome and the ONE hairline value the design disagrees on are set
+     here — see THE ONE HAIRLINE THAT HAS NO TOKEN in the frontmatter. */
+  .sa-row {
+    list-style: none;
+    border-bottom-color: var(--line-btn);
+  }
+
+  .sa-place {
+    font-size: 14.5px;
+    color: var(--ink);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  /* Design: margin-left auto · 13px · #B4541F · nowrap. No font-family: the
+     design leaves it on Space Grotesk, so this is NOT .fig — .fig is the serif
+     figure this template uses for prices and numerals elsewhere. */
+  .sa-time {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* R8 · this section owns its own grid. Three tracks are the design and they
+     must not survive past 900px, where a 32px gutter leaves a place name and its
+     time fighting over the same line. */
+  @media (max-width: 900px) {
+    .sa-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 26px; }
+  }
+  @media (max-width: 620px) {
+    .sa-list { grid-template-columns: minmax(0, 1fr); }
+    .sa-head { gap: 18px; margin-bottom: 20px; }
+    .sa-note { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    .sa-place { font-size: 14px; }
+    /* Release the design's nowrap at the one width where a long owner-typed
+       time ("about 25 minutes on a good day") would push the viewport sideways.
+       Above 520px the tracks are wide enough for it to hold on one line. */
+    .sa-time { white-space: normal; overflow-wrap: anywhere; text-align: right; }
+  }
+</style>

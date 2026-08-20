@@ -1,0 +1,529 @@
+---
+/**
+ * foodcraft / CtaBandBL — "Kalinaw Coffee" CLOSING CTA BAND
+ * (design element data-component="CTA-BAND").
+ *
+ * ROLE. The last ask on the page and the only place the design puts copy and a
+ * photograph side by side with no gutter between them: a two-column espresso
+ * band, the darkest ground in the template, carrying an amber eyebrow, the
+ * largest Fraunces line after the h1, one sentence, and exactly two ways to act
+ * — the owner's own CTA in amber and the owner's own phone number in the
+ * outlined secondary — with a wide café photograph filling the other half edge
+ * to edge.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * the element carrying data-component="CTA-BAND" in
+ * "Kalinaw Coffee Landing.dc.html":
+ *
+ *   section     background #1C130C                       → --band-deep
+ *               (NOT #241A12: this band is a shade deeper than the How band,
+ *                which is what separates the closing ask from the mid-page one.
+ *                --band-deep is that exact value, so this file states a token,
+ *                not a hex, and the wrapper's `band-dark` still supplies every
+ *                text and button flip that goes with an espresso ground.)
+ *   container   max-width 1240px, centred, NO padding of its own
+ *               (NOT .wrap — see THE CONTAINER below)
+ *   grid        minmax(0,1.05fr) minmax(0,.95fr); align-items:stretch
+ *   copy cell   padding 96px 44px 96px 32px;
+ *               display:flex; flex-direction:column; justify-content:center
+ *   eyebrow     10px / .42em caps / #E8A33C / 600         → .kick on .band-dark
+ *   h2          Fraunces 400, clamp(34px,4.4vw,62px), lh 1.05,
+ *               margin .22em 0 .32em, #FBF6EC, and — like GALLERY's — NO
+ *               max-width                                → .h2 on .band-dark
+ *   sub         17px / 1.75 / #CDBFAD, margin 0 0 30px, max-width 40ch
+ *                                                        → --bone-soft-2
+ *   actions     flex, gap 12px, wrap, align-items center
+ *   primary     btnAmber — #E8A33C fill, #241A12 label, 12px/.15em caps,
+ *               16px 32px, 100px radius                  → .btn.btn--band-accent
+ *   secondary   1px rgba(251,246,236,.4), #FBF6EC label, same type,
+ *               16px 30px, 100px radius                  → .band-dark .btn--line
+ *   photo cell  position:relative; min-height 440px; background #2A1E14
+ *                                                        → .plate + --band-well
+ *
+ * NO LITERAL HEX APPEARS IN THIS FILE (R1). Every colour the design names
+ * already has a wrapper token holding the same value: #1C130C is --band-deep,
+ * #2A1E14 is --band-well, #E8A33C is --band-accent, #FBF6EC is --bone, #CDBFAD is
+ * --bone-soft-2, rgba(251,246,236,…) is rgba(var(--bone-rgb),…), 100px is
+ * --r-pill. btnAmber is character-for-character the wrapper's .btn--band-accent and
+ * the outlined action is character-for-character `.band-dark .btn--line` apart
+ * from its 30px side padding, so this file adds exactly ONE button declaration.
+ *
+ * ── EDITABLE HOOKS (each one DECLARED in components/editor/genericContentSchema.ts,
+ *    so every data-field below is a hook a real sidebar input owns) ──────────
+ *   ctaBand.tag        — the amber eyebrow (.kick)
+ *   ctaBand.headline   — the h2, bound with set:html so an owner's own <em>
+ *                        takes the template's signature italic anywhere inside
+ *                        THEIR sentence (on a band that italic is AMBER, not
+ *                        rust — the wrapper owns that rule, see R3 below)
+ *   ctaBand.sub        — the one sentence under it
+ *   ctaBand.cta.text + data-href-field ctaBand.cta.href — the amber action
+ *   location.phone     — the outlined action (data-field ONLY, see THE PHONE)
+ *   ctaBand.image      — data-image-field, the right half's photograph
+ * Nothing else. A data-field on any other path is a dead hook that no sidebar
+ * input owns and that focuses nothing, so no other path is written here.
+ *
+ * ── DERIVED, never stored and never editable ────────────────────────────────
+ *   · the CTA's href, resolved through onPage() against the ids PageBL actually
+ *     mounts, and its target/rel pair — one conditional per attribute, so
+ *     neither is ever emitted twice
+ *   · the tel: href, built from the phone's OWN digits
+ *   · whether the band is two columns or one — see THE EMPTY HALF
+ *
+ * ── NOT SUPPLIED BY THIS COMPONENT (R2) ─────────────────────────────────────
+ * NOT ONE VISIBLE WORD. The design's demo strings — "See you in the morning",
+ * "Save yourself the queue.", "Message us your order and a pickup time…" and
+ * the slot's "Drop a wide café photo" — are the DESIGNER filling in their own
+ * template. A real business gets a closing band that says only what that
+ * business said, so every guard sits OUTSIDE its tag: no amber eyebrow over
+ * nothing, no headline above an empty column, no action row with no actions in
+ * it, and no tinted rectangle standing in for a photograph nobody uploaded.
+ *
+ * ── NOT RENDERED, deliberately ──────────────────────────────────────────────
+ *   · No id on the <section>. This page's anchors are menu / about / gallery /
+ *     location / faq / main; the design gives CTA-BAND none of them and no nav
+ *     link points at it, so inventing one would add a target nothing aims for.
+ *     A derived '#book' resolves to '#main' through ANCHOR_ALIAS below.
+ *   · No aria-label on the <section>. Naming it would make it a landmark
+ *     announced with a word I wrote; the h2 already titles the region.
+ *   · No target="_blank" on the amber action. The design hard-codes one because
+ *     its demo href is an external messaging URL, but here the same button may
+ *     resolve to '#location', and opening an in-page anchor in a new tab is a
+ *     bug. It is emitted for http(s) ONLY — same rule as HeaderBL.
+ *   · The design's `margin-top:96px`. In that file every section is
+ *     padding-top-only with a bare bottom, so the band owns the gap above it.
+ *     PageBL instead declares a symmetric shared `section` rhythm, and the
+ *     section that precedes this one — FaqBL — ships with that shared padding
+ *     intact (`.ask` overrides nothing vertical), so its own bottom padding
+ *     already IS that 96px. Adding the design's margin on top would open a
+ *     ~192px hole above the band. (HowBL makes the OPPOSITE call for its own
+ *     band, and correctly: GalleryBL above it zeroes its bottom padding to keep
+ *     the design's bare-bottom mosaic, so there the margin is the only thing
+ *     holding the two apart and HowBL carries it. FaqBL zeroes nothing.)
+ *
+ * ── THE CONTAINER ───────────────────────────────────────────────────────────
+ * The grid is NOT wrapped in .wrap, which is the one place this section departs
+ * from the family's habit. .wrap is min(--maxw, 92vw) — the family's stand-in
+ * for the "1240px box with 32px of padding" that every OTHER section in this
+ * design has. This band's container is the one that carries NO padding: the
+ * design moved that 32px inside the copy cell precisely so the photograph could
+ * run to the container's edge. Wrapping it would apply the page gutter twice —
+ * once as 4vw of espresso down both edges of the band, again as the copy cell's
+ * 32px — which stops the picture 4vw short of the edge on every viewport under
+ * ~1348px and pushes the closing copy 32px right of every other section's text.
+ * So the container states the design's own two values (--maxw, centred).
+ *   · The wrapper's shared `section` padding, which is zeroed here. The design
+ *     puts ALL of this band's inset inside the copy cell (96px block) precisely
+ *     so the photograph can reach the band's top and bottom edges; keeping the
+ *     shared padding would float the picture in a 96px espresso frame and lose
+ *     the flush half that is the whole point of the layout.
+ *   · .reveal on the PHOTOGRAPH. The copy stack reveals like the rest of the
+ *     family, but the photo is a full-height ground: translating it 14px would
+ *     slide a sliver of --band-deep out from under it on every scroll-in.
+ *   · A star row, a rating, a count, or any other number. Nothing in this band
+ *     is a claim, so there is nothing here to fabricate.
+ *
+ * ── SECTION GATE (R5) ───────────────────────────────────────────────────────
+ * The band renders when it has BODY content: an action (the CTA label or a
+ * phone number), the sentence, or the photograph. It deliberately does NOT
+ * count the eyebrow or the headline — lib/derive-content-defaults.ts fills
+ * ctaBand.headline with "Ready when you are." on EVERY site, so a gate that
+ * counted it would be a no-op that ships a headline with nothing under it.
+ * derive also fills ctaBand.cta.text ('Get in touch') unconditionally, which is
+ * why the band does in practice render on a stock build — but that is a real,
+ * working action pointed at a real id on this page, not a decoration, and an
+ * owner who clears it and supplies no phone, no sub and no photo drops the
+ * whole <section> from the document rather than being left with a lone line of
+ * type on an espresso slab.
+ *
+ * ── THE EMPTY HALF ──────────────────────────────────────────────────────────
+ * The design is two columns because the designer filled both. Either half can
+ * be empty on a real site, so each cell is guarded independently and the grid
+ * drops to a single 1fr track whenever only one of them exists. Without that,
+ * an owner with no photograph would get their closing ask squeezed into the
+ * left 52% of the band with a bare espresso rectangle beside it — a layout the
+ * design never draws and that reads as a broken image. In the one-column case
+ * the copy cell's right padding comes back to the design's own 32px page
+ * gutter, so the text is not left visibly off-centre by the 44px that only
+ * existed to hold it off the photograph.
+ *
+ * ── THE PHONE ───────────────────────────────────────────────────────────────
+ * THE PHONE ANCHOR CARRIES data-field ONLY — no data-href-field. Its href is
+ * DERIVED from the field's own value, so a data-href-field there would write
+ * "tel:+63…" back into the phone field on the first inline edit; V3 also bails
+ * out of inline editing on tel:/mailto: anchors and on anything carrying
+ * data-href-field. This is the family's single documented exception to "every
+ * anchor gets both", and it is the same exception CtaBandBK ships.
+ *
+ * ITS READ CHAIN is content.location.phone || content.contact.phone, which is
+ * exactly what the sidebar's Location → Phone input reads (the schema declares
+ * location.phone with fallbackPaths ['contact.phone'] and writes back to the
+ * primary), so the rendered number and the field this hook opens are always the
+ * same value. layout.contact.phone — the display-formatted mirror the builder
+ * derives — is deliberately NOT preferred: astro-builder formats
+ * content.contact.phone and ignores location.phone entirely, so on a site whose
+ * owner typed a number into Location it would render a DIFFERENT number from
+ * the one the hook edits.
+ *
+ * WHY A location.* HOOK IS SAFE HERE. editorBridge resolves a Blocks toggle to
+ * the ONE section holding the most hooks of that prefix and hides only that
+ * node. This page's location.* census is LocationBL (tag, headline, address,
+ * hours, phone…), FooterBL (phone, address) and this band (1), so "hide
+ * LOCATION" resolves to the Location section and keeps resolving there after
+ * the owner hides it — a live toggle only sets display:none, so Location's
+ * hooks stay in the DOM and keep winning. FOR REVIEW: the edge is a TIE, on a
+ * preview where visibility.locationBlock is already false AND the footer holds
+ * only one location.* hook; editorBridge compares with a strict `>`, so the
+ * first host scored (this band, which sits in <main> ahead of the footer) would
+ * keep the win and re-toggling Location would blank the closing band. That is
+ * preview-only — the published build re-renders from the visibility flags — and
+ * dropping the hook would cost the number its inline edit on every site to
+ * spare that one, so the hook stays.
+ *
+ * ── ACCESSIBILITY (R9) ──────────────────────────────────────────────────────
+ * The photograph is aria-hidden, with a LITERAL unconditional attribute and no
+ * conditional aria-* beside it to collide with. role="img" is not emitted:
+ * there is no owner-typed caption anywhere in the ctaBand group, so the only
+ * name available would be a literal I invented or the business name the header
+ * has already announced. R9 says hide it rather than announce it as something,
+ * so it is hidden. (Contrast AboutBL, which has about.signature to name its
+ * photograph with, and CtaBandBL, which has nothing.)
+ * The tel: link's accessible name is the owner's own number and nothing else —
+ * no "Call …" prefix I wrote. The amber action's name is the owner's own label.
+ * FOCUS: the wrapper's band focus ring (espresso outline inside an amber halo)
+ * applies here unchanged. Its outline is --band rather than --band-deep, one
+ * shade off this ground; restating it would fight a primitive the wrapper owns
+ * for a difference invisible inside a 6px amber halo, so it is left alone.
+ *
+ * ── CONTRAST, on this band's own ground (#1C130C, sRGB relative luminance) ──
+ *   --bone headline / outlined label  16.99:1
+ *   --bone-soft-2 sub-line            10.15:1
+ *   --band-accent eyebrow                    8.48:1
+ *   --band label on the --band-accent fill   8.42:1 (the wrapper's measured figure —
+ *                                      the label sits on amber, not on the band,
+ *                                      so the deeper ground does not change it)
+ * Every one of those is above AA at any size. The band is DEEPER than the ground
+ * the wrapper measured its band tokens against, so each ratio is better here
+ * than on the How band, never worse.
+ *
+ * ── CLASS-NAME LAW (R4, not inferable, do not "tidy") ───────────────────────
+ * The section is .kc-close, NEVER .cta-band: buildOverrideCss emits
+ * `.cta-band .btn { color: <on-ink> !important }` for every state and would
+ * strand both labels here. Buttons are .btn + .btn--band-accent / .btn--line (double
+ * dash) for the same reason. Never .btn-primary / .btn-ghost / .btn-yellow /
+ * .btn-light / .nav-cta / .nav-right / .trust / .testi in this family, and
+ * never `.hero` on a <section>.
+ *
+ * ── R3 ──────────────────────────────────────────────────────────────────────
+ * One scoped <style> block, no is:global. The headline is bound with set:html,
+ * and elements created that way cannot be reached by a scoped rule — which is
+ * fine, because the <em> inside it needs no rule from this file: PageBL's own
+ * `:where(.band-dark) .h2 em { color: var(--band-accent) }` is global and already
+ * turns the signature italic amber on this ground.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// ── ANCHOR GUARD ───────────────────────────────────────────────────────────
+// Copied verbatim from the HeaderBL sibling and pointed at THIS page.
+// lib/derive-content-defaults.ts hard-codes ctaBand.cta.href = '#visit', an id
+// no page in this family renders, so without this the last button on the page
+// would scroll nowhere on every first build. Resolve every in-page href against
+// what PageBL ACTUALLY draws: keep it when the id exists, remap it when this
+// design carries the same block under another name, otherwise fall back to the
+// target the design was built around. Off-page hrefs — tel:, mailto:, http(s)
+// and anything else without a leading '#' — pass through untouched.
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBL and with the copies in
+// HeaderBL, HeroBL, ServicesBL, WhyBL and FooterBL. There is no shared import by
+// design (a section component in this repo receives only `content` + `layout`);
+// the copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'location', 'faq', 'main']);
+// This design renames four derived targets: the services block IS the menu
+// (rooms lands there too), '#about' is the café's own story (host and why are
+// the same block here), '#work' is the photo wall, and '#visit' / '#contact'
+// both mean the location block — address, map and opening hours. A booking link
+// has no checkout to reach on this page, so it lands on <main>.
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'location',
+  host: 'about',
+  rooms: 'menu',
+  services: 'menu',
+  visit: 'location',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const c = (content as any) || {};
+const cta = c.ctaBand || {};
+
+// `||`, never `??`: an owner who CLEARS a box leaves '' behind, and the sidebar
+// treats '' as empty too. With `??` the empty string would be a value and the
+// element would render blank instead of being dropped.
+const tag = String(cta.tag || '').trim();
+const headline = String(cta.headline || '').trim();
+const sub = String(cta.sub || '').trim();
+
+// The hook is always ctaBand.image, the path the sidebar's image picker writes.
+// The quote escape keeps a filename with an apostrophe from closing the url('')
+// early and killing the whole declaration.
+const bandImage = String(cta.image || '').trim();
+const bandImageCss = bandImage.replace(/'/g, '%27');
+
+const ctaText = String(cta.cta?.text || '').trim();
+// '#location' is the fallback because that is where this design puts the
+// address, the map and the hours — the thing a derived '#visit' was aiming at.
+const ctaHref = onPage(cta.cta?.href, '#location');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+// See THE PHONE'S READ CHAIN in the doc comment.
+const phone = String(c.location?.phone || c.contact?.phone || '').trim();
+const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : '';
+
+const hasActions = Boolean(ctaText || phone);
+const hasCopy = Boolean(tag || headline || sub || hasActions);
+// SECTION GATE (R5) — body content only: an action, the sentence, or the photo.
+// Neither the eyebrow nor the headline counts; see the doc comment.
+const hasBand = Boolean(hasActions || sub || bandImage);
+// One column whenever a half is missing; see THE EMPTY HALF.
+const solo = !(hasCopy && bandImage);
+---
+{hasBand && (
+<section class="kc-close band-dark">
+  <div class:list={['kc-close-grid', solo && 'solo']}>
+    {hasCopy && (
+      <div class="kc-close-copy reveal">
+        {tag && <span class="kick kc-close-kick" data-field="ctaBand.tag">{tag}</span>}
+        {/* set:html so the owner's own <em> lands where THEY put it in THEIR
+            sentence; the amber italic is PageBL's global band rule (R3). */}
+        {headline && <h2 class="h2 kc-close-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+        {sub && <p class="kc-close-sub" data-field="ctaBand.sub">{sub}</p>}
+        {hasActions && (
+          <div class="kc-close-acts">
+            {ctaText && (
+              <a
+                class="btn btn--band-accent"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="ctaBand.cta.text"
+                data-href-field="ctaBand.cta.href"
+              >{ctaText}</a>
+            )}
+            {/* data-field ONLY — no data-href-field. See THE PHONE. */}
+            {phone && (
+              <a class="btn btn--line kc-close-tel" href={telHref} data-field="location.phone">{phone}</a>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+    {/* No upload ⇒ no cell at all, rather than a tinted rectangle standing in
+        for a picture nobody supplied. The ground, the clip and the positioning
+        context all arrive with .plate; this file states only what the design
+        changes about them (flush corners, a 440px floor, the band's own well). */}
+    {bandImage && (
+      <div class="plate kc-close-shot">
+        <div
+          class="ph kc-close-ph"
+          data-image-field="ctaBand.image"
+          style={`background-image:url('${bandImageCss}');`}
+          aria-hidden="true"
+        ></div>
+      </div>
+    )}
+  </div>
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBL's token vocabulary
+     (--band-deep --band-well --bone --bone-soft-2 --band-accent --bone-rgb --maxw)
+     and from
+     its shared primitives (.kick .h2 .plate .ph .btn .btn--band-accent
+     .btn--line .band-dark .reveal). There is no literal hex in this file.
+
+     SPECIFICITY NOTE: PageBL wraps its primitives in :where(), so a scoped rule
+     here scores (0,2,0) against the wrapper's (0,1,1) — including inside the
+     wrapper's OWN media queries. Anything overridden below must therefore be
+     restated at every breakpoint this file touches, which is why the headline
+     size and the secondary button's side padding both reappear at 520px. */
+
+  /* The espresso ground, the amber eyebrow, the bone .h2 and both button
+     treatments all arrive from the wrapper's one `band-dark` class; this file
+     must not restate any of them. It overrides exactly two things at section
+     level:
+       1. the GROUND, from --band to --band-deep. The design draws this band a
+          shade deeper than the How band and --band-deep is that exact value.
+       2. the shared vertical padding, to ZERO. The design's inset lives inside
+          the copy cell so the photograph can reach the band's edges.
+     No margin-top — the reasoning is in the frontmatter. */
+  .kc-close {
+    background-color: var(--band-deep);
+    padding: 0;
+  }
+
+  /* THE CONTAINER, exactly as the design draws it: capped at --maxw (the
+     wrapper's token, holding the design's own 1240px, so no literal measure is
+     written here), centred, and carrying NO gutter of its own — that is what
+     lets the photograph run to the band's edge below the cap, which is the
+     whole point of a flush half. The 32px page gutter lives on the copy cell.
+     Deliberately NOT .wrap; the reasoning is in the frontmatter. */
+  .kc-close-grid {
+    width: 100%;
+    max-width: var(--maxw);
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+    align-items: stretch;
+  }
+  /* One half missing ⇒ one track. See THE EMPTY HALF in the frontmatter. */
+  .kc-close-grid.solo { grid-template-columns: minmax(0, 1fr); }
+
+  /* Design: padding 96px 44px 96px 32px, flex column, centred. min-width:0 so a
+     long unbroken word inside it can never widen the track (R8). */
+  .kc-close-copy {
+    padding: 96px 44px 96px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+  /* The 44px only ever existed to hold the copy off the photograph. Two classes,
+     so this scores a class ABOVE the plain `.kc-close-copy` padding below and
+     survives into both media queries — which is why the 520 pass restates it
+     rather than relying on its own shorthand to land. */
+  .solo .kc-close-copy { padding-right: 32px; }
+
+  /* The eyebrow is owner-typed and set in 10px caps at .42em tracking: one
+     unbroken word would otherwise be the widest thing on the page (R8). */
+  .kc-close-kick {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: Fraunces clamp(34px,4.4vw,62px)/1.05, margin .22em 0 .32em — the
+     biggest line on the page after the h1. This is one of the two headlines the
+     design leaves uncapped, so the wrapper's `.h2 { max-width: 24ch }` is
+     released; the copy column is the measure. Face, weight, colour and the
+     amber italic <em> all still come from .h2 + .band-dark. */
+  .kc-close-h {
+    font-size: clamp(34px, 4.4vw, 62px);
+    line-height: 1.05;
+    margin: .22em 0 .32em;
+    max-width: none;
+  }
+
+  /* Design: 17px / 1.75 / #CDBFAD, margin 0 0 30px, max-width 40ch. Written out
+     rather than borrowing .lede or .body, which are a different colour
+     (--bone-soft), size, leading and measure on a band — every value would have
+     been overridden anyway. Qualified by its own class so it beats the
+     wrapper's (0,1,1) bare-paragraph margin reset. */
+  .kc-close-sub {
+    font-size: 17px;
+    line-height: 1.75;
+    color: var(--bone-soft-2);
+    margin: 0 0 30px;
+    max-width: 40ch;
+  }
+
+  /* Design: flex, gap 12px, wrap, align-items center. */
+  .kc-close-acts {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  /* Design: the outlined action is the shared band button at 30px of side
+     padding rather than 32px — the ONLY metric in which it differs from
+     `.band-dark .btn--line`. This is the one button declaration in the file. */
+  .kc-close-tel {
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+
+  /* THE PHOTO HALF. Design: position:relative, min-height 440px, ground
+     #2A1E14, and the slot filling it. .plate brings the positioning context,
+     the clip and the isolation; only the three things the design changes are
+     stated — flush corners (this is a flush half, not a framed plate), the
+     440px floor that keeps the band tall even under short copy, and the band's
+     own well in place of the cream one.
+     align-items:stretch on the grid is what makes it match the copy's height. */
+  .kc-close-shot {
+    min-height: 440px;
+    border-radius: 0;
+    background-color: var(--band-well);
+  }
+  /* Two classes deep on purpose: the wrapper's `:where(.plate) .ph` scores one
+     element more than a single scoped class would, so `.kc-close-ph` alone
+     would lose to it. The inline background-image always wins over the
+     primitive's empty-state washes, so this only has to correct the ground a
+     transparent or still-loading photo shows through — cream inside an espresso
+     band would read as a hole. Restating cover/center costs nothing and means
+     the photograph cannot letterbox if that primitive is ever narrowed. */
+  .kc-close-shot .kc-close-ph {
+    background-color: var(--band-well);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* ── R8 · this section's OWN grid ───────────────────────────────────────────
+     The two columns collapse at 900px, where 1.05fr of a 92vw wrap has run out
+     of measure for a 62px display line. DOM order is kept (copy, then photo) so
+     the reading order and the visual order stay the same — no `order` juggling.
+     The photo's 440px floor exists to match a two-column copy cell; stacked and
+     full-width it is a standalone band photograph, and 440px of it on a phone is
+     a crop nobody framed, so the floor comes down with the layout. */
+  @media (max-width: 900px) {
+    .kc-close-grid { grid-template-columns: minmax(0, 1fr); }
+    .kc-close-copy { padding: clamp(56px, 9vw, 80px) 32px; }
+    .kc-close-h { font-size: clamp(30px, 5.6vw, 46px); }
+    .kc-close-sub { font-size: 16.5px; max-width: none; }
+    .kc-close-shot { min-height: 320px; }
+  }
+
+  /* Nothing may push the page sideways at 360px: long unbroken strings break
+     anywhere, and a long uppercase label wraps inside a full-width button
+     instead of widening the row. The design's 32px gutter costs a fifth of the
+     measure on the narrowest phones, so it comes in to 24px here. */
+  @media (max-width: 520px) {
+    .kc-close-copy { padding: clamp(48px, 12vw, 64px) 24px; }
+    /* Restated, not inherited: `.solo .kc-close-copy` is a class heavier than
+       the shorthand above it, so without this a photoless band on a phone keeps
+       32px on the right against 24px on the left and sits visibly off-centre. */
+    .solo .kc-close-copy { padding-right: 24px; }
+    .kc-close-h {
+      font-size: clamp(27px, 8vw, 34px);
+      overflow-wrap: anywhere;
+    }
+    .kc-close-sub {
+      font-size: 16px;
+      margin-bottom: 26px;
+      overflow-wrap: anywhere;
+    }
+    .kc-close-acts {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 11px;
+    }
+    .kc-close-acts .btn {
+      width: 100%;
+      white-space: normal;
+      text-align: center;
+    }
+    /* Re-join the wrapper's 520 pass: without this the secondary keeps its 30px
+       sides while the amber primary drops to 24px. */
+    .kc-close-tel {
+      padding-left: 24px;
+      padding-right: 24px;
+    }
+    .kc-close-shot { min-height: 260px; }
+  }
+</style>

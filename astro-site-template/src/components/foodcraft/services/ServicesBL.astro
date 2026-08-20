@@ -1,0 +1,313 @@
+---
+/**
+ * foodcraft / ServicesBL — "Kalinaw Coffee": THE MENU.
+ *
+ * ROLE. The design's SERVICES element (id="menu"), verbatim: a split head —
+ * eyebrow + display h2 on the left, one paragraph on the right, both sitting on
+ * the same bottom edge — over a THREE-CARD GRID. Each card is a white plate
+ * inside a warm hairline: an italic rust numeral and a tracked-caps tag on one
+ * baseline across the top, then the dish name, then its blurb, then a foot
+ * pinned to the bottom of the card by `margin-top:auto` and separated by a
+ * paler hairline, carrying a small detail line left and the price hard right.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Nothing below is re-derived. The 30px head
+ * gap and 36px head margin, the 20px grid gutter, the 28px/26px card padding,
+ * the 9px card gap, the 16px foot offset, the 19px numeral, the 24px/1.15 card
+ * heading, the 14px/1.72 blurb, the 12px detail and the 16px/500 price are the
+ * design's own numbers, mapped hex-for-token: #FFFFFF --card · #E9DFCF --line ·
+ * #F2EADC --line-3 · 16px --r-lg · #B4541F --accent · #241A12 --ink · #6B5C4E
+ * --ink-soft · #948373 --muted. No literal hex appears in this file (R1).
+ *
+ * EDITABLE HOOKS — every one is declared in components/editor/
+ * genericContentSchema.ts's `services` group, so none is a dead hook:
+ *   services.tag                — eyebrow (.kick)
+ *   services.headline           — h2, set:html so an owner's <em> becomes the
+ *                                 design's italic rust emphasis
+ *   services.sub                — the head's right-hand paragraph
+ *   services.items.${i}.title   — the card h3
+ *   services.items.${i}.desc    — the card paragraph
+ *   services.items.${i}.tag     — the tracked-caps tag, top right of the card
+ *   services.items.${i}.note    — the small detail line in the card foot, left
+ *   services.items.${i}.price   — the price in the card foot, right
+ *
+ * DERIVED, AND ONLY THIS. The card numeral ("01", "02", …) is built from the
+ * DISPLAY index, is aria-hidden decoration and is stored nowhere — the design
+ * computes it the same way (`String(i+1).padStart(2,'0')`). Every other glyph on
+ * this section is a string the owner typed.
+ *
+ * NOTHING IS SUPPLIED BY THIS FILE (R2). The design's demo cards — "Espresso
+ * bar", "Single-origin pour-over", "Beans to take home", "250g bag", ₱145,
+ * "All day" — are the DESIGNER filling their own template. A drink nobody
+ * sells is an invented drink and a price nobody quoted is an invented price, so
+ * not one of them is a fallback here. The price is printed VERBATIM: never
+ * converted, never prefixed with a currency symbol this file chose, never
+ * totalled or compared. Every guard sits OUTSIDE its element, so an empty value
+ * removes the ELEMENT and not just its text — no empty tag pill, no heading over
+ * nothing, and no foot hairline drawn under a foot that carries neither a detail
+ * line nor a price.
+ *
+ * NOT RENDERED, DELIBERATELY:
+ *   · No button, anywhere. The design's menu cards carry no link and the section
+ *     carries no action — the page's actions live in the header, the hero and
+ *     the CTA band. So services.ctaLabel / services.ctaHref are left to the
+ *     templates that actually draw a per-card button; emitting them here would
+ *     put a live sidebar input on a control this page does not have.
+ *   · NO ANCHOR HELPER (R7). Because the section draws no link at all, a copy of
+ *     the sibling's onPage() remap would be unreachable code, and inventing a
+ *     button to give it a job is the exact trade the family rule forbids. If a
+ *     link is ever added here, copy onPage() from ServicesBK with
+ *     PAGE_ANCHORS = {menu, about, gallery, location, faq, main} and
+ *     ANCHOR_ALIAS = {visit/contact → location, services/rooms → menu,
+ *     host/why → about, work → gallery, book → main}.
+ *   · No card image, rating, meta line, unit or feature chips. The design's card
+ *     is numeral / tag / title / blurb / detail / price and nothing else. Those
+ *     schema fields belong to the zig-zag and card templates; a data-field for
+ *     something this section never draws is an input that changes nothing.
+ *   · No star anywhere. This section prints no rating, so it makes no rating
+ *     claim. (Family rule: N stars are drawn only from a numeric rating field,
+ *     clamped 1–5, aria-hidden with the number itself announced — never five
+ *     stars over a review that carried none.)
+ *   · services.headline is the only set:html field. The card h3 is plain text,
+ *     as the design prints it — and a set:html child could not be reached by
+ *     this scoped block anyway (R3).
+ *
+ * THE CARD FILTER. A card counts as real when it carries a title, a desc, a tag,
+ * a note OR a price — the five things this card can draw. All five are counted
+ * on purpose: each is a string an owner typed into a live input, so dropping a
+ * card that holds only a price would silently delete their number. A row holding
+ * none of them is an empty "+ Add" row, and it would spend a numeral, a hairline
+ * and a whole plate on nothing visible.
+ *
+ * INDEXES (R6). Blank rows are dropped, but every data-field carries the row's
+ * ORIGINAL array index, so deleting card 2 cannot misdirect an edit into card 3.
+ * The numeral — decoration — uses the DISPLAY index, so the grid always reads
+ * 01, 02, 03 with no gaps.
+ *
+ * SECTION GATE (R5). lib/derive-content-defaults.ts fills services.tag,
+ * services.headline AND services.sub on every site (it derives the sub from the
+ * business name), so gating on any of those would ship a heading and a paragraph
+ * over an empty grid. The gate counts BODY content only: at least one real card.
+ * There is no photo or panel in this section to count alongside them.
+ *
+ * THE ITALIC NUMERAL DECLARES WEIGHT 500 where the design leaves it inherited at
+ * 400 — and that is not a re-derivation, because it is what the design already
+ * renders. The design and this template load the SAME font link, whose only
+ * italic instance is `1,9..144,500`; CSS matches font-style BEFORE font-weight,
+ * so an italic span asking for 400 still resolves to that one italic face and is
+ * clamped to wght 500. Declaring it says out loud what the design does silently
+ * and forecloses a synthesised slant on a fallback face standing beside the h2's
+ * genuine italic. The wrapper makes the same call for `.h2 em`. Colour, size and
+ * face are the design's, untouched.
+ *
+ * CONTRAST. --muted on --paper is 3.86:1 — under AA, the design's own value,
+ * and PageBL's frontmatter accepts it for 10–13px labels that the heading beside
+ * them repeats. Both uses here are that: the 10px card tag and the 12px detail
+ * line, each sitting against a card title that names the same thing. Everything
+ * that carries meaning of its own clears AA: --ink on --card 15.3 (title,
+ * price), --ink-soft on --card 6.71 (blurb, sub), --accent on --card 5.31
+ * (eyebrow, numeral).
+ *
+ * RESPONSIVE (R8). The wrapper owns the shared 760/520 pass; this section owns
+ * its own grid. At 900 the three tracks become two, at 620 one — a 24px card
+ * heading inside 26px of padding has ~210px of measure at three-across on a
+ * 900px viewport, which is narrower than the design ever intended. At 520,
+ * checked against a 360px viewport, nothing can push the page sideways: every
+ * grid track is minmax(0,1fr), and the sub, title, blurb, tag, detail and price
+ * all break anywhere, because a price typed as one long range and a tag typed as
+ * one long word are the two likeliest strings on this section to arrive unbroken.
+ *
+ * SPECIFICITY (R3). PageBL wraps its primitives in :where(), so a scoped rule
+ * here at (0,2,0) beats the global at (0,1,1) — including the global's media
+ * queries. So: never restate a property the wrapper tunes per breakpoint without
+ * restating it at that breakpoint too (that is why .s-sub's max-width and the
+ * eyebrow's wrapping reappear below), and never restate a heading's face, weight
+ * or colour at all — the wrapper's heading rule already owns them.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const services = content.services || {};
+// `services` is a wrapper OR a bare legacy array, so every scalar read has to
+// tolerate both — on an array these are simply undefined, which is what the
+// guards below expect.
+const tag = services.tag || '';
+const headline = services.headline || '';
+const sub = services.sub || '';
+
+type Item = { title?: string; desc?: string; tag?: string; note?: string; price?: string };
+// Both shapes: the wrapped `{tag, headline, sub, items[]}` and the legacy bare
+// array at content.services (see lib/services-shape.ts).
+const rawItems: any[] = Array.isArray(services.items) ? services.items : (Array.isArray(services) ? services : []);
+// …and all three VOCABULARIES. lib/astro-builder.ts maps name→title /
+// description→desc when content.services arrives as a bare array, but NOT when
+// it arrives already wrapped — and a wrapped row still carrying the legacy key
+// names is exactly what the editor's brief draft-normalisation window wrote.
+// Without this mapping every row on such a site fails the "did the owner fill
+// anything in?" filter below and the WHOLE MENU vanishes while the data sits
+// untouched in the record. A bare string row (the oldest shape of all) becomes
+// its own title rather than being spread into character keys and lost.
+const items: Item[] = rawItems.map((it: any) => {
+  if (typeof it === 'string') return { title: it };
+  if (!it || typeof it !== 'object') return {};
+  const out: any = { ...it };
+  if (out.title == null && out.name != null) out.title = out.name;
+  if (out.desc == null && out.description != null) out.desc = out.description;
+  return out;
+});
+// Drop the rows an owner added and never filled — carrying the ORIGINAL index
+// (R6). Only the five fields this card DRAWS count; see THE CARD FILTER above.
+const cards = items
+  .map((it, i: number) => ({ ...it, i }))
+  .filter((r) => Boolean(r.title || r.desc || r.tag || r.note || r.price));
+
+// R5: body content only. tag / headline / sub are all derived on every site.
+const hasSection = cards.length > 0;
+---
+{hasSection && (
+  <section class="svcs" id="menu">
+    <div class="wrap">
+      {(tag || headline || sub) && (
+        <div class="s-head">
+          {(tag || headline) && (
+            <div class="s-head-l">
+              {tag && <span class="kick" data-field="services.tag">{tag}</span>}
+              {headline && <h2 class="h2 s-h2 reveal" data-field="services.headline" set:html={headline}></h2>}
+            </div>
+          )}
+          {sub && <p class="s-sub" data-field="services.sub">{sub}</p>}
+        </div>
+      )}
+
+      <div class="s-grid">
+        {cards.map((it, k) => (
+          <article class="s-card reveal" data-delay={String(k % 3)}>
+            <div class="s-top">
+              {/* Decoration: the design computes the same numeral from the
+                  card's position, it is stored nowhere, and it is announced to
+                  nobody. It is the only glyph on this section this file wrote. */}
+              <span class="fig s-num" aria-hidden="true">{String(k + 1).padStart(2, '0')}</span>
+              {it.tag && <span class="mono s-tag" data-field={`services.items.${it.i}.tag`}>{it.tag}</span>}
+            </div>
+            {it.title && <h3 class="s-t" data-field={`services.items.${it.i}.title`}>{it.title}</h3>}
+            {it.desc && <p class="s-p" data-field={`services.items.${it.i}.desc`}>{it.desc}</p>}
+            {/* Guarded OUTSIDE the foot, so a card with neither a detail line
+                nor a price draws no hairline across the bottom of nothing. */}
+            {(it.note || it.price) && (
+              <div class="s-foot">
+                {it.note && <span class="s-note" data-field={`services.items.${it.i}.note`}>{it.note}</span>}
+                {/* Printed exactly as typed. `margin-left:auto` keeps it on the
+                    design's right edge even when the detail line beside it is
+                    absent and space-between has nothing to push against. */}
+                {it.price && <span class="s-price" data-field={`services.items.${it.i}.price`}>{it.price}</span>}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* One scoped block. See the SPECIFICITY note in the frontmatter before adding
+     to it. (Never write a literal end-style-tag inside a comment here — this is
+     a raw-text element and the parser would end the stylesheet on the spot,
+     silently truncating the rest of the file.) */
+
+  /* ── the split head: eyebrow + display h2 left, the owner's paragraph right,
+        baselines aligned on the bottom edge. Wraps to a stack the moment the
+        two cannot share a line. */
+  .s-head { display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap; margin-bottom: 36px; }
+  .s-head-l { min-width: 0; max-width: 100%; }
+  /* Margin and measure only. Size, face, colour, the italic <em> and both mobile
+     passes come from the wrapper's .h2 — and the <em> ARRIVES THROUGH set:html,
+     so it is unreachable from this scoped block by design (R3). The design gives
+     this h2 no measure cap, so the wrapper's 24ch is released. */
+  .s-h2 { margin: .26em 0 0; max-width: none; }
+  /* The design's sub is 15px/1.75 over 36ch in --ink-soft — smaller and tighter
+     than the wrapper's .lede, which is sized for the hero, so this is its own
+     rule rather than a .lede override. Its measure is released at 760 below,
+     because this base rule out-specifies the wrapper's own pass. Qualified by
+     its class so it beats the wrapper's (0,1,1) paragraph reset. */
+  .s-sub { margin: 0; max-width: 36ch; font-size: 15px; line-height: 1.75;
+    color: var(--ink-soft); overflow-wrap: anywhere; }
+
+  /* ── THE CARD GRID. Three equal tracks, 20px gutter. minmax(0,1fr) rather
+        than 1fr so a long unbroken price cannot widen its column. */
+  .s-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px; }
+  /* A white plate inside a warm hairline. Column flex so the foot can be pinned
+     to the bottom edge and cards in a row stay the same height. */
+  .s-card { display: flex; flex-direction: column; gap: 9px; min-width: 0;
+    padding: 28px 26px;
+    background-color: var(--card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); }
+
+  /* ── the card's top line: numeral left, tag right, one shared baseline. */
+  .s-top { display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; }
+  /* .fig supplies the display face, tabular figures and line-height 1; the
+     italic, the rust and the size are the design's. Weight 500 is the only real
+     Fraunces italic the wrapper loads — see the note in the frontmatter. */
+  .s-num { font-size: 19px; font-style: italic; font-weight: 500;
+    color: var(--accent); flex: none; }
+  /* .mono is the design's tracked caps almost exactly: 10px, uppercase,
+     --muted, --sans. The design tracks this one at .18em and leaves it at the
+     body's 400, so both are restated. text-align keeps a tag long enough to wrap
+     against the right edge it was placed on. */
+  .s-tag { min-width: 0; letter-spacing: .18em; font-weight: 400;
+    text-align: right; overflow-wrap: anywhere; }
+
+  /* Face, weight and colour come from the wrapper's heading rule; only the size,
+     the line-height, the margin and the break behaviour are this section's. */
+  .s-t { font-size: 24px; line-height: 1.15; margin: 0; overflow-wrap: anywhere; }
+  /* Qualified by its own class so it beats the wrapper's (0,1,1) paragraph
+     reset, whose 1em bottom margin would break the card's 9px rhythm. */
+  .s-p { margin: 0; font-size: 14px; line-height: 1.72; color: var(--ink-soft);
+    overflow-wrap: anywhere; }
+
+  /* ── the foot. `margin-top:auto` pushes it to the bottom of the plate, so the
+        prices line up across a row of cards whose blurbs differ in length. */
+  .s-foot { margin-top: auto; padding-top: 16px;
+    border-top: 1px solid var(--line-3);
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; }
+  .s-note { min-width: 0; font-size: 12px; color: var(--muted);
+    overflow-wrap: anywhere; }
+  /* Sans, not the serif .fig: the design's price span inherits the body face.
+     margin-left:auto holds the right edge when the note is absent. */
+  .s-price { min-width: 0; margin-left: auto; text-align: right;
+    font-size: 16px; font-weight: 500; color: var(--ink);
+    overflow-wrap: anywhere; }
+
+  /* ── 900: three tracks become two. Below this the card's 24px heading has
+        less measure inside its 26px padding than the design ever gave it. */
+  @media (max-width: 900px) {
+    .s-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ── 760: the head stacks, and its paragraph gives up the 36ch measure this
+        file set (the wrapper's own release cannot reach a (0,2,0) rule). */
+  @media (max-width: 760px) {
+    .s-head { align-items: flex-start; gap: 16px; margin-bottom: 28px; }
+    .s-sub { max-width: none; }
+  }
+
+  /* ── 620: one column. */
+  @media (max-width: 620px) {
+    .s-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* ── 520 (checked against a 360px viewport: nothing here can push the page
+        sideways — the grid's one track is minmax(0,1fr) and every owner-typed
+        string in the card breaks anywhere). */
+  @media (max-width: 520px) {
+    .s-card { padding: 24px 20px; }
+    .s-num { font-size: 17px; }
+    .s-t { font-size: 22px; }
+    /* The eyebrow is inline-block from the wrapper, so a single long word an
+       owner types would otherwise sit at its full tracked width. */
+    .s-head-l .kick { max-width: 100%; overflow-wrap: anywhere; }
+    .s-tag { letter-spacing: .16em; }
+  }
+</style>

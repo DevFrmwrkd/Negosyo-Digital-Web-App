@@ -1,0 +1,543 @@
+---
+/**
+ * foodcraft / LocationBL — "VISIT US" (Kalinaw Coffee / BL).
+ *
+ * ROLE: the getting-here section. The design draws a two-part head — eyebrow +
+ * the ADDRESS set as the Fraunces display headline on the left, an arrival note
+ * on the right, both sitting on one bottom edge and wrapping before either can
+ * overflow — and under it a 1.2fr / .8fr split: a plotted map face at 360px
+ * beside a white OPENING HOURS card of day/time rows.
+ *
+ * THE DESIGN IS THE SPECIFICATION. Every metric below is lifted verbatim from
+ * "Kalinaw Coffee Landing.dc.html", data-component="LOCATION":
+ *   head    flex · align-items:flex-end · space-between · gap 30px · wrap
+ *           margin-bottom 34px; h2 margin .26em 0 0; sub 15px/1.75 max-width 34ch
+ *   split   minmax(0,1.2fr) minmax(0,.8fr) · gap 24px
+ *   map     min-height 360px · radius 16px · ground #F7EFE1 · 1px #E9DFCF
+ *           plot grid 44px at rgba(180,84,31,.08)
+ *           roads  top 47% h:5px · left 44% w:4px · rgba(180,84,31,.22)
+ *           pin    translate(-50%,-100%) off that crossing
+ *           dot    14px #B4541F ringed 3px #FFFCF6
+ *           bubble #241A12 / #FBF6EC · 9px/.2em caps · 5px 12px · 100px
+ *           caption left 18px bottom 18px · 10px/.22em caps · #948373
+ *   card    #FFFFFF · 1px #E9DFCF · radius 16px · padding 26px 28px
+ *   row     space-between · gap 16px · padding 12px 0 · 1px #F2EADC
+ *           day 13px #948373 · time 14px #241A12 right-aligned
+ * NO LITERAL HEX APPEARS IN THIS FILE (R1). Every one of those values is written
+ * as the PageBL token that already holds it: --paper-2 --line --line-3 --card
+ * --ink --ink-soft --muted --accent --accent-rgb --band --bone --paper --r-lg
+ * --r-pill --sans. Nothing is re-derived to survive an admin colour scheme —
+ * that re-derivation is what shipped an earlier template looking like a
+ * different design, and the wrapper's frontmatter already names --accent as the
+ * one axis the theme engine is welcome to move.
+ *
+ * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts
+ * under the "Location" group, so the sidebar owns a real input for each — a
+ * data-field on an undeclared path is a dead hook that focuses nothing):
+ *   location.tag                     — the rust eyebrow (the wrapper's .kick)
+ *   location.headline                — the h2, AND THE ADDRESS. Rendered with
+ *                                      set:html so an owner's own <em> picks up
+ *                                      PageBL's ITALIC RUST EMPHASIS. That rule
+ *                                      is global in the wrapper on purpose:
+ *                                      scoped styles cannot reach elements
+ *                                      created by set:html (R3), so an italic
+ *                                      rule written here would never apply.
+ *   location.sub                     — the arrival note, right of the head
+ *   location.rules.<original i>.label — the DAY cell of an hours row
+ *   location.rules.<original i>.value — the TIME cell of an hours row
+ *   location.hours                   — the card's closing hours note
+ *   location.lat / location.lng      — feed the Leaflet boot. No data-field:
+ *                                      they are coordinates, not copy, and the
+ *                                      sidebar edits them as their own inputs.
+ *
+ * WHY location.rules AND NOT location.hours FOR THE DAY/TIME ROWS. The schema
+ * declares `location.hours` as a single kind:'text' field ("Hours line") and
+ * `location.rules` as the kind:'list' of {label,value} pairs. The design's card
+ * is a REPEATING two-cell row, so it needs the list. Emitting
+ * `location.hours.<i>.day` instead is not a style choice, it is the exact data
+ * loss the schema's own comment at that field warns about and that
+ * isSchemaEditablePath was written to stop: LocationBI shipped that path, the
+ * deep writer converted the existing `location.hours` STRING into an array, and
+ * every other hours row vanished on the next rebuild. So the rows are
+ * location.rules.*, and location.hours keeps its own scalar slot below them.
+ *
+ * WHERE location.hours LANDS, and why not in the card's eyebrow. The design's
+ * card opens with a literal "Opening hours" label and closes with a literal
+ * caveat paragraph. Both are the DESIGNER filling in their own template (R2), so
+ * neither ships as written and only one of the two slots has a hook behind it.
+ * location.hours takes the CLOSING PARAGRAPH, not the label, for one concrete
+ * reason: an owner who types only an hours line and adds no rows then gets a
+ * card that still states their hours. Put the same string in the eyebrow and
+ * that owner gets a tracked-caps label with nothing underneath it — a heading
+ * over nothing, which is the thing R2 exists to prevent — and the card would
+ * have to be gated on rows alone, dropping their hours off the page entirely.
+ *
+ * THE CARD THEREFORE HAS NO EYEBROW. That is a decision, not an oversight. No
+ * schema path owns a title for it, and location.tag is already spent on the
+ * section eyebrow above — a second data-field on that path would be two sidebar
+ * inputs fighting over one value.
+ *
+ * DERIVED, printed but NOT editable here (each of these already owns an input in
+ * the field that holds it, so a second hook on this section would be a duplicate
+ * input fighting the first):
+ *   layout.businessName   → the pin bubble (the design's "cafeName")
+ *   layout.contact.city   → the map caption (the design's "cafeTown")
+ *   layout.contact.address / .lat / .lng → fallbacks behind the location.* pair
+ *
+ * THE HEADLINE IS THE ADDRESS, AND THERE IS NO SECOND ADDRESS PARAGRAPH. The
+ * design's head is eyebrow + h2 + sub — three elements, with the h2 set to
+ * `{{ addressLine }}`. There is no fourth. LocationBK grew an address paragraph
+ * under its h2 on the reasoning that derive-content-defaults.ts fills
+ * location.headline with "Where to find us" on every site while the real street
+ * line sits in location.address, and it had to be taken out again: the head is a
+ * flex row whose two cells share a bottom edge, so a two-line paragraph in the
+ * left cell drags the sub down a row and strands it on the right beside nothing.
+ * That paragraph is not built here.
+ *
+ * The address is not lost by leaving it out. It feeds the geocode below — tier 2
+ * of the map, which is how this very section finds its own pin — and FooterBL
+ * prints it in the contact column, so location.address keeps a live sidebar
+ * input either way. An owner who wants their street line as the heading pastes
+ * it into the headline, which is precisely what the design does.
+ *
+ * DELIBERATELY NOT RENDERED:
+ *   · location.phone. The design's LOCATION prints no number; the closing band
+ *     and the footer own it. A tel: row here would be a control this design does
+ *     not have (R2).
+ *   · location.directions.text/href. Schema-declared and used by siblings, but
+ *     this design's LOCATION has no directions button. Adding one would be
+ *     building a different section than the one that was handed over.
+ *   · NO .plate / .ph / role="img" (R9). The map cell holds no upload — it is a
+ *     DRAWING of a map — so it gets neither the wrapper's image frame nor an
+ *     image role. The only accessible name available for it would be a sentence
+ *     I wrote ("Map showing …"), which is exactly the component-supplied copy R2
+ *     and R9 forbid. The whole drawn face, pin and bubble included, is therefore
+ *     aria-hidden once, on the face itself and nowhere else — a literal
+ *     aria-hidden beside a conditional one is the duplicated-attribute bug two
+ *     BK components shipped — and everything it pictures is announced as real
+ *     text beside it: the address headline, the caption and the hours rows.
+ *   · NO STAR ROW (R2). This section carries no rating field and no review. Five
+ *     stars printed for a customer who gave no rating is a fabricated claim;
+ *     stars belong to TESTIMONIALS and only ever from a numeric rating.
+ *   · NO onPage() ANCHOR-REMAP HELPER (R7), and this too is a decision. The
+ *     helper exists to rewrite in-page hrefs onto this page's ids, and this
+ *     section emits NO href at all — the map is not a link, the card is not a
+ *     link, and the design draws no button here. A copied helper would ship as
+ *     dead code, which is why LocationBK, LocationBJ, WhyBL, GalleryBL and
+ *     TestimonialsBL all leave it out too. If a link is ever added here, copy it
+ *     in from a BL sibling with PAGE_ANCHORS = menu · about · gallery ·
+ *     location · faq · main and ANCHOR_ALIAS mapping visit,contact → location ·
+ *     services,rooms → menu · host,why → about · work → gallery · book → main,
+ *     passing tel: / mailto: / http through untouched.
+ *
+ * SECTION GATE (R5). Body content only: the map (which needs real coordinates OR
+ * a real address behind it), the hours rows, the hours note, or the arrival
+ * paragraph. NOT the tag and NOT the headline — derive-content-defaults.ts emits
+ * location.tag ('Visit') and location.headline ('Where to find us') for EVERY
+ * site, so a gate that counted them would be always-true and would ship an
+ * eyebrow and a heading over an empty two-column hole on every first build. The
+ * split is gated again on its own, so a site with only a sub keeps its paragraph
+ * and grows no empty grid under it, and either cell can leave on its own with
+ * the survivor taking the full width rather than sitting beside a hole.
+ *
+ * THE MAP, three tiers, exactly the pattern LocationBK/BJ use:
+ *   1. build-time lat/lng → window.__foodcraftBLInitMap(lat, lng, label)
+ *   2. else any address   → client-side Nominatim lookup, then the same boot
+ *   3. else               → the drawn plot-grid face, which IS the design
+ * The drawn face lives INSIDE #map until Leaflet mounts; PageBL's boot runs
+ * el.innerHTML = '' first, and that is what erases it. The literal id="map" and
+ * the exact global name __foodcraftBLInitMap are a contract with PageBL — rename
+ * either and the drawn face silently stays on screen underneath the tiles. The
+ * name is family-unique because a preview harness can render two wrappers in one
+ * document and a shared name cross-wires the maps.
+ *
+ * A CLEARED coordinate field leaves '', which passes != null and which Number('')
+ * turns into 0 — booting Leaflet and pinning the café at 0,0 in the Gulf of
+ * Guinea with its own name on the marker: a map asserting a location the owner
+ * never gave. num() rejects blank and out-of-range values so a cleared field
+ * falls through to the address lookup instead, and it uses ?? rather than || so
+ * a genuine 0 survives.
+ *
+ * TWO FORCED DEVIATIONS, both small, both for the same reason — the design draws
+ * this cell as a static picture and ours can turn into a live tile map:
+ *   1. The pin bubble DROPS white-space: nowrap. The frame clips overflow, so a
+ *      long business name would be sliced off at both ends; wrapping beats
+ *      truncating on the element that names the café. The stack is centred on
+ *      the 44% crossing, so it is capped at twice the smaller side — 88% — less
+ *      12px of air each side, and width: max-content is required alongside that
+ *      or absolute shrink-to-fit collapses it to (containing block − left).
+ *   2. The caption gains an OPAQUE --paper-2 backing. In the design it sits on
+ *      the drawn cream face; the moment Leaflet paints CARTO tiles underneath,
+ *      unbacked 10px tracked caps are unreadable over street labels. The backing
+ *      keeps the design's exact colour pair (--muted on --paper-2) rather than
+ *      swapping in the wrapper's espresso .cap pill, which would have changed
+ *      the design's palette to solve a legibility problem.
+ *
+ * THREE VALUES RESTATED OFF A WRAPPER PRIMITIVE. None is a new choice: each one
+ * puts back a number the design states and the primitive rounds off.
+ *   · The arrival note is a FLAT 15px. .body is clamp(14.5px,1.3vw,15px), which
+ *     reaches the design's size only above a ~1150px viewport and prints 14.5px
+ *     on every laptop below it.
+ *   · The map caption is WEIGHT 400 and LEADING 1.3. The design's caption sets
+ *     neither, so it inherits the body's regular and a normal line box — where
+ *     .mono carries the wrapper's tracked-caps 500 and PageBL's body carries
+ *     1.7, which would have made the added backing pill ~27px tall around 10px
+ *     of text.
+ *   · The hours rows are LEADING 1.3, the same leak: it is what holds the row at
+ *     the ~42px the design draws rather than 45px or 48px.
+ * ServicesBL restates the same 400 on .s-tag and TrustBL the same 1.3 on
+ * .tally-lab, and ServicesBL/WhyBL both restate the flat 15px — this is the
+ * family's existing habit with these two primitives, not a local invention.
+ *
+ * CONTRAST, stated rather than quietly fixed. The day cell and the caption are
+ * --muted (#948373), the design's own value, ~3.6:1 on --card and --paper-2 —
+ * below AA, and PageBL's frontmatter already records that --muted is the
+ * design's palette and the owner's call. Note one honest difference from the
+ * wrapper's stated rationale: it justifies --muted as "10-13px labels that the
+ * heading beside them repeats", and the DAY cell is not repeated by anything —
+ * it is the only place in this template where --muted carries unique
+ * information. Darkening --muted to #7C6C5C in the wrapper clears it in one
+ * line. It is not done HERE, because a section that recolours its own text away
+ * from the design is the re-derivation this template is under orders not to
+ * repeat; it is raised for the owner instead.
+ *
+ * SECTION PADDING is the wrapper's, not this file's. The design writes
+ * `max-width:1240px;margin:0 auto;padding:96px 32px 0`: the 1240/gutter half is
+ * the shared .wrap, and the 96px top is html[data-page="BL"] section's
+ * clamp(56px,7.6vw,96px), which caps at exactly that.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+const lay = layout || {};
+
+const loc = content.location || {};
+const tag = typeof loc.tag === 'string' ? loc.tag.trim() : '';
+// Nothing beyond trim(): the headline goes out through set:html so whatever
+// markup the owner typed reaches the wrapper's italic-rust <em> rule.
+const headline = typeof loc.headline === 'string' ? loc.headline.trim() : '';
+const sub = typeof loc.sub === 'string' ? loc.sub.trim() : '';
+// The card's closing note. The schema's single "Hours line" text field — see the
+// frontmatter for why it lands here and not in the card's eyebrow.
+const hoursNote = typeof loc.hours === 'string' ? loc.hours.trim() : '';
+
+// READ, NOT PRINTED. The design's head is eyebrow + h2 + sub and its h2 IS the
+// address; there is no second address paragraph anywhere in that section. This
+// value feeds the geocode below (tier 2 of the map) and FooterBL prints it.
+const address = String(loc.address ?? lay.contact?.address ?? '').trim();
+
+// A row the owner added but never filled would spend a hairline and 24px of
+// padding saying nothing. Drop the blanks (whitespace counts as blank) but carry
+// the ORIGINAL index so deleting row 2 cannot misdirect an edit into row 3 (R6),
+// and note that this filter is what makes the gate honest: a rules array of
+// nothing but blanks no longer keeps the card alive.
+type HourRow = { i: number; day: string; time: string };
+const rows: HourRow[] = (Array.isArray(loc.rules) ? loc.rules : [])
+  .map((r: any, i: number) => ({
+    i,
+    day: String(r?.label ?? '').trim(),
+    time: String(r?.value ?? '').trim(),
+  }))
+  .filter((r: HourRow) => Boolean(r.day || r.time));
+
+const num = (v: any, max: number): number | null => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+};
+const lat = num(loc.lat, 90) ?? num(lay.contact?.lat, 90);
+const lng = num(loc.lng, 180) ?? num(lay.contact?.lng, 180);
+const hasCoords = lat !== null && lng !== null;
+const hasAddress = !!address;
+// The drawn face is a picture claiming where this café physically is. With
+// neither coordinates nor an address there is nothing real behind that claim, so
+// the whole cell leaves and the card takes the full width.
+const hasMap = hasCoords || hasAddress;
+
+// The pin bubble and the marker popup. No placeholder: with no business name the
+// bubble leaves and the pin is a bare dot, rather than a label reading "Your
+// Business" over a real street.
+const brand = String(lay.businessName ?? '').trim();
+// The design's "cafeTown". Nothing derives it, so on a site without a city it is
+// simply absent rather than guessed out of the address.
+const locality = String(lay.contact?.city ?? '').trim();
+
+const hasCard = rows.length > 0 || !!hoursNote;
+const hasSplit = hasMap || hasCard;
+const hasLoc = hasSplit || !!sub;
+---
+{hasLoc && (
+<section class="loc" id="location">
+  <div class="wrap">
+    {/* TWO children, exactly as the design draws it: the heading block and the
+        arrival note beside it. No address paragraph — see the frontmatter. */}
+    <div class="loc-head reveal">
+      <div class="loc-head-l">
+        {tag && <span class="kick" data-field="location.tag">{tag}</span>}
+        {headline && <h2 class="h2 loc-h2" data-field="location.headline" set:html={headline}></h2>}
+      </div>
+      {sub && <p class="body loc-sub" data-field="location.sub">{sub}</p>}
+    </div>
+    {hasSplit && (
+      <div class:list={['loc-split', 'reveal', (!hasMap || !hasCard) && 'one-up']} data-delay="1">
+        {hasMap && (
+          <div class="map-frame">
+            <div id="map">
+              {/* Tier-3 only, and entirely decorative: PageBL's boot empties #map
+                  before Leaflet draws, so tiles never stack on top of this. One
+                  aria-hidden, here and nowhere else in the subtree. */}
+              <div class="map-face" aria-hidden="true">
+                <span class="road road-h"></span>
+                <span class="road road-v"></span>
+                <span class="pin">
+                  <span class="dot"></span>
+                  {brand && <span class="plabel">{brand}</span>}
+                </span>
+              </div>
+            </div>
+            {/* OUTSIDE #map on purpose: the city is the owner's real text, not
+                fallback chrome, so it has to survive the boot that erases the
+                face — and it stays in the accessibility tree. */}
+            {locality && <span class="mono map-cap">{locality}</span>}
+          </div>
+        )}
+        {hasCard && (
+          <div class="hcard">
+            {rows.map((r) => (
+              /* Both cells always render, even when one is blank: the row is
+                 space-between, so dropping an empty cell would promote its
+                 sibling to the wrong edge. An empty span draws nothing — the
+                 guard that matters ran above, where a wholly blank row was
+                 dropped along with its hairline. */
+              <div class="rowrule hrow">
+                <span class="hd" data-field={`location.rules.${r.i}.label`}>{r.day}</span>
+                <span class="ht" data-field={`location.rules.${r.i}.value`}>{r.time}</span>
+              </div>
+            ))}
+            {hoursNote && <p class="hnote" data-field="location.hours">{hoursNote}</p>}
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+</section>
+)}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, brand }}>
+    (function () {
+      // Bounded like the geocode branch below: this script is emitted where the
+      // section sits, ABOVE the wrapper's boot, so one retry is the normal case —
+      // but an unbounded loop would spin a timer forever on any page where the
+      // wrapper script never ran at all.
+      var attempt = 0;
+      (function init() {
+        if (window.__foodcraftBLInitMap) { window.__foodcraftBLInitMap(lat, lng, brand); }
+        else if (attempt++ < 25) { setTimeout(init, 80); }
+      })();
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, brand }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(la, ln) {
+        if (window.__foodcraftBLInitMap) { window.__foodcraftBLInitMap(la, ln, brand); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(la, ln); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var la = parseFloat(results[0].lat);
+            var ln = parseFloat(results[0].lon);
+            if (isNaN(la) || isNaN(ln)) return;
+            tryInit(la, ln);
+          })
+          .catch(function () { /* keep the drawn face: it is the design */ });
+      } catch (e) { /* never block render */ }
+    })();
+  </script>
+)}
+<style>
+  /* ── THE HEAD · flex, bottom-aligned, space-between, wrapping before either
+        side can overflow. 34px to the split, straight from the design.
+        TWO children only. A third — an address paragraph under the h2 — is what
+        dragged the sub down a row in the BK sibling, because in this row a
+        taller left cell moves everything aligned to its bottom edge. */
+  .loc-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 30px; flex-wrap: wrap; margin: 0 0 34px;
+  }
+  /* min-width:0 so a long unbroken address cannot widen the cell past the row
+     and push the page sideways (R8). */
+  .loc-head-l { min-width: 0; }
+  /* PageBL's .h2 primitive already carries the design's face,
+     clamp(31px,4vw,54px)/1.08 and --ink; only the margin differs — the design
+     pushes the h2 .26em BELOW the eyebrow and nothing after it. The primitive's
+     24ch measure is kept deliberately: the design sets no max-width here, but
+     the head is a two-cell flex row and an uncapped address line would eat the
+     cell the arrival note sits in. 24ch is generous for a street line.
+     The primitives are :where()-wrapped in the wrapper, so a scoped class here
+     out-specifies them without an !important. */
+  .loc-h2 { margin: .26em 0 0; }
+  /* Qualified with the parent class on purpose: the wrapper's bare-paragraph
+     reset is (0,1,1) and it sets a bottom margin this must not inherit.
+     .body supplies the design's --ink-soft and its 1.75 leading, but NOT its
+     size: .body is clamp(14.5px,1.3vw,15px), which only reaches 15px above a
+     ~1150px viewport, where the design states a flat 15px and prints it at
+     every width. The size is therefore restated here — exactly as ServicesBL
+     (.s-sub) and WhyBL (.why-p) restate it for the same paragraph treatment. */
+  .loc-head .loc-sub {
+    margin: 0; min-width: 0; max-width: 34ch;
+    font-size: 15px; line-height: 1.75;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── THE SPLIT · the design's 1.2fr / .8fr with a 24px gutter. Either cell can
+        be absent — no coordinates and no address drops the map, no rows and no
+        note drops the card — and the survivor takes the full width instead of
+        leaving a hole beside itself. */
+  .loc-split {
+    display: grid; grid-template-columns: minmax(0,1.2fr) minmax(0,.8fr);
+    gap: 24px; align-items: stretch;
+  }
+  .loc-split.one-up { grid-template-columns: minmax(0,1fr); }
+
+  /* ── THE MAP CELL. Not the wrapper's .plate: that frame is for an upload and
+        carries --well plus --r-md, where the design draws this cell on --paper-2
+        inside a --line hairline at --r-lg. */
+  .map-frame {
+    position: relative; min-height: 360px; overflow: hidden;
+    border-radius: var(--r-lg); border: 1px solid var(--line);
+    background-color: var(--paper-2);
+  }
+  #map { position: absolute; inset: 0; z-index: 0; }
+  /* The plotted face: a 44px rust grid with two roads crossing under the pin.
+     Token-derived, so an admin accent pick moves the plot lines with the pin. */
+  .map-face {
+    position: absolute; inset: 0; background-color: var(--paper-2);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(var(--accent-rgb),.08) 0 1px, transparent 1px 44px),
+      repeating-linear-gradient(90deg, rgba(var(--accent-rgb),.08) 0 1px, transparent 1px 44px);
+  }
+  .road { position: absolute; background-color: rgba(var(--accent-rgb),.22); }
+  .road-h { top: 47%; left: 0; right: 0; height: 5px; }
+  .road-v { top: 0; bottom: 0; left: 44%; width: 4px; }
+  /* The cap sits on the ABSPOS pin, not on the bubble. The stack is CENTRED on
+     the 44% crossing, so it only stays inside the frame when it is capped at
+     twice the smaller side — 88% — less 12px of air each side. calc(100% - 24px)
+     would still let a long café name run past the left edge and be clipped there
+     by the frame, which is the truncation the wrapping bubble exists to avoid.
+     width: max-content is required alongside it, or absolute shrink-to-fit
+     collapses the stack to (containing block - left). */
+  .pin {
+    position: absolute; top: 47%; left: 44%; transform: translate(-50%,-100%);
+    display: grid; justify-items: center; gap: 9px;
+    width: max-content; max-width: calc(88% - 24px); text-align: center; z-index: 1;
+  }
+  .dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background-color: var(--accent); border: 3px solid var(--paper);
+  }
+  /* Espresso bubble, bone label, full pill — the design's own values, and 13.2:1
+     whatever the tiles underneath it look like. nowrap is dropped: see the
+     frontmatter. */
+  .plabel {
+    background-color: var(--band); color: var(--bone);
+    /* Weight 400, not the wrapper .cap's 600: the design sets a weight on every
+       other tracked-caps label in the template and deliberately sets none here,
+       so this pill inherits regular. line-height is stated because the wrapper's
+       body leading of 1.7 would grow the design's ~21px pill by 4px, and because
+       the bubble can now wrap. */
+    font-family: var(--sans); font-weight: 400; font-size: 9px;
+    letter-spacing: .2em; text-transform: uppercase; line-height: 1.45;
+    padding: 5px 12px; border-radius: var(--r-pill);
+    text-align: center; overflow-wrap: anywhere;
+  }
+  /* .mono supplies the design's 10px caps, --sans and --muted. Four things are
+     local, and only the last is an addition:
+       · letter-spacing .22em — the design tracks this label wider than .mono.
+       · font-weight 400 — the design's caption sets NO weight and inherits the
+         body's regular, where .mono carries the wrapper's tracked-caps 500.
+         ServicesBL restates the same 400 on .s-tag for the same reason.
+       · line-height 1.3 — the design's caps labels set no leading, so they
+         compute to `normal` (~1.3 in Space Grotesk). PageBL's body 1.7 leaks
+         in otherwise and inflates the pill below from ~23px to ~27px around
+         10px of text. Same leak, same fix as TrustBL's .tally-lab.
+       · the opaque backing — see the frontmatter. It keeps the design's own
+         colour pair rather than swapping in the wrapper's espresso .cap pill. */
+  .map-cap {
+    position: absolute; left: 18px; bottom: 18px; z-index: 2;
+    font-weight: 400; letter-spacing: .22em; line-height: 1.3;
+    background-color: var(--paper-2); padding: 5px 10px; border-radius: var(--r-pill);
+    max-width: calc(100% - 36px); overflow-wrap: anywhere;
+  }
+
+  /* ── THE OPENING HOURS CARD · white ground, hairline, 16px, 26px 28px. */
+  .hcard {
+    background-color: var(--card); border: 1px solid var(--line);
+    border-radius: var(--r-lg); padding: 26px 28px;
+    min-width: 0;
+  }
+  /* .rowrule brings the flex row and the design's 12px 0. Three things differ
+     and only those three are restated: the design pushes the two cells apart,
+     opens the gutter to 16px, and draws its hairline in --line-3 where the
+     shared primitive uses the one step darker --line-2.
+     The rule sits under EVERY row including the last, which is why there is no
+     "+ .hrow" trick here: that closing hairline above the card's 26px of bottom
+     padding is the design. */
+  .hrow { justify-content: space-between; gap: 16px; border-bottom-color: var(--line-3); }
+  /* line-height 1.3, not the body's 1.7: the design's row spans set no leading
+     at all, so they compute to normal — ~1.3 in Space Grotesk — and the row
+     measures 24px of padding around an ~18px line box, the ~42px the design
+     draws. 1.7 inflates that to 48px and 1.5 to 45px, so neither "holds the row
+     height"; 1.3 is the design's own rhythm. A long day or a two-part time that
+     wraps still clears its own cap height, and overflow-wrap below is what lets
+     it wrap at all. */
+  .hd {
+    font-size: 13px; line-height: 1.3; color: var(--muted);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  .ht {
+    font-size: 14px; line-height: 1.3; color: var(--ink); text-align: right;
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Qualified with the parent class: the wrapper's bare-paragraph reset is
+     (0,1,1) and it sets a bottom margin this must not inherit. */
+  .hcard .hnote {
+    font-size: 13px; line-height: 1.7; color: var(--muted);
+    margin: 16px 0 0; overflow-wrap: anywhere;
+  }
+  /* An owner with an hours line and no rows is a real case, and then the design's
+     16px lead-in would push the note off the card's own top padding. */
+  .hcard .hnote:first-child { margin-top: 0; }
+
+  /* ── RESPONSIVE · the wrapper owns the shared 760 / 520 pass; this is the
+        section's own grid (R8). */
+  @media (max-width: 900px) {
+    /* The card goes under the map: the hours are what a customer reads twice. */
+    .loc-split { grid-template-columns: minmax(0,1fr); }
+    .loc-head .loc-sub { max-width: none; }
+  }
+  @media (max-width: 760px) {
+    .map-frame { min-height: 300px; }
+    .loc-head { margin-bottom: 28px; }
+    .hcard { padding: 22px 24px; }
+  }
+  @media (max-width: 520px) {
+    .map-frame { min-height: 240px; }
+    .hcard { padding: 18px 20px; }
+    /* Two lines rather than squeezing an opening time into a 90px column: day
+       above, time below, both left-aligned. */
+    .hrow { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .ht { text-align: left; }
+    .map-cap {
+      left: 12px; bottom: 12px; font-size: 9px; letter-spacing: .16em;
+      max-width: calc(100% - 24px);
+    }
+    .plabel { font-size: 8.5px; letter-spacing: .14em; padding: 5px 10px; }
+  }
+</style>
