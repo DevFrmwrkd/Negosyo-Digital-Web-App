@@ -21,12 +21,15 @@
  */
 import {
     buildRoleColorCss,
+    COLOR_STATE_LABELS,
+    COLOR_STATES,
     labelFor,
     parseRoleColorKey,
     roleColorKey,
     scopeSelector,
     sectionForField,
 } from '@/lib/roleColors';
+import type { ColorProp, ColorRole } from '@/lib/roleColors';
 
 const luminance = (hex: string): number => {
     let h = hex.replace('#', '');
@@ -395,15 +398,15 @@ describe('roleColorKey / parseRoleColorKey', () => {
 
     it('round-trips a key it wrote, in either form', () => {
         expect(parseRoleColorKey(roleColorKey('heading', 'fg', 'about')))
-            .toEqual({ section: 'about', role: 'heading', prop: 'fg' });
+            .toEqual({ section: 'about', role: 'heading', prop: 'fg', state: 'base' });
         expect(parseRoleColorKey(roleColorKey('primaryCta', 'bg')))
-            .toEqual({ section: null, role: 'primaryCta', prop: 'bg' });
+            .toEqual({ section: null, role: 'primaryCta', prop: 'bg', state: 'base' });
         // A dotless hook has no section, so this must round-trip as the
         // every-section key rather than a scoped one that matches nothing.
         expect(parseRoleColorKey(roleColorKey('link', 'fg', sectionForField('navCtaHref'))))
-            .toEqual({ section: null, role: 'link', prop: 'fg' });
+            .toEqual({ section: null, role: 'link', prop: 'fg', state: 'base' });
         expect(parseRoleColorKey(roleColorKey('link', 'fg', sectionForField('nav.cta.href'))))
-            .toEqual({ section: 'nav', role: 'link', prop: 'fg' });
+            .toEqual({ section: 'nav', role: 'link', prop: 'fg', state: 'base' });
     });
 
     it('rejects a malformed key instead of guessing at it', () => {
@@ -443,6 +446,485 @@ describe('roleColorKey / parseRoleColorKey', () => {
             ':primaryCta:bg': '#FFFFFF',
         });
         expect(withJunk).toBe(buildRoleColorCss({ 'ctaBand:primaryCta:bg': '#17181A' }));
+        expect(withJunk).not.toBe('');
+    });
+});
+
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 3. A colour belongs to a ROLE in a SECTION **at a STATE**.
+ *
+ *    Resting, pointed at, held down. The owner asked for hover and pressed to
+ *    be pickable separately, and the three ways that can go wrong are ordering
+ *    or shape problems rather than arithmetic:
+ *
+ *      · the state rides on the PROP segment (`bg@hover`), because a fourth
+ *        colon field would make `role:prop:state` and `section:role:prop` both
+ *        three parts and impossible to tell apart;
+ *      · every rule is `!important` at the same specificity, so a hover rule
+ *        beats the base rule ONLY by being emitted after it — the tests below
+ *        assert the INDEX, never mere presence;
+ *      · `base` still paints :hover and :focus, exactly as it shipped, so a map
+ *        written before states existed must emit byte-identical CSS. That is
+ *        asserted as a whole-document string match, not a substring.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/** The selector list of one emitted rule, split back into individual selectors. */
+const selectorsOf = (rule: string): string[] => rule.slice(0, rule.indexOf('{')).split(',');
+/** The colour each `background:` rule paints, in emission order. */
+const fillsIn = (css: string): string[] =>
+    [...css.matchAll(/\{background:([^ ]+) !important;/g)].map((m) => m[1]!);
+
+/** Frozen for the same reason LEGACY_PRIMARY_CTA is: published sites read it. */
+const HERO_PRIMARY_BASE =
+    '[data-field="hero.cta1.text"],[data-field="hero.cta1.text"]:hover,[data-field="hero.cta1.text"]:focus';
+
+describe('buildRoleColorCss — a base-only map is byte-identical to pre-states', () => {
+    it('emits exactly the pre-state document for a legacy base-only map', () => {
+        // The whole string, not a substring. This CSS is already baked into
+        // published HTML by app/api/generate-website, so a states axis is only
+        // allowed to be additive: a map that predates it has to come out
+        // character-for-character the same.
+        const css = buildRoleColorCss({ 'primaryCta:bg': '#17181A', 'heading:fg': '#5A0000' });
+        expect(css).toBe(
+            `${LEGACY_PRIMARY_CTA}{background:#17181A !important;border-color:#17181A !important;}\n` +
+            `${LEGACY_PRIMARY_CTA}{color:#FFFFFF !important;}\n` +
+            '[data-field$=".headline"],[data-field^="hero.headlineLines"],' +
+            '[data-field$=".headline"]:hover,[data-field^="hero.headlineLines"]:hover,' +
+            '[data-field$=".headline"]:focus,[data-field^="hero.headlineLines"]:focus' +
+            '{color:#5A0000 !important;}',
+        );
+    });
+
+    it('emits exactly the pre-state document for a section-scoped base-only map', () => {
+        const css = buildRoleColorCss({ 'hero:primaryCta:bg': '#17181A' });
+        expect(css).toBe(
+            `${HERO_PRIMARY_BASE}{background:#17181A !important;border-color:#17181A !important;}\n` +
+            `${HERO_PRIMARY_BASE}{color:#FFFFFF !important;}`,
+        );
+    });
+
+    it('never paints :active or :focus-visible unless a state was actually picked', () => {
+        // Letting `base` cover :active is the tidy-looking choice and it is the
+        // one that breaks the promise above: every map already stored would
+        // start emitting a rule it has never emitted.
+        const css = buildRoleColorCss({
+            'primaryCta:bg': '#17181A',
+            'secondaryCta:fg': '#E0713F',
+            'hero:heading:fg': '#5A0000',
+            'footer:link:fg': '#222222',
+            'ctaBand:eyebrow:fg': '#333333',
+        });
+        expect(css).not.toBe('');
+        expect(css).not.toContain(':active');
+        expect(css).not.toContain(':focus-visible');
+        // ...while still painting the two pseudo-classes base has always painted.
+        expect(css).toContain(':hover');
+        expect(css).toContain(':focus');
+    });
+});
+
+describe('buildRoleColorCss — a hover pick lands after the base it must beat', () => {
+    it('emits :hover and :focus-visible for a hover pick, and nothing resting', () => {
+        expect(buildRoleColorCss({ 'hero:primaryCta:bg@hover': '#17181A' })).toBe(
+            '[data-field="hero.cta1.text"]:hover,[data-field="hero.cta1.text"]:focus-visible' +
+            '{background:#17181A !important;border-color:#17181A !important;}\n' +
+            '[data-field="hero.cta1.text"]:hover,[data-field="hero.cta1.text"]:focus-visible' +
+            '{color:#FFFFFF !important;}',
+        );
+    });
+
+    it('puts the hover rule AFTER the base rule — index, not presence', () => {
+        // Both rules are !important and both match the same element with the
+        // same specificity, because `base` paints :hover too. Source order is
+        // the entire cascade here, so presence proves nothing: assert the index.
+        const rules = rulesIn(buildRoleColorCss({
+            'hero:primaryCta:bg': '#17181A',
+            'hero:primaryCta:bg@hover': '#AAAAAA',
+        }));
+        expect(rules).toHaveLength(4);
+        expect(rules[0]).toBe(
+            `${HERO_PRIMARY_BASE}{background:#17181A !important;border-color:#17181A !important;}`);
+        expect(rules[1]).toBe(`${HERO_PRIMARY_BASE}{color:#FFFFFF !important;}`);
+        expect(rules[2]).toContain('background:#AAAAAA !important');
+        expect(rules[2]).toContain(':focus-visible');
+        // The tie is real, not hypothetical: rule 0 and rule 2 both match
+        // [data-field="hero.cta1.text"]:hover.
+        expect(selectorsOf(rules[0]!)).toContain('[data-field="hero.cta1.text"]:hover');
+        expect(selectorsOf(rules[2]!)).toContain('[data-field="hero.cta1.text"]:hover');
+    });
+
+    it('orders by state, not by however the map happened to get built', () => {
+        const written = buildRoleColorCss({
+            'hero:primaryCta:bg@hover': '#AAAAAA',
+            'hero:primaryCta:bg': '#17181A',
+        });
+        const reversed = buildRoleColorCss({
+            'hero:primaryCta:bg': '#17181A',
+            'hero:primaryCta:bg@hover': '#AAAAAA',
+        });
+        expect(written).toBe(reversed);
+        expect(fillsIn(written)).toEqual(['#17181A', '#AAAAAA']);
+    });
+});
+
+describe('buildRoleColorCss — a pressed pick lands last', () => {
+    it('emits :active only, and after both base and hover', () => {
+        const rules = rulesIn(buildRoleColorCss({
+            'hero:primaryCta:bg@active': '#5A0000',
+            'hero:primaryCta:bg@hover': '#AAAAAA',
+            'hero:primaryCta:bg': '#17181A',
+        }));
+        expect(rules).toHaveLength(6);
+        expect(fillsIn(rules.join('\n'))).toEqual(['#17181A', '#AAAAAA', '#5A0000']);
+        // Last, for the same reason CSS teaches :link :visited :hover :active in
+        // that order — and it is the ONLY rule painting :active.
+        expect(rules[4]).toBe(
+            '[data-field="hero.cta1.text"]:active' +
+            '{background:#5A0000 !important;border-color:#5A0000 !important;}');
+        expect(rules[5]).toBe('[data-field="hero.cta1.text"]:active{color:#FFFFFF !important;}');
+        expect(rules.filter((r) => r.includes(':active'))).toHaveLength(2);
+        expect(rules.slice(0, 4).some((r) => r.includes(':active'))).toBe(false);
+    });
+
+    it('orders by STATE first and scope second, and the two are not interchangeable', () => {
+        // STATE is the major key. An earlier version sorted scope-major, which
+        // reads as equivalent and is not: the scope contest only exists BETWEEN
+        // RULES PAINTING THE SAME PSEUDO-CLASS, so hoisting it above state
+        // pushed every section rule past every global one — and a section pick
+        // for the RESTING colour then beat a global pick for hover or pressed.
+        const css = buildRoleColorCss({
+            'ctaBand:primaryCta:bg': '#111111',
+            'primaryCta:bg@active': '#222222',
+            'primaryCta:bg': '#333333',
+            'ctaBand:primaryCta:bg@hover': '#444444',
+        });
+        // base(global, section), then hover, then active.
+        expect(fillsIn(css)).toEqual(['#333333', '#111111', '#444444', '#222222']);
+    });
+
+    it('resolves to what the admin asked for, not merely to a tidy emission order', () => {
+        // Order is only a proxy. What matters is the colour a browser lands on,
+        // and the previous ordering passed an order assertion while painting
+        // the wrong thing in three separate combinations. Resolve properly:
+        // every rule is !important at equal specificity, so the LAST matching
+        // rule wins.
+        const BTN = '[data-field="hero.cta1.text"]';
+        const paints = (css: string, pseudos: string[]): string | null => {
+            let out: string | null = null;
+            for (const rule of rulesIn(css)) {
+                const body = rule.slice(rule.indexOf('{'));
+                const m = /background:([^ ;]+)/.exec(body);
+                if (!m) continue;
+                for (const sel of selectorsOf(rule)) {
+                    if (!sel.startsWith(BTN)) continue;
+                    const suffix = sel.slice(BTN.length);
+                    if (suffix === '' || pseudos.includes(suffix)) { out = m[1]!; break; }
+                }
+            }
+            return out;
+        };
+
+        // An explicit global HOVER beats a section RESTING pick, whose reach
+        // into :hover is only a back-compat spill.
+        expect(paints(buildRoleColorCss({
+            'primaryCta:bg@hover': '#E0713F', 'hero:primaryCta:bg': '#2B5CE0',
+        }), [':hover'])).toBe('#E0713F');
+
+        // Held down, :hover and :active both match — :active has to win.
+        expect(paints(buildRoleColorCss({
+            'hero:primaryCta:bg@hover': '#E0713F', 'primaryCta:bg@active': '#1E8E3E',
+        }), [':hover', ':active'])).toBe('#1E8E3E');
+
+        // …while the section guarantee survives: at equal state the narrower
+        // pick still wins, and a sibling section is untouched.
+        expect(paints(buildRoleColorCss({
+            'primaryCta:bg': '#111111', 'hero:primaryCta:bg': '#2B5CE0',
+        }), [])).toBe('#2B5CE0');
+        expect(paints(buildRoleColorCss({
+            'primaryCta:bg@hover': '#111111', 'hero:primaryCta:bg@hover': '#2B5CE0',
+        }), [':hover'])).toBe('#2B5CE0');
+        expect(paints(buildRoleColorCss({
+            'primaryCta:bg': '#111111', 'ctaBand:primaryCta:bg': '#2B5CE0',
+        }), [])).toBe('#111111');
+    });
+});
+
+describe('buildRoleColorCss — the state suffix is applied per selector', () => {
+    it('gives EVERY selector of a multi-selector role its own :hover', () => {
+        // Appending the pseudo-class to the JOINED string attaches it to the
+        // last selector only, and that bug is invisible in a one-selector role.
+        // secondaryCta has four.
+        const rule = rulesIn(buildRoleColorCss({ 'secondaryCta:fg@hover': '#5A0000' }))[0]!;
+        const sels = selectorsOf(rule);
+        expect(sels).toHaveLength(8); // 4 selectors x 2 suffixes
+        expect(sels.every((s) => /:(hover|focus-visible)$/.test(s))).toBe(true);
+        expect(sels.filter((s) => s.endsWith(':hover'))).toEqual([
+            '[data-field="hero.cta2.text"]:hover',
+            '[data-field="hero.cta3.text"]:hover',
+            '[data-field="ctaBand.cta2.text"]:hover',
+            '[data-field="ctaBand.cta3.text"]:hover',
+        ]);
+        expect(sels.filter((s) => s.endsWith(':focus-visible'))).toHaveLength(4);
+    });
+
+    it('gives EVERY selector of a multi-selector role its own :active', () => {
+        const rule = rulesIn(buildRoleColorCss({ 'secondaryCta:bg@active': '#5A0000' }))[0]!;
+        const sels = selectorsOf(rule);
+        expect(sels).toHaveLength(4); // 4 selectors x 1 suffix
+        expect(sels.every((s) => s.endsWith(':active'))).toBe(true);
+        expect(sels).toEqual([
+            '[data-field="hero.cta2.text"]:active',
+            '[data-field="hero.cta3.text"]:active',
+            '[data-field="ctaBand.cta2.text"]:active',
+            '[data-field="ctaBand.cta3.text"]:active',
+        ]);
+    });
+
+    it('suffixes a mixed-shape role per selector once it has been scoped', () => {
+        expect(buildRoleColorCss({ 'hero:heading:fg@active': '#5A0000' })).toBe(
+            '[data-field$=".headline"][data-field^="hero."]:active,' +
+            '[data-field^="hero.headlineLines"]:active' +
+            '{color:#5A0000 !important;}',
+        );
+    });
+
+    it('lands the state suffix after :not(.btn), not inside the attribute', () => {
+        expect(buildRoleColorCss({ 'hero:link:fg@hover': '#5A0000' })).toBe(
+            'a[data-href-field^="hero."]:not(.btn):hover,' +
+            'a[data-href-field^="hero."]:not(.btn):focus-visible' +
+            '{color:#5A0000 !important;}',
+        );
+    });
+
+    it('leaves a legacy open-ended selector unprefixed at a state too', () => {
+        expect(buildRoleColorCss({ 'heading:fg@hover': '#5A0000' })).toBe(
+            '[data-field$=".headline"]:hover,[data-field^="hero.headlineLines"]:hover,' +
+            '[data-field$=".headline"]:focus-visible,[data-field^="hero.headlineLines"]:focus-visible' +
+            '{color:#5A0000 !important;}',
+        );
+    });
+});
+
+describe('buildRoleColorCss — the automatic label follows the state it covers', () => {
+    it('gives a hover background its own legible label', () => {
+        // The same failure as the resting case, one pseudo-class along: fill the
+        // hover state toward the label colour and the label vanishes on hover.
+        expect(labelsIn(buildRoleColorCss({ 'hero:primaryCta:bg@hover': '#FBF6F4' })))
+            .toEqual(['#0B0B0F']);
+        expect(labelsIn(buildRoleColorCss({ 'hero:primaryCta:bg@hover': '#17181A' })))
+            .toEqual(['#FFFFFF']);
+    });
+
+    it('gives a pressed background its own legible label', () => {
+        expect(labelsIn(buildRoleColorCss({ 'hero:primaryCta:bg@active': '#FBF6F4' })))
+            .toEqual(['#0B0B0F']);
+    });
+
+    it('does NOT let a base label pick suppress the hover fill auto-label', () => {
+        // Tempting, because a base label does reach :hover. But it reaches it
+        // as a BACK-COMPAT SPILL, not as a decision about the hover state, and
+        // counting the spill as a decision waived the legibility check on
+        // exactly the pairing this file exists to catch:
+        //   { fg: '#FEFEFE', bg@hover: '#FFF9C4' }  ->  1.06:1 on hover
+        // The automatic hover label lands after the base label (state-major
+        // ordering), so it wins on :hover and the resting label is untouched.
+        const css = buildRoleColorCss({
+            'hero:primaryCta:fg': '#E0713F',
+            'hero:primaryCta:bg@hover': '#17181A',
+        });
+        expect(fillsIn(css)).toEqual(['#17181A']);
+        expect(labelsIn(css)).toEqual(['#E0713F', '#FFFFFF']);
+    });
+
+    it('rescues the pairing that motivated the rule — near-white on pale yellow', () => {
+        const css = buildRoleColorCss({
+            'primaryCta:fg': '#FEFEFE',
+            'primaryCta:bg@hover': '#FFF9C4',
+        });
+        // 1.06:1 before; the automatic label is emitted and wins on :hover.
+        expect(labelsIn(css)).toEqual(['#FEFEFE', '#0B0B0F']);
+    });
+
+    it('does NOT let a base label pick suppress the pressed fill auto-label', () => {
+        // Nothing paints :active unless :active was picked, so the resting label
+        // does not reach it. Suppressing here would leave the pressed label at
+        // whatever the template chose — pinned by nothing and checked by nobody,
+        // over a fill the admin has just changed.
+        const css = buildRoleColorCss({
+            'hero:primaryCta:fg': '#E0713F',
+            'hero:primaryCta:bg@active': '#17181A',
+        });
+        expect(labelsIn(css)).toEqual(['#E0713F', '#FFFFFF']);
+    });
+
+    it('does NOT let a hover label pick suppress the resting fill auto-label', () => {
+        // Coverage runs one way only: base reaches hover, hover does not reach
+        // back to the resting state.
+        const css = buildRoleColorCss({
+            'hero:primaryCta:fg@hover': '#E0713F',
+            'hero:primaryCta:bg': '#17181A',
+        });
+        expect(labelsIn(css)).toEqual(['#FFFFFF', '#E0713F']);
+    });
+
+    it('lets a label pick suppress the auto-label at its OWN state', () => {
+        expect(labelsIn(buildRoleColorCss({
+            'hero:primaryCta:bg@hover': '#17181A',
+            'hero:primaryCta:fg@hover': '#E0713F',
+        }))).toEqual(['#E0713F']);
+        expect(labelsIn(buildRoleColorCss({
+            'hero:primaryCta:bg@active': '#17181A',
+            'hero:primaryCta:fg@active': '#E0713F',
+        }))).toEqual(['#E0713F']);
+    });
+
+    it('keeps scopes independent at a state — a hero label does not silence the band', () => {
+        const css = buildRoleColorCss({
+            'hero:primaryCta:fg': '#E0713F',
+            'hero:primaryCta:bg@hover': '#17181A',
+            'ctaBand:primaryCta:bg@hover': '#FBF6F4',
+        });
+        // Both hover fills get their own label — a base label covers only the
+        // base state — and hero's resting label is still emitted first.
+        expect(labelsIn(css)).toEqual(['#E0713F', '#FFFFFF', '#0B0B0F']);
+    });
+
+    it('does not let a legacy label cover a section fill at the same state', () => {
+        const css = buildRoleColorCss({
+            'primaryCta:fg': '#E0713F',
+            'ctaBand:primaryCta:bg@hover': '#17181A',
+        });
+        expect(labelsIn(css)).toEqual(['#E0713F', '#FFFFFF']);
+    });
+});
+
+describe('COLOR_STATES / COLOR_STATE_LABELS', () => {
+    it('offers exactly the three states, resting first', () => {
+        expect(COLOR_STATES).toEqual(['base', 'hover', 'active']);
+        // The picker opens on the resting colour, which is also the state
+        // roleColorKey collapses — so it has to be the first entry.
+        expect(COLOR_STATES[0]).toBe('base');
+    });
+
+    it('spells the states for an admin, not for the code', () => {
+        // 'base' and 'active' are CSS words; an admin recolouring a button is
+        // thinking Normal / Hover / Pressed.
+        expect(COLOR_STATE_LABELS).toEqual({ base: 'Normal', hover: 'Hover', active: 'Pressed' });
+        for (const st of COLOR_STATES) expect(COLOR_STATE_LABELS[st]).toBeTruthy();
+    });
+});
+
+describe('roleColorKey / parseRoleColorKey — the state axis', () => {
+    it('collapses base to a plain prop and decorates only the other two', () => {
+        // A resting pick must write EXACTLY the key that shipped before states
+        // existed, or every colour already stored needs migrating.
+        expect(roleColorKey('primaryCta', 'bg')).toBe('primaryCta:bg');
+        expect(roleColorKey('primaryCta', 'bg', null, 'base')).toBe('primaryCta:bg');
+        expect(roleColorKey('primaryCta', 'bg', null, null)).toBe('primaryCta:bg');
+        expect(roleColorKey('primaryCta', 'bg', 'hero', 'base')).toBe('hero:primaryCta:bg');
+
+        expect(roleColorKey('primaryCta', 'bg', null, 'hover')).toBe('primaryCta:bg@hover');
+        expect(roleColorKey('primaryCta', 'bg', null, 'active')).toBe('primaryCta:bg@active');
+        expect(roleColorKey('heading', 'fg', null, 'hover')).toBe('heading:fg@hover');
+    });
+
+    it('carries a section AND a state on one key', () => {
+        const key = roleColorKey('primaryCta', 'bg', 'ctaBand', 'hover');
+        expect(key).toBe('ctaBand:primaryCta:bg@hover');
+        // Still three colon-separated parts — which is the whole reason the
+        // state rides on the prop instead of taking a fourth field.
+        expect(key.split(':')).toHaveLength(3);
+        expect(parseRoleColorKey(key))
+            .toEqual({ section: 'ctaBand', role: 'primaryCta', prop: 'bg', state: 'hover' });
+
+        expect(roleColorKey('heading', 'fg', 'about', 'active')).toBe('about:heading:fg@active');
+        expect(parseRoleColorKey('about:heading:fg@active'))
+            .toEqual({ section: 'about', role: 'heading', prop: 'fg', state: 'active' });
+
+        // ...and it emits a rule that is scoped AND stateful, not one or other.
+        const css = buildRoleColorCss({ [key]: '#17181A' });
+        expect(rulesIn(css)[0]).toBe(
+            '[data-field="ctaBand.cta1.text"]:hover,[data-field="ctaBand.cta.text"]:hover,' +
+            '[data-field="ctaBand.cta1.text"]:focus-visible,[data-field="ctaBand.cta.text"]:focus-visible' +
+            '{background:#17181A !important;border-color:#17181A !important;}',
+        );
+        expect(css).not.toContain('hero');
+    });
+
+    it('reports state "base" for a key with no state on it', () => {
+        expect(parseRoleColorKey('primaryCta:bg'))
+            .toEqual({ section: null, role: 'primaryCta', prop: 'bg', state: 'base' });
+        expect(parseRoleColorKey('hero:primaryCta:fg'))
+            .toEqual({ section: 'hero', role: 'primaryCta', prop: 'fg', state: 'base' });
+    });
+
+    it('rejects "bg@base" — one colour must not have two spellings', () => {
+        // roleColorKey collapses base to 'bg', so 'bg@base' is not a key we
+        // write. Accepting it would let one colour live under two keys meaning
+        // the same thing, with the picker showing whichever it looked up first
+        // and the other one still painting the page.
+        expect(parseRoleColorKey('primaryCta:bg@base')).toBeNull();
+        expect(parseRoleColorKey('primaryCta:fg@base')).toBeNull();
+        expect(parseRoleColorKey('hero:primaryCta:bg@base')).toBeNull();
+        // Rejected because it is the redundant spelling, NOT because '@' is
+        // unreadable — the two real states on the same prop still parse.
+        expect(parseRoleColorKey('primaryCta:bg@hover'))
+            .toEqual({ section: null, role: 'primaryCta', prop: 'bg', state: 'hover' });
+        expect(parseRoleColorKey('primaryCta:bg@active'))
+            .toEqual({ section: null, role: 'primaryCta', prop: 'bg', state: 'active' });
+    });
+
+    it('rejects a malformed state instead of guessing at one', () => {
+        expect(parseRoleColorKey('primaryCta:bg@junk')).toBeNull();
+        expect(parseRoleColorKey('primaryCta:bg@HOVER')).toBeNull();     // states are lowercase
+        expect(parseRoleColorKey('primaryCta:bg@')).toBeNull();          // trailing @, no state
+        expect(parseRoleColorKey('primaryCta:@hover')).toBeNull();       // state, no prop
+        expect(parseRoleColorKey('hero:primaryCta:@hover')).toBeNull();
+        expect(parseRoleColorKey('@hover')).toBeNull();                  // not a key at all
+        expect(parseRoleColorKey('primaryCta:bg@hover@active')).toBeNull();
+        expect(parseRoleColorKey('primaryCta:border@hover')).toBeNull(); // not a prop we set
+        expect(parseRoleColorKey('noSuchRole:bg@hover')).toBeNull();
+        expect(parseRoleColorKey('constructor:bg@hover')).toBeNull();
+        expect(parseRoleColorKey('hero:primaryCta:bg@hover:extra')).toBeNull();
+        // ...and the well-formed neighbours of every one of those still parse,
+        // so this is a state check and not a blanket ban on the '@'.
+        expect(parseRoleColorKey('hero:primaryCta:bg@hover'))
+            .toEqual({ section: 'hero', role: 'primaryCta', prop: 'bg', state: 'hover' });
+        expect(parseRoleColorKey('heading:fg@active'))
+            .toEqual({ section: null, role: 'heading', prop: 'fg', state: 'active' });
+    });
+
+    it('round-trips every real combination of section, role, prop and state', () => {
+        const sections: Array<string | null> = [null, 'hero', 'ctaBand', 'about'];
+        const roles: ColorRole[] = ['primaryCta', 'secondaryCta', 'heading', 'eyebrow', 'link'];
+        const props: ColorProp[] = ['bg', 'fg'];
+        let checked = 0;
+        for (const section of sections) {
+            for (const role of roles) {
+                for (const prop of props) {
+                    for (const state of COLOR_STATES) {
+                        const key = roleColorKey(role, prop, section, state);
+                        expect(parseRoleColorKey(key)).toEqual({ section, role, prop, state });
+                        checked += 1;
+                    }
+                }
+            }
+        }
+        expect(checked).toBe(sections.length * roles.length * props.length * COLOR_STATES.length);
+    });
+
+    it('skips a stray state key and still emits the good ones', () => {
+        const withJunk = buildRoleColorCss({
+            'hero:primaryCta:bg@hover': '#17181A',
+            'hero:primaryCta:bg@base': '#FFFFFF',
+            'primaryCta:bg@junk': '#FFFFFF',
+            'primaryCta:@hover': '#FFFFFF',
+            'primaryCta:bg@': '#FFFFFF',
+            'primaryCta:bg@hover@active': '#FFFFFF',
+        });
+        expect(withJunk).toBe(buildRoleColorCss({ 'hero:primaryCta:bg@hover': '#17181A' }));
         expect(withJunk).not.toBe('');
     });
 });

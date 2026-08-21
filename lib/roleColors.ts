@@ -34,6 +34,69 @@
 export type ColorRole = 'primaryCta' | 'secondaryCta' | 'heading' | 'eyebrow' | 'link';
 export type ColorProp = 'bg' | 'fg';
 
+/**
+ * Resting, pointed at, and held down. Three states, not two: `:active` is the
+ * one an admin notices is missing the moment they press a button they have just
+ * recoloured and it flashes back to the template's own colour.
+ *
+ * The state rides on the PROP segment of the key (`bg@hover`) rather than
+ * taking a segment of its own. A fourth colon-separated field would have made
+ * `role:prop:state` and `section:role:prop` both three parts and impossible to
+ * tell apart, and every key already stored is one of those two shapes.
+ */
+export type ColorState = 'base' | 'hover' | 'active';
+
+export const COLOR_STATES: ColorState[] = ['base', 'hover', 'active'];
+
+/** How each state is spelled to an admin. */
+export const COLOR_STATE_LABELS: Record<ColorState, string> = {
+    base: 'Normal',
+    hover: 'Hover',
+    active: 'Pressed',
+};
+
+/**
+ * The pseudo-class suffixes each state paints.
+ *
+ * `base` keeps painting :hover and :focus as well, which is what shipped and
+ * what every published site depends on: without it a recoloured button reverted
+ * to the template's own hover the moment you pointed at it. A `hover` pick
+ * simply lands after it and wins.
+ *
+ * `base` deliberately does NOT paint :active. Adding it would change the CSS
+ * emitted for maps that already exist, and the promise made when sections
+ * landed was that those render byte-identically. :active is painted only when
+ * somebody asks for it.
+ */
+const STATE_SUFFIXES: Record<ColorState, string[]> = {
+    base: ['', ':hover', ':focus'],
+    hover: [':hover', ':focus-visible'],
+    active: [':active'],
+};
+
+/**
+ * Which states a LABEL pick counts as a decision for, used to decide whether a
+ * background pick still needs an automatic legible label.
+ *
+ * Each state covers only itself, and `base` covering only `base` is the part
+ * worth explaining. A base label does reach :hover — STATE_SUFFIXES.base paints
+ * it — so it was tempting to say base covers hover too and skip the check
+ * there. That is wrong: reaching :hover is a BACK-COMPAT SPILL, not a choice
+ * the admin made about the hover state. Counting the spill as a decision
+ * waived the legibility check on exactly the pairing it exists to catch —
+ * `{fg: '#FEFEFE', bg@hover: '#FFF9C4'}` rendered a hovered button at 1.06:1
+ * with nothing complaining. The same bug this file was written to prevent,
+ * moved from resting to hover.
+ *
+ * An automatic label emitted for a hover background lands after the base label
+ * (state-major ordering) and so wins on :hover, which is what makes this safe.
+ */
+const STATE_COVERS: Record<ColorState, ColorState[]> = {
+    base: ['base'],
+    hover: ['hover'],
+    active: ['active'],
+};
+
 export interface RoleDef {
     role: ColorRole;
     label: string;
@@ -116,10 +179,19 @@ export function sectionForField(field: string): string {
 }
 
 /**
- * Storage key. Omit `section` for the legacy every-section form.
+ * Storage key. Omit `section` for the legacy every-section form, and omit
+ * `state` (or pass 'base') for the resting colour — both omissions produce
+ * exactly the key shape that shipped before those axes existed, so nothing
+ * already stored has to be migrated.
  */
-export function roleColorKey(role: ColorRole, prop: ColorProp, section?: string | null): string {
-    return section ? `${section}:${role}:${prop}` : `${role}:${prop}`;
+export function roleColorKey(
+    role: ColorRole,
+    prop: ColorProp,
+    section?: string | null,
+    state?: ColorState | null,
+): string {
+    const p = !state || state === 'base' ? prop : `${prop}@${state}`;
+    return section ? `${section}:${role}:${p}` : `${role}:${p}`;
 }
 
 /**
@@ -129,15 +201,15 @@ export function roleColorKey(role: ColorRole, prop: ColorProp, section?: string 
  */
 export function parseRoleColorKey(
     key: string,
-): { section: string | null; role: ColorRole; prop: ColorProp } | null {
+): { section: string | null; role: ColorRole; prop: ColorProp; state: ColorState } | null {
     const parts = String(key || '').split(':');
     let section: string | null = null;
     let role: string | undefined;
-    let prop: string | undefined;
+    let propField: string | undefined;
     if (parts.length === 2) {
-        [role, prop] = parts;
+        [role, propField] = parts;
     } else if (parts.length === 3) {
-        [section, role, prop] = parts as [string, string, string];
+        [section, role, propField] = parts as [string, string, string];
         if (!section) return null;
     } else {
         return null;
@@ -147,8 +219,21 @@ export function parseRoleColorKey(
     // buildRoleColorCss read .selectors off a function — a throw on the path
     // that runs during publish. A stray key is not a key we wrote.
     if (!role || !Object.prototype.hasOwnProperty.call(COLOR_ROLES, role)) return null;
+
+    // `bg` / `fg` for the resting colour, `bg@hover` / `fg@active` for a state.
+    // Splitting on '@' rather than adding a fourth colon field is what keeps
+    // `role:prop` and `section:role:prop` distinguishable by length.
+    const at = (propField ?? '').indexOf('@');
+    const prop = at === -1 ? propField : propField!.slice(0, at);
+    const rawState = at === -1 ? 'base' : propField!.slice(at + 1);
     if (prop !== 'bg' && prop !== 'fg') return null;
-    return { section, role: role as ColorRole, prop };
+    if (rawState !== 'base' && rawState !== 'hover' && rawState !== 'active') return null;
+    // 'bg@base' is not a key we write — roleColorKey collapses base to 'bg' —
+    // so accepting it would let one colour be stored under two keys that mean
+    // the same thing, and the picker would show whichever it looked up first.
+    if (at !== -1 && rawState === 'base') return null;
+
+    return { section, role: role as ColorRole, prop, state: rawState as ColorState };
 }
 
 /**
@@ -247,7 +332,9 @@ const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 export function buildRoleColorCss(roleColors: Record<string, string> | undefined | null): string {
     if (!roleColors || typeof roleColors !== 'object') return '';
 
-    const entries: Array<{ section: string | null; role: ColorRole; prop: ColorProp; color: string }> = [];
+    const entries: Array<{
+        section: string | null; role: ColorRole; prop: ColorProp; state: ColorState; color: string;
+    }> = [];
     for (const [key, color] of Object.entries(roleColors)) {
         if (!color || typeof color !== 'string' || !HEX.test(color)) continue;
         const parsed = parseRoleColorKey(key);
@@ -256,20 +343,45 @@ export function buildRoleColorCss(roleColors: Record<string, string> | undefined
     }
     if (!entries.length) return '';
 
-    // Which (scope, role) pairs carry an admin-chosen label colour, so a
-    // background pick does not overwrite one.
-    const hasExplicitFg = new Set<string>();
-    for (const e of entries) if (e.prop === 'fg') hasExplicitFg.add(`${e.section ?? '*'}:${e.role}`);
+    // Which (scope, role, STATE) triples a background pick must not paint a
+    // label over. A label picked for the resting state also paints :hover, so
+    // it covers a hover background too — but nothing covers :active unless
+    // :active was picked, because nothing paints :active otherwise.
+    const fgCovers = new Set<string>();
+    for (const e of entries) {
+        if (e.prop !== 'fg') continue;
+        for (const st of STATE_COVERS[e.state]) fgCovers.add(`${e.section ?? '*'}:${e.role}:${st}`);
+    }
 
-    // EVERY-SECTION entries first, SECTION-SCOPED second. A pinned selector
-    // like [data-field="hero.cta1.text"] is identical in both forms, so the two
-    // rules tie on specificity and source order is what decides — the narrower
-    // choice has to come last or a legacy every-section colour would silently
-    // outrank the section the admin just picked.
-    entries.sort((a, b) => Number(!!a.section) - Number(!!b.section));
+    // Every rule is !important at the same specificity, so source order is the
+    // whole of the cascade here. Two axes need ordering and STATE IS THE MAJOR
+    // ONE. Getting that backwards is subtle and it was wrong first time.
+    //
+    //   STATE: base, then hover, then active — the order CSS teaches for
+    //   :link :visited :hover :active, and for the same reason. `base` also
+    //   paints :hover (a back-compat spill, see STATE_SUFFIXES), so a hover
+    //   pick only wins by landing after it; and while a button is held down
+    //   both :hover and :active match, so :active must come last or pressing
+    //   shows the hover colour.
+    //
+    //   SCOPE, within one state: every-section before section-scoped. A pinned
+    //   selector like [data-field="hero.cta1.text"] is identical in both forms,
+    //   so the narrower choice has to come last or an every-section colour
+    //   would outrank the section the admin just picked.
+    //
+    // Sorting scope-major looks equivalent and is not. The scope contest only
+    // exists BETWEEN RULES PAINTING THE SAME PSEUDO-CLASS, so hoisting it above
+    // state pushes every section rule past every global one — and a section
+    // pick for the RESTING colour then beat a global pick for hover or pressed,
+    // which the admin had asked for explicitly. Worst case found: a global
+    // three-state palette plus one section resting tweak collapsed all five
+    // rendered states in that section to the resting colour.
+    const stateRank: Record<ColorState, number> = { base: 0, hover: 1, active: 2 };
+    entries.sort((a, b) =>
+        (stateRank[a.state] - stateRank[b.state]) || (Number(!!a.section) - Number(!!b.section)));
 
     const rules: string[] = [];
-    for (const { section, role, prop, color } of entries) {
+    for (const { section, role, prop, state, color } of entries) {
         const def = COLOR_ROLES[role];
         if (!def) continue;
 
@@ -278,15 +390,11 @@ export function buildRoleColorCss(roleColors: Record<string, string> | undefined
             : def.selectors;
         if (!base.length) continue;
 
-        // Apply to base + :hover + :focus (per selector) so the picked colour
-        // holds across states instead of reverting to the template's hover
-        // colour. Appending states to the JOINED string would be wrong — each
-        // selector needs its own suffix.
-        const sel = [
-            ...base,
-            ...base.map((s) => `${s}:hover`),
-            ...base.map((s) => `${s}:focus`),
-        ].join(',');
+        // Each selector needs its own suffix — appending to the JOINED string
+        // would attach the pseudo-class to the last selector only.
+        const sel = STATE_SUFFIXES[state]
+            .flatMap((suffix) => base.map((s) => `${s}${suffix}`))
+            .join(',');
 
         if (prop === 'bg') {
             rules.push(`${sel}{background:${color} !important;border-color:${color} !important;}`);
@@ -296,10 +404,10 @@ export function buildRoleColorCss(roleColors: Record<string, string> | undefined
             // label colour made the label vanish. 'bg' is the DEFAULT prop for
             // buttons, so that was one click away at all times.
             //
-            // Only when the admin has not chosen a label colour at this scope:
-            // an explicit fg always wins, even a bad one. It is their call, and
-            // they can see the result.
-            if (!hasExplicitFg.has(`${section ?? '*'}:${role}`)) {
+            // Only when the admin has not chosen a label colour that already
+            // paints this state: an explicit fg always wins, even a bad one. It
+            // is their call, and they can see the result.
+            if (!fgCovers.has(`${section ?? '*'}:${role}:${state}`)) {
                 rules.push(`${sel}{color:${labelFor(color)} !important;}`);
             }
         } else {
