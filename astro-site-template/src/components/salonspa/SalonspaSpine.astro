@@ -15,12 +15,23 @@
  * Variant-specific overrides (Atelier's espresso CTA, Botanica's
  * sage section bg, etc.) live in the per-letter wrapper, also scoped
  * to `html[data-page="<L>"]` to stop them leaking into sister wrappers.
+ *
+ * EVERY selector below is anchored to the five data-pages that render
+ * through this spine (K, L, M, N, O — the only wrappers that import it).
+ * index.astro imports all 65 wrappers, so Astro bundles every is:global
+ * block into ONE stylesheet that ships on every generated page: an
+ * unanchored `body`, `.btn` or `.h-sect` in here painted all 65 templates,
+ * not just these five. The anchor is `:is(html[data-page="K"],…)`, which
+ * takes the specificity of its most specific argument — (0,1,1) — and so
+ * only RAISES these rules' weight inside K–O. It must not be `:where()`:
+ * that contributes zero, which would stop the leak but also make the spine
+ * lose fights it currently wins inside its own five templates.
  */
 ---
 <style is:global>
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) * { box-sizing: border-box; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) { scroll-behavior: smooth; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) body {
     margin: 0;
     background: var(--paper);
     color: var(--ink);
@@ -30,40 +41,41 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  img { max-width: 100%; display: block; }
-  a { color: inherit; text-decoration: none; }
-  section { position: relative; }
-  .wrap { max-width: var(--maxw, 1280px); margin: 0 auto; padding-inline: var(--pad, clamp(20px, 5vw, 96px)); }
-  .pad-y { padding-block: clamp(72px, 9vw, 140px); }
-  .ink-sect { background: var(--ink); color: var(--paper); }
-  .ink-sect .h-sect { color: var(--paper); }
-  .ink-sect .kicker { color: var(--muted-light, rgba(var(--paper-rgb), 0.66)); }
-  .eyebrow {
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) img { max-width: 100%; display: block; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) a { color: inherit; text-decoration: none; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) section { position: relative; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .wrap { max-width: var(--maxw, 1280px); margin: 0 auto; padding-inline: var(--pad, clamp(20px, 5vw, 96px)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .pad-y { padding-block: clamp(72px, 9vw, 140px); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .ink-sect { background: var(--ink); color: var(--paper); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .ink-sect .h-sect { color: var(--paper); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .ink-sect .kicker { color: var(--muted-light, rgba(var(--paper-rgb), 0.66)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .eyebrow {
     font-family: var(--serif); font-style: italic;
     font-size: clamp(18px, 2vw, 24px); color: var(--accent);
     line-height: 1; margin: 0 0 18px;
   }
-  .kicker {
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .kicker {
     font-family: var(--sans); text-transform: uppercase;
     letter-spacing: .26em; font-weight: 500; font-size: 11px;
     color: var(--muted, rgba(var(--ink-rgb), 0.6));
     display: inline-flex; align-items: center; gap: 12px;
   }
-  .kicker::before { content: ""; width: 28px; height: 1px; background: var(--accent); display: inline-block; }
-  .kicker.on-dark { color: var(--muted-light, rgba(var(--paper-rgb), 0.66)); }
-  .h-sect {
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .kicker::before { content: ""; width: 28px; height: 1px; background: var(--accent); display: inline-block; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .kicker.on-dark { color: var(--muted-light, rgba(var(--paper-rgb), 0.66)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .h-sect {
     font-family: var(--serif); font-weight: 500;
     font-size: clamp(38px, 5.5vw, 78px); line-height: 1.05;
     letter-spacing: -.005em; margin: 14px 0 0;
   }
-  .lead { font-size: clamp(16px, 1.3vw, 19px); color: var(--muted, rgba(var(--ink-rgb), 0.66)); max-width: 56ch; }
-  .on-dark .lead, .lead.on-dark { color: var(--muted-light, rgba(var(--paper-rgb), 0.66)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .lead { font-size: clamp(16px, 1.3vw, 19px); color: var(--muted, rgba(var(--ink-rgb), 0.66)); max-width: 56ch; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .on-dark .lead,
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .lead.on-dark { color: var(--muted-light, rgba(var(--paper-rgb), 0.66)); }
 
   /* Buttons consume contrast-paired tokens (see playbook §"Contrast guarantee").
      `--on-accent` / `--on-ink` / `--on-paper` are luminance-aware in every
      variant + the override CSS, so extreme schemes can never produce
      white-on-white. Fallback chains keep older variants buildable. */
-  .btn {
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn {
     font-family: var(--sans); text-transform: uppercase;
     letter-spacing: .12em; font-weight: 600; font-size: 12.5px;
     padding: 14px 28px; display: inline-flex; align-items: center; gap: 10px;
@@ -71,21 +83,21 @@
     cursor: pointer; transition: transform .25s ease, background .25s ease, color .25s ease, border-color .25s ease;
     white-space: nowrap; border-radius: 999px;
   }
-  .btn:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent, var(--paper)); transform: translateY(-1px); }
-  .btn--accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent, var(--paper)); }
-  .btn--accent:hover { background: var(--ink); border-color: var(--ink); color: var(--on-ink, var(--paper)); }
-  .btn--ghost { background: transparent; color: var(--on-paper, var(--ink)); border-color: var(--on-paper, var(--ink)); }
-  .btn--ghost:hover { background: var(--ink); color: var(--on-ink, var(--paper)); border-color: var(--ink); }
-  .btn--ghost.on-dark { color: var(--on-ink, var(--paper)); border-color: var(--on-ink, var(--paper)); }
-  .btn--ghost.on-dark:hover { background: var(--on-ink, var(--paper)); color: var(--ink); border-color: var(--on-ink, var(--paper)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent, var(--paper)); transform: translateY(-1px); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn--accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent, var(--paper)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn--accent:hover { background: var(--ink); border-color: var(--ink); color: var(--on-ink, var(--paper)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn--ghost { background: transparent; color: var(--on-paper, var(--ink)); border-color: var(--on-paper, var(--ink)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn--ghost:hover { background: var(--ink); color: var(--on-ink, var(--paper)); border-color: var(--ink); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn--ghost.on-dark { color: var(--on-ink, var(--paper)); border-color: var(--on-ink, var(--paper)); }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn--ghost.on-dark:hover { background: var(--on-ink, var(--paper)); color: var(--ink); border-color: var(--on-ink, var(--paper)); }
 
-  .sect-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; margin-bottom: 48px; }
-  .sect-head .lead { margin: 12px 0 0; }
-  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s ease, transform .8s ease; }
-  .reveal.in { opacity: 1; transform: none; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .sect-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; margin-bottom: 48px; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .sect-head .lead { margin: 12px 0 0; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s ease, transform .8s ease; }
+  :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .reveal.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; transition: none; }
-    * { animation: none !important; }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .reveal { opacity: 1; transform: none; transition: none; }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) * { animation: none !important; }
   }
 
   /* ------------------------------------------------------------------ */
@@ -98,17 +110,17 @@
   /* per-section modifiers still win. Desktop rules above are untouched. */
   /* ------------------------------------------------------------------ */
   @media (max-width: 760px) {
-    .wrap { padding-inline: 22px; }
-    .pad-y { padding-block: clamp(52px, 11vw, 84px); }
-    .sect-head { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 32px; }
-    .sect-head .lead { margin-top: 4px; }
-    .h-sect { font-size: clamp(30px, 7vw, 52px); }
-    .eyebrow { font-size: clamp(17px, 4.6vw, 22px); }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .wrap { padding-inline: 22px; }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .pad-y { padding-block: clamp(52px, 11vw, 84px); }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .sect-head { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 32px; }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .sect-head .lead { margin-top: 4px; }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .h-sect { font-size: clamp(30px, 7vw, 52px); }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .eyebrow { font-size: clamp(17px, 4.6vw, 22px); }
   }
   @media (max-width: 520px) {
-    .wrap { padding-inline: 18px; }
-    .pad-y { padding-block: clamp(44px, 12vw, 64px); }
-    .h-sect { font-size: clamp(27px, 8vw, 40px); }
-    .btn { padding: 13px 22px; }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .wrap { padding-inline: 18px; }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .pad-y { padding-block: clamp(44px, 12vw, 64px); }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .h-sect { font-size: clamp(27px, 8vw, 40px); }
+    :is(html[data-page="K"],html[data-page="L"],html[data-page="M"],html[data-page="N"],html[data-page="O"]) .btn { padding: 13px 22px; }
   }
 </style>

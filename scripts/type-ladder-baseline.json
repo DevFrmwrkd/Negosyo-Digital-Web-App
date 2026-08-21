@@ -7,7 +7,8 @@
         "scripts/check-type-ladders.mjs fails on any ladder NOT listed here, so the bug",
         "cannot spread, and fails again if an entry here stops failing, so a fix cannot",
         "silently regress. To clear one: cap the narrow clamp max at the base clamp value",
-        "AT the breakpoint, then delete its line from this file."
+        "AT the breakpoint, then delete its line from this file.",
+        "The five generic entries carry an html[data-page=…] anchor because those rules used to be unscoped and were painting every template; scoping them changed the selector text, not the clamp. Same debt, same numbers, new key."
     ],
     "known": [
         "PageAP.astro  html[data-page=\"AP\"] .sec-head h2",
@@ -24,11 +25,11 @@
         "PageBG.astro  html[data-page=\"BG\"] .h2",
         "PageBH.astro  html[data-page=\"BH\"] .h2",
         "PageAR.astro  html[data-page=\"AR\"] .sec-head h2",
-        "PageA.astro  .sec h2",
-        "PageB.astro  .sec h2",
-        "PageC.astro  .sec h2",
-        "PageD.astro  .sec h2",
-        "PageE.astro  .sec h2",
+        "PageA.astro  html[data-page=\"A\"] .sec h2",
+        "PageB.astro  html[data-page=\"B\"] .sec h2",
+        "PageC.astro  html[data-page=\"C\"] .sec h2",
+        "PageD.astro  html[data-page=\"D\"] .sec h2",
+        "PageE.astro  html[data-page=\"E\"] .sec h2",
         "PageBI.astro  html[data-page=\"BI\"] :where(.h2)",
         "PageAV.astro  html[data-page=\"AV\"] .sec-tag h2",
         "PageAW.astro  html[data-page=\"AW\"] .sec-h",

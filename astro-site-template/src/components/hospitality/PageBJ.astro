@@ -373,6 +373,13 @@ const __fontHref = buildFontHref(__themePairing);
        the Ironwood label, and the same trap is live here because
        buildOverrideCss pins some labels with !important. */
     html[data-page="BJ"] :where(.btn) {
+      /* DECLARED, not left to chance. A button with no background of its own
+         is filled by whatever rule lands last, and index.astro bundles every
+         template's is:global CSS onto every page — so an unscoped
+         `.btn { background: var(--ink) }` from another family was painting
+         this family's outline controls. The variants below each set their
+         own fill; this is what the ones that want none actually get. */
+      background-color: transparent;
       display: inline-flex; align-items: center; justify-content: center; gap: .55em;
       padding: 16px 30px; min-height: 48px;
       border-radius: 999px; border: 1px solid transparent;

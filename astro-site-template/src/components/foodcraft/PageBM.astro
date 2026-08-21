@@ -334,6 +334,13 @@ const __og = layout.ogImage || layout.favicon || '';
        Ironwood label, and the trap is live here because buildOverrideCss pins
        some labels with !important. */
     html[data-page="BM"] :where(.btn) {
+      /* DECLARED, not left to chance. A button with no background of its own
+         is filled by whatever rule lands last, and index.astro bundles every
+         template's is:global CSS onto every page — so an unscoped
+         `.btn { background: var(--ink) }` from another family was painting
+         this family's outline controls. The variants below each set their
+         own fill; this is what the ones that want none actually get. */
+      background-color: transparent;
       /* line-height is DECLARED. The design sets none on its buttons, so they
          render at the browser normal; inheriting body line-height instead
          inflated every control by ~6px and, on the eyebrow below, pushed the

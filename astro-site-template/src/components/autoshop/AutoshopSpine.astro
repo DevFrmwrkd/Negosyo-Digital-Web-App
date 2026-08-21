@@ -11,12 +11,21 @@
  * hover shadows, uppercase Archivo display. Button text routes through
  * --on-accent / --on-ink / --on-paper contrast tokens (playbook §"Contrast
  * guarantee") so extreme schemes never produce invisible buttons.
+ *
+ * SCOPING: index.astro imports all 65 Page*.astro wrappers, so Astro bundles
+ * every is:global block in the codebase into ONE stylesheet that ships on
+ * EVERY generated page. Any unanchored selector in here therefore paints all
+ * 65 templates. Every rule below is anchored to
+ * `:is(html[data-page="P"],…,html[data-page="T"])` — the five wrappers that
+ * actually `import AutoshopSpine` (PageP, PageQ, PageR, PageS, PageT). The
+ * sister autoshop wrappers PageAF and PageAP inline their own base CSS and do
+ * NOT import this file, so they are deliberately not in the list.
  */
 ---
 <style is:global>
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) * { box-sizing: border-box; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) { scroll-behavior: smooth; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) body {
     margin: 0;
     background: var(--paper);
     color: var(--ink);
@@ -26,20 +35,26 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  h1, h2, h3, h4 {
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) h1,
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) h2,
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) h3,
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) h4 {
     font-family: var(--display);
     font-weight: 900; line-height: 0.95; margin: 0;
     letter-spacing: -0.02em;
   }
-  /* THE CAPS ARE SCOPED, the rest is not, and that asymmetry is the point.
+  /* THE CAPS GOT SCOPED FIRST, and that is why the rest of the file followed.
      index.astro imports every wrapper, so Astro bundles every is:global block
      into ONE stylesheet that ships on every page. An unscoped
      `h1,h2,h3,h4{text-transform:uppercase}` therefore uppercased the headings of
      all 63 templates — including two whose designs are mixed-case serif, where
-     it turned "A whole villa, and no one else in it." into a shout.
-     The other declarations here are harmless because every template sets its own
-     heading font, weight and leading, so they are overridden everywhere. Nothing
-     overrode text-transform, because almost nothing declares it. */
+     it turned "A whole villa, and no one else in it." into a shout. The other
+     declarations in this file leaked exactly the same way; they were merely
+     quieter, because most templates re-declare heading font, weight and leading
+     but almost nothing re-declares text-transform. This rule keeps the page list
+     it was written with, which also names AF: PageAF inlines its own base CSS
+     instead of importing this spine and already uppercases its own headings, so
+     the AF entry is inert — left as found rather than silently changed. */
   html[data-page="P"] h1, html[data-page="P"] h2, html[data-page="P"] h3, html[data-page="P"] h4,
   html[data-page="Q"] h1, html[data-page="Q"] h2, html[data-page="Q"] h3, html[data-page="Q"] h4,
   html[data-page="R"] h1, html[data-page="R"] h2, html[data-page="R"] h3, html[data-page="R"] h4,
@@ -48,38 +63,44 @@
   html[data-page="AF"] h1, html[data-page="AF"] h2, html[data-page="AF"] h3, html[data-page="AF"] h4 {
     text-transform: uppercase;
   }
-  img { max-width: 100%; display: block; }
-  a { color: inherit; text-decoration: none; }
-  section { position: relative; }
-  .wrap { max-width: var(--maxw, 1280px); margin: 0 auto; padding-inline: var(--pad, clamp(20px, 5vw, 80px)); }
-  .pad-y { padding-block: clamp(64px, 8vw, 128px); }
-  .ink-sect { background: var(--ink); color: var(--paper); }
-  .ink-sect .h-sect { color: var(--paper); }
-  .ink-sect .mono, .ink-sect .kicker { color: var(--muted-light, rgba(var(--paper-rgb), .66)); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) img { max-width: 100%; display: block; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) a { color: inherit; text-decoration: none; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) section { position: relative; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .wrap { max-width: var(--maxw, 1280px); margin: 0 auto; padding-inline: var(--pad, clamp(20px, 5vw, 80px)); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .pad-y { padding-block: clamp(64px, 8vw, 128px); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .ink-sect { background: var(--ink); color: var(--paper); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .ink-sect .h-sect { color: var(--paper); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .ink-sect .mono,
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .ink-sect .kicker { color: var(--muted-light, rgba(var(--paper-rgb), .66)); }
 
-  .mono {
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .mono {
     font-family: var(--mono); text-transform: uppercase;
     letter-spacing: .18em; font-size: 12px; font-weight: 500;
     color: var(--muted, rgba(var(--ink-rgb), .6));
   }
-  .kicker {
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .kicker {
     font-family: var(--mono); text-transform: uppercase;
     letter-spacing: .2em; font-weight: 600; font-size: 11px;
     color: var(--accent);
     display: inline-flex; align-items: center; gap: 10px;
   }
-  .kicker .dot { width: 9px; height: 9px; background: var(--accent); border-radius: 50%; display: inline-block; }
-  .h-sect {
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .kicker .dot { width: 9px; height: 9px; background: var(--accent); border-radius: 50%; display: inline-block; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .h-sect {
     font-family: var(--display); font-weight: 900;
     font-size: clamp(38px, 5.5vw, 76px); line-height: 0.98;
     letter-spacing: -.02em; text-transform: uppercase; margin: 14px 0 0;
   }
-  .lead { font-size: clamp(16px, 1.3vw, 19px); color: var(--muted, rgba(var(--ink-rgb), .66)); max-width: 56ch; }
-  .on-dark .lead, .lead.on-dark { color: var(--muted-light, rgba(var(--paper-rgb), .66)); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .lead { font-size: clamp(16px, 1.3vw, 19px); color: var(--muted, rgba(var(--ink-rgb), .66)); max-width: 56ch; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .on-dark .lead,
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .lead.on-dark { color: var(--muted-light, rgba(var(--paper-rgb), .66)); }
 
   /* Buttons: hard border + offset accent shadow on hover (Autoshop signature).
-     Text colors route through contrast tokens so black/yellow schemes stay legible. */
-  .btn {
+     Text colors route through contrast tokens so black/yellow schemes stay legible.
+     `.btn:hover` was the loudest leak in this file: unanchored it scored (0,2,0),
+     which beat the (0,1,1) of a newer template's own `:where(.btn--x:hover)`, so
+     buttons on unrelated designs jumped three pixels and grew a hard offset
+     shadow. Anchored, it can only reach P–T. */
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn {
     display: inline-flex; align-items: center; gap: 10px;
     font-family: var(--display); font-weight: 800;
     text-transform: uppercase; letter-spacing: .02em; font-size: 15px;
@@ -87,26 +108,27 @@
     border: 2px solid var(--ink); background: var(--ink); color: var(--on-ink, var(--paper));
     transition: transform .15s ease, box-shadow .15s ease, background .15s ease, color .15s ease;
   }
-  .btn:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 var(--accent); }
-  .btn--accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent, var(--ink)); }
-  .btn--accent:hover { box-shadow: 6px 6px 0 var(--ink); }
-  .btn--ghost { background: transparent; color: var(--on-paper, var(--ink)); border-color: var(--on-paper, var(--ink)); }
-  .btn--ghost:hover { box-shadow: 6px 6px 0 var(--ink); }
-  .btn--ghost.on-dark { color: var(--on-ink, var(--paper)); border-color: var(--on-ink, var(--paper)); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn:hover { transform: translate(-3px, -3px); box-shadow: 6px 6px 0 var(--accent); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn--accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent, var(--ink)); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn--accent:hover { box-shadow: 6px 6px 0 var(--ink); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn--ghost { background: transparent; color: var(--on-paper, var(--ink)); border-color: var(--on-paper, var(--ink)); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn--ghost:hover { box-shadow: 6px 6px 0 var(--ink); }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .btn--ghost.on-dark { color: var(--on-ink, var(--paper)); border-color: var(--on-ink, var(--paper)); }
 
-  .sect-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; margin-bottom: 44px; }
-  .sect-head .lead { margin: 12px 0 0; }
-  .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
-  .reveal.in { opacity: 1; transform: none; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .sect-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; margin-bottom: 44px; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .sect-head .lead { margin: 12px 0 0; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
+  :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .reveal.in { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; transition: none; }
-    * { animation: none !important; }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) .reveal { opacity: 1; transform: none; transition: none; }
+    :is(html[data-page="P"],html[data-page="Q"],html[data-page="R"],html[data-page="S"],html[data-page="T"]) * { animation: none !important; }
   }
 
   /* ------------------------------------------------------------------ */
   /* Mobile-first shared tuning — Foundry family (P–T) only. Scoped with  */
-  /* :is() to the five P–T data-pages so the sister AF wrapper (which     */
-  /* also pulls this spine) keeps its own mobile handling untouched.      */
+  /* :is() to the five P–T data-pages, the same anchor every rule in this */
+  /* file now carries. (The sister AF and AP wrappers inline their own    */
+  /* base CSS and their own mobile handling; neither imports this spine.) */
   /* Desktop (>760px) is unchanged; per-section grids live in each *P     */
   /* component and stack there. These rules only tighten the SHARED       */
   /* utilities (wrap padding, section rhythm, display type, buttons).     */
