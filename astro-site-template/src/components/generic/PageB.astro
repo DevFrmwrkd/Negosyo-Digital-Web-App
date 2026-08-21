@@ -34,7 +34,7 @@ const __fontHref = buildFontHref(__themePairing);
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page="B">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -47,7 +47,13 @@ const __fontHref = buildFontHref(__themePairing);
   {layout.favicon && <link rel="icon" href={layout.favicon} />}
   {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
   <style is:global>
-    :root {
+    /* Scoped to html[data-page="B"]. index.astro imports all 65 Page*.astro
+       wrappers, so every is:global block in the codebase is bundled into ONE
+       stylesheet that ships on EVERY generated page. Unscoped, the palette
+       below handed --peach/--teal/--serif to all 65, and `em` + `.sec h2 em`
+       repainted other templates' copy salmon and italic. Same convention as
+       PageC in this folder; the <html> above carries data-page="B" for it. */
+    html[data-page="B"] {
       --paper: #ECEEE8; --paper-2: #F5F6F1; --card: #E1E6DD;
       --ink: #1C3A37; --ink-soft: #586E69; --line: #D2D9CF;
       --teal: #2E6E69; --teal-deep: #214F4B;
@@ -57,22 +63,30 @@ const __fontHref = buildFontHref(__themePairing);
       --sans: "Figtree", system-ui, sans-serif;
       --wrap: 1180px;
     }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
+    html[data-page="B"] * { box-sizing: border-box; }
+    html[data-page="B"] { scroll-behavior: smooth; }
+    html[data-page="B"] body {
       margin: 0; background: var(--paper); color: var(--ink);
       font-family: var(--sans); font-size: 17px; font-weight: 400;
       line-height: 1.62; -webkit-font-smoothing: antialiased;
     }
-    img { max-width: 100%; display: block; }
-    a { color: inherit; text-decoration: none; }
-    h1, h2, h3, h4 { margin: 0; font-family: var(--serif); font-weight: 400; line-height: 1.02; letter-spacing: 0; }
-    p { margin: 0; }
-    .wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 30px; }
-    .eyebrow { font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
-    em { font-family: var(--serif); font-style: italic; color: var(--peach); }
-    section { position: relative; }
-    .btn {
+    html[data-page="B"] img { max-width: 100%; display: block; }
+    html[data-page="B"] a { color: inherit; text-decoration: none; }
+    html[data-page="B"] h1, html[data-page="B"] h2,
+    html[data-page="B"] h3, html[data-page="B"] h4 { margin: 0; font-family: var(--serif); font-weight: 400; line-height: 1.02; letter-spacing: 0; }
+    html[data-page="B"] p { margin: 0; }
+    /* .wrap is the one primitive that keeps its weight in :where(): HeroB's
+       `<div class="wrap hero-in">` sets `.hero-in { padding: 120px 0 26px }`,
+       which Astro emits as `.hero-in[data-astro-cid-…]` = (0,2,0). A plain
+       `html[data-page="B"] .wrap` scores (0,2,1) and would take the hero's
+       top padding away. Anchor carries the (0,1,1); the primitive stays
+       weightless, so the rule is scoped without winning a fight it loses
+       today. Same for the two @media overrides of .wrap below. */
+    html[data-page="B"] :where(.wrap) { max-width: var(--wrap); margin: 0 auto; padding: 0 30px; }
+    html[data-page="B"] .eyebrow { font-size: 12px; letter-spacing: .28em; text-transform: uppercase; color: var(--teal); font-weight: 600; }
+    html[data-page="B"] em { font-family: var(--serif); font-style: italic; color: var(--peach); }
+    html[data-page="B"] section { position: relative; }
+    html[data-page="B"] .btn {
       display: inline-flex; align-items: center; gap: 9px;
       font-size: 14px; letter-spacing: .04em; font-weight: 600;
       padding: 15px 28px; min-height: 50px;
@@ -80,25 +94,25 @@ const __fontHref = buildFontHref(__themePairing);
       transition: transform .3s ease, background .3s ease, color .3s ease;
       cursor: pointer;
     }
-    .btn-primary { background: var(--teal); border-color: var(--teal); color: var(--paper-2); }
-    .btn-primary:hover { transform: translateY(-3px); background: var(--teal-deep); }
-    .btn-ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
-    .btn-ghost:hover { background: var(--ink); color: var(--paper-2); transform: translateY(-3px); }
-    .reveal { opacity: 1; transform: none; }
-    body.reveal-on .reveal {
+    html[data-page="B"] .btn-primary { background: var(--teal); border-color: var(--teal); color: var(--paper-2); }
+    html[data-page="B"] .btn-primary:hover { transform: translateY(-3px); background: var(--teal-deep); }
+    html[data-page="B"] .btn-ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+    html[data-page="B"] .btn-ghost:hover { background: var(--ink); color: var(--paper-2); transform: translateY(-3px); }
+    html[data-page="B"] .reveal { opacity: 1; transform: none; }
+    html[data-page="B"] body.reveal-on .reveal {
       opacity: 0; transform: translateY(28px);
       transition: opacity .9s cubic-bezier(.19,1,.22,1), transform .9s cubic-bezier(.19,1,.22,1);
     }
-    body.reveal-on .reveal.in { opacity: 1; transform: none; }
-    .sec { padding: 100px 0; }
-    .sec-head { text-align: center; max-width: 24ch; margin: 0 auto; }
-    .sec h2 { font-size: clamp(40px, 5.6vw, 76px); font-weight: 400; }
-    .sec h2 em { color: var(--teal); }
-    .sec-tag { font-size: 12px; letter-spacing: .26em; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 16px; }
+    html[data-page="B"] body.reveal-on .reveal.in { opacity: 1; transform: none; }
+    html[data-page="B"] .sec { padding: 100px 0; }
+    html[data-page="B"] .sec-head { text-align: center; max-width: 24ch; margin: 0 auto; }
+    html[data-page="B"] .sec h2 { font-size: clamp(40px, 5.6vw, 76px); font-weight: 400; }
+    html[data-page="B"] .sec h2 em { color: var(--teal); }
+    html[data-page="B"] .sec-tag { font-size: 12px; letter-spacing: .26em; text-transform: uppercase; color: var(--teal); font-weight: 600; margin-bottom: 16px; }
     @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; }
-      .reveal { opacity: 1 !important; transform: none !important; }
-      html { scroll-behavior: auto; }
+      html[data-page="B"] * { animation: none !important; }
+      html[data-page="B"] .reveal { opacity: 1 !important; transform: none !important; }
+      html[data-page="B"] { scroll-behavior: auto; }
     }
     /* ---------------------------------------------------------------- */
     /* Mobile-first tuning — shared scaffolding only (wrap padding,      */
@@ -106,16 +120,16 @@ const __fontHref = buildFontHref(__themePairing);
     /* inside each *B component. Desktop rules above are untouched.      */
     /* ---------------------------------------------------------------- */
     @media (max-width: 760px) {
-      .wrap { padding: 0 20px; }
-      .sec { padding: 66px 0; }
-      .sec h2 { font-size: clamp(32px, 8vw, 58px); line-height: 1.06; }
+      html[data-page="B"] :where(.wrap) { padding: 0 20px; }
+      html[data-page="B"] .sec { padding: 66px 0; }
+      html[data-page="B"] .sec h2 { font-size: clamp(32px, 8vw, 58px); line-height: 1.06; }
     }
     @media (max-width: 520px) {
-      .wrap { padding: 0 18px; }
-      .sec { padding: 52px 0; }
-      .sec h2 { font-size: clamp(29px, 8.6vw, 44px); }
+      html[data-page="B"] :where(.wrap) { padding: 0 18px; }
+      html[data-page="B"] .sec { padding: 52px 0; }
+      html[data-page="B"] .sec h2 { font-size: clamp(29px, 8.6vw, 44px); }
       /* Full-width primary CTAs on phones. */
-      .btn { width: 100%; justify-content: center; }
+      html[data-page="B"] .btn { width: 100%; justify-content: center; }
     }
   </style>
   {__fontHref && <link href={__fontHref} rel="stylesheet" />}

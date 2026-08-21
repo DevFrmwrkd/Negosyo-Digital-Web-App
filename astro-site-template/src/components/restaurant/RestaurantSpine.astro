@@ -12,12 +12,44 @@
  * accents. Button text routes through --on-accent / --on-ink / --on-paper
  * contrast tokens (playbook §"Contrast guarantee") so extreme schemes never
  * produce invisible buttons.
+ *
+ * WHY EVERY SELECTOR BELOW CARRIES AN html[data-page] ANCHOR
+ * ---------------------------------------------------------
+ * src/pages/index.astro imports all 65 Page*.astro wrappers, so Astro bundles
+ * every `is:global` block in the project into ONE stylesheet that ships on
+ * EVERY generated page. A rule in here that is not anchored to its own
+ * templates paints all 65 — `body { background: var(--paper) }` and
+ * `.btn:hover { … }` were restyling café, hotel and salon templates that have
+ * nothing to do with this family. The wrappers that import this spine are
+ * PageU–PageY (grep `import RestaurantSpine`), and they render
+ * <html data-page="U"> … <html data-page="Y">, so the anchor is
+ *   :is(html[data-page="U"],…,html[data-page="Y"]) <selector>
+ * which adds (0,1,1) to every rule uniformly — so every rule here keeps the
+ * exact precedence it had relative to every other rule here.
+ *
+ * Three families are anchored as `:is(…) :where(.class)` — the same anchor,
+ * but the class weight is dropped so the total stays BELOW a section component
+ * that already overrides it. Astro scopes component styles with a
+ * [data-astro-cid-…] attribute, so a component's own `.foo { … }` scores
+ * (0,2,0); a plain `:is(…) .foo` scores (0,2,1) and would start winning fights
+ * it has always lost — i.e. it would restyle our own templates:
+ *   · .btn / .btn--*  — CtaBandU's `.cta-primary` paints the band CTA white
+ *   · .ulink          — HeroW restates it at letter-spacing .18em
+ *   · .reveal         — ServicesU's `.course` owns `transition: padding-left`
+ * `a` is anchored the same way, so `.btn`'s colour keeps beating
+ * `a { color: inherit }` on <a class="btn"> exactly as it does today.
+ * Each of those forms is still >= the specificity it had before, so nothing
+ * here loses a fight it used to win. Pseudo-classes stay OUTSIDE :where() so
+ * :hover keeps outranking the base rule and the modifiers.
  */
 ---
 <style is:global>
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
+  /* The root is listed alongside the descendant `*` so box-sizing still lands
+     on <html> itself, exactly as the bare `*` did. */
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]),
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) * { box-sizing: border-box; }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) { scroll-behavior: smooth; }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) body {
     margin: 0;
     background: var(--paper);
     color: var(--ink);
@@ -28,42 +60,48 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
-  h1, h2, h3, h4 {
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) h1,
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) h2,
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) h3,
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) h4 {
     font-family: var(--serif);
     font-weight: 300; margin: 0;
     line-height: 1.04; letter-spacing: -.01em;
   }
-  img { max-width: 100%; display: block; }
-  a { color: inherit; text-decoration: none; }
-  section { position: relative; }
-  .wrap { max-width: var(--maxw, 1320px); margin: 0 auto; padding-inline: var(--pad, clamp(22px, 5vw, 84px)); }
-  .pad-y { padding-block: clamp(78px, 10vw, 160px); }
-  .ink-sect { background: var(--olive); color: var(--paper); }
-  .ink-sect .h-sect { color: var(--paper); }
-  .ink-sect .kicker { color: var(--muted-light, rgba(var(--paper-rgb), .72)); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) img { max-width: 100%; display: block; }
+  /* :where(a) — see the header note: keeps .btn / .ulink above the link reset. */
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(a) { color: inherit; text-decoration: none; }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) section { position: relative; }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .wrap { max-width: var(--maxw, 1320px); margin: 0 auto; padding-inline: var(--pad, clamp(22px, 5vw, 84px)); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .pad-y { padding-block: clamp(78px, 10vw, 160px); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .ink-sect { background: var(--olive); color: var(--paper); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .ink-sect .h-sect { color: var(--paper); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .ink-sect .kicker { color: var(--muted-light, rgba(var(--paper-rgb), .72)); }
 
-  .kicker {
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .kicker {
     font-family: var(--sans); font-weight: 600;
     text-transform: uppercase; letter-spacing: .38em;
     font-size: 11px; color: var(--accent);
     display: inline-flex; align-items: center;
   }
-  .kicker.olive { color: var(--olive-2); }
-  .h-sect {
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .kicker.olive { color: var(--olive-2); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .h-sect {
     font-family: var(--serif); font-weight: 300;
     font-size: clamp(34px, 4.6vw, 62px); line-height: 1.04;
     letter-spacing: -.01em; margin: 14px 0 0;
   }
-  .h-sect em { font-style: italic; color: var(--accent); }
-  .lead {
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .h-sect em { font-style: italic; color: var(--accent); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .lead {
     font-family: var(--serif); font-style: italic;
     font-size: clamp(17px, 1.5vw, 20px);
     color: var(--muted, rgba(var(--ink-rgb), .66)); max-width: 40ch;
   }
 
   /* Buttons: solid ink fill, terracotta on hover (Harvest signature).
-     Text colors route through contrast tokens so extreme schemes stay legible. */
-  .btn {
+     Text colors route through contrast tokens so extreme schemes stay legible.
+     :where() on the class — see the header note: CtaBandU's `.cta-primary`
+     (0,2,0) must keep painting the band CTA white. */
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn) {
     display: inline-flex; align-items: center; gap: .7em;
     font-family: var(--sans); font-weight: 600;
     text-transform: uppercase; letter-spacing: .22em; font-size: 12px;
@@ -71,33 +109,37 @@
     border: 1px solid var(--ink); background: var(--ink); color: var(--on-ink, var(--paper));
     transition: background .45s, color .45s, border-color .45s, transform .45s;
   }
-  .btn:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); transform: translateY(-2px); }
-  .btn--accent { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
-  .btn--accent:hover { background: var(--ink); border-color: var(--ink); color: var(--on-ink, var(--paper)); }
-  .btn--ghost { background: transparent; color: var(--on-paper, var(--ink)); border-color: var(--ink); }
-  .btn--ghost:hover { background: var(--ink); color: var(--on-ink, var(--paper)); border-color: var(--ink); }
-  .btn--ghost.on-dark { background: transparent; color: var(--on-ink, var(--paper)); border-color: rgba(var(--paper-rgb), .5); }
-  .btn--ghost.on-dark:hover { background: var(--paper); color: var(--on-paper, var(--ink)); border-color: var(--paper); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn):hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); transform: translateY(-2px); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn--accent) { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn--accent):hover { background: var(--ink); border-color: var(--ink); color: var(--on-ink, var(--paper)); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn--ghost) { background: transparent; color: var(--on-paper, var(--ink)); border-color: var(--ink); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn--ghost):hover { background: var(--ink); color: var(--on-ink, var(--paper)); border-color: var(--ink); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn--ghost.on-dark) { background: transparent; color: var(--on-ink, var(--paper)); border-color: rgba(var(--paper-rgb), .5); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn--ghost.on-dark):hover { background: var(--paper); color: var(--on-paper, var(--ink)); border-color: var(--paper); }
 
-  .ulink {
+  /* :where(.ulink) — see the header note: HeroW restates all three of these. */
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.ulink) {
     font-family: var(--sans); font-weight: 600;
     text-transform: uppercase; letter-spacing: .2em; font-size: 12px;
     position: relative; padding-bottom: 5px;
   }
-  .ulink::after {
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.ulink)::after {
     content: ""; position: absolute; left: 0; bottom: 0; height: 1px; width: 100%;
     background: currentColor; transform-origin: right; transition: transform .5s ease;
   }
-  .ulink:hover::after { transform: scaleX(0); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.ulink):hover::after { transform: scaleX(0); }
 
-  .sect-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; margin-bottom: 60px; }
-  .sect-head .lead { margin: 0; }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .sect-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; margin-bottom: 60px; }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .sect-head .lead { margin: 0; }
 
-  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 1.2s cubic-bezier(.2,.7,.2,1), transform 1.2s cubic-bezier(.2,.7,.2,1); }
-  .reveal.in { opacity: 1; transform: none; }
+  /* :where(.reveal) — see the header note: ServicesU's `.course` owns its own
+     transition and must keep it. */
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.reveal) { opacity: 0; transform: translateY(30px); transition: opacity 1.2s cubic-bezier(.2,.7,.2,1), transform 1.2s cubic-bezier(.2,.7,.2,1); }
+  :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.reveal.in) { opacity: 1; transform: none; }
   @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; transition: none; }
-    * { animation: none !important; }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.reveal) { opacity: 1; transform: none; transition: none; }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]),
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) * { animation: none !important; }
   }
 
   /* ------------------------------------------------------------------ */
@@ -106,17 +148,17 @@
   /* own scoped grid stacks inside its own component. Desktop untouched. */
   /* ------------------------------------------------------------------ */
   @media (max-width: 760px) {
-    .pad-y { padding-block: clamp(56px, 11vw, 104px); }
-    .sect-head { margin-bottom: 40px; gap: 20px; }
-    .h-sect { font-size: clamp(30px, 7.5vw, 48px); }
-    .lead { font-size: clamp(16px, 4vw, 18px); }
-    .btn { padding: 15px 26px; min-height: 50px; }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .pad-y { padding-block: clamp(56px, 11vw, 104px); }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .sect-head { margin-bottom: 40px; gap: 20px; }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .h-sect { font-size: clamp(30px, 7.5vw, 48px); }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .lead { font-size: clamp(16px, 4vw, 18px); }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn) { padding: 15px 26px; min-height: 50px; }
   }
   @media (max-width: 520px) {
-    .pad-y { padding-block: clamp(46px, 12vw, 76px); }
-    .h-sect { font-size: clamp(27px, 8vw, 38px); }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .pad-y { padding-block: clamp(46px, 12vw, 76px); }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) .h-sect { font-size: clamp(27px, 8vw, 38px); }
     /* Full-width primary CTAs on phones — they sit in flex-wrap rows,
        so 100% width simply stacks them cleanly. */
-    .btn { width: 100%; justify-content: center; }
+    :is(html[data-page="U"],html[data-page="V"],html[data-page="W"],html[data-page="X"],html[data-page="Y"]) :where(.btn) { width: 100%; justify-content: center; }
   }
 </style>
