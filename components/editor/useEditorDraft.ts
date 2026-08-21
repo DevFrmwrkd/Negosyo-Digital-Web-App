@@ -116,6 +116,19 @@ export const normalizeDraft = (raw: any): any => {
         how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
         testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
         faq: normalizeBlockEditor(raw.faq, 'items', { question: 'q', answer: 'a' }),
+        // SERVICES. The AI and the legacy shape both emit this block as a BARE
+        // ARRAY, and without it the sidebar reads the rows fine — the schema
+        // declares fallbackPaths: ['services'] — but every WRITE lands on a
+        // property hung off an Array, which JSON.stringify drops. The edit
+        // showed on screen, the toast said saved, and nothing reached Convex.
+        // Same failure the why/how/testimonials/faq/credentials lines above
+        // exist to prevent; services was the one block left out.
+        //
+        // name -> title and description -> desc are the aliases
+        // lib/astro-builder.ts already applies to the legacy shape, so the
+        // sidebar and the build agree about which key holds what. Neither is a
+        // chain, so the pass stays idempotent.
+        services: normalizeBlockEditor(raw.services, 'items', { name: 'title', description: 'desc' }),
         // label/detail are what the AI actually emits (groq.service.ts:949) while
         // the sidebar schema edits title/body — without these two the panel showed
         // blank rows over content the page was rendering fine, because the .astro
@@ -179,7 +192,15 @@ export function useEditorDraft(props: SandboxEditorProps) {
             try {
                 // Only cache when it actually diverges from the server — a clean
                 // editor shouldn't leave a stale cache to offer next time.
-                if (j(d) === j(content) && j(c ?? null) === j(customizations ?? null)) {
+                //
+                // NORMALISED on both sides. `d` is a normalised draft and
+                // `content` is the raw prop, so comparing them directly calls a
+                // draft "diverged" purely because normalizeDraft reshaped it. On
+                // a site whose services/why/how arrived as bare arrays that is
+                // every load: the editor cached a draft the admin never made,
+                // and the next mount offered to restore it. Same predicate as
+                // the clean-sync test below, for the same reason.
+                if (j(d) === j(normalizeDraft(content)) && j(c ?? null) === j(customizations ?? null)) {
                     window.localStorage.removeItem(cacheKey);
                 } else {
                     window.localStorage.setItem(cacheKey, JSON.stringify({ draft: d, cust: c, at: Date.now() }));
@@ -195,7 +216,12 @@ export function useEditorDraft(props: SandboxEditorProps) {
             const raw = window.localStorage.getItem(cacheKey);
             if (!raw) return;
             const parsed = JSON.parse(raw) as Snapshot & { at?: number };
-            if (parsed && j(parsed.draft) !== j(content)) {
+            // Normalised, matching what was cached: `parsed.draft` was written
+            // from an already-normalised draft, so the raw prop is not its
+            // counterpart. Comparing against the raw one put the amber
+            // "unsaved draft · Restore" bar over content nobody had touched,
+            // and Dismiss did not stick because the next mount re-cached it.
+            if (parsed && j(parsed.draft) !== j(normalizeDraft(content))) {
                 cachedRef.current = { draft: parsed.draft, cust: parsed.cust };
                 setHasCachedDraft(true);
             } else {
