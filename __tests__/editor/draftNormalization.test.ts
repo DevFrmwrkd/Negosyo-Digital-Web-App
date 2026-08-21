@@ -38,9 +38,15 @@ const writeDotted = (root: any, path: string, value: any) => {
     let cur = root;
     for (let i = 0; i < parts.length - 1; i++) {
         const k = parts[i];
+        // The numeric branch matters for the four-part list-row paths the
+        // sidebar writes (services.items.0.title): the parent it creates has to
+        // be an ARRAY, exactly as setValue makes it, or these tests would not be
+        // reproducing what the editor actually does to the draft.
+        const numeric = /^d+$/.test(parts[i + 1]);
         if (Array.isArray(cur[k])) cur[k] = [...cur[k]];
         else if (cur[k] && typeof cur[k] === "object") cur[k] = { ...cur[k] };
-        else cur[k] = {};
+        else if (typeof cur[k] === "string" && cur[k].trim()) cur[k] = numeric ? [] : { lead: cur[k] };
+        else cur[k] = numeric ? [] : {};
         cur = cur[k];
     }
     cur[parts[parts.length - 1]] = value;
@@ -142,5 +148,244 @@ describe("draft normalization (v3 silent data loss)", () => {
         expect(normalizeDraft(null)).toEqual({});
         expect(normalizeDraft({}).why).toBeUndefined();
         expect(normalizeDraft({ faq: "not an array" }).faq).toBe("not an array");
+    });
+});
+
+/**
+ * SERVICES — the same silent-data-loss bug, in the one block that was left out.
+ *
+ * Reported by the owner: typing into a services row in the v3 sidebar does not
+ * save. The field takes the text, the row shows it, the toast says saved, and
+ * nothing reaches Convex. It is the identical three-fact pile-up as above:
+ *
+ *   1. The AI and the legacy shape both emit this block as a BARE ARRAY at
+ *      content.services (lib/astro-builder.ts:669 documents the same thing).
+ *   2. genericContentSchema declares the list at "services.items" with
+ *      fallbackPaths: ['services'], so READING a bare array works — the panel
+ *      cheerfully shows "Items (3)".
+ *   3. So every WRITE goes to services.items.N.<key>, setValue walks that path
+ *      and hangs an `items` property on an Array, and JSON.stringify drops
+ *      non-index properties of an Array. The edit renders, then evaporates.
+ *
+ * The fallback in (2) is what made this one worse than its siblings: the other
+ * five blocks at least LOOKED broken ("No items yet"), so nobody typed into
+ * them. Services looked perfectly healthy and ate the edits.
+ *
+ * The aliases (name -> title, description -> desc) are the ones
+ * lib/astro-builder.ts:677-682 already applies to the legacy shape, so the
+ * sidebar and the build agree on which key holds what.
+ */
+
+/** The legacy / AI shape: a BARE ARRAY of {name, description}. */
+const legacyServicesContent = () => ({
+    business_name: "Kubo Stays",
+    services: [
+        { name: "Garden Room", description: "Queen bed, own balcony.", price: "3,200" },
+        { name: "Loft Room", description: "Sleeps four.", price: "4,100" },
+        { name: "Whole House", description: "All three rooms.", price: "9,500" },
+    ],
+});
+
+describe("draft normalization · services (the block the sidebar could not save)", () => {
+    it("PROVES THE BUG: a row edit on an un-normalized draft never reaches Convex", () => {
+        // No normalization — v3's behaviour before the fix.
+        const draft: any = { ...legacyServicesContent() };
+        writeDotted(draft, "services.items.0.title", "Garden Room (renovated)");
+
+        // In memory the edit is right there, which is why the row redrew with
+        // the new text and the toast went green…
+        expect(draft.services.items[0].title).toBe("Garden Room (renovated)");
+
+        // …and this is where it died: `items` is a non-index property hung off
+        // an Array, so JSON.stringify drops it on the way to /api/save-content.
+        const saved = overTheWire(draft);
+        expect(saved.services.items).toBeUndefined();
+        // What Convex actually received: the original three rows, untouched.
+        expect(saved.services).toHaveLength(3);
+        expect(saved.services[0].name).toBe("Garden Room");
+    });
+
+    it("PROVES THE FIX: the same keystroke survives once the draft is normalized", () => {
+        const draft = normalizeDraft(legacyServicesContent());
+        // Exactly what ContentFieldsAuto writes when the admin types into the
+        // row's Title input.
+        writeDotted(draft, "services.items.0.title", "Garden Room (renovated)");
+
+        const saved = overTheWire(draft);
+        expect(saved.services.items[0].title).toBe("Garden Room (renovated)");
+        expect(saved.services.items).toHaveLength(3);
+    });
+
+    it("PROVES THE FIX: '+ Add' survives too, having written onto an Array before", () => {
+        const draft = normalizeDraft(legacyServicesContent());
+        writeDotted(draft, "services.items", [
+            ...draft.services.items,
+            { title: "Day Use", desc: "9am to 5pm.", price: "1,200" },
+        ]);
+
+        const saved = overTheWire(draft);
+        expect(saved.services.items).toHaveLength(4);
+        expect(saved.services.items[3].title).toBe("Day Use");
+    });
+
+    it("editing one row leaves its siblings byte-identical after save", () => {
+        const draft = normalizeDraft(legacyServicesContent());
+        const before = overTheWire(draft.services.items);
+
+        writeDotted(draft, "services.items.1.desc", "Sleeps four, sea view.");
+        const saved = overTheWire(draft);
+
+        expect(saved.services.items).toHaveLength(3);
+        // The untouched rows must come out the far end unchanged, key for key.
+        expect(JSON.stringify(saved.services.items[0])).toBe(JSON.stringify(before[0]));
+        expect(JSON.stringify(saved.services.items[2])).toBe(JSON.stringify(before[2]));
+        // The edited row keeps every key the admin did not touch.
+        expect(saved.services.items[1].desc).toBe("Sleeps four, sea view.");
+        expect(saved.services.items[1].title).toBe("Loft Room");
+        expect(saved.services.items[1].price).toBe("4,100");
+    });
+
+    it("wraps a bare array into { items } so the schema's primary path resolves", () => {
+        const d = normalizeDraft(legacyServicesContent());
+        expect(Array.isArray(d.services)).toBe(false);
+        expect(d.services.items).toHaveLength(3);
+        // Untouched sibling content is still carried through.
+        expect(d.business_name).toBe("Kubo Stays");
+    });
+
+    it("aliases the legacy row names onto the ones the schema edits", () => {
+        const d = normalizeDraft(legacyServicesContent());
+        expect(d.services.items[0].title).toBe("Garden Room");             // name -> title
+        expect(d.services.items[0].desc).toBe("Queen bed, own balcony.");  // description -> desc
+        // The originals survive, so the .astro components' own fallbacks and
+        // lib/astro-builder.ts keep working on the very same object.
+        expect(d.services.items[0].name).toBe("Garden Room");
+        expect(d.services.items[0].description).toBe("Queen bed, own balcony.");
+        // Keys that are neither aliased nor known pass straight through.
+        expect(d.services.items[0].price).toBe("3,200");
+    });
+
+    it("does not let the services aliases clobber an already-correct row", () => {
+        const d = normalizeDraft({
+            services: [
+                { title: "Set by hand", desc: "Edited copy", name: "old", description: "old" },
+            ],
+        });
+        expect(d.services.items[0].title).toBe("Set by hand");
+        expect(d.services.items[0].desc).toBe("Edited copy");
+    });
+
+    it("leaves an already-wrapped services block alone, wrapper keys and all", () => {
+        // What a submission saved through v1 (or through this fix) looks like
+        // when it comes back from the server.
+        const already = {
+            tag: "What we do",
+            headline: "Three rooms",
+            sub: "Book one or take the lot.",
+            ctaLabel: "Enquire",
+            items: [{ title: "Garden Room", desc: "Queen bed.", price: "3,200" }],
+        };
+        const d = normalizeDraft({ services: already });
+
+        expect(d.services).toEqual(already);
+        expect(d.services.tag).toBe("What we do");
+        expect(d.services.headline).toBe("Three rooms");
+        expect(d.services.sub).toBe("Book one or take the lot.");
+        expect(d.services.ctaLabel).toBe("Enquire");
+        expect(d.services.items).toHaveLength(1);
+    });
+
+    it("still aliases the rows inside an already-wrapped block", () => {
+        // The half-migrated shape: someone wrapped the block but the rows still
+        // carry the AI's field names.
+        const d = normalizeDraft({
+            services: { tag: "Rooms", items: [{ name: "Loft", description: "Sleeps four." }] },
+        });
+        expect(d.services.tag).toBe("Rooms");
+        expect(d.services.items[0].title).toBe("Loft");
+        expect(d.services.items[0].desc).toBe("Sleeps four.");
+    });
+
+    it("does not invent a services block where there was none", () => {
+        // An undefined block must stay undefined — normalizing must never write
+        // an empty {items: []} over a template's own defaults.
+        expect(normalizeDraft({ business_name: "X" }).services).toBeUndefined();
+        expect(normalizeDraft({ services: undefined }).services).toBeUndefined();
+        expect(normalizeDraft({ services: null }).services).toBeNull();
+        // And nothing lands on the wire either.
+        expect("services" in overTheWire(normalizeDraft({ business_name: "X" }))).toBe(false);
+    });
+
+    it("passes malformed services through without throwing", () => {
+        expect(() => normalizeDraft({ services: "Haircuts, colour" })).not.toThrow();
+        expect(normalizeDraft({ services: "Haircuts, colour" }).services).toBe("Haircuts, colour");
+        expect(normalizeDraft({ services: 42 }).services).toBe(42);
+        expect(normalizeDraft({ services: true }).services).toBe(true);
+        // An object with no items[] anywhere is returned as-is, not wrapped.
+        expect(normalizeDraft({ services: { headline: "Just a heading" } }).services)
+            .toEqual({ headline: "Just a heading" });
+    });
+
+    it("handles rows that are not objects", () => {
+        const d = normalizeDraft({ services: ["Haircut", null, 42, undefined] });
+        expect(d.services.items).toHaveLength(4);
+        expect(d.services.items[0]).toBe("Haircut");
+        expect(d.services.items[1]).toBeNull();
+        expect(d.services.items[2]).toBe(42);
+    });
+
+    // ── IDEMPOTENCE ──────────────────────────────────────────────────────
+    // normalizeDraft runs at THREE seed points (useEditorDraft.ts:150, :279,
+    // :293) and, critically, on the right-hand side of the clean-sync equality
+    // test at :290. If a second pass differs from the first by so much as a key
+    // ORDER, that test reads as permanently dirty and the editor SILENTLY STOPS
+    // ADOPTING SERVER UPDATES. The stringify assertion below is the production
+    // predicate itself (`j()`), not a proxy for it.
+    //
+    // This is the trap the credentials aliases already fell into once: detail ->
+    // body plus body -> desc is a CHAIN, and ordering it wrongly made the second
+    // pass derive a desc the first pass did not. services' two aliases (name ->
+    // title, description -> desc) share no key, so they cannot chain — these
+    // cases exist to keep it that way.
+    const idempotenceCases: Array<[string, any]> = [
+        ["a bare array", { services: [{ name: "A", description: "a" }] }],
+        ["the wrapped shape", { services: { tag: "t", items: [{ title: "A", desc: "a" }] } }],
+        ["a wrapper whose rows still use legacy names", { services: { items: [{ name: "A", description: "a" }] } }],
+        ["mixed legacy and already-correct rows", {
+            services: [
+                { name: "A", description: "a" },
+                { title: "B", desc: "b" },
+                { name: "C", desc: "c" },
+                { title: "D", description: "d" },
+            ],
+        }],
+        ["rows that are not objects", { services: ["Haircut", null, 42, undefined] }],
+        ["an empty array", { services: [] }],
+        ["an empty wrapper", { services: { headline: "h", items: [] } }],
+        ["a bare array alongside every sibling block", legacyServicesContent()],
+        ["services next to the Groq-shaped blocks", { ...groqShapedContent(), ...legacyServicesContent() }],
+    ];
+
+    it.each(idempotenceCases)("is idempotent for %s", (_label, input) => {
+        const once = normalizeDraft(input);
+        const twice = normalizeDraft(once);
+        expect(twice).toEqual(once);
+        // The exact comparison the clean-sync guard performs.
+        expect(JSON.stringify(twice)).toBe(JSON.stringify(once));
+    });
+
+    it("stays idempotent after the sidebar has written to a row", () => {
+        // The realistic sequence: seed, admin types, server pushes the saved
+        // content back, hook re-normalizes to compare. A third pass must still
+        // be a no-op or the adopt path breaks after the very first edit.
+        const draft = normalizeDraft(legacyServicesContent());
+        writeDotted(draft, "services.items.0.title", "Garden Room (renovated)");
+        const roundTripped = overTheWire(draft);
+
+        const once = normalizeDraft(roundTripped);
+        expect(JSON.stringify(normalizeDraft(once))).toBe(JSON.stringify(once));
+        // And a clean editor comparing its draft against the freshly saved
+        // server content reads as CLEAN, which is what lets it adopt at all.
+        expect(JSON.stringify(once)).toBe(JSON.stringify(normalizeDraft(roundTripped)));
     });
 });

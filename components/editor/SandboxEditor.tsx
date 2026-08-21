@@ -434,6 +434,19 @@ export default function SandboxEditor(props: SandboxEditorProps) {
             how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
             testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
             faq: normalizeBlockEditor(raw.faq, 'items', { question: 'q', answer: 'a' }),
+            // SERVICES. The AI and the legacy shape both emit this block as a BARE
+            // ARRAY, and without it the sidebar reads the rows fine — the schema
+            // declares fallbackPaths: ['services'] — but every WRITE lands on a
+            // property hung off an Array, which JSON.stringify drops. The edit
+            // showed on screen, the toast said saved, and nothing reached Convex.
+            // Same failure the why/how/testimonials/faq/credentials lines above
+            // exist to prevent; services was the one block left out.
+            //
+            // name -> title and description -> desc are the aliases
+            // lib/astro-builder.ts already applies to the legacy shape, so the
+            // sidebar and the build agree about which key holds what. Neither is a
+            // chain, so the pass stays idempotent.
+            services: normalizeBlockEditor(raw.services, 'items', { name: 'title', description: 'desc' }),
             // label/detail are what the AI emits; the schema edits title/body.
             // Kept in step with useEditorDraft.normalizeDraft (the shared copy)
             // so v1 and v3 agree for as long as v1 is still selectable.
