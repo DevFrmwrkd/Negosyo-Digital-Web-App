@@ -532,6 +532,36 @@ const solo = !hasLead;
     overflow-wrap: anywhere;
   }
 
+  /* HOVER, and the boundary STRENGTHENS rather than disappears.
+     The design draws this control no hover at all, and a control with none
+     reads as dead — the same argument HeroBN's outlined button already settled
+     for this family. Inverting to a cream FILL the way that one does is wrong
+     here though: it would land this pill on exactly the treatment of the cream
+     button it is joined to, and the pair would read as one wide button.
+
+     So the hairline goes to full cream and the ground takes an 8% cream wash.
+     Measured against the band: the border moves 3.18:1 -> 5.31:1, so the edge
+     that identifies the control gets MORE definite under the pointer, not less,
+     and the label stays at 5.31:1 on the washed ground (6.14:1 unwashed).
+
+     Same fallback-then-exact pair as the resting border above, for the same
+     reason: no --cream-rgb triplet exists, so the exact value is mixed out of
+     the token and an engine without color-mix keeps the --paper-rgb line.
+     border-COLOR only — the shorthand would put back the left edge that
+     border-left-width: 0 removes so the pair can abut. */
+  .pdend-tel:hover,
+  .pdend-tel:focus-visible {
+    background-color: rgba(var(--paper-rgb), .08);
+    background-color: color-mix(in srgb, var(--cream) 8%, transparent);
+    border-color: rgba(var(--paper-rgb), 1);
+    border-color: var(--cream);
+    /* border-left-width is deliberately NOT restated. border-COLOR does not
+       touch width, so the resting rule's 0 still holds where the two controls
+       abut — and at 520 the stack puts a 1px left edge back, which a width
+       here would out-specify and strip, opening the box on exactly the layout
+       that needs it closed. */
+  }
+
   /* ── R8 · this section's OWN grid ──────────────────────────────────────────
      The two cells collapse at 900px, where .8fr of the body cell has run out of
      measure for a sentence and two controls side by side. DOM order is kept
