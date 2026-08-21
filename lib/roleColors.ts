@@ -85,9 +85,55 @@ export function roleColorKey(role: ColorRole, prop: ColorProp): string {
  * cleanly); `fg` sets the text colour. All rules are `!important` to beat the
  * template's own token-driven styling.
  */
+
+/**
+ * Relative luminance (WCAG 2.x) of a #rgb / #rrggbb / #rrggbbaa colour.
+ * Alpha is ignored: a translucent pick composites over something we cannot see
+ * from here, and guessing would be worse than treating it as opaque.
+ */
+function luminance(hex: string): number {
+    let h = hex.replace('#', '');
+    if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+    if (h.length === 8) h = h.slice(0, 6);
+    if (h.length !== 6) return 0.5;
+    const lin = [0, 2, 4].map((i) => {
+        const s = parseInt(h.slice(i, i + 2), 16) / 255;
+        return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * lin[0]! + 0.7152 * lin[1]! + 0.0722 * lin[2]!;
+}
+
+function contrast(a: string, b: string): number {
+    const x = luminance(a);
+    const y = luminance(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/**
+ * The legible label for a picked background.
+ *
+ * NOT `luminance(bg) > 0.5 ? black : white`. That threshold is wrong — white
+ * only beats black below luminance ~0.179 — and it is why several schemes ship
+ * sub-AA button labels. Measure both and take the winner; there is no case
+ * where the losing one is preferable.
+ */
+export function labelFor(bg: string): string {
+    const DARK = '#0B0B0F';
+    const LIGHT = '#FFFFFF';
+    return contrast(LIGHT, bg) >= contrast(DARK, bg) ? LIGHT : DARK;
+}
+
 export function buildRoleColorCss(roleColors: Record<string, string> | undefined | null): string {
     if (!roleColors || typeof roleColors !== 'object') return '';
     const rules: string[] = [];
+    // Which roles carry an admin-chosen label colour, so a background pick for
+    // that role does not overwrite it.
+    const hasExplicitFg = new Set<string>();
+    for (const [key, color] of Object.entries(roleColors)) {
+        if (!color || typeof color !== 'string' || !/^#[0-9a-fA-F]{3,8}$/.test(color)) continue;
+        const [r, p] = key.split(':');
+        if (p === 'fg' && r) hasExplicitFg.add(r);
+    }
     for (const [key, color] of Object.entries(roleColors)) {
         if (!color || typeof color !== 'string' || !/^#[0-9a-fA-F]{3,8}$/.test(color)) continue;
         const [role, prop] = key.split(':') as [ColorRole, ColorProp];
@@ -104,6 +150,18 @@ export function buildRoleColorCss(roleColors: Record<string, string> | undefined
         ].join(',');
         if (prop === 'bg') {
             rules.push(`${sel}{background:${color} !important;border-color:${color} !important;}`);
+            // A background pick with no matching label pick used to leave the
+            // label at whatever the TEMPLATE chose, pinned by nothing and
+            // checked by nobody — so recolouring a button's fill toward its own
+            // label colour made the label vanish. 'bg' is the DEFAULT prop for
+            // buttons, so that was one click away at all times.
+            //
+            // Only when the admin has not chosen a label colour themselves: an
+            // explicit fg always wins, even a bad one. It is their call, and
+            // they can see the result.
+            if (!hasExplicitFg.has(role)) {
+                rules.push(`${sel}{color:${labelFor(color)} !important;}`);
+            }
         } else {
             rules.push(`${sel}{color:${color} !important;}`);
         }
