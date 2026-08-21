@@ -29,6 +29,7 @@ import {
 } from "./genericContentSchema";
 import { sectionsForTemplate } from "./templateCatalog";
 import { TEMPLATE_FIELD_PATHS } from "./templateFieldPaths.generated";
+import { rowWriteInList } from "./listRowWrites";
 
 export interface ContentFieldsAutoProps {
     getValue: (path: string) => any;
@@ -262,6 +263,7 @@ export default function ContentFieldsAuto({
                     setValue={setValue}
                     openImagePicker={openImagePicker}
                     onTextChange={handleTextChange}
+                    pushLiveText={pushLiveText}
                 />
             ))}
         </div>
@@ -276,9 +278,16 @@ interface GroupRenderProps {
     setValue: (path: string, value: any) => void;
     openImagePicker: (path: string) => void;
     onTextChange: (path: string, value: string) => void;
+    /**
+     * Threaded down only for ListField. A row edit cannot go through
+     * onTextChange — that writes the LEAF path, which is the bug — so ListField
+     * writes the whole array itself and still has to push the live preview
+     * update under the leaf path the iframe bridge knows.
+     */
+    pushLiveText?: (path: string, value: any) => void;
 }
 
-function GroupRender({ group, isOpen, onToggle, getValue, setValue, openImagePicker, onTextChange }: GroupRenderProps) {
+function GroupRender({ group, isOpen, onToggle, getValue, setValue, openImagePicker, onTextChange, pushLiveText }: GroupRenderProps) {
     return (
         <div
             style={{
@@ -347,6 +356,7 @@ function GroupRender({ group, isOpen, onToggle, getValue, setValue, openImagePic
                             setValue={setValue}
                             openImagePicker={openImagePicker}
                             onTextChange={onTextChange}
+                            pushLiveText={pushLiveText}
                         />
                     ))}
                 </div>
@@ -361,9 +371,10 @@ interface FieldRenderProps {
     setValue: (path: string, value: any) => void;
     openImagePicker: (path: string) => void;
     onTextChange: (path: string, value: string) => void;
+    pushLiveText?: (path: string, value: any) => void;
 }
 
-function FieldRender({ field, getValue, setValue, openImagePicker, onTextChange }: FieldRenderProps) {
+function FieldRender({ field, getValue, setValue, openImagePicker, onTextChange, pushLiveText }: FieldRenderProps) {
     if (isListSpec(field)) {
         return (
             <ListField
@@ -372,6 +383,7 @@ function FieldRender({ field, getValue, setValue, openImagePicker, onTextChange 
                 setValue={setValue}
                 openImagePicker={openImagePicker}
                 onTextChange={onTextChange}
+                pushLiveText={pushLiveText}
             />
         );
     }
@@ -508,7 +520,7 @@ function ScalarField({ spec, getValue, setValue, openImagePicker, onTextChange }
     );
 }
 
-function ListField({ spec, getValue, setValue, openImagePicker, onTextChange }: { spec: ListSpec } & Omit<FieldRenderProps, 'field'>) {
+function ListField({ spec, getValue, setValue, openImagePicker, onTextChange, pushLiveText }: { spec: ListSpec } & Omit<FieldRenderProps, 'field'>) {
     let raw = getValue(spec.path);
     if ((!Array.isArray(raw) || raw.length === 0) && spec.fallbackPaths) {
         for (const fb of spec.fallbackPaths) {
@@ -536,6 +548,45 @@ function ListField({ spec, getValue, setValue, openImagePicker, onTextChange }: 
         const [item] = next.splice(from, 1);
         next.splice(to, 0, item);
         setValue(spec.path, next);
+    };
+
+    // ── Row writes carry the whole list ───────────────────────────────────
+    // `list` above may have come from spec.fallbackPaths, or from the derived
+    // defaults the caller's getValue chains onto — in which case spec.path holds
+    // NOTHING. A per-row input that wrote its own leaf (gallery.items.3.caption)
+    // therefore created a fresh SPARSE array with one partial row, and
+    // JSON.stringify turned the holes into null: three tiles destroyed by
+    // editing the fourth, with an honest success toast on top.
+    //
+    // So a row write rebuilds `list` — exactly what the admin is looking at,
+    // whatever it was read from — with that one leaf changed, and writes it to
+    // spec.path in a SINGLE setValue call. Add / Remove / Reorder above have
+    // always done this; these are the writers that did not.
+    //
+    // One call, not read-then-write: two sequential writes would race each other
+    // on stale draft state.
+    //
+    // Nothing here fires on render or on mount. A submission that is merely
+    // OPENED still persists nothing, so the derived defaults stay derived
+    // (lib/derive-content-defaults.ts keeps re-deriving them) and an untouched
+    // draft stays clean.
+    const writeRow = (path: string, value: any): boolean => {
+        // null for a path outside this list, a non-numeric segment where the
+        // index belongs, or an index past the rows on screen — all of which
+        // fall through to the plain setValue rather than being guessed at.
+        const write = rowWriteInList(spec.path, list, path, value);
+        if (!write) return false;
+        setValue(write.path, write.value);
+        return true;
+    };
+    const rowSetValue = (path: string, value: any) => {
+        if (!writeRow(path, value)) setValue(path, value);
+    };
+    // The live preview still has to be told about the LEAF, not the array: the
+    // iframe bridge matches on the data-field path the row's input carries.
+    const rowTextChange = (path: string, value: string) => {
+        if (writeRow(path, value)) pushLiveText?.(path, value);
+        else onTextChange(path, value);
     };
 
     // Determine whether items are strings (when itemFields has a single
@@ -657,25 +708,37 @@ function ListField({ spec, getValue, setValue, openImagePicker, onTextChange }: 
                             </div>
                         </div>
                         {isStringList ? (
-                            // Render the single field at the item path itself.
+                            // Render the single field at the item path itself —
+                            // the row IS the value, so writeRow's subPath is ''.
                             <ScalarField
                                 spec={{ ...spec.itemFields[0], path: itemPath }}
                                 getValue={getValue}
-                                setValue={setValue}
+                                setValue={rowSetValue}
                                 openImagePicker={openImagePicker}
-                                onTextChange={onTextChange}
+                                onTextChange={rowTextChange}
                             />
                         ) : (
                             spec.itemFields.map((sub, sidx) => {
                                 const subPath = joinPath(itemPath, sub.path);
+                                // hrefPath is re-based into the row too. Item
+                                // paths are relative ('cta.text'), so a link
+                                // itemField that kept an absolute hrefPath would
+                                // write the row's text at services.items.0.cta.text
+                                // and its href at the TOP LEVEL — every row
+                                // fighting over one shared key. No list declares
+                                // a link field today; this is what makes it safe
+                                // for one to.
+                                const rowSpec = sub.hrefPath
+                                    ? { ...sub, path: subPath, hrefPath: joinPath(itemPath, sub.hrefPath) }
+                                    : { ...sub, path: subPath };
                                 return (
                                     <ScalarField
                                         key={sidx}
-                                        spec={{ ...sub, path: subPath }}
+                                        spec={rowSpec}
                                         getValue={getValue}
-                                        setValue={setValue}
+                                        setValue={rowSetValue}
                                         openImagePicker={openImagePicker}
-                                        onTextChange={onTextChange}
+                                        onTextChange={rowTextChange}
                                     />
                                 );
                             })

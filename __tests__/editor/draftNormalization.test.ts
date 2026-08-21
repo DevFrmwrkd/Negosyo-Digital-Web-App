@@ -42,7 +42,7 @@ const writeDotted = (root: any, path: string, value: any) => {
         // sidebar writes (services.items.0.title): the parent it creates has to
         // be an ARRAY, exactly as setValue makes it, or these tests would not be
         // reproducing what the editor actually does to the draft.
-        const numeric = /^d+$/.test(parts[i + 1]);
+        const numeric = /^\d+$/.test(parts[i + 1]);
         if (Array.isArray(cur[k])) cur[k] = [...cur[k]];
         else if (cur[k] && typeof cur[k] === "object") cur[k] = { ...cur[k] };
         else if (typeof cur[k] === "string" && cur[k].trim()) cur[k] = numeric ? [] : { lead: cur[k] };
@@ -387,5 +387,330 @@ describe("draft normalization · services (the block the sidebar could not save)
         // And a clean editor comparing its draft against the freshly saved
         // server content reads as CLEAN, which is what lets it adopt at all.
         expect(JSON.stringify(once)).toBe(JSON.stringify(normalizeDraft(roundTripped)));
+    });
+});
+
+/**
+ * FOOTER.SOCIAL — the same bug one level in, and the reason it is worse.
+ *
+ * The producer writes the links as `footer.social_links`
+ * (app/api/generate-website/route.ts:894). The sidebar schema edits
+ * `footer.social` and declares `fallbackPaths: ['footer.social_links']`
+ * (genericContentSchema.ts:757-766). So:
+ *
+ *   1. READING works. ListField falls through to the fallback and the panel
+ *      shows all three links — the same false health that made services worse
+ *      than its siblings.
+ *   2. WRITING a row does not. Each row input commits ONE leaf at
+ *      `footer.social.<n>.<key>`, and `footer.social` does not exist, so
+ *      setValue mints a fresh array with a hole at every index before `<n>`.
+ *   3. JSON.stringify turns those holes into `null`. Unlike services this write
+ *      LANDS — the toast is honest — and the siblings arrive at Convex as nulls.
+ *      barbershop/footer/FooterF.astro:33 then dereferences `s.url` on one and
+ *      the rebuild THROWS.
+ *
+ * normalizeBlockEditor cannot express this one: services' fallback was the
+ * block's OWN key (a bare array AT `services`), which is a block-shape change.
+ * This fallback is a SIBLING key inside `footer`, so it is a hoist within the
+ * footer object.
+ */
+
+/** What generate-website stores for a site with social links. */
+const footerSocialContent = () => ({
+    business_name: "Villa Marilag",
+    footer: {
+        brand_blurb: "Beachfront rooms in San Juan, Batangas.",
+        visit: { lines: ["Barangay Laiya", "0917 555 0134"] },
+        social_links: [
+            { platform: "Instagram", url: "https://instagram.com/villamarilag" },
+            { platform: "Facebook", url: "https://facebook.com/villamarilag" },
+            { platform: "TikTok", url: "https://tiktok.com/@villamarilag" },
+        ],
+    },
+});
+
+/**
+ * What every footer .astro does with the block, verbatim from
+ * barbershop/footer/FooterF.astro:16-18. `layout.socialLinks` is
+ * `content.footer?.social_links` (lib/astro-builder.ts:354). This is how the
+ * tests below check that the hoist keeps the PAGE showing what the PANEL shows.
+ */
+const socialAsRendered = (saved: any): Array<{ platform: string; url: string }> => {
+    const f = saved.footer || {};
+    return Array.isArray(f.social) && f.social.length
+        ? f.social
+        : (Array.isArray(f.social_links) ? f.social_links : []);
+};
+
+/** What ListField displays: primary path, else the fallback (ContentFieldsAuto.tsx:511-518). */
+const socialAsListed = (draft: any): any[] => {
+    const f = draft.footer || {};
+    let raw = f.social;
+    if (!Array.isArray(raw) || raw.length === 0) raw = f.social_links;
+    return Array.isArray(raw) ? raw : [];
+};
+
+describe("draft normalization · footer.social (the list a row edit turned to nulls)", () => {
+    it("PROVES THE BUG: editing row 2 of 3 saves [null, {…}] and drops the rest", () => {
+        // No normalization — the panel is showing three links read through the
+        // fallback, and the admin fixes the Facebook URL on the second one.
+        const draft: any = { ...footerSocialContent() };
+        expect(socialAsListed(draft)).toHaveLength(3);
+
+        writeDotted(draft, "footer.social.1.url", "https://facebook.com/villamarilag.ph");
+
+        const saved = overTheWire(draft);
+        // The write LANDED — this is why the toast was honest and nobody looked.
+        expect(saved.footer.social[1].url).toBe("https://facebook.com/villamarilag.ph");
+        // …and this is the damage: a two-element array whose first row is null,
+        // in place of the three links the panel was showing.
+        expect(saved.footer.social).toEqual([null, { url: "https://facebook.com/villamarilag.ph" }]);
+        // The page now prefers that array (non-empty), so three links become two,
+        // one of them a null that FooterF.astro:33 dereferences as `s.url`.
+        const rendered = socialAsRendered(saved);
+        expect(rendered).toHaveLength(2);
+        expect(rendered[0]).toBeNull();
+        expect(() => rendered.map((s: any) => s.url)).toThrow(TypeError);
+        // The Instagram and TikTok rows are simply gone.
+        expect(rendered.some((s: any) => s?.platform === "Instagram")).toBe(false);
+    });
+
+    it("PROVES THE FIX: the same keystroke leaves all three links intact", () => {
+        const draft = normalizeDraft(footerSocialContent());
+        writeDotted(draft, "footer.social.1.url", "https://facebook.com/villamarilag.ph");
+
+        const saved = overTheWire(draft);
+        expect(saved.footer.social).toHaveLength(3);
+        expect(saved.footer.social.every((s: any) => s && typeof s === "object")).toBe(true);
+        expect(saved.footer.social[1].url).toBe("https://facebook.com/villamarilag.ph");
+        // The edited row keeps the key the admin did not touch…
+        expect(saved.footer.social[1].platform).toBe("Facebook");
+        // …and the untouched rows come out byte-identical.
+        expect(JSON.stringify(saved.footer.social[0]))
+            .toBe(JSON.stringify(footerSocialContent().footer.social_links[0]));
+        expect(JSON.stringify(saved.footer.social[2]))
+            .toBe(JSON.stringify(footerSocialContent().footer.social_links[2]));
+    });
+
+    it("keeps the page and the panel on the same list after the hoist", () => {
+        const draft = normalizeDraft(footerSocialContent());
+        writeDotted(draft, "footer.social.1.url", "https://facebook.com/villamarilag.ph");
+        const saved = overTheWire(draft);
+
+        // Every footer .astro prefers `f.social` when it is a non-empty array,
+        // so the rendered list IS the edited list — no desync with
+        // layout.socialLinks, which the hoist emptied on purpose.
+        expect(socialAsRendered(saved)).toEqual(saved.footer.social);
+        expect(socialAsRendered(saved)).toEqual(socialAsListed(saved));
+        // Stated as what the visitor sees, because page == panel is also true
+        // when BOTH are broken — that is exactly the state this fix removes.
+        expect(socialAsRendered(saved).map((s: any) => s.platform))
+            .toEqual(["Instagram", "Facebook", "TikTok"]);
+    });
+
+    it("hoists the links onto the path the schema actually edits", () => {
+        const d = normalizeDraft(footerSocialContent());
+        expect(d.footer.social).toHaveLength(3);
+        expect(d.footer.social[0].platform).toBe("Instagram");
+        // The legacy key is REMOVED, so ListField's fallback can never fire
+        // again — which is what stops "remove every row" from resurrecting the
+        // old links on the next render.
+        expect("social_links" in d.footer).toBe(false);
+    });
+
+    it("carries every other footer key through untouched", () => {
+        const d = normalizeDraft(footerSocialContent());
+        expect(d.footer.brand_blurb).toBe("Beachfront rooms in San Juan, Batangas.");
+        expect(d.footer.visit.lines).toEqual(["Barangay Laiya", "0917 555 0134"]);
+        expect(d.business_name).toBe("Villa Marilag");
+    });
+
+    it("does not clobber a footer.social the admin already has", () => {
+        const d = normalizeDraft({
+            footer: {
+                social: [{ platform: "Instagram", url: "https://instagram.com/new" }],
+                social_links: [{ platform: "Instagram", url: "https://instagram.com/old" }],
+            },
+        });
+        expect(d.footer.social).toEqual([{ platform: "Instagram", url: "https://instagram.com/new" }]);
+        // And the legacy copy is LEFT ALONE in that state. There is no bug to fix
+        // (the primary exists, so row writes are not destructive), and on a draft
+        // already truncated by this bug it is the only surviving copy of the
+        // original links.
+        expect(d.footer.social_links).toEqual([{ platform: "Instagram", url: "https://instagram.com/old" }]);
+    });
+
+    it("hoists over an EMPTY footer.social, because that is what the panel does", () => {
+        // ContentFieldsAuto.tsx:513 treats [] as absent and falls through to the
+        // fallback — so [] is showing the fallback and has the same bug.
+        const d = normalizeDraft({
+            footer: { social: [], social_links: [{ platform: "Facebook", url: "https://fb.com/x" }] },
+        });
+        expect(d.footer.social).toEqual([{ platform: "Facebook", url: "https://fb.com/x" }]);
+        expect("social_links" in d.footer).toBe(false);
+    });
+
+    it("does not invent a footer on content that has none", () => {
+        expect(normalizeDraft({ business_name: "X" }).footer).toBeUndefined();
+        expect(normalizeDraft({ footer: undefined }).footer).toBeUndefined();
+        expect(normalizeDraft({ footer: null }).footer).toBeNull();
+        // Nothing lands on the wire either.
+        expect("footer" in overTheWire(normalizeDraft({ business_name: "X" }))).toBe(false);
+    });
+
+    it("leaves a footer with no social_links exactly as it was", () => {
+        const footer = { brand_blurb: "b", hours: [{ day: "Mon", time: "9-5" }] };
+        const d = normalizeDraft({ footer });
+        expect(d.footer).toEqual(footer);
+        expect("social" in d.footer).toBe(false);
+    });
+
+    it("passes malformed footers through without throwing", () => {
+        expect(() => normalizeDraft({ footer: "Just a blurb" })).not.toThrow();
+        expect(normalizeDraft({ footer: "Just a blurb" }).footer).toBe("Just a blurb");
+        expect(normalizeDraft({ footer: 42 }).footer).toBe(42);
+        // A footer that is itself an ARRAY is not a footer object — leave it be
+        // rather than hanging a `social` property on an Array, which is the very
+        // shape JSON.stringify drops.
+        const arrFooter = [{ platform: "IG" }] as any;
+        expect(normalizeDraft({ footer: arrFooter }).footer).toBe(arrFooter);
+        // social_links that is not an array is not the list we are hoisting.
+        expect(normalizeDraft({ footer: { social_links: "https://instagram.com/x" } }).footer)
+            .toEqual({ social_links: "https://instagram.com/x" });
+    });
+
+    it("hoists an empty social_links too, so the key never lingers", () => {
+        // generate-website:898 writes `social_links: []` as the DEFAULT footer for
+        // every site with no extracted footer, so this is the common case.
+        const d = normalizeDraft({ footer: { social_links: [] } });
+        expect(d.footer).toEqual({ social: [] });
+        // Renders as nothing either way — `|| []` at astro-builder.ts:354.
+        expect(socialAsRendered(overTheWire(d))).toEqual([]);
+    });
+
+    // ── IDEMPOTENCE ──────────────────────────────────────────────────────
+    // normalizeDraft runs at three seed points AND on the right-hand side of the
+    // clean-sync equality test (useEditorDraft.ts:489). A second pass that
+    // differs by so much as key ORDER reads as permanently dirty and the editor
+    // SILENTLY STOPS ADOPTING SERVER UPDATES. The hoist is self-limiting for the
+    // same reason it is safe: it keys off `social_links`, which it removes.
+    const footerIdempotenceCases: Array<[string, any]> = [
+        ["the producer's shape", footerSocialContent()],
+        ["an empty social_links", { footer: { social_links: [] } }],
+        ["an empty social beside a full social_links", { footer: { social: [], social_links: [{ platform: "IG", url: "u" }] } }],
+        ["a social that already won", { footer: { social: [{ platform: "IG", url: "new" }], social_links: [{ platform: "IG", url: "old" }] } }],
+        ["a footer with no social at all", { footer: { brand_blurb: "b", notes: ["(c) 2026"] } }],
+        ["no footer at all", { business_name: "X" }],
+        ["a malformed footer", { footer: "Just a blurb" }],
+        ["footer.social rows that are not objects", { footer: { social_links: ["https://ig.com/x", null, 42] } }],
+        ["footer beside every other normalized block", { ...groqShapedContent(), ...footerSocialContent() }],
+    ];
+
+    it.each(footerIdempotenceCases)("is idempotent for %s", (_label, input) => {
+        const once = normalizeDraft(input);
+        const twice = normalizeDraft(once);
+        expect(twice).toEqual(once);
+        // The exact comparison the clean-sync guard performs.
+        expect(JSON.stringify(twice)).toBe(JSON.stringify(once));
+        // And a third pass, because the guard runs on every render.
+        expect(JSON.stringify(normalizeDraft(twice))).toBe(JSON.stringify(once));
+    });
+
+    it("stays idempotent after the sidebar has written to a row", () => {
+        // Seed → admin edits → server pushes the saved content back → the hook
+        // re-normalizes to compare. If this drifted, the editor would stop
+        // adopting server updates after the very first social edit.
+        const draft = normalizeDraft(footerSocialContent());
+        writeDotted(draft, "footer.social.1.url", "https://facebook.com/villamarilag.ph");
+        const roundTripped = overTheWire(draft);
+
+        const once = normalizeDraft(roundTripped);
+        expect(JSON.stringify(normalizeDraft(once))).toBe(JSON.stringify(once));
+        // A clean editor comparing its draft against the freshly saved server
+        // content reads as CLEAN, which is what lets it adopt at all.
+        expect(JSON.stringify(once)).toBe(JSON.stringify(normalizeDraft(roundTripped)));
+    });
+
+    it("survives the whole add / edit / remove cycle the panel offers", () => {
+        const draft = normalizeDraft(footerSocialContent());
+        // "+ Add" writes the WHOLE array (ListField.handleAdd).
+        writeDotted(draft, "footer.social", [...draft.footer.social, { platform: "YouTube", url: "https://youtube.com/@vm" }]);
+        // A row input writes one leaf.
+        writeDotted(draft, "footer.social.3.url", "https://youtube.com/@villamarilag");
+        // "Remove" writes the whole array again.
+        writeDotted(draft, "footer.social", draft.footer.social.filter((_: any, i: number) => i !== 0));
+
+        const saved = overTheWire(draft);
+        expect(saved.footer.social).toHaveLength(3);
+        expect(saved.footer.social.map((s: any) => s.platform)).toEqual(["Facebook", "TikTok", "YouTube"]);
+        expect(saved.footer.social[2].url).toBe("https://youtube.com/@villamarilag");
+        expect(socialAsRendered(saved)).toEqual(saved.footer.social);
+    });
+});
+
+describe('normalizeDraft — trust and gallery, the two blocks whose components accept a bare array', () => {
+    // 37 Trust*.astro and 36 Gallery*.astro read
+    //   Array.isArray(x.cells) ? x.cells : (Array.isArray(x) ? x : [])
+    // so the bare shape RENDERS. Undefended it also swallows every write: the
+    // leaf lands on a named property of an Array and JSON.stringify drops it,
+    // with a success toast. trust is reachable today — groq.service.ts admits
+    // it with `typeof parsed.trust === 'object'`, and typeof [] is "object".
+
+    const save = (o: any) => JSON.parse(JSON.stringify(o));
+
+    it('wraps a bare trust array into { cells } so a row write can land', () => {
+        const out = normalizeDraft({ trust: [{ num: '2014', label: 'Est.' }, { num: '4.9', label: 'Rating' }] });
+        expect(Array.isArray(out.trust)).toBe(false);
+        expect(out.trust.cells).toHaveLength(2);
+        expect(out.trust.cells[0]).toEqual({ num: '2014', label: 'Est.' });
+    });
+
+    it('wraps a bare gallery array into { items }', () => {
+        const out = normalizeDraft({ gallery: [{ image: 'p0.jpg' }, { image: 'p1.jpg' }] });
+        expect(out.gallery.items).toHaveLength(2);
+    });
+
+    it('PROVES IT: a trust row edit survives the save it used to be dropped by', () => {
+        // Unnormalised — the shape the pipeline can hand us today.
+        const bare: any = { trust: [{ num: '2014' }, { num: '4.9' }] };
+        (bare.trust as any).cells = [{ num: '2014', label: 'Established' }];
+        expect(save(bare).trust.cells).toBeUndefined();          // the old behaviour
+
+        // Normalised first, the same edit is an ordinary array write.
+        const out: any = normalizeDraft({ trust: [{ num: '2014' }, { num: '4.9' }] });
+        out.trust.cells = out.trust.cells.slice();
+        out.trust.cells[0] = { ...out.trust.cells[0], label: 'Established' };
+        expect(save(out).trust.cells[0].label).toBe('Established');
+        expect(save(out).trust.cells).toHaveLength(2);           // sibling intact
+    });
+
+    it('leaves a normal trust OBJECT alone — it has no cells array to hoist', () => {
+        const normal = { trust: { years: '10', licenses: ['a'], memberships: ['b'] } };
+        expect(normalizeDraft(normal).trust).toEqual(normal.trust);
+    });
+
+    it('leaves an already-wrapped gallery alone and keeps its wrapper keys', () => {
+        const g = { gallery: { tag: 'Gallery', headline: 'Our work', items: [{ image: 'a' }] } };
+        const out = normalizeDraft(g);
+        expect(out.gallery.tag).toBe('Gallery');
+        expect(out.gallery.headline).toBe('Our work');
+        expect(out.gallery.items).toEqual([{ image: 'a' }]);
+    });
+
+    it('is idempotent for both, in every shape', () => {
+        const shapes: any[] = [
+            { trust: [{ num: '1' }] },
+            { trust: { years: '10' } },
+            { trust: { cells: [{ num: '1' }] } },
+            { trust: null },
+            { trust: 'nonsense' },
+            { gallery: [{ image: 'a' }] },
+            { gallery: { items: [] } },
+            { gallery: undefined },
+        ];
+        for (const x of shapes) {
+            const once = normalizeDraft(x);
+            expect(JSON.stringify(normalizeDraft(once))).toBe(JSON.stringify(once));
+        }
     });
 });

@@ -46,6 +46,7 @@ import LinkPopover, { type LinkPopoverData } from "./LinkPopover";
 import ImagePickerModal from "./ImagePickerModal";
 import ContentFieldsAuto from "./ContentFieldsAuto";
 import { deriveContentDefaults, getDerivedAt } from "@/lib/derive-content-defaults";
+import { rowWriteFromSchema } from "./listRowWrites";
 import s from "./SandboxEditor.module.css";
 
 // ── GENERIC LANDING PAGES · 5 templates with iframe previews ─────────
@@ -396,7 +397,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
     // docs/changes/TEMPLATES-SALONSPA-PLAN.md for full context.
     const normalizeBlockEditor = (
         input: any,
-        itemsKey: 'items' | 'steps' = 'items',
+        itemsKey: 'items' | 'steps' | 'cells' = 'items',
         aliases: Record<string, string> = {},
         altItemsKey?: string,
     ): any => {
@@ -426,11 +427,51 @@ export default function SandboxEditor(props: SandboxEditorProps) {
         if (altItemsKey) delete wrapper[altItemsKey];
         return { ...wrapper, [itemsKey]: mapped };
     };
+    // FOOTER.SOCIAL — hoist the producer's `footer.social_links` onto the key
+    // the sidebar actually edits, `footer.social`. Same class as the services
+    // fix above: the schema READS through fallbackPaths, so the panel lists
+    // every link, while each row input writes one leaf at
+    // `footer.social.<n>.<key>` onto a footer with no `social` — minting a
+    // one-row array in place of three links (and FooterF.astro:33 then
+    // dereferences `s.url` on the holes). normalizeBlockEditor cannot express
+    // it because this fallback is a SIBLING key inside `footer`, not the
+    // block's own key. Kept in step with useEditorDraft.ts, which carries the
+    // full reasoning (including why the render side stays in sync and why an
+    // existing non-empty `social` is left completely alone).
+    const hoistFooterSocial = (footer: any): any => {
+        if (!footer || typeof footer !== 'object' || Array.isArray(footer)) return footer;
+        if (!Array.isArray(footer.social_links)) return footer;
+        if (Array.isArray(footer.social) && footer.social.length > 0) return footer;
+        const out = { ...footer };
+        out.social = footer.social_links;
+        delete out.social_links;
+        return out;
+    };
     const normalizeDraft = (raw: any): any => {
         if (!raw || typeof raw !== 'object') return raw ?? {};
         return {
             ...raw,
             why: normalizeBlockEditor(raw.why, 'items', { description: 'body' }),
+            // TRUST and GALLERY are the two blocks whose components accept a BARE
+            // ARRAY at the block key while nothing in the pipeline emits one — 37
+            // Trust*.astro and 36 Gallery*.astro read
+            // `Array.isArray(x.cells) ? x.cells : (Array.isArray(x) ? x : [])`.
+            // Undefended, that shape drops every write: the leaf lands on a named
+            // property of an Array and JSON.stringify discards it, with a success
+            // toast. The whole-array row write does not help — it writes to
+            // trust.cells / gallery.items, which is the same hung property.
+            //
+            // trust is REACHABLE TODAY. groq.service.ts:712 admits it with
+            // `typeof parsed.trust === 'object'`, and typeof [] is "object" — so a
+            // model answering with an array instead of the object it was asked for
+            // passes, and route.ts caches conversion blocks permanently, so it is
+            // never regenerated. gallery has no producer today; it is here because
+            // the components accept the shape and the cost of defending it is a line.
+            //
+            // A normal trust object ({years, licenses, memberships}) has no `cells`
+            // array, so normalizeBlockEditor returns it untouched.
+            trust: normalizeBlockEditor(raw.trust, 'cells'),
+            gallery: normalizeBlockEditor(raw.gallery, 'items'),
             how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
             testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
             faq: normalizeBlockEditor(raw.faq, 'items', { question: 'q', answer: 'a' }),
@@ -456,6 +497,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
             // idempotent — which silently breaks the clean-sync equality test and
             // makes the editor stop adopting server updates. Covered by a test.
             credentials: normalizeBlockEditor(raw.credentials, 'items', { description: 'desc', label: 'title', detail: 'body', body: 'desc' }),
+            footer: hoistFooterSocial(raw.footer),
         };
     };
 
@@ -463,6 +505,75 @@ export default function SandboxEditor(props: SandboxEditorProps) {
     useEffect(() => {
         setDraft(normalizeDraft(content));
     }, [content]);
+
+    // ── The sidebar's read chain, hoisted out of the Content tab's JSX ────
+    // It used to be built inline where <ContentFieldsAuto> renders, which put it
+    // out of reach of the three writers that need it most — the image picker,
+    // the link popover and the image-slot assigner all fire from callbacks, not
+    // from that closure. Same chain, same order, one copy:
+    //   1. draft (admin override)
+    //   2. schema-declared fallbackPaths (inside ContentFieldsAuto)
+    //   3. submission-derived defaults (this layer)
+    // Mirrors `draft` SYNCHRONOUSLY — see setDeepDraft, which writes through
+    // this ref before it calls setDraft. Render-time assignment alone is not
+    // enough: contentGetValue reads this ref, and two writes in one event
+    // (handleLinkSave writes text then href) both fired before React re-rendered,
+    // so the second read the PRE-EDIT draft. With whole-array row writes that is
+    // not a stale read, it is a lost edit — the second write's array overwrites
+    // the first one's. Same invariant useEditorDraft.commitState keeps for v3.
+    const draftRef = useRef<any>(draft);
+    draftRef.current = draft;
+    const contentDerived = useMemo(() => deriveContentDefaults({
+        business_name: (draft as any)?.business_name || businessName,
+        business_city: (draft as any)?.business_city || (draft as any)?.contact?.city,
+        business_type: (draft as any)?.business_type || businessType,
+        tagline: (draft as any)?.tagline,
+        about: (draft as any)?.about,
+        contact: (draft as any)?.contact,
+    }, photos), [draft, businessName, businessType, photos]);
+    const contentDerivedRef = useRef<any>(contentDerived);
+    contentDerivedRef.current = contentDerived;
+    // Reads through the refs so it can be a STABLE callback: handleImagePick and
+    // handleLinkSave are useCallback([]) and would otherwise be reading the
+    // first render's draft forever.
+    const contentGetValue = useCallback((path: string) => {
+        const parts = path.split('.');
+        let cur: any = draftRef.current;
+        for (const p of parts) {
+            if (cur == null) { cur = undefined; break; }
+            cur = cur[p];
+        }
+        if (cur !== undefined && cur !== null && cur !== '') return cur;
+        return getDerivedAt(contentDerivedRef.current, path);
+    }, []);
+
+    /**
+     * setDeepDraft, but safe for LIST ROWS.
+     *
+     * A single-leaf write inside a list — gallery.items.3.caption,
+     * footer.social.1.url — is only correct when the draft already holds that
+     * whole list, and it usually does not: the rows on screen can have come from
+     * a schema fallbackPath or from the derived defaults above. The leaf write
+     * then mints a fresh SPARSE array with one partial row, JSON.stringify turns
+     * the holes into null, and every sibling row is destroyed by an edit to one
+     * of them — with an honest success toast, because the write really did land.
+     *
+     * So a row write carries the WHOLE DISPLAYED LIST, which is what the list's
+     * own add/remove/reorder buttons have always done. Recovered from the schema
+     * plus contentGetValue, because these callers only ever hold a dotted path.
+     * On WRITE only: opening a submission still materialises nothing.
+     */
+    const setContentValue = useCallback((path: string, value: any) => {
+        const write = rowWriteFromSchema(contentGetValue, path, value);
+        // One call either way — read-then-write in two steps could race a
+        // second write on stale draft state.
+        // setDeepDraft is a hoisted function declaration further down this
+        // component; it commits through draftRef + setDraft, so capturing an
+        // older instance is harmless — the same reason handleImagePick has
+        // always closed over it with an empty dep array.
+        if (write) setDeepDraft(write.path, write.value);
+        else setDeepDraft(path, value);
+    }, [contentGetValue]);
 
     const [selectedBucket, setSelectedBucket] = useState<string>(() => {
         const initial = (businessType || draft?.business_type || "").toLowerCase();
@@ -731,9 +842,16 @@ export default function SandboxEditor(props: SandboxEditorProps) {
         // 2. Patch the draft so the change survives Save. We write under
         //    the SHORT path segments (text → data-field path, href →
         //    data-href-field path with the trailing ".href" implied).
-        if (next.field) setDeepDraft(next.field, next.text);
-        if (next.hrefField) setDeepDraft(next.hrefField, next.href);
-    }, []);
+        // Through setContentValue: a social / explore row writes at
+        // footer.social.0.platform + .url, and a leaf write there is what drops
+        // the other rows to null. Two calls back to back are safe ONLY because
+        // setDeepDraft writes draftRef before setDraft — a row write rebuilds
+        // the whole array from what contentGetValue reads, so on a functional
+        // setDraft(prev => …) the href write would have re-read the pre-edit
+        // list and thrown the text edit away.
+        if (next.field) setContentValue(next.field, next.text);
+        if (next.hrefField) setContentValue(next.hrefField, next.href);
+    }, [setContentValue]);
 
     // ── Image picker — apply the chosen URL ──────────────────────────
     const handleImagePick = useCallback((field: string, src: string) => {
@@ -743,36 +861,50 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                 "*",
             );
         } catch { /* sandboxed iframe — ignore */ }
-        setDeepDraft(field, src);
+        // gallery.items.N.image is the most reachable case of the sparse-array
+        // bug: every branded family draws a gallery, and its tiles are normally
+        // DERIVED, so the draft holds no gallery.items until this write lands.
+        setContentValue(field, src);
         setImagePicker(null);
-    }, []);
+    }, [setContentValue]);
 
     // ── setDeepDraft — write a dotted path into the content draft ─────
     // Used by the link popover and image picker so changes persist past
     // the in-iframe live update. Mutates a new copy and updates state.
     function setDeepDraft(path: string, value: any) {
-        setDraft((prev: any) => {
-            const root = prev ? { ...prev } : {};
-            const parts = path.split('.');
-            let cur: any = root;
-            for (let i = 0; i < parts.length - 1; i++) {
-                const k = parts[i];
-                const nextKey = parts[i + 1];
-                const numeric = /^\d+$/.test(nextKey);
-                // Preserve existing value's array-ness; otherwise create
-                // an array when next segment is a number, else an object.
-                if (Array.isArray(cur[k])) {
-                    cur[k] = [...cur[k]];
-                } else if (typeof cur[k] === 'object' && cur[k] !== null) {
-                    cur[k] = { ...cur[k] };
-                } else {
-                    cur[k] = numeric ? [] : {};
-                }
-                cur = cur[k];
+        // Built from draftRef, not from setDraft's `prev`, and the ref is
+        // updated BEFORE setDraft — so a second write in the same event reads
+        // what the first one wrote.
+        //
+        // It used to be a functional update, which composed fine for two LEAF
+        // writes but not for the whole-array writes a list row now makes:
+        // handleLinkSave writes footer.social.0.platform then .0.url, both
+        // before React re-renders, so both rebuilt the array from the PRE-EDIT
+        // draft (contentGetValue reads draftRef) and the href write silently
+        // threw the text edit away. Same invariant useEditorDraft.commitState
+        // already keeps for v3, which is why v3 never had this.
+        const prev = draftRef.current;
+        const root = prev ? { ...prev } : {};
+        const parts = path.split('.');
+        let cur: any = root;
+        for (let i = 0; i < parts.length - 1; i++) {
+            const k = parts[i];
+            const nextKey = parts[i + 1];
+            const numeric = /^\d+$/.test(nextKey);
+            // Preserve existing value's array-ness; otherwise create
+            // an array when next segment is a number, else an object.
+            if (Array.isArray(cur[k])) {
+                cur[k] = [...cur[k]];
+            } else if (typeof cur[k] === 'object' && cur[k] !== null) {
+                cur[k] = { ...cur[k] };
+            } else {
+                cur[k] = numeric ? [] : {};
             }
-            cur[parts[parts.length - 1]] = value;
-            return root;
-        });
+            cur = cur[k];
+        }
+        cur[parts[parts.length - 1]] = value;
+        draftRef.current = root;
+        setDraft(root);
     }
 
     // ── Pending customizations (Template + Theme tabs) ────────────────
@@ -860,6 +992,28 @@ export default function SandboxEditor(props: SandboxEditorProps) {
      * Always also pushes ed:image to the iframe so the swap shows live.
      */
     function assignImageToSlot(url: string, slot: string | null) {
+        // A schema LIST ROW slot (gallery.items.2.image, services.items.0.image)
+        // matched none of the named slots below and fell into the final `else`,
+        // which quietly appends the URL to the photo library instead — the admin
+        // picked a photo for a gallery tile and the tile did not change. Take
+        // those first and write the whole array, which both puts the photo where
+        // the template reads it and keeps the sibling tiles (v3 reaches the same
+        // slots through applyImageSlot, whose dotted-path branch DOES write at
+        // the path — and mints the sparse array this avoids). The named legacy
+        // slots below (favicon, hero.image, about.image, services.image,
+        // services.list.N.image, gallery.tile.N) are not schema list paths, so
+        // none of them can be caught here by accident.
+        const rowWrite = slot ? rowWriteFromSchema(contentGetValue, slot, url) : null;
+        if (rowWrite) {
+            setDeepDraft(rowWrite.path, rowWrite.value);
+            try {
+                iframeRef.current?.contentWindow?.postMessage(
+                    { type: "ed:image", field: slot, src: url },
+                    "*",
+                );
+            } catch { /* sandboxed: ignore */ }
+            return;
+        }
         setDraft((prev: any) => {
             const next = { ...(prev ?? {}) };
             const images = ((next.images as string[]) ?? []).slice();
@@ -3347,35 +3501,15 @@ export default function SandboxEditor(props: SandboxEditorProps) {
 
                     {/* ── CONTENT ──────────────────────────────── */}
                     {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS|hospitality:(BI|BJ))$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
-                        // Derive the same "tier-3" fallback the build pipeline
-                        // uses so inputs always show what the iframe shows. The
-                        // editor's getValue() chain becomes:
-                        //   1. draft (admin override)
-                        //   2. schema-declared fallbackPaths (already in ContentFieldsAuto)
-                        //   3. submission-derived defaults (this layer)
-                        const derived = deriveContentDefaults({
-                            business_name: (draft as any)?.business_name || businessName,
-                            business_city: (draft as any)?.business_city || (draft as any)?.contact?.city,
-                            business_type: (draft as any)?.business_type || businessType,
-                            tagline: (draft as any)?.tagline,
-                            about: (draft as any)?.about,
-                            contact: (draft as any)?.contact,
-                        }, photos);
+                        // The tier-3 read chain (draft -> schema fallbackPaths
+                        // -> submission-derived defaults) is hoisted to the top
+                        // of the component now, because the image picker, the
+                        // link popover and assignImageToSlot need the same one.
                         return (
                             <ContentFieldsAuto
                                 templateCode={String((effectiveCustomizations as any)?.heroStyle ?? "")}
-                                getValue={(path: string) => {
-                                    const parts = path.split('.');
-                                    let cur: any = draft;
-                                    for (const p of parts) {
-                                        if (cur == null) { cur = undefined; break; }
-                                        cur = cur[p];
-                                    }
-                                    if (cur !== undefined && cur !== null && cur !== '') return cur;
-                                    // Final fallback — the derived value for this path.
-                                    return getDerivedAt(derived, path);
-                                }}
-                                setValue={(path: string, value: any) => setDeepDraft(path, value)}
+                                getValue={contentGetValue}
+                                setValue={setContentValue}
                                 openImagePicker={(path: string) => setImagePicker(path)}
                                 pushLiveText={(path: string, value: any) => {
                                     try {

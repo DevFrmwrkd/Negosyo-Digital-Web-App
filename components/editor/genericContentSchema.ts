@@ -791,14 +791,28 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
  * have edited it anyway.
  * ──────────────────────────────────────────────────────────────────────────── */
 
+/** What one list looks like, flattened out of the schema for path lookups. */
+export interface ListShape {
+    /** Where the array is WRITTEN, e.g. "gallery.items". */
+    path: string;
+    /** Declared row sub-paths. An empty string means the row IS the value. */
+    itemPaths: string[];
+    /** Read-only paths the form displays rows from when `path` is empty. */
+    fallbackPaths: string[];
+}
+
 const SCALAR_PATHS = new Set<string>();
-const LIST_SHAPES: Array<{ path: string; itemPaths: string[] }> = [];
+const LIST_SHAPES: ListShape[] = [];
 
 for (const group of GENERIC_CONTENT_SCHEMA) {
     for (const field of group.fields) {
         if ((field as ListSpec).kind === 'list') {
             const l = field as ListSpec;
-            LIST_SHAPES.push({ path: l.path, itemPaths: (l.itemFields ?? []).map((f) => f.path) });
+            LIST_SHAPES.push({
+                path: l.path,
+                itemPaths: (l.itemFields ?? []).map((f) => f.path),
+                fallbackPaths: l.fallbackPaths ?? [],
+            });
         } else {
             const f = field as FieldSpec;
             SCALAR_PATHS.add(f.path);
@@ -826,4 +840,65 @@ export function isSchemaEditablePath(path: string): boolean {
         if (list.itemPaths.includes(m[2])) return true;
     }
     return false;
+}
+
+/**
+ * True when `path` addresses a ROW of a list this schema declares — either
+ * `<list>.<n>` (a string-array row) or `<list>.<n>.<key>` (an object row).
+ *
+ * WHY IT EXISTS. Inline click-to-edit in the preview commits ONE leaf, and a
+ * leaf write inside a list the draft does not hold yet mints a fresh sparse
+ * array with that single row — every sibling becomes a JSON `null`. So array
+ * rows are edited in the sidebar, which writes the whole array at once.
+ *
+ * WHY IT IS DERIVED. The exclusion used to be the hand-written regex
+ * `/\.(items|steps|paragraphs)\.\d+/`, which matches list NAMES, not list
+ * SHAPE. It covered half the schema's lists and left the rest wide open —
+ * hero.headlineLines, trust.cells, about.specs, area.places, area.rows,
+ * location.rules, footer.visit.lines, footer.explore.links, footer.hours,
+ * footer.social and footer.notes — including `footer.hours.<i>.day`, the same
+ * path family whose `location.hours` twin already destroyed data once (see the
+ * block comment above). Reading the shape off LIST_SHAPES means a list added
+ * to this schema tomorrow is excluded the moment it is declared.
+ *
+ * This can only ever NARROW what is inline-editable: every path it matches is
+ * a list row the caller's allow-list had already admitted.
+ *
+ * ONE definition of "row", shared with listShapeForRowPath below — the writer
+ * that has to preserve a row's siblings and the gate that keeps rows out of
+ * inline editing must agree on what a row IS, or a path could be inline-edited
+ * as a scalar while the writer treats it as a row (or worse, the reverse).
+ */
+export function isSchemaListRowPath(path: string): boolean {
+    return listShapeForRowPath(path) !== null;
+}
+
+/**
+ * The list `path` addresses a ROW of, or null.
+ *
+ *   gallery.items.2.image     -> the gallery.items shape
+ *   about.paragraphs.0        -> the about.paragraphs shape
+ *   gallery.items             -> null (the array itself, not a row)
+ *   gallery.headline          -> null
+ *
+ * Deliberately LOOSER than isSchemaEditablePath: the sub-path is not required
+ * to be a declared itemField. Anything under `<list>.<index>.` is a row write
+ * by construction, and a link field's hrefPath can reach a key the ListSpec
+ * never spelled out (`services.items.0.cta.text`). Refusing those would send
+ * exactly the writes this exists to protect back down the destructive path.
+ *
+ * Longest list path wins, so a list living under another list's namespace
+ * resolves to the inner one. None exist today — itemFields are scalar-only, so
+ * the schema cannot express a nested list — but the tie-break costs nothing.
+ */
+export function listShapeForRowPath(path: string): ListShape | null {
+    if (!path) return null;
+    let best: ListShape | null = null;
+    for (const list of LIST_SHAPES) {
+        if (!path.startsWith(list.path + '.')) continue;
+        const head = path.slice(list.path.length + 1).split('.')[0];
+        if (!/^\d+$/.test(head)) continue;
+        if (!best || list.path.length > best.path.length) best = list;
+    }
+    return best;
 }
