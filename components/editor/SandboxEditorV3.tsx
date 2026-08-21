@@ -32,7 +32,8 @@ import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, sectionForF
 import { useEditorDraft } from "./useEditorDraft";
 import { applyImageSlot, isImageField, uploadImage } from "./editorImageSlots";
 import ContentFieldsAuto from "./ContentFieldsAuto";
-import { isSchemaEditablePath } from "./genericContentSchema";
+import { isSchemaEditablePath, isSchemaListRowPath } from "./genericContentSchema";
+import { rowWriteFromSchema } from "./listRowWrites";
 import { deriveContentDefaults, getDerivedAt } from "@/lib/derive-content-defaults";
 import ImagePickerModal from "./ImagePickerModal";
 import LinkPopover, { type LinkPopoverData } from "./LinkPopover";
@@ -365,6 +366,64 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         if (v !== undefined && v !== null && v !== '') return v;
         return getDerivedAt(derived, path);
     }, [m.getValue, derived]);
+    // The read chain, reachable from callbacks that must not re-bind on every
+    // keystroke (the picker, the popover, the upload handler). Same value, read
+    // late — never a stale closure over an older `derived`.
+    const contentGetValueRef = useRef(contentGetValue);
+    contentGetValueRef.current = contentGetValue;
+
+    /**
+     * setValue, but safe for LIST ROWS.
+     *
+     * A leaf write inside a list — gallery.items.3.image, footer.social.1.url —
+     * is only correct when the draft already holds that whole list. It usually
+     * does not: the sidebar (and the page) can be showing rows that came from a
+     * schema fallbackPath or from the submission-derived defaults, in which case
+     * the leaf write mints a fresh SPARSE array holding one partial row, and
+     * JSON.stringify turns the holes into null. Four gallery tiles become
+     * [null,null,null,{caption}] and two templates then throw on the rebuild.
+     *
+     * ContentFieldsAuto's own row inputs are fixed inside ListField, which holds
+     * the array it rendered. This wrapper is for the writers that DO NOT have
+     * the list in scope and never could:
+     *   · the image picker — reachable from the sidebar AND from an
+     *     ed:image-click anywhere in the preview, which never touches ListField
+     *   · the link popover — likewise, opened by clicking a link in the iframe
+     *   · a photo dropped on a slot / picked out of the Media grid
+     * They only ever have a dotted path, so the list is recovered where the path
+     * is: from the schema (which paths are lists, and what each falls back to)
+     * plus this component's own read chain — the same chain the sidebar reads,
+     * so what gets written back is what the admin was looking at.
+     *
+     * On WRITE only. Opening a submission still materialises nothing, so the
+     * derived defaults stay derived and an untouched draft stays clean.
+     */
+    const setContentValue = useCallback((path: string, value: any) => {
+        const write = rowWriteFromSchema(contentGetValueRef.current, path, value);
+        // One setValue call either way: read-then-write in two steps would race
+        // a second write on stale draft state.
+        if (write) mRef.current.setValue(write.path, write.value);
+        else mRef.current.setValue(path, value);
+    }, []);
+
+    /**
+     * Put `url` into image slot `slot` — the Media tab's upload and its
+     * click-a-photo-to-assign grid.
+     *
+     * applyImageSlot's catch-all branch is a plain dotted-path write (its
+     * setAtPath has precisely the sparse-array behaviour this fix removes), so a
+     * slot like `gallery.items.2.image` rebuilt items as a one-row array exactly
+     * the way the picker did. Schema list rows go through the list-safe writer
+     * instead; everything else still goes to applyImageSlot, whose named LEGACY
+     * slots (favicon, hero.image, about.image, services.image,
+     * services.list.N.image, gallery.tile.N, and null = append to the library)
+     * are not schema list paths and so can never be intercepted by accident.
+     */
+    const assignImageSlot = useCallback((slot: string | null, url: string) => {
+        const write = slot ? rowWriteFromSchema(contentGetValueRef.current, slot, url) : null;
+        if (write) mRef.current.setValue(write.path, write.value);
+        else mRef.current.replaceDraft(applyImageSlot(mRef.current.draftRef.current, slot, url));
+    }, []);
 
     const curatedSchemes = schemesForTemplate(m.activeFamily, String((m.effectiveCustomizations as any)?.heroStyle ?? ""));
 
@@ -416,7 +475,20 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
             // what is editable — never re-open something that was closed for a
             // data-loss reason. Rows are edited in the sidebar, which writes the
             // whole array at once.
-            /\.(items|steps|paragraphs)\.\d+/.test(f);
+            //
+            // ASK THE SCHEMA WHAT A ROW IS. This was
+            // `/\.(items|steps|paragraphs)\.\d+/`, which keys on list NAMES and
+            // so covered only 10 of the 20 lists the schema declares —
+            // hero.headlineLines.0, trust.cells.0.num, about.specs.0.label,
+            // area.places.0, area.rows.0.place, location.rules.0.label,
+            // footer.visit.lines.0, footer.explore.links.0.text,
+            // footer.hours.0.day, footer.social.0.platform and footer.notes.0
+            // were all still inline-editable, each one a single-leaf commit into
+            // a list the draft may not hold yet (the sparse-array/null bug).
+            // footer.hours.<i>.day is the same path family that already cost
+            // data at location.hours. isSchemaListRowPath reads the shape off
+            // the ListSpecs, so a list declared tomorrow is excluded for free.
+            isSchemaListRowPath(f);
         const readVal = (node: Element) =>
             ((node as HTMLElement).innerText ?? node.textContent ?? "")
                 .replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
@@ -606,11 +678,16 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     }, [focusSidebarField]);
 
     // ── Image picker select (v1:661-670 parity: write the data-field path) ─
+    // Through setContentValue, not m.setValue. gallery.items.N.image is the most
+    // reachable instance of the sparse-array bug in the whole editor — every
+    // branded family draws a gallery, any submission with 2+ photos fills it,
+    // and the tiles are usually DERIVED, so the draft holds no gallery.items at
+    // all until the moment this write lands.
     const handleImagePick = useCallback((field: string, src: string) => {
         try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:image", field, src }, "*"); } catch { /* ignore */ }
-        m.setValue(field, src);
+        setContentValue(field, src);
         setImagePickerField(null);
-    }, [m]);
+    }, [setContentValue]);
 
     // ── Link popover save (v1:637-658) ────────────────────────────────────
     const handleLinkSave = useCallback((next: LinkPopoverData) => {
@@ -620,9 +697,12 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                 text: next.text, href: next.href, platformField: next.platformField, platform: next.platform,
             }, "*");
         } catch { /* ignore */ }
-        if (next.field) m.setValue(next.field, next.text);
-        if (next.hrefField) m.setValue(next.hrefField, next.href);
-    }, [m]);
+        // Two writes, and both are safe to run back to back: setValue commits
+        // into draftRef SYNCHRONOUSLY, so the href write re-reads the array the
+        // text write just materialised instead of racing it.
+        if (next.field) setContentValue(next.field, next.text);
+        if (next.hrefField) setContentValue(next.hrefField, next.href);
+    }, [setContentValue]);
 
     // ── Upload a photo into a slot (v1 assignImageToSlot path) ────────────
     const handleUpload = useCallback(async (file: File, slot: string | null) => {
@@ -630,7 +710,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         setUploadingPhoto(true);
         try {
             const url = await uploadImage(file, submissionId);
-            m.replaceDraft(applyImageSlot(m.draftRef.current, slot, url));
+            assignImageSlot(slot, url);
             if (slot) {
                 try { iframeRef.current?.contentWindow?.postMessage({ type: "ed:image", field: slot, src: url }, "*"); } catch { /* ignore */ }
             }
@@ -641,7 +721,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
             setUploadingPhoto(false);
             if (fileInputRef.current) fileInputRef.current.value = "";
         }
-    }, [m, submissionId]);
+    }, [assignImageSlot, submissionId]);
 
     // ── Save (v2:301-331) — batched, single rebuild ───────────────────────
     const handleReset = useCallback(() => {
@@ -965,7 +1045,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         {panel === "content" && (
                             <div className="p-3">
                                 <p className="mb-2 px-1 text-[10px] leading-snug text-neutral-400">Edit any field here, or click text in the preview to jump to it. Lists, links &amp; images add/remove/reorder safely.</p>
-                                <ContentFieldsAuto getValue={contentGetValue} setValue={m.setValue} openImagePicker={(path) => setImagePickerField(path)} pushLiveText={pushLiveText} templateCode={String((m.effectiveCustomizations as any)?.heroStyle ?? "")} />
+                                <ContentFieldsAuto getValue={contentGetValue} setValue={setContentValue} openImagePicker={(path) => setImagePickerField(path)} pushLiveText={pushLiveText} templateCode={String((m.effectiveCustomizations as any)?.heroStyle ?? "")} />
                             </div>
                         )}
 
@@ -1025,7 +1105,7 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                                                     <div key={`${url}-${i}`} className="group relative">
                                                         <img
                                                             src={url} alt="" loading="lazy"
-                                                            onClick={() => { if (pendingImageField) { m.replaceDraft(applyImageSlot(m.draftRef.current, pendingImageField, url)); setPendingImageField(null); } }}
+                                                            onClick={() => { if (pendingImageField) { assignImageSlot(pendingImageField, url); setPendingImageField(null); } }}
                                                             className={`aspect-square w-full rounded-md border object-cover ${pendingImageField ? "cursor-pointer border-amber-400 hover:ring-2 hover:ring-amber-400" : "border-neutral-200"}`}
                                                         />
                                                         <button

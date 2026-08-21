@@ -77,7 +77,7 @@ const j = (v: any) => JSON.stringify(v ?? null);
  */
 const normalizeBlockEditor = (
     input: any,
-    itemsKey: 'items' | 'steps' = 'items',
+    itemsKey: 'items' | 'steps' | 'cells' = 'items',
     aliases: Record<string, string> = {},
     altItemsKey?: string,
 ): any => {
@@ -108,11 +108,77 @@ const normalizeBlockEditor = (
     return { ...wrapper, [itemsKey]: mapped };
 };
 
+/**
+ * FOOTER.SOCIAL — the structural twin of the services bug, one level in.
+ *
+ * The producer writes the links as `footer.social_links`
+ * (app/api/generate-website/route.ts:894); the sidebar schema edits
+ * `footer.social` and declares `fallbackPaths: ['footer.social_links']`
+ * (genericContentSchema.ts:760). READING therefore works and the panel shows
+ * every link — but each row input writes ONE leaf at
+ * `footer.social.<n>.<key>` onto a footer that has no `social` at all, which
+ * mints a fresh one-row array where the page had three links. FooterF.astro:33
+ * then dereferences `s.url` on the holes and the rebuild throws.
+ *
+ * normalizeBlockEditor cannot express this one. services' fallback was the
+ * block's OWN key (a bare array AT `services`), so hoisting it into
+ * `services.items` was a block-shape change. This fallback is a SIBLING key
+ * inside `footer`, so it is a hoist within the footer object.
+ *
+ * SAFE FOR THE RENDER, because the page already prefers the destination: every
+ * footer .astro reads
+ *   `Array.isArray(f.social) && f.social.length ? f.social : layout.socialLinks`
+ * and `layout.socialLinks` is `content.footer?.social_links`
+ * (lib/astro-builder.ts:354). Moving the array up therefore keeps the page and
+ * the panel on the SAME list, and dropping the legacy key is what stops a later
+ * "remove every row" from resurrecting the old links through that fallback.
+ *
+ * Deliberately conservative in one direction: a footer that ALREADY has a
+ * non-empty `social` keeps it AND keeps `social_links` untouched. There is no
+ * bug in that state (the primary path exists, so writes are not destructive),
+ * and on a draft already truncated by this bug the stale `social_links` is the
+ * only surviving copy of the original links — worth keeping, not deleting.
+ * An EMPTY `social` is hoisted over, because ContentFieldsAuto.tsx:513 treats
+ * `[]` as absent and falls through to the very same fallback.
+ */
+const hoistFooterSocial = (footer: any): any => {
+    if (!footer || typeof footer !== 'object' || Array.isArray(footer)) return footer;
+    // Nothing to hoist — and the reason a second pass is a no-op, since the
+    // first pass removes the key it keys off. Idempotence is not optional: it
+    // is the right-hand side of the clean-sync equality test below.
+    if (!Array.isArray(footer.social_links)) return footer;
+    if (Array.isArray(footer.social) && footer.social.length > 0) return footer;
+    const out = { ...footer };
+    out.social = footer.social_links;
+    delete out.social_links;
+    return out;
+};
+
 export const normalizeDraft = (raw: any): any => {
     if (!raw || typeof raw !== 'object') return raw ?? {};
     return {
         ...raw,
         why: normalizeBlockEditor(raw.why, 'items', { description: 'body' }),
+        // TRUST and GALLERY are the two blocks whose components accept a BARE
+        // ARRAY at the block key while nothing in the pipeline emits one — 37
+        // Trust*.astro and 36 Gallery*.astro read
+        // `Array.isArray(x.cells) ? x.cells : (Array.isArray(x) ? x : [])`.
+        // Undefended, that shape drops every write: the leaf lands on a named
+        // property of an Array and JSON.stringify discards it, with a success
+        // toast. The whole-array row write does not help — it writes to
+        // trust.cells / gallery.items, which is the same hung property.
+        //
+        // trust is REACHABLE TODAY. groq.service.ts:712 admits it with
+        // `typeof parsed.trust === 'object'`, and typeof [] is "object" — so a
+        // model answering with an array instead of the object it was asked for
+        // passes, and route.ts caches conversion blocks permanently, so it is
+        // never regenerated. gallery has no producer today; it is here because
+        // the components accept the shape and the cost of defending it is a line.
+        //
+        // A normal trust object ({years, licenses, memberships}) has no `cells`
+        // array, so normalizeBlockEditor returns it untouched.
+        trust: normalizeBlockEditor(raw.trust, 'cells'),
+        gallery: normalizeBlockEditor(raw.gallery, 'items'),
         how: normalizeBlockEditor(raw.how, 'steps', { description: 'body' }, 'items'),
         testimonials: normalizeBlockEditor(raw.testimonials, 'items', { name: 'who', author: 'who', context: 'role' }),
         faq: normalizeBlockEditor(raw.faq, 'items', { question: 'q', answer: 'a' }),
@@ -140,6 +206,11 @@ export const normalizeDraft = (raw: any): any => {
         // idempotent — which silently breaks the clean-sync equality test and
         // makes the editor stop adopting server updates. Covered by a test.
         credentials: normalizeBlockEditor(raw.credentials, 'items', { description: 'desc', label: 'title', detail: 'body', body: 'desc' }),
+        // Hoists footer.social_links -> footer.social. `...raw` above already
+        // carried the footer through, so this only ever REPLACES it, and the
+        // helper returns the same object identity when there is nothing to do —
+        // a content with no footer stays a content with no footer.
+        footer: hoistFooterSocial(raw.footer),
     };
 };
 

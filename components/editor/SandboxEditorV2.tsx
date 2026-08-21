@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { isSchemaListRowPath } from "./genericContentSchema";
 import { toast } from "sonner";
 import { injectEditorBridge } from "./editorBridge";
 import type { SandboxEditorProps } from "./SandboxEditor";
@@ -151,7 +152,16 @@ export default function SandboxEditorV2(props: SandboxEditorProps) {
         const SKIP = (f: string) =>
             f === "hero.headline" || // HeroA binds this on the whole <h1> but renders from headlineLines
             /^(nav\.brand|nav\.status|nav\.links|navbar_links)(\.|$)/.test(f) ||
-            /\.(items|steps|paragraphs)\.\d+/.test(f); // array items → sibling-loss risk
+            isSchemaListRowPath(f); // any declared list row -> sibling-loss risk
+        // NAME-MATCHING WAS NOT ENOUGH. This tested the key names
+        // items / steps / paragraphs, which cover 9 of the 21 row paths the
+        // schema declares and leave 12 open — among them
+        // location.hours.<i>.day, the exact path family
+        // genericContentSchema.ts records as having ALREADY caused data
+        // loss. isSchemaListRowPath derives the set from the schema's own
+        // ListSpec paths, so a list added later is covered without anyone
+        // remembering to widen a regex. V3 was moved to it; V2 is still
+        // selectable and was left behind.
         const readVal = (node: Element) =>
             ((node as HTMLElement).innerText ?? node.textContent ?? "")
                 .replace(/[ \t]+/g, " ")
