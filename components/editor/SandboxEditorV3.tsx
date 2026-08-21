@@ -28,7 +28,7 @@ import type { SandboxEditorProps } from "./SandboxEditor";
 import { TEMPLATE_FAMILIES, templateByCode, sectionsForTemplate, BLOCK_TIER, TIER_META, BLOCK_CONTENT_PATHS } from "./templateCatalog";
 import { COLOR_SCHEMES, FONT_PAIRINGS, ALL_BLOCKS, schemesForTemplate, VIS_KEY_BY_BLOCK } from "./editorConstants";
 import { buildOverrideCss, buildFontHref, resolveAutoScheme } from "./themeOverride";
-import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, type ColorRole, type ColorProp } from "@/lib/roleColors";
+import { buildRoleColorCss, roleForField, COLOR_ROLES, roleColorKey, sectionForField, scopeSelector, type ColorRole, type ColorProp } from "@/lib/roleColors";
 import { useEditorDraft } from "./useEditorDraft";
 import { applyImageSlot, isImageField, uploadImage } from "./editorImageSlots";
 import ContentFieldsAuto from "./ContentFieldsAuto";
@@ -107,6 +107,33 @@ function applyRoleColorsToIframe(iframe: HTMLIFrameElement | null, roleColors: R
     } catch { /* same-origin can throw; Save bakes it in anyway */ }
 }
 
+// How many elements in the preview a role's colour would ACTUALLY hit at a
+// given scope — same selector list buildRoleColorCss emits from, so zero here
+// means the CSS it would write provably cannot touch anything on the page.
+//
+// Not hypothetical. The header's hooks are top-level paths
+// (`navbar_links.0.href`, `navCtaText`) and SECTION_ALIASES names that section
+// `header`, so scoping a nav link to its own section asks for
+// a[data-href-field^="header."] — a selector no template can match. Every
+// element in the header is like this. Without the count the picker would open
+// on "This section" and silently do nothing for all of them, which is a worse
+// failure than the bluntness this whole change is fixing.
+//
+// Returns -1 when there is no document to ask, which callers must not read as 0.
+function countRoleMatches(doc: Document | null | undefined, role: ColorRole, section: string | null): number {
+    if (!doc) return -1;
+    const def = COLOR_ROLES[role];
+    if (!def) return -1;
+    const sels = section
+        ? def.selectors.map((s) => scopeSelector(s, section)).filter((s): s is string => !!s)
+        : def.selectors;
+    let n = 0;
+    for (const s of sels) {
+        try { n += doc.querySelectorAll(s).length; } catch { /* a selector the browser rejects matches nothing */ }
+    }
+    return n;
+}
+
 type Panel = "design" | "content" | "media";
 
 export default function SandboxEditorV3(props: SandboxEditorProps) {
@@ -130,6 +157,14 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         ["approved", "website_generated", "deployed", "pending_payment"].includes(submissionStatus ?? "");
 
     const m = useEditorDraft(props);
+    // The LATEST hook object, readable from anything that runs after a commit
+    // rather than during the render that made it. `m` is rebuilt every render,
+    // so a callback that closed over it still holds the pre-commit values —
+    // which is how Reset discarded a theme/colour change in the model and then
+    // repainted the preview with the very values it had just thrown away (its
+    // rAF re-ran the appliers, but the ones captured before resetDraft).
+    const mRef = useRef(m);
+    mRef.current = m;
 
     const [panel, setPanel] = useState<Panel>("design");
     const panelRef = useRef<Panel>(panel);
@@ -148,8 +183,23 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
     // Click-to-recolour (per-role): colorMode routes canvas clicks to a colour
     // popover instead of the text/link/image editors.
+    //
+    // `section` is the section of the element that was clicked (the leading
+    // segment of its hook path) and `scopeAll` is the escape hatch out of it.
+    // A role alone was too blunt a unit — primaryCta covers hero.cta1.text AND
+    // ctaBand.cta.text, which sit on different grounds — so a pick is scoped to
+    // the clicked section by DEFAULT. `scopeAll` writes the legacy every-section
+    // key instead, which is what "make all the primary buttons green" needs and
+    // is what the product did before sections existed. A field we cannot place
+    // (section === "") has no choice: every-section is the only key there is.
     const [colorMode, setColorMode] = useState(false);
-    const [colorPopover, setColorPopover] = useState<{ role: ColorRole; prop: ColorProp; curBg: string; curFg: string } | null>(null);
+    const [colorPopover, setColorPopover] = useState<{
+        role: ColorRole; prop: ColorProp; curBg: string; curFg: string;
+        section: string; scopeAll: boolean;
+        /** How many elements each scope would hit, counted off the live preview
+         *  at click time (-1 = could not look). See countRoleMatches. */
+        sectionMatches: number; allMatches: number;
+    } | null>(null);
 
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
     const railRef = useRef<HTMLDivElement | null>(null);
@@ -219,6 +269,49 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         return false;
     }, [m]);
 
+    // ── Human name for a hook-path section ────────────────────────────────
+    // The colour popover has to say WHICH section it is about to recolour, or
+    // "Primary buttons" reads as all of them. The name is the one the Sections
+    // panel already prints — what THIS template calls the section on the page
+    // ("The rooms", not "SERVICES") — because a second vocabulary for the same
+    // sections would be a second thing to keep true.
+    //
+    // The two sides are keyed differently: sectionForField() returns the hook
+    // path's leading segment ("ctaBand"), the labels are keyed by block name
+    // ("CTA-BAND"). BLOCK_CONTENT_PATHS is the existing bridge between them —
+    // its FIRST path per block is that block's namespace. Only the first: the
+    // later fallbacks are shared namespaces ("contact", "photos") that no one
+    // section owns, and pointing those at a section name would misdescribe the
+    // scope, which really is "every contact.* field on the page".
+    const sectionLabels = useMemo(() => {
+        const byBlock = new Map<string, string>();
+        for (const sec of sectionsForTemplate(m.currentHeroStyle)) byBlock.set(sec.block, sec.label);
+        // Null prototype on purpose. `section` is a template-supplied path
+        // segment, and on a plain object literal a segment named `constructor`
+        // or `toString` resolves UP THE PROTOTYPE CHAIN to a function — which
+        // sectionName would then hand to JSX as the section's name. Same reason
+        // parseRoleColorKey uses hasOwnProperty instead of `in`.
+        const out: Record<string, string> = Object.create(null);
+        for (const [block, paths] of Object.entries(BLOCK_CONTENT_PATHS)) {
+            const ns = String(paths[0] ?? "").split(".")[0];
+            const label = byBlock.get(block);
+            if (ns && label) out[ns] = label;
+        }
+        // HERO and FOOTER carry no BLOCK_CONTENT_PATHS entry (they are always
+        // populated, so there is nothing to test), but they are the two sections
+        // a colour click lands in most often. Their namespace is their block
+        // name, lowercased.
+        for (const [ns, block] of [["hero", "HERO"], ["footer", "FOOTER"]] as const) {
+            const label = byBlock.get(block);
+            if (label) out[ns] = label;
+        }
+        return out;
+    }, [m.currentHeroStyle]);
+
+    // Falls back to the RAW PATH, never to nothing: "header" is a poor name but
+    // it is still true, and a scope with no name on it is the bug this fixes.
+    const sectionName = useCallback((section: string) => sectionLabels[section] || section, [sectionLabels]);
+
     const faviconUrl: string = (m.getValue('favicon') as string) || '';
     const clearFavicon = useCallback(() => {
         // `undefined` is what save-content stores and astro-builder reads as
@@ -249,9 +342,16 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     // Branded (non-generic) families are lockVariant — their hand-tuned palette
     // must survive "auto" in the live preview exactly as it does in the build.
     const isBrandedFamily = !!m.activeFamily && m.activeFamily !== "generic";
+    // Reads through mRef, not the closure: handleReset defers this to an rAF
+    // AFTER discarding the draft, so a closed-over m.currentScheme would put the
+    // discarded scheme straight back on the page.
     const applyTheme = useCallback(() => {
-        applyThemeToIframe(iframeRef.current, m.currentScheme, m.currentFont, m.btForTheme, isBrandedFamily);
-    }, [m.currentScheme, m.currentFont, m.btForTheme, isBrandedFamily]);
+        const mm = mRef.current;
+        applyThemeToIframe(
+            iframeRef.current, mm.currentScheme, mm.currentFont, mm.btForTheme,
+            !!mm.activeFamily && mm.activeFamily !== "generic",
+        );
+    }, []);
 
     const setThemeField = (field: "colorScheme" | "fontPairing", value: string) => {
         m.setThemeField(field, value);
@@ -345,9 +445,12 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
     }, []);
 
     // ── Click-to-recolour (per-role) ──────────────────────────────────────
+    // Same reason as applyTheme: this is the applier handleReset runs on an rAF
+    // after the discard, so it has to read the map that survived the discard —
+    // not the one the render before it was holding.
     const applyRoleColors = useCallback(() => {
-        applyRoleColorsToIframe(iframeRef.current, (m.effectiveCustomizations as any)?.roleColors);
-    }, [m.effectiveCustomizations]);
+        applyRoleColorsToIframe(iframeRef.current, (mRef.current.effectiveCustomizations as any)?.roleColors);
+    }, []);
 
     const toggleColorMode = useCallback(() => {
         setColorMode((prev) => {
@@ -358,8 +461,13 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
         });
     }, []);
 
-    const applyRoleColor = useCallback((role: ColorRole, prop: ColorProp, color: string | null) => {
-        const key = roleColorKey(role, prop);
+    // `section` null → the legacy every-section key, which is still exactly the
+    // string published sites carry, so an old site keeps rendering as it does.
+    // The live injection needs no scope logic of its own: it rebuilds the whole
+    // CSS from the whole map, and buildRoleColorCss is what knows that a
+    // section-scoped rule has to be emitted after the every-section one.
+    const applyRoleColor = useCallback((role: ColorRole, prop: ColorProp, color: string | null, section: string | null) => {
+        const key = roleColorKey(role, prop, section);
         m.setRoleColor(key, color);
         const base = (((m.effectiveCustomizations as any)?.roleColors) ?? {}) as Record<string, string>;
         const nextMap = { ...base };
@@ -420,7 +528,27 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
             }
             if (data.type === "ed:color-click" && typeof data.field === "string") {
                 const role = roleForField(data.field, !!data.isButton);
-                setColorPopover({ role, prop: COLOR_ROLES[role].defaultProp, curBg: String(data.curBg || ""), curFg: String(data.curFg || "") });
+                // The section is not new state — it is already the head of the
+                // hook path the admin clicked, so nothing has to be stored or
+                // guessed to know it. Scope defaults to that section; a field
+                // with no placeable section opens on every-section, which is the
+                // only key that can be written for it.
+                const section = sectionForField(data.field);
+                const doc = iframeRef.current?.contentDocument ?? null;
+                const sectionMatches = section ? countRoleMatches(doc, role, section) : 0;
+                const allMatches = countRoleMatches(doc, role, null);
+                setColorPopover({
+                    role, prop: COLOR_ROLES[role].defaultProp,
+                    curBg: String(data.curBg || ""), curFg: String(data.curFg || ""),
+                    section,
+                    // Section scope is the default and the point of the change —
+                    // EXCEPT where it is provably inert (the header, whose hooks
+                    // are top-level paths). Opening on a scope that cannot change
+                    // a pixel would be a worse default than a blunt one, so those
+                    // open on every-section, which is what they did before today.
+                    scopeAll: !section || sectionMatches === 0,
+                    sectionMatches, allMatches,
+                });
                 return;
             }
             if (data.type === "ed:select" && typeof data.field === "string") {
@@ -907,7 +1035,10 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
                         </button>
                         <button type="button" onClick={m.undo} disabled={!m.canUndo} className={TB} title="Undo (Ctrl/Cmd+Z)">Undo</button>
                         <button type="button" onClick={m.redo} disabled={!m.canRedo} className={TB} title="Redo (Ctrl/Cmd+Shift+Z)">Redo</button>
-                        <button type="button" onClick={toggleColorMode} aria-pressed={colorMode} className={`${TB}${colorMode ? " ring-2 ring-neutral-900" : ""}`} title="Colour mode — click any button, heading, or text on the page to recolour its whole kind">
+                        {/* The tooltip has to say the same thing the picker does. It
+                            used to promise "its whole kind", which is now the OPT-IN
+                            ("Every section") rather than what a click does. */}
+                        <button type="button" onClick={toggleColorMode} aria-pressed={colorMode} className={`${TB}${colorMode ? " ring-2 ring-neutral-900" : ""}`} title="Colour mode — click any button, heading, or text to recolour its kind in that section; the picker can widen it to every section">
                             {colorMode ? "🎨 Colors ✓" : "🎨 Colors"}
                         </button>
                         <div className="ml-1 flex overflow-hidden rounded-lg border border-neutral-200">
@@ -984,41 +1115,86 @@ export default function SandboxEditorV3(props: SandboxEditorProps) {
 
             {colorMode && !colorPopover && (
                 <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 9998, background: "#0f172a", color: "#fff", borderRadius: 999, padding: "8px 16px", fontSize: 12, fontWeight: 600, fontFamily: "ui-sans-serif, system-ui, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}>
-                    🎨 Colour mode — click a button, heading, or text to recolour its kind
+                    🎨 Colour mode — click a button, heading, or text to recolour its kind in that section
                 </div>
             )}
             {colorPopover && (() => {
                 const def = COLOR_ROLES[colorPopover.role];
                 const prop = colorPopover.prop;
-                const key = roleColorKey(colorPopover.role, prop);
+                // THE SCOPE ON SCREEN decides the key — null for every-section.
+                // `existing`, the swatch and Reset all read that one key, so
+                // flipping the scope shows that scope's own stored colour and
+                // Reset can only ever clear the colour being shown. Reading the
+                // role's other key here would have made Reset clear a colour the
+                // admin was not looking at.
+                const scoped = colorPopover.scopeAll ? null : (colorPopover.section || null);
+                const key = roleColorKey(colorPopover.role, prop, scoped);
                 const existing = (((m.effectiveCustomizations as any)?.roleColors) ?? {})[key] as string | undefined;
                 const fallback = prop === "bg" ? (colorPopover.curBg || "#3366cc") : (colorPopover.curFg || "#111111");
                 const value = (existing || fallback || "#000000").slice(0, 7);
+                const where = scoped ? sectionName(scoped) : "every section";
+                // Say so rather than letting a pick land on nothing. `-1` means
+                // the count could not be taken, which is not the same as zero.
+                const activeMatches = colorPopover.scopeAll ? colorPopover.allMatches : colorPopover.sectionMatches;
+                const note = activeMatches !== 0 ? null
+                    : colorPopover.scopeAll
+                        ? "Nothing on this page uses this colour."
+                        : `Nothing in ${sectionName(colorPopover.section)} uses this colour — pick “Every section”.`;
+                const segBtn = (active: boolean) => ({
+                    padding: "6px 10px", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer",
+                    whiteSpace: "nowrap" as const,
+                    background: active ? "#0f172a" : "#fff", color: active ? "#fff" : "#64748b",
+                });
                 return (
-                    <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 9998, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, boxShadow: "0 16px 40px rgba(0,0,0,0.22)", padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, fontFamily: "ui-sans-serif, system-ui, sans-serif", minWidth: 300 }}>
+                    <div style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 9998, background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, boxShadow: "0 16px 40px rgba(0,0,0,0.22)", padding: "12px 14px", display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, fontFamily: "ui-sans-serif, system-ui, sans-serif", minWidth: 300, maxWidth: "calc(100vw - 32px)" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                             <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#64748b" }}>Recolour</span>
                             <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap" }}>{def.label}</span>
+                            {/* Never just "Primary buttons": the same role lives in
+                                the hero and the closing band, so the name of the
+                                role alone cannot say which one is about to change. */}
+                            <span style={{ fontSize: 11, color: "#64748b", whiteSpace: "nowrap" }}>in {where}</span>
                         </div>
+                        {/* Offered only when the click could be placed in a section
+                            — with none, every-section is not a choice, it is the
+                            only key there is. */}
+                        {colorPopover.section && (
+                            <div role="group" aria-label="Which sections this colour applies to"
+                                style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
+                                <button type="button" aria-pressed={!colorPopover.scopeAll}
+                                    onClick={() => setColorPopover((c) => (c ? { ...c, scopeAll: false } : c))}
+                                    title={colorPopover.sectionMatches === 0
+                                        ? `Nothing in ${sectionName(colorPopover.section)} uses this colour`
+                                        : `Only in ${sectionName(colorPopover.section)}`}
+                                    style={segBtn(!colorPopover.scopeAll)}>This section</button>
+                                <button type="button" aria-pressed={colorPopover.scopeAll}
+                                    onClick={() => setColorPopover((c) => (c ? { ...c, scopeAll: true } : c))}
+                                    title={`${def.label} everywhere on the page`}
+                                    style={segBtn(colorPopover.scopeAll)}>Every section</button>
+                            </div>
+                        )}
                         {def.props.length > 1 && (
                             <div style={{ display: "flex", border: "1px solid #e2e8f0", borderRadius: 8, overflow: "hidden" }}>
                                 {def.props.map((p) => (
-                                    <button key={p} type="button" onClick={() => setColorPopover((c) => (c ? { ...c, prop: p } : c))}
-                                        style={{ padding: "6px 10px", fontSize: 11, fontWeight: 700, border: "none", cursor: "pointer", background: prop === p ? "#0f172a" : "#fff", color: prop === p ? "#fff" : "#64748b" }}>
+                                    <button key={p} type="button" aria-pressed={prop === p} onClick={() => setColorPopover((c) => (c ? { ...c, prop: p } : c))}
+                                        style={segBtn(prop === p)}>
                                         {p === "bg" ? "Fill" : "Text"}
                                     </button>
                                 ))}
                             </div>
                         )}
-                        <input type="color" value={value} onChange={(e) => applyRoleColor(colorPopover.role, prop, e.target.value)}
+                        <input type="color" value={value} onChange={(e) => applyRoleColor(colorPopover.role, prop, e.target.value, scoped)}
                             style={{ width: 44, height: 36, border: "1px solid #e2e8f0", borderRadius: 8, background: "#fff", cursor: "pointer", padding: 2 }}
-                            aria-label={`${def.label} ${prop === "bg" ? "fill" : "text"} colour`} />
+                            aria-label={`${def.label} ${prop === "bg" ? "fill" : "text"} colour in ${where}`} />
                         {existing && (
-                            <button type="button" onClick={() => applyRoleColor(colorPopover.role, prop, null)}
+                            <button type="button" onClick={() => applyRoleColor(colorPopover.role, prop, null, scoped)}
                                 style={{ fontSize: 12, color: "#64748b", background: "transparent", border: "none", cursor: "pointer", textDecoration: "underline" }}>Reset</button>
                         )}
                         <button type="button" onClick={() => setColorPopover(null)} aria-label="Close"
                             style={{ marginLeft: "auto", background: "transparent", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, paddingLeft: 6 }}>×</button>
+                        {note && (
+                            <span role="status" style={{ flexBasis: "100%", fontSize: 11, fontWeight: 600, color: "#b45309" }}>{note}</span>
+                        )}
                     </div>
                 );
             })()}
