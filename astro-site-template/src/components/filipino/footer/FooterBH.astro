@@ -74,7 +74,14 @@ const msgHref = waDigits
 // No default label: "Message" asserts a messaging channel the shop may not
 // run — and with no channel there is no pill at all, whatever the
 // CTA text says.
-const msgText = msgHref ? (hero.cta1?.text || cband.cta1?.text || '') : '';
+// The LABEL is this footer's OWN field now. footer.cta.text falls back to
+// exactly what this line read before — hero.cta1, then ctaBand.cta1 — so a site
+// that never filled the footer's box in renders byte-identically, and the hook
+// below spells footer.cta.text so the owner's first edit lands there and this
+// pill stops being retyped by the hero. Only the LABEL moves: the href above is
+// the WhatsApp / Messenger channel, not a CTA target, which is why this pill
+// carries no data-href-field.
+const msgText = msgHref ? (f.cta?.text || hero.cta1?.text || cband.cta1?.text || '') : '';
 ---
 <footer>
   <div class="wrap">
@@ -122,7 +129,7 @@ const msgText = msgHref ? (hero.cta1?.text || cband.cta1?.text || '') : '';
 </footer>
 {msgHref && msgText && (
   <div class="msg-fab">
-    <a href={msgHref} target="_blank" rel="noopener noreferrer" aria-label={msgText} data-field="hero.cta1.text">
+    <a href={msgHref} target="_blank" rel="noopener noreferrer" aria-label={msgText} data-field="footer.cta.text">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4A11 11 0 0 0 4.5 18.5L3 22l3.7-1.4A11 11 0 1 0 20 4Z"/></svg>
       {msgText}
     </a>

@@ -21,11 +21,13 @@
  */
 import {
     buildRoleColorCss,
+    COLOR_ROLES,
     COLOR_STATE_LABELS,
     COLOR_STATES,
     labelFor,
     parseRoleColorKey,
     roleColorKey,
+    roleForField,
     scopeSelector,
     sectionForField,
 } from '@/lib/roleColors';
@@ -50,14 +52,33 @@ const labelsIn = (css: string): string[] =>
 const rulesIn = (css: string): string[] => (css ? css.split('\n') : []);
 
 /**
- * The exact every-section selector list. Frozen on purpose: this string is
- * baked into HTML already published, and a site coloured before sections
- * existed has to render exactly as it does now.
+ * The exact every-section selector list.
+ *
+ * WHAT IS FROZEN IS THE SET OF PAINTED ELEMENTS, NOT THIS STRING. The promise
+ * is that a site whose customizations hold `primaryCta:bg` today keeps
+ * colouring the same buttons after a change, because that CSS is already baked
+ * into published HTML.
+ *
+ * The string therefore GREW when the per-section CTAs stopped borrowing the
+ * hero's field. `about.cta.text`, `services.cta.text`, `how.cta.text` and
+ * `footer.cta.text` name buttons that used to emit `data-field="hero.cta1.text"`
+ * — the About host action, the Services whole-package button, the How band's
+ * action and the footer's contact link / message pill. They were covered by
+ * this key through the hero's selector; listing them here is what KEEPS them
+ * covered now that they carry their own hooks. Dropping them would silently
+ * un-colour a published site's buttons on its next publish, which is the
+ * failure this constant exists to catch, not an example of it.
+ *
+ * `navCtaText` / `nav.cta.text` are deliberately absent: the header CTA has its
+ * own `headerCta` role. See the additive test at the foot of this file.
  */
 const LEGACY_PRIMARY_CTA =
     '[data-field="hero.cta1.text"],[data-field="ctaBand.cta1.text"],[data-field="ctaBand.cta.text"],' +
+    '[data-field="about.cta.text"],[data-field="services.cta.text"],[data-field="how.cta.text"],[data-field="footer.cta.text"],' +
     '[data-field="hero.cta1.text"]:hover,[data-field="ctaBand.cta1.text"]:hover,[data-field="ctaBand.cta.text"]:hover,' +
-    '[data-field="hero.cta1.text"]:focus,[data-field="ctaBand.cta1.text"]:focus,[data-field="ctaBand.cta.text"]:focus';
+    '[data-field="about.cta.text"]:hover,[data-field="services.cta.text"]:hover,[data-field="how.cta.text"]:hover,[data-field="footer.cta.text"]:hover,' +
+    '[data-field="hero.cta1.text"]:focus,[data-field="ctaBand.cta1.text"]:focus,[data-field="ctaBand.cta.text"]:focus,' +
+    '[data-field="about.cta.text"]:focus,[data-field="services.cta.text"]:focus,[data-field="how.cta.text"]:focus,[data-field="footer.cta.text"]:focus';
 
 describe('buildRoleColorCss — a background pick carries its label', () => {
     it('gives a background pick a legible label', () => {
@@ -140,9 +161,24 @@ describe('buildRoleColorCss — a pick is scoped to one section', () => {
     });
 
     it('emits nothing for a section none of the role selectors can reach', () => {
-        // primaryCta lives only in hero + ctaBand. Scoping it to the footer must
-        // drop every selector rather than fall back to all of them.
-        expect(buildRoleColorCss({ 'footer:primaryCta:bg': '#17181A' })).toBe('');
+        // primaryCta reaches hero, ctaBand, about, services, how and footer —
+        // the six sections that draw a primary button — and NOTHING else.
+        // Scoping it to a section with no button must drop every selector
+        // rather than fall back to all of them.
+        expect(buildRoleColorCss({ 'location:primaryCta:bg': '#17181A' })).toBe('');
+        expect(buildRoleColorCss({ 'gallery:primaryCta:bg': '#17181A' })).toBe('');
+        // ...and the six that DO draw one narrow to their own button alone.
+        const FOOTER_CTA =
+            '[data-field="footer.cta.text"],[data-field="footer.cta.text"]:hover,' +
+            '[data-field="footer.cta.text"]:focus';
+        expect(rulesIn(buildRoleColorCss({ 'footer:primaryCta:bg': '#17181A' }))).toEqual([
+            `${FOOTER_CTA}{background:#17181A !important;border-color:#17181A !important;}`,
+            `${FOOTER_CTA}{color:#FFFFFF !important;}`,
+        ]);
+        expect(buildRoleColorCss({ 'how:primaryCta:bg': '#17181A' })).toContain(
+            '[data-field="how.cta.text"]',
+        );
+        expect(buildRoleColorCss({ 'how:primaryCta:bg': '#17181A' })).not.toContain('hero.cta1');
     });
 
     it('scopes an open-ended selector by prefix instead of dropping it', () => {
@@ -898,7 +934,7 @@ describe('roleColorKey / parseRoleColorKey — the state axis', () => {
 
     it('round-trips every real combination of section, role, prop and state', () => {
         const sections: Array<string | null> = [null, 'hero', 'ctaBand', 'about'];
-        const roles: ColorRole[] = ['primaryCta', 'secondaryCta', 'heading', 'eyebrow', 'link'];
+        const roles: ColorRole[] = ['primaryCta', 'secondaryCta', 'headerCta', 'heading', 'eyebrow', 'link'];
         const props: ColorProp[] = ['bg', 'fg'];
         let checked = 0;
         for (const section of sections) {
@@ -926,5 +962,382 @@ describe('roleColorKey / parseRoleColorKey — the state axis', () => {
         });
         expect(withJunk).toBe(buildRoleColorCss({ 'hero:primaryCta:bg@hover': '#17181A' }));
         expect(withJunk).not.toBe('');
+    });
+});
+
+/**
+ * The header CTA has its own role.
+ *
+ * The bug: clicking the header's "Contact us" opened a picker labelled
+ * "Primary buttons", and the colour never arrived. roleForField's catch-all
+ * returned `primaryCta` for ANY button, but primaryCta's selectors are pinned
+ * to `hero.cta1.text` / `ctaBand.cta1.text` / `ctaBand.cta.text` and name no
+ * header hook — so the pick was stored, the CSS was emitted, and it landed on
+ * the hero and closing-band buttons instead of the one that was clicked.
+ *
+ * The templates emit the header CTA in TWO shapes, and both are covered:
+ *   · `navCtaText` / `navCtaHref`     — dotless, 15 family headers and footers
+ *   · `nav.cta.text` / `nav.cta.href` — the five generic headers (HeaderA–E),
+ *     which read the same `content.navCtaText` but emit a dotted hook.
+ */
+
+/** The exact every-section selector list for the header role. Frozen on purpose. */
+const HEADER_CTA_BASE =
+    '[data-field="navCtaText"],[data-field="nav.cta.text"],' +
+    '[data-field="navCtaText"]:hover,[data-field="nav.cta.text"]:hover,' +
+    '[data-field="navCtaText"]:focus,[data-field="nav.cta.text"]:focus';
+
+describe('headerCta — the role exists and matches what the templates emit', () => {
+    it('names both shapes the templates emit, and nothing else', () => {
+        // Checked against a scan of astro-site-template/src, not guessed:
+        // `navCtaText` appears in 15 files, `nav.cta.text` in 5. Covering only
+        // one shape would leave a quarter of the catalogue as broken as before.
+        expect(COLOR_ROLES.headerCta.selectors).toEqual([
+            '[data-field="navCtaText"]',
+            '[data-field="nav.cta.text"]',
+        ]);
+    });
+
+    it('reads in the popover beside the other button roles', () => {
+        expect(COLOR_ROLES.headerCta.label).toBe('Header button');
+        // A name an admin can tell apart from the two it used to be confused
+        // with, at a glance, in the same list.
+        const labels = [
+            COLOR_ROLES.primaryCta.label,
+            COLOR_ROLES.secondaryCta.label,
+            COLOR_ROLES.headerCta.label,
+        ];
+        expect(new Set(labels).size).toBe(3);
+    });
+
+    it('opens on the fill, like every other button role', () => {
+        // A click on a button means "this button's colour", and for a button
+        // that is the fill. Matching primaryCta/secondaryCta also means an
+        // admin who has recoloured one button already knows what the next
+        // click will do.
+        expect(COLOR_ROLES.headerCta.defaultProp).toBe('bg');
+        expect(COLOR_ROLES.headerCta.defaultProp).toBe(COLOR_ROLES.primaryCta.defaultProp);
+        expect(COLOR_ROLES.headerCta.props).toEqual(['bg', 'fg']);
+    });
+
+    it('emits the header selectors and NOT the hero or closing band', () => {
+        const css = buildRoleColorCss({ 'headerCta:bg': '#17181A' });
+        expect(css).toBe(
+            `${HEADER_CTA_BASE}{background:#17181A !important;border-color:#17181A !important;}\n` +
+            `${HEADER_CTA_BASE}{color:#FFFFFF !important;}`,
+        );
+        // The whole point: it must not reach the buttons primaryCta owns.
+        expect(css).not.toContain('hero.cta1');
+        expect(css).not.toContain('ctaBand');
+    });
+
+    it('carries a legible label like any other background pick', () => {
+        // A pale header fill must flip the label to dark, same as everywhere.
+        const css = buildRoleColorCss({ 'headerCta:bg': '#FFF9C4' });
+        expect(labelsIn(css)).toEqual(['#0B0B0F']);
+        expect(contrast('#0B0B0F', '#FFF9C4')).toBeGreaterThanOrEqual(4.5);
+    });
+});
+
+describe('headerCta — primaryCta no longer claims the header field', () => {
+    it('does not list any header hook among primaryCta or secondaryCta selectors', () => {
+        // Verified against the file, so a later edit that "helpfully" widens
+        // primaryCta to cover the header trips here — that widening would
+        // change what every already-published primaryCta:bg paints.
+        const others = [...COLOR_ROLES.primaryCta.selectors, ...COLOR_ROLES.secondaryCta.selectors];
+        for (const sel of others) {
+            expect(sel).not.toContain('navCta');
+            expect(sel).not.toContain('nav.cta');
+        }
+    });
+
+    it('emits nothing touching the header for a primaryCta pick', () => {
+        const css = buildRoleColorCss({ 'primaryCta:bg': '#17181A', 'primaryCta:fg': '#FFFFFF' });
+        expect(css).not.toContain('navCtaText');
+        expect(css).not.toContain('nav.cta.text');
+    });
+
+    it('keeps the header and the hero primary independent of each other', () => {
+        // Two roles, two keys, two disjoint rule sets — the independence the
+        // owner asked for. A header CTA is chrome; a hero CTA sits on artwork.
+        const header = buildRoleColorCss({ 'headerCta:bg': '#B8860B' });
+        const hero = buildRoleColorCss({ 'hero:primaryCta:bg': '#B8860B' });
+        expect(header).not.toBe(hero);
+        expect(header).not.toContain('hero.cta1');
+        expect(hero).not.toContain('navCtaText');
+    });
+});
+
+describe('roleForField — every button field the templates emit', () => {
+    // Every data-field / data-href-field that sits on a button-ish element in
+    // astro-site-template/src, enumerated by scanning the .astro sources rather
+    // than recalled. `isButton` is what the preview bridge computes: a <button>
+    // tag, or `btn` as a whole word in the class list, or a `.btn`/`button`
+    // ancestor.
+    const TABLE: Array<[field: string, isButton: boolean, role: ColorRole]> = [
+        // ── the header CTA: its own role now, in BOTH shapes ────────────────
+        ['navCtaText', true, 'headerCta'],
+        ['navCtaHref', true, 'headerCta'],
+        ['nav.cta.text', true, 'headerCta'],
+        ['nav.cta.href', true, 'headerCta'],
+        // ── hero ───────────────────────────────────────────────────────────
+        ['hero.cta1.text', true, 'primaryCta'],
+        ['hero.cta2.text', true, 'secondaryCta'],
+        ['hero.cta3.text', true, 'secondaryCta'],
+        // ── closing band ───────────────────────────────────────────────────
+        ['ctaBand.cta.text', true, 'primaryCta'],
+        ['ctaBand.cta1.text', true, 'primaryCta'],
+        ['ctaBand.cta2.text', true, 'secondaryCta'],
+        ['ctaBand.cta3.text', true, 'secondaryCta'],
+        ['ctaBand.primary.text', true, 'primaryCta'],
+        ['ctaBand.secondary.text', true, 'primaryCta'],
+        // ── the long tail of one-off buttons, all still the catch-all ──────
+        ['location.cta.text', true, 'primaryCta'],
+        ['location.directions.text', true, 'primaryCta'],
+        ['location.phone', true, 'primaryCta'],
+        ['services.cta.text', true, 'primaryCta'],
+        ['services.ctaLabel', true, 'primaryCta'],
+        // ── the header's NON-CTA hooks, which must NOT be swept up ─────────
+        ['nav.phone', false, 'link'],
+        ['nav.phone.href', false, 'link'],
+        ['nav.brand', false, 'link'],
+        ['nav.status', false, 'link'],
+    ];
+
+    it.each(TABLE)('routes %s (isButton=%s) to %s', (field, isButton, role) => {
+        expect(roleForField(field, isButton)).toBe(role);
+    });
+
+    it('routes the header CTA by its hook, NOT by whether it looks like a button', () => {
+        // Only 7 of the 15 dotless files dress this hook as `.btn`; the rest
+        // use `a.nav-resv`, `a.navc`, `a.link`, `a.foot-cta`, and one of the
+        // five generic headers uses `a.nav-cta`. On 9 of 20 templates the
+        // bridge therefore reports isButton=false. A check placed INSIDE the
+        // isButton branch would have fixed the pill templates and left the
+        // others routing to `link` — the same button answering differently
+        // depending on a class name the template author happened to type.
+        for (const f of ['navCtaText', 'navCtaHref', 'nav.cta.text', 'nav.cta.href']) {
+            expect(roleForField(f, true)).toBe('headerCta');
+            expect(roleForField(f, false)).toBe('headerCta');
+        }
+    });
+
+    it('matches on the whole hook, so a lookalike is not captured', () => {
+        // An exact-match set, not a /^nav\./ pattern — which would have
+        // swallowed nav.phone and nav.brand — and not a substring test either.
+        expect(roleForField('hero.navCtaText', true)).toBe('primaryCta');
+        expect(roleForField('navCtaTextExtra', true)).toBe('primaryCta');
+        expect(roleForField('nav.cta.textarea', true)).toBe('primaryCta');
+        expect(roleForField('footer.nav.cta.text', true)).toBe('primaryCta');
+    });
+
+    it('still routes the non-button roles it always did', () => {
+        expect(roleForField('services.headline', false)).toBe('heading');
+        expect(roleForField('hero.headlineLines.0', false)).toBe('heading');
+        expect(roleForField('about.tag', false)).toBe('eyebrow');
+        expect(roleForField('hero.kicker', false)).toBe('eyebrow');
+        expect(roleForField('footer.blurb', false)).toBe('link');
+        expect(roleForField('', false)).toBe('link');
+    });
+});
+
+describe('headerCta — the section and state axes', () => {
+    it('produces an every-section key for the dotless hook, because it must', () => {
+        // sectionForField returns '' for a dotless hook: scoping works by
+        // prefix and no prefix reaches `navCtaText`. That is not a shortfall —
+        // there is one header, so every-section and header-only are the same
+        // set of elements.
+        expect(sectionForField('navCtaText')).toBe('');
+        expect(roleColorKey('headerCta', 'bg', sectionForField('navCtaText')))
+            .toBe('headerCta:bg');
+        expect(parseRoleColorKey('headerCta:bg'))
+            .toEqual({ section: null, role: 'headerCta', prop: 'bg', state: 'base' });
+    });
+
+    it('scopes the DOTTED shape to nav, and that reaches only the generic headers', () => {
+        // The five generic headers emit nav.cta.text, so a click there yields
+        // section 'nav'. The dotless selector cannot live under any section and
+        // is dropped, leaving exactly the selector that can match.
+        expect(sectionForField('nav.cta.text')).toBe('nav');
+        expect(buildRoleColorCss({ 'nav:headerCta:bg': '#17181A' })).toBe(
+            '[data-field="nav.cta.text"],[data-field="nav.cta.text"]:hover,' +
+            '[data-field="nav.cta.text"]:focus' +
+            '{background:#17181A !important;border-color:#17181A !important;}\n' +
+            '[data-field="nav.cta.text"],[data-field="nav.cta.text"]:hover,' +
+            '[data-field="nav.cta.text"]:focus{color:#FFFFFF !important;}',
+        );
+    });
+
+    it('emits nothing when scoped to a section the header cannot be in', () => {
+        // Both selectors are pinned, and neither names `hero`, so both drop and
+        // the entry is skipped rather than emitting a rule that matches nothing.
+        expect(buildRoleColorCss({ 'hero:headerCta:bg': '#17181A' })).toBe('');
+        expect(buildRoleColorCss({ 'ctaBand:headerCta:fg': '#17181A' })).toBe('');
+        expect(scopeSelector('[data-field="navCtaText"]', 'nav')).toBeNull();
+        expect(scopeSelector('[data-field="nav.cta.text"]', 'nav'))
+            .toBe('[data-field="nav.cta.text"]');
+    });
+
+    it('takes the hover and pressed states, each with its own suffixes', () => {
+        expect(buildRoleColorCss({ 'headerCta:fg@hover': '#E0713F' })).toBe(
+            '[data-field="navCtaText"]:hover,[data-field="nav.cta.text"]:hover,' +
+            '[data-field="navCtaText"]:focus-visible,[data-field="nav.cta.text"]:focus-visible' +
+            '{color:#E0713F !important;}',
+        );
+        expect(buildRoleColorCss({ 'headerCta:fg@active': '#E0713F' })).toBe(
+            '[data-field="navCtaText"]:active,[data-field="nav.cta.text"]:active' +
+            '{color:#E0713F !important;}',
+        );
+    });
+
+    it('orders the header states base → hover → pressed, like every other role', () => {
+        const css = buildRoleColorCss({
+            'headerCta:bg@active': '#111111',
+            'headerCta:bg': '#333333',
+            'headerCta:bg@hover': '#222222',
+        });
+        const rules = rulesIn(css);
+        const idx = (c: string) => rules.findIndex((r) => r.includes(`background:${c}`));
+        expect(idx('#333333')).toBeLessThan(idx('#222222'));
+        expect(idx('#222222')).toBeLessThan(idx('#111111'));
+    });
+
+    it('gives each header state its own auto-label, and lets an fg pick silence it', () => {
+        // A pale hover fill under a base label picked for a dark resting fill
+        // is exactly the 1.06:1 pairing the auto-label rule exists to catch.
+        const spilled = buildRoleColorCss({
+            'headerCta:fg': '#FEFEFE',
+            'headerCta:bg@hover': '#FFF9C4',
+        });
+        expect(labelsIn(spilled)).toEqual(['#FEFEFE', '#0B0B0F']);
+        // ...and a label chosen for the hover state itself is left alone.
+        const chosen = buildRoleColorCss({
+            'headerCta:bg@hover': '#FFF9C4',
+            'headerCta:fg@hover': '#E0713F',
+        });
+        expect(labelsIn(chosen)).toEqual(['#E0713F']);
+    });
+});
+
+describe('headerCta is additive — published sites render byte-identically', () => {
+    it('emits the frozen legacy primaryCta document, untouched by the new role', () => {
+        // The promise: a site whose customizations hold primaryCta:bg today
+        // colours its hero, closing-band and per-section buttons. After this
+        // change it must colour EXACTLY those elements — the HEADER pill was
+        // never covered by this key, so it must not start being covered by it
+        // now, however the 24 headers that used to print hero.cta1.text are
+        // rehooked.
+        expect(buildRoleColorCss({ 'primaryCta:bg': '#17181A' })).toBe(
+            `${LEGACY_PRIMARY_CTA}{background:#17181A !important;border-color:#17181A !important;}\n` +
+            `${LEGACY_PRIMARY_CTA}{color:#FFFFFF !important;}`,
+        );
+    });
+
+    it('leaves a realistic published map completely unchanged', () => {
+        // A whole-site palette of the kind already baked into published HTML,
+        // asserted whole. Nothing here may gain a header rule.
+        const css = buildRoleColorCss({
+            'primaryCta:bg': '#B8860B',
+            'primaryCta:fg': '#0B0B0F',
+            'secondaryCta:bg': '#FFFFFF',
+            'heading:fg': '#5A0000',
+            'eyebrow:fg': '#E0713F',
+            'link:fg': '#2563EB',
+            'hero:primaryCta:bg': '#17181A',
+            'ctaBand:primaryCta:bg@hover': '#FFF9C4',
+        });
+        expect(css).not.toContain('navCtaText');
+        expect(css).not.toContain('nav.cta.text');
+        expect(css).not.toContain('headerCta');
+        // ...and still says everything it used to.
+        expect(css).toContain('[data-field="hero.cta1.text"]');
+        expect(css).toContain('[data-field="ctaBand.cta.text"]');
+        expect(css).toContain('a[data-href-field]:not(.btn)');
+    });
+
+    it('does not let the header key alter what a legacy key emits beside it', () => {
+        // Adding a header colour must be purely additive: the legacy rules come
+        // out character-for-character as they do on their own.
+        const legacyOnly = buildRoleColorCss({ 'primaryCta:bg': '#17181A' });
+        const withHeader = buildRoleColorCss({
+            'primaryCta:bg': '#17181A',
+            'headerCta:bg': '#B8860B',
+        });
+        expect(withHeader.startsWith(legacyOnly)).toBe(true);
+        expect(rulesIn(withHeader).slice(0, 2)).toEqual(rulesIn(legacyOnly));
+    });
+
+    it('does not let a header label pick silence a primaryCta auto-label', () => {
+        // fgCovers is keyed by scope+ROLE+state, so the two roles cannot leak
+        // into one another's legibility check.
+        const css = buildRoleColorCss({
+            'headerCta:fg': '#FF0000',
+            'primaryCta:bg': '#17181A',
+        });
+        expect(labelsIn(css)).toEqual(['#FF0000', '#FFFFFF']);
+    });
+});
+
+/**
+ * headerCta — the two things it does that are NOT obvious from its name.
+ *
+ * Both are deliberate and both were confirmed against the built site rather
+ * than reasoned about. They are pinned here because each looks like a bug to
+ * the next reader, and "fixing" either one costs more than it buys.
+ */
+describe('headerCta — the deliberate over-reach, pinned', () => {
+    it('carries no ancestor constraint, so it reaches the FOOTER copies too', () => {
+        // Five of the 15 dotless files are footers (foodcraft BL/BM/BN/BO,
+        // hospitality BK) that draw `navCtaText` again as a contact line, and
+        // on four of them the same page carries both. A `bg` pick therefore
+        // puts a filled block behind a footer text link — verified on
+        // astro-site-template/dist/index.html, where {headerCta:bg} paints
+        // `header … a.btn.pcbn-cta` AND `footer … a.linkc.pcbn-fcta`.
+        //
+        // `header [data-field="navCtaText"]` would stop that and would be
+        // worse: roleForField sees a field and a boolean, never the ancestor,
+        // so a click on the footer copy would still open this picker, still
+        // say "Header button", and then change something off-screen — the
+        // silent wrong-target this role exists to fix. Every element the
+        // picker opens FROM must be an element the pick reaches.
+        for (const sel of COLOR_ROLES.headerCta.selectors) {
+            expect(sel.trim().startsWith('[')).toBe(true);
+            expect(/^\s*(header|footer|nav)\b/.test(sel)).toBe(false);
+        }
+    });
+
+    it('loses to an every-section `link` colour on the 9 non-.btn files', () => {
+        // Not an ordering question — buildRoleColorCss only settles contests
+        // between rules of EQUAL specificity, and this pair is not equal. On
+        // the 9 files that dress the CTA as `a.nav-resv` / `a.navc` / `a.link`
+        // / `a.nav-cta` / `a.linkc` rather than `.btn`, `link`'s selector
+        // matches the very same element and outweighs this role's, so an
+        // every-section link colour beats a header `fg` — including the
+        // automatic label a `bg` pick emits — whichever is written last.
+        //
+        // Narrowing `link` would fix it and would change the CSS every
+        // published `link:*` key emits. That trade is not available here.
+        const weight = (sel: string): [number, number, number] => {
+            // Only the shapes this file emits: attribute tests, one type, and
+            // a :not() holding a single class.
+            const flat = sel.replace(/:not\(([^)]*)\)/g, '$1');
+            const attrs = (flat.match(/\[[^\]]*\]/g) ?? []).length;
+            // Attribute VALUES hold dots ("nav.cta.text"); blank the brackets
+            // out before looking for classes or a dots would each score.
+            const rest = flat.replace(/\[[^\]]*\]/g, ' ');
+            const ids = (rest.match(/#[\w-]+/g) ?? []).length;
+            const classes = (rest.match(/\.[\w-]+/g) ?? []).length;
+            const types = (rest.match(/(^|[\s>+~])[a-z][\w-]*/gi) ?? []).length;
+            return [ids, attrs + classes, types];
+        };
+        const beats = (a: [number, number, number], b: [number, number, number]) =>
+            a[0] !== b[0] ? a[0]! > b[0]! : a[1] !== b[1] ? a[1]! > b[1]! : a[2]! > b[2]!;
+
+        const link = weight(COLOR_ROLES.link.selectors[0]!);
+        expect(link).toEqual([0, 2, 1]);
+        for (const sel of COLOR_ROLES.headerCta.selectors) {
+            expect(weight(sel)).toEqual([0, 1, 0]);
+            expect(beats(link, weight(sel))).toBe(true);
+        }
     });
 });

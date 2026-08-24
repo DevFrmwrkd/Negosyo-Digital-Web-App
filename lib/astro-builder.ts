@@ -876,8 +876,18 @@ async function transformToAstroData(
                     return band
                 })(),
                 footer: mergeShallow<any>(c.footer, derived.footer),
-                navCtaText: c.navCtaText || 'Get in touch',
-                navCtaHref: c.navCtaHref || '#visit',
+                // The header CTA now RESOLVES here, and the header components
+                // read it as their own field instead of printing hero.cta1.
+                // The hero step in the middle is what keeps that promise: with
+                // a bare `|| 'Get in touch'` this field is a non-empty string on
+                // every build, so the components' `navCtaText || hero.cta1.text`
+                // fallback could never be reached — a site that has hero.cta1
+                // and no navCtaText would have seen its header flip from the
+                // owner's own words to the stock label. `c` is the raw content,
+                // so an owner-set navCtaText still wins wherever it exists; this
+                // step only replaces a stock string with the owner's.
+                navCtaText: c.navCtaText || c.hero?.cta1?.text || 'Get in touch',
+                navCtaHref: c.navCtaHref || c.hero?.cta1?.href || '#visit',
                 navbar_links: Array.isArray(c.navbar_links) && c.navbar_links.length
                     ? c.navbar_links
                     : derived.navbar_links,

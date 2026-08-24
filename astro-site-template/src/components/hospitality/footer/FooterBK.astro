@@ -20,8 +20,8 @@
  *   footer.visit.title           — the CONTACT column heading (see decision 1)
  *   navbar_links.${i}.label      — one page-column link's label
  *   navbar_links.${i}.href       — that link's target (data-href-field)
- *   navCtaText                   — the contact action's label (drawn twice, as
- *   navCtaHref                     the design draws it — see decision 4)
+ *   footer.cta.text                   — the contact action's label (drawn twice, as
+ *   footer.cta.href                     the design draws it — see decision 4)
  *   contact.email                        — the mailto row. NOT in the design,
  *                                          whose demo villa took enquiries on
  *                                          Messenger — but a business that has
@@ -87,18 +87,21 @@
  *
  * 3. THE ARROW after the brand column's action is CSS generated content, not
  *    markup. editorBridge writes an inline edit back through innerHTML, so a
- *    glyph inside the element could end up stored in navCtaText; a pseudo-
+ *    glyph inside the element could end up stored in footer.cta.text; a pseudo-
  *    element cannot.
  *
  * 4. THE CONTACT ACTION IS DRAWN TWICE — brand column and contact column —
  *    because the design draws it twice. Both nodes hook the SAME pair
- *    (navCtaText / navCtaHref), so they cannot disagree, and ed:update
- *    refreshes both. It hooks the Header group's pair rather than hero.cta1 on
- *    purpose: components/editor/editorBridge.ts resolves a Blocks toggle by
+ *    (footer.cta.text / footer.cta.href), so they cannot disagree, and ed:update
+ *    refreshes both. It hooks the Footer group's OWN pair rather than
+ *    hero.cta1 or the header's navCtaText, on purpose:
+ *    components/editor/editorBridge.ts resolves a Blocks toggle by
  *    counting hooks of that prefix inside closest('section,footer'), so a
  *    footer carrying hero.* hooks becomes a candidate for "hide the Hero
- *    block". navCtaText has no entry in that PREFIX map at all, so it is
- *    toggle-inert. HeaderBK hooks the same pair for the same reason.
+ *    block". A footer.* hook belongs to the FOOTER block instead, and
+ *    that block's own toggle already resolves to this component, so the
+ *    pair stays toggle-safe. HeaderBK keeps navCtaText, which is now
+ *    a different field from this one — that split is the point.
  *
  * 5. THE TWO location.* HOOKS HERE ARE SAFE for the same weighted resolution:
  *    this footer holds 2 (phone, address — 3 nodes), LocationBK holds its tag,
@@ -182,11 +185,19 @@ const locality = String(f.locality ?? '').trim();
 // footer.brand_blurb is the schema's declared alias for the same box.
 const blurb = String(f.blurb ?? f.brand_blurb ?? '').trim();
 
-// The page's one action, from the Header group (see decision 4). '#location' is
+// This section's own action (see the note below). '#location' is
 // the fallback because that is where this design puts the address, the map and
 // the house rules; there is no checkout to send a booking link to.
-const ctaText = String(c.navCtaText ?? '').trim();
-const ctaHref = onPage(c.navCtaHref, '#location');
+// THIS FOOTER'S OWN action. footer.cta.* is read FIRST and falls back to
+// navCtaText / navCtaHref — the HEADER's field, which is exactly what these two
+// lines read before — so a site that never filled the footer's box in renders
+// byte-identically and no live footer loses its link. The hooks below spell
+// footer.cta.*, so the owner's first edit lands there and this action's label,
+// link and colour part company with the header pill's from then on. That split
+// is the whole point: one field used to print "Get in touch" in the top bar and
+// again down here, and an owner asked why.
+const ctaText = String(f.cta?.text ?? '').trim() || String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(f.cta?.href || c.navCtaHref, '#location');
 // Computed, never literal, and ONE conditional per attribute — an owner may
 // point this at #location or a tel:, and forcing those into a new tab is wrong.
 const ctaExternal = /^https?:/i.test(ctaHref);
@@ -276,8 +287,8 @@ const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
                 href={ctaHref}
                 target={ctaExternal ? '_blank' : undefined}
                 rel={ctaExternal ? 'noopener noreferrer' : undefined}
-                data-field="navCtaText"
-                data-href-field="navCtaHref"
+                data-field="footer.cta.text"
+                data-href-field="footer.cta.href"
               >{ctaText}</a>
             )}
           </div>
@@ -306,8 +317,8 @@ const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
                 href={ctaHref}
                 target={ctaExternal ? '_blank' : undefined}
                 rel={ctaExternal ? 'noopener noreferrer' : undefined}
-                data-field="navCtaText"
-                data-href-field="navCtaHref"
+                data-field="footer.cta.text"
+                data-href-field="footer.cta.href"
               >{ctaText}</a>
             )}
             {(phone || email || address) && (
@@ -398,7 +409,7 @@ const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
   }
   /* The design's 13px brass action. .linkc already carries the size, the weight
      and the colour, so only the arrow is added — as generated content, so the
-     glyph can never be written back into navCtaText through an inline edit.
+     glyph can never be written back into footer.cta.text through an inline edit.
      It carries NO margin: .linkc is an inline-flex box, so the pseudo-element
      is a flex ITEM and the primitive's own `gap: .5em` already spaces it — a
      margin here stacks on top of that and opens twice the design's gap. */

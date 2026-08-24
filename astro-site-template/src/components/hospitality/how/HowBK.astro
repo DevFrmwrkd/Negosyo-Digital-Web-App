@@ -37,11 +37,20 @@
  *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
  *                              stored value arrived as .desc / .description, so
  *                              the first edit heals the row onto the schema key
- *   hero.cta1.text           — the brass button's label
- *   hero.cta1.href           — its target. Deliberately the page's ONE contact
- *                              action reused, not a fourth CTA field: the schema
- *                              declares hero.cta1.text as a link FieldSpec, so
- *                              hrefPath hero.cta1.href is owned too
+ *   how.cta.text             — the brass button's label, THIS band's own
+ *   how.cta.href             — its target. The schema declares how.cta.text as a
+ *                              link FieldSpec, so hrefPath how.cta.href is owned
+ *                              too. It used to be hero.cta1.*, shared with the
+ *                              header, the hero and the footer: one string for
+ *                              four buttons, so retyping one retyped them all —
+ *                              and one colour too, because the v3 picker derives
+ *                              a button's SECTION from the leading segment of its
+ *                              field path and answered "hero" for all four. On
+ *                              how.cta this band is retypable and recolourable on
+ *                              the How-it-works scope alone. Both halves FALL
+ *                              BACK to hero.cta1.* while how.cta is unset, so no
+ *                              existing site loses a button; the hooks always
+ *                              spell how.cta, so the first edit diverges the band
  *
  * DERIVED, not content:
  *   The circled numeral. It counts DISPLAYED steps (01, 02, 03 — never a gap)
@@ -123,8 +132,8 @@ const rows = source
   .filter((r) => Boolean(r.title || r.body));
 
 // Anchor guard (R7). derive-content-defaults hard-codes hero.cta1.href to
-// '#visit', an id this page does not render, so the mirrored CTA would scroll
-// nowhere. Resolve in-page hrefs against the ids PageBK actually renders and
+// '#visit', an id this page does not render, so a button that falls back to it
+// would scroll nowhere. Resolve in-page hrefs against the ids PageBK renders and
 // keep this table in step with the copies in HeaderBK / HeroBK / CtaBandBK /
 // FooterBK. Off-page hrefs (tel:, mailto:, http) pass straight through.
 const PAGE_ANCHORS = new Set(['about', 'services', 'gallery', 'location', 'faq', 'main']);
@@ -148,10 +157,15 @@ const onPage = (href: string | undefined, fallback: string): string => {
 };
 
 const hero = content.hero || {};
-const ctaText = hero.cta1?.text || '';
+// THIS BAND'S OWN button. how.cta is read FIRST; the page's hero action is the
+// FALLBACK, and the fallback half is exactly what this file read before the
+// split — so a site that never sets how.cta renders identically and no button is
+// lost. The hooks always spell how.cta, which is what makes the first edit
+// diverge instead of retyping the header, the hero and the footer with it.
+const ctaText = how.cta?.text || hero.cta1?.text || '';
 // #location is where this template puts the address and the way to reach the
 // owner, so it is the honest landing place for an unresolvable contact action.
-const ctaHref = onPage(hero.cta1?.href, '#location');
+const ctaHref = onPage(how.cta?.href || hero.cta1?.href, '#location');
 ---
 {rows.length > 0 && (
   <section class="how-band band-panel">
@@ -173,7 +187,7 @@ const ctaHref = onPage(hero.cta1?.href, '#location');
 
       {ctaText && (
         <div class="how-act reveal">
-          <a class="btn btn--fill" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>
+          <a class="btn btn--fill" href={ctaHref} data-field="how.cta.text" data-href-field="how.cta.href">{ctaText}</a>
         </div>
       )}
     </div>

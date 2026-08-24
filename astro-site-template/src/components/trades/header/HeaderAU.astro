@@ -5,9 +5,10 @@
  * / reappears on scroll-up (toggled by PageAU's inline scroll handler via
  * header.nav.hide). The bolt glyph is decorative chrome (aria-hidden).
  *
- * The nav CTA reuses the hero's primary CTA (content.hero.cta1) so it stays in
- * sync and editable, mirroring the reference. navLinks render only when the
- * layout supplies them.
+ * The nav CTA is the header's OWN field (content.navCtaText / navCtaHref), so
+ * retyping it no longer retypes the hero's button; it falls back to the hero's
+ * primary CTA (content.hero.cta1) so a site that never set it keeps the button.
+ * navLinks render only when the layout supplies them.
  */
 interface Props { layout: any; content: any; }
 const { layout, content } = Astro.props;
@@ -42,8 +43,13 @@ const navLinks: Array<{ href: string; label: string; i: number }> =
     .map((l: any, i: number) => ({ ...l, href: onPage(l.href, ''), i }))
     .filter((l: any) => l.href);
 const hero = (content as any).hero || {};
-const ctaText = hero.cta1?.text || '';
-const ctaHref = onPage(hero.cta1?.href, '#location');
+// The header's OWN button. navCtaText / navCtaHref is the top bar's own CTA
+// field, so retyping it no longer retypes the hero's button, and roleColors
+// keys the `headerCta` role to these two hooks — the pill is colourable on its
+// own axis. Falls back to the hero's primary CTA so a site that never set the
+// header's field keeps the button, and the label, it renders today.
+const ctaText = (content as any).navCtaText || hero.cta1?.text || '';
+const ctaHref = onPage((content as any).navCtaHref || hero.cta1?.href, '#location');
 ---
 <header class="nav">
   <div class="nav-in wrap">
@@ -54,7 +60,7 @@ const ctaHref = onPage(hero.cta1?.href, '#location');
           {navLinks.map((link) => (
             <a href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
           ))}
-          {ctaText && <a href={ctaHref} class="navcall" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+          {ctaText && <a href={ctaHref} class="navcall" data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>}
         </nav>
         <button class="nav-burger" type="button" aria-label="Menu" aria-controls="nav-links-au" aria-expanded="false">
           <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>

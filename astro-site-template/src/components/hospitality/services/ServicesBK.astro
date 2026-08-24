@@ -31,7 +31,20 @@
  *   services.whole.body               — panel paragraph
  *   services.whole.price              — the figure, printed VERBATIM
  *   services.whole.unit               — the unit beside it
- *   hero.cta1.text + data-href-field hero.cta1.href — the panel's ONE button
+ *   services.cta.text + data-href-field services.cta.href — the panel's ONE
+ *                                       button, and THIS section's own. It used
+ *                                       to be hero.cta1.*, shared with the
+ *                                       header, the hero and the footer: one
+ *                                       string for four buttons, so retyping one
+ *                                       retyped them all — and one colour too,
+ *                                       because the v3 picker derives a button's
+ *                                       SECTION from the leading segment of its
+ *                                       field path and answered "hero" for all
+ *                                       four. On services.cta the panel is
+ *                                       retypable and recolourable on the
+ *                                       Services scope alone. Both halves FALL
+ *                                       BACK to hero.cta1.* while services.cta is
+ *                                       unset, so no existing site loses a button
  *
  * DERIVED, AND ONLY THIS. The row numeral ("01", "02", …) is built from the
  * DISPLAY index, is aria-hidden decoration, and is stored nowhere — the design
@@ -51,7 +64,9 @@
  *   · No per-row button. The design gives the section exactly ONE action, on the
  *     whole-villa panel, so services.ctaLabel / services.ctaHref are left to the
  *     card templates that draw one. Emitting them here would put a hook on a
- *     control the design does not have.
+ *     control the design does not have. services.cta.* is NOT that field: it is a
+ *     nested object beside those two scalar keys and it drives the panel's own
+ *     button, the one action this section really draws.
  *   · No row image, price, unit, meta, rating or feature chips. The design's row
  *     is numeral / copy / tag and nothing else. Those schema fields belong to the
  *     card templates; a data-field for a thing this section never draws is a
@@ -173,11 +188,16 @@ const wPrice = whole.price || '';
 const wUnit = whole.unit || '';
 
 const heroCta = content.hero?.cta1 || {};
-const heroCtaText = heroCta.text || '';
+// THE PANEL'S OWN button. services.cta is read FIRST; the page's hero action is
+// the FALLBACK, and the fallback half is exactly what this file read before the
+// split, so a site that never sets services.cta renders identically and no button
+// is lost. On a legacy bare-array `services` `.cta` is simply undefined — the
+// same tolerance every other scalar read here relies on.
+const panelCtaText = services.cta?.text || heroCta.text || '';
 // '#location' is this page's contact block — the design's own button points at
 // the owner's contact URL, and derive-content-defaults hands out '#visit', which
 // ANCHOR_ALIAS resolves to the same place.
-const heroCtaHref = onPage(heroCta.href, '#location');
+const panelCtaHref = onPage(services.cta?.href || heroCta.href, '#location');
 
 // The eyebrow alone never opens the panel: a kicker over nothing is a heading
 // for content that does not exist.
@@ -227,7 +247,7 @@ const hasSection = rows.length > 0 || hasWhole;
               {wBody && <p class="body s-w-body" data-field="services.whole.body">{wBody}</p>}
             </div>
           )}
-          {(wPrice || heroCtaText) && (
+          {(wPrice || panelCtaText) && (
             <div class="s-w-act">
               {wPrice && (
                 <div class="s-w-rate">
@@ -237,8 +257,8 @@ const hasSection = rows.length > 0 || hasWhole;
                   {wUnit && <span class="s-w-unit" data-field="services.whole.unit">{wUnit}</span>}
                 </div>
               )}
-              {heroCtaText && (
-                <a class="btn btn--fill s-w-cta" href={heroCtaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{heroCtaText}</a>
+              {panelCtaText && (
+                <a class="btn btn--fill s-w-cta" href={panelCtaHref} data-field="services.cta.text" data-href-field="services.cta.href">{panelCtaText}</a>
               )}
             </div>
           )}

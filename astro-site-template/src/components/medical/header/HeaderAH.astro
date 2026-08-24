@@ -2,8 +2,9 @@
 /**
  * medical / HeaderAH — in-flow porcelain nav bar sitting above the hero, closed
  * by a hairline rule (the design's editorial nav). Cormorant brand left, a
- * seafoam "Book" line-button right. Reuses the hero's primary CTA
- * (content.hero.cta1) for the Book action so it stays editable and in sync.
+ * seafoam "Book" line-button right. The Book action is the header's OWN CTA
+ * (content.navCtaText / navCtaHref), falling back to the hero's primary CTA
+ * (content.hero.cta1) so a site that never set the header's field keeps it.
  *
  * Kept in-flow (not fixed) to match the design; navLinks render only when the
  * layout supplies them.
@@ -41,10 +42,15 @@ const navLinks: Array<{ href: string; label: string; i: number }> =
     .map((l: any, i: number) => ({ ...l, href: onPage(l.href, ''), i }))
     .filter((l: any) => l.href);
 const hero = (content as any).hero || {};
+// The header's OWN button. navCtaText / navCtaHref is the top bar's own CTA
+// field, so retyping it no longer retypes the hero's button, and roleColors
+// keys the `headerCta` role to these two hooks — the pill is colourable on its
+// own axis. Falls back to the hero's primary CTA so a site that never set the
+// header's field keeps the button, and the label, it renders today.
 // No default label: "Book" claims a booking channel a walk-in clinic does not
 // run. No label from the owner => no nav action.
-const bookText = hero.cta1?.text || '';
-const bookHref = onPage(hero.cta1?.href, '#location');
+const bookText = (content as any).navCtaText || hero.cta1?.text || '';
+const bookHref = onPage((content as any).navCtaHref || hero.cta1?.href, '#location');
 ---
 <header class="med-nav">
   <div class="wrap nav-inner">
@@ -57,7 +63,7 @@ const bookHref = onPage(hero.cta1?.href, '#location');
       </nav>
     )}
     <div class="nav-actions">
-      {bookText && <a class="btn line nav-book" href={bookHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{bookText}</a>}
+      {bookText && <a class="btn line nav-book" href={bookHref} data-field="navCtaText" data-href-field="navCtaHref">{bookText}</a>}
       {navLinks.length > 0 && (
         <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="med-nav-drawer">
           <span></span><span></span><span></span>

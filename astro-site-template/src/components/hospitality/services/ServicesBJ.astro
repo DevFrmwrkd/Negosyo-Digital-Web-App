@@ -34,7 +34,8 @@
  *   services.items.${i}.duration       — rate unit ("/ night")
  *   services.ctaLabel + data-href-field services.ctaHref  — the card button
  *   services.whole.tag / .headline / .body / .price / .unit — the band
- *   hero.cta1.text + data-href-field hero.cta1.href        — the band's button
+ *   services.cta.text + data-href-field services.cta.href  — the band's button,
+ *                                        THIS section's own
  *
  * WHY THE CHIPS ARE ONE FIELD. ContentFieldsAuto's ListSpec.itemFields are
  * FieldSpec (scalar) only — a nested list inside a list row renders no input and
@@ -47,6 +48,21 @@
  * WHY ONE BUTTON LABEL FOR EVERY CARD. services.ctaLabel/ctaHref are section
  * scalars, deliberately not row fields: a room added with '+ Add' must arrive
  * with a working button instead of a blank one the owner has to retype.
+ *
+ * TWO BUTTONS, TWO FIELDS, ONE SECTION. services.ctaLabel/ctaHref is the CARD
+ * button repeated across the grid; services.cta.text/href is the whole-house
+ * band's single action. They do not collide — services.cta is a nested object
+ * beside those two scalar keys — and both sit under services., so both answer to
+ * the Services colour scope, which is right: they are two buttons in one section.
+ * The band's button used to read hero.cta1.*, shared with the header, the hero
+ * and the footer: one string for four buttons, so retyping one retyped them all,
+ * and one colour too, because the v3 picker derives a button's SECTION from the
+ * leading segment of its field path and answered "hero" for every one of them.
+ * Both halves FALL BACK to hero.cta1.* while services.cta is unset, so a site
+ * that has never touched the new field renders exactly as before and no button
+ * is lost. The CARD button's href fallback deliberately stays on the hero action
+ * rather than following services.cta.href: it is the page's one contact action,
+ * which is what a card with no ctaHref of its own should still reach.
  *
  * NEVER FABRICATED (R2). No currency is prepended, no rate is totalled, no
  * "from", no "sleeps N" inferred from anything. The whole-house price is the
@@ -126,6 +142,13 @@ const chipsOf = (v?: string): string[] => String(v || '').split(',').map((s) => 
 const heroCta = content.hero?.cta1 || {};
 const heroCtaText = heroCta.text || '';
 const heroCtaHref = onPage(heroCta.href, '#book');
+// THE WHOLE-HOUSE BAND'S OWN button. services.cta is read FIRST; the hero action
+// is the FALLBACK, and the fallback half is exactly what this slot read before
+// the split, so a site that never sets services.cta renders identically. On a
+// legacy bare-array `services` `.cta` is simply undefined — the same tolerance
+// every other scalar read here relies on.
+const bandCtaText = services.cta?.text || heroCtaText;
+const bandCtaHref = onPage(services.cta?.href || heroCta.href, '#book');
 const cardLabel = services.ctaLabel || '';
 // Display falls back to the page's one contact action so the cards are never
 // pointed at nothing before the owner fills the Card-button field in. The HOOK
@@ -250,7 +273,7 @@ const hasSection = rows.length > 0 || hasWhole;
               {wBody && <p class="body w-body" data-field="services.whole.body">{wBody}</p>}
             </div>
           )}
-          {(wPrice || heroCtaText) && (
+          {(wPrice || bandCtaText) && (
             <div class="w-act">
               {wPrice && (
                 <div class="w-rate">
@@ -260,8 +283,8 @@ const hasSection = rows.length > 0 || hasWhole;
                   {wUnit && <span class="w-unit" data-field="services.whole.unit">{wUnit}</span>}
                 </div>
               )}
-              {heroCtaText && (
-                <a class="btn btn--fill w-cta" href={heroCtaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{heroCtaText}</a>
+              {bandCtaText && (
+                <a class="btn btn--fill w-cta" href={bandCtaHref} data-field="services.cta.text" data-href-field="services.cta.href">{bandCtaText}</a>
               )}
             </div>
           )}

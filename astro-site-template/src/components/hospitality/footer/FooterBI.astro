@@ -16,7 +16,9 @@
  *   footer.visit.lines.${i}                          — NAP lines (phone auto-tel:)
  *   footer.explore.links.${i}.text + .href           — the Index column
  *   footer.notes.${i}                                — the copyright / colophon
- *   hero.cta1.text                                   — the message-pill label
+ *   footer.cta.text                                  — the message-pill label
+ *                                                      (own field; falls back to
+ *                                                      hero.cta1 when unset)
  *
  * Never visibility-gated (no PageXX honours a footer toggle). Every column, and
  * every row inside it, auto-hides when empty. Colour: tokens only.
@@ -110,7 +112,14 @@ const msgHref = waDigits
     : '';
 // No default label: "Message" asserts a tone the property may not use — and with
 // no channel there is no pill at all, whatever the CTA text says.
-const msgText = msgHref ? (hero.cta1?.text || '') : '';
+// The LABEL is this footer's OWN field now. footer.cta.text falls back to
+// exactly what this line read before — hero.cta1 — so a site that never filled
+// the footer's box in renders byte-identically, and the hook below spells
+// footer.cta.text so the owner's first edit lands there and this pill stops
+// being retyped by the hero. Only the LABEL moves: the href above is the
+// WhatsApp / Messenger channel, not a CTA target, which is why this pill
+// carries no data-href-field.
+const msgText = msgHref ? (f.cta?.text || hero.cta1?.text || '') : '';
 ---
 <footer class="colo band-shade weave-i">
   <div class="wrap">
@@ -160,7 +169,7 @@ const msgText = msgHref ? (hero.cta1?.text || '') : '';
   <div class="msg-fab">
     {/* Sibling AFTER </footer> and carrying NO .btn class, so buildOverrideCss's
         `footer .btn { color: <on-ink> !important }` pin cannot reach it. */}
-    <a href={msgHref} target="_blank" rel="noopener noreferrer" data-field="hero.cta1.text">
+    <a href={msgHref} target="_blank" rel="noopener noreferrer" data-field="footer.cta.text">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4A11 11 0 0 0 4.5 18.5L3 22l3.7-1.4A11 11 0 1 0 20 4Z"/></svg>
       {msgText}
     </a>

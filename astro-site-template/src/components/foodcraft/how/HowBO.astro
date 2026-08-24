@@ -47,8 +47,8 @@
  * at 520px.
  *
  * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts
- * — group id "how", plus the one `link` FieldSpec in group id "hero". A
- * data-field on any other path is a dead hook no sidebar input owns.)
+ * — group id "how". A data-field on any other path is a dead hook no sidebar
+ * input owns.)
  *   how.tag                  — the pink pill eyebrow
  *   how.headline             — fed with set:html, so an owner can put this
  *                              design's signature colour emphasis inside their
@@ -60,14 +60,22 @@
  *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
  *                              stored value arrived as .desc / .description, so
  *                              the first save heals the row onto the schema key
- *   hero.cta1.text           — the pink button's label
- *   hero.cta1.href           — its target, via data-href-field. Deliberately the
- *                              page's ONE primary action reused rather than a
- *                              new field: the schema declares hero.cta1.text as
- *                              a `link` spec whose hrefPath IS hero.cta1.href,
- *                              so both halves are owned by a real sidebar
- *                              input. The design reuses its own contactUrl /
- *                              contactLabel in exactly this slot.
+ *   how.cta.text             — the pink button's label, THIS section's own
+ *   how.cta.href             — its target, via data-href-field. The schema
+ *                              declares how.cta.text as a `link` spec whose
+ *                              hrefPath IS how.cta.href, so both halves are
+ *                              owned by a real sidebar input. It used to be
+ *                              hero.cta1.*, shared with the header, the hero and
+ *                              the footer: one string for four buttons, so
+ *                              retyping one retyped them all — and one colour
+ *                              too, because the v3 picker derives a button's
+ *                              SECTION from the leading segment of its field
+ *                              path and answered "hero" for all four. On how.cta
+ *                              this section is retypable and recolourable on its
+ *                              own. Both halves FALL BACK to hero.cta1.* while
+ *                              how.cta is unset, so no existing site loses a
+ *                              button; the hooks always spell how.cta, so the
+ *                              owner's first edit writes there and diverges.
  *
  * DERIVED (computed here, never authored here):
  *   · THE NUMERAL, and this is the decision a reader is most likely to read as
@@ -308,12 +316,18 @@ const onPage = (href: string | undefined, fallback: string): string => {
 };
 
 const hero = content?.hero || {};
-const ctaText = typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '';
+// THIS SECTION'S OWN button. how.cta is read FIRST; the hero's primary action is
+// the FALLBACK, and the fallback half is byte-for-byte the expression this file
+// used before the split — so a site that never sets how.cta renders identically.
+// The hooks below always spell how.cta, which is what makes the first edit
+// diverge instead of retyping the header, the hero and the footer with it.
+const ownCtaText = typeof how.cta?.text === 'string' ? how.cta.text.trim() : '';
+const ctaText = ownCtaText || (typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '');
 // #visit is where this template puts the address, the map and the opening
 // hours, so it is the honest landing place for an action that cannot be
 // resolved — the last step above it has just told the visitor to come and
 // collect the order.
-const ctaHref = onPage(hero.cta1?.href, '#visit');
+const ctaHref = onPage(how.cta?.href || hero.cta1?.href, '#visit');
 // Carried for http(s) ONLY — see NOT RENDERED above.
 const ctaExternal = /^https?:/i.test(ctaHref);
 ---
@@ -348,8 +362,8 @@ const ctaExternal = /^https?:/i.test(ctaHref);
               href={ctaHref}
               target={ctaExternal ? '_blank' : undefined}
               rel={ctaExternal ? 'noopener noreferrer' : undefined}
-              data-field="hero.cta1.text"
-              data-href-field="hero.cta1.href"
+              data-field="how.cta.text"
+              data-href-field="how.cta.href"
             >{ctaText}</a>
           </div>
         )}

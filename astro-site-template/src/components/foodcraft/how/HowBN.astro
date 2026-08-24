@@ -40,8 +40,8 @@
  * button rule at all beyond the full-width wrapping label at 520px.
  *
  * EDITABLE HOOKS (every one declared in components/editor/genericContentSchema.ts,
- * group id "how" and group id "hero" — a data-field on any other path is a dead
- * hook that no sidebar input owns)
+ * group id "how" — a data-field on any other path is a dead hook that no
+ * sidebar input owns)
  *   how.headline             — fed with set:html so an owner can place this
  *                              design's second voice inside their OWN sentence.
  *                              Guarded: lib/derive-content-defaults.ts supplies
@@ -51,14 +51,26 @@
  *   how.steps.${i}.body      — canonical key, spelled in the hook even when the
  *                              stored value arrived as .desc / .description, so
  *                              the first save heals the row onto the schema key
- *   hero.cta1.text           — the orange button's label
- *   hero.cta1.href           — its target. Deliberately the page's ONE primary
- *                              action reused rather than a new field: the schema
- *                              declares hero.cta1.text as a `link` FieldSpec
- *                              whose hrefPath is hero.cta1.href, so both halves
- *                              are owned by a real sidebar input. The design
- *                              reuses its own contactUrl/contactLabel in exactly
- *                              this slot
+ *   how.cta.text             — the orange button's label, THIS band's own
+ *   how.cta.href             — its target. The schema declares how.cta.text as a
+ *                              `link` FieldSpec whose hrefPath is how.cta.href,
+ *                              so both halves are owned by a real sidebar input.
+ *                              It used to be hero.cta1.*, and THIS is the button
+ *                              an owner complained about: the hero sits on light
+ *                              paper and takes .btn--ink, while this Procedure
+ *                              band IS --ink and takes .btn--orange — the
+ *                              template draws them differently ON PURPOSE. With
+ *                              both on hero.cta1.text the v3 picker read both as
+ *                              section "hero" (it derives the section from the
+ *                              leading path segment), so one primaryCta fill
+ *                              flattened both and this button went black on a
+ *                              near-black band. On how.cta the band answers to
+ *                              the How-it-works scope alone, and its label is no
+ *                              longer retyped by the header, hero or footer.
+ *                              Both halves FALL BACK to hero.cta1.* while
+ *                              how.cta is unset, so no existing site loses a
+ *                              button; the hooks always spell how.cta, so the
+ *                              owner's first edit writes there and diverges
  *
  * DERIVED, not content:
  *   THE RAIL LABEL "05 / Procedure". The spine's index is decorative and derived
@@ -253,11 +265,19 @@ const onPage = (href: string | undefined, fallback: string): string => {
 };
 
 const hero = content.hero || {};
-const ctaText = typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '';
+// THIS BAND'S OWN button. how.cta is read FIRST; the hero's primary action is
+// the FALLBACK, and the fallback half is byte-for-byte the expression this file
+// used before the split — so a site that never sets how.cta renders identically.
+// The hooks below always spell how.cta, which is what frees this band's label
+// from the header/hero/footer AND puts it on its own colour scope: .btn--orange
+// on an --ink band is a different button from the hero's .btn--ink on paper, and
+// the picker can finally tell them apart.
+const ownCtaText = typeof how.cta?.text === 'string' ? how.cta.text.trim() : '';
+const ctaText = ownCtaText || (typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '');
 // #visit is where this template puts the address, the hours and the way to reach
 // the shop, so it is the honest landing place for an action that cannot be
 // resolved — the last step has just told the visitor where to collect.
-const ctaHref = onPage(hero.cta1?.href, '#visit');
+const ctaHref = onPage(how.cta?.href || hero.cta1?.href, '#visit');
 // Carried for http(s) ONLY — see NOT RENDERED above.
 const ctaExternal = /^https?:/i.test(ctaHref);
 ---
@@ -289,8 +309,8 @@ const ctaExternal = /^https?:/i.test(ctaHref);
             href={ctaHref}
             target={ctaExternal ? '_blank' : undefined}
             rel={ctaExternal ? 'noopener noreferrer' : undefined}
-            data-field="hero.cta1.text"
-            data-href-field="hero.cta1.href"
+            data-field="how.cta.text"
+            data-href-field="how.cta.href"
           >{ctaText}</a>
         </div>
       )}
