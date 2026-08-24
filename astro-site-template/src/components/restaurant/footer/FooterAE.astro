@@ -5,7 +5,7 @@
  * empty, so with just a brand + address it collapses to the design's minimal
  * three-line footer.
  *
- * The floating message pill reuses the hero's primary CTA (content.hero.cta1)
+ * The floating message pill reuses the footer's own CTA (content.footer.cta)
  * — the same "message to order" action — so it stays editable and in sync; it
  * renders only when that CTA (or the CTA-band's) has a link.
  */
@@ -54,8 +54,13 @@ const cband = (content as any).ctaBand || {};
 // WHY no default label: "Order via Messenger" names a channel and promises
 // ordering on it. The link may be a phone number, a map pin or a Facebook page,
 // and plenty of kitchens take no Messenger orders at all. No CTA text → no pill.
-const msgHref = onPage(hero.cta1?.href || cband.cta1?.href, '');
-const msgText = hero.cta1?.text || cband.cta1?.text || '';
+// The footer's OWN button. footer.cta.* wins; left blank — as it is on every
+// site built before the field existed — it still borrows the hero's primary
+// CTA, then the CTA-band's, so no live footer loses its pill. The hooks below
+// point at footer.cta.*, so the owner's first edit lands there and this
+// button's label, link and colour part company with the hero's from then on.
+const msgHref = onPage(f.cta?.href || hero.cta1?.href || cband.cta1?.href, '');
+const msgText = f.cta?.text || hero.cta1?.text || cband.cta1?.text || '';
 ---
 <footer class="foot">
   <div class="wrap">
@@ -114,7 +119,7 @@ const msgText = hero.cta1?.text || cband.cta1?.text || '';
 </footer>
 {msgHref && msgText && (
   <div class="c2m">
-    <a href={msgHref} aria-label={msgText} data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+    <a href={msgHref} aria-label={msgText} data-field="footer.cta.text" data-href-field="footer.cta.href">
       <span aria-hidden="true">💬</span> {msgText}
     </a>
   </div>

@@ -31,7 +31,13 @@
  * app/api/generate-website, so the colours persist on Save + Publish.
  */
 
-export type ColorRole = 'primaryCta' | 'secondaryCta' | 'heading' | 'eyebrow' | 'link';
+export type ColorRole =
+    | 'primaryCta'
+    | 'secondaryCta'
+    | 'headerCta'
+    | 'heading'
+    | 'eyebrow'
+    | 'link';
 export type ColorProp = 'bg' | 'fg';
 
 /**
@@ -115,6 +121,23 @@ export const COLOR_ROLES: Record<ColorRole, RoleDef> = {
             '[data-field="hero.cta1.text"]',
             '[data-field="ctaBand.cta1.text"]',
             '[data-field="ctaBand.cta.text"]',
+            // The per-section CTAs. These buttons used to be bound to
+            // hero.cta1.text — which is why they were already covered by this
+            // role — and now carry their own field so they can be retyped and
+            // recoloured per section. Listing them here is REQUIRED FOR
+            // BACK-COMPAT, not a new feature: a published site with
+            // primaryCta:bg set colours these buttons today, and dropping them
+            // from the role would silently un-colour them on the next publish.
+            //
+            // Section scoping does the rest. sectionForField() reads the
+            // leading segment, so "how:primaryCta:bg" narrows to
+            // [data-field="how.cta.text"] and leaves the hero's button alone —
+            // which is the whole point: the hero sits on light paper and the
+            // Procedure band is --ink, so one fill could never serve both.
+            '[data-field="about.cta.text"]',
+            '[data-field="services.cta.text"]',
+            '[data-field="how.cta.text"]',
+            '[data-field="footer.cta.text"]',
         ],
     },
     secondaryCta: {
@@ -124,6 +147,74 @@ export const COLOR_ROLES: Record<ColorRole, RoleDef> = {
             '[data-field="hero.cta3.text"]',
             '[data-field="ctaBand.cta2.text"]',
             '[data-field="ctaBand.cta3.text"]',
+        ],
+    },
+    /**
+     * The header's own action — "Contact us", "Book a table", "Get a quote".
+     *
+     * It used to fall through roleForField's catch-all into `primaryCta`, whose
+     * selectors are pinned to `hero.cta1.text` / `ctaBand.cta1.text` /
+     * `ctaBand.cta.text` and name no header hook at all. So the popover said
+     * "Primary buttons", the pick was stored, the CSS was emitted — and it
+     * landed on the hero and closing-band buttons instead of the one that had
+     * been clicked. The header button was not merely mis-labelled, it was
+     * unreachable.
+     *
+     * Its own role rather than three more selectors on `primaryCta`, for two
+     * reasons. Widening `primaryCta` would change what every ALREADY PUBLISHED
+     * `primaryCta:bg` paints — a site coloured today would silently gain a
+     * recoloured header on its next publish, which is exactly the byte-identity
+     * promise this file keeps. And it is the right split on the merits: a
+     * header CTA is a small pill on the site's own chrome, a hero CTA is a
+     * large control on artwork, and templates already style them differently.
+     *
+     * TWO SELECTORS BECAUSE THE TEMPLATES EMIT TWO SHAPES. The 15 family
+     * headers/footers (foodcraft, hospitality, restaurant, salonspa, autoshop,
+     * barbershop, shirtstore) emit the dotless `navCtaText`; the five generic
+     * headers (HeaderA–E) read the same `content.navCtaText` but emit it as
+     * `nav.cta.text`. Covering only one shape would have left a third of the
+     * catalogue exactly as broken as before.
+     *
+     * The href twin (`navCtaHref` / `nav.cta.href`) is not listed: it rides on
+     * the SAME element as its text hook in all 20 files, so matching the text
+     * hook already matches the element, and a second selector would only
+     * duplicate every rule. `roleForField` still accepts the href spellings,
+     * because it is a pure function that other callers may reach with either.
+     *
+     * IT IS NOT ONLY THE HEADER, AND THAT IS THE LESSER EVIL. Five of the 15
+     * dotless files are FOOTERS (foodcraft BL/BM/BN/BO, hospitality BK) that
+     * draw the same `navCtaText` hook again as a contact line — 9 elements,
+     * and on BL/BM/BN/BK the same page carries both. They are not pills: they
+     * are text links (`.linkc`, `.fb-row`, `.foot-link`), so a `bg` pick puts
+     * a filled block behind a footer link. Verified on the built site: with
+     * `{headerCta:bg}` set, foodcraft BN paints `header … a.btn.pcbn-cta` AND
+     * `footer … a.linkc.pcbn-fcta`.
+     *
+     * Narrowing to `header [data-field=…]` would stop that, and it is the
+     * WRONG trade. `roleForField` sees a field and a boolean — never the
+     * ancestor — so a click on the footer copy would still open this picker,
+     * still say "Header button", and then change something off-screen instead:
+     * a silent wrong-target, which is the exact bug this whole role exists to
+     * fix. Every element the picker can be opened FROM has to be an element
+     * the pick can reach. Separating them needs the preview bridge to send the
+     * clicked element's section, not a cleverer selector here.
+     *
+     * ONE ROLE CAN STILL LOSE TO ANOTHER — the ordering rules in
+     * buildRoleColorCss settle same-specificity contests, and this one is not.
+     * `link`'s selector is `a[data-href-field]:not(.btn)` at (0,2,1); these are
+     * (0,1,0). On the 9 files that do NOT dress the CTA as `.btn` the two
+     * roles match the same element, so an every-section `link` colour beats
+     * this role's `fg` — including the automatic legible label a `bg` pick
+     * emits — no matter which is written last. Narrowing `link` would fix it
+     * and would change the CSS every published `link:*` key emits, which this
+     * file does not do. Live with it, and know that it is specificity, not
+     * order, if a header label ever refuses to move.
+     */
+    headerCta: {
+        role: 'headerCta', label: 'Header button', defaultProp: 'bg', props: ['bg', 'fg'],
+        selectors: [
+            '[data-field="navCtaText"]',
+            '[data-field="nav.cta.text"]',
         ],
     },
     heading: {
@@ -140,9 +231,49 @@ export const COLOR_ROLES: Record<ColorRole, RoleDef> = {
     },
 };
 
+/**
+ * Every spelling of the header CTA, both shapes and both halves of each pair.
+ *
+ * An exact-match SET, not a pattern. `/^nav\./` would have been shorter and it
+ * would have swallowed `nav.phone`, `nav.phone.href`, `nav.brand` and
+ * `nav.status` — the other four hooks the generic headers emit — collapsing a
+ * phone number and a wordmark into "Header button". A role is only as useful as
+ * it is narrow, and this one is genuinely a closed set: 20 files, two shapes.
+ */
+const HEADER_CTA_FIELDS = new Set([
+    'navCtaText', 'navCtaHref', // dotless — 15 family headers/footers
+    'nav.cta.text', 'nav.cta.href', // dotted — the five generic headers
+]);
+
 /** Map a clicked element (its data-field + whether it looks like a button) to a role. */
 export function roleForField(field: string, isButton: boolean): ColorRole {
     const f = field || '';
+
+    // The header CTA is identified by its HOOK, and the test therefore sits
+    // ahead of the isButton branch rather than inside it.
+    //
+    // `isButton` comes from the preview bridge, which reads it off the element:
+    // a <button> tag, or `btn` as a whole word in the class list. Only 7 of the
+    // 15 dotless files dress the header CTA as `.btn`; the rest give it a
+    // bespoke class — `a.nav-resv`, `a.navc`, `a.link`, `a.foot-cta` — and one
+    // of the five generic headers uses `a.nav-cta`. So on 9 of 20 templates
+    // isButton is FALSE for this hook, and a check placed inside the isButton
+    // branch would have fixed the pill templates and left the rest routing to
+    // `link`, whose selector is the every-anchor `a[data-href-field]:not(.btn)`.
+    // Same button, same hook, same intent, different answer depending on
+    // whether the template author happened to type a class name — that is not a
+    // rule, it is a coin flip.
+    //
+    // Routing them here stops the coin flip; it does not evict them from
+    // `link`, whose selector still MATCHES those 9 files' CTAs and out-
+    // specifies this role's. See the note on COLOR_ROLES.headerCta.
+    //
+    // Nothing that belongs to another button role is taken: the set holds four
+    // exact strings, none of which is a hero, closing-band, services or
+    // location hook. primaryCta keeps `hero.cta1.text` / `ctaBand.cta1.text` /
+    // `ctaBand.cta.text`, secondaryCta keeps its cta2 / cta3 pair.
+    if (HEADER_CTA_FIELDS.has(f)) return 'headerCta';
+
     if (isButton) {
         if (/cta2\.text$|cta3\.text$/.test(f)) return 'secondaryCta';
         return 'primaryCta'; // cta1 / cta.text / any other button

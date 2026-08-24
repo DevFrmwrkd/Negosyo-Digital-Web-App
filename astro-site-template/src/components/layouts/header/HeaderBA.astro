@@ -51,8 +51,13 @@ const address = loc.address || layout.contact?.address || '';
 const addressLines = address ? String(address).split('\n') : [];
 const phone = loc.phone || layout.contact?.phone || '';
 const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
-const ctaText = hero.cta1?.text || '';
-const ctaHref = onPage(hero.cta1?.href, '#book');
+// The header's OWN button. navCtaText / navCtaHref is the top bar's own CTA
+// field, so retyping it no longer retypes the hero's button, and roleColors
+// keys the `headerCta` role to these two hooks — the pill is colourable on its
+// own axis. Falls back to the hero's primary CTA so a site that never set the
+// header's field keeps the button, and the label, it renders today.
+const ctaText = (content as any).navCtaText || hero.cta1?.text || '';
+const ctaHref = onPage((content as any).navCtaHref || hero.cta1?.href, '#book');
 ---
 <aside class="side" data-component="NAV" data-variant="panel">
   <div class="side-top">
@@ -92,7 +97,7 @@ const ctaHref = onPage(hero.cta1?.href, '#book');
       {phone && <a class="meta-phone" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>}
       {ctaText && (
         <div class="cta">
-          <a class="btn f" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>
+          <a class="btn f" href={ctaHref} data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>
         </div>
       )}
     </div>

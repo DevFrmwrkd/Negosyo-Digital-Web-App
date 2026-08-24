@@ -13,7 +13,7 @@
  *   footer.brand                                    — the wordmark
  *   footer.locality                                 — the caps tag beside it
  *   footer.blurb                                    — the standing line under it
- *   hero.cta1.text + hero.cta1.href                 — the contact action (twice:
+ *   footer.cta.text + footer.cta.href               — the contact action (twice:
  *                                                     brand column and column 3)
  *   footer.social.${i}.platform + .url              — one chip per channel
  *   footer.explore.title                            — links column heading
@@ -22,7 +22,7 @@
  *   footer.visit.lines.${i}                         — NAP lines (phone auto-tel:)
  *   contact.email                                   — the mailto row
  *   footer.notes.${i}                               — the colophon row
- *   hero.cta1.text                                  — the message-pill label
+ *   footer.cta.text                                 — the message-pill label
  *
  * NO DESIGN LITERAL SURVIVES HERE. Both column headings are bound
  * (FooterBI hardcodes 'Visit' and 'Index'); an empty value removes the heading
@@ -43,17 +43,15 @@
  * Never visibility-gated (no PageXX honours a footer toggle). Every column, and
  * every row inside it, auto-hides when empty. Colour: tokens only.
  *
- * KNOWN LIMITATION, recorded not fixed. components/editor/editorBridge.ts
- * resolves a Blocks toggle to the closest('section,footer') holding the MOST
- * data-field hooks of that prefix. The contract puts hero.cta1 in both the
- * brand column and the contact column, so this footer counts 2 hero.* hooks
- * against HeroBJ's 5 — safe on every real site, because derive-content-defaults
- * always fills hero.kicker, hero.sub, hero.cta1 and hero.cta2. It would tip the
- * wrong way only on a site whose hero has a CTA label and NOTHING else (no
- * kicker, no lede, no second button, no photo), where toggling the Hero block
- * off would hide this footer instead. The fix is a shared-file change (count
- * data-href-field too, or exclude <footer> from hero-prefix candidates), which
- * is out of scope here.
+ * A KNOWN LIMITATION recorded here is now GONE.
+ * components/editor/editorBridge.ts resolves a Blocks toggle to the
+ * closest('section,footer') holding the MOST data-field hooks of that prefix,
+ * and this footer used to spend hero.cta1 in both the brand column and the
+ * contact column — 2 hero.* hooks against HeroBJ's 5. On a site whose hero
+ * carried a CTA label and NOTHING else (no kicker, no lede, no second button,
+ * no photo) that would have tipped the wrong way and hidden this footer when
+ * the owner toggled the Hero block off. The contact action reads footer.cta.*
+ * now, so no hero.* hook is left here to miscount.
  *
  * BUTTON POLICY: this footer is on the LIGHT --paper-2 tint, so it must contain
  * no element carrying .btn — buildOverrideCss pins `footer .btn{color:<on-ink>
@@ -91,10 +89,15 @@ const brand = f.brand || layout.businessName || '';
 // Third consumer of the one locality field (header wordmark, here, map caption).
 const locality = String(f.locality ?? '').trim();
 const blurb = f.blurb || f.brand_blurb || '';
-// The page's single contact action, reused rather than given a fourth CTA field.
+// The footer's OWN action — drawn in both columns and reused as the message
+// pill's label. footer.cta.* wins; left blank, as it is on every site built
+// before the field existed, it still borrows the hero's primary CTA, so no live
+// footer loses its link. The hooks below point at footer.cta.*, so the owner's
+// first edit lands there and this button's label, link and colour part company
+// with the hero's from then on.
 const hero = c.hero || {};
-const ctaText = hero.cta1?.text || '';
-const ctaHref = onPage(hero.cta1?.href, '#book');
+const ctaText = f.cta?.text || hero.cta1?.text || '';
+const ctaHref = onPage(f.cta?.href || hero.cta1?.href, '#book');
 const phone = layout.contact?.phone || '';
 const phoneDigits = String(phone).replace(/[^0-9+]/g, '');
 const email = String(layout.contact?.email || '').trim();
@@ -160,7 +163,7 @@ const hasBrandCol = !!(brand || locality || blurb || ctaText || social.length);
 const hasVisitCol = !!(visitTitle || ctaText || visitLines.length || email);
 
 // Floating message pill. TRAP — the GATE is the CHANNEL, not the label. Reusing
-// the hero's primary CTA as the gate is what broke this in the precedent
+// a section's primary CTA as the gate is what broke this in the precedent
 // family: lib/derive-content-defaults.ts sets hero.cta1 = { text: 'Get in
 // touch', href: '#visit' } on EVERY site, which onPage() then rewrites to
 // '#location', so the gate was true for every business alive and a chat bubble
@@ -201,7 +204,7 @@ const msgText = msgHref ? ctaText : '';
                 the admin typed. The arrow is generated content (see the
                 stylesheet), so the glyph can never enter the stored value. */}
             {ctaText && (
-              <a class="linkc f-cta" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>
+              <a class="linkc f-cta" href={ctaHref} data-field="footer.cta.text" data-href-field="footer.cta.href">{ctaText}</a>
             )}
             {social.length > 0 && (
               <div class="f-soc">
@@ -224,8 +227,8 @@ const msgText = msgHref ? ctaText : '';
           <div class="f-col">
             {visitTitle && <h4 class="f-h" data-field="footer.visit.title">{visitTitle}</h4>}
             {ctaText && (
-              <a href={ctaHref} data-href-field="hero.cta1.href">
-                <span data-field="hero.cta1.text">{ctaText}</span>
+              <a href={ctaHref} data-href-field="footer.cta.href">
+                <span data-field="footer.cta.text">{ctaText}</span>
               </a>
             )}
             {visitLines.length > 0 && (
@@ -259,7 +262,7 @@ const msgText = msgHref ? ctaText : '';
     {/* Sibling AFTER the closing footer tag and carrying NO .btn class, so
         buildOverrideCss's `footer .btn { color: <on-ink> !important }` pin
         cannot reach it. */}
-    <a href={msgHref} target="_blank" rel="noopener noreferrer" data-field="hero.cta1.text">
+    <a href={msgHref} target="_blank" rel="noopener noreferrer" data-field="footer.cta.text">
       <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 4A11 11 0 0 0 4.5 18.5L3 22l3.7-1.4A11 11 0 1 0 20 4Z"/></svg>
       {msgText}
     </a>

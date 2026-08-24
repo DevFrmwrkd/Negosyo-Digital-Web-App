@@ -51,8 +51,12 @@ const VIEWPORTS: Record<string, number | null> = { desktop: null, tablet: 834, m
 
 // Which roles are offered the hover / pressed axis.
 //
-// The two button roles and `link` — the things a pointer actually interacts
-// with. The link role's selector list is `a[data-href-field]:not(.btn)`, i.e.
+// The three button roles and `link` — the things a pointer actually interacts
+// with. `headerCta` is one of them: it is an <a> in all 20 templates that emit
+// it, so it has a real hover to match whether or not the template dressed it
+// as a `.btn`.
+//
+// The link role's selector list is `a[data-href-field]:not(.btn)`, i.e.
 // real anchors, so a hover colour picked there lands on something that
 // genuinely HAS a hover, even when the click that opened the picker landed on
 // a paragraph (roleForField falls back to `link` for plain text — and the
@@ -67,7 +71,7 @@ const VIEWPORTS: Record<string, number | null> = { desktop: null, tablet: 834, m
 // wrote before states existed, since roleColorKey collapses `base` back to a
 // plain prop segment.
 const ROLE_HAS_STATES: Record<ColorRole, boolean> = {
-    primaryCta: true, secondaryCta: true, link: true, heading: false, eyebrow: false,
+    primaryCta: true, secondaryCta: true, headerCta: true, link: true, heading: false, eyebrow: false,
 };
 
 // Inject the picked Color Scheme / Font Pairing live into the same-origin preview

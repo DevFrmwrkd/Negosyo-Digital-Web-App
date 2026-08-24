@@ -35,13 +35,26 @@
  *                            derive-content-defaults already sets it to the
  *                            business name, so a first build is never nameless)
  *   about.role             — the free-text line under the name
- *   hero.cta1.text + hero.cta1.href — the inline contact action
+ *   about.cta.text + about.cta.href — the inline contact action, THIS section's
+ *                            own (the schema declares about.cta.text as a `link`
+ *                            FieldSpec whose hrefPath is about.cta.href)
  *
- * WHY THE CTA IS hero.cta1 AND NOT A NEW FIELD: this page has ONE contact
- * action, typed once. Reusing it means an owner who changes their Messenger link
- * changes it everywhere. The cross-prefix hook is safe against the visibility
- * bridge — the hero section carries several hero.* hooks against this section's
- * one, so the hero toggle always resolves to the hero, never to the host block.
+ * WHY THE CTA IS about.cta AND NO LONGER hero.cta1. It used to be hero.cta1.*, on
+ * the reasoning that the page has ONE contact action typed once. That cost more
+ * than it saved: the header, the hero, this block and the footer all printed the
+ * same string, so an owner retyping one retyped all four — and the COLOUR was
+ * shared too, because the v3 picker derives a button's SECTION from the leading
+ * segment of its field path and answered "hero" for every one of them. On
+ * about.cta this action is retypable and recolourable on the About scope alone.
+ * Both halves FALL BACK to hero.cta1.* while about.cta is unset, so a site that
+ * has never touched the new field renders exactly as before and no button is
+ * lost; the hooks always spell about.cta, so the owner's first edit writes there
+ * and this block diverges from the hero for good.
+ *
+ * It also settles the visibility-bridge worry the old note had to argue around.
+ * editorBridge resolves a Blocks toggle by counting hooks of a prefix, and this
+ * section no longer carries a hero.* hook at all — so nothing here can be
+ * counted against the hero, whichever way the toggle goes.
  *
  * R2 — NOTHING IS SUPPLIED BY THIS FILE. No host name, no "hosting since", no
  * "replies within the hour", no role. about.role in particular is ONE piece of
@@ -68,7 +81,8 @@ const hero = content.hero || {};
 // ── Anchor guard. A FIFTH byte-identical copy of the Header / Hero / CtaBand /
 // Footer helper, and it has to be here: lib/derive-content-defaults.ts hardcodes
 // hero.cta1.href = '#visit' on EVERY site, and this design renders no id="visit"
-// — so without the remap this button scrolls nowhere on every first build. Keep
+// — so without the remap a button that falls back to it scrolls nowhere on every
+// first build (about.cta.href gets the same treatment, whatever is typed). Keep
 // PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBJ and with the other copies
 // (there is no shared import). Off-page hrefs (tel:, mailto:, http) pass through.
 const PAGE_ANCHORS = new Set(['book', 'faq', 'gallery', 'host', 'how', 'location', 'main', 'nearby', 'promises', 'reviews', 'rooms', 'amenities']);
@@ -94,8 +108,13 @@ const paraRows = paragraphs
 const image = about.image || '';
 const name = about.signature || '';
 const role = about.role || '';
-const ctaText = hero.cta1?.text || '';
-const ctaHref = onPage(hero.cta1?.href, '#book');
+// THIS SECTION'S OWN action. about.cta is read FIRST; the page's hero action is
+// the FALLBACK, and the fallback half is exactly what this file read before the
+// split, so a site that never sets about.cta renders identically and no button is
+// lost. The hooks always spell about.cta, which is what makes the first edit
+// diverge instead of retyping the header, the hero and the footer with it.
+const ctaText = about.cta?.text || hero.cta1?.text || '';
+const ctaHref = onPage(about.cta?.href || hero.cta1?.href, '#book');
 // The name+role stack is gated on the NAME: a role line with no name attributes
 // a claim to nobody. The PORTRAIT is gated only on its own upload — dropping a
 // photo the owner actually uploaded because another box is empty is the mirror
@@ -160,7 +179,7 @@ const hasSection = showsCopy || hasAside;
                   {role && <span class="host-role" data-field="about.role">{role}</span>}
                 </div>
               )}
-              {ctaText && <a class="btn btn--line host-cta" href={ctaHref} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+              {ctaText && <a class="btn btn--line host-cta" href={ctaHref} data-field="about.cta.text" data-href-field="about.cta.href">{ctaText}</a>}
             </div>
           )}
           </div>

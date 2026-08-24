@@ -25,8 +25,8 @@
  *                                      identity half (HeaderBO's rail wordmark
  *                                      is the same field: one box, three places)
  *   footer.blurb                     — the standing line under the lock
- *   navCtaText                       — the purple action's label (see D3)
- *   navCtaHref                       — its target (data-href-field)
+ *   footer.cta.text                       — the purple action's label (see D3)
+ *   footer.cta.href                       — its target (data-href-field)
  *   footer.explore.title             — the LINKS column heading
  *   footer.explore.links.${i}.text   — a links-column label, when the owner
  *   footer.explore.links.${i}.href     filled the footer's own links list
@@ -149,12 +149,13 @@
  *     dropping the column would throw away a working link rather than avoid an
  *     empty one. That does not breach R5 — a CTA is body content with a real
  *     target, not a tag and not a headline.
- *     The pair hooked is navCtaText / navCtaHref, from the Header group, not
+ *     The pair hooked is footer.cta.text / footer.cta.href, this section's own, not
  *     hero.cta1: components/editor/editorBridge.ts resolves a Blocks toggle by
  *     counting hooks of a given prefix inside closest('section,footer'), so a
  *     footer carrying hero.* hooks would become a candidate for "hide the Hero
- *     block". navCtaText has no entry in that PREFIX map at all, so it is
- *     toggle-inert. Note HeaderBO deliberately does NOT bind this pair (its
+ *     block". A footer.* hook belongs to the FOOTER block instead, whose own
+ *     toggle already resolves to this component, so the pair is still
+ *     toggle-safe. Note HeaderBO deliberately does NOT bind this pair (its
  *     design has no rail button), so on this template the footer is the only
  *     place the sidebar's "Header CTA" box reaches a pixel.
  *
@@ -355,11 +356,19 @@ const initial = (Array.from(brand)[0] || '').toUpperCase();
 // footer.brand_blurb is the schema's declared alias for the same box.
 const blurb = String(f.blurb || f.brand_blurb || '').trim();
 
-// The page's one action, from the Header group (D3). '#visit' is the fallback
+// This section's own action (see the note below). '#visit' is the fallback
 // because that is where this design puts the address, the map and the opening
 // hours, and it is the id the derived default already names.
-const ctaText = String(c.navCtaText ?? '').trim();
-const ctaHref = onPage(c.navCtaHref, '#visit');
+// THIS FOOTER'S OWN action. footer.cta.* is read FIRST and falls back to
+// navCtaText / navCtaHref — the HEADER's field, which is exactly what these two
+// lines read before — so a site that never filled the footer's box in renders
+// byte-identically and no live footer loses its link. The hooks below spell
+// footer.cta.*, so the owner's first edit lands there and this action's label,
+// link and colour part company with the header pill's from then on. That split
+// is the whole point: one field used to print "Get in touch" in the top bar and
+// again down here, and an owner asked why.
+const ctaText = String(f.cta?.text ?? '').trim() || String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(f.cta?.href || c.navCtaHref, '#visit');
 // Computed, never literal, and ONE conditional per attribute — an owner may
 // point this at #visit or at a tel:, and forcing those into a new tab is wrong.
 const ctaExternal = /^https?:/i.test(ctaHref);
@@ -445,7 +454,7 @@ const notes: NoteRow[] = (Array.isArray(f.notes) ? f.notes : [])
 
 // ── GATES — BODY content only (R5). The two column headings never count: a
 // heading is not a column, and one printed over nothing is the exact failure the
-// rule exists for. footer.brand / footer.blurb / navbar_links / navCtaText /
+// rule exists for. footer.brand / footer.blurb / navbar_links / the header CTA /
 // footer.notes ARE seeded by derive-content-defaults, but from the owner's own
 // submitted name, city and business type — that is their data, not an invented
 // headline.
@@ -476,15 +485,15 @@ const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
                 an inner span would leave it editing an empty path. The arrow is
                 generated content — editorBridge writes an inline edit back
                 through innerHTML, so a glyph inside the element could end up
-                stored in navCtaText; a pseudo-element cannot. */}
+                stored in footer.cta.text; a pseudo-element cannot. */}
             {ctaText && (
               <a
                 class="linkc sip-fcta"
                 href={ctaHref}
                 target={ctaExternal ? '_blank' : undefined}
                 rel={ctaExternal ? 'noopener noreferrer' : undefined}
-                data-field="navCtaText"
-                data-href-field="navCtaHref"
+                data-field="footer.cta.text"
+                data-href-field="footer.cta.href"
               >{ctaText}</a>
             )}
           </div>

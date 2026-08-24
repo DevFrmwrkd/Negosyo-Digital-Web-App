@@ -40,10 +40,14 @@ const navLinks: Array<{ href: string; label: string; i: number }> =
   ((layout.navLinks && layout.navLinks.length) ? layout.navLinks : [])
     .map((l: any, i: number) => ({ ...l, href: onPage(l.href, ''), i }))
     .filter((l: any) => l.href);
-// Reuse the hero's primary CTA as the nav "book" action so it stays in sync.
+// The header's OWN button. navCtaText / navCtaHref is the top bar's own CTA
+// field, so retyping it no longer retypes the hero's button, and roleColors
+// keys the `headerCta` role to these two hooks — the pill is colourable on its
+// own axis. Falls back to the hero's primary CTA so a site that never set the
+// header's field keeps the button, and the label, it renders today.
 const hero = (content as any).hero || {};
-const ctaText = hero.cta1?.text || '';
-const ctaHref = onPage(hero.cta1?.href, '#book');
+const ctaText = (content as any).navCtaText || hero.cta1?.text || '';
+const ctaHref = onPage((content as any).navCtaHref || hero.cta1?.href, '#book');
 ---
 <header class="nav">
   <div class="nav-in">
@@ -53,7 +57,7 @@ const ctaHref = onPage(hero.cta1?.href, '#book');
         {navLinks.map((link) => (
           <a href={link.href} data-field={`navbar_links.${link.i}.label`} data-href-field={`navbar_links.${link.i}.href`}>{link.label}</a>
         ))}
-        {ctaText && <a href={ctaHref} class="navbook" data-field="hero.cta1.text" data-href-field="hero.cta1.href">{ctaText}</a>}
+        {ctaText && <a href={ctaHref} class="navbook" data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>}
       </nav>
     )}
     {(navLinks.length > 0 || ctaText) && (

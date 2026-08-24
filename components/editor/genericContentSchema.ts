@@ -150,12 +150,29 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 path: 'contact.phone',
                 placeholder: '+0 000 000 0000',
             },
+            // THE header's button — and the ONLY one it gets. 24 headers used to
+            // print hero.cta1 here instead, which meant retyping the hero's
+            // button retyped the header's, and the v3 colour picker reported
+            // both as section "hero" so one fill flattened two buttons the
+            // template had deliberately drawn differently. Those 24 move ONTO
+            // this field rather than gaining a third: it already exists, the ten
+            // headers and five footers that own it already read it, and
+            // roleColors' `headerCta` role is already keyed to its hooks
+            // (`navCtaText` / `nav.cta.text`), so a header on this field is
+            // colourable on its own axis the moment it is bound.
+            //
+            // NO fallbackPaths, on purpose. lib/astro-builder.ts resolves this
+            // field to a non-empty string on every build, so a sidebar fallback
+            // to hero.cta1.text could only ever show a value the page does not
+            // print. The FALLBACK THAT MATTERS is in the components and in
+            // astro-builder's resolution chain, not here.
             {
                 kind: 'link',
                 label: 'Header CTA',
                 path: 'navCtaText',
                 hrefPath: 'navCtaHref',
                 placeholder: 'Get in touch',
+                hint: 'The one button in the top bar. Its label, link and colour are the header\'s own — changing it changes nothing else on the page.',
             },
             {
                 kind: 'list',
@@ -290,6 +307,32 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 path: 'about.role',
                 placeholder: 'Owner · lives on site',
             },
+            // This section's OWN button. AboutBJ draws a contact action in the
+            // host identity row and bound it to hero.cta1 for want of a field of
+            // its own, so retyping the hero's button retyped this one — and
+            // because lib/roleColors.ts derives the section from the leading
+            // segment of the hook, both reported section "hero" and one colour
+            // pick flattened the pair. On `about.cta.*` sectionForField()
+            // returns "about" and the section scoping already in roleColors does
+            // the rest: no DOM marker, no change to the colour system.
+            //
+            // Named `about.cta.text` / `about.cta.href` after ctaBand.cta.text /
+            // ctaBand.cta.href, the file's existing shape for a section that has
+            // exactly one button.
+            //
+            // Blank by default and no fallbackPaths: the COMPONENT falls back to
+            // whatever it reads today, so an untouched site is unchanged, and
+            // declaring the hero's path here would only make this input survive
+            // ContentFieldsAuto's per-template filter on every template that
+            // draws a hero — i.e. all of them.
+            {
+                kind: 'link',
+                label: 'Section button',
+                path: 'about.cta.text',
+                hrefPath: 'about.cta.href',
+                placeholder: 'Message the host',
+                hint: 'Leave blank and this section keeps borrowing the Hero primary CTA. Fill it in and the About button gets its own label, link and colour.',
+            },
             {
                 kind: 'list',
                 label: 'Body paragraphs',
@@ -423,6 +466,29 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 hint: 'Printed exactly as typed — never added up from the items above.',
             },
             { kind: 'text', label: 'Whole-package band · price unit', path: 'services.whole.unit', placeholder: '/ night' },
+            // The SECTION's own button, and a different thing from the per-card
+            // button above. `services.ctaLabel` / `services.ctaHref` is repeated
+            // on every card in the grid; this is the single action at the foot
+            // of the section (ServicesBJ/BK draw it inside the whole-package
+            // band). Both live under `services.` so both answer to the Services
+            // colour scope, which is right — they are two buttons in one
+            // section, not two sections.
+            //
+            // `services.cta.text` cannot collide with `services.ctaLabel`:
+            // `cta` is a nested object beside the two scalar keys, and no
+            // existing site stores anything at `services.cta`.
+            //
+            // It used to be bound to hero.cta1, so the label was shared with the
+            // hero and so was the colour — sectionForField() read "hero" off
+            // both hooks. On `services.cta.*` it reads "services".
+            {
+                kind: 'link',
+                label: 'Section button',
+                path: 'services.cta.text',
+                hrefPath: 'services.cta.href',
+                placeholder: 'Check availability',
+                hint: 'The one button at the foot of this section — NOT the per-card button above. Blank keeps borrowing the Hero primary CTA; filled, it gets its own label, link and colour.',
+            },
         ],
     },
     {
@@ -467,6 +533,24 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                     { kind: 'textarea', label: 'Body', path: 'body' },
                 ],
             } as ListSpec,
+            // The button under the steps. THIS is the field the owner asked for
+            // by name: on foodcraft:BN the hero sits on light paper and uses
+            // .btn--ink while the Procedure band IS --ink and uses .btn--orange,
+            // and because both hooks were hero.cta1.text one primaryCta fill
+            // painted the Procedure button black on a near-black band. Declared
+            // here it becomes `how`, and lib/roleColors.ts scopes the pick to
+            // this section on its own.
+            //
+            // Last in the group because it is last in the section: the band
+            // draws its steps and then its action.
+            {
+                kind: 'link',
+                label: 'Section button',
+                path: 'how.cta.text',
+                hrefPath: 'how.cta.href',
+                placeholder: 'Book a table',
+                hint: 'The button under the steps. Blank keeps borrowing the Hero primary CTA; filled, this band gets its own label, link and colour.',
+            },
         ],
     },
     {
@@ -708,6 +792,36 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 kind: 'text',
                 label: 'Address',
                 path: 'contact.address',
+            },
+            // The footer's own action — the contact link in the brand column,
+            // and the floating message pill the 24 family footers render as a
+            // sibling after </footer>.
+            //
+            // It borrowed two OTHER sections' fields before this: 32 footers
+            // read hero.cta1 and five read navCtaText, the header's field.
+            // Neither is the footer's to spend. The navCtaText five are the
+            // clearest proof — FooterBK carries a whole paragraph explaining
+            // that the brand column and the contact column printed "Get in
+            // touch" twice, six lines apart, because ONE field fed both the
+            // header pill and two footer slots, and an owner asked why.
+            //
+            // On `footer.cta.*` sectionForField() returns "footer", so the
+            // colour picker scopes a fill to this section instead of repainting
+            // the hero's button (or the header's) with it.
+            //
+            // Blank by default, with no fallbackPaths: each component falls back
+            // to exactly the field it reads today, so a site that never fills
+            // this in renders unchanged. Declaring hero.cta1.text here would
+            // instead make the input survive ContentFieldsAuto's per-template
+            // filter on every template with a hero — a control on templates
+            // whose footer draws no button at all.
+            {
+                kind: 'link',
+                label: 'Footer button',
+                path: 'footer.cta.text',
+                hrefPath: 'footer.cta.href',
+                placeholder: 'Message us',
+                hint: 'The footer\'s contact link / message pill. Blank keeps borrowing whatever it borrows today; filled, the footer gets its own label, link and colour.',
             },
             // Column headings. Most footers hardcode "Visit" / "Index"; binding
             // them means the words on the page are the owner's, and a blank

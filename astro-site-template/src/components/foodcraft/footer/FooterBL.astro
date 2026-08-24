@@ -22,8 +22,8 @@
  *   footer.visit.title        — the CONTACT column heading (see decision 1)
  *   navbar_links.${i}.label   — one page-column link's label
  *   navbar_links.${i}.href    — that link's target (data-href-field)
- *   navCtaText                — the rust action's label (see decision 4)
- *   navCtaHref                — its target (data-href-field)
+ *   footer.cta.text                — the rust action's label (see decision 4)
+ *   footer.cta.href                — its target (data-href-field)
  *   location.phone            — the tel: row (data-field only, decision 7)
  *   contact.email             — the mailto: row (decision 8)
  *   location.address          — the address line, and the colophon's other half
@@ -100,7 +100,7 @@
  *
  * 3. THE ARROW after the brand column's action is CSS generated content, not
  *    markup. editorBridge writes an inline edit back through innerHTML, so a
- *    glyph inside the element could end up stored in navCtaText; a pseudo-
+ *    glyph inside the element could end up stored in footer.cta.text; a pseudo-
  *    element cannot. It carries no margin: .linkc is an inline-flex box, so the
  *    pseudo-element is a flex ITEM and the primitive's own `gap: .5em` already
  *    spaces it — a margin would stack on top and open twice the design's gap.
@@ -125,12 +125,14 @@
  *    Nothing is lost when the action is suppressed: the header rail still
  *    carries the pill, and phone, email and address are distinct channels.
  *
- *    The pair hooked is navCtaText / navCtaHref, from the Header group, not
+ *    The pair hooked is footer.cta.text / footer.cta.href, this section's own, not
  *    hero.cta1: components/editor/editorBridge.ts resolves a Blocks toggle by
  *    counting hooks of that prefix inside closest('section,footer'), so a
  *    footer carrying hero.* hooks becomes a candidate for "hide the Hero
- *    block". navCtaText has no entry in that PREFIX map at all, so it is
- *    toggle-inert. HeaderBL hooks the same pair for the same reason.
+ *    block". A footer.* hook belongs to the FOOTER block instead, and
+ *    that block's own toggle already resolves to this component, so the
+ *    pair stays toggle-safe. HeaderBL keeps navCtaText, which is now
+ *    a different field from this one — that split is the point.
  *
  * 5. THE TWO location.* HOOKS HERE ARE SAFE under that same weighted
  *    resolution: this footer holds 2 paths across 3 nodes (phone, the column
@@ -270,11 +272,19 @@ const locality = String(f.locality ?? '').trim();
 // footer.brand_blurb is the schema's declared alias for the same box.
 const blurb = String(f.blurb || f.brand_blurb || '').trim();
 
-// The page's one action, from the Header group (see decision 4). '#location' is
+// This section's own action (see the note below). '#location' is
 // the fallback because that is where this design puts the address, the map and
 // the opening hours; there is no checkout to send a booking link to.
-const ctaText = String(c.navCtaText ?? '').trim();
-const ctaHref = onPage(c.navCtaHref, '#location');
+// THIS FOOTER'S OWN action. footer.cta.* is read FIRST and falls back to
+// navCtaText / navCtaHref — the HEADER's field, which is exactly what these two
+// lines read before — so a site that never filled the footer's box in renders
+// byte-identically and no live footer loses its link. The hooks below spell
+// footer.cta.*, so the owner's first edit lands there and this action's label,
+// link and colour part company with the header pill's from then on. That split
+// is the whole point: one field used to print "Get in touch" in the top bar and
+// again down here, and an owner asked why.
+const ctaText = String(f.cta?.text ?? '').trim() || String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(f.cta?.href || c.navCtaHref, '#location');
 // Computed, never literal, and ONE conditional per attribute — an owner may
 // point this at #location or a tel:, and forcing those into a new tab is wrong.
 const ctaExternal = /^https?:/i.test(ctaHref);
@@ -309,7 +319,7 @@ const addressFlat = address.replace(/\s*\n+\s*/g, ', ');
 
 // ── GATES — BODY content only (R5). The two column headings never count: a
 // heading is not a column, and one printed over nothing is the exact failure
-// the rule exists for. footer.brand / footer.blurb / navbar_links / navCtaText
+// the rule exists for. footer.brand / footer.blurb / navbar_links / the header CTA
 // ARE seeded by derive-content-defaults, but from the owner's own submitted
 // name, city and business type — that is their data, not an invented headline.
 const hasBrandCol = Boolean(brand || locality || blurb);
@@ -346,8 +356,8 @@ const hasColophon = Boolean(brand || addressFlat);
                 href={ctaHref}
                 target={ctaExternal ? '_blank' : undefined}
                 rel={ctaExternal ? 'noopener noreferrer' : undefined}
-                data-field="navCtaText"
-                data-href-field="navCtaHref"
+                data-field="footer.cta.text"
+                data-href-field="footer.cta.href"
               >{ctaText}</a>
             )}
           </div>
@@ -376,8 +386,8 @@ const hasColophon = Boolean(brand || addressFlat);
                 href={ctaHref}
                 target={ctaExternal ? '_blank' : undefined}
                 rel={ctaExternal ? 'noopener noreferrer' : undefined}
-                data-field="navCtaText"
-                data-href-field="navCtaHref"
+                data-field="footer.cta.text"
+                data-href-field="footer.cta.href"
               >{ctaText}</a>
             )}
             {(phone || email || address) && (
@@ -468,7 +478,7 @@ const hasColophon = Boolean(brand || addressFlat);
   }
   /* The design's 13px rust action. .linkc already carries the size, the weight
      and the colour, so only the arrow is added — as generated content, so the
-     glyph can never be written back into navCtaText through an inline edit, and
+     glyph can never be written back into footer.cta.text through an inline edit, and
      with no margin because .linkc's own `gap: .5em` already spaces it. */
   .fb-cta { overflow-wrap: anywhere; }
   .fb-cta::after { content: '\2192'; }
