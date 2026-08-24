@@ -3,6 +3,7 @@ import path from 'path'
 import os from 'os'
 import { execSync } from 'child_process'
 import { defaultsFor, type WhyItem, type HowStep, type Testimonial, type FaqItem, type CredItem, type TrustData, type CtaBand } from './block-defaults'
+import { balanceInlineHtmlDeep } from './balance-inline-html'
 
 interface ExtractedContent {
     business_name: string
@@ -341,7 +342,7 @@ async function transformToAstroData(
         ? { ...content.contact, phone: formatPhoneDisplay(content.contact.phone) || content.contact.phone }
         : content.contact
 
-    return {
+    const payload = {
         layout: {
             businessName: content.business_name,
             tagline: content.tagline,
@@ -909,6 +910,30 @@ async function transformToAstroData(
             }
         })(),
     }
+
+    // ── The one place owner copy is made well-formed ───────────────────
+    // Every template prints this tree through `set:html` (1102 call sites,
+    // 678 components) and NONE of them balances a tag. An unclosed `<em>`
+    // — which lib/services/groq.service.ts actively invites by asking the
+    // model for `<em>highlight</em>`, and which an admin can type — is not
+    // stopped by the enclosing `</p>`: the parser re-opens it after the
+    // block (active formatting element reconstruction), italicising every
+    // following section, and inside a flex row it becomes the row's only
+    // child so `justify-content: space-between` has nothing left to space.
+    //
+    // Fixing that here rather than in the components is the difference
+    // between one pass and 678 edits — and because it runs on the way to
+    // site-data.json, it also repairs copy ALREADY STORED in Convex on the
+    // next rebuild.
+    //
+    // Runs over CONTENT only. The templates' other `set:html` payload,
+    // `__overrideCss`, is built inside the Astro wrapper by
+    // buildOverrideCss(scheme, pairing) from two palette ids and is never
+    // part of this tree, so no CSS passes through here.
+    //
+    // Non-mutating: the balanced tree is a new object where anything
+    // changed, and `payload` itself is never written to.
+    return balanceInlineHtmlDeep(payload)
 }
 
 /**
