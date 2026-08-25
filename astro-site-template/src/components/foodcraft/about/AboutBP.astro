@@ -1,0 +1,198 @@
+---
+/**
+ * foodcraft / AboutBP — "Tahanan Cafe · Split"'s story.
+ *
+ * ROLE. The first FLIP. The hero put its photograph on the right; this section
+ * puts it on the left, and that alternation is the design's whole rhythm. From
+ * the element carrying data-component="ABOUT" in "Tahanan Cafe Landing
+ * v4.dc.html": a 50/50 split with the picture column at min-height 520 on the
+ * cream ground, and a copy column at 66px 44px holding an eyebrow, a headline
+ * with an italic walnut close, two paragraphs at 16.5px/1.86 capped at 50ch,
+ * and a two-column ledger of facts underneath.
+ *
+ * THE LEDGER is the shared .rowrule: label left at 14px in the ink, value
+ * pushed right at 12.5px weight 600 in the muted grey, 10px of padding over a
+ * hairline. Five other sections draw the same object, which is why it lives in
+ * the wrapper and not here.
+ *
+ * EDITABLE HOOKS:
+ *   about.image                 — data-image-field, the left photograph
+ *   about.tag                   — the eyebrow
+ *   about.headline              — set:html, so an owner em takes the italic
+ *   about.lead                  — the first paragraph
+ *   about.paragraphs.${i}       — every paragraph after it, also set:html
+ *   about.specs.${i}.label      — a ledger row's name
+ *   about.specs.${i}.value      — its value
+ *
+ * DERIVED, never stored: the photograph's accessible name, which is
+ * about.signature when the owner supplied one and nothing at all when they did
+ * not. There is no invented alt text here.
+ *
+ * BOTH HALVES ARE INDEPENDENT. Copy with no picture renders one track with the
+ * copy holding the column measure it would have had; a picture with no copy
+ * renders the picture alone. The section disappears entirely only when both are
+ * empty.
+ *
+ * `about.paragraphs` is tolerated as an array OR as a single string, because
+ * older records store it both ways.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const about = content.about || {};
+
+const tag = about.tag || '';
+const headline = about.headline || '';
+const lead = about.lead || '';
+const image = String(about.image || '');
+// The quote escape keeps a filename with an apostrophe from closing the url('')
+// early and killing the declaration.
+const imageCss = image.replace(/'/g, '%27');
+
+const paragraphSource: any[] = Array.isArray(about.paragraphs)
+  ? about.paragraphs
+  : (typeof about.paragraphs === 'string' && about.paragraphs.trim()
+    ? [about.paragraphs]
+    : []);
+
+// The ORIGINAL index rides along in `i`, so dropping an empty paragraph cannot
+// shift the editor hooks of the ones after it.
+const paraRows = paragraphSource
+  .map((text: any, i: number) => ({ text: String(text ?? ''), i }))
+  .filter((row) => row.text.trim().length > 0);
+
+const specSource: any[] = Array.isArray(about.specs) ? about.specs : [];
+const specRows = specSource
+  .map((row: any, i: number) => {
+    const item = row && typeof row === 'object' ? row : { label: row, value: '' };
+    return {
+      label: String(item.label ?? '').trim(),
+      value: String(item.value ?? '').trim(),
+      i,
+    };
+  })
+  .filter((row) => row.label.length > 0 || row.value.length > 0);
+
+const photoName = String(about.signature || '').trim();
+
+const hasCopy = Boolean(tag || headline || lead) || paraRows.length > 0 || specRows.length > 0;
+const hasPhoto = Boolean(image);
+const hasSection = hasCopy || hasPhoto;
+---
+{hasSection && (
+  <section class:list={['split', 'thv-story', !(hasCopy && hasPhoto) && 'split--solo']} id="about">
+    {hasPhoto && (
+      <div class="split__shot plate thv-story-shot">
+        <div
+          class="ph"
+          data-image-field="about.image"
+          role={photoName ? 'img' : undefined}
+          aria-label={photoName || undefined}
+          aria-hidden={photoName ? undefined : 'true'}
+          style={`background-image:url('${imageCss}');`}
+        ></div>
+      </div>
+    )}
+    {hasCopy && (
+      <div class="split__copy thv-story-copy">
+        {tag && <span class="kick thv-story-kick" data-field="about.tag">{tag}</span>}
+        {headline && <h2 class="h2 thv-story-h reveal" data-field="about.headline" set:html={headline}></h2>}
+        {lead && <p class="thv-story-p reveal" data-delay="1" data-field="about.lead">{lead}</p>}
+        {paraRows.map((row, k: number) => (
+          <p
+            class="thv-story-p reveal"
+            data-delay={String((k % 3) + 1)}
+            data-field={`about.paragraphs.${row.i}`}
+            set:html={row.text}
+          ></p>
+        ))}
+        {specRows.length > 0 && (
+          <div class="thv-story-specs reveal" data-delay="2">
+            {specRows.map((row) => (
+              <div class="rowrule thv-story-row">
+                {row.label && (
+                  <span class="thv-story-l" data-field={`about.specs.${row.i}.label`}>{row.label}</span>
+                )}
+                {row.value && (
+                  <span class="thv-story-v" data-field={`about.specs.${row.i}.value`}>{row.value}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --ink-soft --muted --line-3 --well --sans) and from its shared
+     primitives (.split .split__copy .split__shot .kick .h2 .rowrule .plate
+     .ph). There is no literal hex in this file. */
+
+  /* Design: the picture column is min-height:520px. Its cream ground, its
+     hairline and overflow:hidden are all .split__shot already. */
+  .thv-story-shot { min-height: 520px; }
+
+  .thv-story-kick { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
+
+  /* Design: margin .24em 0 .32em, which is the shared .h2 exactly. Only the
+     wrap guard is local. */
+  .thv-story-copy .thv-story-h { overflow-wrap: anywhere; }
+
+  /* Design: 16.5px/1.86 capped at 50ch, 1em between paragraphs. This is NOT
+     the shared .lede — that primitive tops out at 16.5px but sets 50ch on a
+     clamp, and the story wants the flat size the design writes. */
+  .thv-story-copy .thv-story-p {
+    font-size: 16.5px;
+    line-height: 1.86;
+    max-width: 50ch;
+    margin: 0 0 1em;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+  /* The last paragraph's margin is the ledger's job, or the column's floor. */
+  .thv-story-copy .thv-story-p:last-of-type { margin-bottom: 0; }
+  /* An eyebrow with no headline under it still needs air before the prose. */
+  .thv-story-copy .kick + .thv-story-p { margin-top: 14px; }
+
+  /* Design: grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 30px; 24px
+     of clearance above. */
+  .thv-story-specs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 30px;
+    margin-top: 24px;
+  }
+  /* Design: the label is 14px in the ink; the value is 12.5px at 600 in the
+     muted grey, pushed to the right edge of its cell. */
+  .thv-story-copy .thv-story-l {
+    font-size: 14px; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  .thv-story-copy .thv-story-v {
+    margin-left: auto; text-align: right;
+    font-size: 12.5px; font-weight: 500; color: var(--muted);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split to one track
+        at 900 and runs the shared type ladder at 760/520. */
+  @media (max-width: 900px) {
+    /* Stacked, the picture is full width; 520px of it would be a wall between
+       the proof row and the story. */
+    .thv-story-shot { min-height: clamp(300px, 52vw, 440px); }
+  }
+  @media (max-width: 760px) {
+    .thv-story-copy .thv-story-p { max-width: none; }
+    .thv-story-specs { gap: 0 24px; }
+  }
+  @media (max-width: 520px) {
+    /* One column: a 14px label and a 12.5px value cannot share a ~150px half
+       column without splitting mid-word. The CAP meets the 300px floor of the
+       query above rather than clearing it, so the picture never gets taller as
+       the viewport gets narrower. */
+    .thv-story-specs { grid-template-columns: minmax(0, 1fr); margin-top: 20px; }
+    .thv-story-shot { min-height: clamp(230px, 62vw, 300px); }
+  }
+</style>

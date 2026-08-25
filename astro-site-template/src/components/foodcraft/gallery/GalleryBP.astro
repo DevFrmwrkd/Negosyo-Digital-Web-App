@@ -1,0 +1,155 @@
+---
+/**
+ * foodcraft / GalleryBP — "Tahanan Cafe · Split"'s photo grid.
+ *
+ * ROLE. The one block that is neither a split nor a container: a full-bleed
+ * two-column grid of 3:2 figures, ruled on the right and under each, with a
+ * small opaque paper caption chip in the bottom-left of every tile. From the
+ * element carrying data-component="GALLERY" in "Tahanan Cafe Landing
+ * v4.dc.html". Nothing is centred, nothing is inset, and there are no gaps —
+ * the tiles touch and the hairlines do the dividing, which is the same logic
+ * as the split.
+ *
+ * THE HEADING IS NOT IN THE DESIGN, and is drawn from the design's own parts
+ * anyway. The artboard's gallery has no eyebrow and no headline; the schema has
+ * both, and lib/derive-content-defaults.ts fills them on every site that has
+ * not been edited. An owner who types a gallery headline and sees nothing
+ * appear has been failed silently, so it is rendered — as the BASELINE HEAD
+ * this design already uses on Credentials and Service area (a contained row,
+ * eyebrow and headline sharing one baseline, 16px apart). With both fields
+ * emptied the section is byte-for-byte the artboard.
+ *
+ * EDITABLE HOOKS:
+ *   gallery.tag                    — the eyebrow
+ *   gallery.headline               — set:html, so an owner em takes the italic
+ *   gallery.items.${i}.image       — data-image-field, one tile
+ *   gallery.items.${i}.caption     — its chip
+ *
+ * A TILE WITHOUT A PHOTOGRAPH IS NOT A TILE. Items with no image are dropped
+ * rather than padded into the grid as empty cream squares — an owner who
+ * uploaded three photos gets three, not three and a hole. The ORIGINAL index
+ * rides along in `i` so the hooks still point at the right record afterwards.
+ *
+ * AN ODD COUNT SPANS ITS LAST TILE across both columns, so the block always
+ * closes as a rectangle instead of leaving a notch at the bottom right.
+ *
+ * DERIVED, never stored: a tile's accessible name, which is its caption or
+ * nothing at all. There is no invented alt text here.
+ *
+ * BOTH CONTENT SHAPES ARE TOLERATED: the schema's { items: [...] } and the
+ * plain array some older records still store under content.gallery.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const gallery = (content && content.gallery) || {};
+const tag = typeof gallery.tag === 'string' ? gallery.tag.trim() : '';
+const headline = typeof gallery.headline === 'string' ? gallery.headline.trim() : '';
+
+type Tile = { image?: string; caption?: string };
+const raw: Tile[] = Array.isArray(gallery.items)
+  ? gallery.items
+  : (Array.isArray(content?.gallery) ? (content.gallery as Tile[]) : []);
+
+const tiles = raw
+  .map((t, i) => ({
+    image: (t && typeof t.image === 'string' ? t.image : '').trim(),
+    caption: (t && typeof t.caption === 'string' ? t.caption : '').trim(),
+    i,
+  }))
+  .filter((t) => Boolean(t.image));
+
+const n = tiles.length;
+// The quote escape keeps a filename with an apostrophe from closing the url('')
+// early and killing the declaration.
+const cssUrl = (s: string) => s.replace(/'/g, '%27');
+const spanLast = n > 1 && n % 2 === 1;
+const hasHead = Boolean(tag || headline);
+---
+{n > 0 && (
+  <section class="thv-shots" id="gallery">
+    {hasHead && (
+      <div class="wrap thv-shots-head reveal">
+        {tag && <span class="kick" data-field="gallery.tag">{tag}</span>}
+        {headline && <h2 class="h2 thv-shots-h" data-field="gallery.headline" set:html={headline}></h2>}
+      </div>
+    )}
+    <div class:list={['thv-shots-grid', n === 1 && 'thv-shots-grid--one']}>
+      {tiles.map((t, pos) => (
+        <figure
+          class:list={['plate', 'thv-shots-tile', spanLast && pos === n - 1 && 'thv-shots-tile--wide']}
+        >
+          <div
+            class="ph"
+            role={t.caption ? 'img' : undefined}
+            aria-label={t.caption || undefined}
+            aria-hidden={t.caption ? undefined : 'true'}
+            data-image-field={`gallery.items.${t.i}.image`}
+            style={`background-image:url('${cssUrl(t.image)}');`}
+          ></div>
+          {t.caption && (
+            <figcaption class="cap" data-field={`gallery.items.${t.i}.caption`}>{t.caption}</figcaption>
+          )}
+        </figure>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--line --well --paper) and from its shared primitives (.wrap .kick .h2
+     .plate .ph .cap). There is no literal hex in this file. */
+
+  /* THE SECTION CARRIES NO BOTTOM RULE. Every tile draws one under itself, and
+     the bottom row's rule already sits exactly where a section rule would —
+     declaring both would print a 2px line where the design draws 1px. */
+  .thv-shots { padding: 0; }
+
+  /* The head this file adds, built from the design's Credentials/Service-area
+     head: one baseline, 16px apart, wrapping when it runs out of room. */
+  .thv-shots-head {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    padding-block: clamp(34px, 4.6vw, 46px);
+  }
+  .thv-shots-head .kick { max-width: 100%; overflow-wrap: anywhere; }
+  /* Sized to the design's SECTION headings (Credentials at
+     clamp(24px,3vw,38px)) rather than its split headings, because that is the
+     object this head was taken from. */
+  .thv-shots-h {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 38px); line-height: 1.14;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: grid-template-columns:repeat(2,minmax(0,1fr)); no gap, full bleed. */
+  .thv-shots-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .thv-shots-grid--one { grid-template-columns: minmax(0, 1fr); }
+
+  /* Design: aspect-ratio 3/2 on the cream ground, hairline right and bottom,
+     overflow hidden. .plate carries the ground and the clipping; the ratio and
+     the two rules are the design's and are local. min-height is released
+     because the ratio is doing the sizing. */
+  .thv-shots-tile {
+    margin: 0;
+    aspect-ratio: 3 / 2;
+    min-height: 0;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .thv-shots-tile--wide { grid-column: span 2; }
+  .thv-shots-tile:hover .ph { transform: scale(1.03); }
+  @media (prefers-reduced-motion: reduce) { .thv-shots-tile:hover .ph { transform: none; } }
+
+  /* ── R8 · this section's OWN pass. */
+  @media (max-width: 640px) {
+    /* One up. Two 3:2 tiles side by side on a 360px screen are 180px wide and
+       120px tall — a photograph nobody can read. Full width they are 360x240,
+       and the span rule stops meaning anything, so it is released. */
+    .thv-shots-grid { grid-template-columns: minmax(0, 1fr); }
+    .thv-shots-tile--wide { grid-column: auto; }
+    .thv-shots-tile { border-right: 0; }
+  }
+</style>

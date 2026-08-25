@@ -1,0 +1,179 @@
+---
+/**
+ * foodcraft / AreaBP — "Tahanan Cafe · Split"'s delivery list.
+ *
+ * ROLE. A contained block on the white ground. From the element carrying
+ * data-component="SERVICE-AREA" in "Tahanan Cafe Landing v4.dc.html": the
+ * baseline head (eyebrow and headline 16px apart on one line), a 14px note
+ * capped at 46ch, then four columns of ruled rows — a place on the left and its
+ * travel time pushed right in walnut.
+ *
+ * THIS IS THE SMALLEST HEADLINE ON THE PAGE, at clamp(22px,2.8vw,34px). The
+ * design steps its container blocks down in weight as they go — Credentials at
+ * 38, this at 34 — and it is what keeps a list of eight barangays from reading
+ * as a bigger claim than the menu.
+ *
+ * EDITABLE HOOKS:
+ *   area.tag                 — the eyebrow
+ *   area.headline            — set:html, so an owner em takes the italic
+ *   area.body                — the note (area.sub is read as a fallback,
+ *                              because two generations of extraction wrote it)
+ *   area.rows.${i}.place     — a place
+ *   area.rows.${i}.time      — its travel time
+ *   area.places.${i}         — the OLDER shape: a bare list of place names with
+ *                              no times, still stored on plenty of records
+ *
+ * WHICH LIST WINS. If any timed row survives filtering, the timed rows are the
+ * list; otherwise the bare places are. They are never mixed — a column where
+ * half the rows carry a time and half do not reads as missing data rather than
+ * as a design.
+ *
+ * A ROW WITH NO PLACE IS NOT A ROW, whatever time it carries: "12 min" to
+ * nowhere is not information. The ORIGINAL index rides along so the editor
+ * hooks still point at the right record after the empties are dropped.
+ *
+ * THE SECTION HIDES ITSELF unless there is a real list (timed rows, or at least
+ * two bare places) or a note to show. One lonely place name under a heading
+ * that says "Where we deliver" is worse than no section.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const area = content.area || {};
+const tag = area.tag || '';
+const headline = area.headline || '';
+const body = area.body || area.sub || '';
+
+type Row = { place: string; time: string; placeField: string; timeField: string };
+
+const rawRows: any[] = Array.isArray(area.rows) ? area.rows : [];
+const timedRows: Row[] = rawRows
+  .map((r: any, i: number): Row => {
+    const o = r && typeof r === 'object' ? r : { place: r };
+    return {
+      place: String(o.place ?? '').trim(),
+      time: String(o.time ?? '').trim(),
+      placeField: `area.rows.${i}.place`,
+      timeField: `area.rows.${i}.time`,
+    };
+  })
+  .filter((r) => r.place.length > 0);
+
+const rawPlaces: any[] = Array.isArray(area.places) ? area.places : [];
+const placeRows: Row[] = rawPlaces
+  .map((p: any, i: number): Row => ({
+    place: String(p ?? '').trim(),
+    time: '',
+    placeField: `area.places.${i}`,
+    timeField: '',
+  }))
+  .filter((r) => r.place.length > 0);
+
+const rows: Row[] = timedRows.length > 0 ? timedRows : placeRows;
+
+// Follow the data, but never widen past the design's four tracks.
+const cols = String(Math.min(Math.max(rows.length, 1), 4));
+const hasHead = Boolean(tag || headline);
+const show = timedRows.length > 0 || placeRows.length >= 2 || Boolean(body);
+---
+{show && (
+  <section class="thv-zone">
+    <div class="wrap">
+      {hasHead && (
+        <div class="thv-zone-head reveal">
+          {tag && <span class="kick" data-field="area.tag">{tag}</span>}
+          {headline && <h2 class="h2 thv-zone-h" data-field="area.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      {body && <p class="thv-zone-note reveal" data-field="area.body">{body}</p>}
+
+      {rows.length > 0 && (
+        <ul class="thv-zone-list reveal" role="list" data-delay="1" style={`--cols:${cols}`}>
+          {rows.map((r) => (
+            <li class="rowrule thv-zone-row">
+              <span class="thv-zone-place" data-field={r.placeField}>{r.place}</span>
+              {r.time && <span class="thv-zone-time" data-field={r.timeField}>{r.time}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --muted --accent --line --line-3 --sans) and from its shared
+     primitives (.wrap .kick .h2 .rowrule). There is no literal hex in this
+     file. */
+
+  /* Design: padding 48px 30px, and the hairline every section closes with. */
+  .thv-zone {
+    padding-block: clamp(36px, 4.6vw, 48px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Design: display flex; align-items baseline; gap 16px; flex-wrap wrap;
+     margin-bottom 8px — a much tighter floor than Credentials' 26px, because
+     the note sits directly under this head rather than the grid. */
+  .thv-zone-head {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .thv-zone-head .kick { max-width: 100%; overflow-wrap: anywhere; }
+  /* Design: clamp(22px,2.8vw,34px)/1.16 with NO margin — the head's flex gap
+     does the spacing. */
+  .thv-zone-h {
+    margin: 0;
+    font-size: clamp(22px, 2.8vw, 34px); line-height: 1.16;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 14px/1.75 in the muted grey, capped at 46ch, 20px beneath. */
+  .thv-zone-note {
+    margin: 0 0 20px;
+    font-size: 14px; line-height: 1.75; color: var(--muted);
+    max-width: 46ch; overflow-wrap: anywhere;
+  }
+
+  /* Design: grid-template-columns:repeat(4,minmax(0,1fr)); gap:0 26px. */
+  .thv-zone-list {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+    gap: 0 26px;
+    list-style: none; margin: 0; padding: 0;
+  }
+  /* Design: 10px of padding rather than .rowrule's 11px, and 10px between the
+     place and its time rather than 12px. */
+  .thv-zone-row { list-style: none; padding: 10px 0; gap: 10px; }
+
+  /* Design: 14px in the ink. */
+  .thv-zone-place {
+    font-size: 14px; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Design: 12.5px at weight 600 in walnut, pushed right, nowrap so "12 min"
+     never breaks between the number and the unit. */
+  .thv-zone-time {
+    margin-left: auto;
+    font-size: 12.5px; font-weight: 600; color: var(--accent);
+    white-space: nowrap;
+  }
+
+  /* ── R8 · this section's OWN responsive pass. Nothing here uses a clamp
+        whose floor could outgrow a later cap. */
+  @media (max-width: 900px) {
+    .thv-zone-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; }
+  }
+  @media (max-width: 620px) {
+    .thv-zone-list { grid-template-columns: minmax(0, 1fr); }
+    .thv-zone-note { max-width: none; }
+    .thv-zone-head { gap: 10px; }
+  }
+  @media (max-width: 520px) {
+    /* nowrap has to go at the narrowest width: a place name long enough to
+       fill the row would otherwise push its time off the edge, and the
+       wrapper's overflow-x:hidden would clip it silently rather than show a
+       scrollbar. */
+    .thv-zone-time { white-space: normal; overflow-wrap: anywhere; text-align: right; }
+  }
+</style>

@@ -1,0 +1,258 @@
+---
+/**
+ * foodcraft / ServicesBP — "Tahanan Cafe · Split"'s menu.
+ *
+ * ROLE. The flip back: copy left, photograph right. From the element carrying
+ * data-component="SERVICES" in "Tahanan Cafe Landing v4.dc.html": an eyebrow, a
+ * headline with an italic walnut close, a 14.5px note capped at 42ch, and then
+ * the menu itself — GROUPS, each headed by a tracked-caps walnut label sitting
+ * on a full INK rule, with the dishes ruled underneath in the quiet hairline.
+ * The picture column is min-height 560 on the cream ground.
+ *
+ * THE INK RULE UNDER A GROUP HEADING is the one place on this page where a
+ * border is the ink rather than a hairline, and it is what makes the menu read
+ * as a printed card rather than a list. Do not soften it to --line.
+ *
+ * HOW A FLAT LIST BECOMES GROUPS. The schema stores services.items as one flat
+ * array; the design draws groups. `tag` is the bridge: CONSECUTIVE items
+ * sharing a tag are one group and the tag is its heading. Items with no tag
+ * form an untitled group, which prints its rows and no rule. Nothing is
+ * re-ordered — an owner who interleaves tags gets the groups back in the order
+ * they typed them, because reordering their menu behind their back would be
+ * worse than an odd-looking repeat.
+ *
+ * EDITABLE HOOKS:
+ *   services.tag                   — the eyebrow
+ *   services.headline              — set:html, so an owner em takes the italic
+ *   services.sub                   — the note under the headline
+ *   services.items.${i}.tag        — a group heading
+ *   services.items.${i}.title      — a dish
+ *   services.items.${i}.price      — its price, in the walnut serif
+ *   services.items.${i}.desc       — an optional line under the dish
+ *   services.items.${i}.note       — an optional tracked-caps detail
+ *   services.items.${i}.image      — see THE SECTION PHOTOGRAPH below
+ *
+ * THE SECTION PHOTOGRAPH. The design has ONE picture for the whole menu, and
+ * the schema has no services.image to hold it — the only image path the editor
+ * writes here is per-item. So the section shows the FIRST item that carries an
+ * image, hooked to that item's own path, and any further item images go unused
+ * by this template. That is stated rather than hidden: an owner who sets a
+ * photo on the third dish and sees nothing change has been failed quietly, and
+ * the Sections panel blurb says which one is shown.
+ *
+ * DERIVED, never stored: the photograph's accessible name, which is the title
+ * of the item the photograph belongs to, or nothing.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const services = (content && content.services) || {};
+const str = (v: any) => (typeof v === 'string' ? v.trim() : '');
+
+const tag = str(services.tag);
+const headline = str(services.headline);
+const sub = str(services.sub);
+
+type Item = {
+  title: string; desc: string; tag: string; note: string; price: string; image: string; i: number;
+};
+const rawItems: any[] = Array.isArray(services.items)
+  ? services.items
+  : (Array.isArray(content?.services) ? content.services : []);
+
+const items: Item[] = rawItems
+  .map((it: any, i: number): Item => {
+    if (typeof it === 'string') {
+      return { title: it.trim(), desc: '', tag: '', note: '', price: '', image: '', i };
+    }
+    if (!it || typeof it !== 'object') {
+      return { title: '', desc: '', tag: '', note: '', price: '', image: '', i };
+    }
+    return {
+      title: str(it.title) || str(it.name),
+      desc: str(it.desc) || str(it.description),
+      tag: str(it.tag),
+      note: str(it.note),
+      price: str(it.price),
+      image: str(it.image),
+      i,
+    };
+  })
+  .filter((it) => Boolean(it.title || it.desc || it.tag || it.note || it.price));
+
+// CONSECUTIVE items sharing a tag are one group. A new tag opens a new group;
+// an item with no tag joins the current untitled group, or opens one.
+type Group = { title: string; headingFor: number | null; rows: Item[] };
+const groups: Group[] = [];
+for (const it of items) {
+  const last = groups[groups.length - 1];
+  if (!last || last.title !== it.tag) {
+    groups.push({ title: it.tag, headingFor: it.tag ? it.i : null, rows: [it] });
+  } else {
+    last.rows.push(it);
+  }
+}
+
+const cssUrl = (s: string) => s.replace(/'/g, '%27');
+const shot = items.find((it) => Boolean(it.image)) || null;
+
+const hasCopy = Boolean(tag || headline || sub) || groups.length > 0;
+const hasSection = hasCopy || Boolean(shot);
+---
+{hasSection && (
+  <section class:list={['split', 'thv-menu', !(hasCopy && shot) && 'split--solo']} id="menu">
+    {hasCopy && (
+      <div class="split__copy thv-menu-copy">
+        {tag && <span class="kick thv-menu-kick" data-field="services.tag">{tag}</span>}
+        {headline && <h2 class="h2 thv-menu-h reveal" data-field="services.headline" set:html={headline}></h2>}
+        {sub && <p class="thv-menu-lead reveal" data-field="services.sub">{sub}</p>}
+
+        {groups.map((g, gi) => (
+          <div class="thv-menu-group reveal" data-delay={String(Math.min(gi + 1, 3))}>
+            {g.title && g.headingFor !== null && (
+              <div class="thv-menu-gh" data-field={`services.items.${g.headingFor}.tag`}>{g.title}</div>
+            )}
+            {g.rows.map((it) => (
+              <div class="thv-menu-item">
+                {(it.title || it.price) && (
+                  <div class="thv-menu-line">
+                    {it.title && (
+                      <span class="thv-menu-name" data-field={`services.items.${it.i}.title`}>{it.title}</span>
+                    )}
+                    {it.price && (
+                      <span class="fig thv-menu-price" data-field={`services.items.${it.i}.price`}>{it.price}</span>
+                    )}
+                  </div>
+                )}
+                {it.note && (
+                  <span class="mono thv-menu-note" data-field={`services.items.${it.i}.note`}>{it.note}</span>
+                )}
+                {it.desc && (
+                  <p class="thv-menu-desc" data-field={`services.items.${it.i}.desc`}>{it.desc}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    )}
+
+    {shot && (
+      <div class="split__shot plate thv-menu-shot">
+        <div
+          class="ph"
+          data-image-field={`services.items.${shot.i}.image`}
+          role={shot.title ? 'img' : undefined}
+          aria-label={shot.title || undefined}
+          aria-hidden={shot.title ? undefined : 'true'}
+          style={`background-image:url('${cssUrl(shot.image)}');`}
+        ></div>
+      </div>
+    )}
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --ink-soft --muted --accent --line-3 --well --disp --sans) and from
+     its shared primitives (.split .split__copy .split__shot .kick .h2 .fig
+     .mono .plate .ph). There is no literal hex in this file. */
+
+  .thv-menu-kick { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
+
+  /* Design: margin .24em 0 .2em — a tighter floor than the shared .h2's .32em,
+     because the note sits directly under it. */
+  .thv-menu-copy .thv-menu-h { margin-bottom: .2em; overflow-wrap: anywhere; }
+
+  /* Design: 14.5px/1.75 in the muted grey, capped at 42ch, 22px beneath. */
+  .thv-menu-copy .thv-menu-lead {
+    margin: 0 0 22px;
+    font-size: 14.5px; line-height: 1.75; color: var(--muted);
+    max-width: 42ch; overflow-wrap: anywhere;
+  }
+
+  /* Design: each group carries 22px beneath it and nothing above. */
+  .thv-menu-group { margin-bottom: 22px; min-width: 0; }
+  .thv-menu-group:last-child { margin-bottom: 0; }
+
+  /* THE GROUP HEADING. Design: 9.5px at .26em caps in walnut, 700, 9px of
+     padding over a 1px rule in the INK. This is the only ink border on the
+     page and it is what makes the menu read as printed. */
+  .thv-menu-gh {
+    font-family: var(--sans); font-weight: 700; font-size: 9.5px;
+    letter-spacing: .26em; text-transform: uppercase; color: var(--accent);
+    line-height: 1.3;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: padding 11px 0 over a --line-3 hairline. NOT .rowrule, because a
+     dish can carry a description line under it and .rowrule is a single
+     baseline row. */
+  .thv-menu-item {
+    padding: 11px 0;
+    border-bottom: 1px solid var(--line-3);
+    min-width: 0;
+  }
+  /* Design: display flex; align-items baseline; gap 12px. */
+  .thv-menu-line {
+    display: flex; align-items: baseline; gap: 12px;
+    min-width: 0;
+  }
+  /* Design: DM Serif Display 18px in the ink. */
+  .thv-menu-name {
+    font-family: var(--disp); font-weight: 400; font-size: 18px;
+    line-height: 1.25; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Design: DM Serif Display 17px in walnut, pushed to the right edge and set
+     nowrap so a price never breaks between its symbol and its digits. .fig
+     already gives the face, the colour and the tabular numerals. */
+  .thv-menu-price {
+    margin-left: auto;
+    font-size: 17px;
+    white-space: nowrap;
+  }
+
+  /* NOT IN THE DESIGN, and only drawn when an owner has typed one. The design
+     is seeded with dishes that are a name and a price; the schema lets an
+     owner add a detail and a description, and dropping them silently would
+     lose their words. Both are quieter than anything the design draws, so a
+     menu without them is byte-for-byte the design and one with them still
+     reads as the same object. */
+  .thv-menu-note {
+    display: block;
+    margin-top: 5px;
+    font-size: 9.5px; letter-spacing: .2em;
+    overflow-wrap: anywhere;
+  }
+  .thv-menu-item .thv-menu-desc {
+    margin: 4px 0 0;
+    font-size: 13.5px; line-height: 1.7; color: var(--ink-soft);
+    max-width: 46ch; overflow-wrap: anywhere;
+  }
+
+  /* Design: the picture column is min-height:560px. */
+  .thv-menu-shot { min-height: 560px; }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split at 900 and
+        runs the shared type ladder at 760/520. */
+  @media (max-width: 900px) {
+    .thv-menu-shot { min-height: clamp(300px, 52vw, 440px); }
+  }
+  @media (max-width: 760px) {
+    .thv-menu-copy .thv-menu-lead { max-width: none; }
+    .thv-menu-item .thv-menu-desc { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    /* A dish name and its price stop sharing a baseline once the column is
+       ~310px: a three-word dish wraps to two lines and the price hangs off the
+       first. Stacking the price under the name keeps both readable, and the
+       right alignment keeps the column of prices scannable. The CAP meets the
+       300px floor of the query above rather than clearing it, so the picture
+       never gets taller as the viewport gets narrower. */
+    .thv-menu-line { flex-wrap: wrap; gap: 2px 12px; }
+    .thv-menu-price { margin-left: auto; font-size: 16px; }
+    .thv-menu-shot { min-height: clamp(230px, 62vw, 300px); }
+  }
+</style>

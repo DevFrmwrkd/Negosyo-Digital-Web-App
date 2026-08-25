@@ -112,6 +112,7 @@ const FOODCRAFT_TEMPLATES: TemplateDef[] = [
     { letter: "BM", code: "foodcraft:BM", label: "Tahanan Cafe", tagline: "White + walnut · ruled, editorial cafés", preview: "/template-previews/bm.html" },
     { letter: "BN", code: "foodcraft:BN", label: "Panday Coffee Works", tagline: "Bone + rust · roasteries & coffee bars", preview: "/template-previews/bn.html" },
     { letter: "BO", code: "foodcraft:BO", label: "Sipsip Tea Bar", tagline: "Blush + ultraviolet · milk tea & brew bars", preview: "/template-previews/bo.html" },
+    { letter: "BP", code: "foodcraft:BP", label: "Tahanan Cafe · Split", tagline: "White + walnut · half-page photos, ruled cafés", preview: "/template-previews/bp.html" },
 ];
 
 const SERVICES_TEMPLATES: TemplateDef[] = [

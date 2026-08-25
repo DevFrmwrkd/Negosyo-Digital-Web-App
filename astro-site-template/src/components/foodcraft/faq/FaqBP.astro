@@ -1,0 +1,152 @@
+---
+/**
+ * foodcraft / FaqBP — "Tahanan Cafe · Split"'s notes.
+ *
+ * ROLE. A contained block on the #FBF8F5 wash, and the second of the two
+ * sections that sit on it. From the element carrying data-component="FAQ" in
+ * "Tahanan Cafe Landing v4.dc.html": the baseline head, then the questions in
+ * TWO COLUMNS, each a serif question at 19px over a 14.5px answer, ruled
+ * underneath.
+ *
+ * THE ANSWERS ARE ALWAYS OPEN. The design uses no accordion and neither does
+ * this: on a page whose whole argument is that nobody is hurrying you, hiding
+ * six short answers behind six clicks would be the wrong gesture. It also means
+ * the answers are in the page for a crawler to read.
+ *
+ * THE RULE ON THIS GROUND IS --line-tint, one shade darker than the page's
+ * hairline, because on #FBF8F5 the ordinary --line all but disappears. Same
+ * reason as WhyBP.
+ *
+ * THE COLUMNS FLOW DOWN-THEN-ACROSS, which is what a CSS grid does by default
+ * and what the design's own two-column grid does. A reader going top to bottom
+ * in the left column reads questions 1, 2, 3 and then crosses — that is the
+ * order they were written in.
+ *
+ * EDITABLE HOOKS:
+ *   faq.tag                — the eyebrow
+ *   faq.headline           — set:html, so an owner em takes the italic
+ *   faq.items.${i}.q       — a question
+ *   faq.items.${i}.a       — its answer, set:html so an owner can bold or link
+ *                            inside it
+ *
+ * BOTH FIELD SPELLINGS ARE READ (q/a and question/answer) because two
+ * generations of extraction have written them, and BOTH CONTENT SHAPES are
+ * tolerated: the schema's { items: [...] } and the plain array some older
+ * records still store under content.faq.
+ *
+ * A ROW WITH NEITHER A QUESTION NOR AN ANSWER IS NOT DRAWN. The ORIGINAL index
+ * rides along in `i` so the hooks still point at the right record afterwards.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const faq = content.faq || {};
+const tag = String(faq.tag ?? '').trim();
+const headline = String(faq.headline ?? '').trim();
+
+type Item = { q?: string; a?: string; question?: string; answer?: string };
+const items: Item[] = Array.isArray(faq.items)
+  ? faq.items
+  : (Array.isArray(faq) ? faq : []);
+
+const qOf = (it: Item): string => String(it?.q ?? it?.question ?? '');
+const aOf = (it: Item): string => String(it?.a ?? it?.answer ?? '');
+
+const rows = items
+  .map((it, i: number) => ({ i, q: qOf(it).trim(), a: aOf(it).trim() }))
+  .filter((r) => Boolean(r.q || r.a));
+
+const hasHead = Boolean(tag || headline);
+---
+{rows.length > 0 && (
+  <section class="thv-notes band-tint" id="faq">
+    <div class="wrap">
+      {hasHead && (
+        <div class="thv-notes-head reveal">
+          {tag && <span class="kick" data-field="faq.tag">{tag}</span>}
+          {headline && <h2 class="h2 thv-notes-h" data-field="faq.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      <div class="thv-notes-grid reveal" data-delay="1">
+        {rows.map((row) => (
+          <div class="thv-notes-item">
+            {row.q && <h3 class="thv-notes-q" data-field={`faq.items.${row.i}.q`}>{row.q}</h3>}
+            {row.a && <p class="thv-notes-a" data-field={`faq.items.${row.i}.a`} set:html={row.a}></p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --ink-soft --accent --line --line-tint --tint --disp --sans) and from its
+     shared primitives (.wrap .band-tint .kick .h2). There is no literal hex in
+     this file. */
+
+  /* Design: padding 54px 30px, and the hairline every section closes with. */
+  .thv-notes {
+    padding-block: clamp(40px, 5.2vw, 54px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Design: display flex; align-items baseline; gap 16px; flex-wrap wrap;
+     margin-bottom 22px. */
+  .thv-notes-head {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .thv-notes-head .kick { max-width: 100%; overflow-wrap: anywhere; }
+  /* Design: clamp(24px,3vw,40px)/1.14 with NO margin — the head's flex gap
+     does the spacing, so the shared .h2's own margins would double it. */
+  .thv-notes-h {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 40px); line-height: 1.14;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 34px. */
+  .thv-notes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 34px;
+  }
+  /* Design: padding 17px 0 over the darker hairline this ground needs. */
+  .thv-notes-item {
+    padding: 17px 0;
+    border-bottom: 1px solid var(--line-tint);
+    min-width: 0;
+  }
+  /* Design: DM Serif Display 19px, 7px beneath. */
+  .thv-notes-item .thv-notes-q {
+    margin: 0 0 7px;
+    font-family: var(--disp); font-weight: 400; font-size: 19px;
+    line-height: 1.28; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* Design: 14.5px/1.8 in the soft ink, no margin. */
+  .thv-notes-item .thv-notes-a {
+    margin: 0;
+    font-size: 14.5px; line-height: 1.8; color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+  /* set:html means an owner's own link arrives unscoped by Astro, so it is
+     styled with :global() or it inherits nothing and reads as body text. */
+  .thv-notes-item .thv-notes-a :global(a) {
+    color: var(--accent);
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+
+  /* ── R8 · this section's OWN responsive pass. Nothing here uses a clamp
+        whose floor could outgrow a later cap. */
+  @media (max-width: 760px) {
+    /* One column. A 19px serif question and a 14.5px answer need a real
+       measure; half of a 700px page is not one. */
+    .thv-notes-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 520px) {
+    .thv-notes-head { gap: 10px; margin-bottom: 18px; }
+    .thv-notes-item { padding: 15px 0; }
+    .thv-notes-item .thv-notes-q { font-size: 18px; }
+  }
+</style>

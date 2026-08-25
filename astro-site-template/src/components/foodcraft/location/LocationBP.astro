@@ -1,0 +1,293 @@
+---
+/**
+ * foodcraft / LocationBP — "Tahanan Cafe · Split"'s visit panel.
+ *
+ * ROLE. Copy left, map right — the last split before the closing band. From the
+ * element carrying data-component="LOCATION" in "Tahanan Cafe Landing
+ * v4.dc.html": a copy column at 56px 44px holding an eyebrow, a headline, a
+ * short directions note capped at 38ch and the opening hours as a ruled ledger
+ * with the day left and the time right in the serif; and a right column at
+ * min-height 420 on the TINT (not the cream — this is the one picture column in
+ * the design that is not a photograph) carrying a drawn street grid, two roads,
+ * a pin and the locality in the bottom-left corner.
+ *
+ * THE MAP IS DRAWN FIRST AND REPLACED SECOND. The face below is pure CSS — a
+ * 42px grid at 8% walnut, a 5px road across 47% and a 4px road down 44%, a
+ * 13px dot with a 3px paper collar, and an ink flag under it — and it is what
+ * an owner sees when they have given no address and no coordinates. When they
+ * HAVE, the boot in PageBP replaces the whole thing with a Leaflet map at zoom
+ * 16. Both states are the design: the artboard itself ships the drawn face.
+ *
+ * THE ADDRESS. The artboard sets the address AS the headline, because its
+ * content model has no separate one. This repo's schema has both
+ * location.headline (which lib/derive-content-defaults.ts fills with "Where to
+ * find us") and location.address, so both are drawn: the headline takes the h2
+ * and the address takes a serif line directly under it at 20px. Neither
+ * owner's string is dropped, and the address keeps the prominence the design
+ * gives it.
+ *
+ * EDITABLE HOOKS:
+ *   location.tag                 — the eyebrow
+ *   location.headline            — set:html, so an owner em takes the italic
+ *   location.address             — the serif address line, and the geocoder's
+ *                                  input when no coordinates were given
+ *   location.sub                 — the directions note
+ *   location.rules.${i}.label    — a day
+ *   location.rules.${i}.value    — its hours
+ *   location.hours               — the free-text note under the ledger
+ *
+ * DERIVED, never stored: the pin's flag (layout.businessName), the corner
+ * caption (layout.contact.city), and the coordinates when only an address was
+ * given — those are looked up once in the browser through Nominatim, and a
+ * failed lookup simply leaves the drawn face in place.
+ *
+ * THE ID `map` IS LOAD-BEARING. PageBP's boot calls
+ * document.getElementById('map') by that literal string. Renaming it here
+ * silently leaves every owner with the drawn face forever.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+const lay = layout || {};
+const loc = content.location || {};
+
+const tag = typeof loc.tag === 'string' ? loc.tag.trim() : '';
+const headline = typeof loc.headline === 'string' ? loc.headline.trim() : '';
+const sub = typeof loc.sub === 'string' ? loc.sub.trim() : '';
+const hoursNote = typeof loc.hours === 'string' ? loc.hours.trim() : '';
+const address = String(loc.address ?? lay.contact?.address ?? '').trim();
+
+type HourRow = { i: number; day: string; time: string };
+// The ORIGINAL index rides along in `i`, so dropping an empty rule cannot shift
+// the editor hooks of the ones after it.
+const rows: HourRow[] = (Array.isArray(loc.rules) ? loc.rules : [])
+  .map((r: any, i: number) => ({
+    i,
+    day: String(r?.label ?? '').trim(),
+    time: String(r?.value ?? '').trim(),
+  }))
+  .filter((r: HourRow) => Boolean(r.day || r.time));
+
+// A latitude outside ±90 or a longitude outside ±180 is not a coordinate, it is
+// a typo — and passing it to Leaflet puts the pin in the sea rather than
+// failing. Both are rejected back to the drawn face.
+const num = (v: any, max: number): number | null => {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && Math.abs(n) <= max ? n : null;
+};
+const lat = num(loc.lat, 90) ?? num(lay.contact?.lat, 90);
+const lng = num(loc.lng, 180) ?? num(lay.contact?.lng, 180);
+const hasCoords = lat !== null && lng !== null;
+const hasAddress = !!address;
+const hasMap = hasCoords || hasAddress;
+
+const brand = String(lay.businessName ?? '').trim();
+const locality = String(lay.contact?.city ?? '').trim();
+
+const hasCopy = Boolean(tag || headline || address || sub) || rows.length > 0 || Boolean(hoursNote);
+const hasSection = hasCopy || hasMap;
+---
+{hasSection && (
+<section class:list={['split', 'thv-visit', !(hasCopy && hasMap) && 'split--solo']} id="visit">
+  {hasCopy && (
+    <div class="split__copy thv-visit-copy">
+      {tag && <span class="kick thv-visit-kick" data-field="location.tag">{tag}</span>}
+      {headline && <h2 class="h2 thv-visit-h reveal" data-field="location.headline" set:html={headline}></h2>}
+      {address && <p class="thv-visit-addr reveal" data-field="location.address">{address}</p>}
+      {sub && <p class="thv-visit-note reveal" data-delay="1" data-field="location.sub">{sub}</p>}
+      {rows.length > 0 && (
+        <div class="thv-visit-hours reveal" data-delay="1">
+          {rows.map((r) => (
+            <div class="rowrule thv-visit-row">
+              {r.day && <span class="thv-visit-d" data-field={`location.rules.${r.i}.label`}>{r.day}</span>}
+              {r.time && <span class="thv-visit-t" data-field={`location.rules.${r.i}.value`}>{r.time}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+      {hoursNote && <p class="thv-visit-hnote reveal" data-delay="2" data-field="location.hours">{hoursNote}</p>}
+    </div>
+  )}
+
+  {hasMap && (
+    <div class="split__shot thv-visit-map">
+      <div id="map">
+        {/* The drawn face. Replaced wholesale by PageBP's Leaflet boot the
+            moment real coordinates exist; until then it IS the design. */}
+        <div class="thv-visit-face" aria-hidden="true">
+          <span class="thv-visit-road thv-visit-road-h"></span>
+          <span class="thv-visit-road thv-visit-road-v"></span>
+          <span class="thv-visit-pin">
+            <span class="thv-visit-dot"></span>
+            {brand && <span class="thv-visit-flag">{brand}</span>}
+          </span>
+        </div>
+      </div>
+      {locality && <span class="thv-visit-cap">{locality}</span>}
+    </div>
+  )}
+</section>
+)}
+{hasCoords && (
+  <script is:inline define:vars={{ lat, lng, brand }}>
+    (function () {
+      var attempt = 0;
+      (function init() {
+        if (window.__foodcraftBPInitMap) { window.__foodcraftBPInitMap(lat, lng, brand); }
+        else if (attempt++ < 25) { setTimeout(init, 80); }
+      })();
+    })();
+  </script>
+)}
+{!hasCoords && hasAddress && (
+  <script is:inline define:vars={{ address, brand }}>
+    (function geocodeThenInit() {
+      var attempt = 0;
+      function tryInit(la, ln) {
+        if (window.__foodcraftBPInitMap) { window.__foodcraftBPInitMap(la, ln, brand); }
+        else if (attempt++ < 25) { setTimeout(function () { tryInit(la, ln); }, 80); }
+      }
+      try {
+        var query = encodeURIComponent(String(address).replace(/\n/g, ', '));
+        var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + query;
+        fetch(url, { headers: { 'Accept-Language': 'en' } })
+          .then(function (r) { return r.ok ? r.json() : []; })
+          .then(function (results) {
+            if (!Array.isArray(results) || results.length === 0) return;
+            var la = parseFloat(results[0].lat);
+            var ln = parseFloat(results[0].lon);
+            if (isNaN(la) || isNaN(ln)) return;
+            tryInit(la, ln);
+          })
+          .catch(function () { /* the drawn face stays; that is the fallback */ });
+      } catch (e) { /* same */ }
+    })();
+  </script>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --ink-soft --muted --accent --accent-rgb --paper --tint --line-3
+     --on-ink --disp --sans) and from its shared primitives (.split
+     .split__copy .split__shot .kick .h2 .rowrule). There is no literal hex in
+     this file. */
+
+  /* Design: the copy column is 56px rather than the page's 66px. */
+  .thv-visit-copy { padding-block: clamp(42px, 5.2vw, 56px); }
+
+  .thv-visit-kick { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
+  /* Design: clamp(24px,3vw,40px)/1.14 with margin .24em 0 .26em. */
+  .thv-visit-copy .thv-visit-h {
+    font-size: clamp(24px, 3vw, 40px); line-height: 1.14;
+    margin-bottom: .26em;
+    overflow-wrap: anywhere;
+  }
+  /* The address, in the design's own serif at a step down from the headline.
+     See the frontmatter note on why both are drawn. */
+  .thv-visit-copy .thv-visit-addr {
+    margin: 0 0 12px;
+    font-family: var(--disp); font-weight: 400; font-size: 20px;
+    line-height: 1.35; color: var(--ink);
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+  /* Design: 14.5px/1.78 capped at 38ch, 20px beneath. */
+  .thv-visit-copy .thv-visit-note {
+    margin: 0 0 20px;
+    font-size: 14.5px; line-height: 1.78; color: var(--ink-soft);
+    max-width: 38ch; overflow-wrap: anywhere;
+  }
+
+  .thv-visit-hours { min-width: 0; }
+  /* Design: the hours row pushes its two ends apart rather than pushing only
+     the value right, and it is 10px of padding rather than .rowrule's 11px. */
+  .thv-visit-row { justify-content: space-between; padding: 10px 0; }
+  /* Design: 12.5px at weight 500 in the muted grey. */
+  .thv-visit-d {
+    font-family: var(--sans); font-weight: 500; font-size: 12.5px;
+    line-height: 1.4; color: var(--muted);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Design: DM Serif Display 15px in the ink, right-aligned. */
+  .thv-visit-t {
+    margin-left: auto; text-align: right;
+    font-family: var(--disp); font-weight: 400; font-size: 15px;
+    line-height: 1.35; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  .thv-visit-copy .thv-visit-hnote {
+    margin: 14px 0 0;
+    font-size: 13.5px; line-height: 1.75; color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: min-height 420 on the TINT, not the cream. .split__shot supplies
+     the cream, so it is overridden here — this column is a drawing, not a
+     photograph. */
+  .thv-visit-map {
+    min-height: 420px;
+    background-color: var(--tint);
+  }
+  /* Leaflet paints into this element and needs a positioned box with real
+     dimensions before it will lay tiles out at all. */
+  #map { position: absolute; inset: 0; z-index: 0; }
+
+  /* THE DRAWN FACE. Design: a 42px grid at 8% walnut over the tint. */
+  .thv-visit-face {
+    position: absolute; inset: 0;
+    background-color: var(--tint);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(var(--accent-rgb), .08) 0 1px, transparent 1px 42px),
+      repeating-linear-gradient(90deg, rgba(var(--accent-rgb), .08) 0 1px, transparent 1px 42px);
+  }
+  .thv-visit-road { position: absolute; background-color: rgba(var(--accent-rgb), .22); }
+  /* Design: the cross street runs at 47% and the avenue down 44%, which is what
+     puts the pin off-centre and stops the drawing looking like a target. */
+  .thv-visit-road-h { top: 47%; left: 0; right: 0; height: 5px; }
+  .thv-visit-road-v { top: 0; bottom: 0; left: 44%; width: 4px; }
+  .thv-visit-pin {
+    position: absolute; top: 47%; left: 44%; transform: translate(-50%, -100%);
+    display: grid; justify-items: center; gap: 8px;
+    width: max-content; max-width: calc(88% - 24px);
+    text-align: center; z-index: 1;
+  }
+  /* Design: 13px dot in walnut with a 3px paper collar. */
+  .thv-visit-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    background-color: var(--accent); border: 3px solid var(--paper);
+  }
+  /* Design: an ink flag with paper text at 9px/.18em caps. 17.09:1, and opaque,
+     so it holds over the roads it sits on. */
+  .thv-visit-flag {
+    background-color: var(--ink); color: var(--on-ink);
+    font-family: var(--sans); font-weight: 400; font-size: 9px;
+    letter-spacing: .18em; text-transform: uppercase; line-height: normal;
+    padding: 5px 11px;
+    text-align: center; overflow-wrap: anywhere;
+  }
+  /* Design: the locality, bottom-left at 16px, 10px/.18em caps at weight 600.
+     z-index 1 keeps it over a Leaflet map once one has replaced the face. */
+  .thv-visit-cap {
+    position: absolute; left: 16px; bottom: 16px; z-index: 1;
+    max-width: calc(100% - 32px);
+    font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: .18em; text-transform: uppercase; line-height: 1.3;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split at 900 and
+        runs the shared type ladder at 760/520. */
+  @media (max-width: 900px) {
+    .thv-visit-map { min-height: 340px; }
+  }
+  @media (max-width: 760px) {
+    .thv-visit-copy .thv-visit-note { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    /* 280 is BELOW the 340 above, so the map only ever gets shorter as the
+       viewport narrows. A day and its hours keep sharing a row — they are 12.5px
+       and 15px and fit a 310px measure — but both wrap rather than overflow. */
+    .thv-visit-map { min-height: 280px; }
+    .thv-visit-copy .thv-visit-addr { font-size: 18px; }
+  }
+</style>

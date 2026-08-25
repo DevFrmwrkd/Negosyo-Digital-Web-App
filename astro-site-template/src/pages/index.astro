@@ -47,6 +47,7 @@
  *   "foodcraft:BM"  → Tahanan Cafe · white + walnut, a ruled editorial café
  *   "foodcraft:BN"  → Panday Coffee Works · bone + rust, a working roastery
  *   "foodcraft:BO"  → Sipsip Tea Bar · blush + ultraviolet, soft and rounded
+ *   "foodcraft:BP"  → Tahanan Cafe · Split · white + walnut, a full-bleed split page
  *
  *   — v4 hero batch (one flagship per bucket) —
  *   "restaurant:AM" → Kalan · Mercado Nocturne
@@ -110,6 +111,7 @@ import PageBL from '../components/foodcraft/PageBL.astro';
 import PageBM from '../components/foodcraft/PageBM.astro';
 import PageBN from '../components/foodcraft/PageBN.astro';
 import PageBO from '../components/foodcraft/PageBO.astro';
+import PageBP from '../components/foodcraft/PageBP.astro';
 import PageAN from '../components/salonspa/PageAN.astro';
 import PageAO from '../components/retail/PageAO.astro';
 import PageAP from '../components/autoshop/PageAP.astro';
@@ -178,7 +180,7 @@ const educationMatch = /^education:(AJ|AT)$/.exec(heroStyle);
 const educationLetter = educationMatch ? educationMatch[1] : null;
 const tradesMatch = /^trades:(AK|AU)$/.exec(heroStyle);
 const tradesLetter = tradesMatch ? tradesMatch[1] : null;
-const foodcraftMatch = /^foodcraft:(AL|BL|BM|BN|BO)$/.exec(heroStyle);
+const foodcraftMatch = /^foodcraft:(AL|BL|BM|BN|BO|BP)$/.exec(heroStyle);
 const foodcraftLetter = foodcraftMatch ? foodcraftMatch[1] : null;
 const servicesMatch = /^services:(AS)$/.exec(heroStyle);
 const servicesLetter = servicesMatch ? servicesMatch[1] : null;
@@ -237,6 +239,7 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {foodcraftLetter === 'BM' && <PageBM siteData={data} />}
 {foodcraftLetter === 'BN' && <PageBN siteData={data} />}
 {foodcraftLetter === 'BO' && <PageBO siteData={data} />}
+{foodcraftLetter === 'BP' && <PageBP siteData={data} />}
 {salonspaLetter === 'AN' && <PageAN siteData={data} />}
 {retailLetter === 'AO' && <PageAO siteData={data} />}
 {autoshopLetter === 'AP' && <PageAP siteData={data} />}
