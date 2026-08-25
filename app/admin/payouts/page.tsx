@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api"
 import { CheckCircle, AlertCircle, Clock, Loader2, Eye, X, Wallet, RefreshCw } from "lucide-react"
 import AdminLayout from "../components/AdminLayout"
 import { needsFunding, describeStateAge } from "@/lib/payouts/fundingState"
+import { WISE_ACTIVITY_URL, wiseTransferUrl } from "@/lib/payouts/wiseLinks"
 
 /**
  * Payout Management — READ-ONLY transaction view.
@@ -280,7 +281,7 @@ export default function PayoutsPage() {
                             </ul>
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                                 <a
-                                    href="https://wise.com/transactions"
+                                    href={WISE_ACTIVITY_URL}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"
@@ -577,6 +578,15 @@ function TransactionDetailModal({
                                         <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
                                         {refreshing ? 'Checking…' : 'Sync this one with Wise'}
                                     </button>
+                                    <a
+                                        href={wiseTransferUrl(w.wiseTransferId)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-bold text-gray-700 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-800"
+                                    >
+                                        <Wallet className="h-3.5 w-3.5" />
+                                        Open Wise
+                                    </a>
                                     <p className="mt-1.5 text-[11px] text-gray-500">
                                         Wise state {describeStateAge(w, Date.now())}. Otherwise refreshed hourly.
                                     </p>
@@ -603,7 +613,7 @@ function TransactionDetailModal({
                                 </p>
                                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
                                     <a
-                                        href="https://wise.com/transactions"
+                                        href={wiseTransferUrl(w.wiseTransferId)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-1.5 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-orange-700"

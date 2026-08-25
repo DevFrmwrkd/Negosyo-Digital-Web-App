@@ -120,13 +120,32 @@ http.route({
         const transferId = data.resource.id.toString();
         const currentState = data.current_state;
 
+        // Wise's terminal failure states, spelled exactly as Wise sends them.
+        //
+        // The comparison below is exact equality, not substring, so a near-miss
+        // is a silent no-op. The old list said 'refunded' where Wise sends
+        // 'funds_refunded', and omitted 'charged_back' entirely — both fell
+        // through to the ignore branch. Nothing else settles the row either:
+        // checkProcessingStatusCron records Wise's state but never applies a
+        // terminal transition, so such a withdrawal sat at 'processing'
+        // indefinitely — balance never restored, a "still processing" email
+        // every 24h, and no failure surfaced anywhere. A redundant alias here
+        // costs nothing; a missing one strands somebody's money.
+        const WISE_FAILED_STATES = [
+            'cancelled',
+            'funds_refunded',
+            'refunded',
+            'bounced_back',
+            'charged_back',
+        ];
+
         // Map Wise states to withdrawal statuses
         let newStatus: 'processing' | 'completed' | 'failed';
         if (currentState === 'outgoing_payment_sent') {
             newStatus = 'completed';
         } else if (currentState === 'processing') {
             newStatus = 'processing';
-        } else if (['cancelled', 'refunded', 'bounced_back'].includes(currentState)) {
+        } else if (WISE_FAILED_STATES.includes(currentState)) {
             newStatus = 'failed';
         } else {
             return new Response(JSON.stringify({ ignored: true }), {
