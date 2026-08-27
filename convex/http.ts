@@ -1,6 +1,7 @@
 import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
 import { internal } from './_generated/api';
+import { verifyWiseWebhook, WISE_SIGNATURE_HEADER } from './lib/wiseWebhookVerify';
 import nacl from 'tweetnacl';
 
 const http = httpRouter();
@@ -106,27 +107,47 @@ http.route({
 
 // POST /wise-webhook
 //
-// ⚠️ UNAUTHENTICATED. This endpoint verifies nothing: no Wise signature, no
-// shared secret. Anyone who knows the deployment URL — which ships to every
-// browser as NEXT_PUBLIC_CONVEX_URL — can post a state change for any transfer
-// id and drive a withdrawal into a terminal state.
+// Signature-verified per Wise's spec: RSA-SHA256 over the RAW body, Base64, in
+// the X-Signature-SHA256 header. See convex/lib/wiseWebhookVerify.ts.
 //
-// docs/wise/WISE-PAYMENT-FLOW-MOBILE.md claims "Signature verified (RSA-SHA256
-// + WISE_WEBHOOK_PUBLIC_KEY)". That was never implemented, and the env var it
-// names currently holds the Convex deployment URL rather than a public key, so
-// turning verification on is blocked until Wise's real webhook public key is
-// installed.
+// ROLLOUT: verification currently RUNS AND LOGS but does not reject, unless
+// WISE_WEBHOOK_ENFORCE === 'true'. Wise publishes separate keys for sandbox and
+// live, and installing the wrong one would 401 every real event — and since
+// checkProcessingStatusCron never applies terminal transitions, payouts would
+// silently stop settling. Observe first: watch the logs for
+// [WISE-WEBHOOK] signature=valid on genuine traffic, THEN set the flag.
 //
-// The immediate damage is contained by settlementBlockReason() in
-// convex/lib/settlement.ts: a forged event can still settle a withdrawal once,
-// but it can no longer be replayed to credit a balance repeatedly. That is a
-// mitigation, not a fix — this endpoint still needs signature verification.
+// Until enforcement is on, settlementBlockReason() in convex/lib/settlement.ts
+// is what limits a forged event to settling a row once rather than being
+// replayed for profit.
 // Receives transfer state changes from Wise API
 http.route({
     path: '/wise-webhook',
     method: 'POST',
     handler: httpAction(async (ctx, request) => {
-        const body = await request.json();
+        // RAW text, not .json(): the signature covers the exact bytes Wise sent,
+        // and a re-serialised object will not match.
+        const raw = await request.text();
+        const outcome = await verifyWiseWebhook({
+            rawBody: raw,
+            signatureBase64: request.headers.get(WISE_SIGNATURE_HEADER),
+            publicKey: process.env.WISE_WEBHOOK_PUBLIC_KEY,
+        });
+        const enforcing = process.env.WISE_WEBHOOK_ENFORCE === 'true';
+        console.log(`[WISE-WEBHOOK] signature=${outcome} enforcing=${enforcing}`);
+        if (enforcing && outcome !== 'valid') {
+            return new Response(JSON.stringify({ error: 'signature verification failed', outcome }), {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        let body: any;
+        try {
+            body = JSON.parse(raw);
+        } catch {
+            return new Response('Invalid payload', { status: 400 });
+        }
         const { data } = body;
 
         if (!data?.resource?.id) {
