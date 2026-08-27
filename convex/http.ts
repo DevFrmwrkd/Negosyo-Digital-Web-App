@@ -105,6 +105,22 @@ http.route({
 });
 
 // POST /wise-webhook
+//
+// ⚠️ UNAUTHENTICATED. This endpoint verifies nothing: no Wise signature, no
+// shared secret. Anyone who knows the deployment URL — which ships to every
+// browser as NEXT_PUBLIC_CONVEX_URL — can post a state change for any transfer
+// id and drive a withdrawal into a terminal state.
+//
+// docs/wise/WISE-PAYMENT-FLOW-MOBILE.md claims "Signature verified (RSA-SHA256
+// + WISE_WEBHOOK_PUBLIC_KEY)". That was never implemented, and the env var it
+// names currently holds the Convex deployment URL rather than a public key, so
+// turning verification on is blocked until Wise's real webhook public key is
+// installed.
+//
+// The immediate damage is contained by settlementBlockReason() in
+// convex/lib/settlement.ts: a forged event can still settle a withdrawal once,
+// but it can no longer be replayed to credit a balance repeatedly. That is a
+// mitigation, not a fix — this endpoint still needs signature verification.
 // Receives transfer state changes from Wise API
 http.route({
     path: '/wise-webhook',
