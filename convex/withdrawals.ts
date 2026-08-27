@@ -1,6 +1,22 @@
 import { v } from 'convex/values';
 import { query, mutation, action, internalMutation, internalAction, internalQuery } from './_generated/server';
 import { api, internal } from './_generated/api';
+import { settlementBlockReason } from './lib/settlement';
+
+/**
+ * Resolve an adminId to a real admin row. The withdrawal mutations below take
+ * adminId as a plain argument and, before this, used it only as an audit-log
+ * label — so `updateStatus` and `adminRetry` were public mutations that moved
+ * money for any caller who supplied any string. Mirrors admin.markComped.
+ */
+async function assertAdmin(ctx: any, adminId: string) {
+    const actor = await ctx.db
+        .query('creators')
+        .withIndex('by_clerk_id', (q: any) => q.eq('clerkId', adminId))
+        .first();
+    if (!actor || actor.role !== 'admin') throw new Error('Forbidden: admin access required');
+    return actor;
+}
 
 // ==================== MUTATIONS ====================
 
@@ -159,6 +175,14 @@ export const markFailed = internalMutation({
         const withdrawal = await ctx.db.get(args.withdrawalId);
         if (!withdrawal) return;
 
+        const blocked = settlementBlockReason(withdrawal.status, 'failed');
+        if (blocked) {
+            // Internal caller: warn and no-op rather than throw. This runs from
+            // processWiseTransfer's error path, which must not retry-loop.
+            console.warn(`[WITHDRAWAL] markFailed ${args.withdrawalId}: ${blocked}`);
+            return;
+        }
+
         // Restore balance
         const creator = await ctx.db.get(withdrawal.creatorId);
         if (creator) {
@@ -275,8 +299,13 @@ export const adminRetry = mutation({
         notes: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        await assertAdmin(ctx, args.adminId);
+
         const withdrawal = await ctx.db.get(args.id);
         if (!withdrawal) throw new Error('Withdrawal not found');
+
+        const blocked = settlementBlockReason(withdrawal.status, args.status);
+        if (blocked) throw new Error(blocked);
 
         const updates: any = { status: args.status };
         if (args.notes) updates.adminNotes = args.notes;
@@ -328,8 +357,13 @@ export const updateStatus = mutation({
         failureReason: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
+        await assertAdmin(ctx, args.adminId);
+
         const withdrawal = await ctx.db.get(args.id);
         if (!withdrawal) throw new Error('Withdrawal not found');
+
+        const blocked = settlementBlockReason(withdrawal.status, args.status);
+        if (blocked) throw new Error(blocked);
 
         const updates: Record<string, unknown> = { status: args.status };
         if (args.transactionRef !== undefined) updates.transactionRef = args.transactionRef;
@@ -497,6 +531,14 @@ export const updateByTransactionRef = internalMutation({
             return;
         }
 
+        const blocked = settlementBlockReason(withdrawal.status, args.status);
+        if (blocked) {
+            // Webhook path: 200-and-ignore. Wise retries on error, and a retry
+            // that credited again is the exact failure this guards.
+            console.warn(`[WITHDRAWAL] updateByTransactionRef ${withdrawal._id}: ${blocked}`);
+            return;
+        }
+
         const updates: Record<string, unknown> = { status: args.status };
 
         if (args.status === 'completed') {
@@ -559,6 +601,12 @@ export const updateByWiseTransferId = internalMutation({
         const withdrawal = withdrawals[0];
         if (!withdrawal) {
             console.error(`No withdrawal found for Wise transfer ID: ${args.wiseTransferId}`);
+            return;
+        }
+
+        const blocked = settlementBlockReason(withdrawal.status, args.status);
+        if (blocked) {
+            console.warn(`[WITHDRAWAL] updateByWiseTransferId ${withdrawal._id}: ${blocked}`);
             return;
         }
 
