@@ -114,3 +114,30 @@ export function matchesAudience(row: AudienceRow, key: AudienceKey): boolean {
 export function selectAudience<T extends AudienceRow>(rows: T[], key: AudienceKey): T[] {
     return rows.filter((r) => matchesAudience(r, key));
 }
+
+/**
+ * The single decision behind both the recipient count and the send.
+ *
+ * `creatorIds` names people explicitly and overrides the audience entirely —
+ * but it does NOT override isSendable. Hand-picking a deleted account or one
+ * without an email still resolves to nobody, because those two exclusions are
+ * about whether mail can arrive, not about who was chosen.
+ *
+ * PRESENCE of the array, not its length, selects the mode. An empty array means
+ * "these specific people, of whom there are none" and sends to nobody — it must
+ * never fall through to the audience, or clearing the picker would silently
+ * turn one email into a broadcast.
+ *
+ * Order follows the creator list rather than click order, and ids are matched
+ * as a set, so a duplicated id cannot mail the same person twice.
+ */
+export function selectTargets<T extends AudienceRow & { _id?: unknown }>(
+    rows: T[],
+    opts: { audience: AudienceKey; creatorIds?: readonly string[] | null }
+): T[] {
+    if (opts.creatorIds) {
+        const wanted = new Set(opts.creatorIds.map(String));
+        return rows.filter((r) => wanted.has(String(r._id)) && isSendable(r));
+    }
+    return selectAudience(rows, opts.audience);
+}

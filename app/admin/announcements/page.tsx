@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useUser } from "@clerk/nextjs"
 import { useQuery, useAction } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import { Megaphone, Send, Loader2, CheckCircle, AlertCircle, Users } from "lucide-react"
+import { Megaphone, Send, Loader2, CheckCircle, AlertCircle, Users, X } from "lucide-react"
 import AdminLayout from "../components/AdminLayout"
 import { AUDIENCES, type AudienceKey } from "@/lib/announcements/audience"
 
@@ -28,18 +28,38 @@ export default function AnnouncementsPage() {
     const [title, setTitle] = useState("")
     const [body, setBody] = useState("")
     const [audience, setAudience] = useState<AudienceKey>("certified")
+    // Targeting one creator is a separate mode rather than a fifth AudienceKey:
+    // it is not a rule over the creator list, it is a bypass of one.
+    const [pickMode, setPickMode] = useState(false)
+    const [picked, setPicked] = useState<Array<{ _id: string; name: string; email: string }>>([])
+    const [q, setQ] = useState("")
     const [armed, setArmed] = useState(false)
     const [busy, setBusy] = useState<null | "test" | "send">(null)
     const [result, setResult] = useState<{ kind: "ok" | "err"; text: string } | null>(null)
 
+    // Presence of the array selects picked-mode, so an empty selection sends to
+    // nobody rather than falling back to the audience.
+    const targetIds = pickMode ? picked.map((x) => x._id) : undefined
+
     const preview = useQuery(
         api.announcements.previewAudience,
-        adminId ? { adminId, audience } : "skip"
+        adminId ? { adminId, audience, ...(targetIds ? { creatorIds: targetIds as any } : {}) } : "skip"
     )
+    const matches = useQuery(
+        api.announcements.searchRecipients,
+        adminId && pickMode && q.trim().length >= 2 ? { adminId, q } : "skip"
+    )
+    const pickedIds = new Set(picked.map((x) => x._id))
+
+    function togglePick(m: { _id: string; name: string; email: string }) {
+        setArmed(false)
+        setResult(null)
+        setPicked((cur) => (cur.some((x) => x._id === m._id) ? cur.filter((x) => x._id !== m._id) : [...cur, m]))
+    }
     const past = useQuery(api.announcements.list, adminId ? { adminId } : "skip")
     const send = useAction(api.announcements.send)
 
-    const ready = title.trim().length > 0 && body.trim().length > 0
+    const ready = title.trim().length > 0 && body.trim().length > 0 && (!pickMode || picked.length > 0)
     const count = preview?.count ?? 0
 
     // Any edit disarms the confirm: the count on the armed button must never
@@ -57,7 +77,10 @@ export default function AnnouncementsPage() {
         setBusy(testOnly ? "test" : "send")
         setResult(null)
         try {
-            const r = await send({ adminId, title, body, audience, testOnly })
+            const r = await send({
+                adminId, title, body, audience, testOnly,
+                ...(targetIds ? { creatorIds: targetIds as any } : {}),
+            })
             if (testOnly) {
                 setResult({ kind: "ok", text: "Test sent to your own inbox. Nobody else received it." })
             } else {
@@ -134,7 +157,7 @@ export default function AnnouncementsPage() {
                             <label
                                 key={a.key}
                                 className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition-colors ${
-                                    audience === a.key
+                                    !pickMode && audience === a.key
                                         ? "border-amber-400 bg-amber-50"
                                         : "border-gray-200 hover:border-gray-300"
                                 }`}
@@ -143,8 +166,8 @@ export default function AnnouncementsPage() {
                                     type="radio"
                                     name="audience"
                                     className="mt-1"
-                                    checked={audience === a.key}
-                                    onChange={() => edit(setAudience)(a.key)}
+                                    checked={!pickMode && audience === a.key}
+                                    onChange={() => { setPickMode(false); setPicked([]); edit(setAudience)(a.key) }}
                                 />
                                 <span>
                                     <span className="block text-sm font-semibold text-gray-900">{a.label}</span>
@@ -152,7 +175,90 @@ export default function AnnouncementsPage() {
                                 </span>
                             </label>
                         ))}
+
+                        <label
+                            className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition-colors ${
+                                pickMode ? "border-amber-400 bg-amber-50" : "border-gray-200 hover:border-gray-300"
+                            }`}
+                        >
+                            <input
+                                type="radio"
+                                name="audience"
+                                className="mt-1"
+                                checked={pickMode}
+                                onChange={() => { setArmed(false); setResult(null); setPickMode(true) }}
+                            />
+                            <span>
+                                <span className="block text-sm font-semibold text-gray-900">Pick people</span>
+                                <span className="block text-xs leading-relaxed text-gray-500">
+                                    Choose one creator or several, by name or email. Same message, only these recipients.
+                                </span>
+                            </span>
+                        </label>
                     </div>
+
+                    {pickMode && (
+                        <div className="mt-3 rounded-xl border border-gray-200 p-3.5">
+                            {picked.length > 0 && (
+                                <div className="mb-3 flex flex-wrap gap-2">
+                                    {picked.map((pp) => (
+                                        <span
+                                            key={pp._id}
+                                            className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 py-1 pl-3 pr-1.5 text-xs font-semibold text-amber-900"
+                                        >
+                                            {pp.name}
+                                            <button
+                                                type="button"
+                                                aria-label={`Remove ${pp.name}`}
+                                                onClick={() => togglePick(pp)}
+                                                className="rounded-full p-0.5 text-amber-700 transition-colors hover:bg-amber-200 hover:text-amber-900"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            <input
+                                value={q}
+                                onChange={(e) => setQ(e.target.value)}
+                                placeholder={picked.length ? "Add another person" : "Search by name or email"}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-amber-400"
+                            />
+
+                            {q.trim().length >= 2 && (
+                                <div className="mt-2 space-y-1">
+                                    {matches === undefined ? (
+                                        <p className="px-1 py-1.5 text-xs text-gray-500">Searching</p>
+                                    ) : matches.length === 0 ? (
+                                        <p className="px-1 py-1.5 text-xs text-gray-500">Nobody matches that.</p>
+                                    ) : (
+                                        matches.map((m: any) => (
+                                            <button
+                                                key={m._id}
+                                                type="button"
+                                                onClick={() => togglePick(m)}
+                                                className="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-amber-50"
+                                            >
+                                                <span className="min-w-0">
+                                                    <span className="block truncate text-sm font-medium text-gray-900">{m.name}</span>
+                                                    <span className="block truncate text-xs text-gray-500">{m.email}</span>
+                                                </span>
+                                                {pickedIds.has(m._id) && (
+                                                    <CheckCircle className="h-4 w-4 shrink-0 text-amber-600" />
+                                                )}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+
+                            {picked.length === 0 && (
+                                <p className="mt-2 text-xs text-gray-500">Nobody picked yet — nothing will send.</p>
+                            )}
+                        </div>
+                    )}
 
                     <div className="mt-4 rounded-xl bg-gray-50 p-4">
                         {preview === undefined ? (
