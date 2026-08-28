@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation, action, internalMutation, internalAction, internalQuery } from './_generated/server';
 import { api, internal } from './_generated/api';
 import { settlementBlockReason } from './lib/settlement';
+import { greetingName } from '../lib/email/greeting';
 
 /**
  * Resolve an adminId to a real admin row. The withdrawal mutations below take
@@ -127,7 +128,7 @@ export const create = mutation({
             if (creator.email && wiseEmail) {
                 await ctx.scheduler.runAfter(0, internal.withdrawals.sendRequestedEmailAction, {
                     creatorEmail: creator.email,
-                    creatorName: `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Creator',
+                    creatorName: greetingName(creator),
                     amount: args.amount,
                     wiseEmail,
                     reference,
@@ -832,7 +833,7 @@ export const checkProcessingStatusCron = internalAction({
                     await ctx.scheduler.runAfter(0, internal.withdrawals.sendStatusEmailAction, {
                         withdrawalId: w._id,
                         creatorEmail: creator.email,
-                        creatorName: `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Creator',
+                        creatorName: greetingName(creator),
                         amount: w.amount,
                         statusLabel: description.label,
                         statusDescription: description.description,
