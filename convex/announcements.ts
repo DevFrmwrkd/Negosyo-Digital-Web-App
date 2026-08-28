@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, action, internalMutation, internalAction, internalQuery } from './_generated/server';
 import { api, internal } from './_generated/api';
 import { selectTargets, isSendable, type AudienceKey, type AudienceRow } from '../lib/announcements/audience';
+import { notificationPreview } from '../lib/notifications/preview';
 import { greetingName } from '../lib/email/greeting';
 
 /**
@@ -148,6 +149,11 @@ export const recordResult = internalMutation({
  * that helper also schedules a push per creator — 140 scheduled pushes for an
  * announcement most creators have no token for. Push stays best-effort and out
  * of the critical path here.
+ *
+ * The row stores a PREVIEW, not the message. Mobile renders notifications.body
+ * as a clipped list row with no detail view, so writing the full announcement
+ * there produced a sentence cut mid-word and no way to read the rest. The full
+ * text goes by email; this row says what arrived and where to find it.
  */
 export const insertNotifications = internalMutation({
     args: {
@@ -162,7 +168,7 @@ export const insertNotifications = internalMutation({
                 creatorId,
                 type: 'system',
                 title: args.title,
-                body: args.body,
+                body: notificationPreview(args.body),
                 data: { announcementId: args.announcementId },
                 read: false,
                 sentAt: Date.now(),
