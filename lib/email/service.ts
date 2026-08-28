@@ -36,6 +36,7 @@ import {
     getDomainSetupInProgressEmailHtml,
     getDomainRenewalReminderEmailHtml,
     getWithdrawalStatusEmailHtml,
+    getWithdrawalRequestedEmailHtml,
     getIntakeReceivedEmailHtml,
 } from './templates';
 
@@ -425,6 +426,35 @@ interface WithdrawalStatusEmailData {
     submittedAt: number;
 }
 
+interface WithdrawalRequestedEmailData {
+    creatorName: string;
+    creatorEmail: string;
+    amount: number;
+    wiseEmail: string; // where Wise will send the invitation
+    reference?: string;
+    requestedAt: number;
+    wiseSenderName?: string; // our registered Wise payer name, e.g. "VONAS, OPC"
+}
+
+/**
+ * The first thing a creator hears about their own payout. Sent from
+ * withdrawals.create, which previously dispatched nothing at all — no email,
+ * no push, no in-app row.
+ */
+export async function sendWithdrawalRequestedEmail(data: WithdrawalRequestedEmailData) {
+    try {
+        const html = getWithdrawalRequestedEmailHtml(data);
+        return await sendEmail({
+            to: data.creatorEmail,
+            subject: `Your ₱${data.amount.toLocaleString()} withdrawal — what happens next`,
+            html,
+        });
+    } catch (error: any) {
+        console.error('Error in sendWithdrawalRequestedEmail:', error);
+        throw error;
+    }
+}
+
 export async function sendWithdrawalStatusEmail(data: WithdrawalStatusEmailData) {
     try {
         const html = getWithdrawalStatusEmailHtml(data);
@@ -455,5 +485,6 @@ export {
     getDomainSetupInProgressEmailHtml,
     getDomainRenewalReminderEmailHtml,
     getWithdrawalStatusEmailHtml,
+    getWithdrawalRequestedEmailHtml,
     getIntakeReceivedEmailHtml,
 };

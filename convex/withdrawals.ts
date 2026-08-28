@@ -117,6 +117,23 @@ export const create = mutation({
             await ctx.scheduler.runAfter(0, internal.withdrawals.processWiseTransfer, {
                 withdrawalId,
             });
+
+            // First contact. Until now create() dispatched nothing at all — no
+            // email, no push, no in-app row — so the first thing a creator heard
+            // about their own payout was Wise's invitation, sent under our
+            // registered company name rather than "Tendso". One creator read
+            // that as spam, never claimed it, and the transfer auto-refunded
+            // after seven days.
+            if (creator.email && wiseEmail) {
+                await ctx.scheduler.runAfter(0, internal.withdrawals.sendRequestedEmailAction, {
+                    creatorEmail: creator.email,
+                    creatorName: `${creator.firstName || ''} ${creator.lastName || ''}`.trim() || 'Creator',
+                    amount: args.amount,
+                    wiseEmail,
+                    reference,
+                    requestedAt: Date.now(),
+                });
+            }
         }
 
         return {
@@ -827,6 +844,52 @@ export const checkProcessingStatusCron = internalAction({
             } catch (error) {
                 console.error(`[WITHDRAWAL-FOLLOWUP] Error checking withdrawal ${w._id}:`, error)
             }
+        }
+    },
+})
+
+/**
+ * Internal action: tell the creator we received their withdrawal, before Wise
+ * emails them from a company name they will not recognise.
+ *
+ * Every failure is logged and swallowed. The balance is already deducted and
+ * the Wise transfer already scheduled by the time this runs, so a bounced
+ * notification must never be able to fail the withdrawal itself.
+ */
+export const sendRequestedEmailAction = internalAction({
+    args: {
+        creatorEmail: v.string(),
+        creatorName: v.string(),
+        amount: v.number(),
+        wiseEmail: v.string(),
+        reference: v.optional(v.string()),
+        requestedAt: v.number(),
+    },
+    handler: async (ctx, args) => {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.SITE_URL || 'https://www.tendso.com'
+        const internalSecret = process.env.INTERNAL_API_SECRET || ''
+
+        try {
+            const response = await fetch(`${baseUrl}/api/internal/send-withdrawal-requested-email`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Internal-Secret': internalSecret,
+                },
+                body: JSON.stringify({
+                    ...args,
+                    // Our registered Wise payer name, e.g. "VONAS, OPC". Left
+                    // undefined when unset rather than guessed: naming the wrong
+                    // company teaches creators to distrust the real email.
+                    wiseSenderName: process.env.WISE_SENDER_NAME || undefined,
+                }),
+            })
+            if (!response.ok) {
+                const text = await response.text()
+                console.error(`[WITHDRAWAL-REQUESTED] Email send failed: ${response.status} ${text}`)
+            }
+        } catch (error) {
+            console.error('[WITHDRAWAL-REQUESTED] Error sending email:', error)
         }
     },
 })
