@@ -20,7 +20,8 @@ import {
     LogOut,
     Menu,
     X,
-    ChevronRight
+    ChevronRight,
+    Megaphone
 } from "lucide-react"
 
 const navItems = [
@@ -43,6 +44,11 @@ const navItems = [
         label: "Payouts",
         href: "/admin/payouts",
         icon: CreditCard,
+    },
+    {
+        label: "Announcements",
+        href: "/admin/announcements",
+        icon: Megaphone,
     },
     {
         label: "Audit Logs",

@@ -37,6 +37,7 @@ import {
     getDomainRenewalReminderEmailHtml,
     getWithdrawalStatusEmailHtml,
     getWithdrawalRequestedEmailHtml,
+    getAnnouncementEmailHtml,
     getIntakeReceivedEmailHtml,
 } from './templates';
 
@@ -455,6 +456,25 @@ export async function sendWithdrawalRequestedEmail(data: WithdrawalRequestedEmai
     }
 }
 
+/**
+ * One recipient of an admin broadcast. Called once per creator, staggered by
+ * convex/announcements.ts so Resend does not rate-limit a large send.
+ */
+export async function sendAnnouncementEmail(data: {
+    to: string;
+    name: string;
+    title: string;
+    body: string;
+}) {
+    try {
+        const html = getAnnouncementEmailHtml({ name: data.name, title: data.title, body: data.body });
+        return await sendEmail({ to: data.to, subject: data.title, html });
+    } catch (error: any) {
+        console.error('Error in sendAnnouncementEmail:', error);
+        throw error;
+    }
+}
+
 export async function sendWithdrawalStatusEmail(data: WithdrawalStatusEmailData) {
     try {
         const html = getWithdrawalStatusEmailHtml(data);
@@ -486,5 +506,6 @@ export {
     getDomainRenewalReminderEmailHtml,
     getWithdrawalStatusEmailHtml,
     getWithdrawalRequestedEmailHtml,
+    getAnnouncementEmailHtml,
     getIntakeReceivedEmailHtml,
 };

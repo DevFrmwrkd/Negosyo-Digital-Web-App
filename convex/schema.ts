@@ -651,6 +651,24 @@ export default defineSchema({
         .index('by_creator', ['creatorId'])
         .index('by_creator_unread', ['creatorId', 'read']),
 
+    // ==================== ANNOUNCEMENTS ====================
+    // One row per broadcast an admin sends. Exists for the audit trail — a
+    // broadcast cannot be recalled, so "what went out, to whom, and who sent
+    // it" has to survive the request that sent it.
+    announcements: defineTable({
+        title: v.string(),
+        body: v.string(),
+        audience: v.string(),            // AudienceKey from lib/announcements/audience.ts
+        recipientCount: v.number(),      // resolved at send time, not re-derived later
+        status: v.string(),              // 'sending' | 'sent' | 'failed'
+        sentBy: v.string(),              // admin clerkId
+        createdAt: v.number(),
+        completedAt: v.optional(v.number()),
+        emailsSent: v.optional(v.number()),
+        emailsFailed: v.optional(v.number()),
+    })
+        .index('by_createdAt', ['createdAt']),
+
     // ==================== PUSH TOKENS ====================
     pushTokens: defineTable({
         creatorId: v.id('creators'),
