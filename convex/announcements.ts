@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, action, internalMutation, internalAction, internalQuery } from './_generated/server';
 import { api, internal } from './_generated/api';
 import { matchesAudience, type AudienceKey, type AudienceRow } from '../lib/announcements/audience';
+import { greetingName } from '../lib/email/greeting';
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
@@ -143,7 +144,7 @@ export const resolveRecipients = internalQuery({
             .map((c) => ({
                 _id: c._id,
                 email: c.email,
-                name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'there',
+                name: greetingName(c),
             }));
     },
 });
@@ -220,7 +221,7 @@ export const send = action({
             if (!actor.email) throw new Error('Your admin account has no email address to test with.');
             await ctx.runAction(internal.announcements.sendOneEmail, {
                 to: actor.email,
-                name: `${actor.firstName || ''} ${actor.lastName || ''}`.trim() || 'there',
+                name: greetingName(actor),
                 title,
                 body,
             });
