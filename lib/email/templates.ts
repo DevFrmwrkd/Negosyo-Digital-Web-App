@@ -1545,3 +1545,142 @@ export function getIntakeReceivedEmailHtml(params: {
 </html>
     `
 }
+
+/**
+ * Sent the moment a creator requests a withdrawal.
+ *
+ * Before this, `withdrawals.create` dispatched nothing at all — no email, no
+ * push, no in-app row. The first message a creator ever received about their
+ * own payout came from Wise, under our registered company name rather than
+ * "Tendso", telling them to enter bank details. One creator read that as spam,
+ * never claimed it, and the transfer auto-refunded after seven days while the
+ * admin page showed a healthy-looking "processing" the whole time.
+ *
+ * So this pre-empts all four of those failures at the one moment the creator is
+ * definitely paying attention: who the Wise email comes from, that a Wise
+ * account is required, that the address must match, and that the claim window
+ * is finite.
+ *
+ * `wiseSenderName` is optional and omitted rather than guessed. Naming the
+ * wrong company is worse than naming none — it trains creators to distrust the
+ * real email.
+ */
+export function getWithdrawalRequestedEmailHtml(params: {
+    creatorName: string
+    amount: number
+    wiseEmail: string
+    reference?: string
+    requestedAt: number
+    wiseSenderName?: string
+}): string {
+    const { amount, requestedAt } = params
+    const creatorName = escapeHtml(params.creatorName)
+    const wiseEmail = escapeHtml(params.wiseEmail)
+    const reference = escapeHtml(params.reference)
+    const wiseSenderName = escapeHtml(params.wiseSenderName)
+    const requestedDate = new Date(requestedAt).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    })
+    const senderLine = wiseSenderName
+        ? `It will show the sender as <strong style="color:#f5f5f5;">${wiseSenderName}</strong> — that is our registered company name, so it really is from us.`
+        : `It comes from <strong style="color:#f5f5f5;">noreply@wise.com</strong>, so check your spam folder if you do not see it.`
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Withdrawal Requested</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #f5f5f5;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #0a0a0a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background: #1a1a1a; border-radius: 16px; overflow: hidden; max-width: 600px;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #E4B05E 0%, #E4B05Ecc 100%); padding: 48px 40px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800;">Withdrawal requested</h1>
+                            <p style="margin: 12px 0 0; color: rgba(255, 255, 255, 0.92); font-size: 18px; font-weight: 600;">&#8369;${amount.toLocaleString()}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; color: #f5f5f5; font-size: 16px; line-height: 1.6;">Hi ${creatorName},</p>
+                            <p style="margin: 0 0 28px; color: #d4d4d4; font-size: 16px; line-height: 1.6;">
+                                We have your request to withdraw <strong style="color:#f5f5f5;">&#8369;${amount.toLocaleString()}</strong>. Here is exactly what happens next, so nothing catches you by surprise.
+                            </p>
+
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 28px;">
+                                <tr>
+                                    <td style="padding: 0 0 18px;">
+                                        <p style="margin: 0 0 4px; color: #E4B05E; font-size: 13px; font-weight: 700; letter-spacing: 0.4px;">STEP 1</p>
+                                        <p style="margin: 0; color: #d4d4d4; font-size: 15px; line-height: 1.6;">We send your money to your Wise account at <strong style="color:#f5f5f5;">${wiseEmail}</strong>.</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 0 18px;">
+                                        <p style="margin: 0 0 4px; color: #E4B05E; font-size: 13px; font-weight: 700; letter-spacing: 0.4px;">STEP 2</p>
+                                        <p style="margin: 0; color: #d4d4d4; font-size: 15px; line-height: 1.6;">Wise emails you directly. ${senderLine}</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0 0 18px;">
+                                        <p style="margin: 0 0 4px; color: #E4B05E; font-size: 13px; font-weight: 700; letter-spacing: 0.4px;">STEP 3</p>
+                                        <p style="margin: 0; color: #d4d4d4; font-size: 15px; line-height: 1.6;"><strong style="color:#f5f5f5;">If you already have a verified Wise account on that email</strong>, the money lands in your Wise balance, usually within minutes. Nothing for you to do.</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <p style="margin: 0 0 4px; color: #E4B05E; font-size: 13px; font-weight: 700; letter-spacing: 0.4px;">STEP 4</p>
+                                        <p style="margin: 0; color: #d4d4d4; font-size: 15px; line-height: 1.6;"><strong style="color:#f5f5f5;">If you do not have a Wise account yet</strong>, that email has a link to claim your money. Wise is free, but you will need to sign up and verify your ID first.</p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin: 0 0 28px;">
+                                <tr>
+                                    <td style="background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 20px 24px;">
+                                        <h2 style="margin: 0 0 8px; color: #78350f; font-size: 16px; font-weight: 800;">You have 7 days to claim it</h2>
+                                        <p style="margin: 0 0 10px; color: #78350f; font-size: 14px; line-height: 1.6;">
+                                            If the payment is not claimed within 7 days, Wise cancels it and the money comes straight back to your Tendso balance. Nothing is lost, but you would have to withdraw again and wait all over.
+                                        </p>
+                                        <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">
+                                            Your Wise account must use <strong>${wiseEmail}</strong>. A different address means the payment cannot reach you.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #111111; border: 1px solid #262626; border-radius: 12px; margin: 0 0 28px;">
+                                <tr>
+                                    <td style="padding: 16px 20px; ${reference ? 'border-bottom: 1px solid #262626;' : ''}">
+                                        <p style="margin: 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Requested</p>
+                                        <p style="margin: 4px 0 0; color: #f5f5f5; font-size: 14px;">${requestedDate}</p>
+                                    </td>
+                                </tr>
+                                ${reference ? `
+                                <tr>
+                                    <td style="padding: 16px 20px;">
+                                        <p style="margin: 0; color: #737373; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Reference</p>
+                                        <p style="margin: 4px 0 0; color: #f5f5f5; font-size: 13px; font-family: monospace;">${reference}</p>
+                                    </td>
+                                </tr>` : ''}
+                            </table>
+
+                            <p style="margin: 0; color: #a3a3a3; font-size: 14px; line-height: 1.6;">
+                                We will email you again as soon as the status changes. Something not right? Just reply to this email.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #0a0a0a; padding: 24px 40px; text-align: center; border-top: 1px solid #262626;">
+                            <p style="margin: 0; color: #737373; font-size: 12px;">&copy; ${new Date().getFullYear()} Tendso. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
+}
