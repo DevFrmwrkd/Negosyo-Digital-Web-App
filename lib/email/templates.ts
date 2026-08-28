@@ -1684,3 +1684,70 @@ export function getWithdrawalRequestedEmailHtml(params: {
 </body>
 </html>`
 }
+
+/**
+ * An admin broadcast, as the creator receives it.
+ *
+ * `title` and `body` are free text typed by an admin and land in an HTML email,
+ * so both are escaped before any interpolation. Paragraph breaks are then
+ * rebuilt from the escaped text — an admin writing a blank line between
+ * thoughts should not have them collapse into a wall.
+ */
+export function getAnnouncementEmailHtml(params: {
+    name: string
+    title: string
+    body: string
+}): string {
+    const name = escapeHtml(params.name)
+    const title = escapeHtml(params.title)
+    // Escape FIRST, then rebuild paragraphs — the reverse would let typed
+    // markup survive into the output.
+    const paragraphs = escapeHtml(params.body)
+        .split(/\n\s*\n/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map(
+            (p) =>
+                `<p style="margin: 0 0 16px; color: #d4d4d4; font-size: 16px; line-height: 1.7;">${p.replace(/\n/g, '<br>')}</p>`
+        )
+        .join('')
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #f5f5f5;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background: #0a0a0a;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="background: #1a1a1a; border-radius: 16px; overflow: hidden; max-width: 600px;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #E4B05E 0%, #E4B05Ecc 100%); padding: 44px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px; color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 700; letter-spacing: 1.2px;">TENDSO</p>
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; line-height: 1.25;">${title}</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="margin: 0 0 20px; color: #f5f5f5; font-size: 16px; line-height: 1.6;">Hi ${name},</p>
+                            ${paragraphs}
+                            <p style="margin: 24px 0 0; color: #a3a3a3; font-size: 14px; line-height: 1.6;">
+                                Questions? Just reply to this email.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background: #0a0a0a; padding: 24px 40px; text-align: center; border-top: 1px solid #262626;">
+                            <p style="margin: 0; color: #737373; font-size: 12px;">&copy; ${new Date().getFullYear()} Tendso. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`
+}
