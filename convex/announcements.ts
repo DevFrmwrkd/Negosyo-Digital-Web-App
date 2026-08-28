@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { query, action, internalMutation, internalAction, internalQuery } from './_generated/server';
 import { api, internal } from './_generated/api';
-import { matchesAudience, type AudienceKey, type AudienceRow } from '../lib/announcements/audience';
+import { selectTargets, isSendable, type AudienceKey, type AudienceRow } from '../lib/announcements/audience';
 import { greetingName } from '../lib/email/greeting';
 
 /**
@@ -41,12 +41,21 @@ async function assertAdmin(ctx: any, adminId: string) {
  * audience change so the number on the button is the number that gets mailed.
  */
 export const previewAudience = query({
-    args: { adminId: v.string(), audience: v.string() },
+    args: {
+        adminId: v.string(),
+        audience: v.string(),
+        // Present = send to exactly these people. Overrides audience, but never
+        // the deleted / no-email exclusions inside selectTargets.
+        creatorIds: v.optional(v.array(v.id('creators'))),
+    },
     handler: async (ctx, args) => {
         await assertAdmin(ctx, args.adminId);
 
         const all = await ctx.db.query('creators').collect();
-        const selected = all.filter((c) => matchesAudience(c as AudienceRow, args.audience as AudienceKey));
+        const selected = selectTargets(all as unknown as (AudienceRow & { _id?: unknown })[], {
+            audience: args.audience as AudienceKey,
+            creatorIds: args.creatorIds,
+        }) as any[];
 
         return {
             count: selected.length,
@@ -57,6 +66,34 @@ export const previewAudience = query({
                 email: c.email,
             })),
         };
+    },
+});
+
+/**
+ * Find one creator to send to, by name or email.
+ *
+ * Admin-gated and deliberately narrow: it returns only what the picker needs to
+ * show and select a person, never the whole creator row. Only sendable accounts
+ * appear, so an admin cannot pick someone the send would then silently drop.
+ */
+export const searchRecipients = query({
+    args: { adminId: v.string(), q: v.string() },
+    handler: async (ctx, args) => {
+        await assertAdmin(ctx, args.adminId);
+
+        const needle = args.q.trim().toLowerCase();
+        if (needle.length < 2) return [];
+
+        const all = await ctx.db.query('creators').collect();
+        return all
+            .filter((c) => isSendable(c as AudienceRow))
+            .map((c) => ({
+                _id: c._id,
+                name: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email,
+                email: c.email,
+            }))
+            .filter((c) => c.name.toLowerCase().includes(needle) || c.email.toLowerCase().includes(needle))
+            .slice(0, 8);
     },
 });
 
@@ -136,11 +173,13 @@ export const insertNotifications = internalMutation({
 });
 
 export const resolveRecipients = internalQuery({
-    args: { audience: v.string() },
+    args: { audience: v.string(), creatorIds: v.optional(v.array(v.id('creators'))) },
     handler: async (ctx, args) => {
         const all = await ctx.db.query('creators').collect();
-        return all
-            .filter((c) => matchesAudience(c as AudienceRow, args.audience as AudienceKey))
+        return (selectTargets(all as unknown as (AudienceRow & { _id?: unknown })[], {
+            audience: args.audience as AudienceKey,
+            creatorIds: args.creatorIds,
+        }) as any[])
             .map((c) => ({
                 _id: c._id,
                 email: c.email,
@@ -200,6 +239,7 @@ export const send = action({
         title: v.string(),
         body: v.string(),
         audience: v.string(),
+        creatorIds: v.optional(v.array(v.id('creators'))),
         testOnly: v.optional(v.boolean()),
     },
     handler: async (ctx, args): Promise<{
@@ -229,16 +269,25 @@ export const send = action({
         }
 
         const recipients: Array<{ _id: any; email: string; name: string }> =
-            await ctx.runQuery(internal.announcements.resolveRecipients, { audience: args.audience });
+            await ctx.runQuery(internal.announcements.resolveRecipients, {
+                audience: args.audience,
+                creatorIds: args.creatorIds,
+            });
 
         if (recipients.length === 0) {
-            throw new Error('That audience matches nobody — nothing was sent.');
+            throw new Error(
+                args.creatorIds
+                    ? 'None of the people you picked can be emailed — those accounts are deleted or have no email address.'
+                    : 'That audience matches nobody — nothing was sent.'
+            );
         }
 
         const announcementId = await ctx.runMutation(internal.announcements.createRecord, {
             title,
             body,
-            audience: args.audience,
+            // Recorded as what it was, so the history row does not claim a
+            // broadcast went to an audience when it went to named people.
+            audience: args.creatorIds ? `${recipients.length} picked` : args.audience,
             recipientCount: recipients.length,
             sentBy: args.adminId,
         });
