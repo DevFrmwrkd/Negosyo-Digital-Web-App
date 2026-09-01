@@ -107,7 +107,9 @@ export default function ForCreatorsPage() {
                         action; every creator CTA on this page scrolls here (app-first). */}
                     <AppDownloadSection id="app" />
                     <CreatorEarnings />
-                    <ProcessSection />
+                    {/* Creator-side copy: the visit is theirs, the build is ours.
+                        `/` renders the same shell with the owner-facing default. */}
+                    <ProcessSection variant="creator" />
                     <FaqSection defaultTab="creators" />
                     <CtaSection focus="creator" />
                 </main>
