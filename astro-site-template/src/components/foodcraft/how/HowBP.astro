@@ -1,0 +1,220 @@
+---
+/**
+ * foodcraft / HowBP — "Tahanan Cafe · Split"'s ordering steps.
+ *
+ * ROLE. Copy left, photograph right. From the element carrying
+ * data-component="HOW-IT-WORKS" in "Tahanan Cafe Landing v4.dc.html": an
+ * eyebrow, a headline with an italic walnut close, three steps each drawn as a
+ * 32px outlined DISC beside its title and body, and one filled action under
+ * them. The picture column is min-height 520 on the cream ground.
+ *
+ * THE DISC is the only circle on a page whose every other corner is 2px, and
+ * the only other thing besides the outlined button that uses --line-2. Its
+ * numeral is DM Serif Display at 15px in walnut, centred, and it is
+ * aria-hidden: a screen reader hears the step title, not "one two three" ahead
+ * of every one of them. The list is an <ol>, so the ordering is announced
+ * properly instead.
+ *
+ * ROWS ALIGN TO START, NOT BASELINE. This is the one ledger on the page that
+ * does not baseline-align, because a 32px disc beside a 20px title has no
+ * shared baseline worth sitting on — the design sets align-items:start and so
+ * does this.
+ *
+ * EDITABLE HOOKS:
+ *   how.tag              — the eyebrow
+ *   how.headline         — set:html, so an owner em takes the italic
+ *   how.steps.${i}.title — a step's title
+ *   how.steps.${i}.body  — its body
+ *   how.image            — data-image-field, the right photograph
+ *   hero.cta1.text + data-href-field hero.cta1.href — the action under the
+ *                          steps, which is the SAME action as the hero's
+ *                          primary. The design repeats it verbatim, and giving
+ *                          it a second editable copy would let one drift from
+ *                          the other with no way for an owner to tell which
+ *                          they were editing.
+ *
+ * how.image IS NOT IN genericContentSchema.ts, so it has no sidebar picker;
+ * it is reachable by clicking the photograph on the page, which is how
+ * layouts:AZ and shirtstore:Z have bound the same path since they shipped. The
+ * regen pipeline already forwards `how` in its wrapped form, so the choice
+ * survives a rebuild. Section renders one track when it is empty.
+ *
+ * DERIVED, never stored: the step numerals, the action's href (resolved
+ * through onPage against the ids PageBP renders), and the picture's accessible
+ * name (layout.businessName, or nothing).
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBP — and with the copies
+// in HeaderBP, HeroBP, CtaBandBP and FooterBP. There is no shared import by
+// design; the copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const how = content.how || {};
+const tag = typeof how.tag === 'string' ? how.tag.trim() : '';
+const headline = typeof how.headline === 'string' ? how.headline.trim() : '';
+
+type Step = { title?: string; body?: string; desc?: string; description?: string };
+const source: Step[] = Array.isArray(how.steps) ? how.steps : (Array.isArray(how.items) ? how.items : []);
+const titleOf = (s: Step): string => String(s?.title ?? '').trim();
+const bodyOf = (s: Step): string => String(s?.body ?? s?.desc ?? s?.description ?? '').trim();
+
+// The ORIGINAL index rides along in `i`, so dropping an empty step cannot shift
+// the editor hooks of the ones after it.
+const rows = source
+  .map((s, i: number) => ({ i, title: titleOf(s), body: bodyOf(s) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+const image = String(how.image || (Array.isArray(how.images) && how.images[0]) || '').trim();
+const imageCss = image.replace(/'/g, '%27');
+
+const hero = content.hero || {};
+const ctaText = typeof hero.cta1?.text === 'string' ? hero.cta1.text.trim() : '';
+const ctaHref = onPage(hero.cta1?.href, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+const bizName = String((layout as any)?.businessName ?? '').trim();
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+const hasSection = rows.length > 0;
+---
+{hasSection && (
+  <section class:list={['split', 'thv-steps', !image && 'split--solo']}>
+    <div class="split__copy thv-steps-copy">
+      {tag && <span class="kick thv-steps-kick" data-field="how.tag">{tag}</span>}
+      {headline && <h2 class="h2 thv-steps-h reveal" data-field="how.headline" set:html={headline}></h2>}
+      <ol class="thv-steps-list" role="list">
+        {rows.map((step, k) => (
+          <li class="thv-steps-row reveal" data-delay={String(Math.min(k + 1, 3))}>
+            <span class="fig thv-steps-n" aria-hidden="true">{k + 1}</span>
+            <div class="thv-steps-body">
+              {step.title && <h3 class="thv-steps-t" data-field={`how.steps.${step.i}.title`}>{step.title}</h3>}
+              {step.body && <p class="thv-steps-p" data-field={`how.steps.${step.i}.body`}>{step.body}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+      {ctaText && (
+        <div class="thv-steps-act reveal">
+          <a
+            class="btn btn--fill"
+            href={ctaHref}
+            target={ctaExternal ? '_blank' : undefined}
+            rel={ctaExternal ? 'noopener noreferrer' : undefined}
+            data-field="hero.cta1.text"
+            data-href-field="hero.cta1.href"
+          >{ctaText}</a>
+        </div>
+      )}
+    </div>
+
+    {image && (
+      <div class="split__shot plate thv-steps-shot">
+        <div
+          class="ph"
+          data-image-field="how.image"
+          style={`background-image:url('${imageCss}');`}
+          {...photoA11y}
+        ></div>
+      </div>
+    )}
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --ink-soft --accent --line-2 --line-3 --well --disp --sans) and from
+     its shared primitives (.split .split__copy .split__shot .kick .h2 .fig .btn
+     .btn--fill .plate .ph). There is no literal hex in this file. */
+
+  .thv-steps-kick { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
+  .thv-steps-copy .thv-steps-h { overflow-wrap: anywhere; }
+
+  .thv-steps-list { list-style: none; margin: 0; padding: 0; min-width: 0; }
+
+  /* Design: grid-template-columns:minmax(0,40px) minmax(0,1fr); gap:18px;
+     padding:16px 0; border-bottom; align-items:start. */
+  .thv-steps-row {
+    display: grid;
+    grid-template-columns: minmax(0, 40px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line-3);
+    list-style: none;
+    min-width: 0;
+  }
+
+  /* THE DISC. Design: 32px square, 1px --line-2 border, 50% radius, centred,
+     DM Serif Display 15px in walnut, flex:none so it cannot be squeezed. .fig
+     gives the face, the colour and line-height 1. */
+  .thv-steps-row .thv-steps-n {
+    width: 32px; height: 32px; flex: none;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line-2);
+    border-radius: 50%;
+    font-size: 15px;
+  }
+
+  .thv-steps-body { min-width: 0; }
+  /* Design: DM Serif Display 20px, 5px beneath. */
+  .thv-steps-body .thv-steps-t {
+    font-family: var(--disp); font-weight: 400; font-size: 20px;
+    line-height: 1.25; margin: 0 0 5px; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* Design: 14.5px/1.76 capped at 48ch. */
+  .thv-steps-body .thv-steps-p {
+    margin: 0;
+    font-size: 14.5px; line-height: 1.76; color: var(--ink-soft);
+    max-width: 48ch; overflow-wrap: anywhere;
+  }
+
+  /* Design: 24px of clearance over the action. */
+  .thv-steps-act { margin-top: 24px; }
+
+  /* Design: the picture column is min-height:520px. */
+  .thv-steps-shot { min-height: 520px; }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split at 900 and
+        runs the shared type ladder at 760/520. */
+  @media (max-width: 900px) {
+    .thv-steps-shot { min-height: clamp(300px, 52vw, 440px); }
+  }
+  @media (max-width: 760px) {
+    .thv-steps-body .thv-steps-p { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    /* The disc keeps its 32px — shrinking it would make the numeral illegible
+       — but the column it sits in tightens to exactly the disc plus the gap,
+       giving the body back the width. The action goes full width so a long
+       uppercase label wraps inside it instead of widening the row, and both
+       wrap declarations are needed: white-space for a label with spaces,
+       overflow-wrap for one without. The CAP meets the 300px floor of the
+       query above rather than clearing it, so the picture never gets taller as
+       the viewport gets narrower. */
+    .thv-steps-row { grid-template-columns: 32px minmax(0, 1fr); gap: 14px; }
+    .thv-steps-act .btn { width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+    .thv-steps-shot { min-height: clamp(230px, 62vw, 300px); }
+  }
+</style>

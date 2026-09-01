@@ -1,0 +1,141 @@
+---
+/**
+ * foodcraft / TrustBP — "Tahanan Cafe · Split"'s proof row.
+ *
+ * ROLE. Four short figures — farms, rating, opening hour, wifi — each a serif
+ * walnut number with a plain label beside it on a ruled row.
+ *
+ * THE ONE PLACEMENT DEVIATION IN THIS TEMPLATE, and it is deliberate. The
+ * design draws these cells INSIDE the hero's copy column, as a two-by-two grid
+ * under the buttons with a hairline over the pair and one under each row. They
+ * cannot live there here: scripts/check-template-blocks.mjs requires every
+ * toggleable section to be rendered on its own gated line of Page<CODE>.astro,
+ * and a Trust nested inside HeroBP would be a block an owner could never switch
+ * off. So the cells moved out into their own section directly under the hero,
+ * four across on one ruled row instead of two by two.
+ *
+ * NOTHING INSIDE A CELL MOVED. The figure is DM Serif Display at 21px in
+ * walnut on line-height 1; the label is 12.5px at weight 500 in the soft ink;
+ * the row is baseline-aligned with 10px between the two and 11px of padding
+ * over a --line-3 hairline. All five values are the design's.
+ *
+ * EDITABLE HOOKS:
+ *   trust.cells.${i}.num   — the figure. set:html, so an owner can mark part of
+ *                            it (a superscript, an em) and keep it
+ *   trust.cells.${i}.label — the label
+ *
+ * DERIVED, never stored: the number of tracks, which follows the data up to the
+ * design's four.
+ *
+ * BOTH CONTENT SHAPES ARE TOLERATED at every read: the schema's
+ * { cells: [...] } and the plain array some older records still store under
+ * content.trust.
+ *
+ * A HALF-FILLED ROW PRINTS ONE LINE, and an empty row prints no cell at all —
+ * no hairline dividing a column that is not there. The ORIGINAL index rides
+ * along in `i` so the editor hook still points at the right record after the
+ * empties are dropped.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+const trust = content?.trust || {};
+const cells: any[] = Array.isArray(trust.cells)
+  ? trust.cells
+  : (Array.isArray(trust) ? trust : []);
+
+const asText = (v: any) => (v === null || v === undefined ? '' : String(v));
+
+const rows = cells
+  .map((c: any, i: number) => ({ value: asText(c?.num), note: asText(c?.label), i }))
+  .filter((r) => Boolean(r.value.trim() || r.note.trim()));
+
+// Follow the data, but never widen past the design's four tracks (the schema
+// caps the list at 4 anyway). Anything beyond four wraps to a second row.
+const cols = String(Math.min(Math.max(rows.length, 1), 4));
+---
+{rows.length > 0 && (
+  <section class="thv-facts">
+    <div class="wrap">
+      <div class="thv-facts-grid" style={`--cols:${cols}`}>
+        {rows.map((r, k) => (
+          <div class="rowrule thv-facts-cell reveal" data-delay={String(k % 4)}>
+            {r.value.trim() && (
+              <span class="fig thv-facts-n" data-field={`trust.cells.${r.i}.num`} set:html={r.value}></span>
+            )}
+            {r.note.trim() && (
+              <span class="thv-facts-l" data-field={`trust.cells.${r.i}.label`}>{r.note}</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--accent --ink-soft --line --line-3 --disp --sans, via .wrap / .fig /
+     .rowrule). There is not one literal hex in this file.
+
+     (Never write a literal end-style-tag inside a comment in here — the parser
+      would end the stylesheet on the spot and silently truncate the file.) */
+
+  /* The design gives these cells 38px of clearance from the buttons above and
+     nothing below. Standing alone the row needs breathing on both sides, and
+     it closes with the same structural hairline every split section closes
+     with, so the rhythm down the page does not break where Trust was lifted
+     out of the hero. */
+  .thv-facts {
+    padding: 30px 0 24px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /* Design: grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 26px. Four
+     across here rather than two by two, because the row is now the full page
+     width and not half of one. The 26px column gap is the design's. */
+  .thv-facts-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 1), minmax(0, 1fr));
+    gap: 0 26px;
+  }
+
+  /* .rowrule already gives baseline alignment, 11px of padding and the
+     --line-3 hairline. Only the design's 10px gap is local — the primitive's
+     is 12px, because five other sections want the wider one. */
+  .thv-facts-cell { gap: 10px; }
+
+  /* .fig already gives DM Serif Display 400, tabular lining numerals,
+     line-height 1 and the walnut. The 21px is the only local value. Written as
+     a descendant so it clears the wrapper's (0,1,1) rules with room to spare,
+     whatever the source order. */
+  .thv-facts-grid .thv-facts-n {
+    font-size: 21px;
+    /* A pasted URL or an unspaced string must not push the page sideways. */
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: 12.5px at weight 500 in the soft ink. NOT the shared .mono — this
+     label is sentence case in the design, not tracked caps, and routing it
+     through that primitive would shout it. line-height is pinned because
+     body's 1.78 would inflate a 12.5px line box and unbalance the baseline
+     the figure sits on. */
+  .thv-facts-grid .thv-facts-l {
+    font-family: var(--sans); font-weight: 500; font-size: 12.5px;
+    line-height: 1.4; color: var(--ink-soft);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+
+  /* ── R8 · this section's OWN responsive pass. Nothing here uses a clamp, so
+        there is no floor in one query that can outgrow a cap in the next. */
+  @media (max-width: 900px) {
+    /* Two up — which is the design's own arrangement, arrived at from the
+       other direction. */
+    .thv-facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    /* One column. A 12.5px label cannot hold a ~150px half column beside a
+       21px serif figure without splitting mid-word. */
+    .thv-facts-grid { grid-template-columns: minmax(0, 1fr); }
+    .thv-facts { padding: 24px 0 18px; }
+  }
+</style>

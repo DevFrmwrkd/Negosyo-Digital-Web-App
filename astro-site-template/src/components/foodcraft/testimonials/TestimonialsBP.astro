@@ -1,0 +1,214 @@
+---
+/**
+ * foodcraft / TestimonialsBP — "Tahanan Cafe · Split"'s reviews.
+ *
+ * ROLE. Picture left, copy right. From the element carrying
+ * data-component="TESTIMONIALS" in "Tahanan Cafe Landing v4.dc.html": a picture
+ * column at min-height 440 on the cream ground, and a copy column at 60px 44px
+ * holding an eyebrow, a headline one size DOWN from the page's other headlines
+ * (clamp(26px,3.3vw,42px), not clamp(28px,3.6vw,48px)), and the quotes stacked
+ * as ruled figures — the quote itself set in DM Serif Display at 18.5px, and
+ * under it a stars-and-name line sharing one baseline.
+ *
+ * NO STARS FOR A CUSTOMER WHO DID NOT GIVE ONE. The design draws a literal
+ * five-star row above every quote and supplies no rating to back it. Printing
+ * five stars for a regular who never rated anything is a fabricated claim about
+ * a real person, so the row is drawn from testimonials.items.${i}.rating and
+ * nothing else: a quote with no rating gets the design's plain hairline and no
+ * glyphs at all, and a quote with a 4 gets four. The count is announced through
+ * an aria-label on a role="img" so the glyphs themselves stay out of the
+ * accessibility tree.
+ *
+ * THE STARS ARE --accent-2, NOT --accent. The design writes #8A5A34 here, one
+ * step warmer than the walnut it uses everywhere else, and it is the only place
+ * on the page that colour appears. 5.85:1 on white.
+ *
+ * EDITABLE HOOKS:
+ *   testimonials.tag                — the eyebrow
+ *   testimonials.headline           — set:html, so an owner em takes the italic
+ *   testimonials.items.${i}.quote   — the quote, set:html
+ *   testimonials.items.${i}.who     — the attribution
+ *   testimonials.items.${i}.rating  — drives the stars; see above
+ *   testimonials.image              — data-image-field, the left photograph
+ *
+ * testimonials.image IS NOT IN genericContentSchema.ts, so it has no sidebar
+ * picker; it is reachable by clicking the photograph on the page, which is how
+ * layouts:AZ has bound the same path since it shipped. The regen pipeline
+ * already forwards `testimonials` in its wrapped form, so the choice survives a
+ * rebuild. The section renders one track when it is empty.
+ *
+ * DERIVED, never stored: the star count's spoken label, and the picture's
+ * accessible name (layout.businessName, or nothing).
+ *
+ * BOTH CONTENT SHAPES ARE TOLERATED: the schema's { items: [...] } and the
+ * plain array some older records still store under content.testimonials.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+const test = content.testimonials || {};
+
+const str = (v: unknown): string =>
+  typeof v === 'string' ? v : (typeof v === 'number' && Number.isFinite(v) ? String(v) : '');
+
+const tag = str(test.tag).trim();
+const headline = str(test.headline).trim();
+
+type Item = { quote?: unknown; who?: unknown; author?: unknown; name?: unknown; rating?: unknown };
+const items: Item[] = Array.isArray(test.items)
+  ? test.items
+  : (Array.isArray(test) ? (test as Item[]) : []);
+
+// A rating below 1, above 5, or not a number at all is NO rating — not a
+// clamped one. Rounding a 4.6 to 5 is the same fabrication in smaller print.
+const starsOf = (it: Item): number => {
+  const r = Number(str(it.rating).trim());
+  if (!Number.isFinite(r)) return 0;
+  const n = Math.round(r);
+  return n >= 1 ? Math.min(5, n) : 0;
+};
+const STAR = '★';
+
+// The ORIGINAL index rides along in `i`, so dropping a quoteless row cannot
+// shift the editor hooks of the ones after it.
+const rows = items
+  .map((raw, i: number) => {
+    const it: Item = raw && typeof raw === 'object' ? (raw as Item) : ({ quote: raw } as Item);
+    return {
+      quote: str(it.quote),
+      who: str(it.who).trim() || str(it.author).trim() || str(it.name).trim(),
+      stars: starsOf(it),
+      i,
+    };
+  })
+  .filter((r) => Boolean(r.quote.trim()));
+
+const image = String(test.image ?? '').trim();
+const imageCss = image.replace(/'/g, '%27');
+
+const bizName = String((layout as any)?.businessName ?? '').trim();
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+const hasHead = Boolean(tag || headline);
+const hasSection = rows.length > 0;
+---
+{hasSection && (
+  <section class:list={['split', 'thv-says', !image && 'split--solo']}>
+    {image && (
+      <div class="split__shot plate thv-says-shot">
+        <div
+          class="ph"
+          data-image-field="testimonials.image"
+          style={`background-image:url('${imageCss}');`}
+          {...photoA11y}
+        ></div>
+      </div>
+    )}
+    <div class="split__copy thv-says-copy">
+      {hasHead && (
+        <div class="thv-says-head reveal">
+          {tag && <span class="kick thv-says-kick" data-field="testimonials.tag">{tag}</span>}
+          {headline && <h2 class="h2 thv-says-h" data-field="testimonials.headline" set:html={headline}></h2>}
+        </div>
+      )}
+      {rows.map((row, k) => (
+        <figure class="thv-says-item reveal" data-delay={String(Math.min(k + 1, 3))}>
+          <blockquote class="thv-says-q" data-field={`testimonials.items.${row.i}.quote`} set:html={row.quote}></blockquote>
+          {(row.stars > 0 || row.who) && (
+            <figcaption class="thv-says-by">
+              {row.stars > 0 && (
+                <span class="thv-says-stars" role="img" aria-label={`Rated ${row.stars} out of 5`}>
+                  <span aria-hidden="true">{STAR.repeat(row.stars)}</span>
+                </span>
+              )}
+              {row.who && (
+                <span class="thv-says-who" data-field={`testimonials.items.${row.i}.who`}>{row.who}</span>
+              )}
+            </figcaption>
+          )}
+        </figure>
+      ))}
+    </div>
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --muted --accent-2 --line-3 --well --disp --sans) and from its
+     shared primitives (.split .split__copy .split__shot .kick .h2 .plate .ph).
+     There is no literal hex in this file. */
+
+  /* Design: the picture column is min-height:440px, and the copy column is
+     60px rather than the page's 66px. */
+  .thv-says-shot { min-height: 440px; }
+  .thv-says-copy { padding-block: clamp(44px, 5.5vw, 60px); }
+
+  .thv-says-kick { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
+  .thv-says-head { min-width: 0; }
+  /* Design: clamp(26px,3.3vw,42px) with margin .24em 0 .26em — a step down
+     from the shared .h2, because this column also carries three quotes. */
+  .thv-says-copy .thv-says-h {
+    font-size: clamp(26px, 3.3vw, 42px);
+    margin-bottom: .26em;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: margin 0; padding 18px 0; border-top. The rule is ABOVE each
+     quote, so the first gets a line under the headline and the last closes
+     with nothing. */
+  .thv-says-item {
+    margin: 0;
+    padding: 18px 0;
+    border-top: 1px solid var(--line-3);
+    min-width: 0;
+  }
+  /* Design: DM Serif Display 18.5px/1.58 in the ink, 8px beneath. */
+  .thv-says-item .thv-says-q {
+    margin: 0 0 8px;
+    font-family: var(--disp); font-weight: 400;
+    font-size: 18.5px; line-height: 1.58; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* Design: display flex; align-items baseline; gap 12px. */
+  .thv-says-by {
+    display: flex; align-items: baseline; gap: 12px;
+    flex-wrap: wrap; min-width: 0;
+  }
+  /* Design: 11px at 2px of tracking in the warm walnut. A flat px tracking, not
+     an em — the design writes letter-spacing:2px and at 11px that is a wider
+     gap than .18em would give. line-height is pinned so an 11px glyph row does
+     not inherit body's 1.78 and drift off the name's baseline. */
+  .thv-says-stars {
+    font-size: 11px; letter-spacing: 2px; line-height: 1.3;
+    color: var(--accent-2); white-space: nowrap;
+  }
+  /* Design: 10.5px at .18em caps in the muted grey, weight 500. NOT the shared
+     .mono, which is 10px at weight 700. */
+  .thv-says-who {
+    font-family: var(--sans); font-weight: 500; font-size: 10.5px;
+    letter-spacing: .18em; text-transform: uppercase; line-height: 1.4;
+    color: var(--muted);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split at 900 and
+        runs the shared type ladder at 760/520. */
+  @media (max-width: 900px) {
+    .thv-says-shot { min-height: clamp(280px, 48vw, 400px); }
+  }
+  @media (max-width: 760px) {
+    /* The base clamp is at its 26px floor by 788px, so there is nothing left
+       to re-scale here and no cap is written — one would have to sit above the
+       floor to avoid a jump, which is the bug this ladder exists to avoid. The
+       shared 760 rule caps .h2 at 27px and this rule's two classes outrank it,
+       so the local 26px floor is what holds. */
+    .thv-says-item .thv-says-q { font-size: 17.5px; }
+  }
+  @media (max-width: 520px) {
+    /* The CAP meets the 280px floor of the query above rather than clearing
+       it, so the picture never gets taller as the viewport gets narrower. */
+    .thv-says-shot { min-height: clamp(220px, 58vw, 280px); }
+    .thv-says-by { gap: 8px 12px; }
+  }
+</style>

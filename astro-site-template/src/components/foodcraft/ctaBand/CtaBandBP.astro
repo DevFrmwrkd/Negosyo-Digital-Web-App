@@ -1,0 +1,232 @@
+---
+/**
+ * foodcraft / CtaBandBP — "Tahanan Cafe · Split"'s closing band.
+ *
+ * ROLE. The page's last split and its only dark ground. From the element
+ * carrying data-component="CTA-BAND" in "Tahanan Cafe Landing v4.dc.html": the
+ * whole section on #231A13, copy left at 78px 44px — the deepest padding on the
+ * page — and a photograph right at min-height 440 on the cream.
+ *
+ * THE EYEBROW HERE IS NOT THE WALNUT. --accent on the band measures 2.41:1,
+ * well under any floor, so the design switches to #C9A57C — a lighter tan that
+ * holds 7.45:1. That is what --band-kick is for, and the single most important
+ * thing not to "simplify" back to var(--accent).
+ *
+ * THE THREE BAND TOKENS are invisible to the theme engine on purpose: they were
+ * each chosen against #231A13 and an admin colour scheme must not move them out
+ * from under a headline that is already white. --band-body carries the sub-line
+ * at 10.70:1; --on-band the headline at 17.09:1.
+ *
+ * THE CREAM BUTTON'S LABEL IS --on-cream (#4A3320), not the ink. The design
+ * writes it, it is 11.76:1 on white, and it is warmer than the ink against the
+ * band behind it.
+ *
+ * THERE IS NO HAIRLINE DOWN THE MIDDLE. Every other split on this page draws
+ * one; this one does not, because a --line hairline on an ink ground is a
+ * scratch. The wrapper's shared rule is switched off rather than recoloured.
+ *
+ * EDITABLE HOOKS:
+ *   ctaBand.tag             — the tan eyebrow
+ *   ctaBand.headline        — set:html, so an owner em takes the italic
+ *   ctaBand.sub             — the sub-line
+ *   ctaBand.cta.text + data-href-field ctaBand.cta.href — the cream button
+ *   ctaBand.image           — data-image-field, the right photograph
+ *   location.phone          — the outlined phone button, which is the SAME
+ *                             number the footer and the visit panel show. One
+ *                             number, edited in one place.
+ *
+ * DERIVED, never stored: the tel: href (the phone with everything but digits
+ * and a leading plus stripped), and whether the cta opens in a new tab (only
+ * when its href is off-page).
+ *
+ * THE ITALIC IN THE HEADLINE IS ALSO THE WALNUT, and that is deliberate even
+ * here: the shared .h2 em rule colours it var(--accent), which on this ground
+ * is the 2.41:1 pair above. So the band restates it as --band-kick. An owner
+ * who types an em into this headline gets the tan, not the walnut.
+ */
+interface Props { content: any; layout?: any; }
+const { content } = Astro.props;
+
+// Keep PAGE_ANCHORS and ANCHOR_ALIAS in step with PageBP — and with the copies
+// in HeaderBP, HeroBP, HowBP and FooterBP. There is no shared import by design;
+// the copies must stay identical by hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const c = (content as any) || {};
+const cta = c.ctaBand || {};
+
+const tag = String(cta.tag || '').trim();
+const headline = String(cta.headline || '').trim();
+const sub = String(cta.sub || '').trim();
+
+const bandImage = String(cta.image || '').trim();
+// The quote escape keeps a filename with an apostrophe from closing the url('')
+// early and killing the declaration.
+const bandImageCss = bandImage.replace(/'/g, '%27');
+
+const ctaText = String(cta.cta?.text || '').trim();
+const ctaHref = onPage(cta.cta?.href, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+const phone = String(c.location?.phone || c.contact?.phone || '').trim();
+const telHref = phone ? `tel:${phone.replace(/[^0-9+]/g, '')}` : '';
+
+const hasActions = Boolean(ctaText || phone);
+const hasCopy = Boolean(tag || headline || sub || hasActions);
+const hasBand = Boolean(hasActions || sub || bandImage);
+---
+{hasBand && (
+<section class:list={['split', 'band-dark', 'thv-close', !(hasCopy && bandImage) && 'split--solo']}>
+  {hasCopy && (
+    <div class="split__copy thv-close-copy reveal">
+      {tag && <span class="kick thv-close-kick" data-field="ctaBand.tag">{tag}</span>}
+      {headline && <h2 class="h2 thv-close-h" data-field="ctaBand.headline" set:html={headline}></h2>}
+      {sub && <p class="thv-close-sub" data-field="ctaBand.sub">{sub}</p>}
+      {hasActions && (
+        <div class="thv-close-acts">
+          {ctaText && (
+            <a
+              class="btn btn--paper"
+              href={ctaHref}
+              target={ctaExternal ? '_blank' : undefined}
+              rel={ctaExternal ? 'noopener noreferrer' : undefined}
+              data-field="ctaBand.cta.text"
+              data-href-field="ctaBand.cta.href"
+            >{ctaText}</a>
+          )}
+          {phone && (
+            <a class="btn btn--pale thv-close-tel" href={telHref} data-field="location.phone">{phone}</a>
+          )}
+        </div>
+      )}
+    </div>
+  )}
+
+  {bandImage && (
+    <div class="split__shot plate thv-close-shot">
+      <div
+        class="ph"
+        data-image-field="ctaBand.image"
+        style={`background-image:url('${bandImageCss}');`}
+        aria-hidden="true"
+      ></div>
+    </div>
+  )}
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--band --band-kick --band-body --on-band --well --sans) and from its
+     shared primitives (.split .split__copy .split__shot .band-dark .kick .h2
+     .btn .btn--paper .btn--pale .plate .ph). There is no literal hex in this
+     file. */
+
+  /* THE SECTION CLOSES WITHOUT A RULE. Every other split draws a hairline under
+     itself; on an ink ground that hairline is a scratch, and the footer's own
+     white ground is the division. */
+  .thv-close { border-bottom: 0; }
+  /* And no hairline between the halves either — same reason. The declaration
+     lands on the SHOT because that is the element the wrapper's `> * + *` rule
+     actually reaches; the border-top the wrapper swaps in below 900 is switched
+     off with it. */
+  .thv-close-shot { border-left: 0; border-top: 0; }
+
+  /* Design: padding 78px 44px, the deepest on the page. */
+  .thv-close-copy { padding-block: clamp(56px, 7.2vw, 78px); }
+
+  /* THE TAN EYEBROW. See the frontmatter note: the walnut is 2.41:1 here. */
+  .thv-close-copy .thv-close-kick {
+    color: var(--band-kick);
+    align-self: flex-start; max-width: 100%; overflow-wrap: anywhere;
+  }
+
+  /* Design: clamp(30px,4.2vw,58px)/1.08 in white, capped at 22ch, margin
+     .24em 0 .28em. */
+  .thv-close-copy .thv-close-h {
+    font-size: clamp(30px, 4.2vw, 58px);
+    line-height: 1.08;
+    margin-bottom: .28em;
+    color: var(--on-band);
+    max-width: 22ch;
+    overflow-wrap: anywhere;
+  }
+  /* The italic close, recoloured for this ground. :global() because an owner's
+     own em arrives through set:html and Astro cannot scope it. */
+  .thv-close-copy .thv-close-h :global(em),
+  .thv-close-copy .thv-close-h :global(.em) { color: var(--band-kick); }
+
+  /* Design: 16.5px/1.78 in --band-body, capped at 42ch, 28px beneath. */
+  .thv-close-copy .thv-close-sub {
+    margin: 0 0 28px;
+    font-size: 16.5px; line-height: 1.78; color: var(--band-body);
+    max-width: 42ch; overflow-wrap: anywhere;
+  }
+
+  /* Design: display flex; gap 12px; flex-wrap wrap; align-items center. */
+  .thv-close-acts {
+    display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+  }
+  /* The design's outlined phone is the shared button at 26px of side padding
+     rather than 28px — the only metric in which the two differ. */
+  .thv-close-tel { padding-left: 26px; padding-right: 26px; }
+
+  /* Design: min-height 440. */
+  .thv-close-shot { min-height: 440px; }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split at 900 and
+        runs the shared type ladder at 760/520.
+
+        THE CLAMP LADDER: the base clamp(30px,4.2vw,58px) is at its 30px floor
+        by 715px, so 900 leaves it alone — anything written there would have to
+        sit above 37.8px (its value at 900px) to avoid a jump. The 520 query
+        caps at exactly 30px, which is what the base hands over, so the ramp
+        only descends: 58 → 30 → 24. */
+  @media (max-width: 900px) {
+    /* Written with BOTH classes deliberately. The base rule above is
+       `.thv-close-copy .thv-close-h` = (0,4,0) compiled; a bare `.thv-close-h`
+       here would be (0,2,0), and a media query adds no specificity — so the
+       22ch cap would hold at every width and this rule would never once apply.
+       The headline would keep wrapping to a measure meant for a half-width
+       column long after that column went full width. */
+    .thv-close-copy .thv-close-h { max-width: none; }
+    .thv-close-shot { min-height: clamp(280px, 48vw, 380px); }
+  }
+  @media (max-width: 760px) {
+    .thv-close-copy .thv-close-sub { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    .thv-close-copy .thv-close-h { font-size: clamp(24px, 6.6vw, 30px); }
+    .thv-close-copy .thv-close-sub { font-size: 16px; margin-bottom: 24px; }
+    /* Stacked and full width, because two uppercase labels at .14em tracking do
+       not fit a 310px row side by side. Both wrap declarations are needed:
+       white-space for a label with spaces, overflow-wrap for one without. */
+    .thv-close-acts { flex-direction: column; align-items: stretch; gap: 11px; }
+    .thv-close-acts .btn {
+      width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: center;
+    }
+    /* Re-join the wrapper's 520 button padding: without this the rule above
+       keeps the phone at 26px while the cream button drops to 22px. */
+    .thv-close-tel { padding-left: 22px; padding-right: 22px; }
+    /* The CAP meets the 280px floor of the query above rather than clearing
+       it, so the picture never gets taller as the viewport gets narrower. */
+    .thv-close-shot { min-height: clamp(220px, 58vw, 280px); }
+  }
+</style>

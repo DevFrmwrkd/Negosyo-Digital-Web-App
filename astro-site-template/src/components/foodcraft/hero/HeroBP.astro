@@ -1,0 +1,324 @@
+---
+/**
+ * foodcraft / HeroBP — "Tahanan Cafe · Split"'s arrival, and the page's only h1.
+ *
+ * ROLE. The design's opening statement and the first instance of the layout the
+ * rest of the page repeats: a full-bleed 50/50 split, copy left, one photograph
+ * running edge to edge on the right. Lifted verbatim from the element carrying
+ * data-component="HERO" in "Tahanan Cafe Landing v4.dc.html": section
+ * min-height 88vh with align-items stretch and a hairline under it, copy column
+ * padding 76px 44px vertically centred, eyebrow 10px at .34em, h1
+ * clamp(42px,5.8vw,84px)/1.04 with margin .22em 0 .28em, lede 17.5px/1.78 at
+ * 44ch with 30px beneath it, actions 12px apart, and a right column on the
+ * cream ground with a left hairline and overflow hidden.
+ *
+ * TWO METRICS THIS FILE STATES that the wrapper's primitives do not carry, and
+ * both for the same reason — the hero is LARGER than the page:
+ *   · the eyebrow's tracking is .34em here against the shared .32em
+ *   · the lede is a flat 17.5px against the shared clamp, whose ceiling is
+ *     16.5px. Adding the hero's value to the primitive would have raised every
+ *     other section's lede by a point.
+ *
+ * EDITABLE HOOKS (every path is declared in components/editor/
+ * genericContentSchema.ts group id 'hero', so each is live in the sidebar AND
+ * inline):
+ *   hero.image              — data-image-field, the right-hand photograph
+ *   hero.kicker             — the eyebrow
+ *   hero.headline           — the h1, set:html so an owner em takes the italic
+ *   hero.headlineLines.${i} — the SAME h1, when hero.headline holds nothing but
+ *                             the derived business name; see THE HEADLINE below
+ *   hero.sub                — the lede
+ *   hero.cta1.text + data-href-field hero.cta1.href — the filled action
+ *   hero.cta2.text + data-href-field hero.cta2.href — the outlined action
+ *
+ * DERIVED, never stored and never editable:
+ *   · the photograph's accessible name — layout.businessName and nothing else
+ *   · both action hrefs, resolved through onPage() against the ids PageBP
+ *     actually renders
+ *   · which of the two headline paths the h1 binds to, and where the italic
+ *     tail falls when the owner marked none
+ *
+ * NO PHOTOGRAPH, NO SECOND COLUMN. An owner who has uploaded nothing gets a
+ * one-track section with the copy holding the measure the left column actually
+ * has at the design's own width, rather than a 88vh slab of cream standing in
+ * for a picture nobody supplied.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+// Anchor guard. lib/derive-content-defaults.ts hard-codes '#visit' for
+// hero.cta1 and '#services' for hero.cta2; this page renders `visit` but not
+// `services`, so one is kept and the other remapped. Off-page hrefs (tel:,
+// mailto:, http) pass through untouched. Keep PAGE_ANCHORS and ANCHOR_ALIAS in
+// step with PageBP — and with the copies in HeaderBP, HowBP, CtaBandBP and
+// FooterBP. There is no shared import by design (a section component in this
+// repo receives only `content` + `layout`); the copies must stay identical by
+// hand.
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const hero = content.hero || {};
+
+// Display fallbacks only — the HOOK below is always hero.image, the path the
+// sidebar's image picker writes. The quote escape keeps a filename with an
+// apostrophe from closing the url('') early and killing the declaration.
+const heroImage = String(hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '');
+const heroImageCss = heroImage.replace(/'/g, '%27');
+
+const kicker = hero.kicker || '';
+
+// THE HEADLINE. hero.headline is this design's field; the rows take over only
+// when hero.headline holds nothing but the business name
+// derive-content-defaults auto-filled (or is empty), which is the shape every
+// AI-written submission arrives in.
+const bizName = String(layout?.businessName ?? '').trim();
+const headline = String(hero.headline ?? '').trim();
+const lineRows: Array<{ text: string; i: number }> = (Array.isArray(hero.headlineLines) ? hero.headlineLines : [])
+  .map((t: any, i: number) => ({ text: String(t ?? ''), i }))
+  .filter((l: { text: string }) => l.text.trim() !== '');
+// …and only when they SAY something hero.headline does not. On the ordinary
+// named site both hold the same one line, and the single-line hook keeps it.
+const useRows =
+  lineRows.length > 0 &&
+  (headline === '' || headline === bizName) &&
+  lineRows.map((l) => l.text.trim()).join(' ') !== headline;
+const hasHeadline = useRows || headline !== '';
+
+// ── THE SIGNATURE, MADE REACHABLE ────────────────────────────────────────
+// When the owner has NOT marked emphasis themselves, the italic tail is
+// derived from their OWN sentence and adds not one word:
+//   • more than one line                  -> the last line
+//   • a comma, dash, colon or semicolon   -> everything after the LAST one
+//   • anything else                       -> nothing at all
+// That last case is deliberate. A single clause is a single clause, and
+// splitting inside one would lean on a word the owner never leaned on — the
+// design's own headline turns at "Stay as long / as you like." precisely
+// because that is where its sentence turns, and only the writer knows that.
+const hasOwnEm = (v: string): boolean => /<em[\s>]/i.test(v);
+const emphasise = (raw: string): string => {
+  if (!raw || hasOwnEm(raw)) return raw;
+  const lines = raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length > 1) {
+    const tail = lines.pop() as string;
+    return lines.join(' ') + ' <em>' + tail + '</em>';
+  }
+  // The LAST break wins, so a sentence with two commas emphasises its close
+  // rather than its middle. The lookahead keeps a trailing comma from matching.
+  const re = /[,;:—–]\s+(?=\S)/g;
+  let cut = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null) cut = m.index + m[0].length;
+  if (cut <= 0 || cut >= raw.length) return raw;
+  return raw.slice(0, cut) + '<em>' + raw.slice(cut) + '</em>';
+};
+const headlineHtml = emphasise(headline);
+// The rows path marks its LAST row instead, and only when no row is already
+// carrying the owner's own em.
+const rowsOwnEm = lineRows.some((l) => hasOwnEm(l.text));
+
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+// The design's primary is its contact action and its secondary reads "See the
+// menu"; those are the two fallbacks when an owner's href resolves to nothing.
+const cta1Href = onPage(hero.cta1?.href, '#visit');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, '#menu');
+
+// The photograph's accessible name is the owner's own words or nothing. With no
+// business name there is no honest name for the picture, so it leaves the
+// accessibility tree instead of announcing a phrase this file invented. Built
+// as ONE spread object so a conditional attribute can never end up beside a
+// literal.
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+const hasArrival = !!(hasHeadline || sub || heroImage);
+---
+{hasArrival && (
+<section class:list={['split', 'thv-arrival', !heroImage && 'split--solo']}>
+  <div class="split__copy thv-ar-copy">
+    {kicker && <span class="kick thv-ar-kick" data-field="hero.kicker">{kicker}</span>}
+    {!useRows && headline !== '' && <h1 class="thv-ar-h1" data-field="hero.headline" set:html={headlineHtml}></h1>}
+    {useRows && (
+      <h1 class="thv-ar-h1">
+        {lineRows.map((l, k) => (
+          <span class:list={['thv-ar-ln', !rowsOwnEm && k === lineRows.length - 1 && 'thv-ar-ln--em']}><span data-field={`hero.headlineLines.${l.i}`} set:html={l.text}></span>{k === lineRows.length - 1 ? '' : ' '}</span>
+        ))}
+      </h1>
+    )}
+    {sub && <p class="lede thv-ar-lede" data-field="hero.sub">{sub}</p>}
+    {(cta1Text || cta2Text) && (
+      <div class="thv-ar-ctas">
+        {cta1Text && (
+          <a class="btn btn--fill" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">{cta1Text}</a>
+        )}
+        {cta2Text && (
+          <a class="btn btn--line thv-ar-line" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
+        )}
+      </div>
+    )}
+  </div>
+
+  {heroImage && (
+    <div class="split__shot plate thv-ar-shot">
+      <div
+        class="ph"
+        data-image-field="hero.image"
+        style={`background-image:url('${heroImageCss}');`}
+        {...photoA11y}
+      ></div>
+    </div>
+  )}
+</section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --ink-soft --accent --line --well --disp --sans) and from its shared
+     primitives (.split .split__copy .split__shot .kick .lede .btn .btn--fill
+     .btn--line .plate .ph). There is no literal hex in this file.
+
+     HOW THESE RULES WIN. Astro scopes a style block with this project's default
+     scopedStyleStrategy, 'attribute' — so `.thv-ar-h1` ships as
+     `.thv-ar-h1[data-astro-cid-…]`, specificity (0,2,0). The wrapper's
+     primitives are `html[data-page="BP"] :where(.lede)`, specificity (0,1,1),
+     because :where() contributes nothing. Two classes beat one, which is how
+     the lede's 17.5px replaces the shared clamp and the h1 keeps its own
+     margins against the wrapper's `margin:0` — none of it with !important.
+     Setting scopedStyleStrategy:'where' in astro.config.mjs would collapse
+     these to (0,1,0) and silently hand the wrapper the win. */
+
+  /* Design: min-height:88vh. The section's padding is ZERO — the copy column
+     carries all of it — and the hairline under it comes from .split. */
+  .thv-arrival { min-height: 88vh; }
+
+  /* Design: padding 76px 44px, ten more at the top than every other split
+     copy column. The horizontal 44px is --pad-x, already on .split__copy. */
+  .thv-ar-copy { padding-block: clamp(54px, 6.8vw, 76px); }
+
+  /* Design: .34em, wider than the page's .32em. See the frontmatter note. */
+  .thv-ar-kick {
+    letter-spacing: .34em;
+    align-self: flex-start; max-width: 100%; overflow-wrap: anywhere;
+  }
+
+  /* Design: clamp(42px,5.8vw,84px); line-height 1.04; margin .22em 0 .28em.
+     Larger and tighter than the shared .h2, which is why this is an h1 rule of
+     its own. The design sets NO max-width — its column is the measure — so
+     none is invented here; the narrow queries below add one only once the
+     columns have collapsed. */
+  .thv-ar-h1 {
+    font-family: var(--disp);
+    font-weight: 400;
+    font-size: clamp(42px, 5.8vw, 84px);
+    line-height: 1.04;
+    letter-spacing: 0;
+    margin: .22em 0 .28em;
+    color: var(--ink);
+  }
+  /* THE SIGNATURE. DM Serif Display ships a real 400 italic, so this is drawn
+     and not a synthesised oblique. :global() because Astro cannot scope markup
+     that arrived through set:html — which covers both the owner's own em and
+     the derived tail on the single-line path. */
+  .thv-ar-h1 :global(em) { font-style: italic; color: var(--accent); }
+  /* Rows path only (hero.headlineLines). They FLOW as one sentence rather than
+     stacking, because this design's h1 is a sentence — the wrap comes from the
+     column, exactly as it does on the single-line path. The word space between
+     rows is a real text node in the markup, not a faked margin. */
+  .thv-ar-ln { display: inline; }
+  /* The derived tail on the rows path. Same treatment as an owner-typed em,
+     declared separately because the rows are real elements this file owns and
+     so do not need :global(). */
+  .thv-ar-ln--em { font-style: italic; color: var(--accent); }
+
+  /* Design: 17.5px/1.78 at 44ch with 30px under it. The size and the measure
+     are both above the shared .lede, so both are stated. */
+  .thv-ar-lede {
+    font-size: 17.5px;
+    line-height: 1.78;
+    max-width: 44ch;
+    margin: 0 0 30px;
+    overflow-wrap: anywhere;
+  }
+
+  /* Design: display flex; gap 12px; flex-wrap wrap; align-items center. */
+  .thv-ar-ctas {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  /* The design's outlined secondary is the shared button at 26px of side
+     padding rather than 28px — the only metric in which the two differ. */
+  .thv-ar-line { padding-left: 26px; padding-right: 26px; }
+
+  /* The photograph half. .split__shot already gives it the cream ground, the
+     hairline and overflow:hidden; .plate gives it the ph layer. Only the
+     minimum height is local, and only so a stacked hero on a phone still shows
+     a picture rather than a 180px sliver. */
+  .thv-ar-shot { min-height: 0; }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split to one track
+        at 900 and runs the shared type ladder at 760/520; the values below are
+        this hero's.
+
+        THE CLAMP LADDER, checked across breakpoints because an audit on an
+        earlier template in this family found a headline that GREW as the
+        viewport narrowed. The base clamp(42px,5.8vw,84px) is at its 42px FLOOR
+        by 725px, so 900 leaves it alone — there is nothing to re-scale, and any
+        cap written there would have to sit above 52.2px (its value at 900px)
+        to avoid a jump. The 520 query then caps at exactly 42px, which is what
+        the base clamp hands over at that width, so the ramp only ever
+        descends: 84 → 42 → 30. */
+  @media (max-width: 900px) {
+    /* Stacked, the picture is now full width, so 88vh of it would be a wall
+       between the arrival and the proof row under it. */
+    .thv-arrival { min-height: 0; }
+    .thv-ar-h1 { max-width: 18ch; }
+    .thv-ar-shot { min-height: clamp(320px, 52vw, 440px); }
+  }
+  @media (max-width: 520px) {
+    /* Nothing may push the page sideways at 360px: long unbroken strings break
+       anywhere, and a long uppercase label wraps inside a full-width button
+       instead of widening the row. */
+    /* Re-join the wrapper's 520 eyebrow tracking, for the same reason the
+       button padding is re-joined below. The wrapper drops every .kick to
+       .24em at (0,1,1); this file pinned the hero's to .34em at (0,2,0), which
+       wins in the media query too. Left alone, the longest eyebrow on the page
+       is the only one still at desktop tracking on a ~330px column. */
+    .thv-ar-kick { letter-spacing: .24em; }
+    .thv-ar-h1 { font-size: clamp(30px, 8.8vw, 42px); max-width: none; overflow-wrap: anywhere; }
+    .thv-ar-lede { font-size: 16px; max-width: none; margin-bottom: 26px; }
+    .thv-ar-ctas { gap: 10px; }
+    /* white-space:normal lets a label wrap at its spaces; overflow-wrap covers
+       the label that HAS none. Without the second declaration one long unbroken
+       word runs straight out of the button box at 360px — the wrapper's
+       overflow-x:hidden suppresses the scrollbar and the label is clipped
+       instead, which is the same bug wearing a different coat. */
+    .thv-ar-ctas .btn { flex: 1 1 100%; white-space: normal; overflow-wrap: anywhere; text-align: center; }
+    /* Re-join the wrapper's 520 button padding: without this the rule above
+       keeps the secondary at 26px while the primary drops to 22px. */
+    .thv-ar-line { padding-left: 22px; padding-right: 22px; }
+    /* The CAP meets the 320px floor of the query above rather than clearing
+       it: at a larger cap the photograph would get TALLER as the viewport
+       crossed 520px downward, which is a plate growing on a smaller screen. */
+    .thv-ar-shot { min-height: clamp(260px, 76vw, 320px); }
+  }
+</style>

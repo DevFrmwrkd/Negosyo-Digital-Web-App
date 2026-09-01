@@ -1,0 +1,271 @@
+---
+/**
+ * foodcraft / HeaderBP — "Tahanan Cafe · Split" rail.
+ *
+ * ROLE. The page's one persistent chrome. Lifted from the element carrying no
+ * data-component in "Tahanan Cafe Landing v4.dc.html" (the design's header sits
+ * outside its component tree): a translucent white bar with a 12px backdrop
+ * blur and one hairline under it, holding a serif wordmark with a tracked-caps
+ * locality beside it, a row of 13px links, and one filled walnut action.
+ *
+ * Design values reproduced exactly: bar background rgba(255,255,255,.95),
+ * border-bottom 1px, inner max-width 1180 at 15px 30px, wordmark
+ * DM Serif Display 24px, locality 9px at .3em, nav gap 23px, links 13px in
+ * --ink-soft, and the action at 12px 22px / 11.5px rather than the page's
+ * standard 16px 28px / 12.5px.
+ *
+ * ONE STRUCTURAL DEPARTURE, and it is the same one every sibling makes: the
+ * design's bar is `position:fixed` with a matching 59px of padding pushed onto
+ * `main`. This one is `position:sticky; top:0`, which occupies its own space
+ * and needs no compensating padding — the same result without a magic number
+ * that goes stale the moment a longer business name wraps the bar to two rows.
+ *
+ * EDITABLE HOOKS:
+ *   footer.brand              — the wordmark (shared with FooterBP by design;
+ *                               one name, edited in one place)
+ *   footer.locality           — the tracked-caps town beside it
+ *   navbar_links.${i}.label   — each link, with .href on data-href-field
+ *   navCtaText + navCtaHref   — the filled action
+ *
+ * DERIVED, never stored: nothing. Every string here is an owner's.
+ *
+ * NOT GATED. PageBP renders the header under visibility.headerSection, but
+ * check-template-blocks.mjs exempts Header and Footer from the gate rule
+ * because no wrapper in the repo makes them removable. The `hasRail` guard
+ * below is the real switch: with no brand, no links and no action there is
+ * nothing to draw and the element does not ship.
+ *
+ * ANCHOR GUARD. lib/derive-content-defaults.ts writes '#services', '#contact'
+ * and friends into nav hrefs regardless of which ids a template renders. This
+ * page draws menu / about / gallery / visit / faq, so anything else is remapped
+ * to the block that carries the same content here, or dropped. PAGE_ANCHORS and
+ * ANCHOR_ALIAS are duplicated verbatim in HeroBP, HowBP, CtaBandBP and
+ * FooterBP: a section component receives only `content` + `layout`, so there is
+ * no shared import to reach for, and the copies must stay identical by hand.
+ *
+ * THE MOBILE NAV is this file's own — the design has none, being a desktop
+ * artboard. Below 900px the links become a full-width sheet under the bar,
+ * opened by a burger that is 46x44 (over the 44px touch floor) and closed by
+ * Escape, by a link, or by the action.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+const lay = (layout as any) || {};
+const c = (content as any) || {};
+
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const brand = String(c.footer?.brand || lay.businessName || '').trim();
+const locality = String(c.footer?.locality ?? '').trim();
+
+const navSource: any[] = Array.isArray(c.navbar_links)
+  ? c.navbar_links
+  : (Array.isArray(lay.navLinks) ? lay.navLinks : []);
+// A link with no label or no reachable target is not a link. Dropping it is
+// better than printing a nav item that scrolls nowhere.
+const navLinks: Array<{ href: string; label: string; i: number }> = navSource
+  .map((l: any, i: number) => ({ label: String(l?.label ?? '').trim(), href: onPage(l?.href, ''), i }))
+  .filter((l: { href: string; label: string }) => l.href && l.label);
+
+const ctaText = String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(c.navCtaHref, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+const hasRail = Boolean(brand || locality || navLinks.length > 0 || ctaText);
+---
+{hasRail && (
+  <header class="thv-rail">
+    <div class="wrap thv-in">
+      {(brand || locality) && (
+        <a class="thv-lock" href="#main">
+          {brand && <span class="thv-mark" data-field="footer.brand">{brand}</span>}
+          {locality && <span class="thv-town" data-field="footer.locality">{locality}</span>}
+        </a>
+      )}
+      {navLinks.length > 0 && (
+        <nav class="thv-nav" id="thv-nav-BP" aria-label="Primary">
+          {navLinks.map((link) => (
+            <a
+              href={link.href}
+              data-field={`navbar_links.${link.i}.label`}
+              data-href-field={`navbar_links.${link.i}.href`}
+            >{link.label}</a>
+          ))}
+        </nav>
+      )}
+      {ctaText && (
+        <a
+          href={ctaHref}
+          class="btn btn--fill thv-cta"
+          target={ctaExternal ? '_blank' : undefined}
+          rel={ctaExternal ? 'noopener noreferrer' : undefined}
+          data-field="navCtaText"
+          data-href-field="navCtaHref"
+        >{ctaText}</a>
+      )}
+      {navLinks.length > 0 && (
+        <button class="thv-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="thv-nav-BP">
+          <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </button>
+      )}
+    </div>
+  </header>
+)}
+<script is:inline>
+  (function () {
+    var rail = document.querySelector('header.thv-rail');
+    if (!rail) return;
+    var btn = rail.querySelector('.thv-burger');
+    if (!btn) return;
+    function setOpen(open) {
+      rail.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    btn.addEventListener('click', function () { setOpen(!rail.classList.contains('is-open')); });
+    rail.querySelectorAll('.thv-nav a, .thv-cta').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--paper --paper-rgb --ink --ink-rgb --ink-soft --accent --accent-deep --line
+     --line-2 --disp --sans --r) and from its shared primitives (.wrap .btn .btn--fill). There
+     is no literal hex in this file. */
+
+  /* Design: background rgba(255,255,255,.95); backdrop-filter blur(12px);
+     border-bottom 1px. The translucency is written through --paper-rgb so an
+     admin colour pick moves the bar with the page rather than leaving a white
+     strip over a repainted body. */
+  .thv-rail {
+    position: sticky; top: 0; z-index: 50;
+    background-color: rgba(var(--paper-rgb), .95);
+    border-bottom: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  /* Design: padding 15px 30px, space-between, gap 20px. The 30px is .wrap's
+     job; only the vertical 15px is stated here — and it is stated as
+     padding-BLOCK, which is load-bearing. This element is `class="wrap thv-in"`,
+     so the shorthand `padding: 15px 0` would write an explicit 0 into both
+     inline sides at (0,2,0) and out-rank the wrapper's
+     `:where(.wrap){padding-inline:var(--pad)}` at (0,1,1). The gutter this
+     comment says belongs to .wrap would be gone, and the rail's contents would
+     run to the viewport edge while every section below stayed inset — visible
+     at every width, not just narrow ones. */
+  .thv-in {
+    display: flex; align-items: center; justify-content: flex-end;
+    gap: 20px; padding-block: 15px;
+  }
+
+  /* Design: display flex; align-items baseline; gap 10px. margin-right:auto
+     pins the lockup left while the nav takes the middle. */
+  .thv-lock {
+    display: flex; align-items: baseline; gap: 10px;
+    margin-right: auto; flex: 0 1 auto; min-width: 0; color: var(--ink);
+  }
+  /* Design: DM Serif Display 24px. line-height normal rather than the
+     wrapper's heading 1.1, because this is one line in a fixed-height bar and
+     1.1 clips the descenders of a name like "Panaderia Miguel". */
+  .thv-mark {
+    font-family: var(--disp); font-weight: 400; font-size: 24px;
+    line-height: normal; color: var(--ink);
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+  /* Design: 9px at .3em caps in walnut, 700, white-space nowrap. */
+  .thv-town {
+    flex: 0 1 auto; min-width: 0;
+    font-family: var(--sans); font-weight: 700; font-size: 9px;
+    letter-spacing: .3em; text-transform: uppercase; color: var(--accent);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
+
+  /* Design: gap 23px, links 13px in the soft ink. */
+  .thv-nav { display: flex; align-items: center; gap: 23px; margin-right: auto; }
+  .thv-nav a {
+    font-family: var(--sans); font-weight: 400; font-size: 13px;
+    color: var(--ink-soft);
+    transition: color .18s ease;
+  }
+  .thv-nav a:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .thv-nav a { transition: none; } }
+
+  /* Design: the bar's action is smaller than the page's — 12px 22px at
+     11.5px. min-height holds the 44px touch target the design's 41px misses. */
+  .thv-cta {
+    flex: none; padding: 12px 22px; font-size: 11.5px;
+    line-height: 1.2; min-height: 44px;
+  }
+
+  .thv-burger {
+    display: none; flex-direction: column; justify-content: center; gap: 5px;
+    width: 46px; height: 44px; padding: 11px 10px; flex: none;
+    background-color: transparent; border: 1px solid var(--line-2);
+    border-radius: var(--r); cursor: pointer;
+  }
+  .thv-burger span {
+    display: block; width: 100%; height: 2px; background-color: var(--ink);
+    transition: transform .2s ease, opacity .2s ease;
+  }
+  header.thv-rail.is-open .thv-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  header.thv-rail.is-open .thv-burger span:nth-child(2) { opacity: 0; }
+  header.thv-rail.is-open .thv-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (prefers-reduced-motion: reduce) { .thv-burger span { transition: none; } }
+
+  /* ── R8 · this section's OWN responsive pass. The design is a desktop
+        artboard and draws none of this. */
+  @media (max-width: 900px) {
+    .thv-burger { display: flex; }
+    .thv-nav {
+      position: absolute; left: 0; right: 0; top: 100%;
+      display: none; flex-direction: column; align-items: stretch; gap: 0;
+      background-color: var(--paper);
+      border-bottom: 1px solid var(--line-2);
+      box-shadow: 0 14px 30px rgba(var(--ink-rgb), .12);
+      padding: 4px 0 10px; max-height: 78vh; overflow-y: auto;
+    }
+    header.thv-rail.is-open .thv-nav { display: flex; }
+    .thv-nav a {
+      display: flex; align-items: center; min-height: 48px; padding: 12px 22px;
+      border-bottom: 1px solid var(--line);
+      overflow-wrap: anywhere;
+    }
+  }
+  @media (max-width: 520px) {
+    /* The action keeps a hard ceiling on its width so a long label cannot
+       squeeze the wordmark out of the bar entirely. */
+    /* padding-BLOCK again, for the reason given on the base rule. */
+    .thv-in { gap: 10px; padding-block: 12px; }
+    .thv-mark { font-size: 20px; }
+    .thv-town { letter-spacing: .22em; }
+    .thv-cta {
+      display: block; line-height: 20px; padding: 12px 14px;
+      font-size: 10px; letter-spacing: .1em;
+      max-width: 42vw; overflow: hidden; text-overflow: ellipsis;
+    }
+  }
+  @media (max-width: 400px) {
+    .thv-town { display: none; }
+    .thv-cta { max-width: 38vw; padding: 12px 12px; }
+  }
+</style>

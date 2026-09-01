@@ -1,0 +1,191 @@
+---
+/**
+ * foodcraft / WhyBP — "Tahanan Cafe · Split"'s reasons.
+ *
+ * ROLE. The flip again — picture left, copy right — and the first of the two
+ * sections that sit on the #FBF8F5 wash. From the element carrying
+ * data-component="WHY-US" in "Tahanan Cafe Landing v4.dc.html": a 50/50 split
+ * on the tint, picture column at min-height 480, and a copy column holding an
+ * eyebrow, a headline with an italic walnut close, and a stack of reasons each
+ * drawn as a 42px numeral column beside its title and body, ruled ABOVE rather
+ * than below.
+ *
+ * THE NUMERAL IS A LOWERCASE ROMAN, IN ITALIC. The design writes i, ii, iii in
+ * DM Serif Display italic at 24px in walnut. No content field holds it — it is
+ * derived from position and marked aria-hidden, exactly like the numbered
+ * discs in HowBP and the numerals in CredentialsBP. A screen reader hears the
+ * title, not "eye eye eye".
+ *
+ * THE RULE ON THIS GROUND IS --line-tint, not --line. On #FBF8F5 the page's
+ * ordinary hairline all but disappears, and the design steps it one shade
+ * darker. That is why the token exists and why this file uses it on the
+ * divider between the halves as well as on the rows.
+ *
+ * EDITABLE HOOKS:
+ *   why.image            — data-image-field, the left photograph. Declared in
+ *                          components/editor/genericContentSchema.ts group id
+ *                          'why', so it is live in the sidebar AND inline
+ *   why.tag              — the eyebrow
+ *   why.headline         — set:html, so an owner em takes the italic
+ *   why.items.${i}.title — a reason's title
+ *   why.items.${i}.body  — its body
+ *
+ * NO PHOTOGRAPH, NO SECOND COLUMN. An owner who has uploaded nothing here gets
+ * one track with the reasons taking the measure, rather than a 480px slab of
+ * cream standing in for a picture nobody supplied.
+ *
+ * DERIVED, never stored: the roman numerals, and the picture's accessible name
+ * (layout.businessName, or nothing).
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+const why = content.why || {};
+const tag = typeof why.tag === 'string' ? why.tag.trim() : '';
+const headline = typeof why.headline === 'string' ? why.headline.trim() : '';
+
+type Item = { title?: string; body?: string; desc?: string; description?: string };
+const items: Item[] = Array.isArray(why.items) ? why.items : [];
+const titleOf = (it: Item): string => String(it?.title ?? '').trim();
+const bodyOf = (it: Item): string => String(it?.body ?? it?.desc ?? it?.description ?? '').trim();
+
+// The ORIGINAL index rides along in `i`, so dropping an empty reason cannot
+// shift the editor hooks of the ones after it.
+const rows = items
+  .map((it, i: number) => ({ i, title: titleOf(it), body: bodyOf(it) }))
+  .filter((r) => Boolean(r.title || r.body));
+
+// Lowercase roman, the design's own numbering. Only ever called with small
+// positions, but the table runs to 10 so a long list does not fall back to a
+// digit halfway down.
+const ROMAN = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x'];
+const roman = (n: number): string => ROMAN[n] ?? String(n + 1);
+
+// The picture. The quote escape keeps a filename with an apostrophe from
+// closing the url('') early and killing the declaration.
+const image = String(why.image ?? '').trim();
+const imageCss = image.replace(/'/g, '%27');
+
+// The picture's accessible name is the owner's own words or nothing. Built as
+// ONE spread object so a conditional attribute can never end up beside a
+// literal.
+const bizName = String((layout as any)?.businessName ?? '').trim();
+const photoA11y: Record<string, string> = bizName
+  ? { role: 'img', 'aria-label': bizName }
+  : { 'aria-hidden': 'true' };
+
+const hasCopy = Boolean(tag || headline) || rows.length > 0;
+const hasSection = rows.length > 0;
+---
+{hasSection && (
+  <section class:list={['split', 'band-tint', 'thv-why', !image && 'split--solo']}>
+    {image && (
+      <div class="split__shot plate thv-why-shot">
+        <div
+          class="ph"
+          data-image-field="why.image"
+          style={`background-image:url('${imageCss}');`}
+          {...photoA11y}
+        ></div>
+      </div>
+    )}
+    {hasCopy && (
+      <div class="split__copy thv-why-copy">
+        {tag && <span class="kick thv-why-kick" data-field="why.tag">{tag}</span>}
+        {headline && <h2 class="h2 thv-why-h reveal" data-field="why.headline" set:html={headline}></h2>}
+        <ol class="thv-why-list" role="list">
+          {rows.map((r, d: number) => (
+            <li class="thv-why-row reveal" data-delay={String(Math.min(d + 1, 3))}>
+              <span class="fig thv-why-n" aria-hidden="true">{roman(d)}</span>
+              <div class="thv-why-body">
+                {r.title && <h3 class="thv-why-t" data-field={`why.items.${r.i}.title`}>{r.title}</h3>}
+                {r.body && <p class="thv-why-p" data-field={`why.items.${r.i}.body`}>{r.body}</p>}
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    )}
+  </section>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--ink --ink-soft --accent --line-tint --tint --well --disp --sans) and
+     from its shared primitives (.split .split__copy .split__shot .band-tint
+     .kick .h2 .fig .plate .ph). There is no literal hex in this file. */
+
+  /* Design: the picture column is min-height:480px, and its divider on this
+     ground is the darker hairline. The colour is set on the COPY column
+     because that is the element the wrapper's `> * + *` rule actually lands
+     on; with no picture the column has no border and the declaration is inert. */
+  .thv-why-shot { min-height: 480px; }
+  .thv-why-copy { border-left-color: var(--line-tint); }
+
+  .thv-why-kick { align-self: flex-start; max-width: 100%; overflow-wrap: anywhere; }
+  /* Design: margin .24em 0 .3em, which is the shared .h2 to within a
+     hundredth. Only the wrap guard is local. */
+  .thv-why-copy .thv-why-h { overflow-wrap: anywhere; }
+
+  .thv-why-list { list-style: none; margin: 0; padding: 0; min-width: 0; }
+
+  /* Design: grid-template-columns:minmax(0,42px) minmax(0,1fr); gap:18px;
+     padding:18px 0; border-top; align-items:baseline. The rule is ABOVE each
+     row, so the first reason gets a line between it and the headline and the
+     last one closes with nothing — which is what the design draws. */
+  .thv-why-row {
+    display: grid;
+    grid-template-columns: minmax(0, 42px) minmax(0, 1fr);
+    gap: 18px;
+    align-items: baseline;
+    padding: 18px 0;
+    border-top: 1px solid var(--line-tint);
+    list-style: none;
+    min-width: 0;
+  }
+
+  /* Design: DM Serif Display ITALIC 24px in walnut, line-height 1. .fig gives
+     the face, the colour and the leading; the italic and the size are local. */
+  .thv-why-row .thv-why-n {
+    font-style: italic;
+    font-size: 24px;
+  }
+
+  .thv-why-body { min-width: 0; }
+  /* Design: DM Serif Display 21px, 6px beneath. */
+  .thv-why-body .thv-why-t {
+    font-family: var(--disp); font-weight: 400; font-size: 21px;
+    line-height: 1.25; margin: 0 0 6px; color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  /* Design: 14.5px/1.78 capped at 48ch. */
+  .thv-why-body .thv-why-p {
+    margin: 0;
+    font-size: 14.5px; line-height: 1.78; color: var(--ink-soft);
+    max-width: 48ch; overflow-wrap: anywhere;
+  }
+
+  /* ── R8 · this section's OWN pass. The wrapper collapses .split at 900 and
+        runs the shared type ladder at 760/520. */
+  @media (max-width: 900px) {
+    /* Stacked, the divider the wrapper turned into a border-top needs the same
+       darker hairline the vertical one had. */
+    .thv-why-copy { border-top-color: var(--line-tint); }
+    .thv-why-shot { min-height: clamp(300px, 52vw, 440px); }
+  }
+  @media (max-width: 760px) {
+    .thv-why-body .thv-why-p { max-width: none; }
+  }
+  @media (max-width: 520px) {
+    /* A 42px numeral column costs an eighth of a 310px measure. Dropping it to
+       a flowed line keeps the body its full width, and the numeral keeps its
+       size rather than shrinking to a mark nobody can read. The CAP meets the
+       300px floor of the query above rather than clearing it, so the picture
+       never gets taller as the viewport gets narrower. */
+    .thv-why-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      padding: 16px 0;
+    }
+    .thv-why-shot { min-height: clamp(230px, 62vw, 300px); }
+  }
+</style>

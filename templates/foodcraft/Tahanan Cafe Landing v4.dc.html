@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  body{margin:0;background:#FFFFFF;color:#231A13;font-family:"DM Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;}
+  *{box-sizing:border-box;}
+  a{color:#7A4E2D;text-decoration:none;}
+  a:hover{color:#573418;}
+  ::selection{background:#7A4E2D;color:#FFFFFF;}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#FFFFFF">
+
+  <header style="position:fixed;top:0;left:0;right:0;z-index:60;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);border-bottom:1px solid #EFE8E1">
+    <div style="max-width:1180px;margin:0 auto;padding:15px 30px;display:flex;align-items:center;justify-content:space-between;gap:20px">
+      <a href="#top" style="display:flex;align-items:baseline;gap:10px;color:#231A13;flex:0 0 auto">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:24px">{{ cafeName }}</span>
+        <span style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7A4E2D;font-weight:700;white-space:nowrap">{{ cafeTown }}</span>
+      </a>
+      <nav style="display:flex;gap:23px;align-items:center;flex:0 0 auto">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="4">
+          <a href="{{ n.href }}" style="font-size:13px;color:#5B5148;white-space:nowrap">{{ n.label }}</a>
+        </sc-for>
+        <a href="{{ contactUrl }}" target="_blank" rel="noopener" style="{{ btnNav }}">{{ contactLabel }}</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top" style="padding-top:59px">
+
+    <section data-component="HERO" data-screen-label="Hero" style="position:relative;min-height:88vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:stretch;border-bottom:1px solid #EFE8E1">
+      <div style="padding:76px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:#7A4E2D;font-weight:700">{{ heroKicker }}</span>
+        <h1 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(42px,5.8vw,84px);line-height:1.04;margin:.22em 0 .28em;color:#231A13">Stay as long <em style="font-style:italic;color:#7A4E2D">as you like.</em></h1>
+        <p style="font-size:17.5px;line-height:1.78;color:#5B5148;margin:0 0 30px;max-width:44ch">{{ heroLede }}</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <a href="{{ contactUrl }}" target="_blank" rel="noopener" style="{{ btnBrown }}">{{ contactLabel }}</a>
+          <a href="#menu" style="border:1px solid #E3D7CA;color:#231A13;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:16px 26px;border-radius:2px">See the menu</a>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px;margin-top:38px;border-top:1px solid #EFE8E1;padding-top:6px" data-component="TRUST" data-screen-label="Trust">
+          <sc-for list="{{ trust }}" as="t" hint-placeholder-count="4">
+            <div style="display:flex;align-items:baseline;gap:10px;padding:11px 0;border-bottom:1px solid #F3EDE6">
+              <span style="font-family:'DM Serif Display',Georgia,serif;font-size:21px;color:#7A4E2D;line-height:1">{{ t.n }}</span>
+              <span style="font-size:12.5px;color:#5B5148;font-weight:500">{{ t.t }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="position:relative;background:#F7F2EC;border-left:1px solid #EFE8E1;overflow:hidden">
+        <image-slot id="th4-hero" shape="rect" placeholder="Drop a photo of the café"></image-slot>
+      </div>
+    </section>
+
+    <section data-component="ABOUT" data-screen-label="About" id="about" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid #EFE8E1">
+      <div style="position:relative;min-height:520px;background:#F7F2EC;border-right:1px solid #EFE8E1;overflow:hidden">
+        <image-slot id="th4-about" shape="rect" placeholder="Drop the counter"></image-slot>
+      </div>
+      <div style="padding:66px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Our story</span>
+        <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(28px,3.6vw,48px);line-height:1.1;margin:.24em 0 .32em;color:#231A13">A café for the street <em style="font-style:italic;color:#7A4E2D">it sits on.</em></h2>
+        <p style="font-size:16.5px;line-height:1.86;color:#5B5148;margin:0 0 1em;max-width:50ch">{{ aboutP1 }}</p>
+        <p style="font-size:16.5px;line-height:1.86;color:#5B5148;margin:0 0 24px;max-width:50ch">{{ aboutP2 }}</p>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 30px">
+          <sc-for list="{{ specs }}" as="sp" hint-placeholder-count="6">
+            <div style="display:flex;align-items:baseline;gap:10px;padding:10px 0;border-bottom:1px solid #F3EDE6">
+              <span style="font-size:14px;color:#231A13">{{ sp.label }}</span>
+              <span style="margin-left:auto;font-size:12.5px;color:#6A6057;font-weight:500">{{ sp.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section data-component="SERVICES" data-screen-label="Services" id="menu" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid #EFE8E1">
+      <div style="padding:66px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">The menu</span>
+        <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(28px,3.6vw,48px);line-height:1.1;margin:.24em 0 .2em;color:#231A13">What we serve <em style="font-style:italic;color:#7A4E2D">all day.</em></h2>
+        <p style="font-size:14.5px;line-height:1.75;color:#6A6057;margin:0 0 22px;max-width:42ch">{{ menuNote }}</p>
+        <sc-for list="{{ menuGroups }}" as="g" hint-placeholder-count="3">
+          <div style="margin-bottom:22px">
+            <div style="font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;color:#7A4E2D;font-weight:700;padding-bottom:9px;border-bottom:1px solid #231A13">{{ g.title }}</div>
+            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+              <div style="display:flex;align-items:baseline;gap:12px;padding:11px 0;border-bottom:1px solid #F3EDE6">
+                <span style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;color:#231A13;min-width:0">{{ it.h }}</span>
+                <span style="margin-left:auto;font-family:'DM Serif Display',Georgia,serif;font-size:17px;color:#7A4E2D;white-space:nowrap">{{ it.price }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:relative;min-height:560px;background:#F7F2EC;border-left:1px solid #EFE8E1;overflow:hidden">
+        <image-slot id="th4-menu" shape="rect" placeholder="Drop a drink or plate"></image-slot>
+      </div>
+    </section>
+
+    <section data-component="WHY-US" data-screen-label="Why us" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid #EFE8E1;background:#FBF8F5">
+      <div style="position:relative;min-height:480px;background:#F7F2EC;border-right:1px solid #EAE1D8;overflow:hidden">
+        <image-slot id="th4-why" shape="rect" placeholder="Drop the corner table"></image-slot>
+      </div>
+      <div style="padding:66px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Why here</span>
+        <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(28px,3.6vw,48px);line-height:1.1;margin:.24em 0 .3em;color:#231A13">Why neighbours <em style="font-style:italic;color:#7A4E2D">stay.</em></h2>
+        <sc-for list="{{ why }}" as="w" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:minmax(0,42px) minmax(0,1fr);gap:18px;padding:18px 0;border-top:1px solid #EAE1D8;align-items:baseline">
+            <span style="font-family:'DM Serif Display',Georgia,serif;font-style:italic;font-size:24px;color:#7A4E2D;line-height:1">{{ w.n }}</span>
+            <div>
+              <h3 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:21px;margin:0 0 6px;color:#231A13">{{ w.h }}</h3>
+              <p style="font-size:14.5px;line-height:1.78;color:#5B5148;margin:0;max-width:48ch">{{ w.p }}</p>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section data-component="HOW-IT-WORKS" data-screen-label="How it works" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid #EFE8E1">
+      <div style="padding:66px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Ordering</span>
+        <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(28px,3.6vw,48px);line-height:1.1;margin:.24em 0 .3em;color:#231A13">Order ahead, <em style="font-style:italic;color:#7A4E2D">skip the queue.</em></h2>
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:minmax(0,40px) minmax(0,1fr);gap:18px;padding:16px 0;border-bottom:1px solid #F3EDE6;align-items:start">
+            <span style="width:32px;height:32px;border:1px solid #E3D7CA;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',Georgia,serif;font-size:15px;color:#7A4E2D;flex:none">{{ st.n }}</span>
+            <div>
+              <h3 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:20px;margin:0 0 5px;color:#231A13">{{ st.h }}</h3>
+              <p style="font-size:14.5px;line-height:1.76;color:#5B5148;margin:0;max-width:48ch">{{ st.p }}</p>
+            </div>
+          </div>
+        </sc-for>
+        <div style="margin-top:24px">
+          <a href="{{ contactUrl }}" target="_blank" rel="noopener" style="{{ btnBrown }}">{{ contactLabel }}</a>
+        </div>
+      </div>
+      <div style="position:relative;min-height:520px;background:#F7F2EC;border-left:1px solid #EFE8E1;overflow:hidden">
+        <image-slot id="th4-how" shape="rect" placeholder="Drop the counter queue"></image-slot>
+      </div>
+    </section>
+
+    <section data-component="GALLERY" data-screen-label="Gallery" id="gallery" style="border-bottom:1px solid #EFE8E1">
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr))">
+        <sc-for list="{{ gallery }}" as="g" hint-placeholder-count="4">
+          <figure style="margin:0;position:relative;aspect-ratio:3/2;background:#F7F2EC;border-right:1px solid #EFE8E1;border-bottom:1px solid #EFE8E1;overflow:hidden">
+            <image-slot id="{{ g.slotId }}" shape="rect" placeholder="{{ g.hint }}"></image-slot>
+            <figcaption style="position:absolute;left:12px;bottom:12px;background:#FFFFFF;color:#231A13;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;padding:6px 12px">{{ g.cap }}</figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+
+    <section data-component="TESTIMONIALS" data-screen-label="Testimonials" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid #EFE8E1">
+      <div style="position:relative;min-height:440px;background:#F7F2EC;border-right:1px solid #EFE8E1;overflow:hidden">
+        <image-slot id="th4-rev" shape="rect" placeholder="Drop a regular at a table"></image-slot>
+      </div>
+      <div style="padding:60px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Reviews</span>
+        <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(26px,3.3vw,42px);line-height:1.12;margin:.24em 0 .26em;color:#231A13">From the regulars</h2>
+        <sc-for list="{{ reviews }}" as="r" hint-placeholder-count="3">
+          <figure style="margin:0;padding:18px 0;border-top:1px solid #F3EDE6">
+            <blockquote style="margin:0 0 8px;font-family:'DM Serif Display',Georgia,serif;font-size:18.5px;line-height:1.58;color:#231A13">{{ r.text }}</blockquote>
+            <figcaption style="display:flex;align-items:baseline;gap:12px">
+              <span style="font-size:11px;color:#8A5A34;letter-spacing:2px">★★★★★</span>
+              <span style="font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#6A6057;font-weight:500">{{ r.who }}</span>
+            </figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+
+    <section data-component="CREDENTIALS" data-screen-label="Credentials" style="border-bottom:1px solid #EFE8E1;background:#FBF8F5">
+      <div style="max-width:1180px;margin:0 auto;padding:54px 30px">
+        <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:26px">
+          <span style="font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Standards</span>
+          <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(24px,3vw,38px);line-height:1.14;margin:0;color:#231A13">How we keep standards</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 26px">
+          <sc-for list="{{ creds }}" as="c" hint-placeholder-count="4">
+            <div style="border-top:1px solid #231A13;padding-top:14px">
+              <h3 style="font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:#7A4E2D;margin:0 0 8px;font-weight:700">{{ c.h }}</h3>
+              <p style="font-size:13.5px;line-height:1.76;color:#5B5148;margin:0">{{ c.p }}</p>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section data-component="LOCATION" data-screen-label="Location" id="visit" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid #EFE8E1">
+      <div style="padding:56px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Visit us</span>
+        <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(24px,3vw,40px);line-height:1.14;margin:.24em 0 .26em;color:#231A13">{{ addressLine }}</h2>
+        <p style="font-size:14.5px;line-height:1.78;color:#5B5148;margin:0 0 20px;max-width:38ch">Two doors from the barangay hall. Street parking is easiest before nine.</p>
+        <sc-for list="{{ hours }}" as="h" hint-placeholder-count="5">
+          <div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #F3EDE6">
+            <span style="font-size:12.5px;color:#6A6057;font-weight:500">{{ h.d }}</span>
+            <span style="font-family:'DM Serif Display',Georgia,serif;font-size:15px;color:#231A13">{{ h.t }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:relative;min-height:420px;background:#FBF8F5;border-left:1px solid #EFE8E1;overflow:hidden">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(122,78,45,.08) 0 1px,transparent 1px 42px),repeating-linear-gradient(90deg,rgba(122,78,45,.08) 0 1px,transparent 1px 42px)"></div>
+        <div style="position:absolute;top:47%;left:0;right:0;height:5px;background:rgba(122,78,45,.22)"></div>
+        <div style="position:absolute;top:0;bottom:0;left:44%;width:4px;background:rgba(122,78,45,.22)"></div>
+        <div style="position:absolute;top:47%;left:44%;transform:translate(-50%,-100%);text-align:center">
+          <div style="width:13px;height:13px;border-radius:50%;background:#7A4E2D;border:3px solid #FFFFFF;margin:0 auto"></div>
+          <div style="margin-top:8px;background:#231A13;color:#FFFFFF;font-size:9px;letter-spacing:.18em;text-transform:uppercase;padding:5px 11px;white-space:nowrap">{{ cafeName }}</div>
+        </div>
+        <span style="position:absolute;left:16px;bottom:16px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#6A6057;font-weight:600">{{ cafeTown }}</span>
+      </div>
+    </section>
+
+    <section data-component="SERVICE-AREA" data-screen-label="Service area" style="border-bottom:1px solid #EFE8E1">
+      <div style="max-width:1180px;margin:0 auto;padding:48px 30px">
+        <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+          <span style="font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Delivery</span>
+          <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(22px,2.8vw,34px);line-height:1.16;margin:0;color:#231A13">Where we deliver</h2>
+        </div>
+        <p style="font-size:14px;line-height:1.75;color:#6A6057;margin:0 0 20px;max-width:46ch">{{ deliveryNote }}</p>
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 26px">
+          <sc-for list="{{ areas }}" as="a" hint-placeholder-count="8">
+            <div style="display:flex;align-items:baseline;gap:10px;padding:10px 0;border-bottom:1px solid #F3EDE6">
+              <span style="font-size:14px;color:#231A13">{{ a.place }}</span>
+              <span style="margin-left:auto;font-size:12.5px;color:#7A4E2D;font-weight:600;white-space:nowrap">{{ a.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section data-component="FAQ" data-screen-label="FAQ" id="faq" style="border-bottom:1px solid #EFE8E1;background:#FBF8F5">
+      <div style="max-width:1180px;margin:0 auto;padding:54px 30px">
+        <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+          <span style="font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#7A4E2D;font-weight:700">Notes</span>
+          <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(24px,3vw,40px);line-height:1.14;margin:0;color:#231A13">Often asked</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 34px">
+          <sc-for list="{{ faq }}" as="q" hint-placeholder-count="6">
+            <div style="padding:17px 0;border-bottom:1px solid #EAE1D8">
+              <h3 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:19px;margin:0 0 7px;color:#231A13">{{ q.q }}</h3>
+              <p style="font-size:14.5px;line-height:1.8;color:#5B5148;margin:0">{{ q.a }}</p>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section data-component="CTA-BAND" data-screen-label="CTA band" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:#231A13">
+      <div style="padding:78px 44px;display:flex;flex-direction:column;justify-content:center">
+        <span style="display:inline-block;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#C9A57C;font-weight:700">See you soon</span>
+        <h2 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:clamp(30px,4.2vw,58px);line-height:1.08;margin:.24em 0 .28em;color:#FFFFFF;max-width:22ch">Come by, or send your order.</h2>
+        <p style="font-size:16.5px;line-height:1.78;color:#D5CBC1;margin:0 0 28px;max-width:42ch">Message us your order and a pickup time, or just walk in — there is usually a table free.</p>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+          <a href="{{ contactUrl }}" target="_blank" rel="noopener" style="{{ btnCream }}">{{ contactLabel }}</a>
+          <a href="{{ phoneHref }}" style="border:1px solid rgba(255,255,255,.42);color:#FFFFFF;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:16px 26px;border-radius:2px">{{ phoneLabel }}</a>
+        </div>
+      </div>
+      <div style="position:relative;min-height:440px;background:#F7F2EC;overflow:hidden">
+        <image-slot id="th4-cta" shape="rect" placeholder="Drop a warm interior photo"></image-slot>
+      </div>
+    </section>
+
+  </main>
+
+  <footer data-component="FOOTER" data-screen-label="Footer">
+    <div style="max-width:1180px;margin:0 auto;padding:50px 30px 38px">
+      <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr);gap:34px;padding-bottom:30px;border-bottom:1px solid #EFE8E1">
+        <div>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px">
+            <span style="font-family:'DM Serif Display',Georgia,serif;font-size:23px;color:#231A13">{{ cafeName }}</span>
+            <span style="font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#7A4E2D;font-weight:700">{{ cafeTown }}</span>
+          </div>
+          <p style="font-size:14px;line-height:1.8;color:#5B5148;margin:0 0 13px;max-width:34ch">{{ footerBlurb }}</p>
+          <a href="{{ contactUrl }}" target="_blank" rel="noopener" style="font-size:13px;font-weight:700;color:#7A4E2D">{{ contactLabel }} →</a>
+        </div>
+        <div>
+          <div style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#7A4E2D;font-weight:700;margin-bottom:12px">This page</div>
+          <p style="margin:0 0 8px"><a href="#menu" style="font-size:14px;color:#5B5148">The menu</a></p>
+          <p style="margin:0 0 8px"><a href="#about" style="font-size:14px;color:#5B5148">Our story</a></p>
+          <p style="margin:0"><a href="#faq" style="font-size:14px;color:#5B5148">FAQ</a></p>
+        </div>
+        <div>
+          <div style="font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#7A4E2D;font-weight:700;margin-bottom:12px">Get in touch</div>
+          <p style="margin:0 0 8px"><a href="{{ phoneHref }}" style="font-size:14px;color:#5B5148">{{ phoneLabel }}</a></p>
+          <p style="margin:0;font-size:14px;color:#6A6057">{{ addressLine }}</p>
+        </div>
+      </div>
+      <div style="padding-top:18px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#6A6057;font-weight:600">{{ cafeName }} · {{ addressLine }} · Prices in {{ currencyName }}</div>
+    </div>
+  </footer>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;contactUrl&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;https://m.me/TahananCafe&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contact&quot;},&quot;contactLabel&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Contact us&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contact&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;+63 917 555 0192&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contact&quot;},&quot;cafeName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Tahanan&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;town&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;San Juan&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;address&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;9 Pinaglabanan St, San Juan&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;kitchenOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;currency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;PHP&quot;,&quot;options&quot;:[&quot;PHP&quot;,&quot;USD&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#7A4E2D&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#7A4E2D&quot;,&quot;#5C3A20&quot;,&quot;#8A5A34&quot;,&quot;#4A3320&quot;],&quot;section&quot;:&quot;Look&quot;}}">
+class Component extends DCLogic {
+  money(php) {
+    const usd = this.props.currency === 'USD';
+    if (usd) return '$' + (php / 58).toFixed(2);
+    return '\u20B1' + php.toLocaleString('en-US');
+  }
+
+  renderVals() {
+    const accent = this.props.accent || '#7A4E2D';
+    const contactUrl = this.props.contactUrl || 'https://m.me/TahananCafe';
+    const contactLabel = this.props.contactLabel || 'Contact us';
+    const phone = this.props.phone || '+63 917 555 0192';
+    const town = this.props.town || 'San Juan';
+    const cafeName = this.props.cafeName || 'Tahanan';
+    const kitchen = this.props.kitchenOpen !== false;
+    const btn = 'display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;padding:16px 28px;border-radius:2px;';
+
+    const groups = [
+      { title: 'Coffee', items: [
+        { h: 'House brew', php: 95 },
+        { h: 'Flat white', php: 150 },
+        { h: 'Pour-over', php: 200 }
+      ]},
+      { title: kitchen ? 'Kitchen' : 'Counter', items: kitchen ? [
+        { h: 'Tapsilog', php: 265 },
+        { h: 'Sourdough toast', php: 165 },
+        { h: 'Pandesal basket', php: 120 }
+      ] : [
+        { h: 'Pandesal basket', php: 120 },
+        { h: 'Ensaymada', php: 95 },
+        { h: 'Banana bread', php: 105 }
+      ]},
+      { title: 'Take home', items: [
+        { h: 'Beans, 250g', php: 450 },
+        { h: 'Office catering', php: 1550 }
+      ]}
+    ];
+
+    return {
+      cafeName, cafeTown: town, contactUrl, contactLabel,
+      phoneLabel: phone,
+      phoneHref: 'tel:' + String(phone).replace(/[^+\d]/g, ''),
+      addressLine: this.props.address || '9 Pinaglabanan St, San Juan',
+      currencyName: this.props.currency === 'USD' ? 'US dollars' : 'Philippine pesos',
+
+      heroKicker: 'Neighbourhood café \u00B7 ' + town,
+      heroLede: 'A small café on a quiet street in ' + town + '. Filipino beans, honest prices, and no one hurrying you out of your seat.',
+
+      aboutP1: 'We opened in 2020 in a converted front room, mostly because the street had nowhere to sit down. Six tables then, nine now, and the same two of us behind the counter.',
+      aboutP2: kitchen
+        ? 'The coffee is from four Philippine farms and the kitchen is small on purpose \u2014 rice plates, eggs, and whatever the bakery two streets over sends across that morning.'
+        : 'The coffee is from four Philippine farms, and the food is whatever the bakery two streets over sends across each morning.',
+
+      menuNote: 'Prices are what you pay at the counter. Cash, GCash and cards all fine.',
+
+      nav: [
+        { label: 'Menu', href: '#menu' },
+        { label: 'Story', href: '#about' },
+        { label: 'Visit', href: '#visit' },
+        { label: 'FAQ', href: '#faq' }
+      ],
+
+      btnNav: btn + 'background:' + accent + ';color:#FFFFFF;padding:12px 22px;font-size:11.5px;',
+      btnBrown: btn + 'background:' + accent + ';color:#FFFFFF;',
+      btnCream: btn + 'background:#FFFFFF;color:#4A3320;',
+
+      footerBlurb: 'A small neighbourhood café in ' + town + '. Filipino beans, fair prices, and a table you can sit at all morning.',
+
+      trust: [
+        { n: '4', t: 'Philippine farms' },
+        { n: '4.9', t: 'Google rating' },
+        { n: '7am', t: 'Open daily' },
+        { n: 'Free', t: 'Wifi, no minimum' }
+      ],
+
+      specs: [
+        { label: 'Seats', value: '26 in, 6 out' },
+        { label: 'Wifi', value: '200 Mbps' },
+        { label: 'Plugs', value: 'Most tables' },
+        { label: 'Beans in', value: 'Weekly' },
+        { label: 'Payments', value: 'Cash, GCash' },
+        { label: 'Parking', value: 'Street' }
+      ],
+
+      menuGroups: groups.map(g => ({
+        title: g.title,
+        items: g.items.map(it => ({ h: it.h, price: this.money(it.php) }))
+      })),
+
+      why: [
+        { n: 'i', h: 'Nobody rushes you', p: 'No time limits and no minimum spend. Stay for one cup or the whole morning.' },
+        { n: 'ii', h: 'We know your order', p: 'Same two of us since we opened. By your third visit we start it before you ask.' },
+        { n: 'iii', h: 'Priced for the street', p: 'A neighbourhood café, not a mall kiosk. The house brew has gone up once in five years.' }
+      ],
+
+      steps: [
+        { n: '1', h: 'Send your order', p: 'Message the drinks and a pickup time. Before nine we reply fastest.' },
+        { n: '2', h: 'We start it on time', p: 'Made to hit your minute, so nothing sits going cold.' },
+        { n: '3', h: 'Collect, or stay', p: 'Grab it and go, or take the corner table.' }
+      ],
+
+      gallery: [
+        { slotId: 'th4-g1', hint: 'The room', cap: 'The room' },
+        { slotId: 'th4-g2', hint: 'Pour-over', cap: 'Pour-over' },
+        { slotId: 'th4-g3', hint: kitchen ? 'A plate' : 'Pastries', cap: kitchen ? 'Plate' : 'Pastries' },
+        { slotId: 'th4-g4', hint: 'Bagged beans', cap: 'Beans' }
+      ],
+
+      reviews: [
+        { text: 'The only place nearby where I can sit for three hours with one coffee and nobody minds.', who: 'Cha V. \u00B7 San Juan' },
+        { text: 'Asked about the beans and got a proper answer about the farm. Then they let me taste it.', who: 'Migs A. \u00B7 Greenhills' },
+        { text: 'Prices have barely moved since they opened. That says everything about who runs it.', who: 'Len D. \u00B7 Kamuning' }
+      ],
+
+      creds: [
+        { h: 'Local beans', p: 'Four Philippine farms we buy from directly, visited each harvest.' },
+        { h: 'Roast date on bag', p: 'Dated by hand, never sold past three weeks off roast.' },
+        { h: 'Barista trained', p: 'Both of us completed SCA foundation training.' },
+        { h: 'Sanitation certified', p: 'City-certified kitchen, inspected yearly.' }
+      ],
+
+      hours: [
+        { d: 'Mon \u2013 Thu', t: '7am \u2013 8pm' },
+        { d: 'Friday', t: '7am \u2013 9pm' },
+        { d: 'Saturday', t: '8am \u2013 9pm' },
+        { d: 'Sunday', t: '8am \u2013 6pm' },
+        { d: 'Holidays', t: 'See our page' }
+      ],
+
+      deliveryNote: 'Same-day coffee and pastry runs nearby. Office catering needs a day\u2019s notice.',
+
+      areas: [
+        { place: 'San Juan', time: '8 min' },
+        { place: 'Greenhills', time: '12 min' },
+        { place: 'Kamuning', time: '15 min' },
+        { place: 'New Manila', time: '14 min' },
+        { place: 'Mandaluyong', time: '18 min' },
+        { place: 'Cubao', time: '20 min' },
+        { place: 'Ortigas', time: '22 min' },
+        { place: 'Sta. Mesa', time: '20 min' }
+      ],
+
+      faq: [
+        { q: 'Do you take reservations?', a: 'Not for tables \u2014 seating is first come. For six or more, message us and we will try to hold space.' },
+        { q: 'Can I order ahead?', a: 'Yes, and it is the quickest way past the morning queue. Tap any contact button and send your order.' },
+        { q: 'Do I pay through this page?', a: 'No. There is no checkout here; this page is for orders and enquiries only.' },
+        { q: 'Is there a time limit?', a: 'None, and no minimum spend. We only ask you free the bigger tables at lunch if you are alone.' },
+        { q: 'Do you have non-dairy milk?', a: 'Oat and soy, both at no extra charge. Just say so when you order.' },
+        { q: 'Can I buy the beans?', a: 'Everything on the board is on the retail shelf too, ground to your brewer.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,350 @@
+---
+/**
+ * foodcraft / FooterBP — "Tahanan Cafe · Split"'s footer.
+ *
+ * ROLE. The page's last contained block, back on the white ground after the ink
+ * band. From the footer element in "Tahanan Cafe Landing v4.dc.html": a
+ * 1.5/1/1 grid — the brand column with its lockup, blurb and one walnut text
+ * link; a column of in-page links; a column of ways to get in touch — over a
+ * hairline, and under it a single tracked-caps colophon line.
+ *
+ * THE LOCKUP IS THE HEADER'S. Same fields (footer.brand + footer.locality),
+ * same serif-and-tracked-caps pairing, one point smaller (23px against 24px).
+ * One name, edited in one place, wherever an owner clicks it.
+ *
+ * EDITABLE HOOKS:
+ *   footer.brand                  — the wordmark, and the colophon's first term
+ *   footer.locality               — the tracked-caps town
+ *   footer.blurb                  — the paragraph under it
+ *   navCtaText + navCtaHref       — the walnut text link, which is the header's
+ *                                   action wearing different clothes
+ *   footer.explore.title          — the links column's heading
+ *   footer.explore.links.${i}.text / .href — its links, when an admin has
+ *                                   curated them
+ *   navbar_links.${i}.label / .href — the SAME links when they have not; the
+ *                                   footer mirrors the nav rather than
+ *                                   inventing a second set
+ *   footer.visit.title            — the contact column's heading
+ *   location.phone                — the phone, also shown by CtaBandBP
+ *   contact.email                 — the email
+ *   location.address              — the address, also shown by LocationBP
+ *   footer.notes.${i}             — the trailing colophon terms
+ *
+ * DERIVED, never stored: the tel: and mailto: hrefs, the address flattened onto
+ * one line for the colophon, and which column carries the call to action.
+ *
+ * THE ACTION IS DRAWN ONCE. It belongs to the brand column; only if there is no
+ * brand column does it fall through to the contact column, and even then not
+ * when its label already repeats that column's heading. Two identical buttons
+ * in one footer is not emphasis, it is a bug.
+ *
+ * A NOTE THAT REPEATS THE BRAND OR THE ADDRESS IS DROPPED. The colophon already
+ * opens with both, and extraction has a habit of writing them into notes as
+ * well; the comparison is whitespace- and case-insensitive.
+ *
+ * ANCHOR GUARD. Same PAGE_ANCHORS and ANCHOR_ALIAS as HeaderBP, HeroBP, HowBP
+ * and CtaBandBP. There is no shared import by design; the copies must stay
+ * identical by hand.
+ */
+interface Props { content: any; layout?: any; }
+const { content, layout } = Astro.props;
+
+const c = (content as any) || {};
+const lay = (layout as any) || {};
+const f = c.footer || {};
+
+const PAGE_ANCHORS = new Set(['menu', 'about', 'gallery', 'visit', 'faq', 'main']);
+const ANCHOR_ALIAS: Record<string, string> = {
+  book: 'main',
+  contact: 'visit',
+  host: 'about',
+  location: 'visit',
+  rooms: 'menu',
+  services: 'menu',
+  why: 'about',
+  work: 'gallery',
+};
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const id = href.slice(1);
+  if (PAGE_ANCHORS.has(id)) return href;
+  const alias = ANCHOR_ALIAS[id];
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+
+const brand = String(f.brand || lay.businessName || '').trim();
+const locality = String(f.locality ?? '').trim();
+const blurb = String(f.blurb || f.brand_blurb || '').trim();
+
+const ctaText = String(c.navCtaText ?? '').trim();
+const ctaHref = onPage(c.navCtaHref, '#visit');
+const ctaExternal = /^https?:/i.test(ctaHref);
+
+const linksTitle = String(f.explore?.title ?? '').trim();
+const contactTitle = String(f.visit?.title ?? '').trim();
+
+const exploreFromAdmin = Array.isArray(f.explore?.links) && f.explore.links.length > 0;
+const navFromContent = Array.isArray(c.navbar_links) && c.navbar_links.length > 0;
+
+type LinkRow = { label: string; href: string; i: number; labelHook?: string; hrefHook?: string };
+// The hook depends on WHICH source won, because writing an edit back to the
+// wrong path would change nothing on the page and look like a broken editor.
+// layout.navLinks is the last resort and carries no hook at all — it is not a
+// content path, so there is nothing an owner could edit.
+const columnLinks: LinkRow[] = ((exploreFromAdmin
+  ? f.explore.links.map((l: any) => ({ label: l?.text, href: l?.href }))
+  : (navFromContent ? c.navbar_links : (Array.isArray(lay.navLinks) ? lay.navLinks : []))) as any[])
+  .map((l: any, i: number): LinkRow => ({
+    label: String(l?.label ?? '').trim(),
+    href: onPage(l?.href, ''),
+    i,
+    labelHook: exploreFromAdmin
+      ? `footer.explore.links.${i}.text`
+      : (navFromContent ? `navbar_links.${i}.label` : undefined),
+    hrefHook: exploreFromAdmin
+      ? `footer.explore.links.${i}.href`
+      : (navFromContent ? `navbar_links.${i}.href` : undefined),
+  }))
+  .filter((l: LinkRow) => Boolean(l.label && l.href));
+
+const phone = String(c.location?.phone || lay.contact?.phone || '').trim();
+const email = String(c.contact?.email || lay.contact?.email || '').trim();
+const address = String(c.location?.address || lay.contact?.address || '').trim();
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+const addressFlat = address.replace(/\s*\n+\s*/g, ', ');
+
+const norm = (v: string): string => v.replace(/\s+/g, ' ').trim().toLowerCase();
+
+type NoteRow = { v: string; i: number };
+const notes: NoteRow[] = (Array.isArray(f.notes) ? f.notes : [])
+  .map((n: any, i: number): NoteRow => ({ v: String(n ?? '').trim(), i }))
+  .filter((n: NoteRow) => Boolean(n.v) && norm(n.v) !== norm(brand) && norm(n.v) !== norm(addressFlat));
+
+const hasBrandCol = Boolean(brand || locality || blurb);
+const brandShowsCta = Boolean(ctaText) && hasBrandCol;
+const showContactCta = Boolean(ctaText) && !brandShowsCta && norm(ctaText) !== norm(contactTitle);
+const hasContactCol = Boolean(showContactCta || phone || email || address);
+
+const hasGrid = hasBrandCol || columnLinks.length > 0 || hasContactCol;
+const hasColophon = Boolean(brand || addressFlat || notes.length > 0);
+---
+{(hasGrid || hasColophon) && (
+<footer class="thv-foot">
+  <div class="wrap">
+    {hasGrid && (
+      <div class:list={['thv-fgrid', hasColophon && 'thv-fgrid--ruled']}>
+        {hasBrandCol && (
+          <div class="thv-fbrand">
+            {(brand || locality) && (
+              <div class="thv-flock">
+                {brand && <span class="thv-fmark" data-field="footer.brand">{brand}</span>}
+                {locality && <span class="thv-ftown" data-field="footer.locality">{locality}</span>}
+              </div>
+            )}
+            {blurb && <p class="thv-fblurb" data-field="footer.blurb">{blurb}</p>}
+            {brandShowsCta && (
+              <a
+                class="linkc thv-fcta"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+          </div>
+        )}
+        {columnLinks.length > 0 && (
+          <div class="thv-fcol">
+            {linksTitle && <h4 class="thv-fh" data-field="footer.explore.title">{linksTitle}</h4>}
+            {columnLinks.map((l) => (
+              <a
+                class="thv-frow"
+                href={l.href}
+                data-field={l.labelHook}
+                data-href-field={l.hrefHook}
+              >{l.label}</a>
+            ))}
+          </div>
+        )}
+        {hasContactCol && (
+          <div class="thv-fcol">
+            {contactTitle && <h4 class="thv-fh" data-field="footer.visit.title">{contactTitle}</h4>}
+            {showContactCta && (
+              <a
+                class="thv-frow"
+                href={ctaHref}
+                target={ctaExternal ? '_blank' : undefined}
+                rel={ctaExternal ? 'noopener noreferrer' : undefined}
+                data-field="navCtaText"
+                data-href-field="navCtaHref"
+              >{ctaText}</a>
+            )}
+            {(phone || email || address) && (
+              <address class="thv-faddr">
+                {phone && (
+                  <a class="thv-frow thv-fchan" href={`tel:${phoneDigits}`} data-field="location.phone">{phone}</a>
+                )}
+                {email && (
+                  <a class="thv-frow thv-fchan" href={`mailto:${email}`} data-field="contact.email">{email}</a>
+                )}
+                {/* Not a link: an address is not dialable and not mailable, and
+                    white-space:pre-line keeps a multi-line one on its lines. */}
+                {address && <span class="thv-fline" data-field="location.address">{address}</span>}
+              </address>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+    {hasColophon && (
+      <div class="thv-fcolo">
+        {(brand || addressFlat) && (
+          <span class="thv-fid">
+            {brand && <span data-field="footer.brand">{brand}</span>}
+            {brand && addressFlat && <span class="thv-fsep" aria-hidden="true">·</span>}
+            {addressFlat && <span data-field="location.address" data-derived>{addressFlat}</span>}
+          </span>
+        )}
+        {notes.length > 0 && (
+          <span class="thv-fnotes">
+            {notes.map((n, d) => (
+              <>
+                {d > 0 && <span class="thv-fsep" aria-hidden="true">·</span>}
+                <span data-field={`footer.notes.${n.i}`}>{n.v}</span>
+              </>
+            ))}
+          </span>
+        )}
+      </div>
+    )}
+  </div>
+</footer>
+)}
+<style>
+  /* Colour, type and metrics come only from PageBP's token vocabulary
+     (--paper --ink --ink-soft --muted --accent --accent-deep --line --disp
+     --sans) and from its shared primitives (.wrap .linkc). There is no literal
+     hex in this file. */
+
+  /* Design: padding 50px 30px 38px on the white ground. */
+  .thv-foot {
+    background-color: var(--paper);
+    padding: 50px 0 38px;
+  }
+
+  /* Design: grid-template-columns 1.5fr 1fr 1fr; gap 34px. */
+  .thv-fgrid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 34px;
+  }
+  /* The rule is the colophon's ceiling, so it is only drawn when there IS a
+     colophon under it — otherwise it would be a line closing nothing. */
+  .thv-fgrid--ruled {
+    padding-bottom: 30px;
+    border-bottom: 1px solid var(--line);
+  }
+  .thv-fbrand, .thv-fcol { min-width: 0; }
+
+  /* The lockup, one point down from the header's. */
+  .thv-flock {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 12px; min-width: 0;
+  }
+  .thv-fmark {
+    font-family: var(--disp); font-weight: 400; font-size: 23px;
+    line-height: 1.15; color: var(--ink);
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  .thv-ftown {
+    font-family: var(--sans); font-weight: 700; font-size: 9px;
+    letter-spacing: .3em; text-transform: uppercase; color: var(--accent);
+    line-height: 1.3;
+    min-width: 0; overflow-wrap: anywhere;
+  }
+  /* Design: 14px/1.8 in the soft ink, capped at 34ch, 13px beneath. */
+  .thv-fbrand .thv-fblurb {
+    margin: 0 0 13px;
+    font-family: var(--sans); font-size: 14px; line-height: 1.8;
+    color: var(--ink-soft); max-width: 34ch; overflow-wrap: anywhere;
+  }
+  /* Design: 13px at 700 in walnut with a trailing arrow. The arrow is CSS
+     content and aria-hidden by construction — a generated glyph is not in the
+     accessibility tree — so a screen reader reads the label and not "right
+     arrow". */
+  .thv-fcta { overflow-wrap: anywhere; }
+  .thv-fcta::after { content: '\2192'; }
+
+  /* Design: 10px at .24em caps in walnut, 700, 12px beneath. */
+  .thv-fh {
+    margin: 0 0 12px;
+    font-family: var(--sans); font-weight: 700; font-size: 10px;
+    letter-spacing: .24em; text-transform: uppercase; color: var(--accent);
+    line-height: 1.4; overflow-wrap: anywhere;
+  }
+  /* Design: 14px in the soft ink, one per line with 8px between. The design
+     writes each as a paragraph; a block anchor is the same rhythm with a
+     44px-friendly hit area. */
+  .thv-frow {
+    display: block; padding: 4px 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    color: var(--ink-soft);
+    transition: color .18s ease;
+    overflow-wrap: anywhere;
+  }
+  .thv-frow:hover { color: var(--accent-deep); }
+  @media (prefers-reduced-motion: reduce) { .thv-frow { transition: none; } }
+
+  .thv-faddr {
+    font-style: normal; margin: 0; min-width: 0;
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    color: var(--muted);
+  }
+  .thv-fline {
+    display: block; padding: 4px 0;
+    white-space: pre-line; overflow-wrap: anywhere;
+  }
+  /* The two rows in this column that ARE links are underlined, because in a
+     column that also holds a plain address there is otherwise nothing but
+     colour to tell a reader which of the three they can tap. */
+  .thv-faddr .thv-fchan {
+    text-decoration: underline; text-decoration-color: currentColor;
+    text-decoration-thickness: 1px; text-underline-offset: 3px;
+  }
+  .thv-faddr .thv-fchan:hover {
+    text-decoration-color: var(--accent-deep); text-decoration-thickness: 2px;
+  }
+
+  /* Design: padding-top 18px; 10px at .2em caps in the muted grey, weight 600. */
+  .thv-fcolo {
+    padding-top: 18px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    font-family: var(--sans); font-weight: 600; font-size: 10px;
+    letter-spacing: .2em; text-transform: uppercase; line-height: 1.9;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  .thv-fid, .thv-fnotes { min-width: 0; overflow-wrap: anywhere; }
+  .thv-fsep { margin: 0 .45em; }
+
+  /* ── R8 · this section's OWN responsive pass. Nothing here uses a clamp, so
+        there is no floor in one query that can outgrow a cap in the next. */
+  @media (max-width: 900px) {
+    /* The brand column keeps a full row to itself — its blurb is a paragraph,
+       not a list — and the two link columns share the row under it. */
+    .thv-fgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+    .thv-fbrand { grid-column: 1 / -1; }
+  }
+  @media (max-width: 520px) {
+    .thv-foot { padding: 40px 0 30px; }
+    .thv-fgrid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+    .thv-fbrand .thv-fblurb { max-width: none; }
+    .thv-fmark { font-size: 21px; }
+    /* Stacked rather than justified: at this width the two halves of the
+       colophon were being pushed to opposite edges of a 310px line and reading
+       as two unrelated fragments. */
+    .thv-fcolo { justify-content: flex-start; gap: 8px; letter-spacing: .16em; }
+  }
+</style>
