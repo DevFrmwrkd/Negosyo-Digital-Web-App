@@ -127,6 +127,41 @@ const EN: Dict = {
     "process.kit7": "Looks right when shared",
     "process.turnaroundLabel": "from start to finish",
 
+    // Process — creator variant (/for-creators). Same shell as `process.*`
+    // above, but every "you" here is the CREATOR doing the visit, not the shop
+    // owner receiving the site. Never let these two blocks borrow each other's
+    // strings. {b} = base price, {r} = referral bonus (interpolated from
+    // lib/pricing.ts by ProcessSection — do not hardcode the numbers here).
+    "process.creator.eyebrow": "Your part",
+    "process.creator.titleA": "You do the visit.",
+    "process.creator.titleB": "We do the build.",
+    "process.creator.lede":
+        "About 30 minutes inside one shop. No design, no writing, no code — the app walks you through all of it.",
+    "process.creator.s1h": "You find the shop",
+    "process.creator.s1cost": "your pick",
+    "process.creator.s1sub":
+        "A barbershop, a carinderia, a repair shop — any business near you without a real website. The app lists nearby leads, or you bring your own.",
+    "process.creator.s2h": "You shoot and you ask",
+    "process.creator.s2cost": "~30 min on site",
+    "process.creator.s2sub":
+        "Guided step by step: at least 3 photos of the place and the work, then a recorded interview with the owner — video or audio. Your phone is the only gear.",
+    "process.creator.s3h": "We build the site",
+    "process.creator.s3cost": "none of it yours",
+    "process.creator.s3sub":
+        "You submit and you’re done. We turn your photos and that interview into a real coded website, usually live in 48–72 hours. You design nothing.",
+    "process.creator.s4h": "Owner approves, you get paid",
+    "process.creator.s4cost": "50% of the sale",
+    "process.creator.s4sub":
+        "You set the sell price before you submit — it starts at {b}. When the owner approves their site, your half reaches your Wise account within 48 hours.",
+    "process.creator.kitLabel": "What you keep",
+    "process.creator.kit1": "50% of every sale",
+    "process.creator.kit2": "{r} per referral",
+    "process.creator.kit3": "You set the price",
+    "process.creator.kit4": "Paid through Wise",
+    "process.creator.kit5": "Guided in the app",
+    "process.creator.kit6": "No quota, no shift",
+    "process.creator.statLabel": "your half of a {b} site",
+
     // Business pricing
     "price.eyebrow": "The price",
     "price.once": "once.",
@@ -358,6 +393,38 @@ const TL: Dict = {
     "process.kit6": "Menu o presyo mo",
     "process.kit7": "Maganda kapag na-share",
     "process.turnaroundLabel": "mula simula hanggang tapos",
+
+    // Process — creator variant (/for-creators). Tingnan ang EN block: ang
+    // "ikaw" dito ay ang CREATOR na bibisita, hindi ang may-ari ng tindahan.
+    "process.creator.eyebrow": "Ang parte mo",
+    "process.creator.titleA": "Ikaw ang bibisita.",
+    "process.creator.titleB": "Kami ang gagawa.",
+    "process.creator.lede":
+        "Mga 30 minuto sa loob ng isang tindahan. Walang idi-disenyo, walang isusulat, walang code — gagabayan ka ng app.",
+    "process.creator.s1h": "Ikaw ang pipili ng tindahan",
+    "process.creator.s1cost": "ikaw ang pipili",
+    "process.creator.s1sub":
+        "Barbershop, carinderia, repair shop — kahit anong negosyo malapit sa’yo na walang totoong website. May listahan ng malalapit na lead sa app, o ikaw mismo ang magdala.",
+    "process.creator.s2h": "Ikaw ang kukuha at magtatanong",
+    "process.creator.s2cost": "~30 min sa lugar",
+    "process.creator.s2sub":
+        "Gagabayan ka step by step: hindi bababa sa 3 litrato ng lugar at ng trabaho, tapos isang recorded na interview sa may-ari — video o audio. Cellphone mo lang ang kailangan.",
+    "process.creator.s3h": "Kami ang gagawa ng site",
+    "process.creator.s3cost": "wala sa’yo",
+    "process.creator.s3sub":
+        "Pagka-submit mo, tapos ka na. Gagawin naming totoong coded na website ang litrato at interview mo — karaniwang live sa loob ng 48–72 oras. Wala kang idi-disenyo.",
+    "process.creator.s4h": "Kapag na-approve, bayad ka na",
+    "process.creator.s4cost": "50% ng benta",
+    "process.creator.s4sub":
+        "Ikaw ang magtatakda ng presyo bago mo i-submit — nagsisimula sa {b}. Kapag inaprubahan ng may-ari ang site nila, mapupunta ang kalahati mo sa Wise account mo sa loob ng 48 oras.",
+    "process.creator.kitLabel": "Ang mapupunta sa’yo",
+    "process.creator.kit1": "50% ng bawat benta",
+    "process.creator.kit2": "{r} kada referral",
+    "process.creator.kit3": "Ikaw ang nagtatakda ng presyo",
+    "process.creator.kit4": "Bayad sa pamamagitan ng Wise",
+    "process.creator.kit5": "May gabay sa app",
+    "process.creator.kit6": "Walang quota, walang shift",
+    "process.creator.statLabel": "ang kalahati mo sa {b} na site",
 
     // Business pricing
     "price.eyebrow": "Ang presyo",
