@@ -36,7 +36,11 @@ const usps = rawUsps
   .slice(0, 3);
 ---
 
-<section class={`heroBP${usps.length > 0 ? ' has-usps' : ''}`} id="top">
+<section
+  class={`heroBP${usps.length > 0 ? ' has-usps' : ''}`}
+  id="top"
+  style={`--hero-lines:${Math.max(headlineLines.length, 1)}`}
+>
   <div class="heroBP-media">
     <div class="bg-img" data-image-field="hero.image" style={heroImage ? `background-image: url('${heroImage}');` : ''}></div>
   </div>
@@ -120,14 +124,21 @@ const usps = rawUsps
     position: absolute; inset: 0; z-index: 2; pointer-events: none;
     background: linear-gradient(to top, rgba(var(--ink-rgb), .75), transparent 42%);
   }
+  /* The top inset clears the header instead of matching the other three.
+     At 24px all round, the frame's top edge landed 6px above the nav's own
+     outlined "Book" button and its right edge 37px beside it — two hairline
+     rectangles that close together stop reading as a frame and a button and
+     start reading as one misdrawn box. Below 860px the header is a solid bar
+     that covers the line anyway, so the design's even inset returns there. */
   .heroBP-frame {
-    position: absolute; inset: 24px; z-index: 4; pointer-events: none;
+    position: absolute; inset: 100px 24px 24px; z-index: 4; pointer-events: none;
     border: 1px solid rgba(var(--paper-rgb), .30);
   }
+  @media (max-width: 860px) { .heroBP-frame { inset: 14px; } }
   .heroBP-inner {
     position: relative; z-index: 5;
     display: flex; flex-direction: column;
-    padding: 150px clamp(56px, 7vw, 116px) 120px;
+    padding: clamp(120px, 15svh, 150px) clamp(56px, 7vw, 116px) clamp(64px, 8svh, 120px);
   }
   /* Above 900px the strip is absolutely positioned over the photo, so the copy
      column has to reserve its height by hand. Two conditions, both load-bearing:
@@ -138,15 +149,21 @@ const usps = rawUsps
      out-specifies the narrow blocks' padding shorthand and would otherwise
      reserve 260px of nothing above a strip that is by then in normal flow. */
   @media (min-width: 901px) {
-    .heroBP.has-usps .heroBP-inner { padding-bottom: 260px; }
+    .heroBP.has-usps .heroBP-inner { padding-bottom: clamp(132px, 20svh, 260px); }
   }
   .heroBP-locality {
     font-family: var(--cond); text-transform: uppercase; letter-spacing: .24em;
-    font-size: 14px; color: rgba(var(--paper-rgb), .86); margin-bottom: 26px;
+    font-size: 14px; color: rgba(var(--paper-rgb), .86); margin-bottom: clamp(10px, 2.2svh, 26px);
   }
   .heroBP h1 {
     font-family: var(--display); font-weight: 400; text-transform: uppercase;
-    font-size: clamp(58px, 8.6vw, 142px); line-height: .92; letter-spacing: .005em; margin: 0;
+    /* Width-driven as designed, then capped by the height it would cost.
+       --hero-lines comes from the markup because the height of this block is
+       lines x size: at 142px a three-line headline alone is 468px, which no
+       laptop viewport can hold alongside the copy and the USP strip. A
+       one-line headline divides by one and keeps the full 142px. */
+    font-size: clamp(44px, min(8.6vw, calc(30svh / var(--hero-lines, 1))), 142px);
+    line-height: .92; letter-spacing: .005em; margin: 0;
   }
   .heroBP h1 .line { display: block; overflow: hidden; padding-bottom: .04em; }
   .heroBP h1 .line .inner { display: block; }
@@ -158,7 +175,8 @@ const usps = rawUsps
   }
   .heroBP-sub {
     font-size: clamp(17px, 1.5vw, 20px); line-height: 1.62;
-    color: rgba(var(--paper-rgb), .92); max-width: 30ch; margin: 34px 0 40px;
+    color: rgba(var(--paper-rgb), .92); max-width: 30ch;
+    margin: clamp(14px, 2.6svh, 34px) 0 clamp(18px, 3.2svh, 40px);
   }
   .heroBP-actions { display: flex; align-items: center; gap: 34px; flex-wrap: wrap; }
   /* Anchored on .heroBP-actions on purpose. The spine's stacked-CTA rules
@@ -172,13 +190,13 @@ const usps = rawUsps
   .heroBP-actions .heroBP-secondary { padding: 22px 30px; letter-spacing: .18em; }
 
   .heroBP-usps {
-    position: absolute; left: clamp(56px, 7vw, 116px); bottom: 68px; z-index: 5;
+    position: absolute; left: clamp(56px, 7vw, 116px); bottom: clamp(20px, 4svh, 68px); z-index: 5;
     display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
     max-width: 940px;
     background: rgba(var(--ink-rgb), .55); backdrop-filter: blur(14px);
     border: 1px solid rgba(var(--paper-rgb), .18);
   }
-  .heroBP-usps .usp { display: flex; align-items: center; gap: 20px; padding: 26px 32px; }
+  .heroBP-usps .usp { display: flex; align-items: center; gap: 20px; padding: clamp(12px, 2svh, 26px) 32px; }
   .heroBP-usps .usp + .usp { border-left: 1px solid rgba(var(--paper-rgb), .16); }
   .heroBP-usps .ico { color: var(--brass); flex: 0 0 auto; display: inline-flex; }
   .heroBP-usps .ico svg { width: 34px; height: 34px; }
@@ -192,13 +210,12 @@ const usps = rawUsps
     .heroBP-usps { right: clamp(56px, 7vw, 116px); max-width: none; }
   }
   @media (max-width: 900px) {
-    .heroBP-frame { inset: 14px; }
     .heroBP-inner { padding: 130px var(--pad) 40px; }
     /* 77px, not the 84px this rule was written with: the base clamp yields
        8.6vw = 77.49px at 901px, so a 84px ceiling made the headline GROW 6.5px
        as the window crossed 900 and shrink again as it grew. Same floor, same
        vw, capped at what the desktop curve already reads here. */
-    .heroBP h1 { font-size: clamp(46px, 11vw, 77px); }
+    .heroBP h1 { font-size: clamp(46px, min(11vw, calc(30svh / var(--hero-lines, 1))), 77px); }
     .heroBP-sub { max-width: 34ch; }
     /* In flow, not floating. Absolute + a hand-counted padding is a race
        the padding loses as soon as a USP body wraps: at <=760 the 290px
@@ -215,14 +232,14 @@ const usps = rawUsps
   }
   @media (max-width: 760px) {
     .heroBP-inner { padding: 118px var(--pad) 32px; }
-    .heroBP h1 { font-size: clamp(40px, 12vw, 64px); }
+    .heroBP h1 { font-size: clamp(40px, min(12vw, calc(30svh / var(--hero-lines, 1))), 64px); }
     .heroBP-locality { font-size: 12px; letter-spacing: .2em; margin-bottom: 18px; }
     .heroBP-sub { font-size: 16px; margin: 22px 0 28px; }
     .heroBP-actions { gap: 20px; }
     .heroBP-actions .heroBP-primary { padding: 16px 24px; }
   }
   @media (max-width: 520px) {
-    .heroBP h1 { font-size: clamp(34px, 12.5vw, 50px); }
+    .heroBP h1 { font-size: clamp(34px, min(12.5vw, calc(30svh / var(--hero-lines, 1))), 50px); }
     .heroBP-inner { padding: 104px var(--pad) 28px; }
     .heroBP-usps .usp-text { display: none; }
   }
