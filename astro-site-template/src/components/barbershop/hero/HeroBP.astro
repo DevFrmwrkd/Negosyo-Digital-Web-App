@@ -1,0 +1,229 @@
+---
+interface Props { content: any; layout: any; }
+const { content, layout } = Astro.props;
+// Anchor guard — same contract as HeroF. PageBP reuses the *F sections, so its
+// anchor set matches PageF's. Keep PAGE_ANCHORS in step with PageBP.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'how', 'services', 'top', 'visit', 'work']);
+const ANCHOR_ALIAS: Record<string, string> = { gallery: 'work', location: 'visit' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+const hero = content.hero || {};
+const heroImage = hero.image || (hero.photos && hero.photos[0]) || (content.photos && content.photos[0]) || '';
+const locality = hero.kicker || hero.locality || '';
+const headlineLines = Array.isArray(hero.headlineLines) && hero.headlineLines.length > 0
+  ? hero.headlineLines
+  : (hero.headline ? [hero.headline] : []);
+const thin = hero.thin || hero.sub_kicker || '';
+const sub = hero.sub || '';
+const cta1Text = hero.cta1?.text || '';
+const cta1Href = onPage(hero.cta1?.href, '#services');
+const cta2Text = hero.cta2?.text || '';
+const cta2Href = onPage(hero.cta2?.href, (layout.contact?.phone ? `tel:${layout.contact.phone.replace(/[^0-9+]/g, '')}` : '#'));
+// USP strip. Accepts plain strings or {title,text} objects — the content layer
+// emits both shapes across categories. Nothing is invented: with no usps the
+// strip is not drawn, and a usp with no body text renders as a title alone.
+const rawUsps: any[] = Array.isArray(hero.usps) ? hero.usps : [];
+const usps = rawUsps
+  .map((u: any) => (typeof u === 'string'
+    ? { title: u, text: '' }
+    : { title: u?.title || u?.label || u?.heading || '', text: u?.text || u?.desc || u?.body || '' }))
+  .filter((u: any) => u.title)
+  .slice(0, 3);
+---
+
+<section class={`heroBP${usps.length > 0 ? ' has-usps' : ''}`} id="top">
+  <div class="heroBP-media">
+    <div class="bg-img" data-image-field="hero.image" style={heroImage ? `background-image: url('${heroImage}');` : ''}></div>
+  </div>
+  <span class="heroBP-scrim"></span>
+  <span class="heroBP-scrim-b"></span>
+  <span class="heroBP-frame"></span>
+
+  <div class="heroBP-inner">
+    {locality && <div class="heroBP-locality" data-field="hero.kicker">{locality}</div>}
+    {/* Guarded element, not guarded contents: with no name supplied the content
+        layer emits headlineLines: [], and an unconditional <h1> would ship an
+        empty heading. */}
+    {/* The accent falls on the LAST line — but only when there IS more than one.
+        derive-content-defaults emits headlineLines: [businessName], a single
+        line, on every site whose owner has not written a multi-line headline;
+        accenting index length-1 unguarded would paint the WHOLE wordmark ice
+        blue on the common case. HeroF sidesteps this by accenting index 1,
+        which simply never matches a one-liner. */}
+    {(headlineLines.length > 0 || thin) && (
+      <h1>
+        {headlineLines.map((line: string, i: number) => (
+          <span class="line"><span class={`inner${i === headlineLines.length - 1 && headlineLines.length > 1 ? ' accent' : ''}`} data-field={`hero.headlineLines.${i}`} set:html={line}></span></span>
+        ))}
+        {thin && <span class="thin" data-field="hero.thin">{thin}</span>}
+      </h1>
+    )}
+    {sub && <p class="heroBP-sub" data-field="hero.sub">{sub}</p>}
+    <div class="heroBP-actions">
+      {cta1Text && (
+        <a class="btn btn--brass heroBP-primary" href={cta1Href} data-field="hero.cta1.text" data-href-field="hero.cta1.href">
+          <span>{cta1Text}</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6" /></svg>
+        </a>
+      )}
+      {cta2Text && (
+        <a class="btn btn--ghost on-dark heroBP-secondary" href={cta2Href} data-field="hero.cta2.text" data-href-field="hero.cta2.href">{cta2Text}</a>
+      )}
+    </div>
+  </div>
+
+  {usps.length > 0 && (
+    <div class="heroBP-usps" style={`grid-template-columns:repeat(${usps.length},minmax(0,1fr))`}>
+      {usps.map((u: any, i: number) => (
+        <div class="usp">
+          <span class="ico" aria-hidden="true">
+            {i === 0 && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><circle cx="6" cy="6" r="2.6" /><circle cx="6" cy="18" r="2.6" /><path d="M8.2 7.9L20 20M8.2 16.1L20 4" /></svg>
+            )}
+            {i === 1 && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M10 2h4v3.2l2.4 3.4A4 4 0 0 1 17 11v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9a4 4 0 0 1 .6-2.4L10 5.2z" /><path d="M7 14h10" /></svg>
+            )}
+            {i === 2 && (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M6 4h12M8 4v6h8V4M5 10h14v5H5zM7 15v5M17 15v5M4 20h16" /></svg>
+            )}
+          </span>
+          <div>
+            <div class="usp-title" data-field={`hero.usps.${i}.title`}>{u.title}</div>
+            {u.text && <div class="usp-text" data-field={`hero.usps.${i}.text`}>{u.text}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</section>
+
+<style>
+  .heroBP {
+    background: var(--ink); color: var(--paper);
+    min-height: 100svh; overflow: hidden; position: relative;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .heroBP-media, .heroBP-media .bg-img { position: absolute; inset: 0; }
+  .heroBP-media .bg-img { background-size: cover; background-position: center; }
+  /* Two scrims, not one: the diagonal keeps the copy side legible while the
+     subject stays clear, the vertical lifts the USP strip off the photo. */
+  .heroBP-scrim {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: linear-gradient(100deg, rgba(var(--ink-rgb), .88) 0%, rgba(var(--ink-rgb), .62) 38%, rgba(var(--ink-rgb), .18) 68%, rgba(var(--ink-rgb), .45) 100%);
+  }
+  .heroBP-scrim-b {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: linear-gradient(to top, rgba(var(--ink-rgb), .75), transparent 42%);
+  }
+  .heroBP-frame {
+    position: absolute; inset: 24px; z-index: 4; pointer-events: none;
+    border: 1px solid rgba(var(--paper-rgb), .30);
+  }
+  .heroBP-inner {
+    position: relative; z-index: 5;
+    display: flex; flex-direction: column;
+    padding: 150px clamp(56px, 7vw, 116px) 120px;
+  }
+  /* Above 900px the strip is absolutely positioned over the photo, so the copy
+     column has to reserve its height by hand. Two conditions, both load-bearing:
+     only when the strip is DRAWN (hero.usps is opt-in and empty on a fresh
+     site, and an unconditional 260px left a dead band under the CTAs and shoved
+     the copy 55px above optical centre on every site that never filled it in),
+     and only at the widths where it floats — min-width, because this rule
+     out-specifies the narrow blocks' padding shorthand and would otherwise
+     reserve 260px of nothing above a strip that is by then in normal flow. */
+  @media (min-width: 901px) {
+    .heroBP.has-usps .heroBP-inner { padding-bottom: 260px; }
+  }
+  .heroBP-locality {
+    font-family: var(--cond); text-transform: uppercase; letter-spacing: .24em;
+    font-size: 14px; color: rgba(var(--paper-rgb), .86); margin-bottom: 26px;
+  }
+  .heroBP h1 {
+    font-family: var(--display); font-weight: 400; text-transform: uppercase;
+    font-size: clamp(58px, 8.6vw, 142px); line-height: .92; letter-spacing: .005em; margin: 0;
+  }
+  .heroBP h1 .line { display: block; overflow: hidden; padding-bottom: .04em; }
+  .heroBP h1 .line .inner { display: block; }
+  .heroBP h1 .line :global(.accent) { color: var(--brass); }
+  .heroBP h1 .thin {
+    display: block; font-family: var(--serif); font-style: italic; font-weight: 500;
+    text-transform: none; color: var(--brass-bright); font-size: .34em;
+    letter-spacing: 0; line-height: 1; margin-top: .2em;
+  }
+  .heroBP-sub {
+    font-size: clamp(17px, 1.5vw, 20px); line-height: 1.62;
+    color: rgba(var(--paper-rgb), .92); max-width: 30ch; margin: 34px 0 40px;
+  }
+  .heroBP-actions { display: flex; align-items: center; gap: 34px; flex-wrap: wrap; }
+  /* Anchored on .heroBP-actions on purpose. The spine's stacked-CTA rules
+     reach .btn through :is(html[data-page=...]) at (0,2,1); a bare
+     .heroBP-primary is (0,2,0) once Astro scopes it, so the design's own
+     padding, gap and tracking silently lost to the family default. */
+  .heroBP-actions .heroBP-primary { gap: 26px; padding: 22px 30px; letter-spacing: .18em; }
+  .heroBP-actions .heroBP-primary svg { width: 20px; height: 20px; flex: 0 0 auto; }
+  /* Secondary CTA is an outlined ghost button, not a media control — this
+     template hosts no video, and cta2 carries whatever label the owner set. */
+  .heroBP-actions .heroBP-secondary { padding: 22px 30px; letter-spacing: .18em; }
+
+  .heroBP-usps {
+    position: absolute; left: clamp(56px, 7vw, 116px); bottom: 68px; z-index: 5;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: 940px;
+    background: rgba(var(--ink-rgb), .55); backdrop-filter: blur(14px);
+    border: 1px solid rgba(var(--paper-rgb), .18);
+  }
+  .heroBP-usps .usp { display: flex; align-items: center; gap: 20px; padding: 26px 32px; }
+  .heroBP-usps .usp + .usp { border-left: 1px solid rgba(var(--paper-rgb), .16); }
+  .heroBP-usps .ico { color: var(--brass); flex: 0 0 auto; display: inline-flex; }
+  .heroBP-usps .ico svg { width: 34px; height: 34px; }
+  .usp-title {
+    font-family: var(--cond); font-size: 12.5px; font-weight: 500;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--paper);
+  }
+  .usp-text { font-size: 14px; line-height: 1.5; color: var(--muted-light); margin-top: 6px; }
+
+  @media (max-width: 1180px) {
+    .heroBP-usps { right: clamp(56px, 7vw, 116px); max-width: none; }
+  }
+  @media (max-width: 900px) {
+    .heroBP-frame { inset: 14px; }
+    .heroBP-inner { padding: 130px var(--pad) 40px; }
+    /* 77px, not the 84px this rule was written with: the base clamp yields
+       8.6vw = 77.49px at 901px, so a 84px ceiling made the headline GROW 6.5px
+       as the window crossed 900 and shrink again as it grew. Same floor, same
+       vw, capped at what the desktop curve already reads here. */
+    .heroBP h1 { font-size: clamp(46px, 11vw, 77px); }
+    .heroBP-sub { max-width: 34ch; }
+    /* In flow, not floating. Absolute + a hand-counted padding is a race
+       the padding loses as soon as a USP body wraps: at <=760 the 290px
+       reserve was 7px under a one-column strip and the panel covered the CTA
+       row. As a flex item after .heroBP-inner it cannot overlap anything. */
+    .heroBP-usps {
+      position: static; left: auto; right: auto; bottom: auto;
+      margin: 0 var(--pad) 56px;
+      grid-template-columns: 1fr !important;
+    }
+    .heroBP-usps .usp { padding: 18px 22px; }
+    .heroBP-usps .usp + .usp { border-left: 0; border-top: 1px solid rgba(var(--paper-rgb), .16); }
+    .heroBP-usps .ico svg { width: 26px; height: 26px; }
+  }
+  @media (max-width: 760px) {
+    .heroBP-inner { padding: 118px var(--pad) 32px; }
+    .heroBP h1 { font-size: clamp(40px, 12vw, 64px); }
+    .heroBP-locality { font-size: 12px; letter-spacing: .2em; margin-bottom: 18px; }
+    .heroBP-sub { font-size: 16px; margin: 22px 0 28px; }
+    .heroBP-actions { gap: 20px; }
+    .heroBP-actions .heroBP-primary { padding: 16px 24px; }
+  }
+  @media (max-width: 520px) {
+    .heroBP h1 { font-size: clamp(34px, 12.5vw, 50px); }
+    .heroBP-inner { padding: 104px var(--pad) 28px; }
+    .heroBP-usps .usp-text { display: none; }
+  }
+</style>

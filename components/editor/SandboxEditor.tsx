@@ -60,17 +60,19 @@ const GENERIC_TEMPLATES = [
     { letter: 'E', code: 'generic:E', label: 'Wash House',    tagline: 'Blue + yellow · laundry',       preview: '/template-previews/e.html' },
 ] as const;
 
-// ── BARBERSHOP · Forge family · 5 letter variants ────────────────────
+// ── BARBERSHOP · Forge family · 6 variants ───────────────────────
 // Codes map to `customizations.heroStyle = "barbershop:<letter>"` which
-// the Astro router resolves to PageF…PageJ. Each variant shares the
-// same 16 Letter F section components and only swaps :root tokens for
-// per-letter palette / typography identity.
+// the Astro router resolves to PageF…PageJ and PageBP. Each variant
+// shares the same 16 Letter F section components and only swaps :root
+// tokens for per-letter palette / typography identity. BP is a global
+// letter, not a per-family one — K..BO were already spoken for.
 const BARBERSHOP_TEMPLATES = [
     { letter: 'F', code: 'barbershop:F', label: 'Forge',     tagline: 'Paper + brass · classic',           preview: '/template-previews/f.html' },
     { letter: 'G', code: 'barbershop:G', label: 'Cinematic', tagline: 'Oversized type · editorial',         preview: '/template-previews/g.html' },
     { letter: 'H', code: 'barbershop:H', label: 'Kinetic',   tagline: 'Black + green · energetic',          preview: '/template-previews/h.html' },
     { letter: 'I', code: 'barbershop:I', label: 'Minimal',   tagline: 'Neutral grayscale · refined',        preview: '/template-previews/i.html' },
     { letter: 'J', code: 'barbershop:J', label: 'Stacked',   tagline: 'Stone + dark red · bold serif',      preview: '/template-previews/j.html' },
+    { letter: 'BP', code: 'barbershop:BP', label: 'Glacier', tagline: 'Ice blue + didone · full-bleed photo', preview: '/template-previews/bp.html' },
 ] as const;
 
 // ── SALONSPA · 5 letter variants K–O + AN ────────────────────────────
@@ -683,7 +685,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
         () => /^generic:[A-E]$/.test(__initStyle) || !/^(generic|barbershop|salonspa|autoshop|restaurant|shirtstore|retail|medical|fitness|education|trades|foodcraft|services):/.test(__initStyle),
     );
     const [barbershopAccordionOpen, setBarbershopAccordionOpen] = useState<boolean>(
-        () => /^barbershop:[F-J]$/.test(__initStyle),
+        () => /^barbershop:([F-J]|BP)$/.test(__initStyle),
     );
     const [salonspaAccordionOpen, setSalonspaAccordionOpen] = useState<boolean>(
         () => /^salonspa:([K-O]|AN)$/.test(__initStyle),
@@ -1494,7 +1496,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                                                     Barbershop
                                                 </div>
                                                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--sx-ink)" }}>
-                                                    {activeFamily === 'barbershop' && activeTpl ? activeTpl.label : "Forge family · 5 variants"}
+                                                    {activeFamily === 'barbershop' && activeTpl ? activeTpl.label : "Forge family · 6 variants"}
                                                 </div>
                                                 <div
                                                     style={{
@@ -3500,7 +3502,7 @@ export default function SandboxEditor(props: SandboxEditorProps) {
                     })()}
 
                     {/* ── CONTENT ──────────────────────────────── */}
-                    {tab === "content" && /^(generic:[A-E]|barbershop:[F-J]|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS|hospitality:(BI|BJ))$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
+                    {tab === "content" && /^(generic:[A-E]|barbershop:([F-J]|BP)|salonspa:([K-O]|AN)|autoshop:([P-T]|AF|AP)|restaurant:([U-Y]|AE|AM)|shirtstore:(Z|A[A-D])|retail:(AG|AO)|medical:(AH|AQ)|fitness:(AI|AR)|education:(AJ|AT)|trades:(AK|AU)|foodcraft:AL|services:AS|hospitality:(BI|BJ))$/.test(String((effectiveCustomizations as any)?.heroStyle ?? "")) && (() => {
                         // The tier-3 read chain (draft -> schema fallbackPaths
                         // -> submission-derived defaults) is hoisted to the top
                         // of the component now, because the image picker, the

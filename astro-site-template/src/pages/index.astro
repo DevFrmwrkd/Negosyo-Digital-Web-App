@@ -15,6 +15,7 @@
  *   "barbershop:H"  → Forge Kinetic (black + green)
  *   "barbershop:I"  → Forge Minimal (neutral)
  *   "barbershop:J"  → Forge Stacked (paper + dark red)
+ *   "barbershop:BP" → Glacier (ice blue + didone · full-bleed photo)
  *   "salonspa:K"    → Atelier (pearl + brass · Cormorant Garamond + Jost)
  *   "salonspa:L"    → Botanica (sage + cream · Spectral + Mulish)
  *   "salonspa:M"    → Clinic (mist + teal · Tenor Sans + Karla)
@@ -77,6 +78,7 @@ import PageG from '../components/barbershop/PageG.astro';
 import PageH from '../components/barbershop/PageH.astro';
 import PageI from '../components/barbershop/PageI.astro';
 import PageJ from '../components/barbershop/PageJ.astro';
+import PageBP from '../components/barbershop/PageBP.astro';
 import PageK from '../components/salonspa/PageK.astro';
 import PageL from '../components/salonspa/PageL.astro';
 import PageM from '../components/salonspa/PageM.astro';
@@ -158,7 +160,7 @@ const heroStyle: string = (__q.get('hero') || customizations.heroStyle) ?? '';
 const data = { ...__sd, layout, visibility, customizations: { ...customizations, heroStyle } };
 const genericMatch = /^generic:([A-E])$/.exec(heroStyle);
 const genericLetter = genericMatch ? genericMatch[1] : null;
-const barbershopMatch = /^barbershop:([F-J])$/.exec(heroStyle);
+const barbershopMatch = /^barbershop:([F-J]|BP)$/.exec(heroStyle);
 const barbershopLetter = barbershopMatch ? barbershopMatch[1] : null;
 const salonspaMatch = /^salonspa:([K-O]|AN)$/.exec(heroStyle);
 const salonspaLetter = salonspaMatch ? salonspaMatch[1] : null;
@@ -204,6 +206,7 @@ const anyLetter = genericLetter || barbershopLetter || salonspaLetter
 {barbershopLetter === 'H' && <PageH siteData={data} />}
 {barbershopLetter === 'I' && <PageI siteData={data} />}
 {barbershopLetter === 'J' && <PageJ siteData={data} />}
+{barbershopLetter === 'BP' && <PageBP siteData={data} />}
 {salonspaLetter === 'K' && <PageK siteData={data} />}
 {salonspaLetter === 'L' && <PageL siteData={data} />}
 {salonspaLetter === 'M' && <PageM siteData={data} />}
