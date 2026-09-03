@@ -1,0 +1,237 @@
+---
+/**
+ * barbershop / PageBP — Glacier. Sixth variant in the Forge family.
+ * Full-bleed hero photograph behind an inset hairline frame, didone display
+ * face, ice-blue accent. Body sections are the shared *F components: the
+ * spine paints them from the tokens below, so this variant restyles the whole
+ * page without duplicating fifteen section files.
+ *
+ * LETTER. The design was handed over as "K". K is salonspa:K — data-page
+ * letters are one GLOBAL sequence in this repo, not one per family, and
+ * A..Z / AA..BO were all taken. BP is this variant's letter everywhere:
+ * the file names, data-page, the heroStyle code and the preview.
+ *
+ * Palette + font tokens are scoped to html[data-page="BP"] so sister wrappers
+ * imported by index.astro don't bleed their tokens here.
+ *
+ * ACCENT — the ice blue is the DEFAULT, not a hard-coded colour. It is set on
+ * --brass / --brass-bright, the same tokens every section and the spine read,
+ * so an admin Color Scheme override repaints it across the page. Two things
+ * it does NOT reach, both stated rather than quietly worked around: the
+ * Leaflet marker below hard-codes its fill, exactly as PageF..PageJ do
+ * (#C2954E / #1F9D57 / #1A1A1A / #9E3039) — a family-wide habit worth one
+ * sweep, not a BP-only divergence; and the light-ground accent below is
+ * WITHHELD when a scheme is picked rather than recoloured, because the theme
+ * engine emits one accent and has no second to pair with it.
+ *
+ * ...WITH ONE CAVEAT THIS VARIANT HAS TO ANSWER, and no sibling does.
+ * #BBD3EE is 12.66:1 on --ink and 1.36:1 on --paper. On the dark half of the
+ * page — the hero, the four ink bands, the filled buttons — it is the most
+ * legible accent in the family. On the cream half it is not low-contrast, it
+ * is INVISIBLE, and the shared *F sections spend --brass there on the service
+ * numerals, the step numbers, the signature, the review stars, the location
+ * icons and the FAQ's +/- affordance, which is the accordion's only open/close
+ * cue. Forge itself is 2.38:1 there and Kinetic 3.10:1, so the family already
+ * carries this debt; at 1.36 it stops being debt and starts being a bug.
+ *
+ * No accent can fix it by moving: r(ink) x r(paper) = 17.25 for ANY colour on
+ * this ink/paper pair, so min(r) can never exceed sqrt(17.25) = 4.15. The
+ * palette needs two accents, not a better one. So --brass keeps the design's
+ * ice blue at the root, where the dark half of the page reads it, and is
+ * REDECLARED as #2D6CB4 -- the same hue and saturation, taken dark enough to
+ * clear AA on cream -- on the cream sections themselves. Redeclared, not
+ * overridden per rule: see the note above that block for why a wrapper cannot
+ * out-specify a scoped section rule. Nothing about the design changes on any
+ * surface where the ice blue was already legible.
+ *
+ * STATED, NOT SILENTLY FIXED (all the designer's own values, all reachable
+ * only over a light hero photograph): .heroBP-frame's rgba(paper,.30) hairline
+ * measures 1.09-2.49:1 and never clears the 3.00 WCAG 1.4.11 asks of a UI
+ * boundary -- it is decorative and gates no control; the USP panel's
+ * rgba(paper,.18) border and .16 divider are 1.68 and 1.57 on the same
+ * reasoning; and above 860px the header is transparent until .scrolled, so
+ * over a bright photograph the wordmark (1.13), the links (1.10) and the
+ * booking button's border (1.07) are all effectively absent until the first
+ * scroll. The design's own answer to that last one already ships below 860px
+ * (a solid bar); 861px-and-up is exposed by choice.
+ *
+ * The hero photograph is editable from the Content panel's "Background image",
+ * not by clicking it: .heroBP-inner is the full-bleed copy layer and covers
+ * most of the picture, so the click-to-edit hook on .bg-img is hard to hit.
+ */
+import HeaderBP from './header/HeaderBP.astro';
+import HeroBP from './hero/HeroBP.astro';
+import TrustF from './trust/TrustF.astro';
+import AboutF from './about/AboutF.astro';
+import ServicesF from './services/ServicesF.astro';
+import WhyF from './why/WhyF.astro';
+import HowF from './how/HowF.astro';
+import TestimonialsF from './testimonials/TestimonialsF.astro';
+import GalleryF from './gallery/GalleryF.astro';
+import FaqF from './faq/FaqF.astro';
+import AreaF from './area/AreaF.astro';
+import CredentialsF from './credentials/CredentialsF.astro';
+import LocationF from './location/LocationF.astro';
+import MarqueeF from './marquee/MarqueeF.astro';
+import CtaBandF from './ctaBand/CtaBandF.astro';
+import FooterF from './footer/FooterF.astro';
+import BarbershopSpine from './BarbershopSpine.astro';
+import { resolveTheme, buildFontHref, buildOverrideCss } from '../../lib/genericThemeOverrides';
+
+interface Props { siteData: any; }
+const { siteData } = Astro.props;
+const layout = siteData.layout ?? {};
+const content = siteData.content ?? {};
+const visibility = siteData.visibility ?? {};
+const title = layout.businessName
+  ? `${layout.businessName}${layout.tagline ? ' — ' + layout.tagline : ''}`
+  : 'Welcome';
+// skipAuto: per-variant palette wins when admin leaves Color Scheme on auto.
+const { scheme: __themeScheme, pairing: __themePairing } = resolveTheme(layout, (content as any).business_type, { lockVariant: true });
+const __overrideCss = buildOverrideCss(__themeScheme, __themePairing);
+const __fontHref = buildFontHref(__themePairing);
+// The light-ground accent, emitted only when the variant's own palette is the
+// one rendering. Order-independent on purpose: it declares --brass on SECTION
+// elements, and the engine's html:root block declares it on the root, so the
+// two never meet in one cascade -- which is also why it has to be withheld
+// rather than out-weighted when a scheme is picked.
+const __lightGroundCss = __overrideCss ? '' : `
+html[data-page="BP"] section.pad-y:not(.ink-sect):not(.cta-band) {
+  --brass: #2D6CB4; --on-brass: #F4F1EA;
+}
+html[data-page="BP"] .about-media .stamp,
+html[data-page="BP"] .svc:hover,
+html[data-page="BP"] .feat {
+  --brass: #BBD3EE; --on-brass: #0B0D10;
+}`;
+---
+
+<!DOCTYPE html>
+<html lang="en" data-page="BP">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  {content.description && <meta name="description" content={content.description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Jost:wght@300;400;500;600&family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  {layout.favicon && <link rel="icon" href={layout.favicon} />}
+  {(layout.ogImage || layout.favicon) && <meta property="og:image" content={layout.ogImage || layout.favicon} />}
+  <style is:global>
+    html[data-page="BP"] {
+      --ink: #0B0D10; --ink-2: #12161B; --ink-3: #1A1F26;
+      --paper: #F4F1EA; --paper-2: #E9E4DA;
+      --ink-rgb: 11,13,16; --paper-rgb: 244,241,234; --brass-rgb: 187,211,238;
+      --brass: #BBD3EE; --brass-bright: #CBDDF2;
+      --line: rgba(11,13,16,.14); --line-light: rgba(244,241,234,.18);
+      --muted: rgba(11,13,16,.62); --muted-light: rgba(244,241,234,.66);
+      /* Contrast tokens — text colors that stay legible on each background.
+         The accent is pale, so --on-brass is ink, not paper. */
+      --on-brass: #0B0D10; --on-ink: #F4F1EA; --on-paper: #0B0D10;
+      --display: "Bodoni Moda", serif;
+      --cond: "Jost", sans-serif;
+      --serif: "Cormorant Garamond", serif;
+      --body: "Manrope", sans-serif;
+      --pad: clamp(20px, 5vw, 96px);
+      --maxw: 1280px;
+    }
+    /* Didone display needs looser tracking and a touch more leading than
+       Anton at the same size, or the hairlines collide. */
+    html[data-page="BP"] .h-sect { letter-spacing: .015em; line-height: .96; }
+    html[data-page="BP"] .kicker { letter-spacing: .3em; }
+
+    /* ---- The two accents. See ACCENT in the header comment. --------------
+       Rerouted at the TOKEN, never per rule. Astro stamps its scope attribute
+       on EVERY compound of a scoped selector, so ServicesF's `.svc .no`
+       compiles to `.svc[cid] .no[cid]` at (0,4,0) and a wrapper rule written
+       as `html[data-page="BP"] .svc .no` (0,3,1) LOSES outright -- b is
+       compared before c, and source order is never reached. Every two-class
+       descendant selector in the fourteen *F sections is out of a wrapper's
+       reach that way, which is most of them.
+
+       Custom properties have no such problem. The sections all read
+       var(--brass), so redefining --brass ON THE SECTION reaches every rule
+       inside it whatever that rule's specificity, and the dark islands nested
+       within a cream section restore the ice blue on themselves.
+
+       #2D6CB4 is #BBD3EE's own hue and saturation (HSL 211.8 / 60%) taken to
+       44% lightness: 4.75:1 on --paper, 4.28:1 on --paper-2. Paired with
+       --on-brass = --paper it also gives LocationF's .btn--brass a 4.75:1 box
+       AND a 4.75:1 label on cream, which the ice blue cannot do -- as a fill
+       it is 1.36:1 against the page and the control has no edge at all.
+
+       Emitted ONLY when Color Scheme is on auto (see __lightGroundCss). An
+       explicit scheme replaces --brass wholesale through the engine's
+       html:root block, and the engine has never heard of a second accent;
+       rather than freeze a blue into a maroon page, BP then behaves exactly
+       like its five siblings. */
+
+    /* TrustF and CtaBandF paint a --brass band straight onto the --paper page.
+       The text on them is 12.66:1 and fine; the BAND is 1.36:1 against the
+       page and reads as a faint tint rather than a band. One hairline restores
+       the edge without touching the design's pale fill. .38 alpha, not .18:
+       the composite has to clear 3:1 against --paper to be a boundary at all,
+       and .18 only reaches 2.0. This one is not gated on the scheme -- it is
+       rgba(--ink-rgb) and follows whatever the engine paints. */
+    html[data-page="BP"] .trust,
+    html[data-page="BP"] .cta-band { border-block: 1px solid rgba(var(--ink-rgb), .38); }
+  </style>
+  <BarbershopSpine />
+  {__fontHref && <link href={__fontHref} rel="stylesheet" />}
+  <style is:global set:html={__overrideCss}></style>
+  <style is:global set:html={__lightGroundCss}></style>
+</head>
+<body>
+  <HeaderBP layout={layout} content={content} />
+  <main id="top">
+    {visibility.heroSection !== false && <HeroBP content={content} layout={layout} />}
+    {visibility.trustBlock !== false && <TrustF content={content} />}
+    {visibility.aboutSection !== false && <AboutF content={content} />}
+    {visibility.servicesSection !== false && <ServicesF content={content} />}
+    {visibility.whyUsBlock !== false && <WhyF content={content} />}
+    {visibility.howItWorksBlock !== false && <HowF content={content} />}
+    {visibility.testimonialsBlock !== false && <TestimonialsF content={content} />}
+    {visibility.gallerySection !== false && <GalleryF content={content} layout={layout} />}
+    {visibility.faqBlock !== false && <FaqF content={content} />}
+    {visibility.serviceAreaBlock !== false && <AreaF content={content} />}
+    {visibility.credentialsBlock !== false && <CredentialsF content={content} />}
+    {visibility.locationBlock !== false && <LocationF content={content} layout={layout} />}
+    {visibility.marqueeBlock !== false && <MarqueeF content={content} />}
+  </main>
+  {visibility.ctaBandBlock !== false && <CtaBandF content={content} layout={layout} />}
+  <FooterF layout={layout} content={content} />
+
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    (function () {
+      var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!reduce && !document.hidden) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) {
+            if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
+        document.querySelectorAll('.reveal').forEach(function (el) { io.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+      }
+      var hdr = document.querySelector('header.nav');
+      if (hdr) {
+        var onScroll = function () { if (window.scrollY > 16) hdr.classList.add('scrolled'); else hdr.classList.remove('scrolled'); };
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      }
+      window.__barbershopInitMap = function (lat, lng, label) {
+        if (!window.L) return;
+        var el = document.getElementById('map'); if (!el) return; el.innerHTML = '';
+        var map = L.map('map', { scrollWheelZoom: false }).setView([lat, lng], 15);
+        L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap &copy; CARTO', maxZoom: 19 }).addTo(map);
+        var icon = L.divIcon({ className: '', html: '<div style="width:22px;height:22px;background:#BBD3EE;border:3px solid #0B0D10;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.35);"></div>', iconSize: [22, 22], iconAnchor: [11, 22] });
+        L.marker([lat, lng], { icon: icon }).addTo(map).bindPopup('<b>' + label + '</b>');
+      };
+    })();
+  </script>
+</body>
+</html>

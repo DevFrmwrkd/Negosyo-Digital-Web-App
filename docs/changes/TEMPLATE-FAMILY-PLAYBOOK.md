@@ -8,8 +8,8 @@ The two existing batches (Generic → `TEMPLATES-GENERIC-PLAN.md`, Barbershop) a
 
 ## Vocabulary
 
-- **Family** — a set of related templates that share a section spine and visual vocabulary. Generic (5 variants), Barbershop (5 variants), and any future family.
-- **Variant** — one template within a family, identified by a single uppercase letter. Generic uses A–E, Barbershop uses F–J. The next family should claim the next letters in alphabetical order (K, L, M, ...).
+- **Family** — a set of related templates that share a section spine and visual vocabulary. Generic (5 variants), Barbershop (6 variants), and any future family.
+- **Variant** — one template within a family, identified by an uppercase **code**: `A`…`Z`, then `AA`…`AZ`, `BA`… . **Codes are ONE GLOBAL SEQUENCE across every family, not one per family**, because `data-page` is a single attribute on a single `<html>` and every wrapper's CSS ships in every build — two families claiming `K` means each paints the other. They are also not required to be contiguous within a family: Barbershop holds F–J **and BP**, which is simply the code that was free when a sixth Forge design arrived long after J. Take the next unused code in the sequence, never the next letter after your own family's last one.
 - **Spine** — the shared base CSS for a family. One file, consumed by every variant's Page wrapper. Defines `.btn`, `.kicker`, `.h-sect`, body typography, reveal animations, etc. — anything that doesn't change per variant.
 - **Page wrapper** — the per-variant top-level component (`PageX.astro`). Emits the full document (`<html>`, `<head>`, font + Leaflet links), scopes the variant's palette + font tokens, and composes the section components.
 - **Section component** — a single block (Hero, Services, FAQ, Footer, ...). Lives in a per-section folder under the family. Reads `content.<section>` and renders the markup with `data-field` editor hooks.
@@ -22,7 +22,7 @@ The two existing batches (Generic → `TEMPLATES-GENERIC-PLAN.md`, Barbershop) a
 Before writing code, lock these decisions:
 
 1. **A namespace** — the family name in lowercase kebab-case (`generic`, `barbershop`, `salon`, etc.). This becomes the directory name and the `heroStyle` prefix.
-2. **A letter range** — pick 5 consecutive letters not already used. Generic = A–E, Barbershop = F–J. Next family = K–O.
+2. **A letter range** — take the next N unused codes from the single global sequence. `A`–`Z`, `AA`–`AZ` and `BA`–`BP` are spoken for; the next free code is `BQ`. Confirm before claiming: `ls astro-site-template/src/components/*/Page*.astro` is the authoritative list, and `components/editor/templateCatalog.ts` is the registered subset.
 3. **A shared section spine** — the ordered list of sections (Hero, About, Services, ...). All variants must use the same order and section IDs so click-to-edit hooks and content shape stay portable when admin swaps variants.
 4. **A palette + typography table** — for each of the 5 variants, the hand-tuned `--paper`, `--ink`, `--brass` (or family-equivalent), `--brass-bright`, display font, condensed font, body font, serif font.
 5. **A hero strategy** — one of:
@@ -225,9 +225,10 @@ When adding a new family that uses a token name not already aliased in `buildOve
 ```ts
 const heroStyle: string = customizations.heroStyle ?? '';
 const genericMatch    = /^generic:([A-E])$/.exec(heroStyle);
-const barbershopMatch = /^barbershop:([F-J])$/.exec(heroStyle);
-// Add a new line per family:
-const <family>Match   = /^<family>:([<L1>-<L5>])$/.exec(heroStyle);
+const barbershopMatch = /^barbershop:([F-J]|BP)$/.exec(heroStyle);
+// Add a new line per family. A two-character code CANNOT go in a character
+// class — join it as an alternation inside the capture group, as BP does above.
+const <family>Match   = /^<family>:([<L1>-<L5>]|<CODE>)$/.exec(heroStyle);
 ```
 
 Each match resolves to the corresponding letter, and a block of conditional renders picks the right wrapper:
@@ -286,7 +287,7 @@ When admin picks a variant, `setPendingCustomizations` updates `heroStyle` AND a
 Extend the regex when adding a family:
 
 ```ts
-/^(generic:[A-E]|barbershop:[F-J]|<family>:[<L1>-<L5>])$/.test(heroStyle)
+/^(generic:[A-E]|barbershop:([F-J]|BP)|<family>:[<L1>-<L5>])$/.test(heroStyle)
 ```
 
 ### Click-to-edit
@@ -385,7 +386,11 @@ Before merging a new family:
 8. **Extend `genericThemeOverrides.ts`** if your family uses a token name not already aliased (e.g. if your primary accent is called `--accent` instead of `--brass`).
 9. **Decide on `lockVariant`** — pass it from the Page wrappers if variant palettes should win on auto.
 10. **Update `AUTO_SCHEME_BY_BUSINESS_TYPE`** in both `lib/astro-builder.ts` and `astro-site-template/src/lib/genericThemeOverrides.ts` if a business_type maps to your family.
-11. **Extend the editor** — add `<FAMILY>_TEMPLATES` array, add accordion in SandboxEditor, extend content tab regex.
+11. **Extend the editor** — add `<FAMILY>_TEMPLATES` array, add accordion in SandboxEditor, extend content tab regex. Note `components/editor/SandboxEditor.tsx` is still the DEFAULT editor and keeps its **own** copy of the template arrays; v2 and v3 read `templateCatalog.ts`. Both have to be fed.
+11a. **Register in `components/editor/templateCatalog.ts`** — one row per variant. This is what v2/v3 and the parity check read.
+11b. **Add a `components/editor/templateSectionLabels.ts` block** — without it the Sections panel falls back to generic block names.
+11c. **Regenerate, never hand-edit,** `templateSectionOrder.generated.ts` and `templateFieldPaths.generated.ts`: `node scripts/gen-template-sections.mjs` and `node scripts/gen-template-fields.mjs`, then re-run both with `--check`.
+11d. **Add `public/template-previews/<code>.html`** — `scripts/check-template-parity.mjs` fails on a count mismatch in either direction. `scripts/build-template-previews.mjs` is frozen at `au` and is not the route for new codes; build the page and prune the bundle to the active code instead.
 12. **Extend the three scripts** — `build-template-previews.mjs`, `wire-theme-overrides.mjs`, `strip-section-defaults-v3.mjs`.
 13. **Run all three scripts** — they're idempotent.
 14. **Run verification checklist.**

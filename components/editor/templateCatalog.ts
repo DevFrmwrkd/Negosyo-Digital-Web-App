@@ -42,6 +42,7 @@ const BARBERSHOP_TEMPLATES: TemplateDef[] = [
     { letter: "H", code: "barbershop:H", label: "Kinetic",   tagline: "Black + green · energetic",     preview: "/template-previews/h.html" },
     { letter: "I", code: "barbershop:I", label: "Minimal",   tagline: "Neutral grayscale · refined",   preview: "/template-previews/i.html" },
     { letter: "J", code: "barbershop:J", label: "Stacked",   tagline: "Stone + dark red · bold serif", preview: "/template-previews/j.html" },
+    { letter: "BP", code: "barbershop:BP", label: "Glacier", tagline: "Ice blue + didone · full-bleed photo", preview: "/template-previews/bp.html" },
 ];
 
 const SALONSPA_TEMPLATES: TemplateDef[] = [

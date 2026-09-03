@@ -228,6 +228,33 @@ export const GENERIC_CONTENT_SCHEMA: GroupSpec[] = [
                 hrefPath: 'hero.cta2.href',
                 placeholder: 'See services',
             },
+            {
+                // Glacier (barbershop:BP) draws these as the three-cell strip
+                // across the bottom of its hero. It is the only consumer today,
+                // and it takes the first three. Rows accept a title alone — the
+                // body line is optional and is not invented when it is absent.
+                //
+                // OPT-IN, WITH NO PRODUCER, DELIBERATELY. The obvious source is
+                // content.unique_selling_points, and it was wired that way
+                // first. It cannot stay: generate-website defaults that key to
+                // the literal ['Quality','Reliability','Service'] and persists
+                // the default back as extracted content, so a shop whose
+                // extraction found no USPs would publish QUALITY / RELIABILITY
+                // / SERVICE across its own hero, in its own voice, under barber
+                // iconography — and nothing downstream can tell that triple
+                // apart from three the owner really gave. An empty strip that
+                // an admin fills is the honest state; the hero draws nothing at
+                // all until a row has a title.
+                kind: 'list',
+                label: 'Hero USP strip (3 cells)',
+                path: 'hero.usps',
+                maxItems: 3,
+                newItem: { title: '', text: '' },
+                itemFields: [
+                    { kind: 'text', label: 'Title', path: 'title', placeholder: 'Walk-ins welcome' },
+                    { kind: 'text', label: 'Body', path: 'text', placeholder: 'Seven days a week, 9-7' },
+                ],
+            } as ListSpec,
             { kind: 'text', label: 'Meta line 1', path: 'hero.meta1', placeholder: '★★★★★ rated on Google' },
             { kind: 'text', label: 'Meta line 2', path: 'hero.meta2', placeholder: 'Open daily · address' },
             { kind: 'text', label: 'Trust line (Stillwater)', path: 'hero.trustLine', hint: 'Used by Stillwater hero only.' },

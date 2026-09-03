@@ -1,0 +1,206 @@
+---
+interface Props { layout: any; content: any; }
+const { layout, content } = Astro.props;
+// Anchor guard — same contract as HeaderF. Resolve every in-page href against
+// what PageBP actually renders: keep it if the id exists, remap it when this
+// design carries the same section under another id, otherwise drop the link
+// (a nav entry that scrolls nowhere is as broken as a dead CTA). Off-page
+// hrefs (tel:, mailto:, http) pass through.
+// PageBP reuses the *F sections, so its anchor set matches PageF's.
+const PAGE_ANCHORS = new Set(['about', 'faq', 'how', 'services', 'top', 'visit', 'work']);
+const ANCHOR_ALIAS: Record<string, string> = { gallery: 'work', location: 'visit' };
+const onPage = (href: string | undefined, fallback: string): string => {
+  if (!href) return fallback;
+  if (!href.startsWith('#')) return href;
+  const alias = ANCHOR_ALIAS[href.slice(1)];
+  if (PAGE_ANCHORS.has(href.slice(1))) return href;
+  return alias && PAGE_ANCHORS.has(alias) ? `#${alias}` : fallback;
+};
+// No invented wordmark: with no name supplied the mark is omitted.
+// The data-field hook sits on the inner <span>, not on this anchor: the editor
+// bridge updates a bound node with innerHTML, and a hook on the anchor would
+// wipe the second line and the wordmark's own type styling on every keystroke.
+const brand = (content as any).footer?.brand || layout.businessName || '';
+// Second brand line: a bare place name under the wordmark. footer.locality is
+// the field the schema declares for exactly this slot — "Location tag (beside
+// the brand name)", one field shared by the header tag, the footer wordmark
+// and the map caption. NOT layout.tagline, which was the first attempt: that
+// one is the <title> / meta-description key this very file's wrapper bakes
+// into the document head, so editing a 10.5px sub-line would rewrite the page
+// title and the search snippet; it defaults to "Welcome to <business name>",
+// which is not a locality; and derive-content-defaults already pours it into
+// hero.sub, so the same sentence would print twice above the fold.
+// No fallback and no invention: no place name, no second line.
+const brandSub = (content as any).footer?.locality || '';
+const navLinks: Array<{ href: string; label: string; i: number }> =
+  ((layout.navLinks && layout.navLinks.length) ? layout.navLinks : [])
+    .map((l: any, i: number) => ({ ...l, href: onPage(l.href, ''), i }))
+    .filter((l: any) => l.href);
+const phone = layout.contact?.phone || (content as any).contact?.phone || '';
+// Derived, not editable: the tel: target is the number with everything but
+// digits stripped. No data-href-field on that anchor — contact.phone holds a
+// string, and writing a `.href` twin into it replaces the number with {}.
+const phoneDigits = phone.replace(/[^0-9+]/g, '');
+// No default label — a label from the owner or no nav CTA.
+const ctaText = (content as any).navCtaText || '';
+const ctaHref = onPage((content as any).navCtaHref, '#visit');
+---
+<header class="nav navBP">
+  {brand && (
+    <a href="#top" class="brand">
+      <span class="brand-name" data-field="footer.brand">{brand}</span>
+      {brandSub && <span class="brand-sub" data-field="footer.locality">{brandSub}</span>}
+    </a>
+  )}
+  {(navLinks.length > 0 || ctaText || phone) && (
+    <button class="nav-burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav-bp-menu">
+      <span></span><span></span><span></span>
+    </button>
+  )}
+  <div class="nav-panel" id="nav-bp-menu">
+    <div class="nav-links">
+      {navLinks.map((link) => (
+        <a
+          href={link.href}
+          class={link.href === '#top' ? 'is-active' : ''}
+          aria-current={link.href === '#top' ? 'page' : undefined}
+          data-field={`navbar_links.${link.i}.label`}
+          data-href-field={`navbar_links.${link.i}.href`}
+        >{link.label}</a>
+      ))}
+    </div>
+    <div class="nav-cta">
+      {phone && (
+        <a href={`tel:${phoneDigits}`} class="nav-phone" data-field="contact.phone">{phone}</a>
+      )}
+      {ctaText && <a href={ctaHref} class="nav-book" data-field="navCtaText" data-href-field="navCtaHref">{ctaText}</a>}
+    </div>
+  </div>
+</header>
+
+<script is:inline>
+  (function () {
+    var hdr = document.querySelector('header.navBP');
+    if (!hdr) return;
+    var burger = hdr.querySelector('.nav-burger');
+    var panel = hdr.querySelector('.nav-panel');
+    if (!burger || !panel) return;
+    function setOpen(open) {
+      hdr.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    burger.addEventListener('click', function () { setOpen(!hdr.classList.contains('open')); });
+    panel.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { setOpen(false); });
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setOpen(false); });
+  })();
+</script>
+
+<style>
+  /* Three-column grid so the links sit optically centred on the page, not
+     centred in the gap left over by the brand and the CTA. */
+  header.navBP {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 32px;
+    padding: 30px calc(var(--pad) - 30px);
+    transition: background .3s ease, padding .3s ease, border-color .3s ease;
+    border-bottom: 1px solid transparent;
+  }
+  header.navBP.scrolled {
+    background: rgba(var(--ink-rgb), .92);
+    backdrop-filter: blur(10px);
+    padding-block: 14px;
+    border-bottom: 1px solid var(--line-light);
+  }
+  .brand { display: block; line-height: 1; }
+  .brand-name {
+    display: block; font-family: var(--display); font-size: 25px;
+    letter-spacing: .1em; color: var(--paper); text-transform: uppercase;
+  }
+  .brand-sub {
+    display: block; font-family: var(--cond); font-size: 10.5px;
+    letter-spacing: .42em; color: var(--muted-light);
+    text-transform: uppercase; margin-top: 7px;
+  }
+  .nav-panel { display: contents; }
+  .nav-links { display: flex; gap: clamp(22px, 2.6vw, 46px); align-items: center; justify-self: center; }
+  .nav-links :global(a) {
+    font-family: var(--cond); text-transform: uppercase; letter-spacing: .18em;
+    font-size: 12.5px; font-weight: 400; color: var(--paper); opacity: .82;
+    padding-bottom: 6px; border-bottom: 1px solid transparent;
+    transition: opacity .25s ease, border-color .25s ease;
+  }
+  .nav-links :global(a:hover) { opacity: 1; }
+  .nav-links :global(a.is-active) { opacity: 1; border-bottom-color: var(--brass); }
+  .nav-cta { display: flex; align-items: center; gap: 16px; justify-self: end; }
+  .nav-phone {
+    font-family: var(--cond); letter-spacing: .1em; font-size: 13px;
+    color: var(--paper); display: flex; align-items: center; gap: 8px;
+  }
+  /* Outlined booking button — the filled .btn--brass would fight the hero's
+     primary CTA for attention. */
+  .nav-book {
+    font-family: var(--cond); font-size: 12.5px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--paper);
+    border: 1px solid rgba(var(--paper-rgb), .55); padding: 16px 28px;
+    display: inline-flex; align-items: center; white-space: nowrap;
+    transition: background .25s ease, color .25s ease, border-color .25s ease;
+  }
+  .nav-book:hover { background: var(--brass); color: var(--on-brass, var(--ink)); border-color: var(--brass); }
+  .nav-burger { display: none; }
+
+  @media (max-width: 1080px) {
+    .nav-links { gap: 20px; }
+    .nav-links :global(a) { font-size: 11.5px; letter-spacing: .14em; }
+    .nav-book { padding: 14px 20px; letter-spacing: .14em; }
+  }
+
+  /* Mobile (<=860px): the centred bar collapses to brand + burger with a
+     full-width drawer. Solid bar so the mark stays legible over any hero
+     photograph. */
+  @media (max-width: 860px) {
+    header.navBP {
+      grid-template-columns: 1fr auto;
+      background: rgba(var(--ink-rgb), .94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line-light);
+      padding: 12px var(--pad);
+    }
+    .nav-burger {
+      display: inline-flex; flex-direction: column; justify-content: center; gap: 5px;
+      width: 44px; height: 44px; padding: 10px; margin-right: -8px;
+      background: transparent; border: 0; cursor: pointer; z-index: 2;
+    }
+    .nav-burger span {
+      display: block; width: 24px; height: 2px; background: var(--paper);
+      border-radius: 2px; transition: transform .3s ease, opacity .3s ease;
+    }
+    header.navBP.open .nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    header.navBP.open .nav-burger span:nth-child(2) { opacity: 0; }
+    header.navBP.open .nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .nav-panel {
+      display: block; position: absolute; left: 0; right: 0; top: 100%;
+      background: var(--ink); border-bottom: 1px solid var(--line-light);
+      box-shadow: 0 24px 40px -22px rgba(0, 0, 0, .6);
+      max-height: 0; overflow: hidden; opacity: 0; visibility: hidden;
+      transition: max-height .35s ease, opacity .25s ease, visibility .35s;
+    }
+    header.navBP.open .nav-panel {
+      max-height: calc(100vh - 60px); overflow-y: auto; opacity: 1; visibility: visible;
+    }
+    .nav-links { display: flex; flex-direction: column; gap: 0; align-items: stretch; justify-self: stretch; padding: 6px 0 0; }
+    .nav-links :global(a) {
+      display: flex; align-items: center; min-height: 48px; padding: 4px var(--pad);
+      font-size: 15px; opacity: .92; border-bottom: 1px solid var(--line-light);
+    }
+    .nav-links :global(a.is-active) { border-bottom-color: var(--line-light); color: var(--brass-bright); }
+    .nav-cta { flex-direction: column; align-items: stretch; gap: 0; justify-self: stretch; padding: 0 var(--pad) 16px; }
+    .nav-phone {
+      display: flex; justify-content: flex-start; min-height: 48px;
+      padding: 4px 0; font-size: 15px; border-bottom: 1px solid var(--line-light);
+    }
+    .nav-book { width: 100%; justify-content: center; min-height: 48px; margin-top: 14px; }
+  }
+</style>
