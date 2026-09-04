@@ -275,6 +275,16 @@ export default defineSchema({
         netlifySiteId: v.optional(v.string()), // DEPRECATED - kept for existing data
         cfPagesProjectName: v.optional(v.string()), // Cloudflare Pages project name
         publishedAt: v.optional(v.number()),
+        // Set while the Worker is serving the holding page instead of the site
+        // (lib/holding-page.ts). Deliberately a separate field rather than a
+        // third `status` literal: `status` is a union the mobile app shares, and
+        // adding a value to it would fail validation on any deploy still
+        // carrying the old schema. ABSENT MEANS LIVE.
+        //
+        // `publishedUrl` and `cfPagesProjectName` stay set while offline — they
+        // are what lets a restore land on the same Worker, same URL, same
+        // attached custom domain. Do not clear them here.
+        offlineAt: v.optional(v.number()),
         // Domain customization
         subdomain: v.optional(v.string()),
         customDomain: v.optional(v.string()),
