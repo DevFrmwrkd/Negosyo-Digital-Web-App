@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { internalQuery, internalMutation, internalAction } from './_generated/server';
 import { internal } from './_generated/api';
+import { deployHoldingPage } from '../lib/holding-page';
 
 const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
 
@@ -23,7 +24,13 @@ export const getOverdueSubmissions = internalQuery({
 });
 
 /**
- * Internal mutation: mark a submission as unpublished and clear its Cloudflare project data.
+ * Internal mutation: mark a submission's website as offline.
+ *
+ * It used to clear publishedUrl and cfPagesProjectName, which threw away the
+ * only record of WHICH Worker was serving the site — leaving nothing able to
+ * find it again, to take it down, or to put it back. They are kept now: the
+ * site comes back with one publish, at the same URL, with its custom domain
+ * still attached.
  */
 export const markSubmissionUnpublished = internalMutation({
     args: { submissionId: v.id('submissions') },
@@ -33,65 +40,58 @@ export const markSubmissionUnpublished = internalMutation({
             unpublishedAt: Date.now(),
         });
 
-        // Clear publishedUrl and cfPagesProjectName from generatedWebsites
         const website = await ctx.db
             .query('generatedWebsites')
             .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
             .first();
 
         if (website) {
-            await ctx.db.patch(website._id, {
-                publishedUrl: undefined,
-                cfPagesProjectName: undefined,
-                status: 'draft',
-            });
+            await ctx.db.patch(website._id, { offlineAt: Date.now() });
         }
     },
 });
 
 /**
- * Internal action: delete a Cloudflare Pages project to unpublish the website.
- * Returns true if deletion succeeded or project didn't exist.
+ * Internal action: take a website offline by redeploying its Worker with the
+ * holding page.
+ *
+ * This replaces a DELETE against `/pages/projects/{name}`. Sites are published
+ * as Workers (app/api/publish-website/route.ts), so that call 404'd every time,
+ * the 404 was logged as "Deleted CF project", and the overdue site kept serving
+ * — the three-day payment deadline had no teeth at all.
+ *
+ * The database is only updated when Cloudflare confirms the deploy. A failure
+ * leaves the submission in pending_payment so the next hourly run retries it;
+ * marking it unpublished while the site is still up is what this is fixing.
  */
-export const deleteCfPagesProject = internalAction({
+export const takeWebsiteOffline = internalAction({
     args: {
         submissionId: v.id('submissions'),
         projectName: v.string(),
+        businessName: v.string(),
     },
     handler: async (ctx, args) => {
         const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
         const cfAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 
         if (!cfApiToken || !cfAccountId) {
-            console.error('[unpublish] Missing Cloudflare credentials');
-            // Still mark as unpublished in our DB even without CF creds
-            await ctx.runMutation(internal.unpublish.markSubmissionUnpublished, {
-                submissionId: args.submissionId,
-            });
+            console.error(
+                `[unpublish] Missing Cloudflare credentials — ${args.projectName} is STILL LIVE and was not marked unpublished. Will retry next run.`
+            );
             return;
         }
 
         try {
-            const res = await fetch(
-                `https://api.cloudflare.com/client/v4/accounts/${cfAccountId}/pages/projects/${args.projectName}`,
-                {
-                    method: 'DELETE',
-                    headers: { Authorization: `Bearer ${cfApiToken}` },
-                }
-            );
-
-            // 404 = project already gone, still fine
-            if (!res.ok && res.status !== 404) {
-                const body = await res.json().catch(() => ({}));
-                console.error('[unpublish] CF delete failed:', res.status, JSON.stringify(body));
-            } else {
-                console.log(`[unpublish] Deleted CF project: ${args.projectName}`);
-            }
+            await deployHoldingPage(cfApiToken, cfAccountId, args.projectName, args.businessName);
+            console.log(`[unpublish] Holding page deployed to Worker: ${args.projectName}`);
         } catch (err) {
-            console.error('[unpublish] CF API error:', err);
+            console.error(
+                `[unpublish] Holding-page deploy FAILED for ${args.projectName} — site is still live, leaving status untouched so the next run retries:`,
+                err
+            );
+            return;
         }
 
-        // Update DB regardless of CF API outcome
         await ctx.runMutation(internal.unpublish.markSubmissionUnpublished, {
             submissionId: args.submissionId,
         });
@@ -120,13 +120,14 @@ export const checkAndUnpublish = internalAction({
             });
 
             if (website?.cfPagesProjectName) {
-                // Schedule the deletion action (non-blocking per submission)
-                await ctx.runAction(internal.unpublish.deleteCfPagesProject, {
+                await ctx.runAction(internal.unpublish.takeWebsiteOffline, {
                     submissionId: submission._id,
                     projectName: website.cfPagesProjectName,
+                    businessName: submission.businessName || '',
                 });
             } else {
-                // No CF project — just mark as unpublished in our DB
+                // Nothing was ever deployed for this submission — there is no
+                // Worker to serve a holding page, so record the state directly.
                 await ctx.runMutation(internal.unpublish.markSubmissionUnpublished, {
                     submissionId: submission._id,
                 });

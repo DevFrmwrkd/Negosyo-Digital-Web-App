@@ -128,18 +128,29 @@ export default function TopActionBar({
     submissionId ? { submissionId: submissionId as Id<"submissions"> } : "skip"
   );
   const publishStale = !!website?.publishedUrl && website?.status === "draft";
+  // Offline = the Worker is serving the holding page. publishedUrl and the
+  // Worker name stay set (that is what makes restoring one click), so the
+  // presence of a URL no longer means the site is up — this flag does.
+  const isOffline = !!website?.offlineAt;
 
   // Eligibility
   const canApprove = status === "website_generated" || (status === "in_review" && websiteGenerated);
   const canGenerate = ["in_review", "website_generated", "approved", "deployed"].includes(status);
+  // "unpublished" belongs here: taking a site offline sets that status, and
+  // without it the only button that can restore the site disappears the moment
+  // you use the button next to it.
   const canPublish =
-    ["approved", "website_generated", "deployed", "pending_payment", "paid"].includes(status) &&
+    ["approved", "website_generated", "deployed", "pending_payment", "paid", "unpublished"].includes(status) &&
     websiteGenerated;
   const canEnhance =
     ["submitted", "in_review", "website_generated", "approved", "deployed"].includes(status) && hasTranscript;
   const canReject = !["rejected", "deployed", "pending_payment", "paid", "unpublished"].includes(status);
   const canMarkInReview = status === "submitted";
-  const canMarkPaid = status === "pending_payment";
+  // Also offered once a site has been pulled: an owner who pays after the
+  // three-day deadline is the ordinary way this ends, and without it there is
+  // no way to settle the submission and restore the site. markPaid itself has
+  // no status guard (convex/admin.ts:454), so this only widens the UI.
+  const canMarkPaid = ["pending_payment", "unpublished"].includes(status);
   // Promo: hand the site to the owner for free, creator still earns their ₱500.
   // Offered from the moment a real website exists to give away, and still
   // offered at pending_payment — an owner who was billed and went quiet is
@@ -150,9 +161,9 @@ export default function TopActionBar({
     !isComped &&
     !isCustomDomainTier &&
     websiteGenerated &&
-    ["approved", "website_generated", "deployed", "pending_payment"].includes(status);
+    ["approved", "website_generated", "deployed", "pending_payment", "unpublished"].includes(status);
   const canSendToClient = status === "deployed";
-  const canUnpublish = !!websitePublishedUrl;
+  const canUnpublish = !!websitePublishedUrl && !isOffline;
   const canResendPaymentEmail = status === "pending_payment";
   const canSendFollowUp = status === "pending_payment";
 
@@ -292,14 +303,16 @@ export default function TopActionBar({
               loading={publishingWebsite || republishingWebsite}
               icon={Upload}
               label={
-                websitePublishedUrl
-                  ? publishStale
-                    ? "Republish · changes not live"
-                    : "Republish"
-                  : "Publish website"
+                isOffline
+                  ? "Restore website"
+                  : websitePublishedUrl
+                    ? publishStale
+                      ? "Republish · changes not live"
+                      : "Republish"
+                    : "Publish website"
               }
               tone="emerald"
-              attention={publishStale}
+              attention={publishStale || isOffline}
             />
           )}
 

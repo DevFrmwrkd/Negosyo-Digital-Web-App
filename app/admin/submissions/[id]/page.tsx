@@ -67,6 +67,12 @@ export default function SubmissionDetailPage() {
         submissionData ? { submissionId: submissionData._id } : "skip"
     );
 
+    // The Worker is serving the holding page rather than the site. Kept off the
+    // local websitePublishedUrl state deliberately: that state is seeded once
+    // from the row, while this has to track the row live so a restore lights
+    // the buttons back up on its own.
+    const websiteOffline = !!existingWebsite?.offlineAt;
+
     const websiteImages = existingWebsite?.extractedContent?.images as string[] | undefined;
     const needsHeroResolution = websiteImages?.some((p) => !p.startsWith("http"));
     const heroImageUrls = useQuery(
@@ -757,9 +763,13 @@ export default function SubmissionDetailPage() {
                 const errorData = await response.json();
                 throw new Error(errorData.error || "Failed to unpublish website");
             }
-            setWebsitePublishedUrl(null);
+            // The published URL deliberately stays — the site is offline, not
+            // gone, and that URL is where it comes back. `existingWebsite.offlineAt`
+            // is what the buttons read, and it arrives over the subscription.
             setModalType("success");
-            setModalMessage("Website unpublished successfully.");
+            setModalMessage(
+                "Website taken offline. Visitors now see a temporarily-unavailable page; press Restore website to bring it back at the same address."
+            );
             setShowModal(true);
         } catch (error: any) {
             setModalType("error");
@@ -1230,7 +1240,14 @@ export default function SubmissionDetailPage() {
                                     ),
                                     onSaveContent: handleSaveContent,
                                     onUpdateDesign: handleUpdateDesign,
-                                    websitePublishedUrl: websitePublishedUrl ?? undefined,
+                                    // While the site is offline the three editor
+                                    // bars must not offer "Republish"/"Unpublish"
+                                    // or link visitors at a holding page. They all
+                                    // gate on this one value, so withholding it
+                                    // turns the bar back into a single Publish —
+                                    // which is exactly the restore action, landing
+                                    // on the same Worker and the same URL.
+                                    websitePublishedUrl: websiteOffline ? undefined : (websitePublishedUrl ?? undefined),
                                     websiteGenerated,
                                     generatingWebsite,
                                     publishingWebsite,

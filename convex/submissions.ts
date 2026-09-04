@@ -588,6 +588,25 @@ export const updateStatus = mutation({
 });
 
 /**
+ * Mark a submission's website as taken offline.
+ *
+ * Separate from updateStatus because `unpublishedAt` has to move with the
+ * status — the admin queue and the payment-chase emails both read it to say
+ * *when* a site went dark. The non-payment cron sets the same pair
+ * (convex/unpublish.ts), so a manual takedown and an automatic one are
+ * indistinguishable downstream, which is the point.
+ */
+export const setUnpublished = mutation({
+    args: { id: v.id('submissions') },
+    handler: async (ctx, args) => {
+        await ctx.db.patch(args.id, {
+            status: 'unpublished',
+            unpublishedAt: Date.now(),
+        });
+    },
+});
+
+/**
  * Submit a draft submission.
  * Sets status to "submitted", creates a lead, increments analytics,
  * and triggers the Airtable AI content pipeline.

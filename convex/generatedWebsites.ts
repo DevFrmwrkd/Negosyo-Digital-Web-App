@@ -211,7 +211,35 @@ export const publish = mutation({
             publishedUrl: args.publishedUrl,
             cfPagesProjectName: args.cfPagesProjectName,
             publishedAt: Date.now(),
+            // A publish is also the restore path for an offline site: the same
+            // Worker gets the real HTML back, so it is live again by definition.
+            offlineAt: undefined,
         });
+
+        return website._id;
+    },
+});
+
+/**
+ * Mark a site as offline — the Worker is now serving the holding page.
+ *
+ * Only ever called AFTER that deploy succeeds. Everything needed to bring the
+ * site back (publishedUrl, cfPagesProjectName) is deliberately left in place;
+ * `unpublish` below is the older, destructive version that clears them.
+ */
+export const markOffline = mutation({
+    args: { submissionId: v.id('submissions') },
+    handler: async (ctx, args) => {
+        const website = await ctx.db
+            .query('generatedWebsites')
+            .withIndex('by_submissionId', (q) => q.eq('submissionId', args.submissionId))
+            .first();
+
+        if (!website) {
+            throw new Error('Generated website not found');
+        }
+
+        await ctx.db.patch(website._id, { offlineAt: Date.now() });
 
         return website._id;
     },
