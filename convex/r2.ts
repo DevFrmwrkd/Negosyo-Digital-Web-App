@@ -224,44 +224,6 @@ export const deleteFile = action({
 });
 
 /**
- * Generate a presigned URL for uploading an APK to R2.
- *
- * Uses a STABLE storage key — `releases/tendso.apk` — so the
- * downloaded file is always named "tendso.apk" without any
- * Content-Disposition rewrites or route-level indirection. R2 derives
- * the download filename from the storage key, and re-uploads simply
- * overwrite the previous file at the same key.
- *
- * Trade-off accepted on purpose: no per-release version history in R2.
- * If we ever need historical releases, snapshot apk_uploaded_at +
- * archive the bytes elsewhere; don't pollute the storage key.
- */
-const APK_STABLE_KEY = 'releases/tendso.apk';
-
-export const generateApkUploadUrl = action({
-    args: {
-        fileName: v.string(),
-        fileType: v.string(),
-    },
-    handler: async (_ctx, args) => {
-        const client = getR2Client();
-        const bucketName = getBucketName();
-        const publicUrlPrefix = getPublicUrlPrefix();
-
-        const command = new PutObjectCommand({
-            Bucket: bucketName,
-            Key: APK_STABLE_KEY,
-            ContentType: args.fileType || 'application/vnd.android.package-archive',
-        });
-
-        const uploadUrl = await getSignedUrl(client, command, { expiresIn: 3600 });
-        const publicUrl = `${publicUrlPrefix}/${APK_STABLE_KEY}`;
-
-        return { uploadUrl, publicUrl, key: APK_STABLE_KEY };
-    },
-});
-
-/**
  * Get a presigned URL for downloading a file (for private buckets).
  *
  * Accepts either `{ key }` (web) or `{ fileKey }` (mobile).
