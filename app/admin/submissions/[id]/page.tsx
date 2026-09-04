@@ -252,6 +252,11 @@ export default function SubmissionDetailPage() {
 
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    // Set when a delete succeeded in Convex but left external assets behind.
+    // It cannot live in the ordinary modal: the row this page renders is gone
+    // the moment the mutation commits, so the page unmounts itself and takes
+    // the modal with it. Rendered standalone, above the "no submission" guard.
+    const [orphanedAssetsNotice, setOrphanedAssetsNotice] = useState<string | null>(null);
 
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
@@ -620,16 +625,14 @@ export default function SubmissionDetailPage() {
             const failed: Array<{ asset: string; error: string }> = data?.failedAssets || [];
             if (failed.length > 0) {
                 setShowDeleteModal(false);
-                setModalType("error");
-                setModalMessage(
+                setOrphanedAssetsNotice(
                     `Submission record deleted, but ${failed.length} external ${failed.length === 1 ? "asset" : "assets"} could not be cleaned up:\n\n` +
                         failed.map((f) => `• ${f.asset}: ${f.error}`).join("\n") +
-                        `\n\nThese may need manual cleanup.`
+                        `\n\nThese need manual cleanup — nothing else records them.`
                 );
-                setShowModal(true);
                 return;
             }
-            window.location.href = "/admin";
+            window.location.href = "/admin/submissions";
         } catch (error: any) {
             setShowDeleteModal(false);
             setModalType("error");
@@ -871,6 +874,34 @@ export default function SubmissionDetailPage() {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+            </div>
+        );
+    }
+
+    // The delete removed the row this page is built on, so `submission` is
+    // already null and the guard below would render a blank screen — losing the
+    // only list of assets the cleanup could not reach. Show it on its own.
+    if (orphanedAssetsNotice) {
+        return (
+            <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl text-center">
+                    <div className="w-16 h-16 rounded-full bg-rose-50 border-2 border-rose-200 flex items-center justify-center mx-auto mb-4">
+                        <AlertTriangle className="w-8 h-8 text-rose-600" />
+                    </div>
+                    <h3
+                        style={{ fontFamily: "var(--font-fraunces)" }}
+                        className="text-2xl font-semibold mb-2 text-rose-900"
+                    >
+                        Deleted, with leftovers
+                    </h3>
+                    <p className="text-neutral-600 mb-6 text-sm whitespace-pre-wrap text-left">{orphanedAssetsNotice}</p>
+                    <button
+                        onClick={() => router.push("/admin/submissions")}
+                        className="block w-full py-3 px-4 rounded-xl font-semibold text-sm transition-colors bg-neutral-900 hover:bg-black text-white"
+                    >
+                        Back to submissions
+                    </button>
+                </div>
             </div>
         );
     }

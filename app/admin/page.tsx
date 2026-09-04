@@ -2,10 +2,8 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { useMutation, useQuery } from "convex/react"
 import { api } from "@/convex/_generated/api"
-import { Input } from "@/components/ui/input"
 import { useAdminAuth, useSubmissions } from "@/hooks/useAdmin"
 import {
     Chart,
@@ -19,18 +17,12 @@ import {
     Filler,
 } from "chart.js"
 import { Line } from "react-chartjs-2"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion } from "framer-motion"
 import AdminLayout from "./components/AdminLayout"
-import { 
-    Search, 
-    Filter, 
-    ArrowUpDown, 
-    MoreVertical, 
-    Eye, 
-    Trash2, 
-    TrendingUp, 
-    AlertCircle, 
-    CheckCircle2, 
+import {
+    TrendingUp,
+    AlertCircle,
+    CheckCircle2,
     XCircle,
     Calendar,
     ArrowRight
@@ -47,52 +39,14 @@ Chart.register(
     Filler
 )
 
-function getInitials(name: string) {
-    return name
-        .split(/\s+/)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-}
-
 export default function AdminDashboard() {
-    const router = useRouter()
     const { isAdmin, loading: authLoading } = useAdminAuth()
     const { submissions, loading: submissionsLoading } = useSubmissions()
-    const [searchQuery, setSearchQuery] = useState("")
-    const [activeFilter, setActiveFilter] = useState<"all" | "pending" | "approved" | "rejected">("all")
-    const [sortBy, setSortBy] = useState<"newest" | "oldest" | "az" | "za" | "status" | "highest_payout">("newest")
-    const [showSortDropdown, setShowSortDropdown] = useState(false)
-    const [currentPage, setCurrentPage] = useState(1)
-    const itemsPerPage = 5
     const [backfilling, setBackfilling] = useState(false)
     const [backfillResult, setBackfillResult] = useState<{ updatedSubmissions: number; updatedWebsites: number } | null>(null)
     // Safely handle checkBackfillNeeded query with error fallback
     const isBackfillNeeded = useQuery(api.admin.checkBackfillNeeded) ?? false
     const backfillWebsiteUrls = useMutation(api.admin.backfillWebsiteUrls)
-
-    // Delete submission state
-    const [showDeleteModal, setShowDeleteModal] = useState(false)
-    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
-    const [deleteTargetName, setDeleteTargetName] = useState("")
-    const [deleting, setDeleting] = useState(false)
-    const [deleteResult, setDeleteResult] = useState<{ type: "success" | "error"; message: string } | null>(null)
-
-    // `useSubmissions` flattens each row to a fixed shape and drops
-    // `contentSource`, so read the raw query for the owner-intake flag. Convex
-    // shares one subscription across identical query+args, so this costs nothing
-    // beyond the hook's own call.
-    const rawSubmissions = useQuery(api.submissions.getAllWithCreator, isAdmin ? {} : "skip")
-    const ownerSubmittedIds = useMemo(
-        () =>
-            new Set(
-                (rawSubmissions ?? [])
-                    .filter((s) => s.contentSource === "owner_intake")
-                    .map((s) => s._id as string)
-            ),
-        [rawSubmissions]
-    )
 
     // Analytics data
     const allAnalytics = useQuery(api.analytics.getAllAnalytics, {})
@@ -111,83 +65,13 @@ export default function AdminDashboard() {
         }
     }
 
-    const handleDeleteSubmission = async () => {
-        if (!deleteTargetId) return
-        setDeleting(true)
-        try {
-            const response = await fetch("/api/delete-submission", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ submissionId: deleteTargetId }),
-            })
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || "Failed to delete submission")
-            }
-            setDeleteResult({ type: "success", message: `"${deleteTargetName}" deleted successfully.` })
-        } catch (error: any) {
-            setDeleteResult({ type: "error", message: error.message || "Failed to delete submission." })
-        } finally {
-            setDeleting(false)
-            setShowDeleteModal(false)
-            setDeleteTargetId(null)
-        }
-    }
-
-    // Status order for sorting
-    const statusOrder: Record<string, number> = {
-        submitted: 0, in_review: 1, draft: 2, approved: 3, website_generated: 4,
-        deployed: 5, pending_payment: 6, paid: 7, completed: 8, rejected: 9, unpublished: 10,
-    }
-
-    // Filter by stat card + search + sort
-    const filteredSubmissions = useMemo(() => {
-        let result = [...submissions]
-
-        if (activeFilter === "pending") {
-            result = result.filter((s) => ["draft", "submitted", "in_review"].includes(s.status))
-        } else if (activeFilter === "approved") {
-            result = result.filter((s) => ["approved", "deployed", "pending_payment", "paid", "completed", "website_generated"].includes(s.status))
-        } else if (activeFilter === "rejected") {
-            result = result.filter((s) => s.status === "rejected")
-        }
-
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase()
-            result = result.filter(
-                (s) =>
-                    s.business_name.toLowerCase().includes(query) ||
-                    s.owner_name.toLowerCase().includes(query) ||
-                    s.business_type.toLowerCase().includes(query)
-            )
-        }
-
-        // Sort
-        result.sort((a, b) => {
-            switch (sortBy) {
-                case "newest": return b.created_at - a.created_at
-                case "oldest": return a.created_at - b.created_at
-                case "az": return a.business_name.localeCompare(b.business_name)
-                case "za": return b.business_name.localeCompare(a.business_name)
-                case "status": return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99)
-                case "highest_payout": return (b.creator_payout || 0) - (a.creator_payout || 0)
-                default: return 0
-            }
-        })
-
-        return result
-    }, [submissions, activeFilter, searchQuery, sortBy])
-
-    // Pagination
-    const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
-    const paginatedSubmissions = filteredSubmissions.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
+    // The five most recent submissions — a glance, not a workbench. The full
+    // list, with its filters, search, sort and paging, lives at
+    // /admin/submissions; keeping a second copy here is how the two drift.
+    const recentSubmissions = useMemo(
+        () => [...submissions].sort((a, b) => b.created_at - a.created_at).slice(0, 5),
+        [submissions]
     )
-
-    useMemo(() => {
-        setCurrentPage(1)
-    }, [searchQuery, activeFilter, sortBy])
 
     // Needs attention items
     const needsAttention = submissions.filter((s: any) => s.status === "submitted" || s.status === "in_review")
@@ -325,86 +209,20 @@ export default function AdminDashboard() {
 
     if (!isAdmin) return null
 
-    // Pagination display logic
-    const getPageNumbers = () => {
-        const pages: (number | string)[] = []
-        if (totalPages <= 5) {
-            for (let i = 1; i <= totalPages; i++) pages.push(i)
-        } else {
-            pages.push(1, 2, 3)
-            if (currentPage > 4) pages.push("...")
-            if (currentPage > 3 && currentPage < totalPages - 2) pages.push(currentPage)
-            if (currentPage < totalPages - 3) pages.push("...")
-            pages.push(totalPages)
-        }
-        return [...new Set(pages)]
-    }
-
     return (
         <AdminLayout>
-            {/* Delete Result Banner */}
-            {deleteResult && (
-                <div className={`-mx-4 sm:-mx-6 lg:-mx-8 -mt-6 lg:-mt-8 mb-6 border-b ${deleteResult.type === "success" ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200"}`}>
-                    <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-                        <p className={`text-sm font-medium ${deleteResult.type === "success" ? "text-amber-800" : "text-red-800"}`}>
-                            {deleteResult.message}
-                        </p>
-                        <button onClick={() => setDeleteResult(null)} className="text-gray-400 hover:text-gray-600">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">Delete &ldquo;{deleteTargetName}&rdquo;</h3>
-                        </div>
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                            <p className="text-sm font-semibold text-red-800 mb-2">This action is permanent and cannot be undone:</p>
-                            <ul className="text-sm text-red-700 space-y-1">
-                                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>Business submission record</li>
-                                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>Generated website &amp; content</li>
-                                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>All media files (images, audio, video)</li>
-                                <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>Cloudflare Pages deployment &amp; Airtable record</li>
-                            </ul>
-                        </div>
-                        <div className="flex gap-3">
-                            <button onClick={() => { setShowDeleteModal(false); setDeleteTargetId(null) }} disabled={deleting} className="flex-1 py-2.5 px-4 rounded-xl font-semibold border border-gray-300 hover:bg-gray-50 transition-all disabled:opacity-50 text-sm">Cancel</button>
-                            <button onClick={handleDeleteSubmission} disabled={deleting} className="flex-1 py-2.5 px-4 rounded-xl font-semibold bg-red-600 hover:bg-red-700 text-white transition-all disabled:opacity-50 text-sm">
-                                {deleting ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        Processing...
-                                    </span>
-                                ) : "Delete Permanently"}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Page Title — editorial */}
             <div className="mb-8 lg:mb-10">
-                <div className="ed-eyebrow mb-3">Dashboard · Submissions Overview</div>
+                <div className="ed-eyebrow mb-3">Dashboard · Platform Overview</div>
                 <h1 className="ed-display-md" style={{ color: "var(--ed-ink)" }}>
-                    Manage <em style={{ color: "var(--ed-accent)" }}>business applications</em>.
+                    The platform at a <em style={{ color: "var(--ed-accent)" }}>glance</em>.
                 </h1>
                 <p
                     className="ed-body mt-3"
                     style={{ color: "var(--ed-ink-2)", maxWidth: "60ch" }}
                 >
-                    Review submissions, watch revenue, and approve creators across the platform.
+                    Revenue, review load and the latest arrivals. The full queue — search, filters and
+                    every business application — lives under Submissions.
                 </p>
             </div>
 
@@ -529,239 +347,87 @@ export default function AdminDashboard() {
                             )}
                         </div>
                     </div>
-                    {isBackfillNeeded === true && (
-                        <button
-                            onClick={handleBackfill}
-                            disabled={backfilling}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                    <div className="flex items-center gap-2 shrink-0">
+                        {isBackfillNeeded === true && (
+                            <button
+                                onClick={handleBackfill}
+                                disabled={backfilling}
+                                className="px-4 py-2 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {backfilling ? "Running..." : "Run Backfill"}
+                            </button>
+                        )}
+                        {/* Straight into the review queue, pre-filtered. */}
+                        <Link
+                            href="/admin/submissions?status=review"
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-amber-900 bg-white border border-amber-200 hover:bg-amber-100 rounded-lg transition-colors"
                         >
-                            {backfilling ? "Running..." : "Run Backfill"}
-                        </button>
-                    )}
+                            Review now
+                            <ArrowRight size={14} />
+                        </Link>
+                    </div>
                 </div>
             )}
 
-            {/* Search + Sort */}
-            <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <Input
-                        type="text"
-                        placeholder="Search by business, owner, or category..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 h-12 bg-white border-gray-100 rounded-2xl text-sm font-medium focus:ring-amber-100 focus:border-amber-400 transition-all shadow-sm"
-                    />
-                </div>
-                
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <div className="relative group/sort">
-                        <button
-                            onClick={() => setShowSortDropdown(!showSortDropdown)}
-                            className="flex items-center gap-2.5 px-5 h-12 bg-white border border-gray-100 rounded-2xl text-sm font-bold text-gray-700 hover:border-amber-400 transition-all shadow-sm whitespace-nowrap"
-                        >
-                            <ArrowUpDown size={16} className="text-gray-400 group-hover/sort:text-amber-500 transition-colors" />
-                            <span>Sort By</span>
-                            <div className={`w-1.5 h-1.5 rounded-full bg-amber-500 transition-all ${sortBy !== "newest" ? "scale-100 opacity-100" : "scale-0 opacity-0"}`} />
-                        </button>
-                        <AnimatePresence>
-                            {showSortDropdown && (
-                                <>
-                                    <motion.div 
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        className="fixed inset-0 z-10" 
-                                        onClick={() => setShowSortDropdown(false)} 
-                                    />
-                                    <motion.div 
-                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className="absolute right-0 top-full mt-2 w-56 bg-white border border-gray-100 rounded-[22px] shadow-2xl z-20 overflow-hidden p-1.5"
-                                    >
-                                        {([
-                                            { key: "newest", label: "Newest First" },
-                                            { key: "oldest", label: "Oldest First" },
-                                            { key: "az", label: "A - Z (Name)" },
-                                            { key: "za", label: "Z - A (Name)" },
-                                            { key: "status", label: "Workflow Status" },
-                                            { key: "highest_payout", label: "Highest Payout" },
-                                        ] as const).map((option) => (
-                                            <button
-                                                key={option.key}
-                                                onClick={() => { setSortBy(option.key); setShowSortDropdown(false) }}
-                                                className={`
-                                                    w-full text-left px-4 py-2.5 text-xs font-bold uppercase tracking-tight rounded-xl transition-all
-                                                    ${sortBy === option.key
-                                                        ? "bg-amber-50 text-amber-700"
-                                                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"}
-                                                `}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
-                                    </motion.div>
-                                </>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-            </div>
-
-            {/* Submissions Table */}
+            {/* Recent Submissions — a glance at the queue. The workbench (search,
+                filters, sort, paging, delete) is the dedicated /admin/submissions page. */}
             <div className="bg-white rounded-2xl border border-amber-500 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead>
-                            <tr className="border-b border-gray-100">
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Business Entity</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Owner Representative</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Workflow Status</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Creator</th>
-                                <th className="px-6 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Submission Date</th>
-                                <th className="px-6 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] pr-10">Management</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {paginatedSubmissions.length === 0 ? (
-                                <tr key="empty">
-                                    <td colSpan={7} className="px-6 py-20 text-center">
-                                        <div className="flex flex-col items-center gap-2">
-                                            <Search className="text-gray-200 w-10 h-10 mb-2" strokeWidth={1} />
-                                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">
-                                                {searchQuery ? "No entries match search" : "No entries found"}
+                <div className="px-5 sm:px-6 py-5 flex items-center justify-between gap-4 border-b border-gray-100">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-1.5 h-5 bg-amber-500 rounded-full" />
+                            <h3 className="text-lg font-black text-gray-900 tracking-tight">Recent Submissions</h3>
+                        </div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.1em] mt-1">
+                            Latest {Math.min(5, submissions.length)} of {submissions.length.toLocaleString()}
+                        </p>
+                    </div>
+                    <Link
+                        href="/admin/submissions"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-tight text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors whitespace-nowrap"
+                    >
+                        View all
+                        <ArrowRight size={14} />
+                    </Link>
+                </div>
+
+                {recentSubmissions.length === 0 ? (
+                    <div className="px-6 py-16 text-center">
+                        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No submissions yet</p>
+                    </div>
+                ) : (
+                    <ul className="divide-y divide-gray-50">
+                        {recentSubmissions.map((submission) => {
+                            const badge = getStatusBadge(submission.status)
+                            return (
+                                <li key={submission.id}>
+                                    <Link
+                                        href={`/admin/submissions/${submission.id}`}
+                                        className="flex items-center justify-between gap-4 px-5 sm:px-6 py-4 hover:bg-gray-50/80 transition-colors group"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-gray-900 group-hover:text-amber-600 transition-colors uppercase tracking-tight truncate">
+                                                {submission.business_name}
+                                            </p>
+                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5 truncate">
+                                                {submission.business_type} &bull; {submission.owner_name}
                                             </p>
                                         </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                paginatedSubmissions.map((submission: any, idx: number) => {
-                                    const badge = getStatusBadge(submission.status)
-                                    return (
-                                        <tr 
-                                            key={submission.id} 
-                                            className="border-b border-gray-50 hover:bg-gray-50/80 transition-all cursor-pointer group" 
-                                            onClick={() => router.push(`/admin/submissions/${submission.id}`)}
-                                        >
-                                                <td className="px-6 py-5">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-gray-900 group-hover:text-amber-600 transition-colors uppercase tracking-tight">{submission.business_name}</span>
-                                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-0.5">{submission.business_type}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-500 uppercase border border-white shadow-sm">
-                                                            {submission.owner_name[0]}
-                                                        </div>
-                                                        <span className="text-xs font-semibold text-gray-600">{submission.owner_name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5">
-                                                    <div className="flex flex-col">
-                                                        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tight w-fit ${badge.bg} ${badge.text}`}>
-                                                            <span className={`w-1 h-1 rounded-full bg-current ${submission.status === 'submitted' ? 'animate-pulse' : ''}`} />
-                                                            {badge.label}
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5">
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                                            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
-                                                                {submission.creators
-                                                                    ? `${submission.creators.first_name} ${submission.creators.last_name}`.trim()
-                                                                    : "Unknown Creator"}
-                                                            </span>
-                                                        </div>
-                                                        {/* The house creator makes an owner-originated row look like any
-                                                            other, so say it out loud: no field visit, no recorded interview. */}
-                                                        {ownerSubmittedIds.has(submission.id) && (
-                                                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tight w-fit bg-indigo-50 text-indigo-700">
-                                                                <span className="w-1 h-1 rounded-full bg-current" />
-                                                                Owner-submitted
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5">
-                                                    <div className="flex items-center gap-2 text-gray-400 font-bold text-[11px] uppercase tracking-tighter">
-                                                        <Calendar size={12} strokeWidth={2.5} />
-                                                        {new Date(submission.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 text-right" onClick={(e) => e.stopPropagation()}>
-                                                    <div className="flex items-center justify-end gap-1.5">
-                                                        <Link
-                                                            href={`/admin/submissions/${submission.id}`}
-                                                            className="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all"
-                                                        >
-                                                            <ArrowRight size={18} />
-                                                        </Link>
-                                                        <button
-                                                            onClick={() => {
-                                                                setDeleteTargetId(submission.id)
-                                                                setDeleteTargetName(submission.business_name)
-                                                                setShowDeleteModal(true)
-                                                            }}
-                                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )
-                                    })
-                                )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-100">
-                        <p className="text-xs sm:text-sm text-gray-500">
-                            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                            {Math.min(currentPage * itemsPerPage, filteredSubmissions.length)} of{" "}
-                            {filteredSubmissions.length.toLocaleString()} results
-                        </p>
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                disabled={currentPage === 1}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                            </button>
-                            {getPageNumbers().map((page, i) =>
-                                page === "..." ? (
-                                    <span key={`dots-${i}`} className="w-8 h-8 flex items-center justify-center text-sm text-gray-400">...</span>
-                                ) : (
-                                    <button
-                                        key={page}
-                                        onClick={() => setCurrentPage(page as number)}
-                                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
-                                            currentPage === page
-                                                ? "bg-amber-500 text-white"
-                                                : "text-gray-600 hover:bg-gray-100"
-                                        }`}
-                                    >
-                                        {page}
-                                    </button>
-                                )
-                            )}
-                            <button
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                disabled={currentPage === totalPages}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                            </button>
-                        </div>
-                    </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                            <div className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-tight ${badge.bg} ${badge.text}`}>
+                                                <span className={`w-1 h-1 rounded-full bg-current ${submission.status === 'submitted' ? 'animate-pulse' : ''}`} />
+                                                {badge.label}
+                                            </div>
+                                            <div className="flex items-center gap-1.5 text-gray-400 font-bold text-[11px] uppercase tracking-tighter">
+                                                <Calendar size={12} strokeWidth={2.5} />
+                                                {new Date(submission.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                            </div>
+                                        </div>
+                                    </Link>
+                                </li>
+                            )
+                        })}
+                    </ul>
                 )}
             </div>
         </AdminLayout>
