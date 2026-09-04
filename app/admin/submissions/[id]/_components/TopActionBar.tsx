@@ -161,7 +161,7 @@ export default function TopActionBar({
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4">
         {/* Back + title */}
         <Link
-          href="/admin"
+          href="/admin/submissions"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-neutral-700 hover:text-amber-700 px-3 py-2 rounded-xl border border-neutral-200 hover:border-amber-300 hover:bg-amber-50 transition-colors shrink-0"
         >
           <ArrowLeft className="w-4 h-4" />

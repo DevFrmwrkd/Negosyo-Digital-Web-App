@@ -21,7 +21,8 @@ import {
     Menu,
     X,
     ChevronRight,
-    Megaphone
+    Megaphone,
+    Inbox
 } from "lucide-react"
 
 const navItems = [
@@ -29,6 +30,11 @@ const navItems = [
         label: "Dashboard",
         href: "/admin",
         icon: LayoutDashboard,
+    },
+    {
+        label: "Submissions",
+        href: "/admin/submissions",
+        icon: Inbox,
     },
     {
         label: "Creators",
@@ -165,7 +171,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
                     {navItems.map((item) => {
-                        const isActive = pathname === item.href
+                        // Prefix match so a section stays lit on its own detail
+                        // routes (/admin/submissions/<id>, /admin/creators/<id>).
+                        // "/admin" is exact-only — it prefixes every admin route,
+                        // and two active items would mount two <motion.div
+                        // layoutId="active-pill"> at once and make the dot jump.
+                        const isActive =
+                            item.href === "/admin"
+                                ? pathname === "/admin"
+                                : pathname === item.href || pathname.startsWith(item.href + "/")
                         const Icon = item.icon
                         return (
                             <Link
