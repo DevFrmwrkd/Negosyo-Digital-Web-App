@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { internalQuery, internalMutation, internalAction } from './_generated/server';
 import { internal } from './_generated/api';
-import { deployHoldingPage } from '../lib/holding-page';
+import { deployHoldingPage, resolveHoldingTheme } from '../lib/holding-page';
 
 const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
 
@@ -69,6 +69,10 @@ export const takeWebsiteOffline = internalAction({
         submissionId: v.id('submissions'),
         projectName: v.string(),
         businessName: v.string(),
+        // Passed rather than re-queried: the caller already holds both rows, and
+        // they are what the holding page needs to wear the site's own colours.
+        businessType: v.optional(v.string()),
+        customizations: v.optional(v.any()),
     },
     handler: async (ctx, args) => {
         const cfApiToken = process.env.CLOUDFLARE_API_TOKEN;
@@ -82,7 +86,8 @@ export const takeWebsiteOffline = internalAction({
         }
 
         try {
-            await deployHoldingPage(cfApiToken, cfAccountId, args.projectName, args.businessName);
+            const theme = resolveHoldingTheme(args.customizations, args.businessType);
+            await deployHoldingPage(cfApiToken, cfAccountId, args.projectName, args.businessName, theme);
             console.log(`[unpublish] Holding page deployed to Worker: ${args.projectName}`);
         } catch (err) {
             console.error(
@@ -124,6 +129,8 @@ export const checkAndUnpublish = internalAction({
                     submissionId: submission._id,
                     projectName: website.cfPagesProjectName,
                     businessName: submission.businessName || '',
+                    businessType: submission.businessType || undefined,
+                    customizations: website.customizations,
                 });
             } else {
                 // Nothing was ever deployed for this submission — there is no

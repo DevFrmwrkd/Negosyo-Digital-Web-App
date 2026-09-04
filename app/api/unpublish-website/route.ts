@@ -3,7 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { fetchQuery, fetchMutation } from 'convex/nextjs'
 import { api } from '@/convex/_generated/api'
 import { Id } from '@/convex/_generated/dataModel'
-import { deployHoldingPage } from '@/lib/holding-page'
+import { deployHoldingPage, resolveHoldingTheme } from '@/lib/holding-page'
 
 /**
  * Take a published website offline.
@@ -69,9 +69,16 @@ export async function POST(request: NextRequest) {
             id: submissionId as Id<"submissions">
         })
 
+        // The holding page wears the site's own palette and the character of its
+        // font pairing, resolved from the same two fields the astro build reads.
+        const theme = resolveHoldingTheme(
+            (website as { customizations?: Record<string, unknown> })?.customizations,
+            submission?.businessType,
+        )
+
         // Any failure here throws and is reported. The database is only touched
         // once Cloudflare has confirmed the holding page is live.
-        await deployHoldingPage(cfApiToken, cfAccountId, workerName, submission?.businessName || '')
+        await deployHoldingPage(cfApiToken, cfAccountId, workerName, submission?.businessName || '', theme)
 
         await fetchMutation(api.generatedWebsites.markOffline, {
             submissionId: submissionId as Id<"submissions">
