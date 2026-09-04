@@ -19,8 +19,13 @@ function FootCol({ title, children }: { title: string; children: React.ReactNode
 /** Footer — WP dense multi-column directory, brand-token dark surface, real company info. */
 export default function Footer() {
     const { lang, setLang, t } = useT();
-    const apkUrl = useQuery(api.settings.get, { key: "apk_download_url" }) as string | null | undefined;
+    // Both store listings, exactly as the "Get the app" band reads them
+    // (AppDownloadSection). The Android link used to hand out the raw APK from
+    // `apk_download_url` with a `download` attribute — so a visitor got a file
+    // their phone then had to be talked into installing, instead of the Play
+    // Store listing that has existed since the app was published.
     const appStoreUrl = useQuery(api.settings.get, { key: "app_store_url" }) as string | null | undefined;
+    const playStoreUrl = useQuery(api.settings.get, { key: "play_store_url" }) as string | null | undefined;
     const year = new Date().getFullYear();
 
     return (
@@ -36,10 +41,10 @@ export default function Footer() {
                     </div>
 
                     <FootCol title={t("footer.appCol")}>
-                        {apkUrl ? (
-                            <a href={apkUrl} download="tendso.apk">Android · Direct APK</a>
+                        {playStoreUrl && playStoreUrl.trim() ? (
+                            <a href={playStoreUrl} target="_blank" rel="noreferrer">Android · Google Play</a>
                         ) : (
-                            <Link href="/for-creators">Android · Direct APK</Link>
+                            <span className="text-khaki/40">Android · {t("footer.comingSoon")}</span>
                         )}
                         {appStoreUrl && appStoreUrl.trim() ? (
                             <a href={appStoreUrl} target="_blank" rel="noreferrer">iOS · App Store</a>

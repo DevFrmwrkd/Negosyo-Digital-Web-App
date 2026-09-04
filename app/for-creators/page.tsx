@@ -103,8 +103,8 @@ export default function ForCreatorsPage() {
                 <main>
                     <CreatorHero />
                     <ApplySection />
-                    {/* The creator app (real Play Store + APK download) — the primary
-                        action; every creator CTA on this page scrolls here (app-first). */}
+                    {/* The creator app on both stores — the primary action; every
+                        creator CTA on this page scrolls here (app-first). */}
                     <AppDownloadSection id="app" />
                     <CreatorEarnings />
                     {/* Creator-side copy: the visit is theirs, the build is ours.

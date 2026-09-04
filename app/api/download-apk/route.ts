@@ -5,35 +5,33 @@ import { api } from '@/convex/_generated/api'
 /**
  * GET /api/download-apk
  *
- * Thin backward-compat passthrough. The landing-page Navbar and Footer now
- * link DIRECTLY to `apk_download_url` (the R2 public URL) — that's the
- * canonical download path. This route exists only so any external link or
- * bookmark to `/api/download-apk` keeps working.
+ * Kept only for links that predate the Play Store listing — Discord posts,
+ * messages, bookmarks. There is no APK any more: the app ships through Google
+ * Play, so this sends the visitor to the listing, which is what someone
+ * following an "install the Android app" link actually wants.
  *
- * The filename problem ("downloaded as 1704812345678-a8b2c1d4.apk instead
- * of tendso.apk") is now solved at the upload layer in
- * convex/r2.ts: the APK is stored at a stable key `releases/tendso.apk`,
- * so R2 derives the friendly filename from the storage key. No
- * Content-Disposition rewrites, no presigned URLs, no settings drift.
+ * Not deleted, because a 404 would strand every one of those old links. It can
+ * go once they have aged out.
  */
 export async function GET(_request: NextRequest) {
     try {
-        const apkDownloadUrl = (await fetchQuery(api.settings.get, {
-            key: 'apk_download_url',
+        const playStoreUrl = (await fetchQuery(api.settings.get, {
+            key: 'play_store_url',
         })) as string | null | undefined
 
-        if (!apkDownloadUrl) {
+        if (!playStoreUrl || !playStoreUrl.trim()) {
             return NextResponse.json(
-                { error: 'No APK release available right now.' },
+                { error: 'The Android app listing is not configured.' },
                 { status: 404 },
             )
         }
 
-        return NextResponse.redirect(apkDownloadUrl, { status: 302 })
-    } catch (err: any) {
-        console.error('download-apk error:', err)
+        return NextResponse.redirect(playStoreUrl.trim(), { status: 302 })
+    } catch (err) {
+        console.error('download-apk redirect error:', err)
+        const message = err instanceof Error ? err.message : ''
         return NextResponse.json(
-            { error: err?.message || 'Internal server error' },
+            { error: message || 'Internal server error' },
             { status: 500 },
         )
     }
